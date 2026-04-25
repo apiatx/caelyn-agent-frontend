@@ -1,0 +1,192 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Project constraints:
+
+* This repo is the display layer. 
+* The existing Home page `Trending on X` UI should remain unchanged.
+* The Social page should become a richer destination for X-based intelligence using the same underlying snapshot/call family, not a whole new XAI-expensive product.
+* Reuse the existing ticker click -> popup/modal/detail behavior wherever possible.
+
+PRIMARY GOAL
+Implement 4 X-based sections on the existing Social page using the backend’s shared X snapshot view.
+
+The 4 sections should be:
+
+1. X Consensus
+2. Freshest Alpha
+3. Theme Leadership
+4. Sentiment Acceleration
+
+Also include a compact top summary strip if backend provides it:
+
+* Market Pulse
+* Portfolio Bias
+  This should be lightweight context, not one of the 4 main sections.
+
+IMPORTANT NAMING
+On the Social page, the current Home-style “Trending on X” concept should be named:
+
+**X Consensus**
+
+Reason:
+
+* more accurate to what the backend/Grok output actually is
+* fits better next to the other 3 sections
+* do NOT rename the Home page section; this naming change is for Social page only
+
+AUDIT FIRST
+Before implementing, inspect:
+
+1. the existing Social page structure
+2. existing data flow on that page
+3. whether there is already a suitable page layout for 4 primary sections
+4. existing reusable UI pieces from:
+
+   * Home `Trending on X`
+   * ticker cards / symbol pills
+   * popup/detail modal flow
+   * chart popup / TradingView integration
+5. what current click behavior should be preserved for tickers
+
+IMPLEMENT
+
+PART 1 — Add the 4 main sections to the Social page
+Build these 4 sections from the backend Social X endpoint:
+
+A. X Consensus
+Purpose:
+
+* primary ranked consensus tickers from your curated X accounts
+
+Render useful info such as:
+
+* ticker
+* name
+* hype score
+* trader count
+* consensus strength
+* buzz trend
+* short thesis
+* catalysts if they fit cleanly
+* fresh trade badge if relevant
+
+B. Freshest Alpha
+Purpose:
+
+* newly emerging names and early ideas
+
+Render:
+
+* ticker
+* why fresh
+* entry thesis
+* first mentioned by
+* optional badge if spotlight freshest_alpha matches
+
+C. Theme Leadership
+Purpose:
+
+* dominant narrative/theme clusters across X
+
+Render:
+
+* theme
+* buzz level
+* top key tickers
+* why hot
+
+D. Sentiment Acceleration
+Purpose:
+
+* names heating up fastest versus prior snapshot
+
+Render:
+
+* ticker
+* mention delta / hype delta if backend provides
+* current sentiment context
+* why now / acceleration rationale
+
+PART 2 — Top context strip
+If backend provides these, render a thin top summary strip above the 4 sections:
+
+* Market Pulse
+* Portfolio Bias
+  Keep it compact and premium.
+
+PART 3 — Preserve ticker click behavior
+Critical:
+
+* if a section contains tickers, clicking a ticker should still open the existing popup/modal/detail/chart behavior wherever it makes sense
+* do NOT break the detail UX
+* reuse the existing TradingView/popup flow if possible
+
+PART 4 — Layout
+Strong preference:
+
+* one clean Social page with 4 clear sections
+* desktop-first
+* could be 2x2 grid or another clean premium layout
+* do not make it feel cluttered
+* do not redesign the entire app
+* do not change the Home page UI
+
+PART 5 — State semantics
+Surface backend state honestly:
+
+* updated_at
+* stale
+* refresh_in_progress
+* next_allowed_refresh_at if provided
+* no_data_yet / empty / stale-but-available should be distinct and truthful
+
+PART 6 — No extra expensive frontend behavior
+
+* do not create frontend timers for X refresh
+* do not add extra XAI-triggering fetches
+* use the shared backend Social X endpoint
+* keep query count disciplined
+
+VERIFY
+Before finishing, verify:
+
+1. Social page now has the 4 sections:
+
+   * X Consensus
+   * Freshest Alpha
+   * Theme Leadership
+   * Sentiment Acceleration
+2. Home page `Trending on X` remains unchanged
+3. clicking a ticker still opens the expected popup/detail/chart flow
+4. no unnecessary extra X-related fetch fan-out was added
+5. layout is clean and readable
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. where the 4 sections were added
+3. how the page is laid out
+4. confirmation that Social uses the shared backend X snapshot endpoint
+5. confirmation Home page UI was left unchanged
+6. confirmation ticker popup/detail still works
+7. whether query count changed
+8. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Reuse the existing X intelligence cleanly
+* Make the Social page feel premium and high-signal
+* Preserve Home page UI and existing ticker detail UX
+* Then commit and push directly to `main`

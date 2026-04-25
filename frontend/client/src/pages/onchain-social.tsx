@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { openSecureLink } from '@/utils/security';
 import socialImage from "@assets/image_1771574082445.png";
 
@@ -645,6 +646,341 @@ function ConsensusBriefingCard({ data }: { data: any }) {
   );
 }
 
+// ─── X Snapshot — 4 primary sections ─────────────────────────────
+function XSnapshotSections({ tx }: { tx: any }) {
+  const [expandedTicker,      setExpandedTicker]      = useState<string | null>(null);
+  const [expandedThemeTicker, setExpandedThemeTicker] = useState<string | null>(null);
+  const [expandedAccelTicker, setExpandedAccelTicker] = useState<string | null>(null);
+  const [expandedAlphaTicker, setExpandedAlphaTicker] = useState<string | null>(null);
+
+  const C = {
+    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
+    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+  };
+
+  const mp          = tx.market_pulse      || {};
+  const bias        = tx.portfolio_bias    || '';
+  const topTickers: any[] = tx.top_tickers        || [];
+  const keyThemes:  any[] = tx.key_themes          || [];
+  const sentAccel:  any[] = tx.sentiment_acceleration || [];
+  const freshAlpha         = tx.freshest_alpha || tx.spotlight || null;
+  const freshTrades: any[] = tx.fresh_trades   || [];
+  const isStale      = tx.is_stale === true || tx.stale === true;
+  const isRefreshing = tx.refresh_in_progress === true;
+  const generatedAt  = tx.generated_at ? new Date(tx.generated_at) : null;
+  const verdictColor = /bull/i.test(mp.verdict || '') ? C.green : /bear/i.test(mp.verdict || '') ? C.red : C.gold;
+
+  const relTime = (() => {
+    if (!generatedAt) return null;
+    const ageMs  = Date.now() - generatedAt.getTime();
+    const ageSec = Math.max(0, Math.floor(ageMs / 1000));
+    if (ageSec < 60)  return `${ageSec}s ago`;
+    const ageMin = Math.floor(ageSec / 60);
+    if (ageMin < 60)  return `${ageMin}m ago`;
+    const ageHr  = Math.floor(ageMin / 60);
+    if (ageHr  < 24)  return `${ageHr}h ago`;
+    return `${Math.floor(ageHr / 24)}d ago`;
+  })();
+
+  const toggle = (key: string, setter: (v: string | null) => void, current: string | null) =>
+    setter(current === key ? null : key);
+
+  const sentColor = (s: string | null | undefined) =>
+    !s ? C.dim : /bull/i.test(s) ? C.green : /bear/i.test(s) ? C.red : C.gold;
+
+  const buzzColor = (lvl: string) =>
+    /extreme/i.test(lvl) ? C.red : /high/i.test(lvl) ? C.gold : /moderate/i.test(lvl) ? '#eab308' : C.dim;
+
+  const cardStyle: CSSProperties = {
+    background: '#0a0b1e',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    padding: '1.25rem 1.25rem 1rem',
+    display: 'flex',
+    flexDirection: 'column',
+  };
+
+  const sectionTitle = (label: string, color: string, count?: number) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+      <span style={{ fontFamily: font, fontSize: '0.75rem', fontWeight: 700, color }}>{label}</span>
+      {count != null && count > 0 && (
+        <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>({count})</span>
+      )}
+    </div>
+  );
+
+  const emptyState = (msg: string) => (
+    <div style={{ color: C.dim, fontSize: '0.72rem', fontFamily: sansFont, padding: '0.75rem 0', textAlign: 'center' }}>
+      {msg}
+    </div>
+  );
+
+  const tickerChip = (ticker: string, isExp: boolean, onClick: () => void, chipColor: string) => (
+    <button
+      key={ticker}
+      onClick={onClick}
+      style={{
+        padding: '3px 10px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700,
+        fontFamily: font, color: isExp ? '#fff' : chipColor,
+        background: isExp ? `${chipColor}30` : `${chipColor}10`,
+        border: `1px solid ${isExp ? chipColor : `${chipColor}30`}`,
+        cursor: 'pointer', transition: 'all 0.15s',
+      }}
+    >${ticker}</button>
+  );
+
+  return (
+    <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 0', position: 'relative', zIndex: 1 }}>
+
+      {/* ── Context strip (Market Pulse + Portfolio Bias) ── */}
+      {(mp.verdict || mp.summary || bias) && (
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+          {(mp.verdict || mp.summary) && (
+            <div style={{ flex: 1, minWidth: 200, background: `${verdictColor}08`, border: `1px solid ${verdictColor}22`,
+              borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>Market Pulse</span>
+              {mp.verdict && <span style={{ color: verdictColor, fontWeight: 800, fontSize: '0.7rem', fontFamily: font, textTransform: 'uppercase' }}>{mp.verdict}</span>}
+              {mp.summary && <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{mp.summary}</span>}
+            </div>
+          )}
+          {bias && (
+            <div style={{ flex: 1, minWidth: 200, background: `${C.blue}08`, border: `1px solid ${C.blue}18`,
+              borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>Portfolio Bias</span>
+              <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{bias}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Freshness + state strip ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+        {relTime && <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Updated {relTime}</span>}
+        {isStale && (
+          <span style={{ color: '#f59e0b', fontSize: '0.58rem', fontFamily: font, fontWeight: 700,
+            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+            borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>STALE</span>
+        )}
+        {isRefreshing && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.dim, fontSize: '0.6rem', fontFamily: font }}>
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', opacity: 0.8 }} />
+            Refreshing…
+          </span>
+        )}
+      </div>
+
+      {/* ── 2×2 grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+
+        {/* ① X Consensus */}
+        <div style={cardStyle}>
+          {sectionTitle('𝕏 Consensus', C.blue, topTickers.length)}
+          {topTickers.length === 0 ? emptyState('No consensus data yet.') : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
+              {topTickers.map((t: any, i: number) => {
+                const sym   = t.symbol || t.ticker;
+                const isExp = expandedTicker === sym;
+                return (
+                  <div key={sym || i}>
+                    <div
+                      onClick={() => toggle(sym, setExpandedTicker, expandedTicker)}
+                      style={{
+                        background: isExp ? `${C.blue}0a` : C.card,
+                        border: `1px solid ${isExp ? `${C.blue}40` : C.border}`,
+                        borderRadius: 8, padding: '0.6rem 0.8rem',
+                        cursor: 'pointer', transition: 'border-color 0.15s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: t.rationale ? 5 : 0, flexWrap: 'wrap' }}>
+                        <span style={{ color: C.dim, fontWeight: 700, fontSize: '0.7rem', fontFamily: font }}>#{i + 1}</span>
+                        <span style={{ color: C.blue, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                        {t.sentiment && (
+                          <span style={{ color: sentColor(t.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{t.sentiment}</span>
+                        )}
+                        {Array.isArray(t.accounts) && t.accounts.length > 0 && (
+                          <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>{t.accounts.length} src</span>
+                        )}
+                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
+                      </div>
+                      {t.rationale && (
+                        <div style={{
+                          color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: isExp ? 'unset' : 2,
+                          WebkitBoxOrient: 'vertical' as const,
+                        }}>
+                          {t.rationale}
+                        </div>
+                      )}
+                    </div>
+                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ② Freshest Alpha */}
+        <div style={cardStyle}>
+          {sectionTitle('Freshest Alpha', C.green)}
+          {!freshAlpha && freshTrades.length === 0 ? emptyState('No fresh alpha data yet.') : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+              {freshAlpha && (freshAlpha.ticker || freshAlpha.symbol) && (() => {
+                const sym   = freshAlpha.ticker || freshAlpha.symbol;
+                const isExp = expandedAlphaTicker === sym;
+                return (
+                  <div>
+                    <div
+                      onClick={() => toggle(sym, setExpandedAlphaTicker, expandedAlphaTicker)}
+                      style={{ background: `${C.purple}08`, border: `1px solid ${C.purple}22`, borderRadius: 8, padding: '0.75rem 0.9rem', cursor: 'pointer' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700,
+                          fontFamily: font, color: C.purple, border: `1px solid ${C.purple}40`,
+                          background: `${C.purple}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>SPOTLIGHT</span>
+                        <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                        {freshAlpha.conviction && <ConvictionBadge value={freshAlpha.conviction} />}
+                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
+                      </div>
+                      {freshAlpha.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.thesis}</div>}
+                      {freshAlpha.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.reason}</div>}
+                      {freshAlpha.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, marginTop: 4 }}>{freshAlpha.catalyst}</div>}
+                      {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: {freshAlpha.first_mentioned_by}</div>}
+                    </div>
+                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                  </div>
+                );
+              })()}
+              {freshTrades.length > 0 && (
+                <div>
+                  <div style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                    textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>Fresh Trades</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                    {freshTrades.map((t: any, i: number) => {
+                      const sym   = t.ticker || t.symbol;
+                      const key   = `ft-${sym}`;
+                      const isExp = expandedAlphaTicker === key;
+                      return (
+                        <div key={i}>
+                          {tickerChip(sym, isExp, () => toggle(key, setExpandedAlphaTicker, expandedAlphaTicker), C.green)}
+                          {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ③ Theme Leadership */}
+        <div style={cardStyle}>
+          {sectionTitle('Theme Leadership', C.gold, keyThemes.length)}
+          {keyThemes.length === 0 ? emptyState('No theme data yet.') : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
+              {keyThemes.map((h: any, i: number) => {
+                const themeKey = h.theme || h.name || `theme-${i}`;
+                const buzzLvl  = h.buzz_level || h.buzz || '';
+                const bc       = buzzColor(buzzLvl);
+                return (
+                  <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0.7rem 0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: 6 }}>
+                      <span style={{ color: C.bright, fontWeight: 700, fontSize: '0.78rem', fontFamily: font }}>{themeKey}</span>
+                      {buzzLvl && (
+                        <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700,
+                          fontFamily: font, color: bc, border: `1px solid ${bc}40`,
+                          background: `${bc}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{buzzLvl}</span>
+                      )}
+                    </div>
+                    {(h.why_hot || h.description) && (
+                      <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55, marginBottom: 8 }}>
+                        {h.why_hot || h.description}
+                      </div>
+                    )}
+                    {Array.isArray(h.key_tickers) && h.key_tickers.length > 0 && (
+                      <>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {h.key_tickers.map((ticker: string, j: number) => {
+                            const chipKey = `${themeKey}-${ticker}`;
+                            const isExp   = expandedThemeTicker === chipKey;
+                            return tickerChip(ticker, isExp, () => toggle(chipKey, setExpandedThemeTicker, expandedThemeTicker), C.blue);
+                          })}
+                        </div>
+                        {h.key_tickers.map((ticker: string) => {
+                          const chipKey = `${themeKey}-${ticker}`;
+                          return expandedThemeTicker === chipKey
+                            ? <TradingViewChart key={ticker} symbol={`NASDAQ:${ticker}`} />
+                            : null;
+                        })}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ④ Sentiment Acceleration */}
+        <div style={cardStyle}>
+          {sectionTitle('Sentiment Acceleration', C.purple, sentAccel.length)}
+          {sentAccel.length === 0 ? emptyState('No acceleration data yet.') : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
+              {sentAccel.map((item: any, i: number) => {
+                const sym   = item.ticker || item.symbol;
+                const isExp = expandedAccelTicker === sym;
+                return (
+                  <div key={sym || i}>
+                    <div
+                      onClick={() => toggle(sym, setExpandedAccelTicker, expandedAccelTicker)}
+                      style={{
+                        background: C.card, border: `1px solid ${isExp ? `${C.purple}40` : C.border}`,
+                        borderRadius: 8, padding: '0.65rem 0.85rem', cursor: 'pointer', transition: 'border-color 0.15s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+                        marginBottom: (item.reason || item.why_now || item.context) ? 5 : 0 }}>
+                        <span style={{ color: C.purple, fontWeight: 800, fontSize: '0.88rem', fontFamily: font }}>${sym}</span>
+                        {item.hype_delta != null && (
+                          <span style={{ color: item.hype_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font, fontWeight: 700 }}>
+                            Δ{item.hype_delta >= 0 ? '+' : ''}{item.hype_delta}
+                          </span>
+                        )}
+                        {item.mention_delta != null && (
+                          <span style={{ color: item.mention_delta >= 0 ? C.green : C.red, fontSize: '0.62rem', fontFamily: font }}>
+                            mentions {item.mention_delta >= 0 ? '+' : ''}{item.mention_delta}
+                          </span>
+                        )}
+                        {item.sentiment && (
+                          <span style={{ color: sentColor(item.sentiment), fontSize: '0.6rem', fontFamily: font, fontWeight: 700, textTransform: 'uppercase' }}>{item.sentiment}</span>
+                        )}
+                        <span style={{ color: C.dim, fontSize: '0.56rem', fontFamily: font, marginLeft: 'auto' }}>{isExp ? '▼' : '▶'} chart</span>
+                      </div>
+                      {(item.reason || item.why_now || item.context) && (
+                        <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55 }}>
+                          {item.reason || item.why_now || item.context}
+                        </div>
+                      )}
+                    </div>
+                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
 function GrokSocialAgent() {
   const [messages, setMessages] = useState<GrokMessage[]>([]);
   const [input, setInput] = useState('');
@@ -1090,9 +1426,16 @@ const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "", sty
 };
 
 export default function OnchainSocialPage() {
-  const openInNewTab = (url: string) => {
-    openSecureLink(url);
-  };
+  const openInNewTab = (url: string) => { openSecureLink(url); };
+
+  const { data: dashData, isLoading: dashLoading } = useQuery<any>({
+    queryKey: ['/api/home/dashboard'],
+    queryFn: () => fetch('/api/home/dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
+  const tx = dashData?.trending_on_x ?? null;
 
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif", lineHeight: 1.65 }}>
@@ -1138,8 +1481,28 @@ export default function OnchainSocialPage() {
           </div>
         </div>
 
+        {/* ═══ X Intelligence Snapshot — 4 sections ═══ */}
+        <div style={{ marginTop: '1.5rem' }}>
+          {dashLoading ? (
+            <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} style={{ background: '#0a0b1e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '1.25rem', height: 200 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, height: 14, width: '40%', marginBottom: '0.75rem' }} />
+                    {[0, 1, 2].map(j => (
+                      <div key={j} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, height: 42, marginBottom: '0.45rem' }} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : tx ? (
+            <XSnapshotSections tx={tx} />
+          ) : null}
+        </div>
+
         {/* ═══ Grok Social Agent ═══ */}
-        <div style={{ marginTop: '2rem' }}>
+        <div style={{ marginTop: '1.5rem' }}>
           <GrokSocialAgent />
         </div>
 
