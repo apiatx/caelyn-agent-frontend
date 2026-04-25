@@ -929,7 +929,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
                     {Array.isArray(h.key_tickers) && h.key_tickers.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                         {h.key_tickers.map((ticker: string) =>
-                          tickerChip(ticker, false, (e: any) => { e.stopPropagation(); onTickerClick(ticker, undefined, h.why_hot || h.description); }, C.blue)
+                          tickerChip(ticker, false, (e: any) => { e.stopPropagation(); onTickerClick(ticker, undefined, undefined); }, C.blue)
                         )}
                       </div>
                     )}
