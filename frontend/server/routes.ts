@@ -2542,6 +2542,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Social — X intelligence dashboard (flat payload: top_tickers + new sibling keys) ===
+  app.get('/api/social/x-dashboard', async (req, res) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 25_000);
+    try {
+      const r = await fetch(`${SR_URL}/api/social/x-dashboard`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body });
+      }
+      const data = await r.json();
+      return res.json(data);
+    } catch (e: any) {
+      clearTimeout(tid);
+      const msg = e?.name === 'AbortError' ? 'Social X dashboard timed out (25s)' : (e?.message || 'Fetch failed');
+      return res.status(500).json({ error: msg });
+    }
+  });
+
   // === Home — per-category movers (gainers / losers) ===
   app.get('/api/home/movers', async (req, res) => {
     try {

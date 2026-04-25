@@ -1480,20 +1480,21 @@ export default function OnchainSocialPage() {
   const queryClient = useQueryClient();
 
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
-    queryKey: ['/api/home/dashboard'],
-    queryFn: () => fetch('/api/home/dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    queryKey: ['/api/social/x-dashboard'],
+    queryFn: () => fetch('/api/social/x-dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
     retry: 1,
   });
 
-  const tx = dashData?.trending_on_x ?? null;
+  // Social endpoint returns data flat at the top level (no trending_on_x wrapper)
+  const tx = dashData ?? null;
 
   const refreshMutation = useMutation({
     mutationFn: () =>
       fetch('/api/home/x-snapshot/refresh', { method: 'POST' })
         .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/home/dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social/x-dashboard'] });
     },
   });
 
