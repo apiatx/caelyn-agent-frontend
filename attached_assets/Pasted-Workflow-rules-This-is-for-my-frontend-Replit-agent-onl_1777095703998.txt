@@ -1,0 +1,135 @@
+Workflow rules:
+
+This is for my frontend Replit agent only
+Do not worry about pushing to git
+Audit first, then implement
+
+Project context:
+
+This repo is the frontend display layer.
+The chart popup / TradingView modal is a frontend-only feature
+Backend is NOT responsible for TradingView chart rendering or exchange-prefix resolution for the popup
+The goal is to fix foreign / non-U.S. / cross-listed stocks whose chart modal currently says:
+“This Chart Does Not Exist”
+
+PRIMARY GOAL
+Fix the frontend TradingView popup/modal so foreign or non-U.S. stocks open the correct chart by using the proper exchange-prefixed TradingView symbol instead of assuming a default U.S. exchange.
+
+PROBLEM TO SOLVE
+Right now, when certain non-U.S. or foreign-related names are clicked in the UI, TradingView says:
+
+“This Chart Does Not Exist”
+
+This likely means the frontend is building the TradingView symbol incorrectly, for example:
+
+using raw ticker only
+assuming NASDAQ/NYSE for everything
+using the wrong exchange for cross-listed names
+not handling ADR / Toronto / LSE / Frankfurt / Euronext / HK / etc.
+
+AUDIT FIRST
+Inspect the frontend and identify:
+
+Where the TradingView popup/modal/chart is opened
+all components/pages that open this popup
+Home page
+Social page
+Watchlist / Portfolio / Options / any shared popup flow
+How the TradingView symbol is currently built
+raw ticker
+symbol
+guessed NASDAQ:${ticker} or NYSE:${ticker}
+some helper/util
+any existing mapping table
+Whether there is one shared chart modal/component or multiple
+if there is a shared component, fix it there first
+Which tickers/pages are known failing examples
+use at least one known foreign/non-U.S. failing symbol from live UI testing
+
+IMPLEMENTATION TARGET
+
+PART 1 — Add a frontend TradingView symbol resolver
+Create or extend a frontend helper/utility that resolves chart symbols before passing them to the TradingView component.
+
+Strong preference:
+
+one shared resolver used by all chart popups
+centralized logic, not duplicated per page
+
+PART 2 — Resolution logic
+The resolver should prefer, in order:
+
+any explicit tradingview_symbol or exchange-prefixed field already present in the frontend row/object if it exists
+any explicit exchange + ticker combo already present in the frontend row/object
+a frontend mapping/resolution layer for known foreign/non-U.S. exchanges
+raw ticker fallback only as a last resort
+
+Important:
+
+do NOT assume U.S. exchange by default for all names
+do NOT break U.S. names that already work
+
+PART 3 — Frontend-only exchange mapping support
+Since this is frontend-only, create a clean symbol-resolution strategy for likely cases:
+
+U.S. stocks / ETFs
+ADRs
+Toronto / TSX
+London / LSE
+Frankfurt / XETRA/FWB
+Euronext
+HKEX
+other exchanges only if current UI data makes them reasonably detectable
+
+Use the cleanest practical approach:
+
+existing exchange field if present
+heuristics / mapping table if needed
+symbol normalization helper if needed
+
+Do NOT overengineer a giant global security master in the frontend.
+Keep it practical and focused on making the popup work.
+
+PART 4 — Shared popup integration
+Update the shared chart popup/modal flow so it always passes the resolved TradingView symbol to the widget/component.
+
+Do NOT redesign the popup.
+Do NOT change the Home/Social page layout.
+This is a data-resolution fix only.
+
+PART 5 — Graceful fallback
+If the resolver cannot confidently determine a better symbol:
+
+fall back to current behavior
+do not crash the modal
+keep existing working U.S. names intact
+
+PART 6 — Verification
+Test with:
+
+one normal U.S. stock that already works
+one ETF
+one foreign / non-U.S. / cross-listed stock that previously failed
+one Social/X-derived ticker if applicable
+
+For each, verify the TradingView chart now loads correctly or at least resolves to a better exchange-aware symbol.
+
+DELIVERABLES
+When done, report:
+
+exact frontend files changed
+exact old chart-symbol logic
+exact new symbol-resolution logic
+where the shared resolver is now used
+examples of resolved symbols for:
+a U.S. stock
+an ETF
+a foreign/non-U.S. stock
+confirmation the popup/modal UX was preserved
+
+EXECUTION STYLE
+
+Audit first
+Fix the shared chart symbol path
+Do not redesign the UI
+Make foreign names work without breaking U.S. names

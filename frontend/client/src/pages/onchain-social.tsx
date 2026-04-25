@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { openSecureLink } from '@/utils/security';
+import { resolveTVSymbol } from '@/utils/tvSymbol';
 
 // ─── Grok Agent Constants ─────────────────────────────────────────
 const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
@@ -524,7 +525,7 @@ function ConsensusBriefingCard({ data }: { data: any }) {
                       {h.key_tickers.map((ticker: string) => {
                         const chipKey = `${themeKey}-${ticker}`;
                         return expandedHypeTicker === chipKey
-                          ? <TradingViewChart key={ticker} symbol={`NASDAQ:${ticker}`} />
+                          ? <TradingViewChart key={ticker} symbol={resolveTVSymbol(ticker)} />
                           : null;
                       })}
                     </>
@@ -547,7 +548,7 @@ function ConsensusBriefingCard({ data }: { data: any }) {
             {picks.map((p: any, i: number) => {
               const pickTicker = p.ticker || p.symbol || `pick-${i}`;
               const isExpanded = expandedPick === pickTicker;
-              const tvSymbol = p.tradingview_symbol || `NASDAQ:${pickTicker}`;
+              const tvSymbol = resolveTVSymbol(pickTicker, p);
               return (
                 <div key={i}>
                   <div
@@ -834,7 +835,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                         </div>
                       )}
                     </div>
-                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, t)} />}
                   </div>
                 );
               })}
@@ -869,7 +870,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                       {freshAlpha.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, marginTop: 4 }}>{freshAlpha.catalyst}</div>}
                       {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: {freshAlpha.first_mentioned_by}</div>}
                     </div>
-                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, freshAlpha)} />}
                   </div>
                 );
               })()}
@@ -911,7 +912,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                             </div>
                           )}
                         </div>
-                        {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                        {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, t)} />}
                       </div>
                     );
                   })}
@@ -957,7 +958,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                         {h.key_tickers.map((ticker: string) => {
                           const chipKey = `${themeKey}-${ticker}`;
                           return expandedThemeTicker === chipKey
-                            ? <TradingViewChart key={ticker} symbol={`NASDAQ:${ticker}`} />
+                            ? <TradingViewChart key={ticker} symbol={resolveTVSymbol(ticker)} />
                             : null;
                         })}
                       </>
@@ -1018,7 +1019,7 @@ function XSnapshotSections({ tx }: { tx: any }) {
                         </div>
                       )}
                     </div>
-                    {isExp && <TradingViewChart symbol={`NASDAQ:${sym}`} />}
+                    {isExp && <TradingViewChart symbol={resolveTVSymbol(sym, item)} />}
                   </div>
                 );
               })}
