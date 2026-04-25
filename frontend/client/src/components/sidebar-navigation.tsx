@@ -86,6 +86,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/notifai'
     },
     {
+      id: 'onchain-social',
+      label: 'Social',
+      icon: <MessageSquare className="w-4 h-4" />,
+      path: '/app/onchain/social'
+    },
+    {
       id: 'watchlist',
       label: 'Watchlist',
       icon: <Eye className="w-4 h-4" />,
@@ -387,12 +393,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Tokenization',
       icon: <Building2 className="w-4 h-4" />,
       path: '/app/rwa'
-    },
-    {
-      id: 'onchain-social',
-      label: 'Social',
-      icon: <MessageSquare className="w-4 h-4" />,
-      path: '/app/onchain/social'
     },
     {
       id: 'dev-qa',

@@ -1,0 +1,100 @@
+You are working in this repo only:
+
+* Frontend repo: https://github.com/apiatx/caelyn-agent-frontend.git
+
+Workflow rules:
+
+* Work directly on `main`
+* Do NOT create a branch
+* Do NOT create a PR
+* Commit directly to `main`
+* Push directly to `main`
+
+Project constraints:
+
+* This repo is the display layer. 
+* The Social page already uses the shared backend X snapshot architecture.
+* Do not redesign the whole page.
+* This is a focused UI enhancement.
+
+PRIMARY GOAL
+Add a **manual refresh button** to the **top-right corner of the Social page** so a user can explicitly refresh the X snapshot after 8 PM if they want an updated read.
+
+IMPORTANT BEHAVIOR
+
+* This is for the Social page
+* The button should use the new backend manual-refresh endpoint
+* The normal automatic schedule should still exist in backend
+* Frontend should just expose the explicit override cleanly
+
+AUDIT FIRST
+Inspect the current Social page and determine:
+
+1. the best place in the top-right corner for the manual refresh button
+2. the current data-fetch/query flow for the Social X dashboard
+3. whether page metadata already shows updated_at / stale / refresh state
+4. how to add the button without cluttering the page
+
+IMPLEMENT
+A. Add a top-right manual refresh button
+
+* place it cleanly in the Social page header / top-right area
+* label can be:
+
+  * `Refresh`
+  * or `Refresh X Snapshot`
+* keep it compact and premium
+
+B. Wire it to the backend manual-refresh endpoint
+
+* on click, call the backend manual refresh route
+* then refresh/invalidate the Social page query appropriately
+
+C. Show honest UI states
+If backend provides metadata, use it:
+
+* normal state
+* refreshing
+* disabled while refresh in progress
+* disabled during cooldown
+* show tooltip / helper text / small subtext if backend says:
+
+  * next manual refresh allowed at X
+  * refresh already running
+  * overnight auto-refresh is paused
+
+D. Keep the page clean
+
+* do not clutter the Social page
+* this should feel like a deliberate control, not a dev button
+
+E. Preserve Home page
+
+* do not add this button to Home unless explicitly asked
+* this is for the Social page only
+
+VERIFY
+Before finishing, verify:
+
+1. button is visible in the top-right of Social page
+2. clicking it triggers the backend manual refresh path
+3. disabled/loading/cooldown states work cleanly
+4. page query refreshes after successful manual refresh
+5. no unrelated page layout is broken
+
+DELIVERABLES
+When done, report:
+
+1. exact frontend files changed
+2. where the button was added
+3. how it is wired to the backend endpoint
+4. what loading/disabled/cooldown states are shown
+5. confirmation Home page was left unchanged
+6. confirmation changes were committed and pushed directly to `main`
+
+EXECUTION STYLE
+
+* Audit first
+* Add one clean top-right control
+* Keep the page polished
+* Then commit and push directly to `main`
