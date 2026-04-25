@@ -2517,6 +2517,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Home — manual X snapshot refresh (Social page button) ===
+  // Triggers a forced re-fetch of the backend's trending_on_x data.
+  // Returns the refreshed dashboard payload so the client can update immediately.
+  app.post('/api/home/x-snapshot/refresh', async (req, res) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 45_000);
+    try {
+      const r = await fetch(`${SR_URL}/api/home/dashboard?force=true`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body });
+      }
+      const data = await r.json();
+      return res.json({ ok: true, trending_on_x: data?.trending_on_x ?? null, _refreshed_at: Date.now() });
+    } catch (e: any) {
+      clearTimeout(tid);
+      const msg = e?.name === 'AbortError' ? 'Refresh timed out (45s)' : (e?.message || 'Refresh failed');
+      return res.status(500).json({ error: msg });
+    }
+  });
+
   // === Home — per-category movers (gainers / losers) ===
   app.get('/api/home/movers', async (req, res) => {
     try {
