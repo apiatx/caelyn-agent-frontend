@@ -297,6 +297,62 @@ function ModeToggle({ mode, setMode }: { mode: "sectors" | "themes"; setMode: (m
   );
 }
 
+// ─── Theme ETF → correct TradingView exchange prefix ─────────────────────────
+// TradingView rejects AMEX: for NASDAQ/NYSE-listed ETFs; this map provides the right prefix.
+const THEME_ETF_TV: Record<string, string> = {
+  // Semiconductors
+  SMH:   "NASDAQ:SMH",   SOXX:  "NASDAQ:SOXX",  SOXL:  "NASDAQ:SOXL",  SOXS:  "NASDAQ:SOXS",
+  // AI / Robotics / Tech
+  BOTZ:  "NASDAQ:BOTZ",  ROBO:  "NASDAQ:ROBO",  IRBO:  "NYSE:IRBO",
+  QTUM:  "NASDAQ:QTUM",  SKYY:  "NASDAQ:SKYY",
+  // Cybersecurity
+  CIBR:  "NASDAQ:CIBR",  HACK:  "NASDAQ:HACK",  BUG:   "NASDAQ:BUG",   IHAK:  "AMEX:IHAK",
+  // Fintech / Blockchain
+  FINX:  "NASDAQ:FINX",  BLOK:  "NYSE:BLOK",    LEGR:  "NYSE:LEGR",
+  // ARK
+  ARKK:  "NYSE:ARKK",    ARKW:  "NYSE:ARKW",    ARKG:  "NYSE:ARKG",
+  ARKF:  "NYSE:ARKF",    ARKX:  "NYSE:ARKX",    PRNT:  "NYSE:PRNT",    IZRL:  "AMEX:IZRL",
+  // Clean Energy / EV
+  ICLN:  "NASDAQ:ICLN",  QCLN:  "NASDAQ:QCLN",  LIT:   "NYSE:LIT",
+  FAN:   "NYSE:FAN",     TAN:   "NYSE:TAN",      DRIV:  "AMEX:DRIV",   KARS:  "NYSE:KARS",
+  HAIL:  "NYSE:HAIL",    IDRV:  "NASDAQ:IDRV",
+  // Nuclear / Uranium
+  URA:   "NYSE:URA",     URNM:  "NYSE:URNM",     NLR:   "AMEX:NLR",
+  // Defense / Aerospace
+  ITA:   "AMEX:ITA",     XAR:   "AMEX:XAR",      PPA:   "NYSE:PPA",
+  // Biotech / Genomics
+  XBI:   "AMEX:XBI",     IBB:   "NASDAQ:IBB",    IDNA:  "NYSE:IDNA",
+  GNOM:  "AMEX:GNOM",
+  // Med Devices / Healthcare equipment
+  IHI:   "AMEX:IHI",     IHF:   "NYSE:IHF",
+  // Regional banks / Financials
+  KRE:   "NYSE:KRE",     IAT:   "AMEX:IAT",      KBWB:  "NASDAQ:KBWB",
+  // Energy / Oil & Gas
+  OIH:   "AMEX:OIH",     FCG:   "AMEX:FCG",      XOP:   "AMEX:XOP",
+  AMLP:  "NYSE:AMLP",
+  // Materials / Mining / Commodities
+  COPX:  "AMEX:COPX",    GDX:   "NYSE:GDX",      GDXJ:  "NYSE:GDXJ",
+  SLV:   "NYSE:SLV",     GLD:   "NYSE:GLD",       IAU:   "NYSE:IAU",
+  RING:  "NASDAQ:RING",  REMX:  "NYSE:REMX",
+  // Homebuilders / Real Estate
+  XHB:   "AMEX:XHB",     ITB:   "AMEX:ITB",       SRVR:  "AMEX:SRVR",
+  // Water / Infrastructure
+  PHO:   "NASDAQ:PHO",   IQLT:  "AMEX:IQLT",
+  // International / Emerging
+  KWEB:  "NYSE:KWEB",    FXI:   "NYSE:FXI",       MCHI:  "NASDAQ:MCHI",
+  EEM:   "NYSE:EEM",     VWO:   "NYSE:VWO",       EWJ:   "NYSE:EWJ",
+  // Multi-asset / broad
+  VNQ:   "NYSE:VNQ",
+  // Sector SPDR fallbacks (in case any appear as a theme leader)
+  XLC:   "NYSE:XLC",     XLY:   "NYSE:XLY",       XLP:   "NYSE:XLP",
+  XLE:   "NYSE:XLE",     XLF:   "NYSE:XLF",       XLV:   "NYSE:XLV",
+  XLI:   "NYSE:XLI",     XLB:   "NYSE:XLB",       XLRE:  "NYSE:XLRE",
+  XLK:   "NYSE:XLK",     XLU:   "NYSE:XLU",
+};
+function themeEtfTvSymbol(ticker: string): string {
+  return THEME_ETF_TV[ticker.toUpperCase()] ?? `AMEX:${ticker}`;
+}
+
 // ─── Theme Performance Table ──────────────────────────────────────────────────
 type ThemeSortKey = "rank" | "label" | "parent_sector" | "p1d" | "p5d" | "p1m" | "p3m" | "pytd" | "rs_score";
 
@@ -421,7 +477,7 @@ function ThemePerformanceView({ themes }: { themes: ThemeRow[] }) {
                         <span className="text-xs font-mono font-bold text-white">{leaderSym}</span>
                         <span className="text-xs text-gray-500">{item.label}</span>
                       </div>
-                      <TVTickerChart ticker={leaderSym} />
+                      <TVTickerChart ticker={leaderSym} symbol={themeEtfTvSymbol(leaderSym)} />
                     </td>
                   </tr>
                 )}
