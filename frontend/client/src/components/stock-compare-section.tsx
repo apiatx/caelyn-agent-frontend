@@ -228,18 +228,6 @@ function DropdownMenu({
   );
 }
 
-// ─── Custom right-side labels via chart dot ───────────────────────────────────
-
-function EndLabel({ viewBox, value, color, unit }: any) {
-  if (!viewBox || value == null) return null;
-  const { x, y } = viewBox;
-  return (
-    <text x={x + 6} y={y + 4} fill={color} fontSize={10} fontWeight={600}>
-      {formatValue(value, unit)}
-    </text>
-  );
-}
-
 // ─── Snapshot Table ───────────────────────────────────────────────────────────
 
 const SNAPSHOT_COLS: { key: string; label: string; unit: string }[] = [
@@ -415,18 +403,30 @@ function NewsCompareView({
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 
-function CompareTooltip({ active, payload, label, unit }: any) {
+function CompareTooltip({ active, payload, label, unit, seriesMap }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#111318] border border-white/15 rounded-lg p-3 shadow-xl text-xs min-w-[160px]">
-      <div className="text-white/60 mb-2 font-medium">{label}</div>
-      {payload.map((p: any) => (
-        <div key={p.dataKey} className="flex items-center gap-2 py-0.5">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-          <span className="text-white/70">{p.name}</span>
-          <span className="ml-auto font-semibold text-white">{formatValue(p.value, unit)}</span>
-        </div>
-      ))}
+    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-xl text-xs min-w-[180px]">
+      <div className="text-gray-500 mb-2 font-medium border-b border-gray-100 pb-1.5">
+        {String(label).slice(0, 4)}
+      </div>
+      {payload.map((p: any) => {
+        const name = seriesMap?.[p.dataKey] || p.dataKey;
+        return (
+          <div key={p.dataKey} className="flex items-start gap-2 py-0.5">
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0 mt-0.5" style={{ backgroundColor: p.color }} />
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-gray-800">{p.dataKey}</div>
+              {name && name !== p.dataKey && (
+                <div className="text-gray-400 truncate">{name}</div>
+              )}
+            </div>
+            <span className="font-semibold text-gray-900 ml-2 tabular-nums">
+              {p.value != null ? formatValue(p.value, unit) : "N/A"}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -761,19 +761,23 @@ export function StockCompareSection() {
               </div>
               <div className="max-h-56 overflow-y-auto py-1">
                 {filteredMetrics.map((m) => (
-                  <button
+                  <div
                     key={m.key}
-                    onClick={() => { setMetric(m); setMetricOpen(false); setMetricSearch(""); }}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${m.key === metric.key ? "text-blue-400" : "text-white/80"}`}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-white/5 transition-colors cursor-pointer ${m.key === metric.key ? "text-blue-400" : "text-white/80"}`}
                   >
-                    <span>{m.label}</span>
-                    <button
+                    <span
+                      className="flex-1"
+                      onClick={() => { setMetric(m); setMetricOpen(false); setMetricSearch(""); }}
+                    >
+                      {m.label}
+                    </span>
+                    <span
                       onClick={(e) => { e.stopPropagation(); toggleStar(m.key); }}
-                      className={`ml-2 transition-colors ${starred.includes(m.key) ? "text-yellow-400" : "text-white/20 hover:text-white/50"}`}
+                      className={`ml-2 transition-colors cursor-pointer ${starred.includes(m.key) ? "text-yellow-400" : "text-white/20 hover:text-white/50"}`}
                     >
                       <Star className="w-3 h-3" fill={starred.includes(m.key) ? "currentColor" : "none"} />
-                    </button>
-                  </button>
+                    </span>
+                  </div>
                 ))}
               </div>
             </DropdownMenu>
@@ -884,57 +888,67 @@ export function StockCompareSection() {
               <NewsCompareView news={news} symbols={symbols} colors={colorMap} />
             ) : (
               <>
-                {/* Legend */}
-                <div className="flex flex-wrap gap-3 mb-3">
-                  {series.map((s, i) => {
-                    const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
-                    return (
-                      <div key={s.symbol} className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                        <span className="font-medium">{s.symbol}</span>
-                        {s.name && <span className="text-gray-400 hidden sm:inline">· {s.name}</span>}
-                      </div>
-                    );
-                  })}
+                {/* Legend + chart title */}
+                <div className="flex flex-wrap items-center gap-4 mb-2">
+                  <div className="flex flex-wrap gap-3">
+                    {series.map((s, i) => {
+                      const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
+                      return (
+                        <div key={s.symbol} className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+                          <span className="font-semibold text-gray-800">{s.symbol}</span>
+                          {s.name && <span className="text-gray-400 hidden sm:inline">{s.name}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="ml-auto text-xs font-semibold text-gray-500">{metric.label}</div>
                 </div>
 
-                {/* Chart title */}
-                <div className="text-xs text-center text-gray-500 mb-2 font-medium">{metric.label}</div>
-
                 {/* Chart */}
-                <div className="w-full" style={{ height: 480 }}>
+                <div className="w-full" style={{ height: 520 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 80, left: 10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <LineChart
+                      data={chartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 10, fill: "#9ca3af" }}
-                        tickFormatter={(v: string) => v?.slice(0, 4) || v}
-                        minTickGap={24}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        tickFormatter={(v: string) => String(v).slice(0, 4)}
+                        minTickGap={28}
+                        axisLine={{ stroke: "#e5e7eb" }}
+                        tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 10, fill: "#9ca3af" }}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
                         tickFormatter={(v: number) => formatValue(v, metric.unit)}
-                        width={60}
+                        width={68}
+                        axisLine={false}
+                        tickLine={false}
                       />
-                      <Tooltip content={<CompareTooltip unit={metric.unit} />} />
+                      <Tooltip
+                        content={
+                          <CompareTooltip
+                            unit={metric.unit}
+                            seriesMap={Object.fromEntries(series.map((s) => [s.symbol, s.name || ""]))}
+                          />
+                        }
+                      />
                       {series.map((s, i) => {
                         const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
                         return (
                           <Line
                             key={s.symbol}
-                            type="monotone"
+                            type="linear"
                             dataKey={s.symbol}
                             name={s.symbol}
                             stroke={color}
-                            strokeWidth={2}
+                            strokeWidth={3}
                             dot={false}
+                            activeDot={{ r: 4, strokeWidth: 0 }}
                             connectNulls={false}
-                            label={
-                              chartData.length > 0
-                                ? <EndLabel color={color} unit={metric.unit} />
-                                : undefined
-                            }
                           />
                         );
                       })}

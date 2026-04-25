@@ -1,0 +1,203 @@
+The Stock Compare feature is working well. Do not change the overall layout, controls, chips, dropdowns, or data flow.
+
+Goal
+
+Change the current compare chart from the scattered-number/label look into a clean multi-line chart that matches the original reference screenshot.
+
+What to fix
+
+Right now the chart is plotting values in a way that mostly shows floating/scattered numeric labels.
+I want it to render like a proper comparison chart:
+
+one colored line per ticker
+x-axis = fiscal year/date
+y-axis = selected metric value
+clean grid
+clean legend
+no value labels at every data point
+chart should visually match the original screenshot style as closely as possible
+Important
+
+Everything else is already good.
+This is a chart rendering/style correction only.
+
+Exact chart behavior I want
+1) Render a true line chart
+
+Use the project’s existing chart library. If we are already using Recharts, use:
+
+LineChart
+Line
+XAxis
+YAxis
+CartesianGrid
+Tooltip
+Legend
+ResponsiveContainer
+
+Do not use a scatter chart style and do not render labels for every point.
+
+2) Each ticker should be a separate line
+
+For selected tickers like:
+
+INTT
+TRT
+NNBR
+
+show:
+
+blue line for INTT
+orange line for TRT
+purple line for NNBR
+
+Use the same chip/legend color mapping already in place.
+
+3) Remove the cluttered point labels
+
+Remove the text labels currently being drawn across the plot area for every value.
+
+Specifically:
+
+remove LabelList / point labels / always-on numeric annotations
+keep values visible in tooltip on hover
+optionally keep a single end-of-line latest value label if it looks clean, but do not label every point
+
+The chart should feel clean like the original screenshot.
+
+4) Styling should match the original screenshot
+
+Make the chart look as close as possible to the original reference:
+
+white background
+subtle gray gridlines
+clean axes
+thin/medium line strokes
+no giant dots everywhere
+smooth, readable comparison look
+centered metric title above chart (ex: Revenue)
+legend at top-left above the chart area
+
+Suggested visual settings:
+
+strokeWidth={3} on lines
+dot={false} or very subtle dots only on hover
+activeDot={{ r: 4 }}
+clean padding/margins
+compact y-axis formatting (113.83M, 49.22M, etc.)
+
+For fundamentals, I prefer a clean straight line/standard line look, not a flashy curved or noisy style.
+
+5) Keep the tooltip
+
+On hover, tooltip should show:
+
+ticker
+company name if available
+fiscal year/date
+formatted metric value
+
+Example:
+
+INTT
+2024
+Revenue: 55.42M
+6) X-axis / Y-axis
+X-axis
+
+Use year/date from the series points:
+
+2016
+2017
+2018
+etc.
+Y-axis
+
+Use compact formatting:
+
+0
+50M
+100M
+150M
+etc.
+
+The axis should scale automatically based on the selected metric.
+
+7) Data transformation
+
+Make sure the chart data is normalized into a single row-per-date structure for the line chart.
+
+Example target structure:
+
+[
+  { date: "2016", INTT: 20380000, TRT: 8770000, NNBR: 212470000 },
+  { date: "2017", INTT: 34690000, TRT: 9460000, NNBR: 161160000 },
+  { date: "2018", INTT: 39400000, TRT: 10640000, NNBR: 182450000 }
+]
+
+If the backend is already returning series, transform it client-side into chart-ready rows.
+
+Important:
+
+sort dates ascending
+allow nulls when a symbol has no value for a given date
+do not break the chart if one series has missing points
+8) If using Recharts, structure it like this
+
+Use the existing component structure, but the chart itself should behave like this:
+
+<ResponsiveContainer width="100%" height={520}>
+  <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+    <CartesianGrid strokeDasharray="3 3" />
+    <XAxis dataKey="date" />
+    <YAxis tickFormatter={formatCurrencyCompact} />
+    <Tooltip formatter={(value) => formatMetricValue(value, selectedMetric)} />
+    <Legend />
+    {selectedSymbols.map((symbol) => (
+      <Line
+        key={symbol}
+        type="linear"
+        dataKey={symbol}
+        stroke={colorMap[symbol]}
+        strokeWidth={3}
+        dot={false}
+        activeDot={{ r: 4 }}
+        connectNulls={false}
+      />
+    ))}
+  </LineChart>
+</ResponsiveContainer>
+Important note
+
+Use type="linear" or a very clean line style.
+Do not use the current rendering that makes the chart look like scattered numbers.
+
+9) Preserve everything else
+
+Keep all of this unchanged unless needed for the chart:
+
+ticker chips
+add ticker input
+Revenue dropdown
+Options dropdown
+annual toggle
+range buttons
+legend row
+overall section layout
+
+Only improve the chart visualization so it looks like the original compare example.
+
+10) Done criteria
+
+This fix is complete when:
+
+The chart shows actual colored lines for each ticker.
+The plot area is clean and readable.
+The cluttered floating value labels are gone.
+Hover tooltip works.
+It visually resembles the original screenshot’s clean line graph.
+Small backend note
+
+If needed, send this tiny note to backend too:
+
+No major backend changes needed. Just ensure each series’ points are sorted ascending by date and continue returning date, fiscalYear, value, and formatted cleanly.
