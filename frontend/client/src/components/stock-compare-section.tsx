@@ -117,7 +117,7 @@ const DEFAULT_STARRED: string[] = [
   "operating_income", "ebitda", "free_cash_flow", "total_debt", "market_cap",
 ];
 
-// Screener table column definitions (camelCase keys matching backend screener rows)
+// Screener table column definitions — camelCase keys matching backend screener response
 const SCREENER_COLUMNS: { key: string; label: string; type: string }[] = [
   { key: "symbol",             label: "Ticker",           type: "text"           },
   { key: "name",               label: "Company",          type: "text"           },
@@ -761,7 +761,7 @@ export function StockCompareSection() {
       toast({ title: "No data to export", variant: "destructive" });
       return;
     }
-    const cols = ["ticker", "name", ...SCREENER_COLUMNS.slice(2).map((c) => c.key)];
+    const cols = ["symbol", "name", ...SCREENER_COLUMNS.slice(2).map((c) => c.key)];
     const header = cols.join(",");
     const rows = exportRows.map((row) =>
       cols.map((c) => {
