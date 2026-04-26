@@ -1,0 +1,148 @@
+Correction to Catalyst Calendar UX.
+
+We are reverting the non-earnings tabs back to the simpler list/range layout.
+
+Final intended behavior:
+
+1. Earnings tab
+- Keep as an actual calendar view.
+- Preserve the existing Earnings calendar.
+- Preserve the existing Earnings stock click/popup behavior exactly.
+- Do not break or rewrite this.
+
+2. All other tabs should NOT be calendar views:
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+These tabs should use list/table/card view with quick range toggles:
+- Recent
+- Today
+- This Week
+- Next Week
+- This Month
+
+Do not render these as calendar grids.
+
+Important:
+The only true calendar on the Catalyst Calendar page should be the Earnings tab.
+
+Required UI behavior:
+- When activeTab === earnings_dates:
+  - Show Earnings calendar view.
+  - Keep existing earnings modal/popup behavior.
+
+- When activeTab !== earnings_dates:
+  - Hide calendar grid.
+  - Show list/table view.
+  - Show range toggle buttons:
+    - Recent
+    - Today
+    - This Week
+    - Next Week
+    - This Month
+
+The range toggle should control date params sent to backend.
+
+Suggested date windows:
+- Recent: last 30 days by default
+- Today: today only
+- This Week: current week
+- Next Week: next week
+- This Month: current month
+
+For IPOs and Stock Splits, Recent can use last 90 days if backend supports tab-specific defaults.
+For Dividends, Recent can use last 60 days.
+For Economic Releases and Treasury/Macro, Recent can use last 30 days.
+
+Tabs and view type:
+- Earnings Dates: calendar only
+- Dividends: list view with range toggles
+- IPOs: list view with range toggles
+- Stock Splits: list view with range toggles
+- Economic Releases: list view with range toggles
+- Treasury / Macro: list view with range toggles
+
+List/table columns:
+- Date
+- Symbol / Macro
+- Company / Event
+- Event Type
+- Key Details
+- Importance
+- Source
+
+Per-tab key details:
+
+Dividends:
+- Dividend amount
+- Ex-dividend date
+- Record date
+- Payment date
+
+IPOs:
+- IPO date
+- Exchange
+- Price range / offer price
+- Shares if available
+
+Stock Splits:
+- Split date
+- Split ratio
+
+Economic Releases:
+- Release date
+- Actual
+- Estimate
+- Previous
+- Country
+
+Treasury / Macro:
+- Date
+- Rate / yield / macro indicator name
+- Actual/current value
+- Previous value if available
+
+Click behavior:
+- Earnings calendar events: keep existing earnings popup.
+- Non-earnings list rows: open generic Catalyst Detail modal if available.
+- Do not route non-earnings events through the earnings popup.
+
+Backend query behavior:
+For non-earnings tabs, call /api/catalysts/events with tab and date range.
+
+Use either:
+GET /api/catalysts/events?tab={tab}&from={from}&to={to}
+
+or if backend supports mode:
+GET /api/catalysts/events?tab={tab}&mode=recent
+for Recent.
+
+But the UI should be range-driven, not calendar-driven.
+
+Do not remove backend support for normalized date fields. The list still needs dates.
+
+Clean up:
+- Remove calendar rendering from Dividends, IPOs, Stock Splits, Economic Releases, and Treasury / Macro.
+- If a shared calendar component was expanded to support all tabs, restrict it back to Earnings only.
+- Keep any reusable event normalization/table work that is useful.
+
+Final validation:
+Test:
+1. Earnings shows actual calendar.
+2. Earnings popup still works.
+3. Dividends shows list/table with Recent, Today, This Week, Next Week, This Month.
+4. IPOs shows list/table with same range toggles.
+5. Stock Splits shows list/table with same range toggles.
+6. Economic Releases shows list/table with same range toggles.
+7. Treasury / Macro shows list/table with same range toggles.
+8. No non-earnings tab renders a calendar grid.
+
+Final response:
+Tell me:
+- Which files changed
+- Confirm Earnings remains calendar-only
+- Confirm all other tabs are list/range views
+- Confirm the existing Earnings popup behavior was untouched

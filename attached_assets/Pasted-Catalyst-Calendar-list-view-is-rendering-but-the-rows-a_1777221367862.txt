@@ -1,0 +1,223 @@
+Catalyst Calendar list view is rendering but the rows are not useful.
+
+Observed from screenshots:
+- Company / Event is showing "—"
+- Event Type is showing generic "Event"
+- Key Details is often "—"
+- Importance is mostly Low
+- IPOs do not show up in Upcoming or Recent
+- Treasury/Macro shows values like 4.31 but no label explaining what the value is
+- Economic Releases have key details but no event name/title
+- Dividends and Stock Splits show symbols but not the actual dividend/split details
+
+Goal:
+Fix the Catalyst Calendar frontend list rendering so it displays meaningful event-specific data from backend normalized fields.
+
+Important:
+- Do NOT break the Earnings tab calendar.
+- Do NOT break the existing Earnings popup/modal behavior.
+- Only Earnings should be a calendar.
+- Non-earnings tabs remain list/range views.
+
+Tabs affected:
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Expected data fields from backend may include:
+- title
+- subtitle
+- eventType
+- eventLabel
+- keyDetails
+- companyName
+- symbol
+- date
+- importance
+- raw
+- dividend
+- exDividendDate
+- paymentDate
+- recordDate
+- exchange
+- priceRange
+- offerPrice
+- shares
+- splitRatio
+- actual
+- estimate
+- previous
+- country
+- rate
+- yield
+- maturity
+- indicatorName
+
+Frontend rendering rules:
+
+1. Company / Event column
+Render the first available value:
+- event.title
+- event.companyName
+- event.raw.companyName
+- event.raw.company
+- event.raw.name
+- event.raw.event
+- event.raw.title
+- event.symbol + " " + readable event label
+
+Do not show "—" unless absolutely none exists.
+
+Examples:
+- "AAPL Dividend"
+- "Core CPI"
+- "XYZ IPO"
+- "NVDA Stock Split"
+- "10Y Treasury Rate"
+
+2. Event Type column
+Use:
+- event.eventLabel if available
+- else humanize event.eventType
+- else infer from active tab
+
+Do not show generic "Event."
+
+Mappings:
+- dividends => Dividend
+- ipos => IPO
+- splits => Stock Split
+- economic_releases => Economic Release
+- treasury_macro => Treasury / Macro
+- earnings_dates => Earnings
+
+3. Key Details column
+Use event.keyDetails if provided.
+If missing, build it from known fields:
+
+Dividends:
+- Dividend: ${dividend}
+- Ex-Date: ${exDividendDate}
+- Record: ${recordDate}
+- Payable: ${paymentDate}
+
+IPOs:
+- Exchange: ${exchange}
+- Price: ${priceRange || offerPrice}
+- Shares: ${shares}
+
+Stock Splits:
+- Split: ${splitRatio}
+- Ratio: ${numerator}:${denominator}
+
+Economic Releases:
+- Actual: ${actual}
+- Est: ${estimate}
+- Prev: ${previous}
+- Country: ${country}
+
+Treasury / Macro:
+- Yield: ${yield}
+- Rate: ${rate}
+- Maturity: ${maturity}
+- Value: ${value}
+- Indicator: ${indicatorName}
+
+If none of those exist, use event.subtitle.
+Only show "—" as final fallback.
+
+4. Symbol column
+For macro rows:
+Show "Macro"
+For symbol rows:
+Show symbol
+
+5. Importance
+Use backend importance if present.
+If missing, infer:
+- high for treasury_macro 10Y/2Y/30Y or major US economic release
+- medium for normal earnings/dividend/IPO/split
+- low only for minor events
+
+6. IPO tab
+Audit the frontend tab key and route/query mapping.
+Make sure active IPO tab sends the exact backend tab key expected:
+- tab=ipos
+
+Check both:
+- mode=upcoming
+- mode=recent
+
+Do not accidentally send:
+- ipo
+- ipo_calendar
+- IPOs
+- upcoming_ipos
+unless backend explicitly expects those.
+
+Also check if frontend filters are hiding IPOs because of Watchlist/Portfolio/Symbol filter state.
+
+For IPO tab:
+- Symbol may be missing for some upcoming IPOs.
+- Do not hide IPO rows just because symbol is missing.
+- Use company name/title as the primary display.
+
+7. Query/range behavior
+Non-earnings tabs should use list view with range toggles:
+- Recent
+- Today
+- This Week
+- Next Week
+- This Month
+
+Make sure Recent maps to:
+- mode=recent
+or correct from/to date range.
+
+Make sure Upcoming maps to:
+- mode=upcoming
+or correct future from/to range.
+
+8. Empty state for IPOs
+If IPO endpoint returns zero rows, show:
+"No IPO catalysts found for this range."
+But first verify this is not a frontend tab-key bug.
+
+9. Debugging
+Temporarily console.log, in development only:
+- activeTab
+- activeMode/range
+- request URL
+- returned count
+- first event
+
+Do not leave noisy production logs.
+
+10. Final validation:
+Confirm these displays:
+
+Dividends recent:
+Date | Symbol | AAPL Dividend | Dividend | Dividend: $x.xx · Ex-Date: ... | Importance
+
+IPOs:
+Date | Symbol or — | Company IPO | IPO | Exchange: ... · Price: ... | Importance
+
+Stock Splits:
+Date | Symbol | XYZ Stock Split | Stock Split | Split: 10-for-1 | Importance
+
+Economic Releases:
+Date | Macro | CPI / Retail Sales / GDP etc. | Economic Release | Actual: ... · Est: ... · Prev: ... · US | Importance
+
+Treasury / Macro:
+Date | Macro | 10Y Treasury Rate | Treasury Rate | Yield: 4.31% | High
+
+Final response:
+Tell me:
+- Which files changed
+- Confirm generic "Event" labels are gone
+- Confirm Company/Event is populated
+- Confirm Key Details is populated
+- Confirm IPO tab query key is correct and IPOs render if backend returns them
+- Confirm Earnings calendar and popup were untouched

@@ -2620,9 +2620,19 @@ function CatalystCalendarGrid({
   );
 }
 
-// ─── RecentCatalystList — sortable table for "Recent" mode ──────
+// ─── CatalystListTab — range toggles + sortable list ────────────
 
-function RecentCatalystList({
+const RANGE_OPTIONS = [
+  { key: "recent",     label: "Recent"     },
+  { key: "today",      label: "Today"      },
+  { key: "this_week",  label: "This Week"  },
+  { key: "next_week",  label: "Next Week"  },
+  { key: "this_month", label: "This Month" },
+] as const;
+
+type DateRange = typeof RANGE_OPTIONS[number]["key"];
+
+function CatalystListTab({
   tabKey,
   scope,
   search,
@@ -2631,19 +2641,22 @@ function RecentCatalystList({
   scope: string;
   search: string;
 }) {
-  const [events, setEvents]     = useState<CatalystEvent[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>("recent");
+  const [events, setEvents]       = useState<CatalystEvent[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
-  const [sortCol, setSortCol]   = useState<string>("date");
-  const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
+  const [sortCol, setSortCol]     = useState<string>("date");
+  const [sortDir, setSortDir]     = useState<"asc" | "desc">("desc");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({ tab: tabKey, mode: "recent", scope });
+    const params = new URLSearchParams({ tab: tabKey, scope });
+    if (dateRange === "recent") params.set("mode", "recent");
+    else params.set("date_range", dateRange);
     if (search.trim()) params.set("search", search.trim());
     fetch(`/api/catalysts/events?${params}`)
       .then((r) => r.json())
@@ -2659,7 +2672,7 @@ function RecentCatalystList({
       .catch(() => { if (!cancelled) setError("Could not load recent data."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [tabKey, scope, search, refreshKey]);
+  }, [tabKey, scope, search, dateRange, refreshKey]);
 
   /** Build the "Key Details" string per tab */
   function getKeyDetails(ev: CatalystEvent, tab: string): string {
@@ -2747,13 +2760,25 @@ function RecentCatalystList({
 
   return (
     <div>
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] text-white/30">
-          {loading
-            ? "Loading recent events…"
-            : `${sorted.length} recent event${sorted.length !== 1 ? "s" : ""}`}
-        </p>
+      {/* ── Range toggles ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
+          {RANGE_OPTIONS.map(({ key, label }, i) => (
+            <button
+              key={key}
+              onClick={() => setDateRange(key)}
+              className="px-3 py-1.5 transition-all whitespace-nowrap"
+              style={{
+                borderRight: i < RANGE_OPTIONS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                ...(dateRange === key
+                  ? { background: "rgba(59,130,246,0.18)", color: "#60a5fa" }
+                  : { color: "rgba(255,255,255,0.4)" }),
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => setRefreshKey((k) => k + 1)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
@@ -2762,6 +2787,13 @@ function RecentCatalystList({
           Refresh
         </button>
       </div>
+
+      {/* ── Row count ─────────────────────────────────────────────── */}
+      <p className="text-[10px] text-white/25 mb-2">
+        {loading
+          ? "Loading…"
+          : `${sorted.length} event${sorted.length !== 1 ? "s" : ""}`}
+      </p>
 
       {error && (
         <div className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15 text-[11px] text-red-400/70">
@@ -2854,129 +2886,14 @@ function RecentCatalystList({
   );
 }
 
-// ─── CatalystTab — calendar (upcoming) or list (recent) ──────────
-
-function CatalystTab({
-  tabKey,
-  scope,
-  search,
-  mode,
-}: {
-  tabKey: string;
-  scope: string;
-  search: string;
-  mode: "upcoming" | "recent";
-}) {
-  // Recent mode → delegate directly to list component (separate fetch, separate state)
-  if (mode === "recent") {
-    return <RecentCatalystList tabKey={tabKey} scope={scope} search={search} />;
-  }
-
-  // Upcoming mode — render CatalystCalendarGrid (calendar view)
-  return <CatalystUpcomingCalendar tabKey={tabKey} scope={scope} search={search} />;
-}
-
-/** Upcoming calendar sub-component — keeps its own fetch + state so it doesn't
- *  re-mount when the Recent/Upcoming toggle flips (React key handles remounting). */
-function CatalystUpcomingCalendar({
-  tabKey,
-  scope,
-  search,
-}: {
-  tabKey: string;
-  scope: string;
-  search: string;
-}) {
-  const [rawEvents, setRawEvents] = useState<CatalystEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [partial, setPartial] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ tab: tabKey, scope, date_range: "next_30_days" });
-    if (search.trim()) params.set("search", search.trim());
-    fetch(`/api/catalysts/events?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data.error) {
-          setError("Catalyst data temporarily unavailable.");
-          setRawEvents([]);
-        } else {
-          const arr: CatalystEvent[] = Array.isArray(data)
-            ? data
-            : (data.events || data.results || []);
-          setRawEvents(arr);
-          setPartial(!!data.partial);
-        }
-      })
-      .catch(() => { if (!cancelled) setError("Could not load catalyst data."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [tabKey, scope, search, refreshKey]);
-
-  const calendarEvents: CalendarEvent[] = rawEvents
-    .map((ev, i) => normalizeCatalystEvent(ev, tabKey, i))
-    .filter((ev): ev is CalendarEvent => ev !== null);
-
-  return (
-    <div>
-      {/* Partial warning + refresh */}
-      <div className="flex items-center justify-between mb-4">
-        {partial ? (
-          <div className="flex items-center gap-1.5 text-[10px] text-yellow-400/70">
-            <AlertCircle className="w-3 h-3" />
-            Some catalyst sources are temporarily unavailable.
-          </div>
-        ) : <div />}
-        <button
-          onClick={() => setRefreshKey((k) => k + 1)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
-        >
-          <RefreshCw className="w-3 h-3" />
-          Refresh
-        </button>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15 text-[11px] text-red-400/70">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {error} The calendar grid is still visible below.
-        </div>
-      )}
-
-      <CatalystCalendarGrid
-        events={calendarEvents}
-        loading={loading}
-        onEventClick={(ev) => setSelectedEvent(ev)}
-      />
-
-      {selectedEvent && (
-        <CatalystDetailModal
-          event={selectedEvent.raw}
-          onClose={() => setSelectedEvent(null)}
-        />
-      )}
-    </div>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
   // ── Tab + mode state ─────────────────────────────────────────────
   const [activeTab,  setActiveTab]  = useState<string>("earnings_dates");
-  const [activeMode, setActiveMode] = useState<"upcoming" | "recent">("upcoming");
-
-  // Switch tab → always reset to Upcoming view
   const switchTab = (key: string) => {
     setActiveTab(key);
-    setActiveMode("upcoming");
   };
 
   // ── Shared filter state ──────────────────────────────────────────
@@ -3003,8 +2920,7 @@ export default function StocksEarningsCalendarPage() {
   }, [fetchEarnings]);
 
   const isEarningsTab = activeTab === "earnings_dates";
-  // Show filter bar for non-earnings tabs, or for earnings in Recent mode
-  const showFilterBar = !isEarningsTab || activeMode === "recent";
+  const showFilterBar = !isEarningsTab;
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
@@ -3052,33 +2968,6 @@ export default function StocksEarningsCalendarPage() {
             })}
           </div>
 
-          {/* ── Upcoming / Recent segmented toggle (all tabs) ────── */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
-              <button
-                onClick={() => setActiveMode("upcoming")}
-                className="px-4 py-1.5 transition-all"
-                style={activeMode === "upcoming"
-                  ? { background: "rgba(59,130,246,0.18)", color: "#60a5fa", borderRight: "1px solid rgba(255,255,255,0.06)" }
-                  : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-              >
-                Upcoming
-              </button>
-              <button
-                onClick={() => setActiveMode("recent")}
-                className="px-4 py-1.5 transition-all"
-                style={activeMode === "recent"
-                  ? { background: "rgba(16,185,129,0.15)", color: "#34d399" }
-                  : { color: "rgba(255,255,255,0.4)" }}
-              >
-                Recent
-              </button>
-            </div>
-            <span className="text-[10px] text-white/25">
-              {activeMode === "upcoming" ? "Calendar view — events ahead" : "List view — past events"}
-            </span>
-          </div>
-
           {/* ── Filter bar ───────────────────────────────────────── */}
           {showFilterBar && (
             <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -3116,8 +3005,8 @@ export default function StocksEarningsCalendarPage() {
           )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab && activeMode === "upcoming" ? (
-            /* ── Earnings / Upcoming — existing widget untouched ── */
+          {isEarningsTab ? (
+            /* ── Earnings — real calendar widget (unchanged) ──── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
@@ -3141,17 +3030,13 @@ export default function StocksEarningsCalendarPage() {
             ) : (
               <EarningsCalendarWidget markets={earningsMarkets} />
             )
-          ) : isEarningsTab && activeMode === "recent" ? (
-            /* ── Earnings / Recent — list view via RecentCatalystList ── */
-            <RecentCatalystList tabKey="earnings_dates" scope={scope} search={search} />
           ) : (
-            /* ── All other tabs — CatalystTab handles upcoming/recent ── */
-            <CatalystTab
-              key={`${activeTab}-${activeMode}`}
+            /* ── All other tabs — range-toggle + list/table ────── */
+            <CatalystListTab
+              key={activeTab}
               tabKey={activeTab}
               scope={scope}
               search={search}
-              mode={activeMode}
             />
           )}
 
