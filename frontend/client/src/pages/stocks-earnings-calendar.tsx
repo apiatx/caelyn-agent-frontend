@@ -2169,6 +2169,12 @@ interface CatalystEvent {
   rating_from?: string;
   rating_to?: string;
   price_target?: number;
+  // earnings recent
+  eps_actual?: number;
+  eps_estimate?: number;
+  revenue_actual?: number;
+  revenue_estimate?: number;
+  surprise?: number;          // % surprise
   // insider
   insider_name?: string;
   transaction_type?: string;
@@ -2614,9 +2620,265 @@ function CatalystCalendarGrid({
   );
 }
 
-// ─── CatalystTab — fetches, normalizes, renders calendar ─────────
+// ─── RecentCatalystList — sortable table for "Recent" mode ──────
+
+function RecentCatalystList({
+  tabKey,
+  scope,
+  search,
+}: {
+  tabKey: string;
+  scope: string;
+  search: string;
+}) {
+  const [events, setEvents]     = useState<CatalystEvent[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
+  const [sortCol, setSortCol]   = useState<string>("date");
+  const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ tab: tabKey, mode: "recent", scope });
+    if (search.trim()) params.set("search", search.trim());
+    fetch(`/api/catalysts/events?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.error) {
+          setError("Recent data temporarily unavailable.");
+          setEvents([]);
+        } else {
+          setEvents(Array.isArray(data) ? data : (data.events || data.results || []));
+        }
+      })
+      .catch(() => { if (!cancelled) setError("Could not load recent data."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [tabKey, scope, search, refreshKey]);
+
+  /** Build the "Key Details" string per tab */
+  function getKeyDetails(ev: CatalystEvent, tab: string): string {
+    if (tab === "earnings_dates") {
+      const parts: string[] = [];
+      if (ev.eps_actual != null) parts.push(`EPS: $${ev.eps_actual.toFixed(2)}`);
+      if (ev.eps_estimate != null) parts.push(`Est: $${ev.eps_estimate.toFixed(2)}`);
+      if (ev.surprise != null) parts.push(`Surprise: ${ev.surprise > 0 ? "+" : ""}${ev.surprise.toFixed(1)}%`);
+      if (ev.revenue_actual != null) parts.push(`Rev: ${formatMktCap(ev.revenue_actual)}`);
+      return parts.join(" · ") || "—";
+    }
+    if (tab === "dividends") {
+      const parts: string[] = [];
+      if (ev.dividend_amount != null) parts.push(`$${ev.dividend_amount.toFixed(4)}/share`);
+      if (ev.dividend_yield != null) parts.push(`Yield ${(ev.dividend_yield * 100).toFixed(2)}%`);
+      if (ev.ex_date) parts.push(`Ex: ${ev.ex_date.slice(0, 10)}`);
+      if (ev.pay_date) parts.push(`Pay: ${ev.pay_date.slice(0, 10)}`);
+      return parts.join(" · ") || "—";
+    }
+    if (tab === "ipos") {
+      const parts: string[] = [];
+      if (ev.ipo_price_range) parts.push(ev.ipo_price_range);
+      if (ev.ipo_shares != null) parts.push(`${(ev.ipo_shares / 1e6).toFixed(1)}M shares`);
+      return parts.join(" · ") || "—";
+    }
+    if (tab === "splits") {
+      return ev.split_ratio ? `Ratio: ${ev.split_ratio}` : (ev.company || "—");
+    }
+    if (tab === "economic_releases") {
+      const parts: string[] = [];
+      if (ev.actual != null) parts.push(`Actual: ${ev.actual}`);
+      if (ev.estimate != null) parts.push(`Est: ${ev.estimate}`);
+      if (ev.previous != null) parts.push(`Prev: ${ev.previous}`);
+      if (ev.country) parts.push(ev.country);
+      return parts.join(" · ") || "—";
+    }
+    if (tab === "treasury_macro") {
+      const parts: string[] = [];
+      if (ev.actual != null) parts.push(`${ev.actual}`);
+      if (ev.previous != null) parts.push(`Prev: ${ev.previous}`);
+      if (ev.country) parts.push(ev.country);
+      if (ev.currency) parts.push(ev.currency);
+      return parts.join(" · ") || "—";
+    }
+    return ev.sector || "—";
+  }
+
+  // Sort
+  const IMPORTANCE_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
+  const sorted = [...events].sort((a, b) => {
+    let va: string | number = "";
+    let vb: string | number = "";
+    if (sortCol === "date")       { va = a.date || ""; vb = b.date || ""; }
+    if (sortCol === "symbol")     { va = a.symbol || ""; vb = b.symbol || ""; }
+    if (sortCol === "event_type") { va = a.event_type || ""; vb = b.event_type || ""; }
+    if (sortCol === "importance") {
+      va = IMPORTANCE_RANK[a.importance || "low"] ?? 0;
+      vb = IMPORTANCE_RANK[b.importance || "low"] ?? 0;
+    }
+    if (va < vb) return sortDir === "asc" ? -1 : 1;
+    if (va > vb) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const toggleSort = (col: string) => {
+    if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const SortIndicator = ({ col }: { col: string }) =>
+    sortCol === col ? (
+      <ChevronDown className={`w-3 h-3 ml-0.5 inline text-white/60 transition-transform ${sortDir === "asc" ? "rotate-180" : ""}`} />
+    ) : (
+      <ChevronDown className="w-3 h-3 ml-0.5 inline text-white/20" />
+    );
+
+  const COLS = [
+    { key: "date",       label: "Date",            sortable: true },
+    { key: "symbol",     label: "Symbol",          sortable: true },
+    { key: "company",    label: "Company / Event",  sortable: false },
+    { key: "event_type", label: "Event Type",       sortable: true },
+    { key: "details",    label: "Key Details",      sortable: false },
+    { key: "importance", label: "Importance",       sortable: true },
+  ];
+
+  return (
+    <div>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] text-white/30">
+          {loading
+            ? "Loading recent events…"
+            : `${sorted.length} recent event${sorted.length !== 1 ? "s" : ""}`}
+        </p>
+        <button
+          onClick={() => setRefreshKey((k) => k + 1)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15 text-[11px] text-red-400/70">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 720 }}>
+          <thead>
+            <tr style={{ backgroundColor: "#111827" }} className="border-b border-white/10">
+              {COLS.map(({ key, label, sortable }) => (
+                <th
+                  key={key}
+                  onClick={sortable ? () => toggleSort(key) : undefined}
+                  className={`text-left py-2.5 px-3 font-semibold whitespace-nowrap select-none ${sortable ? "cursor-pointer hover:text-white/70" : ""}`}
+                  style={{ color: "#9ca3af" }}
+                >
+                  {label}
+                  {sortable && <SortIndicator col={key} />}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  {COLS.map((_, j) => (
+                    <td key={j} className="py-2.5 px-3">
+                      <div
+                        className="h-3 rounded bg-white/5 animate-pulse"
+                        style={{ width: j === 2 || j === 4 ? "80%" : "50%" }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+
+            {!loading && sorted.length === 0 && (
+              <tr>
+                <td colSpan={COLS.length} className="py-10 text-center text-white/30 text-xs">
+                  No recent catalysts found for this filter / date range.
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              sorted.map((ev, i) => (
+                <tr
+                  key={ev.id || i}
+                  onClick={() => setSelectedEvent(ev)}
+                  className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  style={{ backgroundColor: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}
+                >
+                  <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
+                    {ev.date?.slice(0, 10) || "—"}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {ev.symbol ? (
+                      <span className="font-bold text-white/90">{ev.symbol}</span>
+                    ) : (
+                      <span className="text-white/30 italic text-[10px]">Macro</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-white/70 max-w-[200px] truncate">
+                    {ev.company || ev.event_name || "—"}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    <EventTypeBadge type={ev.event_type} />
+                  </td>
+                  <td className="py-2.5 px-3 text-white/50 max-w-[240px] truncate">
+                    {getKeyDetails(ev, tabKey)}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    <ImportanceBadge importance={ev.importance} />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedEvent && (
+        <CatalystDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
+    </div>
+  );
+}
+
+// ─── CatalystTab — calendar (upcoming) or list (recent) ──────────
 
 function CatalystTab({
+  tabKey,
+  scope,
+  search,
+  mode,
+}: {
+  tabKey: string;
+  scope: string;
+  search: string;
+  mode: "upcoming" | "recent";
+}) {
+  // Recent mode → delegate directly to list component (separate fetch, separate state)
+  if (mode === "recent") {
+    return <RecentCatalystList tabKey={tabKey} scope={scope} search={search} />;
+  }
+
+  // Upcoming mode — render CatalystCalendarGrid (calendar view)
+  return <CatalystUpcomingCalendar tabKey={tabKey} scope={scope} search={search} />;
+}
+
+/** Upcoming calendar sub-component — keeps its own fetch + state so it doesn't
+ *  re-mount when the Recent/Upcoming toggle flips (React key handles remounting). */
+function CatalystUpcomingCalendar({
   tabKey,
   scope,
   search,
@@ -2636,7 +2898,6 @@ function CatalystTab({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    // Fetch a broad range so the calendar has data to show as users navigate
     const params = new URLSearchParams({ tab: tabKey, scope, date_range: "next_30_days" });
     if (search.trim()) params.set("search", search.trim());
     fetch(`/api/catalysts/events?${params}`)
@@ -2654,14 +2915,11 @@ function CatalystTab({
           setPartial(!!data.partial);
         }
       })
-      .catch(() => {
-        if (!cancelled) setError("Could not load catalyst data.");
-      })
+      .catch(() => { if (!cancelled) setError("Could not load catalyst data."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [tabKey, scope, search, refreshKey]);
 
-  // Normalize raw events into unified CalendarEvent shape
   const calendarEvents: CalendarEvent[] = rawEvents
     .map((ev, i) => normalizeCatalystEvent(ev, tabKey, i))
     .filter((ev): ev is CalendarEvent => ev !== null);
@@ -2685,7 +2943,6 @@ function CatalystTab({
         </button>
       </div>
 
-      {/* Error state — still keep calendar visible per spec */}
       {error && (
         <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15 text-[11px] text-red-400/70">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -2693,14 +2950,12 @@ function CatalystTab({
         </div>
       )}
 
-      {/* Calendar grid — always rendered, reuses same week grid as Earnings tab */}
       <CatalystCalendarGrid
         events={calendarEvents}
         loading={loading}
         onEventClick={(ev) => setSelectedEvent(ev)}
       />
 
-      {/* Detail modal */}
       {selectedEvent && (
         <CatalystDetailModal
           event={selectedEvent.raw}
@@ -2714,11 +2969,18 @@ function CatalystTab({
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
-  // ── Tab state ────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<string>("earnings_dates");
+  // ── Tab + mode state ─────────────────────────────────────────────
+  const [activeTab,  setActiveTab]  = useState<string>("earnings_dates");
+  const [activeMode, setActiveMode] = useState<"upcoming" | "recent">("upcoming");
 
-  // ── Filter state (shared across non-earnings tabs) ───────────────
-  const [scope, setScope]   = useState<string>("all");
+  // Switch tab → always reset to Upcoming view
+  const switchTab = (key: string) => {
+    setActiveTab(key);
+    setActiveMode("upcoming");
+  };
+
+  // ── Shared filter state ──────────────────────────────────────────
+  const [scope,  setScope]  = useState<string>("all");
   const [search, setSearch] = useState<string>("");
 
   // ── Earnings tab state (unchanged) ──────────────────────────────
@@ -2729,13 +2991,9 @@ export default function StocksEarningsCalendarPage() {
     setEarningsLoading(true);
     try {
       const data = await fetchPolymarketByTag("earnings");
-      if (data && data.length > 0) {
-        setEarningsMarkets(parseTagEvents(data));
-      }
+      if (data && data.length > 0) setEarningsMarkets(parseTagEvents(data));
     } catch { /* silent */ }
-    finally {
-      setEarningsLoading(false);
-    }
+    finally { setEarningsLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -2745,6 +3003,8 @@ export default function StocksEarningsCalendarPage() {
   }, [fetchEarnings]);
 
   const isEarningsTab = activeTab === "earnings_dates";
+  // Show filter bar for non-earnings tabs, or for earnings in Recent mode
+  const showFilterBar = !isEarningsTab || activeMode === "recent";
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
@@ -2773,7 +3033,7 @@ export default function StocksEarningsCalendarPage() {
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => switchTab(tab.key)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all flex-shrink-0"
                   style={active ? {
                     background: "rgba(245,158,11,0.15)",
@@ -2792,8 +3052,35 @@ export default function StocksEarningsCalendarPage() {
             })}
           </div>
 
-          {/* ── Filter bar (non-earnings tabs only) ─────────────── */}
-          {!isEarningsTab && (
+          {/* ── Upcoming / Recent segmented toggle (all tabs) ────── */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
+              <button
+                onClick={() => setActiveMode("upcoming")}
+                className="px-4 py-1.5 transition-all"
+                style={activeMode === "upcoming"
+                  ? { background: "rgba(59,130,246,0.18)", color: "#60a5fa", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                  : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                Upcoming
+              </button>
+              <button
+                onClick={() => setActiveMode("recent")}
+                className="px-4 py-1.5 transition-all"
+                style={activeMode === "recent"
+                  ? { background: "rgba(16,185,129,0.15)", color: "#34d399" }
+                  : { color: "rgba(255,255,255,0.4)" }}
+              >
+                Recent
+              </button>
+            </div>
+            <span className="text-[10px] text-white/25">
+              {activeMode === "upcoming" ? "Calendar view — events ahead" : "List view — past events"}
+            </span>
+          </div>
+
+          {/* ── Filter bar ───────────────────────────────────────── */}
+          {showFilterBar && (
             <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
               {/* Scope */}
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
@@ -2829,7 +3116,8 @@ export default function StocksEarningsCalendarPage() {
           )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab ? (
+          {isEarningsTab && activeMode === "upcoming" ? (
+            /* ── Earnings / Upcoming — existing widget untouched ── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
@@ -2853,12 +3141,17 @@ export default function StocksEarningsCalendarPage() {
             ) : (
               <EarningsCalendarWidget markets={earningsMarkets} />
             )
+          ) : isEarningsTab && activeMode === "recent" ? (
+            /* ── Earnings / Recent — list view via RecentCatalystList ── */
+            <RecentCatalystList tabKey="earnings_dates" scope={scope} search={search} />
           ) : (
+            /* ── All other tabs — CatalystTab handles upcoming/recent ── */
             <CatalystTab
-              key={activeTab}
+              key={`${activeTab}-${activeMode}`}
               tabKey={activeTab}
               scope={scope}
               search={search}
+              mode={activeMode}
             />
           )}
 
