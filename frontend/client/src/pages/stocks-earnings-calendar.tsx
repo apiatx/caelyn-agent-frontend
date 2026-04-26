@@ -992,6 +992,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
 // ─── Earnings Calendar Component ──────────────────────────────────
 
 function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
+  const [askCaelynOpen, setAskCaelynOpen] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
   const [selectedDayKey, setSelectedDayKey] = useState<string>(dateKey(new Date()));
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
@@ -1235,6 +1236,19 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Ask Caelyn popup button */}
+          <button
+            onClick={() => setAskCaelynOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all mr-2"
+            style={{
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(249,115,22,0.15))',
+              border: '1px solid rgba(245,158,11,0.3)',
+              color: '#fbbf24',
+            }}
+          >
+            <Sparkles className="w-3 h-3" />
+            Ask Caelyn
+          </button>
           <button
             onClick={goToday}
             className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
@@ -1249,6 +1263,8 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
           </button>
         </div>
       </div>
+      {/* Ask Caelyn popup */}
+      {askCaelynOpen && <EarningsAgent onClose={() => setAskCaelynOpen(false)} />}
 
       {/* Smart/All toggle + cache status */}
       <div className="flex items-center justify-between mb-3">
@@ -1891,7 +1907,7 @@ const EARNINGS_SUGGESTED_PROMPTS = [
   "What stocks could surprise big up or down — biggest potential movers?",
 ];
 
-function EarningsAgent() {
+function EarningsAgent({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<EarningsAgentMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1998,25 +2014,37 @@ function EarningsAgent() {
   };
 
   return (
-    <div className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0">
-      <div className="rounded-xl p-5 sticky top-4" style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), 0 2px 16px rgba(0,0,0,0.3)',
-      }}>
+    // Backdrop — click outside to close
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-end"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      <div
+        className="relative m-4 mt-16 w-full max-w-[420px] rounded-xl p-5 flex flex-col"
+        style={{
+          background: '#0f1117',
+          border: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+          maxHeight: 'calc(100vh - 88px)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%)' }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%)' }}>
           <Sparkles className="w-4 h-4 text-white" />
         </div>
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            Ask Caelyn
-          </h2>
-          <p className="text-[10px] text-white/25">
-            Earnings intel, beat odds &amp; trading setups
-          </p>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-bold text-white">Ask Caelyn</h2>
+          <p className="text-[10px] text-white/25">Earnings intel, beat odds &amp; trading setups</p>
         </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all flex-shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Suggested prompts (only show when no messages) */}
@@ -2133,39 +2161,31 @@ export default function StocksEarningsCalendarPage() {
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left: content */}
-          <div className="flex-1 min-w-0">
-            <GlassCard className="p-5">
-              {earningsLoading && earningsMarkets.length === 0 ? (
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <CalendarDays className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white">
-                        Earnings Calendar
-                        <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
-                      </h3>
-                      <p className="text-[10px] text-white/30 leading-tight">Complete earnings calendar with Polymarket predictions &amp; Finnhub fundamentals</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-5 gap-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-[200px] rounded-xl" />
-                    ))}
-                  </div>
+        <GlassCard className="p-5 w-full">
+          {earningsLoading && earningsMarkets.length === 0 ? (
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-5 h-5 text-white" />
                 </div>
-              ) : (
-                <EarningsCalendarWidget markets={earningsMarkets} />
-              )}
-            </GlassCard>
-          </div>
-
-          {/* Right: Agent sidebar */}
-          <EarningsAgent />
-        </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Earnings Calendar
+                    <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
+                  </h3>
+                  <p className="text-[10px] text-white/30 leading-tight">Complete earnings calendar with Polymarket predictions &amp; Finnhub fundamentals</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[200px] rounded-xl" />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <EarningsCalendarWidget markets={earningsMarkets} />
+          )}
+        </GlassCard>
       </main>
     </div>
   );
