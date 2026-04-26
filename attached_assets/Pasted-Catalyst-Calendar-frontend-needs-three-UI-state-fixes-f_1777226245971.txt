@@ -1,0 +1,196 @@
+Catalyst Calendar frontend needs three UI/state fixes focused on the Earnings Dates tab.
+
+IMPORTANT GUARDRAILS:
+- Do NOT break the existing Earnings popup/modal.
+- Do NOT reintroduce Polymarket rows into the main earnings calendar/list.
+- Main Earnings Dates data should remain FMP company earnings only.
+- Polymarket can remain only as clicked-stock popup enrichment.
+- Do NOT break Ask Caelyn global placement.
+- Do NOT change backend unless absolutely required.
+
+FIX #1: Move the All / Watchlist / Portfolio / Search ticker filter bar to Earnings Dates only
+
+Current issue:
+The filter bar:
+- All
+- Watchlist
+- Portfolio
+- Search ticker...
+
+is showing on every tab except Earnings Dates.
+
+This is backwards.
+
+Required:
+Show this filter bar ONLY on the Earnings Dates tab.
+
+When activeTab === "earnings_dates":
+- Show All / Watchlist / Portfolio scope filter
+- Show Search ticker input
+
+When activeTab !== "earnings_dates":
+- Hide this filter bar completely
+
+Affected non-earnings tabs:
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Those tabs should not show this top scope/search filter bar for now.
+
+FIX #2: Earnings Dates > Recent should only show past earnings
+
+Current issue:
+Inside Earnings Dates > Recent, the UI still shows quick range buttons:
+- Recent
+- Today
+- This Week
+- Next Week
+- This Month
+
+That is wrong for Earnings Recent.
+
+Required:
+When activeTab === "earnings_dates" and activeMode === "recent":
+- Hide Today
+- Hide This Week
+- Hide Next Week
+- Hide This Month
+- Only show recent/past earnings reports/calls
+- Do not show future date range controls
+
+Recent earnings should mean:
+- past earnings only
+- default window can be last 30 days
+- optionally allow a simple past-only selector later, but not required now
+
+Acceptable UI:
+- Show no extra range toggle under Recent
+or
+- Show a single label: "Recent earnings reports"
+or
+- Show a past-only range selector: "Last 7D / Last 30D / Last 90D"
+
+But DO NOT show:
+- Today
+- This Week
+- Next Week
+- This Month
+
+Those are forward/current calendar controls and make no sense in Recent earnings.
+
+Data query:
+For Earnings Dates > Recent, call backend with either:
+GET /api/catalysts/events?tab=earnings_dates&mode=recent
+
+or explicit past-only date range:
+from = today - 30 days
+to = today
+
+Do not query future dates in Recent mode.
+
+FIX #3: Earnings Dates should default to All, not Smart. All should be clean list view.
+
+Current issue:
+Earnings Dates currently defaults to Smart.
+
+Required:
+Default Earnings Dates view should be:
+- activeMode = "upcoming"
+- earningsSignalFilter = "all" or equivalent
+
+The user should be able to switch to Smart manually.
+
+Behavior:
+When user opens Catalyst Calendar:
+- activeTab = earnings_dates
+- activeMode = upcoming
+- Earnings filter defaults to All, not Smart
+
+Smart:
+- Still exists as an optional toggle.
+- When selected, Smart can show the curated/high-conviction style cards.
+
+All:
+- Should be a clean list view like the other tabs.
+- Do not show the heavy “High Conviction Earnings” / “Most Talked About” grouped layout in All mode.
+- All mode should show actual FMP company earnings events in a clean list/table/card list.
+
+All mode display requirements:
+For the selected day/week, show clean rows/cards with:
+- Date
+- Symbol
+- Company
+- Earnings time: Pre-Market / After Hours / Time if available
+- Period/quarter
+- EPS estimate
+- Revenue estimate if available
+- View full details
+
+Do not show Polymarket odds as standalone rows.
+Do not show prediction market questions.
+
+Suggested rendering logic:
+
+If activeTab === "earnings_dates":
+  show scope/search filter bar
+
+  show Upcoming/Recent toggle
+
+  if activeMode === "upcoming":
+    show earnings calendar/week day cards
+
+    show Smart/All toggle
+
+    if earningsSignalFilter === "all":
+      show clean list view of FMP earnings for selected day
+    else if earningsSignalFilter === "smart":
+      show current smart/high-conviction curated earnings layout
+
+  if activeMode === "recent":
+    hide calendar grid if recent is intended as list
+    hide Today/This Week/Next Week/This Month range buttons
+    show clean recent earnings list from past dates only
+
+If activeTab !== "earnings_dates":
+  hide scope/search filter bar
+  hide Smart/All toggle
+  show existing non-earnings list/range UI
+
+Important:
+The user asked: “The All tab should be a clean list view like the other tabs.”
+So All must not look like Smart. All is utilitarian. Smart is curated.
+
+Clean up confusing labels:
+- If Upcoming Earnings is calendar view, label can say "Calendar — upcoming earnings calls"
+- If Recent Earnings is list view, label can say "List — recent earnings reports"
+- Do not show range buttons for recent earnings that imply future/current dates.
+
+Validation checklist:
+1. Catalyst Calendar opens to Earnings Dates.
+2. Earnings Dates shows All / Watchlist / Portfolio / Search ticker bar.
+3. Dividends does NOT show that bar.
+4. IPOs does NOT show that bar.
+5. Stock Splits does NOT show that bar.
+6. Economic Releases does NOT show that bar.
+7. Treasury / Macro does NOT show that bar.
+8. Earnings Dates defaults to All, not Smart.
+9. User can switch from All to Smart.
+10. All shows clean FMP earnings list/cards.
+11. Smart still shows curated/high-conviction layout.
+12. Earnings Dates > Recent does not show Today / This Week / Next Week / This Month.
+13. Earnings Dates > Recent only queries/displays past earnings.
+14. Existing earnings click popup still works.
+15. Main Earnings list/calendar still has no Polymarket question rows.
+
+Final response:
+Tell me:
+- Which files changed
+- Confirm filter bar now only appears on Earnings Dates
+- Confirm Earnings Recent is past-only and no longer shows Today/This Week/Next Week/This Month
+- Confirm Earnings Dates defaults to All
+- Confirm All is clean list view
+- Confirm Smart remains optional
+- Confirm Earnings popup behavior was untouched

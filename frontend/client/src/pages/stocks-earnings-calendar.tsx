@@ -1002,7 +1002,7 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
   const finnhubFetchedWeeks = useRef<Set<string>>(new Set());
 
   // Smart View state
-  const [viewMode, setViewMode] = useState<"smart" | "all">("smart");
+  const [viewMode, setViewMode] = useState<"smart" | "all">("all");
   const [smartData, setSmartData] = useState<Record<string, SmartDayData>>({});
   const [smartLoading, setSmartLoading] = useState(false);
   const [smartOverflowCount, setSmartOverflowCount] = useState(0);
@@ -2699,10 +2699,12 @@ function CatalystListTab({
   tabKey,
   scope,
   search,
+  hideRangeToggle = false,
 }: {
   tabKey: string;
   scope: string;
   search: string;
+  hideRangeToggle?: boolean;
 }) {
   const [dateRange, setDateRange] = useState<DateRange>("recent");
   const [events, setEvents]       = useState<CatalystEvent[]>([]);
@@ -2953,23 +2955,25 @@ function CatalystListTab({
     <div>
       {/* ── Range toggles ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
-          {RANGE_OPTIONS.map(({ key, label }, i) => (
-            <button
-              key={key}
-              onClick={() => setDateRange(key)}
-              className="px-3 py-1.5 transition-all whitespace-nowrap"
-              style={{
-                borderRight: i < RANGE_OPTIONS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : undefined,
-                ...(dateRange === key
-                  ? { background: "rgba(59,130,246,0.18)", color: "#60a5fa" }
-                  : { color: "rgba(255,255,255,0.4)" }),
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {!hideRangeToggle && (
+          <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
+            {RANGE_OPTIONS.map(({ key, label }, i) => (
+              <button
+                key={key}
+                onClick={() => setDateRange(key)}
+                className="px-3 py-1.5 transition-all whitespace-nowrap"
+                style={{
+                  borderRight: i < RANGE_OPTIONS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                  ...(dateRange === key
+                    ? { background: "rgba(59,130,246,0.18)", color: "#60a5fa" }
+                    : { color: "rgba(255,255,255,0.4)" }),
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           onClick={() => setRefreshKey((k) => k + 1)}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
@@ -3139,7 +3143,7 @@ export default function StocksEarningsCalendarPage() {
   }, [fetchEarnings]);
 
   const isEarningsTab   = activeTab === "earnings_dates";
-  const showFilterBar   = !isEarningsTab || earningsMode === "recent";
+  const showFilterBar   = isEarningsTab;
 
   return (
     <>
@@ -3299,6 +3303,7 @@ export default function StocksEarningsCalendarPage() {
               tabKey="earnings_dates"
               scope={scope}
               search={search}
+              hideRangeToggle
             />
           ) : (
             /* ── All other tabs — range-toggle + list/table ─────── */
