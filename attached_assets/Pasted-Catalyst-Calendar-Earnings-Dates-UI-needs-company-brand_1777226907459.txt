@@ -1,0 +1,136 @@
+Catalyst Calendar Earnings Dates UI needs company branding/details added.
+
+Current issue:
+Stocks on the Earnings Calendar show only the ticker.
+They should show:
+- company logo
+- company name
+- ticker
+
+Important guardrails:
+- Do NOT break the existing Earnings popup/modal.
+- Do NOT reintroduce Polymarket rows into the main earnings calendar/list.
+- Main Earnings Dates data should remain FMP company earnings only.
+- Polymarket can remain only as clicked-stock popup enrichment.
+- Do NOT break Smart/All toggle.
+- Do NOT break Upcoming/Recent behavior.
+- Do NOT change non-earnings tabs unless they share a safe reusable company display component.
+
+Required UI update:
+Wherever an earnings event appears in the Earnings Dates tab, render:
+
+[company logo/avatar] Company Name
+                      TICKER · Q/Period · Time
+                      EPS Est / Rev Est if available
+
+At minimum:
+- logo
+- company name
+- ticker
+
+Affected Earnings views:
+1. Earnings Dates > Upcoming > All
+2. Earnings Dates > Upcoming > Smart
+3. Earnings day cards / selected-day event list
+4. Earnings Dates > Recent list
+5. Any compact earnings event card where only ticker is currently shown
+
+Do not force full company names inside the tiny weekly day summary chips if space is too tight. For tiny day summary bubbles, ticker/logo initials are okay. But in the selected day list/cards, Recent list, and All list, company name + logo must be visible.
+
+Data fields to use:
+Try in this order:
+
+Company name:
+- event.companyName
+- event.name
+- event.profile.companyName
+- event.raw.companyName
+- event.raw.company
+- event.raw.name
+- fallback: event.symbol
+
+Logo:
+- event.logo
+- event.image
+- event.profile.image
+- event.profile.logo
+- event.raw.image
+- event.raw.logo
+- fallback generated avatar using ticker initials
+
+If no logo exists:
+Render a clean fallback avatar:
+- first 1-2 letters of ticker
+- same circular/square style as the current UI
+- do not show broken image icons
+
+Image handling:
+- Use img onError fallback to ticker avatar.
+- Lazy-load logos if possible.
+- Keep sizing consistent:
+  - card/list logo: 36-48px
+  - compact row logo: 28-32px
+  - tiny day chip: do not overdo it
+
+Suggested component:
+Create or reuse a small component:
+CompanyIdentity
+or
+EarningsCompanyBadge
+
+Props:
+{
+  symbol: string
+  companyName?: string
+  logoUrl?: string
+  size?: "sm" | "md" | "lg"
+  subtitle?: string
+}
+
+Rendering example:
+Logo/Avatar | Booking Holdings Inc
+              BKNG · Q1 2026 · Pre-Market
+
+For Recent earnings:
+Logo/Avatar | Booking Holdings Inc
+              BKNG · Reported Apr 24 · EPS Actual $x.xx vs Est $x.xx
+
+For All list:
+Logo/Avatar | Verizon Communications
+              VZ · Q1 2026 · Pre-Market
+              EPS Est: $1.23
+
+Current cards that show only:
+VZ
+DPZ
+CDNS
+NUE
+
+should instead show:
+[logo] Verizon Communications Inc
+       VZ · Q1 2026 · Pre-Market
+
+[logo] Domino's Pizza Inc
+       DPZ · Q1 2026 · Pre-Market
+
+If companyName is too long:
+- truncate with ellipsis
+- keep ticker visible
+
+Validation:
+1. Earnings Dates > Upcoming > All shows logo + company name + ticker.
+2. Earnings Dates > Upcoming > Smart shows logo + company name + ticker.
+3. Earnings Dates > Recent shows logo + company name + ticker.
+4. Existing earnings popup still opens correctly when clicking.
+5. No broken image icons appear.
+6. If logo missing, fallback avatar appears.
+7. Non-earnings tabs still work.
+8. No Polymarket question rows appear in main Earnings Calendar.
+
+Final response:
+Tell me:
+- Which files changed
+- Which component renders the company identity
+- Confirm company name + logo + ticker appear in Earnings cards/lists
+- Confirm fallback avatar works
+- Confirm Earnings popup behavior was untouched

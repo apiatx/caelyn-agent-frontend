@@ -2683,6 +2683,54 @@ function CatalystCalendarGrid({
   );
 }
 
+// ─── CompanyIdentity — logo/avatar + company name + ticker ──────
+
+function CompanyIdentity({
+  symbol,
+  companyName,
+  logoUrl,
+  size = "sm",
+}: {
+  symbol: string;
+  companyName?: string;
+  logoUrl?: string;
+  size?: "sm" | "md";
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const avatarSz  = size === "md" ? "w-9 h-9"   : "w-7 h-7";
+  const initSz    = size === "md" ? "text-[10px]" : "text-[9px]";
+  const showImg   = !!logoUrl && !imgFailed;
+  const hasName   = !!companyName && companyName !== symbol;
+
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      {showImg ? (
+        <img
+          src={logoUrl}
+          alt={symbol}
+          loading="lazy"
+          className={`${avatarSz} rounded-lg object-contain bg-white/5 p-0.5 flex-shrink-0`}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <div className={`${avatarSz} rounded-lg bg-gradient-to-br ${tickerColor(symbol)} flex items-center justify-center flex-shrink-0`}>
+          <span className={`${initSz} font-bold text-white`}>{symbol.slice(0, 2)}</span>
+        </div>
+      )}
+      <div className="min-w-0">
+        {hasName && (
+          <p className="text-xs font-semibold text-white/90 truncate max-w-[160px] leading-tight">
+            {companyName}
+          </p>
+        )}
+        <p className={`font-mono leading-tight ${hasName ? "text-[10px] text-white/40" : "text-xs font-bold text-white/90"}`}>
+          {symbol}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── CatalystListTab — range toggles + sortable list ────────────
 
 const RANGE_OPTIONS = [
@@ -3058,7 +3106,28 @@ function CatalystListTab({
                       {ev.date?.slice(0, 10) || "—"}
                     </td>
                     <td className="py-2.5 px-3">
-                      {ev.symbol ? (
+                      {tabKey === "earnings_dates" && ev.symbol ? (
+                        <CompanyIdentity
+                          symbol={ev.symbol as string}
+                          companyName={
+                            (ev.companyName as string | undefined) ||
+                            ((ev.raw as Record<string, unknown>)?.companyName as string | undefined) ||
+                            ((ev.raw as Record<string, unknown>)?.company as string | undefined) ||
+                            ((ev.raw as Record<string, unknown>)?.name as string | undefined) ||
+                            undefined
+                          }
+                          logoUrl={
+                            (ev.logo as string | undefined) ||
+                            (ev.image as string | undefined) ||
+                            ((ev.profile as Record<string, unknown>)?.image as string | undefined) ||
+                            ((ev.profile as Record<string, unknown>)?.logo as string | undefined) ||
+                            ((ev.raw as Record<string, unknown>)?.image as string | undefined) ||
+                            ((ev.raw as Record<string, unknown>)?.logo as string | undefined) ||
+                            undefined
+                          }
+                          size="sm"
+                        />
+                      ) : ev.symbol ? (
                         <span className="font-bold text-white/90">{ev.symbol as string}</span>
                       ) : isMacroRow ? (
                         <span className="text-white/30 italic text-[10px]">Macro</span>
