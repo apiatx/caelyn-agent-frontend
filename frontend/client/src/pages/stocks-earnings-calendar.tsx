@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, AlertCircle } from "lucide-react";
@@ -633,8 +634,8 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
   const consensus = detail?.analyst_consensus;
   const articles = detail?.news_articles || [];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-4xl max-h-[90vh] bg-[#0c0c0f] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto"
@@ -985,7 +986,8 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -2211,7 +2213,7 @@ interface CatalystEvent {
 }
 
 const CATALYST_TABS: { key: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: "earnings_dates",     label: "Earnings Dates",     icon: CalendarDays   },
+  { key: "earnings_dates",     label: "Earnings",           icon: CalendarDays   },
   { key: "dividends",          label: "Dividends",          icon: DollarSign     },
   { key: "ipos",               label: "IPOs",               icon: TrendingUp     },
   { key: "splits",             label: "Stock Splits",       icon: Scissors       },
@@ -2321,8 +2323,8 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
   if (event.value != null)  rows.push(["Value",      formatMktCap(event.value as number)]);
   if (event.country)        rows.push(["Country",    event.country]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="relative w-full max-w-lg rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0c0c0f", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "80vh" }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -2368,7 +2370,8 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -3350,7 +3353,7 @@ export default function StocksEarningsCalendarPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">
-                      Earnings Dates
+                      Earnings
                       <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
                     </h3>
                     <p className="text-[10px] text-white/30">FMP earnings data</p>
