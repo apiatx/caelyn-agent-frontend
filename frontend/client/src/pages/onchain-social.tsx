@@ -837,7 +837,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
         <div style={cardStyle}>
           {sectionTitle('Freshest Alpha', C.green)}
           {!freshAlpha && freshTrades.length === 0 ? emptyState('No fresh alpha data yet.') : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {freshAlpha && (freshAlpha.ticker || freshAlpha.symbol) && (() => {
                 const sym = freshAlpha.ticker || freshAlpha.symbol;
                 const ctx = freshAlpha.thesis || freshAlpha.reason || freshAlpha.catalyst;
