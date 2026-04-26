@@ -1435,8 +1435,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                       onClick={() => handleEntryClick(e)}
                     >
                       <div className="flex items-center gap-4 p-4">
-                        {(enrich?.logo || identityMap[e.ticker]?.logo) ? (
-                          <img src={(enrich?.logo || identityMap[e.ticker]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                        {(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
+                          <img src={(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0" onError={ev => { ev.currentTarget.style.display = "none"; }} />
                         ) : (
                           <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
                             <span className="text-xs font-bold text-white">{e.ticker.slice(0, 2)}</span>
@@ -1445,7 +1445,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                              {enrich?.company_name || identityMap[e.ticker]?.name || e.company}
+                              {enrich?.company_name || identityMap[e.ticker.toUpperCase()]?.name || e.company}
                             </p>
                             <span className="text-[11px] font-mono text-white/40">{e.ticker}</span>
                             {e.quarter && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400/70">{e.quarter}</span>}
@@ -1521,7 +1521,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                           const entry: EarningsEntry = polyEntry || {
                             market: null,
                             ticker: st.ticker,
-                            company: enrich?.company_name || identityMap[st.ticker]?.name || st.ticker,
+                            company: enrich?.company_name || identityMap[st.ticker.toUpperCase()]?.name || st.ticker,
                             eps: epsStr,
                             quarter: qtr,
                             time: timeStr,
@@ -1536,8 +1536,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                         }}
                       >
                         <div className="flex items-start gap-4 p-4">
-                          {(enrich?.logo || identityMap[st.ticker]?.logo) ? (
-                            <img src={(enrich?.logo || identityMap[st.ticker]?.logo)!} alt={st.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                          {(enrich?.logo || identityMap[st.ticker.toUpperCase()]?.logo) ? (
+                            <img src={(enrich?.logo || identityMap[st.ticker.toUpperCase()]?.logo)!} alt={st.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
                           ) : (
                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(st.ticker)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                               <span className="text-xs font-bold text-white">{st.ticker.slice(0, 2)}</span>
@@ -1547,7 +1547,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                                  {enrich?.company_name || identityMap[st.ticker]?.name || st.ticker}
+                                  {enrich?.company_name || identityMap[st.ticker.toUpperCase()]?.name || st.ticker}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                   <span className="text-[11px] font-mono text-white/40">{st.ticker}</span>
@@ -1722,8 +1722,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                 onClick={() => handleEntryClick(e)}
               >
                 <div className="flex items-start gap-4 p-4">
-                  {(enrich?.logo || identityMap[e.ticker]?.logo) ? (
-                    <img src={(enrich?.logo || identityMap[e.ticker]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                  {(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
+                    <img src={(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
                   ) : (
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                       <span className="text-xs font-bold text-white">{e.ticker.slice(0, 2)}</span>
@@ -1734,7 +1734,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                          {enrich?.company_name || identityMap[e.ticker]?.name || e.company}
+                          {enrich?.company_name || identityMap[e.ticker.toUpperCase()]?.name || e.company}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-[11px] font-mono text-white/40">{e.ticker}</span>

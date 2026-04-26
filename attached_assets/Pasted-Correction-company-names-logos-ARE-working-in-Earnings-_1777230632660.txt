@@ -1,0 +1,187 @@
+Correction: company names/logos ARE working in Earnings > Recent, but NOT in Earnings > Upcoming calendar.
+
+So do not do a full source-of-truth rewrite yet.
+
+Current issue:
+- Earnings Dates > Recent list shows company names/logos correctly.
+- Earnings Dates > Upcoming calendar still only shows tickers.
+- Therefore backend enrichment is likely working.
+- The bug is isolated to the Upcoming calendar render path / EarningsCalendarWidget mapping.
+
+Goal:
+Make Earnings Dates > Upcoming calendar use the same enriched company identity fields that Recent already uses.
+
+Important guardrails:
+- Do NOT break Earnings > Recent, since identity works there.
+- Do NOT break the existing Earnings popup/modal.
+- Do NOT reintroduce Polymarket rows into main earnings calendar.
+- Main Earnings data remains FMP company earnings only.
+- Polymarket remains popup-only enrichment.
+
+Step 1: Compare Recent vs Upcoming data paths
+Find where Recent earnings list gets its event data and company identity from.
+Find where Upcoming calendar gets its event data and company identity from.
+
+Expected:
+Recent is likely rendering enriched Catalyst events with:
+- companyName
+- logo/image
+- title
+- symbol
+
+Upcoming calendar is likely using:
+- legacy EarningsEntry
+- buildFinnhubEntry
+- day card transformation
+- grouped week data
+- company = ticker
+- ticker-only card component
+
+Step 2: Do NOT change backend unless frontend proves Upcoming response lacks companyName/logo
+In frontend dev logs, compare:
+
+Recent first event:
+console.log("[Earnings Recent event]", recentEvents[0])
+
+Upcoming first event before calendar mapping:
+console.log("[Earnings Upcoming raw event]", upcomingEvents[0])
+
+Upcoming first event after calendar mapping/grouping:
+console.log("[Earnings Upcoming mapped entry]", mappedWeekEvents[0])
+
+The likely failure is:
+raw event has companyName/logo
+mapped entry loses companyName/logo
+
+Fix the mapping.
+
+Step 3: Preserve identity fields during Upcoming calendar mapping
+Wherever Upcoming events are grouped by date/week/day, make sure mapped entries keep:
+
+{
+  symbol,
+  ticker: symbol,
+  companyName,
+  company,
+  title,
+  logo,
+  image,
+  date,
+  time,
+  period,
+  epsEstimated,
+  revenueEstimated,
+  source,
+  raw
+}
+
+Mapping should be:
+
+const symbol = event.symbol || event.ticker;
+
+const companyName =
+  event.companyName ||
+  event.company ||
+  event.title?.replace(/\s+Earnings.*$/i, "") ||
+  event.raw?.companyName ||
+  event.raw?.company ||
+  symbol;
+
+const logo =
+  event.logo ||
+  event.image ||
+  event.raw?.logo ||
+  event.raw?.image ||
+  null;
+
+return {
+  ...existingEntry,
+  symbol,
+  ticker: symbol,
+  companyName,
+  company: companyName,
+  logo,
+  image: logo,
+  title: event.title || `${companyName} Earnings`,
+  raw: event
+};
+
+Do not overwrite companyName/company later with ticker.
+
+Step 4: Update Upcoming calendar card rendering
+In Earnings Dates > Upcoming:
+- day cards can remain compact.
+- tiny ticker bubbles inside week cards can stay compact if necessary.
+- BUT selected-day list/cards under the calendar must show:
+  - logo/avatar
+  - company name
+  - ticker
+  - period/time
+  - EPS estimate if available
+
+Use the same CompanyIdentity component or same identity resolver that Recent uses.
+
+If Recent has a working component, reuse it in Upcoming selected-day list/cards.
+
+Step 5: Smart/All default logic
+The screenshot still shows Smart selected in Upcoming.
+Previous requirement still stands:
+- Earnings Dates should default to All, not Smart.
+- User can switch to Smart.
+- All should be clean list view.
+If that has not been fixed yet, fix it while touching this component.
+
+But do not let this distract from the main bug:
+Upcoming calendar selected-day cards must show company identity.
+
+Step 6: Recent mode cleanup
+Recent currently still shows range buttons:
+- Recent
+- Today
+- This Week
+- Next Week
+- This Month
+
+Previous requirement still stands:
+For Earnings Dates > Recent:
+- hide Today
+- hide This Week
+- hide Next Week
+- hide This Month
+- Recent earnings should be past-only
+
+If not fixed yet, clean that up too.
+
+Step 7: Validation
+Test these exact states:
+
+1. Earnings Dates > Recent
+- still shows company names/logos
+- still works
+
+2. Earnings Dates > Upcoming > All
+- selected-day earnings list shows company logo/avatar + company name + ticker
+- not ticker-only
+
+3. Earnings Dates > Upcoming > Smart
+- smart cards show company logo/avatar + company name + ticker
+- not ticker-only
+
+4. Weekly day summary chips
+- can remain compact ticker/initial bubbles if space is tight
+
+5. Existing earnings popup
+- clicking earnings still opens the same popup
+
+6. Main calendar
+- no Polymarket question rows
+
+Final response:
+Tell me:
+- Which component/path was used by Upcoming calendar
+- Where companyName/logo were being dropped
+- Confirm Recent was left working
+- Confirm Upcoming selected-day list/cards now show companyName + logo/avatar + ticker
+- Confirm Earnings defaults to All if fixed
+- Confirm Earnings Recent no longer shows forward/current range buttons if fixed
+- Confirm popup behavior was untouched
