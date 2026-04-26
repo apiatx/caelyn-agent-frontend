@@ -1,0 +1,143 @@
+You did not wire the frontend to the new clean backend endpoints.
+
+Backend created and validated these new FMP-only endpoints:
+
+GET /api/catalysts/earnings/upcoming-clean
+GET /api/catalysts/earnings/day-clean
+
+But the frontend is still calling:
+
+GET /api/catalysts/events?tab=earnings_dates&mode=upcoming&limit=2000
+
+That is the old path. Stop using it for Earnings Dates > Upcoming.
+
+Required fix:
+Rewire Catalyst Calendar > Earnings Dates > Upcoming to use the new clean FMP-only endpoints.
+
+Scope:
+Only touch Earnings Dates > Upcoming.
+
+Do NOT touch:
+- Earnings Dates > Recent, which is working.
+- Existing clicked earnings popup/modal.
+- Non-earnings Catalyst tabs.
+- Ask Caelyn unless needed for compatibility.
+
+Final data flow:
+
+1. On load / when visible date range changes:
+Call:
+
+GET /api/catalysts/earnings/upcoming-clean?from={todayOrVisibleStart}&to={todayPlus30OrVisibleEnd}&limit=10000
+
+Use this response for:
+- calendar day cards
+- countsByDate
+- eventsByDate
+- day chips
+- determining which days have earnings
+
+2. When a day is selected:
+Call:
+
+GET /api/catalysts/earnings/day-clean?date={selectedDate}&limit=1000
+
+Use this response for the selected-day list/cards.
+
+This selected-day endpoint is the one that returns enriched fields:
+- companyName
+- logo
+- price
+- marketCap
+- epsEstimated
+- epsActual
+- revenueEstimated
+- revenueActual
+
+Do not rely on the old /api/catalysts/events endpoint for Upcoming anymore.
+
+Hard removal from Earnings Upcoming:
+- no /api/catalysts/events?tab=earnings_dates&mode=upcoming
+- no fetchFinnhubCalendar
+- no /api/earnings/calendar
+- no Finnhub
+- no Polymarket
+- no beat odds
+- no Smart/high-conviction/most-talked-about data source
+
+Upcoming UI:
+- Keep Upcoming / Recent toggle.
+- Keep calendar/day cards.
+- Keep Today / previous / next controls.
+- Keep selected-day list.
+- Remove Smart toggle from Upcoming if still present.
+- Remove beat odds badges.
+- Remove high-conviction/most-talked-about sections.
+- Remove Polymarket rows.
+
+Selected-day card should show only FMP earnings info:
+
+[logo/avatar] Company Name
+              TICKER · Earnings time · Period
+              EPS Est: X · EPS Actual: Y
+              Rev Est: X · Rev Actual: Y
+              Price: X · Market Cap: X
+
+Right side:
+View full details
+
+No percent beat badges.
+No probability.
+No Polymarket.
+
+Sorting:
+Use backend day-clean order as-is. Backend already sorts:
+US major exchange → largest market cap → estimate availability → ticker.
+
+Do not re-sort by beat odds, Smart score, or probability.
+
+Fallbacks:
+If logo missing:
+- show ticker avatar
+If companyName missing:
+- show symbol
+If EPS/revenue/price/marketCap missing:
+- show —
+
+Validation:
+Use Network tab and prove Earnings Dates > Upcoming calls:
+
+/api/catalysts/earnings/upcoming-clean
+/api/catalysts/earnings/day-clean
+
+And does NOT call:
+
+/api/catalysts/events?tab=earnings_dates&mode=upcoming
+/api/earnings/calendar
+Finnhub
+Polymarket
+
+UI validation:
+For Apr 28 or a populated selected day, cards should look like:
+
+The Coca-Cola Company
+KO · EPS Est: 0.81 · Rev Est: 12.2B · Price: 76.63 · Market Cap: 329.8B
+
+Barclays PLC
+BCS · EPS Est: 0.75 · Rev Est: 10.9B
+
+Robinhood Markets, Inc.
+HOOD · EPS Est: 0.41 · Rev Est: 1.1B
+
+No beat odds.
+
+Final response:
+Tell me:
+- Which frontend files changed
+- Confirm Upcoming now calls /api/catalysts/earnings/upcoming-clean
+- Confirm selected day now calls /api/catalysts/earnings/day-clean
+- Confirm old /api/catalysts/events earnings upcoming path is no longer used
+- Confirm no Finnhub/Polymarket calls in Earnings Upcoming
+- Confirm Smart/beat odds/high-conviction/most-talked-about are gone from Upcoming
+- Confirm selected-day cards show companyName, logo/avatar, EPS est/actual, revenue est/actual, price, and marketCap
+- Confirm Recent and popup were untouched

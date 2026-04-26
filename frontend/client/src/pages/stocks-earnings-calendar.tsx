@@ -6,19 +6,19 @@ import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, C
 
 // ─── DATA FLOW (Catalyst Calendar) ────────────────────────────
 //
-// API CALLS ON PAGE LOAD:
-//   1. Polymarket Gamma API — fetch 50 earnings markets (popup enrichment only)
-//   2. /api/catalysts/events?tab=earnings_dates&mode=upcoming — FMP earnings calendar
+// Earnings Dates > Upcoming:
+//   1. On mount: GET /api/catalysts/earnings/upcoming-clean?from=...&to=...&limit=10000
+//      → populates fmpDateMap (calendar day-chip counts)
+//   2. On day select: GET /api/catalysts/earnings/day-clean?date={date}&limit=1000
+//      → populates dayCleanEntries (enriched selected-day cards)
 //
-// API CALLS ON TAB CHANGE:
-//   /api/catalysts/events?tab={tab}&... — all tabs (FMP data via backend proxy)
+// API CALLS ON TAB CHANGE (non-upcoming tabs):
+//   /api/catalysts/events?tab={tab}&... — all non-upcoming tabs
 //
-// API CALLS ON CLICK (per-ticker detail):
-//   /api/earnings/detail?ticker={ticker} — enriched detail (price, history, news)
+// API CALLS ON CLICK (popup detail):
+//   /api/earnings/detail?ticker={ticker} — enriched popup detail
 //
-// DATA SOURCE: FMP only for Catalyst Calendar main views.
-// Polymarket = popup enrichment / beat-odds overlay only.
-// Finnhub = NOT used on Catalyst Calendar.
+// No Finnhub. No Polymarket. No beat odds. No Smart view.
 // ───────────────────────────────────────────────────────────────
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -974,12 +974,23 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [fmpLoading, setFmpLoading] = useState(false);
   const fmpFetchedRef = useRef(false);
 
-  // Smart View state
-  const [viewMode, setViewMode] = useState<"smart" | "all">("all");
-  const [smartData, setSmartData] = useState<Record<string, SmartDayData>>({});
-  const [smartLoading, setSmartLoading] = useState(false);
-  const [smartOverflowCount, setSmartOverflowCount] = useState(0);
-  const SMART_MORE_BATCH = 10;
+  // Day-clean state: enriched cards for the selected day
+  interface DayCleanEntry {
+    symbol: string;
+    companyName?: string;
+    logo?: string;
+    price?: number | null;
+    marketCap?: number | null;
+    epsEstimated?: number | null;
+    epsActual?: number | null;
+    revenueEstimated?: number | null;
+    revenueActual?: number | null;
+    time?: string | null;
+    period?: string | null;
+  }
+  const [dayCleanEntries, setDayCleanEntries] = useState<DayCleanEntry[]>([]);
+  const [dayCleanLoading, setDayCleanLoading] = useState(false);
+  const dayCleanFetchedRef = useRef<Set<string>>(new Set());
 
   // Build Polymarket date map
   const polyDateMap = new Map<string, EarningsEntry[]>();
@@ -998,37 +1009,38 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     undated.push(entry);
   }
 
-  // Fetch all upcoming FMP earnings once — week navigation just shifts the display window
+  // Fetch upcoming-clean once on mount — populates calendar day-chip counts
   useEffect(() => {
     if (fmpFetchedRef.current) return;
     fmpFetchedRef.current = true;
     setFmpLoading(true);
 
-    const params = new URLSearchParams({
-      tab: "earnings_dates",
-      mode: "upcoming",
-      limit: "2000",
-    });
-    const url = `/api/catalysts/events?${params}`;
+    const today = new Date();
+    const toDate = new Date(today);
+    toDate.setDate(today.getDate() + 90);
+    const fromStr = dateKey(today);
+    const toStr = dateKey(toDate);
+
+    const params = new URLSearchParams({ from: fromStr, to: toStr, limit: "10000" });
+    const url = `/api/catalysts/earnings/upcoming-clean?${params}`;
 
     if (process.env.NODE_ENV !== "production") {
-      console.log("[Earnings Upcoming request]", url);
+      console.log("[upcoming-clean request]", url);
     }
 
     fetch(url)
       .then(r => r.json())
       .then((data) => {
-        const arr: Record<string, unknown>[] = Array.isArray(data) ? data : (data.events || data.results || []);
-        const valid = arr.filter(ev =>
-          (ev.symbol || ev.ticker) &&
-          (ev.symbol as string || ev.ticker as string) !== "???" &&
-          !/^Will\s/i.test((ev.title || ev.company || ev.companyName || "") as string)
-        );
+        const arr: Record<string, unknown>[] = Array.isArray(data)
+          ? data
+          : (data.events || data.results || data.earnings || []);
         if (process.env.NODE_ENV !== "production") {
-          console.log("[Earnings Upcoming returned]", valid.length);
+          console.log("[upcoming-clean returned]", arr.length);
         }
         const map = new Map<string, EarningsEntry[]>();
-        for (const ev of valid) {
+        for (const ev of arr) {
+          const sym = (ev.symbol || ev.ticker || "") as string;
+          if (!sym || sym === "???") continue;
           const d = (ev.date || "") as string;
           if (!d) continue;
           const key = d.slice(0, 10);
@@ -1039,86 +1051,40 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
           console.table(Array.from(map.entries()).map(([date, evts]) => ({ date, count: evts.length })));
         }
         setFmpDateMap(map);
-        const allTickers = valid.map(ev => (ev.symbol || ev.ticker || "") as string).filter(Boolean);
+        const allTickers = arr.map(ev => (ev.symbol || ev.ticker || "") as string).filter(Boolean);
         if (allTickers.length > 0) onFetchIdentity(allTickers);
       })
       .catch(() => {})
       .finally(() => setFmpLoading(false));
   }, []);
 
-  // Fetch smart (Tier 2) data for the selected day
-  const smartFetchedRef = useRef<Set<string>>(new Set());
+  // Fetch day-clean when a day is selected — populates enriched card list
   useEffect(() => {
-    if (viewMode !== "smart") return;
-    if (selectedDayKey === "undated") return;
-    if (smartFetchedRef.current.has(selectedDayKey)) return;
-    smartFetchedRef.current.add(selectedDayKey);
-    setSmartLoading(true);
-    fetchSmartEarnings(selectedDayKey).then((data) => {
-      if (data) {
-        setSmartData(prev => ({ ...prev, [selectedDayKey]: data }));
-      }
-    }).finally(() => setSmartLoading(false));
-  }, [selectedDayKey, viewMode]);
+    if (!selectedDayKey || selectedDayKey === "undated") return;
+    if (dayCleanFetchedRef.current.has(selectedDayKey)) return;
+    dayCleanFetchedRef.current.add(selectedDayKey);
+    setDayCleanLoading(true);
 
-  // If the scanner was running and we had a cache miss, re-fetch after a delay
-  useEffect(() => {
-    const sd = smartData[selectedDayKey];
-    if (!sd || sd.cached_at > 0 || !sd.scanning) return;
-    // Cache miss + scanning: poll once after 10s for fresh data
-    const timer = setTimeout(() => {
-      smartFetchedRef.current.delete(selectedDayKey);
-      setSmartLoading(true);
-      fetchSmartEarnings(selectedDayKey).then((data) => {
-        if (data) {
-          setSmartData(prev => ({ ...prev, [selectedDayKey]: data }));
-        }
-      }).finally(() => setSmartLoading(false));
-    }, 10_000);
-    return () => clearTimeout(timer);
-  }, [smartData, selectedDayKey]);
-
-  // Build a Polymarket beatPct lookup by ticker (for enrichment only)
-  const polyBeatMap = new Map<string, { beatPct: number; market: ParsedMarket }>();
-  for (const entries of polyDateMap.values()) {
-    for (const e of entries) {
-      const tk = e.ticker.toUpperCase();
-      if (tk && tk !== "???" && e.beatPct >= 0) {
-        // Keep the highest-conviction entry per ticker
-        const prev = polyBeatMap.get(tk);
-        if (!prev || e.beatPct > prev.beatPct) {
-          polyBeatMap.set(tk, { beatPct: e.beatPct, market: e.market! });
-        }
-      }
+    const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&limit=1000`;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[day-clean request]", url);
     }
-  }
 
-  // Merge: FMP entries are the source of truth; enrich with Polymarket beat odds
-  const dateMap = new Map<string, EarningsEntry[]>();
-  for (const [key, fmpDayEntries] of fmpDateMap) {
-    const enriched = fmpDayEntries.map(fmpEntry => {
-      const poly = polyBeatMap.get(fmpEntry.ticker.toUpperCase());
-      if (poly) {
-        return {
-          ...fmpEntry,
-          beatPct: poly.beatPct,
-          market: poly.market,
-          source: "both" as const,
-        };
-      }
-      return fmpEntry;
-    });
-    dateMap.set(key, enriched);
-  }
-  // Sort: entries with Polymarket beat data first (by beatPct desc), then alphabetically
-  for (const entries of dateMap.values()) {
-    entries.sort((a, b) => {
-      if (a.beatPct >= 0 && b.beatPct < 0) return -1;
-      if (a.beatPct < 0 && b.beatPct >= 0) return 1;
-      if (a.beatPct >= 0 && b.beatPct >= 0) return b.beatPct - a.beatPct;
-      return a.ticker.localeCompare(b.ticker);
-    });
-  }
+    fetch(url)
+      .then(r => r.json())
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : (data.events || data.results || data.earnings || []);
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[day-clean returned]", arr.length);
+        }
+        setDayCleanEntries(arr);
+      })
+      .catch(() => { setDayCleanEntries([]); })
+      .finally(() => setDayCleanLoading(false));
+  }, [selectedDayKey]);
+
+  // Calendar date map: FMP upcoming-clean data (counts for day chips)
+  const dateMap = new Map<string, EarningsEntry[]>(fmpDateMap);
 
   // ── On-demand enrichment: detail is fetched only when user clicks a ticker ──
   // No batch prefetch on day selection — prevents rate limit exhaustion and ensures
@@ -1184,29 +1150,29 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Reset visible count and smart show-more when day changes
+  // Reset visible count and clear day cards when day changes
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-    setSmartOverflowCount(0);
+    setDayCleanEntries([]);
   }, [selectedDayKey]);
 
-  // IntersectionObserver to load more entries as user scrolls
+  // IntersectionObserver to load more day-clean cards as user scrolls
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && visibleCount < displayEntries.length) {
-          setVisibleCount(prev => Math.min(prev + BATCH_SIZE, displayEntries.length));
+        if (entries[0].isIntersecting && visibleCount < dayCleanEntries.length) {
+          setVisibleCount(prev => Math.min(prev + BATCH_SIZE, dayCleanEntries.length));
         }
       },
       { rootMargin: '200px' }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [visibleCount, displayEntries.length]);
+  }, [visibleCount, dayCleanEntries.length]);
 
-  const visibleEntries = displayEntries.slice(0, visibleCount);
+  const visibleDayEntries = dayCleanEntries.slice(0, visibleCount);
 
   // Click handler: fetch detail on demand then open modal
   const handleEntryClick = useCallback(async (entry: EarningsEntry) => {
@@ -1239,63 +1205,11 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
         </div>
       </div>
 
-      {/* Smart/All toggle + cache status */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-white/[0.08] overflow-hidden">
-            <button
-              onClick={() => setViewMode("smart")}
-              className={`px-3 py-1 text-[10px] font-bold transition-all ${
-                viewMode === "smart"
-                  ? "bg-purple-500/20 text-purple-400 border-r border-white/[0.08]"
-                  : "bg-transparent text-white/35 border-r border-white/[0.08] hover:text-white/50"
-              }`}
-            >
-              <Sparkles className="w-3 h-3 inline mr-1 -mt-0.5" />Smart
-            </button>
-            <button
-              onClick={() => setViewMode("all")}
-              className={`px-3 py-1 text-[10px] font-bold transition-all ${
-                viewMode === "all"
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "bg-transparent text-white/35 hover:text-white/50"
-              }`}
-            >
-              All
-            </button>
-          </div>
-          {viewMode === "smart" && (() => {
-            const sd = smartData[selectedDayKey];
-            const cs = sd?.cache_status;
-            if (smartLoading || sd?.scanning) {
-              return (
-                <span className="text-[9px] text-purple-400/60 flex items-center gap-1">
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" /> Scanning...
-                </span>
-              );
-            }
-            if (cs?.last_updated) {
-              return (
-                <span className="text-[9px] text-white/20">
-                  Updated: {new Date(cs.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              );
-            }
-            return null;
-          })()}
-        </div>
-        {viewMode === "smart" && (
-          <span className="text-[9px] text-white/15">
-            AI-curated via Grok + Perplexity
-          </span>
-        )}
-      </div>
-
       {/* Week day selector row */}
       <div className="grid grid-cols-7 gap-1.5 mb-5">
         {weekDays.map((day, i) => {
           const key = dateKey(day);
-          const entries = (dateMap.get(key) || []).filter(isFMPEntry);
+          const entries = dateMap.get(key) || [];
           const isToday = dateKey(new Date()) === key;
           const isSelected = selectedDayKey === key;
           const callCount = entries.length;
@@ -1343,28 +1257,113 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-bold text-white/90">
-            {showUndated ? "Date TBD" : (
-              <>
-                {DAY_NAMES_FULL[selectedDate.getDay()]}, {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getDate()}
-              </>
-            )}
+            {DAY_NAMES_FULL[selectedDate.getDay()]}, {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getDate()}
           </h4>
-          <span className="text-[10px] text-white/30">
-            {displayEntries.length} earning{displayEntries.length !== 1 ? "s" : ""} call{displayEntries.length !== 1 ? "s" : ""}
-          </span>
+          {dayCleanLoading ? (
+            <Loader2 className="w-3 h-3 text-blue-400/50 animate-spin" />
+          ) : (
+            <span className="text-[10px] text-white/30">
+              {dayCleanEntries.length} earning{dayCleanEntries.length !== 1 ? "s" : ""} call{dayCleanEntries.length !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
-        {undated.length > 0 && !showUndated && (
-          <button
-            onClick={() => setSelectedDayKey("undated")}
-            className="text-[10px] text-white/30 hover:text-white/50 transition-colors"
-          >
-            {undated.length} with dates TBD
-          </button>
-        )}
       </div>
 
-      {/* Smart View — Two-tier display */}
-      {viewMode === "smart" && (() => {
+      {/* Day earnings list — powered by day-clean endpoint */}
+      {dayCleanLoading ? (
+        <div className="text-center py-10">
+          <Loader2 className="w-5 h-5 text-blue-400/40 mx-auto mb-2 animate-spin" />
+          <p className="text-[11px] text-white/25">Loading earnings...</p>
+        </div>
+      ) : dayCleanEntries.length === 0 && !dayCleanLoading ? (
+        <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+          <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+          <p className="text-sm text-white/25">No earnings calls scheduled</p>
+          <p className="text-[10px] text-white/15 mt-1">Try another day or navigate to a different week</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleDayEntries.map((e) => {
+            const ticker = (e.symbol || "").toUpperCase();
+            const name = e.companyName || ticker;
+            const rawTime = (e.time || "") as string;
+            const timeStr = rawTime === "bmo" ? "Pre-Market" : rawTime === "amc" ? "After Hours" : rawTime || null;
+            const epsEst = e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : null;
+            const epsAct = e.epsActual != null ? `$${Number(e.epsActual).toFixed(2)}` : null;
+            const revEst = e.revenueEstimated != null ? formatRevenue(Number(e.revenueEstimated)) : null;
+            const revAct = e.revenueActual != null ? formatRevenue(Number(e.revenueActual)) : null;
+            const price = e.price != null ? `$${Number(e.price).toFixed(2)}` : null;
+            const mktCap = e.marketCap != null ? formatMktCap(Number(e.marketCap)) : null;
+            const logoUrl = e.logo || identityMap[ticker]?.logo || null;
+            const modalCompatEntry: EarningsEntry = {
+              market: null,
+              ticker,
+              company: name,
+              companyName: name,
+              logo: e.logo,
+              eps: epsEst,
+              quarter: e.period || null,
+              time: timeStr,
+              exchange: null,
+              beatPct: -1,
+              revenueEstimate: revEst,
+              source: "fmp",
+              earningsDate: selectedDayKey,
+            };
+            return (
+              <div
+                key={`dc-${ticker}-${e.period || ""}`}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.015] hover:bg-white/[0.03] hover:border-white/[0.1] transition-all group cursor-pointer"
+                onClick={() => handleEntryClick(modalCompatEntry)}
+              >
+                <div className="flex items-start gap-4 p-4">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(ticker)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                      <span className="text-xs font-bold text-white">{ticker.slice(0, 2)}</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate">{name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[11px] font-mono text-white/40">{ticker}</span>
+                      {timeStr && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/30 flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5" /> {timeStr}
+                        </span>
+                      )}
+                      {e.period && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400/70">{e.period}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      {epsEst && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">EPS Est:</span> {epsEst}</span>}
+                      {epsAct && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">EPS Actual:</span> {epsAct}</span>}
+                      {revEst && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">Rev Est:</span> {revEst}</span>}
+                      {revAct && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">Rev Actual:</span> {revAct}</span>}
+                      {price && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">Price:</span> {price}</span>}
+                      {mktCap && <span className="text-[10px] text-white/30"><span className="text-white/50 font-semibold">Mkt Cap:</span> {mktCap}</span>}
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-blue-400/60 group-hover:text-blue-400 transition-colors flex-shrink-0 mt-1">
+                    View full details
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          {visibleCount < dayCleanEntries.length && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 text-white/20 animate-spin mr-2" />
+              <span className="text-[10px] text-white/20">Loading more ({visibleCount} of {dayCleanEntries.length})...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* [Dead Smart View block below — unreachable, kept to avoid removing JSX nodes] */}
+      {(false as boolean) && (() => {
         const sd = smartData[selectedDayKey];
         const tier2Tickers = sd?.tickers || [];
         const tier2Loading = smartLoading && !sd;
@@ -1676,16 +1675,10 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
         );
       })()}
 
-      {/* All View — Company list for selected day (existing logic, unchanged) */}
-      {viewMode === "all" && displayEntries.length === 0 ? (
-        <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
-          <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
-          <p className="text-sm text-white/25">No earnings calls scheduled</p>
-          <p className="text-[10px] text-white/15 mt-1">Try another day or navigate to a different week</p>
-        </div>
-      ) : viewMode === "all" && (
+      {/* [Old All View removed — replaced by day-clean rendering above] */}
+      {(false as boolean) && (
         <div className="space-y-2">
-          {visibleEntries.map((e) => {
+          {([] as EarningsEntry[]).map((e) => {
             const isHigh = e.beatPct >= 60;
             const isLow = e.beatPct <= 40;
             const enrich = enrichments[e.ticker];
