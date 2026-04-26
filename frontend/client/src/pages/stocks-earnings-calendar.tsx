@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, AlertCircle } from "lucide-react";
 
 // ─── DATA FLOW AUDIT (March 2026) ─────────────────────────────
 //
@@ -2133,9 +2133,333 @@ function EarningsAgent({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Catalyst Calendar — Types & Constants ────────────────────────
+
+interface CatalystEvent {
+  id?: string;
+  date: string;
+  symbol?: string;
+  company?: string;
+  event_name?: string;
+  event_type: string;
+  importance?: "high" | "medium" | "low";
+  sector?: string;
+  market_cap?: number;
+  details?: Record<string, unknown>;
+  // dividend fields
+  dividend_amount?: number;
+  dividend_yield?: number;
+  ex_date?: string;
+  pay_date?: string;
+  // ipo fields
+  ipo_price_range?: string;
+  ipo_shares?: number;
+  // split fields
+  split_ratio?: string;
+  // macro fields
+  previous?: number;
+  estimate?: number;
+  actual?: number;
+  currency?: string;
+  country?: string;
+  // filing / analyst
+  filing_type?: string;
+  filing_url?: string;
+  analyst_firm?: string;
+  rating_from?: string;
+  rating_to?: string;
+  price_target?: number;
+  // insider
+  insider_name?: string;
+  transaction_type?: string;
+  shares?: number;
+  value?: number;
+}
+
+const CATALYST_TABS: { key: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: "earnings_dates",     label: "Earnings Dates",     icon: CalendarDays   },
+  { key: "dividends",          label: "Dividends",          icon: DollarSign     },
+  { key: "ipos",               label: "IPOs",               icon: TrendingUp     },
+  { key: "splits",             label: "Stock Splits",       icon: Scissors       },
+  { key: "economic_releases",  label: "Economic Releases",  icon: BarChart2      },
+  { key: "treasury_macro",     label: "Treasury / Macro",   icon: Landmark       },
+];
+
+const EVENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  earnings:          { bg: "rgba(245,158,11,0.15)",  text: "#fbbf24", border: "rgba(245,158,11,0.3)"  },
+  dividend:          { bg: "rgba(16,185,129,0.15)",  text: "#34d399", border: "rgba(16,185,129,0.3)"  },
+  ipo:               { bg: "rgba(139,92,246,0.15)",  text: "#a78bfa", border: "rgba(139,92,246,0.3)"  },
+  split:             { bg: "rgba(59,130,246,0.15)",  text: "#60a5fa", border: "rgba(59,130,246,0.3)"  },
+  economic_release:  { bg: "rgba(249,115,22,0.15)",  text: "#fb923c", border: "rgba(249,115,22,0.3)"  },
+  macro:             { bg: "rgba(236,72,153,0.15)",  text: "#f472b6", border: "rgba(236,72,153,0.3)"  },
+  sec_filing:        { bg: "rgba(239,68,68,0.15)",   text: "#f87171", border: "rgba(239,68,68,0.3)"   },
+  analyst:           { bg: "rgba(14,165,233,0.15)",  text: "#38bdf8", border: "rgba(14,165,233,0.3)"  },
+  insider:           { bg: "rgba(168,85,247,0.15)",  text: "#c084fc", border: "rgba(168,85,247,0.3)"  },
+};
+
+const IMPORTANCE_COLORS: Record<string, { bg: string; text: string }> = {
+  high:   { bg: "rgba(239,68,68,0.15)",   text: "#f87171" },
+  medium: { bg: "rgba(245,158,11,0.15)", text: "#fbbf24" },
+  low:    { bg: "rgba(255,255,255,0.06)", text: "rgba(255,255,255,0.4)" },
+};
+
+function EventTypeBadge({ type }: { type: string }) {
+  const t = type?.toLowerCase().replace(/ /g, "_") || "macro";
+  const c = EVENT_TYPE_COLORS[t] || EVENT_TYPE_COLORS.macro;
+  const label = type?.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase()) || "Event";
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
+      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}>
+      {label}
+    </span>
+  );
+}
+
+function ImportanceBadge({ importance }: { importance?: string }) {
+  const imp = importance || "low";
+  const c = IMPORTANCE_COLORS[imp] || IMPORTANCE_COLORS.low;
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
+      style={{ background: c.bg, color: c.text }}>
+      {imp.charAt(0).toUpperCase() + imp.slice(1)}
+    </span>
+  );
+}
+
+// ─── Catalyst Detail Modal ────────────────────────────────────────
+
+function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const rows: [string, string][] = [];
+  if (event.date) rows.push(["Date", event.date]);
+  if (event.symbol) rows.push(["Symbol", event.symbol]);
+  if (event.company) rows.push(["Company", event.company]);
+  if (event.sector) rows.push(["Sector", event.sector]);
+  if (event.market_cap) rows.push(["Market Cap", formatMktCap(event.market_cap)]);
+  if (event.ex_date) rows.push(["Ex-Date", event.ex_date]);
+  if (event.pay_date) rows.push(["Pay Date", event.pay_date]);
+  if (event.dividend_amount != null) rows.push(["Dividend Amount", `$${event.dividend_amount.toFixed(4)}`]);
+  if (event.dividend_yield != null) rows.push(["Dividend Yield", `${(event.dividend_yield * 100).toFixed(2)}%`]);
+  if (event.ipo_price_range) rows.push(["Price Range", event.ipo_price_range]);
+  if (event.split_ratio) rows.push(["Split Ratio", event.split_ratio]);
+  if (event.previous != null) rows.push(["Previous", String(event.previous)]);
+  if (event.estimate != null) rows.push(["Estimate", String(event.estimate)]);
+  if (event.actual != null) rows.push(["Actual", String(event.actual)]);
+  if (event.analyst_firm) rows.push(["Analyst Firm", event.analyst_firm]);
+  if (event.rating_from && event.rating_to) rows.push(["Rating Change", `${event.rating_from} → ${event.rating_to}`]);
+  if (event.price_target != null) rows.push(["Price Target", `$${event.price_target}`]);
+  if (event.insider_name) rows.push(["Insider", event.insider_name]);
+  if (event.transaction_type) rows.push(["Transaction", event.transaction_type]);
+  if (event.shares != null) rows.push(["Shares", event.shares.toLocaleString()]);
+  if (event.value != null) rows.push(["Value", formatMktCap(event.value)]);
+  if (event.country) rows.push(["Country", event.country]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg rounded-2xl overflow-hidden flex flex-col" style={{ background: "#0c0c0f", border: "1px solid rgba(255,255,255,0.08)", maxHeight: "80vh" }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-white/[0.06] flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <EventTypeBadge type={event.event_type} />
+              <ImportanceBadge importance={event.importance} />
+            </div>
+            <h2 className="text-base font-bold text-white">{event.event_name || event.company || event.symbol || "Catalyst Event"}</h2>
+            {event.symbol && event.event_name && (
+              <p className="text-xs text-white/40 mt-0.5">{event.symbol} · {event.date}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all ml-3 flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Details */}
+        <div className="px-5 py-4 overflow-y-auto">
+          <div className="space-y-2">
+            {rows.map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between py-1.5 border-b border-white/[0.04]">
+                <span className="text-xs text-white/40">{label}</span>
+                <span className="text-xs text-white/80 font-medium">{value}</span>
+              </div>
+            ))}
+          </div>
+          {event.filing_url && (
+            <a href={event.filing_url} target="_blank" rel="noopener noreferrer"
+              className="mt-4 flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              <ExternalLink className="w-3 h-3" />
+              View Filing
+            </a>
+          )}
+          {event.details && Object.keys(event.details).length > 0 && (
+            <details className="mt-4">
+              <summary className="text-[10px] text-white/30 cursor-pointer hover:text-white/50 transition-colors">View raw data</summary>
+              <pre className="mt-2 text-[10px] text-white/30 bg-white/[0.02] rounded-lg p-3 overflow-x-auto">{JSON.stringify(event.details, null, 2)}</pre>
+            </details>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generic Catalyst Tab ────────────────────────────────────────
+
+function CatalystTab({
+  tabKey,
+  scope,
+  search,
+  dateRange,
+}: {
+  tabKey: string;
+  scope: string;
+  search: string;
+  dateRange: string;
+}) {
+  const [events, setEvents] = useState<CatalystEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [partial, setPartial] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ tab: tabKey, scope, date_range: dateRange });
+    if (search.trim()) params.set("search", search.trim());
+    fetch(`/api/catalysts/events?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.error) {
+          setError("Catalyst data temporarily unavailable.");
+          setEvents([]);
+        } else {
+          setEvents(data.events || data.results || data || []);
+          setPartial(!!data.partial);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load catalyst data.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [tabKey, scope, search, dateRange, refreshKey]);
+
+  const skeletonRows = Array.from({ length: 6 });
+
+  return (
+    <div>
+      {/* Refresh + partial warning */}
+      <div className="flex items-center justify-between mb-3">
+        {partial && (
+          <div className="flex items-center gap-1.5 text-[10px] text-yellow-400/70">
+            <AlertCircle className="w-3 h-3" />
+            Some catalyst sources are temporarily unavailable.
+          </div>
+        )}
+        {!partial && <div />}
+        <button
+          onClick={() => setRefreshKey((k) => k + 1)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 700 }}>
+          <thead>
+            <tr style={{ backgroundColor: "#111827" }} className="border-b border-white/10">
+              {["Date", "Symbol", "Company / Event", "Event Type", "Importance", "Sector", "Market Cap"].map((h) => (
+                <th key={h} className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && skeletonRows.map((_, i) => (
+              <tr key={i} className="border-b border-white/5">
+                {Array.from({ length: 7 }).map((_, j) => (
+                  <td key={j} className="py-2.5 px-3">
+                    <div className="h-3 rounded bg-white/5 animate-pulse" style={{ width: j === 2 ? "80%" : j === 0 ? "60%" : "50%" }} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {!loading && error && (
+              <tr>
+                <td colSpan={7} className="py-10 text-center text-white/30 text-xs">
+                  <AlertCircle className="w-5 h-5 mx-auto mb-2 text-white/20" />
+                  {error}
+                </td>
+              </tr>
+            )}
+            {!loading && !error && events.length === 0 && (
+              <tr>
+                <td colSpan={7} className="py-10 text-center text-white/30 text-xs">
+                  No catalysts found for this filter / date range.
+                </td>
+              </tr>
+            )}
+            {!loading && !error && events.map((ev, i) => {
+              const sym = ev.symbol || "Macro";
+              const name = ev.company || ev.event_name || "—";
+              const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent";
+              return (
+                <tr
+                  key={ev.id || i}
+                  className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  style={{ backgroundColor: rowBg }}
+                  onClick={() => setSelectedEvent(ev)}
+                >
+                  <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">{ev.date}</td>
+                  <td className="py-2.5 px-3">
+                    {ev.symbol ? (
+                      <span className="font-bold text-white/90">{ev.symbol}</span>
+                    ) : (
+                      <span className="text-white/30 italic text-[10px]">Macro</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-white/70 max-w-[220px] truncate">{name}</td>
+                  <td className="py-2.5 px-3"><EventTypeBadge type={ev.event_type} /></td>
+                  <td className="py-2.5 px-3"><ImportanceBadge importance={ev.importance} /></td>
+                  <td className="py-2.5 px-3 text-white/40">{ev.sector || "—"}</td>
+                  <td className="py-2.5 px-3 text-white/40">{ev.market_cap ? formatMktCap(ev.market_cap) : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedEvent && (
+        <CatalystDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
+  // ── Tab state ────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<string>("earnings_dates");
+
+  // ── Filter state (shared across non-earnings tabs) ───────────────
+  const [scope, setScope]       = useState<string>("all");
+  const [search, setSearch]     = useState<string>("");
+  const [dateRange, setDateRange] = useState<string>("this_week");
+
+  // ── Earnings tab state (unchanged) ──────────────────────────────
   const [earningsMarkets, setEarningsMarkets] = useState<ParsedMarket[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(true);
 
@@ -2158,33 +2482,144 @@ export default function StocksEarningsCalendarPage() {
     return () => clearInterval(iv);
   }, [fetchEarnings]);
 
+  const isEarningsTab = activeTab === "earnings_dates";
+
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GlassCard className="p-5 w-full">
-          {earningsLoading && earningsMarkets.length === 0 ? (
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <CalendarDays className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    Earnings Calendar
-                    <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
-                  </h3>
-                  <p className="text-[10px] text-white/30 leading-tight">Complete earnings calendar with Polymarket predictions &amp; Finnhub fundamentals</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[200px] rounded-xl" />
+
+          {/* ── Page header ─────────────────────────────────────── */}
+          <div className="flex items-start gap-4 mb-5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316, #ef4444)" }}>
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-white leading-tight">Catalyst Calendar</h1>
+              <p className="text-[11px] text-white/35 mt-0.5 leading-snug">
+                Track earnings, dividends, IPOs, splits, macro releases, SEC filings, analyst changes, and insider activity in one place.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Tab bar ─────────────────────────────────────────── */}
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-4 pb-1">
+            {CATALYST_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                  style={active ? {
+                    background: "rgba(245,158,11,0.15)",
+                    border: "1px solid rgba(245,158,11,0.3)",
+                    color: "#fbbf24",
+                  } : {
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Filter bar (non-earnings tabs only) ─────────────── */}
+          {!isEarningsTab && (
+            <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+              {/* Scope */}
+              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
+                {["all", "watchlist", "portfolio"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setScope(s)}
+                    className="px-3 py-1.5 transition-all capitalize"
+                    style={scope === s ? { background: "rgba(245,158,11,0.2)", color: "#fbbf24" } : { color: "rgba(255,255,255,0.4)" }}
+                  >
+                    {s}
+                  </button>
                 ))}
               </div>
+
+              {/* Date range */}
+              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
+                {[
+                  { k: "today",      l: "Today"    },
+                  { k: "this_week",  l: "This Week" },
+                  { k: "next_week",  l: "Next Week" },
+                  { k: "this_month", l: "This Month" },
+                ].map(({ k, l }) => (
+                  <button
+                    key={k}
+                    onClick={() => setDateRange(k)}
+                    className="px-3 py-1.5 transition-all"
+                    style={dateRange === k ? { background: "rgba(59,130,246,0.2)", color: "#60a5fa" } : { color: "rgba(255,255,255,0.4)" }}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div className="flex items-center gap-2 flex-1 min-w-[160px] max-w-[240px] bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5">
+                <Search className="w-3 h-3 text-white/30 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search ticker..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-transparent text-[11px] text-white placeholder-white/25 outline-none w-full"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="text-white/30 hover:text-white/60 flex-shrink-0">
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <EarningsCalendarWidget markets={earningsMarkets} />
           )}
+
+          {/* ── Tab content ─────────────────────────────────────── */}
+          {isEarningsTab ? (
+            earningsLoading && earningsMarkets.length === 0 ? (
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CalendarDays className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      Earnings Dates
+                      <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
+                    </h3>
+                    <p className="text-[10px] text-white/30">Polymarket predictions &amp; Finnhub fundamentals</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-[200px] rounded-xl" />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <EarningsCalendarWidget markets={earningsMarkets} />
+            )
+          ) : (
+            <CatalystTab
+              key={activeTab}
+              tabKey={activeTab}
+              scope={scope}
+              search={search}
+              dateRange={dateRange}
+            />
+          )}
+
         </GlassCard>
       </main>
     </div>

@@ -1,0 +1,169 @@
+We are renaming/reframing the existing “Earnings” page into “Catalyst Calendar” while preserving the current working earnings functionality.
+
+IMPORTANT GUARDRAIL:
+Do NOT break, remove, rewrite, or degrade the current Earnings page behavior:
+- Current earnings display
+- Current earnings stock click behavior
+- Current custom popup/modal
+- Existing earnings detail logic
+That works and must stay intact.
+
+Goal:
+Update the page UI so the Earnings page becomes a broader “Catalyst Calendar” page with tabs. The existing earnings tab/popup behavior should remain, but we are adding more event tabs powered by new backend catalyst endpoints.
+
+Backend endpoints expected:
+- GET /api/catalysts/overview
+- GET /api/catalysts/events
+- GET /api/catalysts/filters
+- Optional: GET /api/catalysts/by-symbol/{symbol}
+
+Page title:
+Change visible page title from “Earnings” to:
+“Catalyst Calendar”
+
+Subtitle:
+“Track earnings, dividends, IPOs, splits, macro releases, SEC filings, analyst changes, and insider activity in one place.”
+
+Tabs to add:
+Primary upcoming tabs:
+1. Earnings Dates
+2. Dividends
+3. IPOs
+4. Stock Splits
+5. Economic Releases
+6. Treasury / Macro
+
+Optional secondary/recent tabs, if layout allows cleanly:
+7. Recent Earnings
+8. SEC Filings
+9. Analyst Ratings
+10. Insider Transactions
+
+If too many tabs clutter the UI, use two grouped sections:
+- Upcoming Catalysts
+- Recent Catalysts
+
+But the user specifically asked for the new Catalyst Calendar page tabs to include:
+- Earnings dates
+- Dividend dates
+- IPO calendar
+- Stock split calendar
+- Economic releases
+- Treasury rate updates / macro events
+
+So those six must be present as tabs.
+
+Design requirements:
+1. Keep the current premium dashboard look.
+2. Use tabbed navigation at the top of the page.
+3. Add filter bar under the tabs:
+   - Scope: All / Watchlist / Portfolio
+   - Sector dropdown
+   - Market cap dropdown
+   - Event type dropdown
+   - Date range picker or quick ranges
+   - Search ticker input
+   - Refresh button
+4. Add event list/table/calendar hybrid.
+   Default display should be a list/table because it is more information-dense.
+   Optional toggle:
+   - List View
+   - Calendar View
+
+Event table columns:
+- Date
+- Symbol
+- Company / Event
+- Event Type
+- Importance
+- Sector
+- Market Cap
+- Details
+
+For macro events where there is no ticker:
+- Symbol column should show “Macro”
+- Company/Event should show event name
+- Sector/Market cap can show “—”
+
+5. Event cards/list rows:
+Use visual badges:
+- Earnings
+- Dividend
+- IPO
+- Split
+- Macro
+- SEC Filing
+- Analyst
+- Insider
+
+Importance badge:
+- High
+- Medium
+- Low
+
+6. Preserve existing earnings popup:
+For Earnings Dates tab:
+- If clicking a stock currently opens the custom earnings popup, keep using that existing behavior.
+- Do not replace it with a generic catalyst modal unless the existing behavior is unavailable.
+- For non-earnings tabs, use a simple Catalyst Detail modal.
+
+7. Catalyst Detail modal for non-earnings events:
+Show:
+- Event title
+- Symbol/company if applicable
+- Date/time
+- Event type
+- Source: FMP
+- Key fields depending on event type
+- Raw details collapsed under “View raw data”
+- Filing link for SEC filings if available
+
+8. Watchlist / Portfolio filters:
+If frontend already has access to watchlist and portfolio tickers, pass them to backend through:
+symbols=AAPL,NVDA,...
+and scope=watchlist or scope=portfolio.
+
+If backend already exposes watchlist/portfolio symbols, use /api/catalysts/filters.
+
+9. Loading states:
+- Show skeleton rows while loading
+- Show per-tab empty state:
+  “No catalysts found for this filter/date range.”
+- Show partial warning if backend status is partial:
+  “Some catalyst sources are temporarily unavailable.”
+
+10. Do not fire all tabs unnecessarily on every tab switch.
+Preferred:
+- Initial page load calls /api/catalysts/overview for counts + first tab preview
+- When user opens a tab, call /api/catalysts/events?tab={tab}
+- Cache frontend tab responses in React Query or existing fetch/cache pattern
+- Refetch only when filters/date range change or user clicks refresh
+
+11. Suggested tab keys:
+- earnings_dates
+- dividends
+- ipos
+- splits
+- economic_releases
+- treasury_macro
+- recent_earnings
+- sec_filings
+- analyst_ratings
+- insider_transactions
+
+12. Keep existing route if possible:
+If current page route is /earnings, keep it working.
+Only change displayed nav/page name to “Catalyst Calendar.”
+Do not break bookmarks/routing.
+
+13. Navigation:
+Change sidebar/nav label from “Earnings” to “Catalyst Calendar.”
+Do not remove the page.
+
+14. Final response:
+Tell me:
+- Which files were changed
+- Which UI components were added
+- Whether existing earnings popup behavior was preserved
+- Which tabs are live
+- Any backend field assumptions made

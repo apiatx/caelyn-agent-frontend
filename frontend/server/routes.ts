@@ -3522,5 +3522,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Catalyst Calendar endpoints ──────────────────────────────────────────────
+
+  app.get('/api/catalysts/overview', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const r = await fetch(`${FC_URL}/api/catalysts/overview`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/catalysts/events', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${FC_URL}/api/catalysts/events${qs ? '?' + qs : ''}`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/catalysts/filters', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(`${FC_URL}/api/catalysts/filters`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/catalysts/by-symbol/:symbol', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const { symbol } = req.params;
+      const r = await fetch(`${FC_URL}/api/catalysts/by-symbol/${encodeURIComponent(symbol)}`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
   return httpServer;
 }
