@@ -4,44 +4,21 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, AlertCircle } from "lucide-react";
 
-// ─── DATA FLOW AUDIT (March 2026) ─────────────────────────────
+// ─── DATA FLOW (Catalyst Calendar) ────────────────────────────
 //
 // API CALLS ON PAGE LOAD:
-//   1. Polymarket Gamma API (free, no key) — fetch 50 earnings events
-//   2. Finnhub /earnings_calendar (free tier, included in API key) — current week
-//   Both are lightweight list calls, no per-ticker enrichment.
+//   1. Polymarket Gamma API — fetch 50 earnings markets (popup enrichment only)
+//   2. /api/catalysts/events?tab=earnings_dates&mode=upcoming — FMP earnings calendar
 //
-// API CALLS ON SCROLL:
-//   None. The entry list is paginated in batches of 15 (render-only, no API calls).
+// API CALLS ON TAB CHANGE:
+//   /api/catalysts/events?tab={tab}&... — all tabs (FMP data via backend proxy)
 //
 // API CALLS ON CLICK (per-ticker detail):
-//   1. Finnhub company_profile (24hr cache) — name, sector, market_cap, logo
-//   2. Finnhub earnings_surprises (1hr cache) — past 4 quarters beat/miss
-//   3. Finnhub earnings_calendar per-ticker (no cache) — upcoming dates
-//   4. Finnhub recommendation_trends (10min cache) — analyst buy/hold/sell
-//   5. Finnhub quote (1min cache) — current price
-//   6. Finnhub company_news (no cache) — recent articles
-//   7. SEC EDGAR XBRL (free, 6hr cache) — revenue, financials
-//   Total: ~7 Finnhub calls + 1-2 EDGAR calls per click (all free tier).
+//   /api/earnings/detail?ticker={ticker} — enriched detail (price, history, news)
 //
-// PERPLEXITY / LLM CALLS:
-//   NONE. Zero Perplexity, zero LLM calls anywhere in this flow.
-//   News sentiment is a simple keyword heuristic (backend lines 713-719).
-//   news_summary field exists but is always empty string — no LLM generates it.
-//
-// RATE LIMITS:
-//   /api/earnings/calendar: 10/minute (slowapi)
-//   /api/earnings/detail:   30/minute (slowapi)
-//   Finnhub free tier: 60 calls/minute (shared across all endpoints)
-//   SEC EDGAR: Token bucket 2 req/sec, circuit breaker on 429
-//
-// CACHING (backend in-memory TTL):
-//   Calendar response: 5 min
-//   Detail response:   10 min
-//   Company profile:   24 hr
-//   Earnings history:  1 hr
-//   EDGAR financials:  6 hr
-//   EDGAR CIK map:     7 days
+// DATA SOURCE: FMP only for Catalyst Calendar main views.
+// Polymarket = popup enrichment / beat-odds overlay only.
+// Finnhub = NOT used on Catalyst Calendar.
 // ───────────────────────────────────────────────────────────────
 
 // ─── Constants ────────────────────────────────────────────────────
@@ -108,29 +85,19 @@ interface ParsedMarket {
   endDate?: string;
 }
 
-interface FinnhubEarning {
-  ticker: string;
-  date: string;
-  eps_estimate: number | null;
-  eps_actual: number | null;
-  revenue_estimate: number | null;
-  revenue_actual: number | null;
-  hour: string;  // "bmo", "amc", or ""
-  quarter: number | null;
-  year: number | null;
-}
-
 interface EarningsEntry {
   market: ParsedMarket | null;
   ticker: string;
   company: string;
+  companyName?: string;
+  logo?: string;
   eps: string | null;
   quarter: string | null;
   time: string | null;
   exchange: string | null;
   beatPct: number;
   revenueEstimate: string | null;
-  source: "polymarket" | "finnhub" | "both";
+  source: "polymarket" | "fmp" | "both";
   earningsDate: string | null;
 }
 
@@ -303,25 +270,35 @@ function buildEntry(m: ParsedMarket): EarningsEntry {
   };
 }
 
-function buildFinnhubEntry(e: FinnhubEarning): EarningsEntry {
-  const hour = e.hour === "bmo" ? "Pre-Market" : e.hour === "amc" ? "After Hours" : null;
-  const qtr = e.quarter && e.year ? `Q${e.quarter} ${e.year}` : e.quarter ? `Q${e.quarter}` : null;
-  const epsStr = e.eps_estimate != null ? `$${e.eps_estimate.toFixed(2)}` : null;
-  const revStr = e.revenue_estimate != null
-    ? (e.revenue_estimate >= 1e9 ? `$${(e.revenue_estimate / 1e9).toFixed(1)}B` : e.revenue_estimate >= 1e6 ? `$${(e.revenue_estimate / 1e6).toFixed(0)}M` : `$${e.revenue_estimate.toLocaleString()}`)
+function buildFmpEntry(ev: Record<string, unknown>): EarningsEntry {
+  const sym = (ev.symbol || ev.ticker || "") as string;
+  const rawEps = ev.epsEstimated ?? ev.eps_estimate ?? ev.epsEstimate;
+  const rawRev = ev.revenueEstimated ?? ev.revenue_estimate ?? ev.revenueEstimate;
+  const epsStr = rawEps != null ? `$${Number(rawEps).toFixed(2)}` : null;
+  const revNum = rawRev != null ? Number(rawRev) : null;
+  const revStr = revNum != null && !isNaN(revNum)
+    ? (revNum >= 1e9 ? `$${(revNum / 1e9).toFixed(1)}B` : revNum >= 1e6 ? `$${(revNum / 1e6).toFixed(0)}M` : `$${revNum.toLocaleString()}`)
     : null;
+  const rawTime = (ev.time || ev.hour || "") as string;
+  const timeStr = rawTime === "bmo" ? "Pre-Market" : rawTime === "amc" ? "After Hours" : null;
+  const period = (ev.period || ev.quarter || null) as string | null;
+  const cName = (ev.companyName || ev.company_name || ev.company || ev.name ||
+    (ev.title ? (ev.title as string).replace(/\s+Earnings.*$/i, "").trim() : null) || sym) as string;
+  const logoUrl = (ev.logo || ev.image || null) as string | null;
   return {
     market: null,
-    ticker: e.ticker,
-    company: e.ticker,  // Will be enriched later
+    ticker: sym,
+    company: cName,
+    companyName: cName,
+    logo: logoUrl ?? undefined,
     eps: epsStr,
-    quarter: qtr,
-    time: hour,
+    quarter: period,
+    time: timeStr,
     exchange: null,
-    beatPct: -1,  // -1 = no Polymarket data
+    beatPct: -1,
     revenueEstimate: revStr,
-    source: "finnhub",
-    earningsDate: e.date,
+    source: "fmp",
+    earningsDate: (ev.date || null) as string | null,
   };
 }
 
@@ -444,21 +421,6 @@ async function fetchPolymarketByTag(tagSlug: string): Promise<PolyEvent[] | null
   return null;
 }
 
-async function fetchFinnhubCalendar(fromDate: string, toDate: string): Promise<FinnhubEarning[]> {
-  try {
-    const res = await fetch(
-      `${AGENT_BACKEND_URL}/api/earnings/calendar?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`,
-      { headers: authHeaders() }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      return data.earnings || [];
-    }
-  } catch (e) {
-    console.warn("[FINNHUB_CALENDAR] fetch failed:", e);
-  }
-  return [];
-}
 
 async function fetchSmartEarnings(date: string): Promise<SmartDayData | null> {
   try {
@@ -930,7 +892,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
           <div className="px-6 py-4 border-b border-white/[0.06]">
             <div className="flex items-center justify-center py-4 gap-2">
               <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-              <span className="text-xs text-white/40">Loading earnings data from Finnhub...</span>
+              <span className="text-xs text-white/40">Loading earnings data...</span>
             </div>
           </div>
         )}
@@ -978,7 +940,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
 
         {/* Footer */}
         <div className="px-6 py-4 flex items-center justify-between">
-          <span className="text-[9px] text-white/20">{entry.source === "polymarket" || entry.source === "both" ? "Polymarket + Finnhub" : "Finnhub"}</span>
+          <span className="text-[9px] text-white/20">{entry.source === "both" ? "Polymarket + FMP" : entry.source === "polymarket" ? "Polymarket" : "FMP"}</span>
           {entry.market && (
           <a
             href={`https://polymarket.com/event/${entry.market.eventSlug}`}
@@ -1008,9 +970,9 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const [enrichments, setEnrichments] = useState<Record<string, EarningsDetailData>>({});
   const [enrichLoading, setEnrichLoading] = useState<Set<string>>(new Set());
-  const [finnhubEntries, setFinnhubEntries] = useState<Map<string, EarningsEntry[]>>(new Map());
-  const [finnhubLoading, setFinnhubLoading] = useState(false);
-  const finnhubFetchedWeeks = useRef<Set<string>>(new Set());
+  const [fmpEntries, setFmpEntries] = useState<Map<string, EarningsEntry[]>>(new Map());
+  const [fmpLoading, setFmpLoading] = useState(false);
+  const fmpFetchedWeeks = useRef<Set<string>>(new Set());
 
   // Smart View state
   const [viewMode, setViewMode] = useState<"smart" | "all">("all");
@@ -1036,36 +998,53 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     undated.push(entry);
   }
 
-  // Fetch Finnhub calendar for current week
+  // Fetch FMP earnings calendar for current week via /api/catalysts/events
   useEffect(() => {
     const weekKey = dateKey(weekStart);
-    if (finnhubFetchedWeeks.current.has(weekKey)) return;
-    finnhubFetchedWeeks.current.add(weekKey);
-    setFinnhubLoading(true);
+    if (fmpFetchedWeeks.current.has(weekKey)) return;
+    fmpFetchedWeeks.current.add(weekKey);
+    setFmpLoading(true);
 
     const sunday = weekStart;
     const saturday = addDays(sunday, 6);
     const fromStr = dateKey(sunday);
     const toStr = dateKey(saturday);
 
-    fetchFinnhubCalendar(fromStr, toStr).then((earnings) => {
-      const map = new Map<string, EarningsEntry[]>();
-      for (const e of earnings) {
-        if (!e.date || !e.ticker) continue;
-        const key = e.date;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(buildFinnhubEntry(e));
-      }
-      setFinnhubEntries(prev => {
-        const merged = new Map(prev);
-        for (const [k, v] of map) {
-          merged.set(k, v);
+    const params = new URLSearchParams({
+      tab: "earnings_dates",
+      mode: "upcoming",
+      from: fromStr,
+      to: toStr,
+    });
+
+    fetch(`/api/catalysts/events?${params}`)
+      .then(r => r.json())
+      .then((data) => {
+        const arr: Record<string, unknown>[] = Array.isArray(data) ? data : (data.events || data.results || []);
+        // Filter out pure Polymarket question rows
+        const valid = arr.filter(ev =>
+          (ev.symbol || ev.ticker) &&
+          (ev.symbol as string || ev.ticker as string) !== "???" &&
+          !/^Will\s/i.test((ev.title || ev.company || ev.companyName || "") as string)
+        );
+        const map = new Map<string, EarningsEntry[]>();
+        for (const ev of valid) {
+          const d = (ev.date || "") as string;
+          if (!d) continue;
+          const key = d.slice(0, 10);
+          if (!map.has(key)) map.set(key, []);
+          map.get(key)!.push(buildFmpEntry(ev));
         }
-        return merged;
-      });
-      const allTickers = earnings.filter(e => e.ticker).map(e => e.ticker);
-      if (allTickers.length > 0) onFetchIdentity(allTickers);
-    }).catch(() => {}).finally(() => setFinnhubLoading(false));
+        setFmpEntries(prev => {
+          const merged = new Map(prev);
+          for (const [k, v] of map) merged.set(k, v);
+          return merged;
+        });
+        const allTickers = valid.map(ev => (ev.symbol || ev.ticker || "") as string).filter(Boolean);
+        if (allTickers.length > 0) onFetchIdentity(allTickers);
+      })
+      .catch(() => {})
+      .finally(() => setFmpLoading(false));
   }, [weekStart]);
 
   // Fetch smart (Tier 2) data for the selected day
@@ -1115,20 +1094,20 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     }
   }
 
-  // Merge: Finnhub entries are the source of truth; enrich with Polymarket beat odds
+  // Merge: FMP entries are the source of truth; enrich with Polymarket beat odds
   const dateMap = new Map<string, EarningsEntry[]>();
-  for (const [key, fhEntries] of finnhubEntries) {
-    const enriched = fhEntries.map(fhEntry => {
-      const poly = polyBeatMap.get(fhEntry.ticker.toUpperCase());
+  for (const [key, fmpDayEntries] of fmpEntries) {
+    const enriched = fmpDayEntries.map(fmpEntry => {
+      const poly = polyBeatMap.get(fmpEntry.ticker.toUpperCase());
       if (poly) {
         return {
-          ...fhEntry,
+          ...fmpEntry,
           beatPct: poly.beatPct,
           market: poly.market,
           source: "both" as const,
         };
       }
-      return fhEntry;
+      return fmpEntry;
     });
     dateMap.set(key, enriched);
   }
@@ -1243,7 +1222,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
       <div className="flex items-center justify-between mb-4">
         <p className="text-[11px] text-white/40">
           {weekMonth} {weekYear} &middot; {totalThisWeek} earnings call{totalThisWeek !== 1 ? "s" : ""} this week
-          {finnhubLoading && <Loader2 className="w-2.5 h-2.5 animate-spin inline ml-1.5 text-blue-400/50" />}
+          {fmpLoading && <Loader2 className="w-2.5 h-2.5 animate-spin inline ml-1.5 text-blue-400/50" />}
         </p>
         <div className="flex items-center gap-1">
           <button
@@ -1435,8 +1414,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                       onClick={() => handleEntryClick(e)}
                     >
                       <div className="flex items-center gap-4 p-4">
-                        {(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
-                          <img src={(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                        {(enrich?.logo || e.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
+                          <img src={(enrich?.logo || e.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0" onError={ev => { ev.currentTarget.style.display = "none"; }} />
                         ) : (
                           <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0`}>
                             <span className="text-xs font-bold text-white">{e.ticker.slice(0, 2)}</span>
@@ -1445,7 +1424,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                              {enrich?.company_name || identityMap[e.ticker.toUpperCase()]?.name || e.company}
+                              {enrich?.company_name || e.companyName || identityMap[e.ticker.toUpperCase()]?.name || e.company}
                             </p>
                             <span className="text-[11px] font-mono text-white/40">{e.ticker}</span>
                             {e.quarter && <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400/70">{e.quarter}</span>}
@@ -1528,7 +1507,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                             exchange: null,
                             beatPct: -1,
                             revenueEstimate: revStr,
-                            source: "finnhub",
+                            source: "fmp",
                             earningsDate: st.date,
                           };
                           setModalEntry(entry);
@@ -1722,8 +1701,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                 onClick={() => handleEntryClick(e)}
               >
                 <div className="flex items-start gap-4 p-4">
-                  {(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
-                    <img src={(enrich?.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                  {(enrich?.logo || e.logo || identityMap[e.ticker.toUpperCase()]?.logo) ? (
+                    <img src={(enrich?.logo || e.logo || identityMap[e.ticker.toUpperCase()]?.logo)!} alt={e.ticker} className="w-10 h-10 rounded-xl object-contain bg-white/5 p-1 flex-shrink-0 mt-0.5" onError={ev => { ev.currentTarget.style.display = "none"; }} />
                   ) : (
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                       <span className="text-xs font-bold text-white">{e.ticker.slice(0, 2)}</span>
@@ -1734,7 +1713,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                          {enrich?.company_name || identityMap[e.ticker.toUpperCase()]?.name || e.company}
+                          {enrich?.company_name || e.companyName || identityMap[e.ticker.toUpperCase()]?.name || e.company}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-[11px] font-mono text-white/40">{e.ticker}</span>
@@ -1786,7 +1765,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                         </div>
                         ) : (
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-                          <span className="text-[9px] text-white/30 font-semibold">Finnhub</span>
+                          <span className="text-[9px] text-white/30 font-semibold">FMP</span>
                         </div>
                         )}
                       </div>

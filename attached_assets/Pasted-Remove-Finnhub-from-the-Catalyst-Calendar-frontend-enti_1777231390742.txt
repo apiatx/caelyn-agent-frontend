@@ -1,0 +1,189 @@
+Remove Finnhub from the Catalyst Calendar frontend entirely.
+
+Reason:
+The current Earnings Dates > Upcoming calendar still uses fetchFinnhubCalendar / legacy Finnhub data, while Recent uses /api/catalysts/events and works correctly. This split data path is causing company names/logos to fail and making the page impossible to stabilize.
+
+IMPORTANT:
+This applies to Catalyst Calendar only.
+Do NOT remove Finnhub globally from unrelated pages.
+Do NOT break the existing earnings popup/modal.
+Do NOT remove Polymarket from clicked-stock popup enrichment.
+Do NOT show Polymarket rows in the main Earnings calendar.
+
+Final architecture:
+Catalyst Calendar frontend must use only:
+GET /api/catalysts/events
+
+For every tab:
+- Earnings Dates
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Remove/bypass from Catalyst Calendar:
+- fetchFinnhubCalendar
+- buildFinnhubEntry
+- Finnhub calendar fetches
+- legacy external backend earnings calendar call
+- /api/earnings/calendar if it feeds Finnhub calendar rows
+- /api/fmp/company-identity as a required patch for the main calendar
+
+Important:
+The `/api/fmp/company-identity` workaround should no longer be needed for Catalyst Calendar main rendering, because `/api/catalysts/events` must already return companyName/logo/image.
+
+It may remain in the codebase if used elsewhere, but Catalyst Calendar should not depend on it.
+
+Required frontend behavior:
+
+1. Earnings Dates > Upcoming
+Fetch:
+GET /api/catalysts/events?tab=earnings_dates&mode=upcoming
+
+Render the existing calendar UI from those FMP Catalyst events.
+
+You may map CatalystEvent into the existing calendar UI shape, but preserve:
+- symbol
+- companyName
+- logo
+- image
+- title
+- date
+- time
+- period
+- epsEstimated
+- revenueEstimated
+- source
+
+Mapping example:
+const entry = {
+  ticker: event.symbol,
+  symbol: event.symbol,
+  companyName: event.companyName || event.title?.replace(/\s+Earnings.*$/i, "") || event.symbol,
+  company: event.companyName || event.symbol,
+  logo: event.logo || event.image || null,
+  image: event.image || event.logo || null,
+  date: event.date,
+  time: event.time,
+  period: event.period,
+  epsEstimate: event.epsEstimated,
+  revenueEstimate: event.revenueEstimated,
+  source: event.source,
+  raw: event
+}
+
+2. Earnings Dates > Recent
+Continue using:
+GET /api/catalysts/events?tab=earnings_dates&mode=recent
+
+Recent already works, so do not break it.
+
+3. Non-earnings tabs
+Continue using:
+GET /api/catalysts/events?tab={tab}&mode={mode or range}
+
+Tabs:
+- dividends
+- ipos
+- splits
+- economic_releases
+- treasury_macro
+
+4. Company display
+For Earnings Upcoming selected-day list/cards, show:
+- logo/avatar
+- company name
+- ticker
+- period/time
+- EPS estimate if available
+
+Do not show ticker-only cards except tiny compact day summary chips where space is tight.
+
+Company resolver:
+companyName =
+  event.companyName ||
+  entry.companyName ||
+  event.title stripped of " Earnings" ||
+  entry.company ||
+  symbol
+
+logo =
+  event.logo ||
+  event.image ||
+  entry.logo ||
+  entry.image ||
+  null
+
+5. Preserve existing visual calendar
+Do not destroy the Earnings calendar UI.
+Keep:
+- week/day cards
+- Today controls
+- previous/next
+- Upcoming/Recent toggle
+- Smart/All toggle if still part of Upcoming
+
+But the data underneath must come from FMP Catalyst events only.
+
+6. Remove frontend Finnhub data path
+Search the Catalyst Calendar / stocks earnings calendar code for:
+- fetchFinnhubCalendar
+- buildFinnhubEntry
+- Finnhub
+- finnhub
+- /earnings/calendar
+- external backend earnings calendar call
+- company: e.ticker
+
+Remove or isolate them so they are not used by Catalyst Calendar.
+
+7. Remove wrong copy
+Remove labels like:
+- “AI-curated via Grok + Perplexity”
+- “Finnhub earnings calendar”
+- any text implying Finnhub is the source
+
+Use:
+- “FMP earnings calendar”
+or no source copy.
+
+8. Ask Caelyn
+Ask Caelyn remains global.
+Its context should come from:
+GET /api/catalysts/ask-context
+or the same FMP Catalyst tab data.
+No Finnhub calendar rows.
+
+9. Validation
+Use browser devtools Network tab and prove:
+
+For Earnings Dates > Upcoming:
+- The request is /api/catalysts/events?tab=earnings_dates&mode=upcoming
+- There is no Finnhub calendar request
+- There is no legacy /api/earnings/calendar request feeding the main calendar
+- Rendered visible entries include companyName/logo/image from FMP Catalyst response
+
+For Earnings Dates > Recent:
+- Still works
+
+For Dividends/IPOs/Splits/Economic/Treasury:
+- Still work
+
+Required UI proof:
+Visible Upcoming selected-day cards must show:
+- DPZ — Domino's Pizza Inc.
+- CDNS — Cadence Design Systems Inc.
+- NUE — Nucor Corporation
+- VZ — Verizon Communications Inc.
+or whatever tickers are visible that day, with company names and logo/avatar.
+
+Final response:
+Tell me:
+- Which frontend files changed
+- Which Finnhub functions/routes were removed from Catalyst Calendar
+- Confirm Earnings Upcoming now uses /api/catalysts/events
+- Confirm no Catalyst Calendar main view calls Finnhub
+- Confirm company names/logos now render in Upcoming
+- Confirm Recent still works
+- Confirm popup behavior was untouched
