@@ -1,0 +1,139 @@
+The company logo/name fix did not work on the Earnings Dates UI.
+
+Observed:
+- Almost all earnings events still show ticker only.
+- Only Verizon shows a company name.
+- Logos are not rendering.
+
+This may be backend data missing, frontend field mismatch, or a stale query cache.
+
+Goal:
+Make Earnings Dates cards/lists render company logo + company name + ticker wherever the data exists, and provide a clear fallback if it does not.
+
+Important guardrails:
+- Do NOT break Earnings popup/modal.
+- Do NOT reintroduce Polymarket rows into main Earnings Calendar.
+- Do NOT change non-earnings tabs unless using a safe shared component.
+- Main Earnings view remains FMP company earnings only.
+
+Step 1: Inspect actual frontend event object
+In development only, log the first 10 earnings events actually rendered in:
+- Earnings Dates > Upcoming > All
+- Earnings Dates > Upcoming > Smart
+- Earnings Dates > Recent
+
+Log fields:
+- symbol
+- companyName
+- name
+- title
+- logo
+- image
+- profile
+- raw
+
+This is to confirm whether the data is missing or field names are wrong.
+
+Step 2: Fix field resolution
+Wherever an earnings card/list row renders company identity, resolve fields like this:
+
+symbol:
+event.symbol || event.ticker || event.raw?.symbol || event.raw?.ticker
+
+companyName:
+event.companyName
+|| event.company_name
+|| event.name
+|| event.profile?.companyName
+|| event.profile?.company_name
+|| event.raw?.companyName
+|| event.raw?.company_name
+|| event.raw?.company
+|| event.raw?.name
+|| event.title with " Earnings" stripped if useful
+|| symbol
+
+logoUrl:
+event.logo
+|| event.image
+|| event.logoUrl
+|| event.profile?.image
+|| event.profile?.logo
+|| event.raw?.image
+|| event.raw?.logo
+|| event.raw?.profile?.image
+|| event.raw?.profile?.logo
+|| null
+
+Step 3: Ensure all Earnings UI paths use same CompanyIdentity component
+Create or update a reusable component:
+CompanyIdentityBadge or EarningsCompanyIdentity
+
+Use it in:
+- Earnings Dates > Upcoming > All clean list
+- Earnings Dates > Upcoming > Smart cards
+- selected day earnings list
+- Earnings Dates > Recent list
+- any high conviction/most talked about earnings cards if still present
+
+Do not leave older ticker-only card components in place.
+
+Step 4: Fallback avatar
+If logoUrl is null or image fails:
+- show avatar with 1-2 ticker letters
+- no broken image icon
+- keep company name visible
+
+Step 5: Force React query/cache refresh if needed
+If frontend is caching old earnings payloads that only had ticker:
+- bump query key version for earnings calendar
+- invalidate Catalyst Calendar earnings query on load or refresh
+- make sure cached stale response is not hiding backend fixes
+
+Suggested query key:
+["catalyst-calendar", "earnings-dates", "v2", activeMode, selectedDate, scope, search]
+
+Step 6: Rendering examples
+Instead of:
+VZ
+
+Render:
+[logo/avatar] Verizon Communications Inc.
+              VZ · Q1 2026 · Pre-Market
+              EPS Est: $1.23
+
+Instead of:
+DPZ
+
+Render:
+[logo/avatar] Domino's Pizza Inc.
+              DPZ · Q1 2026 · Pre-Market
+              EPS Est: $4.32
+
+If companyName missing:
+[avatar] DPZ
+         DPZ · Q1 2026 · Pre-Market
+
+Step 7: Tiny day chips
+For the small circular chips inside weekly date cards:
+- It is okay to keep compact ticker/initial chip because there is not enough room.
+- But selected-day list/cards and recent/all lists must show company name + logo/avatar + ticker.
+
+Step 8: Validation
+Verify:
+1. Earnings Dates > Upcoming > All shows logo/avatar + company name + ticker for many events.
+2. Earnings Dates > Upcoming > Smart shows logo/avatar + company name + ticker.
+3. Earnings Dates > Recent shows logo/avatar + company name + ticker.
+4. DPZ, CDNS, NUE, and other non-Verizon tickers do not render as ticker-only if backend provides names.
+5. No broken image icons.
+6. Existing earnings popup still opens.
+7. No Polymarket question rows in main earnings list.
+
+Final response:
+Tell me:
+- Which files/components changed
+- Whether backend data already had companyName/logo or frontend was reading wrong fields
+- Whether stale React query cache was involved
+- Confirm all major Earnings render paths now use the shared identity component
+- Confirm fallback avatar works
+- Confirm popup behavior was untouched

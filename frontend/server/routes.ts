@@ -2076,6 +2076,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Company identity batch — used by earnings calendar ───────────
+  const _identityCache = new Map<string, { name: string; logo: string | null; ts: number }>();
+  const _IDENTITY_TTL = 24 * 3600_000;
+
+  app.get('/api/fmp/company-identity', async (req, res) => {
+    const raw = (req.query.symbols as string || '').trim();
+    if (!raw) return res.json({});
+    const symbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
+    const result: Record<string, { name: string; logo: string | null }> = {};
+    const needFetch: string[] = [];
+    for (const sym of symbols) {
+      const c = _identityCache.get(sym);
+      if (c && Date.now() - c.ts < _IDENTITY_TTL) {
+        result[sym] = { name: c.name, logo: c.logo };
+      } else {
+        needFetch.push(sym);
+      }
+    }
+    if (needFetch.length > 0) {
+      const FMP_KEY = process.env.FMP_API_KEY || '';
+      if (FMP_KEY) {
+        try {
+          const url = `https://financialmodelingprep.com/stable/profile?symbol=${needFetch.join(',')}&apikey=${FMP_KEY}`;
+          const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+          if (r.ok) {
+            const profiles: any[] = await r.json();
+            if (Array.isArray(profiles)) {
+              for (const p of profiles) {
+                if (!p.symbol) continue;
+                const s = p.symbol.toUpperCase();
+                const entry = { name: p.companyName || s, logo: p.image || null, ts: Date.now() };
+                _identityCache.set(s, entry);
+                result[s] = { name: entry.name, logo: entry.logo };
+              }
+            }
+          }
+        } catch (e: any) {
+          console.warn('[company-identity] FMP fetch failed:', e?.message);
+        }
+      }
+      for (const sym of needFetch) {
+        if (!result[sym]) {
+          _identityCache.set(sym, { name: sym, logo: null, ts: Date.now() });
+          result[sym] = { name: sym, logo: null };
+        }
+      }
+    }
+    return res.json(result);
+  });
+
   const httpServer = createServer(app);
   // Real-time market data endpoints
   app.get('/api/real-time/top-movers', async (req, res) => {
