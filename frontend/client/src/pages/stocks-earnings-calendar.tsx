@@ -970,9 +970,9 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const [enrichments, setEnrichments] = useState<Record<string, EarningsDetailData>>({});
   const [enrichLoading, setEnrichLoading] = useState<Set<string>>(new Set());
-  const [fmpEntries, setFmpEntries] = useState<Map<string, EarningsEntry[]>>(new Map());
+  const [fmpDateMap, setFmpDateMap] = useState<Map<string, EarningsEntry[]>>(new Map());
   const [fmpLoading, setFmpLoading] = useState(false);
-  const fmpFetchedWeeks = useRef<Set<string>>(new Set());
+  const fmpFetchedRef = useRef(false);
 
   // Smart View state
   const [viewMode, setViewMode] = useState<"smart" | "all">("all");
@@ -998,35 +998,35 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     undated.push(entry);
   }
 
-  // Fetch FMP earnings calendar for current week via /api/catalysts/events
+  // Fetch all upcoming FMP earnings once — week navigation just shifts the display window
   useEffect(() => {
-    const weekKey = dateKey(weekStart);
-    if (fmpFetchedWeeks.current.has(weekKey)) return;
-    fmpFetchedWeeks.current.add(weekKey);
+    if (fmpFetchedRef.current) return;
+    fmpFetchedRef.current = true;
     setFmpLoading(true);
-
-    const sunday = weekStart;
-    const saturday = addDays(sunday, 6);
-    const fromStr = dateKey(sunday);
-    const toStr = dateKey(saturday);
 
     const params = new URLSearchParams({
       tab: "earnings_dates",
       mode: "upcoming",
-      from: fromStr,
-      to: toStr,
+      limit: "2000",
     });
+    const url = `/api/catalysts/events?${params}`;
 
-    fetch(`/api/catalysts/events?${params}`)
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Earnings Upcoming request]", url);
+    }
+
+    fetch(url)
       .then(r => r.json())
       .then((data) => {
         const arr: Record<string, unknown>[] = Array.isArray(data) ? data : (data.events || data.results || []);
-        // Filter out pure Polymarket question rows
         const valid = arr.filter(ev =>
           (ev.symbol || ev.ticker) &&
           (ev.symbol as string || ev.ticker as string) !== "???" &&
           !/^Will\s/i.test((ev.title || ev.company || ev.companyName || "") as string)
         );
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[Earnings Upcoming returned]", valid.length);
+        }
         const map = new Map<string, EarningsEntry[]>();
         for (const ev of valid) {
           const d = (ev.date || "") as string;
@@ -1035,17 +1035,16 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
           if (!map.has(key)) map.set(key, []);
           map.get(key)!.push(buildFmpEntry(ev));
         }
-        setFmpEntries(prev => {
-          const merged = new Map(prev);
-          for (const [k, v] of map) merged.set(k, v);
-          return merged;
-        });
+        if (process.env.NODE_ENV !== "production") {
+          console.table(Array.from(map.entries()).map(([date, evts]) => ({ date, count: evts.length })));
+        }
+        setFmpDateMap(map);
         const allTickers = valid.map(ev => (ev.symbol || ev.ticker || "") as string).filter(Boolean);
         if (allTickers.length > 0) onFetchIdentity(allTickers);
       })
       .catch(() => {})
       .finally(() => setFmpLoading(false));
-  }, [weekStart]);
+  }, []);
 
   // Fetch smart (Tier 2) data for the selected day
   const smartFetchedRef = useRef<Set<string>>(new Set());
@@ -1096,7 +1095,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
 
   // Merge: FMP entries are the source of truth; enrich with Polymarket beat odds
   const dateMap = new Map<string, EarningsEntry[]>();
-  for (const [key, fmpDayEntries] of fmpEntries) {
+  for (const [key, fmpDayEntries] of fmpDateMap) {
     const enriched = fmpDayEntries.map(fmpEntry => {
       const poly = polyBeatMap.get(fmpEntry.ticker.toUpperCase());
       if (poly) {

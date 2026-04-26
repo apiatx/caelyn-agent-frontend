@@ -1,0 +1,94 @@
+Catalyst Calendar > Earnings Dates upcoming calendar is not showing a complete week/month of earnings.
+
+Current issue:
+The calendar only shows earnings for today/tomorrow and a couple random days next week. It should request and render the full visible earnings date range.
+
+Important guardrails:
+- Catalyst Calendar should use FMP Catalyst endpoint only.
+- Do NOT use Finnhub for Catalyst Calendar.
+- Do NOT use Polymarket for main calendar rows.
+- Do NOT break existing earnings popup/modal.
+- Do NOT break companyName/logo rendering.
+
+Required frontend behavior:
+For Earnings Dates > Upcoming:
+Use:
+GET /api/catalysts/events?tab=earnings_dates&mode=upcoming&from={visibleStartDate}&to={visibleEndDate}&limit=2000
+
+Do not call:
+- fetchFinnhubCalendar
+- /api/earnings/calendar
+- external Finnhub calendar endpoint
+- /api/fmp/company-identity as required source
+
+Date window:
+If showing weekly calendar:
+- from = start of visible week
+- to = end of visible week
+
+If user navigates next/previous:
+- refetch using the new visible week/month range
+
+If showing monthly context:
+- either request the full month
+- or request a rolling 30/60-day window
+
+Do not request only today/tomorrow.
+
+Query key:
+Include date range:
+["catalyst-calendar", "earnings_dates", "upcoming", visibleStartDate, visibleEndDate, scope, search, "v4"]
+
+Do not reuse stale query for a different week.
+
+Rendering:
+Group events by event.date.
+Every date in the visible week should render:
+- count of events
+- compact chips
+- selected-day list/cards
+
+If a day has no earnings:
+- show "No calls" only if the grouped events for that day are truly empty.
+
+Do not show "No Calls" because the date was not fetched.
+
+Debug:
+In dev only, log:
+console.log("[Earnings Upcoming request]", url);
+console.log("[Earnings Upcoming returned]", events.length);
+console.table(Object.entries(groupByDate(events)).map(([date, arr]) => ({ date, count: arr.length })));
+
+Validation:
+When viewing Apr 26-May 2 week:
+- request should include from=2026-04-26 and to=2026-05-02 or equivalent
+- returned data should group by each weekday with FMP events if available
+- calendar should not randomly skip weekdays due to stale state/limit
+
+Also validate next week navigation:
+- clicking next updates from/to
+- new data loads
+- counts update
+
+Check for accidental limit:
+If frontend sends limit=100, change to 1000 or 2000 for earnings calendar.
+Do not let limit=100 cut off later dates.
+
+Company names/logos:
+Continue rendering:
+- companyName
+- logo/image
+- ticker
+
+Do not regress that work.
+
+Final response:
+Tell me:
+- Which frontend file changed
+- What URL is now called for Earnings Upcoming
+- What from/to range is sent
+- What limit is sent
+- Confirm grouped count by date for the visible week
+- Confirm next/previous navigation refetches correct range
+- Confirm no Finnhub calls remain for Catalyst Calendar
+- Confirm popup behavior untouched
