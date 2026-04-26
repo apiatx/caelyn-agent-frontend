@@ -86,7 +86,6 @@ interface TheBriefData {
 }
 
 const NEWS_SUGGESTED_PROMPTS = [
-  "How are today's top headlines likely to impact the S&P 500 and crypto markets this week?",
   "What geopolitical risks in the news right now pose the biggest threat to my portfolio?",
   "Which sectors benefit most from the current news cycle and policy trends?",
   "Are there any breaking news catalysts that could trigger a major market move today?",
@@ -883,14 +882,7 @@ export default function NotifAIPage() {
               height: 600, flexShrink: 0, borderRadius: 12, overflow: 'hidden',
               border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
             }}>
-              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.5)' }}>
-                  TOP STORIES
-                </span>
-              </div>
-              <div style={{ height: 561 }}>
-                <TopStoriesWidget />
-              </div>
+              <TopStoriesWidget />
             </div>
           </div>
 
