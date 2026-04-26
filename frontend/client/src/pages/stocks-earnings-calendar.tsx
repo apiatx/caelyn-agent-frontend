@@ -992,7 +992,6 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
 // ─── Earnings Calendar Component ──────────────────────────────────
 
 function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
-  const [askCaelynOpen, setAskCaelynOpen] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
   const [selectedDayKey, setSelectedDayKey] = useState<string>(dateKey(new Date()));
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
@@ -1216,39 +1215,13 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
 
   return (
     <div>
-      {/* Calendar header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <CalendarDays className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white">
-              Earnings Calendar
-            </h3>
-            <p className="text-[10px] text-white/30 mt-0.5 leading-tight">
-              Complete earnings calendar with Polymarket predictions &amp; Finnhub fundamentals
-            </p>
-            <p className="text-[10px] text-white/20 mt-0.5">
-              {weekMonth} {weekYear} &middot; {totalThisWeek} earnings call{totalThisWeek !== 1 ? "s" : ""} this week
-              {finnhubLoading && <span className="ml-1.5 text-blue-400/50"><Loader2 className="w-2.5 h-2.5 animate-spin inline" /></span>}
-            </p>
-          </div>
-        </div>
+      {/* Calendar navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] text-white/40">
+          {weekMonth} {weekYear} &middot; {totalThisWeek} earnings call{totalThisWeek !== 1 ? "s" : ""} this week
+          {finnhubLoading && <Loader2 className="w-2.5 h-2.5 animate-spin inline ml-1.5 text-blue-400/50" />}
+        </p>
         <div className="flex items-center gap-1">
-          {/* Ask Caelyn popup button */}
-          <button
-            onClick={() => setAskCaelynOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all mr-2"
-            style={{
-              background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(249,115,22,0.15))',
-              border: '1px solid rgba(245,158,11,0.3)',
-              color: '#fbbf24',
-            }}
-          >
-            <Sparkles className="w-3 h-3" />
-            Ask Caelyn
-          </button>
           <button
             onClick={goToday}
             className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
@@ -1263,8 +1236,6 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
           </button>
         </div>
       </div>
-      {/* Ask Caelyn popup */}
-      {askCaelynOpen && <EarningsAgent onClose={() => setAskCaelynOpen(false)} />}
 
       {/* Smart/All toggle + cache status */}
       <div className="flex items-center justify-between mb-3">
@@ -1907,7 +1878,25 @@ const EARNINGS_SUGGESTED_PROMPTS = [
   "What stocks could surprise big up or down — biggest potential movers?",
 ];
 
-function EarningsAgent({ onClose }: { onClose: () => void }) {
+const CATALYST_SUGGESTED_PROMPTS = [
+  "What are the most important upcoming earnings and macro events this week?",
+  "Any high-impact IPOs or economic releases I should watch?",
+  "Summarize dividend and stock split catalyst events for the next month.",
+  "Which catalyst events pose the biggest market-moving risk right now?",
+];
+
+const CATALYST_SYSTEM_CONTEXT =
+  "You are analyzing the Catalyst Calendar across earnings, dividends, IPOs, stock splits, economic releases, and treasury/macro events. Use the provided FMP catalyst data across all tabs.";
+
+function EarningsAgent({
+  onClose,
+  systemContext,
+  suggestedPrompts: customPrompts,
+}: {
+  onClose: () => void;
+  systemContext?: string;
+  suggestedPrompts?: string[];
+}) {
   const [messages, setMessages] = useState<EarningsAgentMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1940,9 +1929,10 @@ function EarningsAgent({ onClose }: { onClose: () => void }) {
       const focusWeekSaturday = addDays(focusWeek, 6).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
       const weekContext = `[Date context: Today is ${todayStr}. ${isWeekend ? "It is the weekend — focus on NEXT week's earnings" : "Focus on this week's earnings"}. Earnings week in view: ${focusWeekSunday} – ${focusWeekSaturday}.]`;
 
+      const systemPrefix = systemContext ? `[${systemContext}] ` : "";
       const payload: Record<string, unknown> = {
-        query: `${weekContext} ${text.trim()}`,
-        preset_intent: "earnings_catalyst",
+        query: `${systemPrefix}${weekContext} ${text.trim()}`,
+        preset_intent: systemContext ? "catalyst_calendar" : "earnings_catalyst",
         history: history.length > 0 ? history : undefined,
         conversation_id: conversationId,
       };
@@ -2037,7 +2027,9 @@ function EarningsAgent({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-bold text-white">Ask Caelyn</h2>
-          <p className="text-[10px] text-white/25">Earnings intel, beat odds &amp; trading setups</p>
+          <p className="text-[10px] text-white/25">
+            {systemContext ? "Catalyst Calendar — all tabs" : "Earnings intel, beat odds & trading setups"}
+          </p>
         </div>
         <button
           onClick={onClose}
@@ -2050,7 +2042,7 @@ function EarningsAgent({ onClose }: { onClose: () => void }) {
       {/* Suggested prompts (only show when no messages) */}
       {messages.length === 0 && (
         <div className="flex flex-col gap-2 mb-4">
-          {EARNINGS_SUGGESTED_PROMPTS.map((prompt) => (
+          {(customPrompts || EARNINGS_SUGGESTED_PROMPTS).map((prompt) => (
             <button
               key={prompt}
               onClick={() => sendMessage(prompt)}
@@ -2748,15 +2740,21 @@ function CatalystListTab({
   function resolveDisplayName(ev: CatalystEvent, tab: string): string {
     const r = ev.raw || {};
     const fallbackLabel = TAB_LABELS[tab] || "Event";
+    // For IPO tab, company name sources get " IPO" appended if not already present
+    const appendSuffix = (name: string | undefined | null): string | null => {
+      if (!name) return null;
+      if (tab === "ipos" && !/ipo/i.test(name)) return `${name} IPO`;
+      return name;
+    };
     return (
       (ev.title as string | undefined) ||
-      (ev.companyName as string | undefined) ||
-      (r.companyName as string | undefined) ||
-      (r.company    as string | undefined) ||
-      (r.name       as string | undefined) ||
+      appendSuffix(ev.companyName as string | undefined) ||
+      appendSuffix(r.companyName as string | undefined) ||
+      appendSuffix(r.company    as string | undefined) ||
+      appendSuffix(r.name       as string | undefined) ||
       (r.event      as string | undefined) ||
       (r.title      as string | undefined) ||
-      (ev.company as string | undefined) ||
+      appendSuffix(ev.company as string | undefined) ||
       (ev.event_name as string | undefined) ||
       (ev.indicatorName as string | undefined) ||
       (r.indicatorName as string | undefined) ||
@@ -3068,16 +3066,33 @@ function CatalystListTab({
 
 export default function StocksEarningsCalendarPage() {
   // ── Tab + mode state ─────────────────────────────────────────────
-  const [activeTab,  setActiveTab]  = useState<string>("earnings_dates");
+  const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
+  const [earningsMode, setEarningsMode] = useState<"upcoming" | "recent">("upcoming");
   const switchTab = (key: string) => {
     setActiveTab(key);
+    if (key === "earnings_dates") setEarningsMode("upcoming");
   };
+
+  // ── Ask Caelyn global state ───────────────────────────────────────
+  const [askCaelynOpen,    setAskCaelynOpen]    = useState(false);
+  const [catalystContext,  setCatalystContext]   = useState<string>("");
+
+  const openAskCaelyn = useCallback(async () => {
+    try {
+      const res = await fetch("/api/catalysts/ask-context");
+      if (res.ok) {
+        const data = await res.json();
+        setCatalystContext(data.context || "");
+      }
+    } catch { /* fallback: no extra context */ }
+    setAskCaelynOpen(true);
+  }, []);
 
   // ── Shared filter state ──────────────────────────────────────────
   const [scope,  setScope]  = useState<string>("all");
   const [search, setSearch] = useState<string>("");
 
-  // ── Earnings tab state (unchanged) ──────────────────────────────
+  // ── Earnings tab state ───────────────────────────────────────────
   const [earningsMarkets, setEarningsMarkets] = useState<ParsedMarket[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(true);
 
@@ -3096,16 +3111,17 @@ export default function StocksEarningsCalendarPage() {
     return () => clearInterval(iv);
   }, [fetchEarnings]);
 
-  const isEarningsTab = activeTab === "earnings_dates";
-  const showFilterBar = !isEarningsTab;
+  const isEarningsTab   = activeTab === "earnings_dates";
+  const showFilterBar   = !isEarningsTab || earningsMode === "recent";
 
   return (
+    <>
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GlassCard className="p-5 w-full">
 
           {/* ── Page header ─────────────────────────────────────── */}
-          <div className="flex items-start gap-4 mb-5">
+          <div className="flex items-center gap-4 mb-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: "linear-gradient(135deg, #f59e0b, #f97316, #ef4444)" }}>
               <Calendar className="w-5 h-5 text-white" />
@@ -3116,6 +3132,19 @@ export default function StocksEarningsCalendarPage() {
                 Track earnings, dividends, IPOs, splits, macro releases, SEC filings, analyst changes, and insider activity in one place.
               </p>
             </div>
+            {/* ── Ask Caelyn — global, all tabs ─────────────────── */}
+            <button
+              onClick={openAskCaelyn}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(249,115,22,0.15))",
+                border: "1px solid rgba(245,158,11,0.3)",
+                color: "#fbbf24",
+              }}
+            >
+              <Sparkles className="w-3 h-3" />
+              Ask Caelyn
+            </button>
           </div>
 
           {/* ── Tab bar ─────────────────────────────────────────── */}
@@ -3181,9 +3210,38 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
+          {/* ── Earnings Upcoming / Recent toggle ───────────────── */}
+          {isEarningsTab && (
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
+                <button
+                  onClick={() => setEarningsMode("upcoming")}
+                  className="px-4 py-1.5 transition-all"
+                  style={earningsMode === "upcoming"
+                    ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  Upcoming
+                </button>
+                <button
+                  onClick={() => setEarningsMode("recent")}
+                  className="px-4 py-1.5 transition-all"
+                  style={earningsMode === "recent"
+                    ? { background: "rgba(16,185,129,0.15)", color: "#34d399" }
+                    : { color: "rgba(255,255,255,0.4)" }}
+                >
+                  Recent
+                </button>
+              </div>
+              <span className="text-[10px] text-white/25">
+                {earningsMode === "upcoming" ? "Calendar — this week's earnings calls" : "List — recent earnings reports"}
+              </span>
+            </div>
+          )}
+
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab ? (
-            /* ── Earnings — real calendar widget (unchanged) ──── */
+          {isEarningsTab && earningsMode === "upcoming" ? (
+            /* ── Earnings Upcoming — real calendar widget ──────── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
@@ -3207,8 +3265,16 @@ export default function StocksEarningsCalendarPage() {
             ) : (
               <EarningsCalendarWidget markets={earningsMarkets} />
             )
+          ) : isEarningsTab && earningsMode === "recent" ? (
+            /* ── Earnings Recent — list/table via CatalystListTab ─ */
+            <CatalystListTab
+              key="earnings_dates-recent"
+              tabKey="earnings_dates"
+              scope={scope}
+              search={search}
+            />
           ) : (
-            /* ── All other tabs — range-toggle + list/table ────── */
+            /* ── All other tabs — range-toggle + list/table ─────── */
             <CatalystListTab
               key={activeTab}
               tabKey={activeTab}
@@ -3220,5 +3286,15 @@ export default function StocksEarningsCalendarPage() {
         </GlassCard>
       </main>
     </div>
+
+    {/* ── Global Ask Caelyn popup ──────────────────────────────── */}
+    {askCaelynOpen && (
+      <EarningsAgent
+        onClose={() => setAskCaelynOpen(false)}
+        systemContext={catalystContext ? `${CATALYST_SYSTEM_CONTEXT}\n\n${catalystContext}` : CATALYST_SYSTEM_CONTEXT}
+        suggestedPrompts={CATALYST_SUGGESTED_PROMPTS}
+      />
+    )}
+    </>
   );
 }

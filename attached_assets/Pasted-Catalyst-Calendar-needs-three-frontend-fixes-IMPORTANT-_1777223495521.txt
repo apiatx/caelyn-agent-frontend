@@ -1,0 +1,194 @@
+Catalyst Calendar needs three frontend fixes.
+
+IMPORTANT GUARDRAILS:
+- Do NOT break the existing Earnings calendar.
+- Do NOT break existing Earnings popup/click behavior.
+- Do NOT remove the Catalyst Calendar tabs.
+- Only Earnings should be a calendar.
+- Non-earnings tabs should remain list/range views.
+
+Fix #1: Earnings tab needs the Upcoming/Recent toggle too
+
+Current issue:
+The Earnings tab has the calendar, but it does not have the same Upcoming/Recent toggle shown on the other tabs.
+
+Required behavior:
+On Earnings tab, add the same segmented toggle:
+[Upcoming] [Recent]
+
+But the behavior should be different by mode:
+
+Earnings > Upcoming:
+- Show existing Earnings calendar exactly as-is.
+- Preserve existing Smart/All toggle.
+- Preserve existing day cards.
+- Preserve existing ticker click/popup behavior.
+- This remains calendar view.
+
+Earnings > Recent:
+- Show list/table view, same style as the other tabs.
+- Do NOT show calendar grid.
+- Show recent earnings reports/events from backend.
+- Columns:
+  - Date
+  - Symbol
+  - Company / Event
+  - Event Type
+  - Key Details
+  - Importance
+  - Source if available
+
+Recent earnings key details should show:
+- EPS Actual
+- EPS Estimate
+- Revenue Actual
+- Revenue Estimate
+- Surprise / surprise percentage if available
+
+Clicking recent earnings rows:
+- If safe, reuse existing earnings popup/detail behavior.
+- If not, use generic Catalyst Detail modal.
+- Do not break Upcoming earnings popup.
+
+Also remove this redundant text block from the Earnings tab:
+"Earnings Calendar
+Complete earnings calendar with Polymarket predictions & Finnhub fundamentals
+
+April 2026 · 1021 earnings calls this week"
+
+The page already says Catalyst Calendar and the Earnings tab already makes the context obvious.
+Do not remove useful calendar controls like Today, previous/next arrows, Smart/All toggle, or Ask Caelyn.
+
+Fix #2: Move Ask Caelyn button to top-right of the Catalyst Calendar glasscard
+
+Current issue:
+Ask Caelyn is only located inside the Earnings tab area and is only visible there.
+
+Required:
+Move Ask Caelyn button to the top-right of the overall Catalyst Calendar glasscard/header so it is visible on every tab:
+- Earnings
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Placement:
+Top-right of the main Catalyst Calendar glasscard, aligned with the page title/header area.
+
+Behavior:
+Ask Caelyn should be global for the Catalyst Calendar page, not tab-specific.
+
+When clicked:
+- It should collect Catalyst Calendar context across all tabs, not just the active tab.
+- Use backend endpoint if available:
+  GET /api/catalysts/ask-context
+- Include:
+  - Earnings upcoming/recent
+  - Dividends upcoming/recent
+  - IPOs upcoming/recent
+  - Stock Splits upcoming/recent
+  - Economic Releases upcoming/recent
+  - Treasury / Macro upcoming/recent
+
+If existing Ask Caelyn opens a chat/modal, keep the same UI pattern, but change the data context it sends.
+
+The Ask Caelyn prompt/context should clearly say:
+"You are analyzing the Catalyst Calendar across earnings, dividends, IPOs, stock splits, economic releases, and treasury/macro events. Use the provided FMP catalyst data across all tabs."
+
+Do not make Ask Caelyn only analyze the active tab unless the user asks specifically.
+
+If /api/catalysts/ask-context is unavailable temporarily:
+Fallback to collecting loaded tab data from frontend state, but prefer backend endpoint.
+
+Fix #3: IPO data still not displaying
+
+Current issue:
+IPO tab is blank or not showing data.
+
+Frontend checks:
+1. Confirm IPO tab uses exact backend tab key:
+tab=ipos
+
+2. Confirm mode/range params are correct:
+- Upcoming should call:
+  /api/catalysts/events?tab=ipos&mode=upcoming
+  or valid from/to future range
+
+- Recent should call:
+  /api/catalysts/events?tab=ipos&mode=recent
+  or valid from/to past 90-day range
+
+3. Do not filter out IPO rows with missing symbol.
+Some IPOs may only have companyName/title/date.
+Render them anyway.
+
+4. IPO list rendering:
+Company / Event column:
+- event.title
+- event.companyName + " IPO"
+- raw.companyName + " IPO"
+- raw.company + " IPO"
+- raw.name + " IPO"
+- symbol + " IPO"
+
+Event Type:
+- event.eventLabel
+- "IPO"
+
+Key Details:
+- event.keyDetails
+- Exchange
+- Price range / offer price
+- Shares
+
+5. IPO empty state:
+If backend truly returns zero:
+"No IPO catalysts found for this range."
+But if response has rows and frontend hides them, fix the filtering/rendering.
+
+General list rendering guardrail:
+For all non-earnings tabs, do not display generic useless rows like:
+- Company/Event = —
+- Event Type = Event
+- Key Details = —
+
+Use fallbacks:
+Event Type by active tab:
+- dividends => Dividend
+- ipos => IPO
+- splits => Stock Split
+- economic_releases => Economic Release
+- treasury_macro => Treasury / Macro
+
+Final validation:
+1. Earnings > Upcoming:
+   - Calendar still works.
+   - Existing earnings popup works.
+   - Redundant Earnings Calendar copy is gone.
+   - Upcoming/Recent toggle is visible.
+
+2. Earnings > Recent:
+   - List/table view shows recent earnings.
+   - No calendar grid.
+
+3. Ask Caelyn:
+   - Visible on every tab.
+   - Located top-right of Catalyst Calendar glasscard/header.
+   - Uses all-tab Catalyst Calendar context, preferably /api/catalysts/ask-context.
+
+4. IPOs:
+   - IPO tab calls tab=ipos.
+   - Upcoming IPOs render if backend returns them.
+   - Recent IPOs render if backend returns them.
+   - IPO rows are not hidden because symbol is missing.
+
+Final response:
+Tell me:
+- Which files changed
+- Confirm Earnings Upcoming/Recent toggle was added
+- Confirm redundant Earnings Calendar copy was removed
+- Confirm Ask Caelyn is global and visible on every tab
+- Confirm Ask Caelyn uses all-tab catalyst context
+- Confirm IPO tab uses tab=ipos and does not filter out symbol-less IPO rows
+- Confirm Earnings popup/click behavior was untouched
