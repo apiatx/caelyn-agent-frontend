@@ -3010,10 +3010,13 @@ function CatalystListTab({
       <ChevronDown className="w-3 h-3 ml-0.5 inline text-white/20" />
     );
 
+  const isMacroTab = tabKey === "treasury_macro" || tabKey === "economic_releases";
+  const isDividendsTab = tabKey === "dividends";
+
   const COLS = [
     { key: "date",       label: "Date",            sortable: true },
-    { key: "symbol",     label: "Symbol",          sortable: true },
-    { key: "company",    label: "Company / Event",  sortable: false },
+    ...(!isMacroTab ? [{ key: "symbol",  label: "Symbol",      sortable: true  }] : []),
+    ...(!isDividendsTab ? [{ key: "company", label: isMacroTab ? "Event" : "Company / Event", sortable: false }] : []),
     { key: "event_type", label: "Event Type",       sortable: true },
     { key: "details",    label: "Key Details",      sortable: false },
     { key: "importance", label: "Importance",       sortable: true },
@@ -3125,41 +3128,45 @@ function CatalystListTab({
                     <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
                       {ev.date?.slice(0, 10) || "—"}
                     </td>
-                    <td className="py-2.5 px-3">
-                      {tabKey === "earnings_dates" && ev.symbol ? (
-                        <CompanyIdentity
-                          symbol={ev.symbol as string}
-                          companyName={
-                            identityMap[(ev.symbol as string)?.toUpperCase()]?.name ||
-                            (ev.companyName as string | undefined) ||
-                            ((ev.raw as Record<string, unknown>)?.companyName as string | undefined) ||
-                            ((ev.raw as Record<string, unknown>)?.company as string | undefined) ||
-                            ((ev.raw as Record<string, unknown>)?.name as string | undefined) ||
-                            undefined
-                          }
-                          logoUrl={
-                            identityMap[(ev.symbol as string)?.toUpperCase()]?.logo ||
-                            (ev.logo as string | undefined) ||
-                            (ev.image as string | undefined) ||
-                            ((ev.profile as Record<string, unknown>)?.image as string | undefined) ||
-                            ((ev.profile as Record<string, unknown>)?.logo as string | undefined) ||
-                            ((ev.raw as Record<string, unknown>)?.image as string | undefined) ||
-                            ((ev.raw as Record<string, unknown>)?.logo as string | undefined) ||
-                            undefined
-                          }
-                          size="sm"
-                        />
-                      ) : ev.symbol ? (
-                        <span className="font-bold text-white/90">{ev.symbol as string}</span>
-                      ) : isMacroRow ? (
-                        <span className="text-white/30 italic text-[10px]">Macro</span>
-                      ) : (
-                        <span className="text-white/25 text-[10px]">—</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 text-white/80 max-w-[220px] truncate font-medium">
-                      {displayName}
-                    </td>
+                    {!isMacroTab && (
+                      <td className="py-2.5 px-3">
+                        {tabKey === "earnings_dates" && ev.symbol ? (
+                          <CompanyIdentity
+                            symbol={ev.symbol as string}
+                            companyName={
+                              identityMap[(ev.symbol as string)?.toUpperCase()]?.name ||
+                              (ev.companyName as string | undefined) ||
+                              ((ev.raw as Record<string, unknown>)?.companyName as string | undefined) ||
+                              ((ev.raw as Record<string, unknown>)?.company as string | undefined) ||
+                              ((ev.raw as Record<string, unknown>)?.name as string | undefined) ||
+                              undefined
+                            }
+                            logoUrl={
+                              identityMap[(ev.symbol as string)?.toUpperCase()]?.logo ||
+                              (ev.logo as string | undefined) ||
+                              (ev.image as string | undefined) ||
+                              ((ev.profile as Record<string, unknown>)?.image as string | undefined) ||
+                              ((ev.profile as Record<string, unknown>)?.logo as string | undefined) ||
+                              ((ev.raw as Record<string, unknown>)?.image as string | undefined) ||
+                              ((ev.raw as Record<string, unknown>)?.logo as string | undefined) ||
+                              undefined
+                            }
+                            size="sm"
+                          />
+                        ) : ev.symbol ? (
+                          <span className="font-bold text-white/90">{ev.symbol as string}</span>
+                        ) : isMacroRow ? (
+                          <span className="text-white/30 italic text-[10px]">Macro</span>
+                        ) : (
+                          <span className="text-white/25 text-[10px]">—</span>
+                        )}
+                      </td>
+                    )}
+                    {!isDividendsTab && (
+                      <td className="py-2.5 px-3 text-white/80 max-w-[220px] truncate font-medium">
+                        {displayName}
+                      </td>
+                    )}
                     <td className="py-2.5 px-3">
                       <EventTypeBadge type={eventType} />
                     </td>

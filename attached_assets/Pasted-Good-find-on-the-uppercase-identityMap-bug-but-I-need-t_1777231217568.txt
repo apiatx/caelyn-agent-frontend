@@ -1,0 +1,102 @@
+Good find on the uppercase identityMap bug, but I need this fully verified and hardened.
+
+Your own logs confirmed:
+- Recent uses /api/catalysts/events and receives enriched FMP companyName/logo.
+- Upcoming uses fetchFinnhubCalendar → external backend/Finnhub-style calendar data with no company names.
+- You fixed identityMap lookups by uppercasing ticker keys.
+
+That may fix the display only if identityMap is reliably populated for every visible Upcoming ticker.
+
+Please do a final focused pass with proof.
+
+Requirements:
+
+1. Verify identityMap population for Upcoming
+When fetchFinnhubCalendar returns the weekly Upcoming earnings tickers, make sure the frontend calls the identity fetch for ALL unique visible Upcoming tickers.
+
+In dev only, log:
+console.log("[Upcoming tickers needing identity]", uniqueTickers.length, uniqueTickers.slice(0, 25));
+console.log("[Identity map loaded]", Object.keys(identityMap).length, Object.keys(identityMap).slice(0, 25));
+
+Also log a visible sample:
+console.table(visibleUpcomingEntries.slice(0, 20).map(e => {
+  const key = (e.ticker || e.symbol || "").toUpperCase();
+  const id = identityMap[key];
+  return {
+    ticker: key,
+    hasIdentity: !!id,
+    name: id?.name,
+    hasLogo: !!id?.logo
+  };
+}));
+
+2. Confirm all identity lookups normalize ticker keys
+Search the Earnings calendar file for every identityMap lookup.
+
+Every lookup must use a normalized uppercase key:
+const key = (ticker || symbol || "").toUpperCase();
+
+No remaining:
+identityMap[e.ticker]
+identityMap[st.ticker]
+identityMap[symbol]
+identityMap[entry.ticker]
+without normalization.
+
+3. Add a helper so this does not regress
+Create one helper:
+
+function getIdentity(identityMap, tickerOrSymbol) {
+  const key = String(tickerOrSymbol || "").toUpperCase();
+  return identityMap[key] || null;
+}
+
+Use this helper everywhere instead of ad hoc identityMap[...] calls.
+
+4. Ensure /api/fmp/company-identity handles all Upcoming tickers
+The identity endpoint currently batches up to 50 tickers per call.
+
+Make sure frontend chunks requests until every unique ticker has been requested.
+If there are 200 visible Upcoming tickers, it should fetch 4 chunks, not just first 50.
+
+Do not silently drop tickers.
+
+5. Cache safely
+Keep identity cache, but make sure stale missing identities do not permanently poison the UI.
+
+If a ticker has no identity because of a failed fetch, allow retry on refresh.
+Do not store failed/missing identity forever.
+
+6. Render fallback correctly
+If identity exists:
+Show logo/avatar + company name + ticker.
+
+If identity does not exist:
+Show fallback avatar + ticker.
+No broken image icons.
+
+7. Real validation
+Do not say “server started” or “login page appeared” as validation.
+
+Validation must be from authenticated UI or actual rendered object logs.
+
+Confirm with specific visible Upcoming tickers:
+- VZ shows Verizon Communications Inc.
+- DPZ shows Domino's Pizza Inc.
+- CDNS shows Cadence Design Systems Inc.
+- NUE shows Nucor Corporation
+- Any other 10 random visible Upcoming tickers show names if FMP identity returns them.
+
+8. If identityMap still fails for many Upcoming tickers
+Then fallback to using /api/catalysts/events?tab=earnings_dates&mode=upcoming for identity enrichment, because that endpoint already returns enriched FMP companyName/logo.
+
+Do not leave Upcoming dependent on raw Finnhub identity if the identityMap patch remains unreliable.
+
+Final response:
+- Confirm exactly how many Upcoming tickers were visible
+- Confirm how many identity records loaded
+- Confirm 10 sample tickers with company name + hasLogo
+- Confirm all identityMap lookups now use getIdentity()
+- Confirm no ticker cap/drop remains
+- Confirm Recent was not changed
+- Confirm popup behavior was untouched
