@@ -1,0 +1,82 @@
+The backend safe earnings-clean router is still disabled, but ready.
+
+Do not enable broad 30-day fetching.
+
+Frontend implementation must be FMP-safe.
+
+For Catalyst Calendar > Earnings Dates > Upcoming:
+
+1. Do NOT call old endpoint:
+   /api/catalysts/events?tab=earnings_dates&mode=upcoming
+
+2. Do NOT call Finnhub.
+
+3. Do NOT call Polymarket.
+
+4. Do NOT call /api/catalysts/earnings/* until backend router is re-enabled.
+
+Once backend router is re-enabled, use this safe pattern:
+
+On visible week load:
+GET /api/catalysts/earnings/upcoming-clean?from={weekStart}&to={weekEnd}
+
+Do not request more than 7 days initially.
+
+When user navigates next/previous week:
+refetch only that visible week.
+
+When user selects a day:
+GET /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Do not use enrich=true initially.
+
+Selected-day list should show:
+- companyName or symbol
+- ticker
+- EPS Est
+- EPS Actual
+- Revenue Est
+- Revenue Actual
+- price if provided
+- marketCap if provided
+
+If companyName/logo/price/marketCap are missing, show fallback values. Do not call more APIs from frontend to patch them.
+
+No Smart toggle.
+No beat odds.
+No Polymarket.
+No high-conviction sections.
+No most-talked-about sections.
+
+Keep:
+- Upcoming / Recent toggle
+- calendar week cards
+- Today / previous / next controls
+- selected-day list
+- existing popup on click
+- Recent earnings unchanged
+
+Also:
+- React Query retry should be false or max 1 for these earnings-clean endpoints.
+- No polling.
+- No refetch-on-window-focus for this endpoint.
+- No automatic 30-day preload.
+
+Validation:
+Before backend router is re-enabled, confirm frontend makes zero /api/catalysts/earnings/* calls.
+
+After backend router is re-enabled:
+Confirm Network tab:
+- one upcoming-clean call for the visible week only
+- one day-clean call when selecting a day
+- no old earnings upcoming endpoint
+- no Finnhub
+- no Polymarket
+- no retry storm
+
+Final response:
+- Confirm old upcoming endpoint is no longer used
+- Confirm frontend fetches one week only
+- Confirm selected day uses day-clean enrich=false
+- Confirm no polling/retry storm
+- Confirm Recent and popup untouched

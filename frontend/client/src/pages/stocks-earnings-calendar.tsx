@@ -970,9 +970,12 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const [enrichments, setEnrichments] = useState<Record<string, EarningsDetailData>>({});
   const [enrichLoading, setEnrichLoading] = useState<Set<string>>(new Set());
+  // ── Feature flag: flip to true once backend /api/catalysts/earnings/* router is re-enabled ──
+  const EARNINGS_CLEAN_ENABLED = false;
+
   const [fmpDateMap, setFmpDateMap] = useState<Map<string, EarningsEntry[]>>(new Map());
   const [fmpLoading, setFmpLoading] = useState(false);
-  const fmpFetchedRef = useRef(false);
+  const fmpFetchedWeeks = useRef<Set<string>>(new Set());
 
   // Day-clean state: enriched cards for the selected day
   interface DayCleanEntry {
@@ -1009,19 +1012,20 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     undated.push(entry);
   }
 
-  // Fetch upcoming-clean once on mount — populates calendar day-chip counts
+  // upcoming-clean: fetch visible week only, once per week, only when backend router is enabled
   useEffect(() => {
-    if (fmpFetchedRef.current) return;
-    fmpFetchedRef.current = true;
+    if (!EARNINGS_CLEAN_ENABLED) return;
+
+    const weekKey = dateKey(weekStart);
+    if (fmpFetchedWeeks.current.has(weekKey)) return;
+    fmpFetchedWeeks.current.add(weekKey);
     setFmpLoading(true);
 
-    const today = new Date();
-    const toDate = new Date(today);
-    toDate.setDate(today.getDate() + 90);
-    const fromStr = dateKey(today);
-    const toStr = dateKey(toDate);
-
-    const params = new URLSearchParams({ from: fromStr, to: toStr, limit: "10000" });
+    const weekEnd = addDays(weekStart, 6);
+    const params = new URLSearchParams({
+      from: dateKey(weekStart),
+      to: dateKey(weekEnd),
+    });
     const url = `/api/catalysts/earnings/upcoming-clean?${params}`;
 
     if (process.env.NODE_ENV !== "production") {
@@ -1029,59 +1033,64 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
     }
 
     fetch(url)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((data) => {
         const arr: Record<string, unknown>[] = Array.isArray(data)
           ? data
           : (data.events || data.results || data.earnings || []);
         if (process.env.NODE_ENV !== "production") {
-          console.log("[upcoming-clean returned]", arr.length);
+          console.log("[upcoming-clean returned]", arr.length, "for week", weekKey);
         }
-        const map = new Map<string, EarningsEntry[]>();
+        const weekMap = new Map<string, EarningsEntry[]>();
         for (const ev of arr) {
           const sym = (ev.symbol || ev.ticker || "") as string;
           if (!sym || sym === "???") continue;
           const d = (ev.date || "") as string;
           if (!d) continue;
           const key = d.slice(0, 10);
-          if (!map.has(key)) map.set(key, []);
-          map.get(key)!.push(buildFmpEntry(ev));
+          if (!weekMap.has(key)) weekMap.set(key, []);
+          weekMap.get(key)!.push(buildFmpEntry(ev));
         }
-        if (process.env.NODE_ENV !== "production") {
-          console.table(Array.from(map.entries()).map(([date, evts]) => ({ date, count: evts.length })));
-        }
-        setFmpDateMap(map);
+        setFmpDateMap(prev => {
+          const merged = new Map(prev);
+          for (const [k, v] of weekMap) merged.set(k, v);
+          return merged;
+        });
         const allTickers = arr.map(ev => (ev.symbol || ev.ticker || "") as string).filter(Boolean);
         if (allTickers.length > 0) onFetchIdentity(allTickers);
       })
-      .catch(() => {})
+      .catch(() => { fmpFetchedWeeks.current.delete(weekKey); })
       .finally(() => setFmpLoading(false));
-  }, []);
+  }, [weekStart, EARNINGS_CLEAN_ENABLED]);
 
-  // Fetch day-clean when a day is selected — populates enriched card list
+  // day-clean: fetch selected day once, only when backend router is enabled
   useEffect(() => {
+    if (!EARNINGS_CLEAN_ENABLED) return;
     if (!selectedDayKey || selectedDayKey === "undated") return;
     if (dayCleanFetchedRef.current.has(selectedDayKey)) return;
     dayCleanFetchedRef.current.add(selectedDayKey);
     setDayCleanLoading(true);
 
-    const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&limit=1000`;
+    const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&enrich=false`;
     if (process.env.NODE_ENV !== "production") {
       console.log("[day-clean request]", url);
     }
 
     fetch(url)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((data) => {
         const arr = Array.isArray(data) ? data : (data.events || data.results || data.earnings || []);
         if (process.env.NODE_ENV !== "production") {
-          console.log("[day-clean returned]", arr.length);
+          console.log("[day-clean returned]", arr.length, "for", selectedDayKey);
         }
         setDayCleanEntries(arr);
       })
-      .catch(() => { setDayCleanEntries([]); })
+      .catch(() => {
+        dayCleanFetchedRef.current.delete(selectedDayKey);
+        setDayCleanEntries([]);
+      })
       .finally(() => setDayCleanLoading(false));
-  }, [selectedDayKey]);
+  }, [selectedDayKey, EARNINGS_CLEAN_ENABLED]);
 
   // Calendar date map: FMP upcoming-clean data (counts for day chips)
   const dateMap = new Map<string, EarningsEntry[]>(fmpDateMap);
