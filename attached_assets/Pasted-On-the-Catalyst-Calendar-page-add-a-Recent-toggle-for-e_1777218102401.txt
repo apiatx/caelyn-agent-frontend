@@ -1,0 +1,204 @@
+On the Catalyst Calendar page, add a “Recent” toggle for each main catalyst tab.
+
+Current main tabs:
+- Earnings
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Current/upcoming behavior:
+- The default/current view should stay as an actual calendar view.
+- Do not break the current calendar rendering.
+- Do not break the Earnings tab popup/click behavior.
+
+New requirement:
+Each tab needs a toggle between:
+1. Upcoming
+2. Recent
+
+UX behavior:
+- Upcoming = existing calendar view
+- Recent = list view, NOT calendar view
+
+Example:
+When user is on “Dividends” tab:
+[Upcoming] [Recent]
+
+Upcoming shows the dividend calendar.
+Recent shows a sortable recent dividends list.
+
+When user is on “IPOs” tab:
+[Upcoming] [Recent]
+
+Upcoming shows IPO calendar.
+Recent shows recent IPO list.
+
+Required tabs that need this toggle:
+- Earnings
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+- Treasury / Macro
+
+Important:
+The Recent toggle is per tab. It should not be a global separate page.
+Active tab + active mode should determine the data query.
+
+Suggested state:
+activeTab:
+- earnings_dates
+- dividends
+- ipos
+- splits
+- economic_releases
+- treasury_macro
+
+activeMode:
+- upcoming
+- recent
+
+Default:
+activeMode = upcoming
+
+Frontend query behavior:
+If activeMode === "upcoming":
+Call current/upcoming catalyst endpoint, likely:
+GET /api/catalysts/events?tab={activeTab}&from={today}&to={futureDate}
+
+If activeMode === "recent":
+Call:
+GET /api/catalysts/events?tab={activeTab}&mode=recent
+or, if backend uses date ranges:
+GET /api/catalysts/events?tab={activeTab}&from={recentStartDate}&to={today}&mode=recent
+
+Use whatever backend contract exists, but prefer explicit `mode=recent`.
+
+Recent default date window:
+- Earnings: last 30 days
+- Dividends: last 60 days
+- IPOs: last 90 days
+- Stock Splits: last 90 days
+- Economic Releases: last 30 days
+- Treasury / Macro: last 30 days
+
+If the backend provides default windows, let backend control this.
+
+Recent list view requirements:
+Display as a clean sortable table/list, not a calendar.
+
+Columns:
+- Date
+- Symbol / Macro
+- Company / Event
+- Event Type
+- Key Details
+- Importance
+- Source
+
+Per tab details:
+
+Earnings Recent:
+- EPS actual
+- EPS estimate
+- Revenue actual
+- Revenue estimate
+- Surprise if available
+
+Dividends Recent:
+- Dividend amount
+- Ex-dividend date
+- Record date
+- Payment date
+
+IPOs Recent:
+- IPO date
+- Exchange
+- Price range / offer price
+- Shares if available
+
+Stock Splits Recent:
+- Split date
+- Split ratio
+
+Economic Releases Recent:
+- Release date
+- Actual
+- Estimate
+- Previous
+- Country
+
+Treasury / Macro Recent:
+- Date
+- Rate / yield / macro indicator name
+- Actual/current value
+- Previous value if available
+
+Click behavior:
+- Upcoming Earnings calendar: keep existing earnings popup behavior untouched.
+- Recent Earnings list: if clicking a ticker can reuse the existing earnings detail popup safely, do it. If not, open the generic Catalyst Detail modal.
+- Non-earnings recent rows: open the generic Catalyst Detail modal.
+
+Visual requirements:
+Add a small segmented toggle near the top of each tab:
+[Upcoming] [Recent]
+
+Upcoming selected:
+- Calendar visible
+
+Recent selected:
+- Calendar hidden
+- Recent list/table visible
+
+Do not show both at the same time.
+
+Keep existing filters:
+- Watchlist
+- Portfolio
+- Sector
+- Market cap
+- Event type
+- Search ticker
+- Date range
+
+When Recent mode is active:
+- Filters should still apply.
+- Date range should default to recent window.
+- User can override date range.
+
+Empty state:
+If Recent mode returns no data:
+“No recent catalysts found for this filter/date range.”
+
+Loading state:
+Show skeleton list rows for Recent mode.
+Show calendar skeleton for Upcoming mode.
+
+Implementation preference:
+Reuse existing table/list components if available.
+Do not build a giant one-off component if the app already has a reusable table/card/list pattern.
+
+Final validation:
+Test:
+1. Earnings > Upcoming = existing calendar and popup still work
+2. Earnings > Recent = list view
+3. Dividends > Upcoming = calendar
+4. Dividends > Recent = list view
+5. IPOs > Upcoming = calendar
+6. IPOs > Recent = list view
+7. Stock Splits > Upcoming = calendar
+8. Stock Splits > Recent = list view
+9. Economic Releases > Upcoming = calendar
+10. Economic Releases > Recent = list view
+11. Treasury / Macro > Upcoming = calendar or existing macro view
+12. Treasury / Macro > Recent = list view
+
+Final response:
+Tell me:
+- Which files changed
+- How the Upcoming/Recent state is handled
+- Which endpoint/query params are used for Recent
+- Confirm Recent is list view only
+- Confirm Earnings popup behavior was not broken

@@ -1,0 +1,147 @@
+The new Catalyst Calendar page is close, but the non-earnings tabs are wrong.
+
+Current issue:
+The tabs:
+- Dividends
+- IPOs
+- Stock Splits
+- Economic Releases
+
+are only showing sortable range buttons like:
+- Today
+- This Week
+- Next Week
+- This Month
+
+They are NOT showing an actual calendar layout.
+
+Required fix:
+Make these tabs use the same actual calendar UI/layout behavior as the Earnings tab.
+
+Important:
+Do NOT break the Earnings tab.
+Do NOT rewrite the working earnings popup/modal behavior.
+Do NOT remove the range filters entirely if they are useful, but they cannot replace the real calendar.
+
+Expected UX:
+Each of these tabs should render a real calendar just like Earnings:
+
+Tabs that need actual calendar view:
+1. Earnings Dates — already working, preserve it
+2. Dividends — must use actual calendar
+3. IPOs — must use actual calendar
+4. Stock Splits — must use actual calendar
+5. Economic Releases — must use actual calendar
+
+Treasury / Macro can either use the same calendar layout or a macro timeline/list if calendar data is not day-specific, but if the events have dates, show them on the calendar too.
+
+Implementation requirements:
+1. Audit the current Earnings tab calendar component.
+   - Find the reusable calendar component or logic used by the Earnings tab.
+   - Reuse it for Dividends, IPOs, Stock Splits, and Economic Releases.
+   - Do not create a completely separate one-off calendar unless the existing component is impossible to reuse.
+
+2. Normalize frontend event mapping per tab.
+
+Calendar event object should be shaped consistently, something like:
+
+{
+  id: string,
+  date: string,
+  symbol?: string,
+  title: string,
+  subtitle?: string,
+  eventType: string,
+  importance?: "high" | "medium" | "low",
+  raw: object
+}
+
+Map each catalyst tab into the same calendar event format:
+
+Dividends:
+- date should use exDividendDate first if available
+- fallback to date
+- title example: "AAPL Dividend"
+- subtitle can include dividend amount, payment date, record date
+
+IPOs:
+- date should use ipoDate/date
+- title example: "XYZ IPO"
+- subtitle can include exchange, price range, shares
+
+Stock Splits:
+- date should use split date / execution date / date
+- title example: "NVDA Split"
+- subtitle can include split ratio
+
+Economic Releases:
+- date should use release date / date
+- title example: "CPI", "Initial Jobless Claims", "GDP", etc.
+- symbol should show "Macro" or be blank
+- subtitle can include actual / estimate / previous if available
+
+3. The calendar should support:
+- Month view
+- Week/day grouping if the existing Earnings calendar supports it
+- Clickable event chips/cards inside each calendar date cell
+- Same visual density as Earnings
+- Badges/colors by event type
+- Empty calendar cells should still render like a real calendar grid
+
+4. Range buttons:
+The range buttons Today / This Week / Next Week / This Month can stay as quick filters above the calendar, but after clicking them, the result must still display on the actual calendar grid.
+
+Do not let those buttons switch the page into a plain sortable table/list.
+
+5. Clicking calendar events:
+- Earnings tab: preserve existing stock click/popup behavior exactly.
+- Dividends/IPOs/Splits/Economic Releases: open the generic Catalyst Detail modal.
+- Do not route these clicks through the earnings popup unless it is actually an earnings event.
+
+6. Shared component approach:
+Preferred implementation:
+- Extract or reuse the Earnings calendar component as something like:
+  CatalystCalendarGrid
+  EventCalendarView
+  CalendarEventGrid
+
+Then pass:
+- events
+- activeTab
+- onEventClick
+- renderEventBadge
+- selectedRange/date
+
+The calendar should not be hardcoded only for earnings.
+
+7. Backend contract assumption:
+Use /api/catalysts/events?tab={tab}
+where tab values are:
+- dividends
+- ipos
+- splits
+- economic_releases
+
+If the backend returns events with different date field names, normalize them in the frontend before passing them to the calendar.
+
+8. If the backend data has no usable date field:
+Do not silently render a table.
+Show a warning in dev console and display:
+"No calendar-ready events found for this date range."
+But still keep the calendar grid visible.
+
+9. Final validation:
+Test each tab:
+- Earnings Dates: still works exactly like before
+- Dividends: actual calendar grid visible
+- IPOs: actual calendar grid visible
+- Stock Splits: actual calendar grid visible
+- Economic Releases: actual calendar grid visible
+
+10. Final response:
+Tell me:
+- Which component currently powers the Earnings calendar
+- Whether you reused/extracted it
+- Which files changed
+- Confirm that Dividends, IPOs, Stock Splits, and Economic Releases now render as real calendars
+- Confirm Earnings popup/click behavior was untouched
