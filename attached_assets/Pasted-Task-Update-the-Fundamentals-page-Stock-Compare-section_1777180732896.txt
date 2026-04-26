@@ -1,0 +1,301 @@
+Task: Update the Fundamentals page Stock Compare section to use backend-supported metric metadata and clean up the metric dropdown/screener.
+
+Context:
+Stock Compare currently shows a metric dropdown with:
+
+- Market Cap
+- Revenue
+- Revenue Growth
+- Gross Profit
+- Gross Margin
+- Profit Margin
+- EPS (Diluted)
+- Operating Income
+- Net Income
+- EBITDA
+- Free Cash Flow
+- Total Debt
+- P/S Ratio
+- P/E Ratio
+- Recent News
+
+Some metrics are missing for certain tickers. Backend is being updated to return a proper supported metric registry, diagnostics, screener rows, metric availability, and warnings.
+
+Main frontend goals:
+1. Remove Recent News from the chart metric dropdown.
+2. Add newly supported numeric metrics.
+3. Render unavailable metric values as N/A, not broken/blank.
+4. Keep chart metric dropdown numeric only.
+5. Keep Recent News as a separate panel below the screener.
+6. Use backend /metrics endpoint if available, with hardcoded fallback.
+7. Show metric availability/warnings cleanly.
+8. Keep screener sorting frontend-only.
+
+Backend endpoints expected:
+
+GET /api/fundamentals/compare/metrics
+
+Returns:
+{
+  "metrics": [
+    {
+      "key": "revenue",
+      "label": "Revenue",
+      "unit": "currency",
+      "chartable": true,
+      "screener": true,
+      "source": "income_statement",
+      "fallback": null
+    }
+  ],
+  "nonChartSections": [
+    {
+      "key": "recent_news",
+      "label": "Recent News"
+    }
+  ]
+}
+
+POST /api/fundamentals/compare
+
+Returns:
+{
+  "metric": {},
+  "range": "5Y",
+  "symbols": [],
+  "series": [],
+  "screener": [],
+  "snapshot": [],
+  "news": {},
+  "metricAvailability": {},
+  "missingSymbols": [],
+  "invalidSymbols": [],
+  "meta": {
+    "warnings": []
+  }
+}
+
+GET /api/fundamentals/compare/diagnostics?symbols=INTT,TRT,NNBR&period=annual
+
+This can be used for optional debug/admin visibility but should not be required for normal rendering.
+
+Required metric dropdown changes:
+
+Remove:
+- Recent News
+
+Add:
+- Price
+- Price Change %
+- Enterprise Value
+- Operating Margin
+- FCF Margin
+- Debt / Equity
+- Current Ratio
+- EV / EBITDA
+- ROE
+- ROA
+
+Final chart metric dropdown should be numeric only:
+
+Price
+Price Change %
+Market Cap
+Enterprise Value
+Revenue
+Revenue Growth
+Gross Profit
+Gross Margin
+Operating Income
+Operating Margin
+Net Income
+Profit Margin
+EPS (Diluted)
+EBITDA
+Free Cash Flow
+FCF Margin
+Total Debt
+Debt / Equity
+Current Ratio
+P/S Ratio
+P/E Ratio
+EV / EBITDA
+ROE
+ROA
+
+Metric key map:
+
+const FALLBACK_STOCK_COMPARE_METRICS = [
+  { key: "price", label: "Price", unit: "price", chartable: true, screener: true },
+  { key: "price_change_percent", label: "Price Change %", unit: "percentAlready", chartable: true, screener: true },
+  { key: "market_cap", label: "Market Cap", unit: "currency", chartable: true, screener: true },
+  { key: "enterprise_value", label: "Enterprise Value", unit: "currency", chartable: true, screener: true },
+  { key: "revenue", label: "Revenue", unit: "currency", chartable: true, screener: true },
+  { key: "revenue_growth", label: "Revenue Growth", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "gross_profit", label: "Gross Profit", unit: "currency", chartable: true, screener: true },
+  { key: "gross_margin", label: "Gross Margin", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "operating_income", label: "Operating Income", unit: "currency", chartable: true, screener: true },
+  { key: "operating_margin", label: "Operating Margin", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "net_income", label: "Net Income", unit: "currency", chartable: true, screener: true },
+  { key: "profit_margin", label: "Profit Margin", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "eps_diluted", label: "EPS (Diluted)", unit: "number", chartable: true, screener: true },
+  { key: "ebitda", label: "EBITDA", unit: "currency", chartable: true, screener: true },
+  { key: "free_cash_flow", label: "Free Cash Flow", unit: "currency", chartable: true, screener: true },
+  { key: "fcf_margin", label: "FCF Margin", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "total_debt", label: "Total Debt", unit: "currency", chartable: true, screener: true },
+  { key: "debt_to_equity", label: "Debt / Equity", unit: "ratio", chartable: true, screener: true },
+  { key: "current_ratio", label: "Current Ratio", unit: "ratio", chartable: true, screener: true },
+  { key: "ps_ratio", label: "P/S Ratio", unit: "ratio", chartable: true, screener: true },
+  { key: "pe_ratio", label: "P/E Ratio", unit: "ratio", chartable: true, screener: true },
+  { key: "ev_to_ebitda", label: "EV / EBITDA", unit: "ratio", chartable: true, screener: true },
+  { key: "roe", label: "ROE", unit: "percentDecimal", chartable: true, screener: true },
+  { key: "roa", label: "ROA", unit: "percentDecimal", chartable: true, screener: true }
+];
+
+Important:
+- Try GET /api/fundamentals/compare/metrics on component load.
+- If it fails, use FALLBACK_STOCK_COMPARE_METRICS.
+- Only show metrics where chartable === true in chart dropdown.
+- Do not show Recent News in the metric dropdown.
+
+Screener table columns:
+
+Ticker
+Company
+Price
+Price Change %
+Market Cap
+Enterprise Value
+Revenue
+Revenue Growth
+Gross Profit
+Gross Margin
+Operating Income
+Operating Margin
+Net Income
+Profit Margin
+EPS (Diluted)
+EBITDA
+Free Cash Flow
+FCF Margin
+Total Debt
+Debt / Equity
+Current Ratio
+P/S Ratio
+P/E Ratio
+EV / EBITDA
+ROE
+ROA
+
+Use backend response.screener first.
+Fallback to response.snapshot only if screener missing.
+
+Frontend field mapping:
+Backend may return camelCase screener fields.
+
+Column config:
+
+const SCREENER_COLUMNS = [
+  { key: "symbol", label: "Ticker", type: "text" },
+  { key: "name", label: "Company", type: "text" },
+  { key: "price", label: "Price", type: "price" },
+  { key: "priceChangePercent", label: "Price Change %", type: "percentAlready" },
+  { key: "marketCap", label: "Market Cap", type: "currency" },
+  { key: "enterpriseValue", label: "Enterprise Value", type: "currency" },
+  { key: "revenue", label: "Revenue", type: "currency" },
+  { key: "revenueGrowth", label: "Revenue Growth", type: "percentDecimal" },
+  { key: "grossProfit", label: "Gross Profit", type: "currency" },
+  { key: "grossMargin", label: "Gross Margin", type: "percentDecimal" },
+  { key: "operatingIncome", label: "Operating Income", type: "currency" },
+  { key: "operatingMargin", label: "Operating Margin", type: "percentDecimal" },
+  { key: "netIncome", label: "Net Income", type: "currency" },
+  { key: "profitMargin", label: "Profit Margin", type: "percentDecimal" },
+  { key: "epsDiluted", label: "EPS (Diluted)", type: "number" },
+  { key: "ebitda", label: "EBITDA", type: "currency" },
+  { key: "freeCashFlow", label: "Free Cash Flow", type: "currency" },
+  { key: "fcfMargin", label: "FCF Margin", type: "percentDecimal" },
+  { key: "totalDebt", label: "Total Debt", type: "currency" },
+  { key: "debtToEquity", label: "Debt / Equity", type: "ratio" },
+  { key: "currentRatio", label: "Current Ratio", type: "ratio" },
+  { key: "psRatio", label: "P/S Ratio", type: "ratio" },
+  { key: "peRatio", label: "P/E Ratio", type: "ratio" },
+  { key: "evToEbitda", label: "EV / EBITDA", type: "ratio" },
+  { key: "roe", label: "ROE", type: "percentDecimal" },
+  { key: "roa", label: "ROA", type: "percentDecimal" }
+];
+
+Formatting rules:
+- currency: 122000000 => 122.00M
+- price: 9.83 => $9.83
+- percentDecimal: 0.084 => 8.4%
+- percentAlready: -1.82 => -1.82%
+- ratio: 1.07 => 1.07x
+- number: 0.71 => 0.71
+- null/undefined/NaN => N/A
+
+Be careful:
+priceChangePercent is already a percent number. Do not multiply by 100.
+revenueGrowth, margins, ROE, ROA are decimals. Do multiply by 100 for display.
+
+Sorting:
+- All screener columns sortable.
+- Sorting is local only.
+- Sorting must not call backend.
+- Null values sink to bottom.
+
+Chart data behavior:
+- Use response.series.
+- Backend returns points ascending now. Do not reverse.
+- Build wide chart rows by year.
+- Do not render symbols with zero valid points.
+- If metric has no chart data for all symbols, show:
+  "No chartable data returned for this metric. Try a different metric."
+
+Warnings:
+Show response.meta.warnings in a muted warning strip above the chart or above the screener.
+
+Example:
+"Some metrics are unavailable for selected symbols. Missing values are shown as N/A."
+
+Metric availability:
+If response.metricAvailability exists, use it to optionally show a small info indicator.
+Do not block rendering if missing.
+
+Recent News section:
+Keep Recent News below the screener as a separate panel.
+
+Render from response.news:
+- Group by ticker.
+- Show latest 2-3 headlines per ticker.
+- Do not treat it as a chart metric.
+
+Options dropdown:
+If there is any saved metric list, remove recent_news from saved chart metrics.
+If recent_news was saved in localStorage, ignore/remove it.
+
+Default selected metric:
+Keep Revenue as default.
+
+Default range:
+Keep 5Y.
+
+Required UX:
+- Metric dropdown = numeric metrics only.
+- Screener = all metrics visible side-by-side.
+- Recent News = separate panel.
+- Missing values = N/A.
+- No frontend crash from missing metric fields.
+- No new API call when sorting screener.
+- Do not call backend just because user sorts a table column.
+- Metric change can call backend for chart series, but screener should reuse response.screener where possible.
+
+Done criteria:
+1. Recent News is removed from chart metric dropdown.
+2. New metrics appear in dropdown and screener.
+3. Screener shows all selected tickers and all columns.
+4. Missing metrics show N/A.
+5. Sorting all columns works without API calls.
+6. Chart still works for Revenue 5Y.
+7. EBITDA/EV/EBITDA/etc. do not crash if unavailable.
+8. Backend warnings are visible but not ugly.
+9. Recent News appears as a separate section below screener.

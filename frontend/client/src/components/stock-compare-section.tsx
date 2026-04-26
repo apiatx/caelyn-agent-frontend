@@ -28,15 +28,19 @@ type CompareSymbol = {
   industry?: string;
 };
 
-type CompareMetricKey =
-  | "market_cap" | "revenue" | "revenue_growth" | "gross_profit"
-  | "gross_margin" | "profit_margin" | "eps_diluted" | "operating_income"
-  | "net_income" | "ebitda" | "free_cash_flow" | "total_debt"
-  | "ps_ratio" | "pe_ratio" | "recent_news";
+type CompareMetricKey = string;
 
 type CompareRange = "1Y" | "3Y" | "5Y";
 
-type MetricDef = { key: CompareMetricKey; label: string; unit: string };
+type MetricDef = {
+  key: CompareMetricKey;
+  label: string;
+  unit: string;
+  chartable?: boolean;
+  screener?: boolean;
+  source?: string;
+  fallback?: string | null;
+};
 
 type SearchResult = {
   symbol: string;
@@ -61,22 +65,7 @@ type SeriesEntry = {
   latest?: { date: string; value: number | null; formatted?: string };
 };
 
-type SnapshotRow = {
-  symbol: string;
-  name?: string;
-  market_cap?: number | null;
-  revenue?: number | null;
-  revenue_growth?: number | null;
-  gross_margin?: number | null;
-  profit_margin?: number | null;
-  eps_diluted?: number | null;
-  ebitda?: number | null;
-  free_cash_flow?: number | null;
-  total_debt?: number | null;
-  ps_ratio?: number | null;
-  pe_ratio?: number | null;
-  [key: string]: any;
-};
+type ScreenerRow = { [key: string]: any };
 
 type NewsItem = { headline?: string; title?: string; source?: string; date?: string; summary?: string; url?: string };
 
@@ -85,34 +74,77 @@ type CompareResponse = {
   range?: string;
   symbols?: string[];
   series?: SeriesEntry[];
-  snapshot?: SnapshotRow[];
+  screener?: ScreenerRow[];
+  snapshot?: ScreenerRow[];
   news?: Record<string, NewsItem[]>;
+  metricAvailability?: Record<string, Record<string, boolean>>;
+  missingSymbols?: string[];
+  invalidSymbols?: string[];
   meta?: { cached?: boolean; generatedAt?: string; warnings?: string[] };
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STOCK_COMPARE_METRICS: MetricDef[] = [
-  { key: "market_cap",       label: "Market Cap",       unit: "currency" },
-  { key: "revenue",          label: "Revenue",          unit: "currency" },
-  { key: "revenue_growth",   label: "Revenue Growth",   unit: "percent"  },
-  { key: "gross_profit",     label: "Gross Profit",     unit: "currency" },
-  { key: "gross_margin",     label: "Gross Margin",     unit: "percent"  },
-  { key: "profit_margin",    label: "Profit Margin",    unit: "percent"  },
-  { key: "eps_diluted",      label: "EPS (Diluted)",    unit: "number"   },
-  { key: "operating_income", label: "Operating Income", unit: "currency" },
-  { key: "net_income",       label: "Net Income",       unit: "currency" },
-  { key: "ebitda",           label: "EBITDA",           unit: "currency" },
-  { key: "free_cash_flow",   label: "Free Cash Flow",   unit: "currency" },
-  { key: "total_debt",       label: "Total Debt",       unit: "currency" },
-  { key: "ps_ratio",         label: "P/S Ratio",        unit: "ratio"    },
-  { key: "pe_ratio",         label: "P/E Ratio",        unit: "ratio"    },
-  { key: "recent_news",      label: "Recent News",      unit: "news"     },
+const FALLBACK_STOCK_COMPARE_METRICS: MetricDef[] = [
+  { key: "price",               label: "Price",             unit: "price",          chartable: true,  screener: true },
+  { key: "price_change_percent",label: "Price Change %",    unit: "percentAlready", chartable: true,  screener: true },
+  { key: "market_cap",          label: "Market Cap",        unit: "currency",       chartable: true,  screener: true },
+  { key: "enterprise_value",    label: "Enterprise Value",  unit: "currency",       chartable: true,  screener: true },
+  { key: "revenue",             label: "Revenue",           unit: "currency",       chartable: true,  screener: true },
+  { key: "revenue_growth",      label: "Revenue Growth",    unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "gross_profit",        label: "Gross Profit",      unit: "currency",       chartable: true,  screener: true },
+  { key: "gross_margin",        label: "Gross Margin",      unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "operating_income",    label: "Operating Income",  unit: "currency",       chartable: true,  screener: true },
+  { key: "operating_margin",    label: "Operating Margin",  unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "net_income",          label: "Net Income",        unit: "currency",       chartable: true,  screener: true },
+  { key: "profit_margin",       label: "Profit Margin",     unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "eps_diluted",         label: "EPS (Diluted)",     unit: "number",         chartable: true,  screener: true },
+  { key: "ebitda",              label: "EBITDA",            unit: "currency",       chartable: true,  screener: true },
+  { key: "free_cash_flow",      label: "Free Cash Flow",    unit: "currency",       chartable: true,  screener: true },
+  { key: "fcf_margin",          label: "FCF Margin",        unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "total_debt",          label: "Total Debt",        unit: "currency",       chartable: true,  screener: true },
+  { key: "debt_to_equity",      label: "Debt / Equity",     unit: "ratio",          chartable: true,  screener: true },
+  { key: "current_ratio",       label: "Current Ratio",     unit: "ratio",          chartable: true,  screener: true },
+  { key: "ps_ratio",            label: "P/S Ratio",         unit: "ratio",          chartable: true,  screener: true },
+  { key: "pe_ratio",            label: "P/E Ratio",         unit: "ratio",          chartable: true,  screener: true },
+  { key: "ev_to_ebitda",        label: "EV / EBITDA",       unit: "ratio",          chartable: true,  screener: true },
+  { key: "roe",                 label: "ROE",               unit: "percentDecimal", chartable: true,  screener: true },
+  { key: "roa",                 label: "ROA",               unit: "percentDecimal", chartable: true,  screener: true },
 ];
 
-const DEFAULT_STARRED: CompareMetricKey[] = [
+const DEFAULT_STARRED: string[] = [
   "revenue", "gross_profit", "profit_margin", "eps_diluted",
   "operating_income", "ebitda", "free_cash_flow", "total_debt", "market_cap",
+];
+
+// Screener table column definitions (camelCase keys matching backend screener rows)
+const SCREENER_COLUMNS: { key: string; label: string; type: string }[] = [
+  { key: "symbol",             label: "Ticker",           type: "text"           },
+  { key: "name",               label: "Company",          type: "text"           },
+  { key: "price",              label: "Price",            type: "price"          },
+  { key: "priceChangePercent", label: "Price Change %",   type: "percentAlready" },
+  { key: "marketCap",          label: "Market Cap",       type: "currency"       },
+  { key: "enterpriseValue",    label: "Enterprise Value", type: "currency"       },
+  { key: "revenue",            label: "Revenue",          type: "currency"       },
+  { key: "revenueGrowth",      label: "Revenue Growth",   type: "percentDecimal" },
+  { key: "grossProfit",        label: "Gross Profit",     type: "currency"       },
+  { key: "grossMargin",        label: "Gross Margin",     type: "percentDecimal" },
+  { key: "operatingIncome",    label: "Operating Income", type: "currency"       },
+  { key: "operatingMargin",    label: "Operating Margin", type: "percentDecimal" },
+  { key: "netIncome",          label: "Net Income",       type: "currency"       },
+  { key: "profitMargin",       label: "Profit Margin",    type: "percentDecimal" },
+  { key: "epsDiluted",         label: "EPS (Diluted)",    type: "number"         },
+  { key: "ebitda",             label: "EBITDA",           type: "currency"       },
+  { key: "freeCashFlow",       label: "Free Cash Flow",   type: "currency"       },
+  { key: "fcfMargin",          label: "FCF Margin",       type: "percentDecimal" },
+  { key: "totalDebt",          label: "Total Debt",       type: "currency"       },
+  { key: "debtToEquity",       label: "Debt / Equity",    type: "ratio"          },
+  { key: "currentRatio",       label: "Current Ratio",    type: "ratio"          },
+  { key: "psRatio",            label: "P/S Ratio",        type: "ratio"          },
+  { key: "peRatio",            label: "P/E Ratio",        type: "ratio"          },
+  { key: "evToEbitda",         label: "EV / EBITDA",      type: "ratio"          },
+  { key: "roe",                label: "ROE",              type: "percentDecimal" },
+  { key: "roa",                label: "ROA",              type: "percentDecimal" },
 ];
 
 const RANGES: CompareRange[] = ["1Y", "3Y", "5Y"];
@@ -172,13 +204,32 @@ function formatNumber(v: number | null | undefined): string {
   return Number(v).toFixed(2);
 }
 
+function formatPrice(v: number | null | undefined): string {
+  if (v == null || isNaN(Number(v))) return "N/A";
+  return `$${Number(v).toFixed(2)}`;
+}
+
+function formatPercentDecimal(v: number | null | undefined): string {
+  if (v == null || isNaN(Number(v))) return "N/A";
+  return `${(Number(v) * 100).toFixed(1)}%`;
+}
+
+function formatPercentAlready(v: number | null | undefined): string {
+  if (v == null || isNaN(Number(v))) return "N/A";
+  const n = Number(v);
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+}
+
 function formatValue(v: number | null | undefined, unit: string): string {
   if (v == null) return "N/A";
   switch (unit) {
-    case "currency": return formatCurrencyCompact(v);
-    case "percent":  return formatPercent(v);
-    case "ratio":    return formatRatio(v);
-    default:         return formatNumber(v);
+    case "currency":       return formatCurrencyCompact(v);
+    case "price":          return formatPrice(v);
+    case "percent":        return formatPercent(v);
+    case "percentDecimal": return formatPercentDecimal(v);
+    case "percentAlready": return formatPercentAlready(v);
+    case "ratio":          return formatRatio(v);
+    default:               return formatNumber(v);
   }
 }
 
@@ -231,62 +282,95 @@ function DropdownMenu({
   );
 }
 
-// ─── Snapshot Table ───────────────────────────────────────────────────────────
+// ─── Screener Table ───────────────────────────────────────────────────────────
 
-const SNAPSHOT_COLS: { key: string; label: string; unit: string }[] = [
-  { key: "market_cap",     label: "Market Cap",     unit: "currency" },
-  { key: "revenue",        label: "Revenue",        unit: "currency" },
-  { key: "revenue_growth", label: "Rev Growth",     unit: "percent"  },
-  { key: "gross_margin",   label: "Gross Margin",   unit: "percent"  },
-  { key: "profit_margin",  label: "Profit Margin",  unit: "percent"  },
-  { key: "eps_diluted",    label: "EPS",            unit: "number"   },
-  { key: "ebitda",         label: "EBITDA",         unit: "currency" },
-  { key: "free_cash_flow", label: "FCF",            unit: "currency" },
-  { key: "total_debt",     label: "Total Debt",     unit: "currency" },
-  { key: "ps_ratio",       label: "P/S",            unit: "ratio"    },
-  { key: "pe_ratio",       label: "P/E",            unit: "ratio"    },
-];
-
-function SnapshotTable({
-  snapshot,
-  symbols,
+function ScreenerTable({
+  rows,
   colors,
 }: {
-  snapshot: SnapshotRow[];
-  symbols: CompareSymbol[];
+  rows: ScreenerRow[];
   colors: Record<string, string>;
 }) {
-  if (!snapshot?.length) return null;
+  const [sortKey, setSortKey] = React.useState<string>("symbol");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+
+  if (!rows?.length) return null;
+
+  function handleSort(key: string) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "symbol" || key === "name" ? "asc" : "desc");
+    }
+  }
+
+  const sorted = [...rows].sort((a, b) => {
+    const av = a[sortKey];
+    const bv = b[sortKey];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === "string" && typeof bv === "string") {
+      return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    }
+    return sortDir === "asc" ? Number(av) - Number(bv) : Number(bv) - Number(av);
+  });
+
+  // Data columns (skip symbol & name which are pinned)
+  const dataCols = SCREENER_COLUMNS.slice(2);
 
   return (
     <div className="mt-6 overflow-x-auto">
-      <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Snapshot Comparison</div>
-      <table className="w-full text-xs border-collapse min-w-[700px]">
+      <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Screener Comparison</div>
+      <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
         <thead>
           <tr className="border-b border-white/10">
-            <th className="text-left py-2 px-2 text-white/50 font-medium">Ticker</th>
-            <th className="text-left py-2 px-2 text-white/50 font-medium">Company</th>
-            {SNAPSHOT_COLS.map((c) => (
-              <th key={c.key} className="text-right py-2 px-2 text-white/50 font-medium whitespace-nowrap">
-                {c.label}
+            {/* Pinned: Ticker */}
+            <th
+              className="text-left py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none sticky left-0 bg-white z-10"
+              onClick={() => handleSort("symbol")}
+            >
+              Ticker {sortKey === "symbol" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+            </th>
+            {/* Pinned: Company */}
+            <th
+              className="text-left py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none"
+              onClick={() => handleSort("name")}
+            >
+              Company {sortKey === "name" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+            </th>
+            {dataCols.map((c) => (
+              <th
+                key={c.key}
+                className="text-right py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none"
+                onClick={() => handleSort(c.key)}
+              >
+                {c.label} {sortKey === c.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {snapshot.map((row, i) => {
-            const color = colors[row.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
+          {sorted.map((row, i) => {
+            const sym = row.symbol || row.ticker || "";
+            const color = colors[sym] || CHIP_COLORS[i % CHIP_COLORS.length];
             return (
-              <tr key={row.symbol} className="border-b border-white/5 hover:bg-white/[0.03]">
-                <td className="py-2 px-2">
-                  <span className="font-bold" style={{ color }}>{row.symbol}</span>
+              <tr key={sym || i} className="border-b border-white/5 hover:bg-gray-50/60">
+                <td className="py-2 px-2 sticky left-0 bg-white">
+                  <span className="font-bold text-xs" style={{ color }}>{sym}</span>
                 </td>
-                <td className="py-2 px-2 text-white/70 truncate max-w-[120px]">{row.name || "—"}</td>
-                {SNAPSHOT_COLS.map((c) => (
-                  <td key={c.key} className="py-2 px-2 text-right text-white/80 tabular-nums">
-                    {formatValue(row[c.key], c.unit)}
-                  </td>
-                ))}
+                <td className="py-2 px-2 text-gray-600 truncate max-w-[140px] text-xs">{row.name || "—"}</td>
+                {dataCols.map((c) => {
+                  const raw = row[c.key];
+                  const display = raw == null || raw === "" ? "N/A" : formatValue(Number(raw), c.type);
+                  const isNA = display === "N/A";
+                  return (
+                    <td key={c.key} className={`py-2 px-2 text-right tabular-nums text-xs ${isNA ? "text-gray-300" : "text-gray-700"}`}>
+                      {display}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}
@@ -442,7 +526,8 @@ export function StockCompareSection() {
   // ── State ──────────────────────────────────────────────────────────────────
 
   const [symbols, setSymbols] = useState<CompareSymbol[]>([]);
-  const [metric, setMetric] = useState<MetricDef>(STOCK_COMPARE_METRICS[1]); // Revenue default
+  const [availableMetrics, setAvailableMetrics] = useState<MetricDef[]>(FALLBACK_STOCK_COMPARE_METRICS);
+  const [metric, setMetric] = useState<MetricDef>(FALLBACK_STOCK_COMPARE_METRICS[4]); // Revenue default
   const [range, setRange] = useState<CompareRange>("5Y");
   const [period, setPeriod] = useState<"annual" | "quarterly">("annual");
 
@@ -459,10 +544,14 @@ export function StockCompareSection() {
   const [metricSearch, setMetricSearch] = useState("");
   const [optionsOpen, setOptionsOpen] = useState(false);
 
-  const [starred, setStarred] = useState<CompareMetricKey[]>(() => {
+  const [starred, setStarred] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (raw) return JSON.parse(raw) as CompareMetricKey[];
+      if (raw) {
+        const parsed: string[] = JSON.parse(raw);
+        // Strip legacy recent_news from saved starred list
+        return parsed.filter((k) => k !== "recent_news");
+      }
     } catch { /* ignore */ }
     return DEFAULT_STARRED;
   });
@@ -473,6 +562,23 @@ export function StockCompareSection() {
     symbols.forEach((s, i) => { map[s.symbol] = CHIP_COLORS[i % CHIP_COLORS.length]; });
     return map;
   }, [symbols]);
+
+  // ── Fetch metric registry from backend (with fallback) ────────────────────
+
+  useEffect(() => {
+    fetch("/api/fundamentals/compare/metrics")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.metrics?.length) {
+          // Backend returns chartable numeric metrics — use them, skip non-chart sections
+          const backendMetrics: MetricDef[] = data.metrics.filter((m: MetricDef) => m.key !== "recent_news");
+          setAvailableMetrics(backendMetrics);
+          // If current metric is not in the new list, reset to revenue
+          setMetric((cur) => backendMetrics.find((m) => m.key === cur.key) || backendMetrics.find((m) => m.key === "revenue") || backendMetrics[0]);
+        }
+      })
+      .catch(() => { /* use fallback silently */ });
+  }, []);
 
   // ── URL hydration on mount ─────────────────────────────────────────────────
 
@@ -490,8 +596,8 @@ export function StockCompareSection() {
       // default tickers from spec
       setSymbols([{ symbol: "INTT" }, { symbol: "TRT" }, { symbol: "NNBR" }]);
     }
-    if (metricParam) {
-      const m = STOCK_COMPARE_METRICS.find((x) => x.key === metricParam);
+    if (metricParam && metricParam !== "recent_news") {
+      const m = FALLBACK_STOCK_COMPARE_METRICS.find((x) => x.key === metricParam);
       if (m) setMetric(m);
     }
     if (rangeParam) {
@@ -626,16 +732,19 @@ export function StockCompareSection() {
   }
 
   function exportCSV() {
-    const snap = compareData?.snapshot || [];
-    if (!snap.length) {
+    // screenerRows is defined lower in the component body but accessible here via closure at call time
+    const exportRows: ScreenerRow[] = (compareData?.screener?.length
+      ? compareData.screener
+      : (compareData?.snapshot || []));
+    if (!exportRows.length) {
       toast({ title: "No data to export", variant: "destructive" });
       return;
     }
-    const cols = ["symbol", "name", ...SNAPSHOT_COLS.map((c) => c.key)];
+    const cols = ["ticker", "name", ...SCREENER_COLUMNS.slice(2).map((c) => c.key)];
     const header = cols.join(",");
-    const rows = snap.map((row) =>
+    const rows = exportRows.map((row) =>
       cols.map((c) => {
-        const v = row[c];
+        const v = (row as Record<string, unknown>)[c];
         return v == null ? "" : String(v);
       }).join(",")
     );
@@ -684,10 +793,13 @@ export function StockCompareSection() {
   }, [compareData]);
 
   const series = compareData?.series || [];
-  const snapshot = compareData?.snapshot || [];
+  // Prefer backend screener rows (camelCase); fall back to snapshot
+  const screenerRows: ScreenerRow[] = compareData?.screener?.length
+    ? compareData.screener
+    : (compareData?.snapshot || []);
   const news = compareData?.news || {};
   const warnings = compareData?.meta?.warnings || [];
-  const isNewsMetric = metric.key === "recent_news";
+  const isNewsMetric = false; // recent_news is no longer a chart metric
 
   // Symbols that have ≥2 valid numeric points in the wide-format chart data —
   // Recharts needs at least two points to draw a connected line.
@@ -701,8 +813,10 @@ export function StockCompareSection() {
   // True only when every series has zero chartable points (and we have data back)
   const allSeriesEmpty = series.length > 0 && validSymbols.length === 0;
 
-  // Filtered metric list for dropdown
-  const filteredMetrics = STOCK_COMPARE_METRICS.filter((m) =>
+  // Metric list for dropdown: chartable only, no recent_news, filtered by search
+  const filteredMetrics = availableMetrics.filter((m) =>
+    m.chartable !== false &&
+    m.key !== "recent_news" &&
     m.label.toLowerCase().includes(metricSearch.toLowerCase())
   );
 
@@ -998,10 +1112,8 @@ export function StockCompareSection() {
                   </div>
                 )}
 
-                {/* Snapshot table */}
-                {snapshot.length > 0 && (
-                  <SnapshotTable snapshot={snapshot} symbols={symbols} colors={colorMap} />
-                )}
+                {/* Screener table */}
+                <ScreenerTable rows={screenerRows} colors={colorMap} />
 
                 {/* Recent news panel */}
                 {Object.keys(news).length > 0 && (
