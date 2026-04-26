@@ -2139,27 +2139,48 @@ interface CatalystEvent {
   id?: string;
   date: string;
   symbol?: string;
+  // display / label fields (backend may use either naming)
   company?: string;
+  companyName?: string;
   event_name?: string;
+  title?: string;
+  subtitle?: string;
   event_type: string;
+  eventType?: string;
+  eventLabel?: string;
+  keyDetails?: string;
   importance?: "high" | "medium" | "low";
   sector?: string;
   market_cap?: number;
   details?: Record<string, unknown>;
-  // dividend fields
+  // dividend — snake_case & camelCase
+  dividend?: number;
   dividend_amount?: number;
   dividend_yield?: number;
   ex_date?: string;
   pay_date?: string;
-  // ipo fields
+  exDividendDate?: string;
+  paymentDate?: string;
+  recordDate?: string;
+  // ipo — snake_case & camelCase
   ipo_price_range?: string;
   ipo_shares?: number;
-  // split fields
+  exchange?: string;
+  priceRange?: string;
+  offerPrice?: number;
+  // split — snake_case & camelCase
   split_ratio?: string;
-  // macro fields
+  splitRatio?: string;
+  numerator?: number;
+  denominator?: number;
+  // macro — snake_case & camelCase
   previous?: number;
   estimate?: number;
   actual?: number;
+  rate?: number;
+  yield?: number;
+  maturity?: string;
+  indicatorName?: string;
   currency?: string;
   country?: string;
   // filing / analyst
@@ -2174,12 +2195,16 @@ interface CatalystEvent {
   eps_estimate?: number;
   revenue_actual?: number;
   revenue_estimate?: number;
-  surprise?: number;          // % surprise
+  surprise?: number;
   // insider
   insider_name?: string;
   transaction_type?: string;
   shares?: number;
   value?: number;
+  // catch-all raw payload from backend
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw?: Record<string, any>;
+  [key: string]: unknown;
 }
 
 const CATALYST_TABS: { key: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -2241,29 +2266,57 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const r = event.raw || {};
+  const str = (v: unknown) => (v != null ? String(v).trim() : null) || null;
+
   const rows: [string, string][] = [];
-  if (event.date) rows.push(["Date", event.date]);
+  if (event.date)   rows.push(["Date",   event.date]);
   if (event.symbol) rows.push(["Symbol", event.symbol]);
-  if (event.company) rows.push(["Company", event.company]);
+  const compName = event.companyName || str(r.companyName) || str(r.company) || str(r.name) || event.company;
+  if (compName)     rows.push(["Company", compName]);
   if (event.sector) rows.push(["Sector", event.sector]);
-  if (event.market_cap) rows.push(["Market Cap", formatMktCap(event.market_cap)]);
-  if (event.ex_date) rows.push(["Ex-Date", event.ex_date]);
-  if (event.pay_date) rows.push(["Pay Date", event.pay_date]);
-  if (event.dividend_amount != null) rows.push(["Dividend Amount", `$${event.dividend_amount.toFixed(4)}`]);
-  if (event.dividend_yield != null) rows.push(["Dividend Yield", `${(event.dividend_yield * 100).toFixed(2)}%`]);
-  if (event.ipo_price_range) rows.push(["Price Range", event.ipo_price_range]);
-  if (event.split_ratio) rows.push(["Split Ratio", event.split_ratio]);
-  if (event.previous != null) rows.push(["Previous", String(event.previous)]);
+  if (event.exchange || str(r.exchange)) rows.push(["Exchange", (event.exchange || str(r.exchange))!]);
+  if (event.market_cap) rows.push(["Market Cap", formatMktCap(event.market_cap as number)]);
+  // dividends
+  const exd = event.exDividendDate || event.ex_date || str(r.exDividendDate) || str(r.ex_date);
+  const rec = event.recordDate || str(r.recordDate) || str(r.record_date);
+  const pay = event.paymentDate || event.pay_date || str(r.paymentDate) || str(r.pay_date);
+  const divAmt = event.dividend_amount ?? event.dividend ?? (r.dividend as number | undefined);
+  const divYld = event.dividend_yield ?? (r.dividend_yield as number | undefined);
+  if (divAmt != null) rows.push(["Dividend Amount", `$${Number(divAmt).toFixed(4)}`]);
+  if (divYld != null) rows.push(["Dividend Yield", `${(Number(divYld) * 100).toFixed(2)}%`]);
+  if (exd) rows.push(["Ex-Date",  exd.slice(0, 10)]);
+  if (rec) rows.push(["Record Date", rec.slice(0, 10)]);
+  if (pay) rows.push(["Pay Date",    pay.slice(0, 10)]);
+  // ipos
+  const price = event.priceRange || event.ipo_price_range || str(r.priceRange) || str(r.price_range);
+  if (price) rows.push(["Price Range", price]);
+  const shares = event.shares ?? event.ipo_shares ?? (r.shares as number | undefined);
+  if (shares != null) rows.push(["Shares", Number(shares).toLocaleString()]);
+  // splits
+  const ratio = event.splitRatio || event.split_ratio || str(r.splitRatio) || str(r.split_ratio);
+  if (ratio) rows.push(["Split Ratio", ratio]);
+  // macro
+  const yld = event.yield ?? (r.yield as number | undefined);
+  const rate = event.rate ?? (r.rate as number | undefined);
+  const mat = event.maturity || str(r.maturity);
+  const ind = event.indicatorName || str(r.indicatorName);
+  if (yld  != null) rows.push(["Yield",     `${yld}%`]);
+  if (rate != null) rows.push(["Rate",      `${rate}%`]);
+  if (mat)          rows.push(["Maturity",  mat]);
+  if (ind)          rows.push(["Indicator", ind]);
+  // economic
+  if (event.actual   != null) rows.push(["Actual",   String(event.actual)]);
   if (event.estimate != null) rows.push(["Estimate", String(event.estimate)]);
-  if (event.actual != null) rows.push(["Actual", String(event.actual)]);
-  if (event.analyst_firm) rows.push(["Analyst Firm", event.analyst_firm]);
+  if (event.previous != null) rows.push(["Previous", String(event.previous)]);
+  // analyst / insider
+  if (event.analyst_firm)   rows.push(["Analyst Firm", event.analyst_firm]);
   if (event.rating_from && event.rating_to) rows.push(["Rating Change", `${event.rating_from} → ${event.rating_to}`]);
   if (event.price_target != null) rows.push(["Price Target", `$${event.price_target}`]);
-  if (event.insider_name) rows.push(["Insider", event.insider_name]);
+  if (event.insider_name)   rows.push(["Insider",     event.insider_name]);
   if (event.transaction_type) rows.push(["Transaction", event.transaction_type]);
-  if (event.shares != null) rows.push(["Shares", event.shares.toLocaleString()]);
-  if (event.value != null) rows.push(["Value", formatMktCap(event.value)]);
-  if (event.country) rows.push(["Country", event.country]);
+  if (event.value != null)  rows.push(["Value",      formatMktCap(event.value as number)]);
+  if (event.country)        rows.push(["Country",    event.country]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -2276,7 +2329,9 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
               <EventTypeBadge type={event.event_type} />
               <ImportanceBadge importance={event.importance} />
             </div>
-            <h2 className="text-base font-bold text-white">{event.event_name || event.company || event.symbol || "Catalyst Event"}</h2>
+            <h2 className="text-base font-bold text-white">
+              {event.title || event.companyName || str(r.companyName) || str(r.company) || str(r.name) || str(r.title) || event.event_name || event.company || event.symbol || "Catalyst Event"}
+            </h2>
             {event.symbol && event.event_name && (
               <p className="text-xs text-white/40 mt-0.5">{event.symbol} · {event.date}</p>
             )}
@@ -2666,7 +2721,11 @@ function CatalystListTab({
           setError("Recent data temporarily unavailable.");
           setEvents([]);
         } else {
-          setEvents(Array.isArray(data) ? data : (data.events || data.results || []));
+          const arr = Array.isArray(data) ? data : (data.events || data.results || []);
+          if (process.env.NODE_ENV !== "production") {
+            console.debug(`[CatalystListTab] tab=${tabKey} range=${dateRange} count=${arr.length}`, arr[0] ?? "(empty)");
+          }
+          setEvents(arr);
         }
       })
       .catch(() => { if (!cancelled) setError("Could not load recent data."); })
@@ -2674,50 +2733,157 @@ function CatalystListTab({
     return () => { cancelled = true; };
   }, [tabKey, scope, search, dateRange, refreshKey]);
 
-  /** Build the "Key Details" string per tab */
-  function getKeyDetails(ev: CatalystEvent, tab: string): string {
+  // ── Display helpers ────────────────────────────────────────────────
+
+  const TAB_LABELS: Record<string, string> = {
+    dividends:          "Dividend",
+    ipos:               "IPO",
+    splits:             "Stock Split",
+    economic_releases:  "Economic Release",
+    treasury_macro:     "Treasury / Macro",
+    earnings_dates:     "Earnings",
+  };
+
+  /** Primary label for "Company / Event" column — rich fallback chain */
+  function resolveDisplayName(ev: CatalystEvent, tab: string): string {
+    const r = ev.raw || {};
+    const fallbackLabel = TAB_LABELS[tab] || "Event";
+    return (
+      (ev.title as string | undefined) ||
+      (ev.companyName as string | undefined) ||
+      (r.companyName as string | undefined) ||
+      (r.company    as string | undefined) ||
+      (r.name       as string | undefined) ||
+      (r.event      as string | undefined) ||
+      (r.title      as string | undefined) ||
+      (ev.company as string | undefined) ||
+      (ev.event_name as string | undefined) ||
+      (ev.indicatorName as string | undefined) ||
+      (r.indicatorName as string | undefined) ||
+      (ev.symbol ? `${ev.symbol} ${fallbackLabel}` : null) ||
+      fallbackLabel
+    );
+  }
+
+  /** Normalized event_type string for badge look-up */
+  function resolveEventType(ev: CatalystEvent, tab: string): string {
+    if (ev.eventLabel) return ev.eventLabel;
+    const TAB_TYPES: Record<string, string> = {
+      dividends:          "dividend",
+      ipos:               "ipo",
+      splits:             "split",
+      economic_releases:  "economic_release",
+      treasury_macro:     "macro",
+      earnings_dates:     "earnings",
+    };
+    const raw = (ev.eventType as string | undefined) || ev.event_type || TAB_TYPES[tab] || "macro";
+    // strip out generic "event" if backend fallback is unhelpful
+    if (raw.toLowerCase() === "event") return TAB_TYPES[tab] || "macro";
+    return raw;
+  }
+
+  /** Key details string — checks keyDetails, then builds from known fields */
+  function resolveKeyDetails(ev: CatalystEvent, tab: string): string {
+    if (ev.keyDetails) return ev.keyDetails as string;
+
+    const r = ev.raw || {};
+    const coerce = (v: unknown): string | null => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      return s.length > 0 && s !== "null" && s !== "undefined" ? s : null;
+    };
+
     if (tab === "earnings_dates") {
       const parts: string[] = [];
-      if (ev.eps_actual != null) parts.push(`EPS: $${ev.eps_actual.toFixed(2)}`);
-      if (ev.eps_estimate != null) parts.push(`Est: $${ev.eps_estimate.toFixed(2)}`);
-      if (ev.surprise != null) parts.push(`Surprise: ${ev.surprise > 0 ? "+" : ""}${ev.surprise.toFixed(1)}%`);
-      if (ev.revenue_actual != null) parts.push(`Rev: ${formatMktCap(ev.revenue_actual)}`);
-      return parts.join(" · ") || "—";
+      if (ev.eps_actual != null) parts.push(`EPS: $${(ev.eps_actual as number).toFixed(2)}`);
+      if (ev.eps_estimate != null) parts.push(`Est: $${(ev.eps_estimate as number).toFixed(2)}`);
+      if (ev.surprise != null) parts.push(`Surprise: ${(ev.surprise as number) > 0 ? "+" : ""}${(ev.surprise as number).toFixed(1)}%`);
+      if (ev.revenue_actual != null) parts.push(`Rev: ${formatMktCap(ev.revenue_actual as number)}`);
+      return parts.join(" · ") || (ev.subtitle as string | undefined) || "—";
     }
+
     if (tab === "dividends") {
       const parts: string[] = [];
-      if (ev.dividend_amount != null) parts.push(`$${ev.dividend_amount.toFixed(4)}/share`);
-      if (ev.dividend_yield != null) parts.push(`Yield ${(ev.dividend_yield * 100).toFixed(2)}%`);
-      if (ev.ex_date) parts.push(`Ex: ${ev.ex_date.slice(0, 10)}`);
-      if (ev.pay_date) parts.push(`Pay: ${ev.pay_date.slice(0, 10)}`);
-      return parts.join(" · ") || "—";
+      const amt  = (ev.dividend_amount ?? ev.dividend ?? (r.dividend as number | undefined) ?? (r.dividend_amount as number | undefined)) as number | undefined;
+      const yld  = (ev.dividend_yield ?? (r.dividend_yield as number | undefined)) as number | undefined;
+      const exd  = coerce(ev.exDividendDate) || coerce(ev.ex_date) || coerce(r.exDividendDate) || coerce(r.ex_date);
+      const rec  = coerce(ev.recordDate) || coerce(r.recordDate) || coerce(r.record_date);
+      const pay  = coerce(ev.paymentDate) || coerce(ev.pay_date) || coerce(r.paymentDate) || coerce(r.pay_date);
+      if (amt != null)  parts.push(`Dividend: $${Number(amt).toFixed(4)}`);
+      if (yld != null)  parts.push(`Yield: ${(Number(yld) * 100).toFixed(2)}%`);
+      if (exd)          parts.push(`Ex-Date: ${exd.slice(0, 10)}`);
+      if (rec)          parts.push(`Record: ${rec.slice(0, 10)}`);
+      if (pay)          parts.push(`Payable: ${pay.slice(0, 10)}`);
+      return parts.join(" · ") || (ev.subtitle as string | undefined) || "—";
     }
+
     if (tab === "ipos") {
       const parts: string[] = [];
-      if (ev.ipo_price_range) parts.push(ev.ipo_price_range);
-      if (ev.ipo_shares != null) parts.push(`${(ev.ipo_shares / 1e6).toFixed(1)}M shares`);
-      return parts.join(" · ") || "—";
+      const exch  = coerce(ev.exchange) || coerce(r.exchange) || coerce(r.market);
+      const price = coerce(ev.priceRange) || coerce(ev.ipo_price_range) || coerce(r.priceRange) || coerce(r.price_range)
+                  || (ev.offerPrice != null ? `$${ev.offerPrice}` : null);
+      const sh    = (ev.shares ?? ev.ipo_shares ?? (r.shares as number | undefined) ?? (r.ipo_shares as number | undefined)) as number | undefined;
+      if (exch)       parts.push(`Exchange: ${exch}`);
+      if (price)      parts.push(`Price: ${price}`);
+      if (sh != null) parts.push(`Shares: ${(Number(sh) / 1e6).toFixed(1)}M`);
+      return parts.join(" · ") || (ev.subtitle as string | undefined) || "—";
     }
+
     if (tab === "splits") {
-      return ev.split_ratio ? `Ratio: ${ev.split_ratio}` : (ev.company || "—");
+      const ratio = coerce(ev.splitRatio) || coerce(ev.split_ratio) || coerce(r.splitRatio) || coerce(r.split_ratio);
+      const n = (ev.numerator ?? (r.numerator as number | undefined)) as number | undefined;
+      const d = (ev.denominator ?? (r.denominator as number | undefined)) as number | undefined;
+      const parts: string[] = [];
+      if (ratio)              parts.push(`Split: ${ratio}`);
+      if (n != null && d != null) parts.push(`Ratio: ${n}:${d}`);
+      return parts.join(" · ") || (ev.subtitle as string | undefined) || "—";
     }
+
     if (tab === "economic_releases") {
       const parts: string[] = [];
-      if (ev.actual != null) parts.push(`Actual: ${ev.actual}`);
-      if (ev.estimate != null) parts.push(`Est: ${ev.estimate}`);
-      if (ev.previous != null) parts.push(`Prev: ${ev.previous}`);
-      if (ev.country) parts.push(ev.country);
-      return parts.join(" · ") || "—";
+      const act  = (ev.actual   ?? (r.actual   as number | undefined)) as number | undefined;
+      const est  = (ev.estimate ?? (r.estimate as number | undefined)) as number | undefined;
+      const prev = (ev.previous ?? (r.previous as number | undefined)) as number | undefined;
+      const ctry = coerce(ev.country) || coerce(r.country);
+      if (act  != null) parts.push(`Actual: ${act}`);
+      if (est  != null) parts.push(`Est: ${est}`);
+      if (prev != null) parts.push(`Prev: ${prev}`);
+      if (ctry)         parts.push(ctry);
+      return parts.join(" · ") || (ev.subtitle as string | undefined) || "—";
     }
+
     if (tab === "treasury_macro") {
       const parts: string[] = [];
-      if (ev.actual != null) parts.push(`${ev.actual}`);
-      if (ev.previous != null) parts.push(`Prev: ${ev.previous}`);
-      if (ev.country) parts.push(ev.country);
-      if (ev.currency) parts.push(ev.currency);
-      return parts.join(" · ") || "—";
+      const yld  = (ev.yield  ?? (r.yield  as number | undefined) ?? ev.actual ?? (r.actual as number | undefined)) as number | undefined;
+      const rate = (ev.rate   ?? (r.rate   as number | undefined)) as number | undefined;
+      const mat  = coerce(ev.maturity) || coerce(r.maturity);
+      const ind  = coerce(ev.indicatorName) || coerce(r.indicatorName);
+      const prev = (ev.previous ?? (r.previous as number | undefined)) as number | undefined;
+      if (yld  != null)           parts.push(`Yield: ${yld}%`);
+      if (rate != null && rate !== yld) parts.push(`Rate: ${rate}%`);
+      if (mat)                    parts.push(`Maturity: ${mat}`);
+      if (ind)                    parts.push(`Indicator: ${ind}`);
+      if (prev != null)           parts.push(`Prev: ${prev}%`);
+      return parts.join(" · ") || coerce(ev.actual) || (ev.subtitle as string | undefined) || "—";
     }
-    return ev.sector || "—";
+
+    return (ev.subtitle as string | undefined) || (ev.sector as string | undefined) || "—";
+  }
+
+  /** Infer importance if backend did not provide it */
+  function resolveImportance(ev: CatalystEvent, tab: string): "high" | "medium" | "low" {
+    if (ev.importance) return ev.importance;
+    if (tab === "treasury_macro") {
+      const name = resolveDisplayName(ev, tab).toUpperCase();
+      if (/10Y|2Y|30Y|FED|FOMC/.test(name)) return "high";
+      return "medium";
+    }
+    if (tab === "economic_releases") {
+      const name = resolveDisplayName(ev, tab).toUpperCase();
+      if (/CPI|GDP|NFP|UNEMPLOYMENT|RETAIL|FOMC|PPI/.test(name)) return "high";
+      return "medium";
+    }
+    return "low";
   }
 
   // Sort
@@ -2838,43 +3004,54 @@ function CatalystListTab({
             {!loading && sorted.length === 0 && (
               <tr>
                 <td colSpan={COLS.length} className="py-10 text-center text-white/30 text-xs">
-                  No recent catalysts found for this filter / date range.
+                  {tabKey === "ipos"
+                    ? "No IPO catalysts found for this range."
+                    : `No ${TAB_LABELS[tabKey] || "catalyst"} events found for this range.`}
                 </td>
               </tr>
             )}
 
             {!loading &&
-              sorted.map((ev, i) => (
-                <tr
-                  key={ev.id || i}
-                  onClick={() => setSelectedEvent(ev)}
-                  className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
-                  style={{ backgroundColor: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}
-                >
-                  <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
-                    {ev.date?.slice(0, 10) || "—"}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {ev.symbol ? (
-                      <span className="font-bold text-white/90">{ev.symbol}</span>
-                    ) : (
-                      <span className="text-white/30 italic text-[10px]">Macro</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 text-white/70 max-w-[200px] truncate">
-                    {ev.company || ev.event_name || "—"}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <EventTypeBadge type={ev.event_type} />
-                  </td>
-                  <td className="py-2.5 px-3 text-white/50 max-w-[240px] truncate">
-                    {getKeyDetails(ev, tabKey)}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <ImportanceBadge importance={ev.importance} />
-                  </td>
-                </tr>
-              ))}
+              sorted.map((ev, i) => {
+                const displayName  = resolveDisplayName(ev, tabKey);
+                const eventType    = resolveEventType(ev, tabKey);
+                const keyDetails   = resolveKeyDetails(ev, tabKey);
+                const importance   = resolveImportance(ev, tabKey);
+                const isMacroRow   = !ev.symbol && ["economic_releases", "treasury_macro"].includes(tabKey);
+                return (
+                  <tr
+                    key={ev.id || i}
+                    onClick={() => setSelectedEvent(ev)}
+                    className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
+                    style={{ backgroundColor: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}
+                  >
+                    <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
+                      {ev.date?.slice(0, 10) || "—"}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {ev.symbol ? (
+                        <span className="font-bold text-white/90">{ev.symbol as string}</span>
+                      ) : isMacroRow ? (
+                        <span className="text-white/30 italic text-[10px]">Macro</span>
+                      ) : (
+                        <span className="text-white/25 text-[10px]">—</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-white/80 max-w-[220px] truncate font-medium">
+                      {displayName}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <EventTypeBadge type={eventType} />
+                    </td>
+                    <td className="py-2.5 px-3 text-white/50 max-w-[260px] truncate">
+                      {keyDetails}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <ImportanceBadge importance={importance} />
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
