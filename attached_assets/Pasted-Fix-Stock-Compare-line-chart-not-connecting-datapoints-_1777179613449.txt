@@ -1,0 +1,175 @@
+Fix Stock Compare line chart not connecting datapoints
+
+The Stock Compare chart on the Fundamentals page has data points and the tooltip works, but the actual colored lines are not connecting the datapoints. Fix this now.
+
+Do not redesign the section. Do not touch backend unless absolutely necessary. This is a chart rendering/data-transform issue.
+
+Problem
+
+The chart shows individual datapoints on hover, but no visible line connects the points.
+
+This means the backend data is making it to the frontend, but the chart data is probably not shaped correctly for Recharts LineChart.
+
+Required fix
+
+Normalize backend series into one shared row per fiscal year/date.
+
+Correct chart data shape
+
+The chart data should look like this:
+
+[
+  {
+    year: "2021",
+    INTT: 84500000,
+    TRT: 49200000,
+    NNBR: 430000000
+  },
+  {
+    year: "2022",
+    INTT: 116830000,
+    TRT: 50700000,
+    NNBR: 498740000
+  },
+  {
+    year: "2023",
+    INTT: 123000000,
+    TRT: 53000000,
+    NNBR: 470000000
+  }
+]
+
+It should not look like this:
+
+[
+  { year: "2021", symbol: "INTT", value: 84500000 },
+  { year: "2021", symbol: "TRT", value: 49200000 },
+  { year: "2021", symbol: "NNBR", value: 430000000 }
+]
+
+That second shape causes Recharts lines to fail or render as scattered points because each Line dataKey="INTT" only sees values on isolated rows.
+
+Implement this transform
+
+Add or replace the chart transform with something like:
+
+function buildCompareChartData(series: any[]) {
+  const rowsByYear = new Map<string, any>();
+
+  for (const s of series || []) {
+    const symbol = s.symbol;
+    if (!symbol || !Array.isArray(s.points)) continue;
+
+    for (const point of s.points) {
+      if (typeof point.value !== "number") continue;
+
+      const year =
+        point.fiscalYear?.toString() ||
+        point.date?.slice(0, 4);
+
+      if (!year) continue;
+
+      if (!rowsByYear.has(year)) {
+        rowsByYear.set(year, { year });
+      }
+
+      rowsByYear.get(year)[symbol] = point.value;
+      rowsByYear.get(year)[`${symbol}Formatted`] = point.formatted;
+      rowsByYear.get(year)[`${symbol}Name`] = s.name;
+    }
+  }
+
+  return Array.from(rowsByYear.values()).sort(
+    (a, b) => Number(a.year) - Number(b.year)
+  );
+}
+
+Then use:
+
+const chartData = buildCompareChartData(compareData?.series || []);
+Recharts line rendering
+
+The chart should render lines like this:
+
+<ResponsiveContainer width="100%" height={520}>
+  <LineChart
+    data={chartData}
+    margin={{ top: 24, right: 48, left: 24, bottom: 16 }}
+  >
+    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+    <XAxis
+      dataKey="year"
+      type="category"
+      allowDuplicatedCategory={false}
+    />
+    <YAxis tickFormatter={(value) => formatMetricValue(value, selectedMetric)} />
+
+    <Tooltip content={<CustomCompareTooltip />} />
+
+    {validSymbols.map((symbol) => (
+      <Line
+        key={symbol}
+        type="linear"
+        dataKey={symbol}
+        name={symbol}
+        stroke={colorMap[symbol]}
+        strokeWidth={3}
+        dot={{ r: 3 }}
+        activeDot={{ r: 5 }}
+        connectNulls={true}
+        isAnimationActive={false}
+      />
+    ))}
+  </LineChart>
+</ResponsiveContainer>
+
+Important settings:
+
+strokeWidth={3}
+connectNulls={true}
+type="linear"
+dot={{ r: 3 }}
+activeDot={{ r: 5 }}
+Only render symbols with at least 2 valid points
+
+Before rendering lines, compute valid symbols:
+
+const validSymbols = selectedSymbols.filter((symbol) => {
+  const count = chartData.filter((row) => typeof row[symbol] === "number").length;
+  return count >= 2;
+});
+
+If a symbol has only one point, show it in warnings but don’t expect a line.
+
+Optional: if every symbol has only one point, show:
+
+Only one data point is available. A line requires at least two fiscal periods.
+
+But for the normal 5Y revenue case, INTT/TRT/NNBR should definitely have multiple points.
+
+Check the current bug
+
+Inspect the current chart transform. Look for patterns like:
+
+series.flatMap(...)
+
+or rows shaped like:
+
+{ date, symbol, value }
+
+That is probably the bug. Recharts multi-line charts need a wide format object per x-axis value.
+
+Do not reverse backend data
+
+Backend now returns points ascending. Do not reverse the series client-side.
+
+Done criteria
+
+This is fixed when:
+
+Revenue 5Y for INTT/TRT/NNBR shows three colored connected lines.
+Tooltip still works.
+Dots are visible but not the main visual.
+Lines connect across fiscal years.
+No always-on value labels clutter the chart.
+Missing symbols do not blank the chart.

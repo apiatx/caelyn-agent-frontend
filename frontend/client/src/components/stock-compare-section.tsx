@@ -411,7 +411,7 @@ function CompareTooltip({ active, payload, label, unit, seriesMap }: any) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-xl text-xs min-w-[180px]">
       <div className="text-gray-500 mb-2 font-medium border-b border-gray-100 pb-1.5">
-        {String(label).slice(0, 4)}
+        {String(label)}
       </div>
       {payload.map((p: any) => {
         const name = seriesMap?.[p.dataKey] || p.dataKey;
@@ -652,22 +652,35 @@ export function StockCompareSection() {
   // ── Chart data ─────────────────────────────────────────────────────────────
 
   const chartData = useMemo(() => {
-    const series = compareData?.series || [];
-    if (!series.length) return [];
+    const allSeries = compareData?.series || [];
+    if (!allSeries.length) return [];
 
-    // Collect all dates
-    const dateSet = new Set<string>();
-    series.forEach((s) => s.points?.forEach((p) => dateSet.add(p.date)));
-    const dates = Array.from(dateSet).sort();
+    // Wide-format keyed by fiscal year so all tickers share the same x-axis row.
+    // Different tickers often have slightly different fiscal year-end dates; using
+    // the year string instead of the full ISO date prevents each ticker from
+    // getting its own isolated row (which makes Recharts draw nothing).
+    const rowsByYear = new Map<string, Record<string, any>>();
 
-    return dates.map((date) => {
-      const row: Record<string, any> = { date };
-      series.forEach((s) => {
-        const pt = s.points?.find((p) => p.date === date);
-        row[s.symbol] = pt?.value ?? null;
-      });
-      return row;
-    });
+    for (const s of allSeries) {
+      const symbol = s.symbol;
+      if (!symbol || !Array.isArray(s.points)) continue;
+      for (const point of s.points) {
+        if (typeof point.value !== "number") continue;
+        const year =
+          point.fiscalYear?.toString() ||
+          (point.date ? String(point.date).slice(0, 4) : undefined);
+        if (!year) continue;
+        if (!rowsByYear.has(year)) rowsByYear.set(year, { year });
+        const row = rowsByYear.get(year)!;
+        row[symbol] = point.value;
+        row[`${symbol}Fmt`] = point.formatted;
+        row[`${symbol}Name`] = s.name;
+      }
+    }
+
+    return Array.from(rowsByYear.values()).sort(
+      (a, b) => Number(a.year) - Number(b.year)
+    );
   }, [compareData]);
 
   const series = compareData?.series || [];
@@ -676,13 +689,17 @@ export function StockCompareSection() {
   const warnings = compareData?.meta?.warnings || [];
   const isNewsMetric = metric.key === "recent_news";
 
-  // Series that have at least one non-null data point — used to skip empty Lines
-  const chartableSeries = series.filter((s) =>
-    (s.points || []).some((p) => p.value != null)
+  // Symbols that have ≥2 valid numeric points in the wide-format chart data —
+  // Recharts needs at least two points to draw a connected line.
+  const validSymbols = useMemo(() =>
+    symbols
+      .map((s) => s.symbol)
+      .filter((sym) => chartData.filter((row) => typeof row[sym] === "number").length >= 2),
+    [symbols, chartData]
   );
 
-  // True only when every series has zero valid points (and we have data back)
-  const allSeriesEmpty = series.length > 0 && chartableSeries.length === 0;
+  // True only when every series has zero chartable points (and we have data back)
+  const allSeriesEmpty = series.length > 0 && validSymbols.length === 0;
 
   // Filtered metric list for dropdown
   const filteredMetrics = STOCK_COMPARE_METRICS.filter((m) =>
@@ -908,7 +925,7 @@ export function StockCompareSection() {
                   <div className="flex flex-wrap gap-3">
                     {series.map((s, i) => {
                       const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
-                      const hasData = chartableSeries.some((cs) => cs.symbol === s.symbol);
+                      const hasData = validSymbols.includes(s.symbol);
                       return (
                         <div key={s.symbol} className={`flex items-center gap-1.5 text-xs ${hasData ? "text-gray-600" : "text-gray-400"}`}>
                           <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: hasData ? color : "#d1d5db" }} />
@@ -933,14 +950,14 @@ export function StockCompareSection() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={chartData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                        margin={{ top: 24, right: 48, left: 24, bottom: 16 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                         <XAxis
-                          dataKey="date"
+                          dataKey="year"
+                          type="category"
+                          allowDuplicatedCategory={false}
                           tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          tickFormatter={(v: string) => String(v).slice(0, 4)}
-                          minTickGap={28}
                           axisLine={{ stroke: "#e5e7eb" }}
                           tickLine={false}
                         />
@@ -959,19 +976,20 @@ export function StockCompareSection() {
                             />
                           }
                         />
-                        {chartableSeries.map((s, i) => {
-                          const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
+                        {validSymbols.map((sym) => {
+                          const color = colorMap[sym] || CHIP_COLORS[symbols.findIndex((s) => s.symbol === sym) % CHIP_COLORS.length];
                           return (
                             <Line
-                              key={s.symbol}
+                              key={sym}
                               type="linear"
-                              dataKey={s.symbol}
-                              name={s.symbol}
+                              dataKey={sym}
+                              name={sym}
                               stroke={color}
                               strokeWidth={3}
-                              dot={false}
-                              activeDot={{ r: 4, strokeWidth: 0 }}
-                              connectNulls={false}
+                              dot={{ r: 3, strokeWidth: 0, fill: color }}
+                              activeDot={{ r: 5, strokeWidth: 0 }}
+                              connectNulls={true}
+                              isAnimationActive={false}
                             />
                           );
                         })}
