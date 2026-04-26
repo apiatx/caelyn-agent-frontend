@@ -320,33 +320,41 @@ function ScreenerTable({
   // Data columns (skip symbol & name which are pinned)
   const dataCols = SCREENER_COLUMNS.slice(2);
 
+  const HEADER_BG = "#111827"; // matches dark card bg on Fundamentals page
+
   return (
-    <div className="mt-6 overflow-x-auto">
-      <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Screener Comparison</div>
+    <div className="mt-6 overflow-x-auto rounded-lg border border-white/10">
+      {/* Section label */}
+      <div className="px-3 pt-3 pb-2 text-xs font-semibold text-white/50 uppercase tracking-wider">
+        Screener Comparison <span className="text-white/30 font-normal normal-case">— click any column header to sort</span>
+      </div>
       <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
         <thead>
-          <tr className="border-b border-white/10">
-            {/* Pinned: Ticker */}
+          <tr style={{ backgroundColor: HEADER_BG }} className="border-b border-white/10">
+            {/* Sticky: Ticker */}
             <th
-              className="text-left py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none sticky left-0 bg-white z-10"
+              className="text-left py-2.5 px-3 font-semibold cursor-pointer whitespace-nowrap select-none sticky left-0 z-10"
+              style={{ backgroundColor: HEADER_BG, color: sortKey === "symbol" ? "#e5e7eb" : "#9ca3af" }}
               onClick={() => handleSort("symbol")}
             >
-              Ticker {sortKey === "symbol" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              Ticker{sortKey === "symbol" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
             </th>
-            {/* Pinned: Company */}
+            {/* Company */}
             <th
-              className="text-left py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none"
+              className="text-left py-2.5 px-3 font-semibold cursor-pointer whitespace-nowrap select-none"
+              style={{ color: sortKey === "name" ? "#e5e7eb" : "#9ca3af" }}
               onClick={() => handleSort("name")}
             >
-              Company {sortKey === "name" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              Company{sortKey === "name" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
             </th>
             {dataCols.map((c) => (
               <th
                 key={c.key}
-                className="text-right py-2 px-2 text-white/50 font-medium cursor-pointer hover:text-white/80 whitespace-nowrap select-none"
+                className="text-right py-2.5 px-3 font-semibold cursor-pointer whitespace-nowrap select-none"
+                style={{ color: sortKey === c.key ? "#e5e7eb" : "#9ca3af" }}
                 onClick={() => handleSort(c.key)}
               >
-                {c.label} {sortKey === c.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                {c.label}{sortKey === c.key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
               </th>
             ))}
           </tr>
@@ -355,18 +363,31 @@ function ScreenerTable({
           {sorted.map((row, i) => {
             const sym = row.symbol || row.ticker || "";
             const color = colors[sym] || CHIP_COLORS[i % CHIP_COLORS.length];
+            const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent";
             return (
-              <tr key={sym || i} className="border-b border-white/5 hover:bg-gray-50/60">
-                <td className="py-2 px-2 sticky left-0 bg-white">
-                  <span className="font-bold text-xs" style={{ color }}>{sym}</span>
+              <tr
+                key={sym || i}
+                className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                style={{ backgroundColor: rowBg }}
+              >
+                {/* Sticky ticker cell */}
+                <td
+                  className="py-2 px-3 sticky left-0 z-10"
+                  style={{ backgroundColor: rowBg }}
+                >
+                  <span className="font-bold" style={{ color }}>{sym}</span>
                 </td>
-                <td className="py-2 px-2 text-gray-600 truncate max-w-[140px] text-xs">{row.name || "—"}</td>
+                <td className="py-2 px-3 text-white/50 truncate max-w-[140px]">{row.name || "—"}</td>
                 {dataCols.map((c) => {
                   const raw = row[c.key];
                   const display = raw == null || raw === "" ? "N/A" : formatValue(Number(raw), c.type);
                   const isNA = display === "N/A";
                   return (
-                    <td key={c.key} className={`py-2 px-2 text-right tabular-nums text-xs ${isNA ? "text-gray-300" : "text-gray-700"}`}>
+                    <td
+                      key={c.key}
+                      className="py-2 px-3 text-right tabular-nums"
+                      style={{ color: isNA ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.85)" }}
+                    >
                       {display}
                     </td>
                   );
