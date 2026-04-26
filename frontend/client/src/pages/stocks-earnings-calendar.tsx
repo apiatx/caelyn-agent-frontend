@@ -1087,35 +1087,39 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
     return () => clearTimeout(timer);
   }, [smartData, selectedDayKey]);
 
-  // Merge: Polymarket entries take priority, Finnhub fills in the rest
-  const dateMap = new Map<string, EarningsEntry[]>();
-  // First, add all Polymarket entries
-  for (const [key, entries] of polyDateMap) {
-    dateMap.set(key, [...entries]);
-  }
-  // Then merge Finnhub entries (skip if ticker already present from Polymarket)
-  for (const [key, fhEntries] of finnhubEntries) {
-    const existing = dateMap.get(key) || [];
-    const existingTickers = new Set(existing.map(e => e.ticker.toUpperCase()));
-    for (const fhEntry of fhEntries) {
-      if (existingTickers.has(fhEntry.ticker.toUpperCase())) {
-        // Enrich existing Polymarket entry with Finnhub data
-        const polyEntry = existing.find(e => e.ticker.toUpperCase() === fhEntry.ticker.toUpperCase());
-        if (polyEntry) {
-          if (!polyEntry.eps && fhEntry.eps) polyEntry.eps = fhEntry.eps;
-          if (!polyEntry.quarter && fhEntry.quarter) polyEntry.quarter = fhEntry.quarter;
-          if (!polyEntry.time && fhEntry.time) polyEntry.time = fhEntry.time;
-          if (!polyEntry.revenueEstimate && fhEntry.revenueEstimate) polyEntry.revenueEstimate = fhEntry.revenueEstimate;
-          polyEntry.source = "both";
+  // Build a Polymarket beatPct lookup by ticker (for enrichment only)
+  const polyBeatMap = new Map<string, { beatPct: number; market: ParsedMarket }>();
+  for (const entries of polyDateMap.values()) {
+    for (const e of entries) {
+      const tk = e.ticker.toUpperCase();
+      if (tk && tk !== "???" && e.beatPct >= 0) {
+        // Keep the highest-conviction entry per ticker
+        const prev = polyBeatMap.get(tk);
+        if (!prev || e.beatPct > prev.beatPct) {
+          polyBeatMap.set(tk, { beatPct: e.beatPct, market: e.market! });
         }
-      } else {
-        existing.push(fhEntry);
-        existingTickers.add(fhEntry.ticker.toUpperCase());
       }
     }
-    dateMap.set(key, existing);
   }
-  // Sort: Polymarket entries first (by beatPct desc), then Finnhub entries alphabetically
+
+  // Merge: Finnhub entries are the source of truth; enrich with Polymarket beat odds
+  const dateMap = new Map<string, EarningsEntry[]>();
+  for (const [key, fhEntries] of finnhubEntries) {
+    const enriched = fhEntries.map(fhEntry => {
+      const poly = polyBeatMap.get(fhEntry.ticker.toUpperCase());
+      if (poly) {
+        return {
+          ...fhEntry,
+          beatPct: poly.beatPct,
+          market: poly.market,
+          source: "both" as const,
+        };
+      }
+      return fhEntry;
+    });
+    dateMap.set(key, enriched);
+  }
+  // Sort: entries with Polymarket beat data first (by beatPct desc), then alphabetically
   for (const entries of dateMap.values()) {
     entries.sort((a, b) => {
       if (a.beatPct >= 0 && b.beatPct < 0) return -1;
@@ -1175,7 +1179,14 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
   const totalThisWeek = weekDays.reduce((sum, d) => sum + (dateMap.get(dateKey(d))?.length || 0), 0);
 
   const showUndated = selectedDayKey === "undated";
-  const displayEntries = showUndated ? undated : selectedEntries;
+  /** Safety filter: strip any pure Polymarket question events from the main display */
+  const isFMPEntry = (e: EarningsEntry) =>
+    e.source !== "polymarket" &&
+    e.ticker !== "???" &&
+    !/^Will\s/i.test(e.company || "") &&
+    !/^Will\s/i.test(e.ticker || "");
+  const rawEntries = showUndated ? undated : selectedEntries;
+  const displayEntries = rawEntries.filter(isFMPEntry);
 
   // ── Lazy rendering: paginate in batches of 15 ──
   const BATCH_SIZE = 15;
@@ -1293,7 +1304,7 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
       <div className="grid grid-cols-7 gap-1.5 mb-5">
         {weekDays.map((day, i) => {
           const key = dateKey(day);
-          const entries = dateMap.get(key) || [];
+          const entries = (dateMap.get(key) || []).filter(isFMPEntry);
           const isToday = dateKey(new Date()) === key;
           const isSelected = selectedDayKey === key;
           const callCount = entries.length;
@@ -1393,11 +1404,11 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
 
         return (
           <div className="space-y-2">
-            {/* ── Tier 1: Polymarket Earnings ── */}
+            {/* ── Tier 1: High Conviction Earnings ── */}
             {tier1Entries.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Polymarket Earnings</span>
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">High Conviction Earnings</span>
                   <div className="flex-1 h-px bg-white/[0.06]" />
                 </div>
                 {tier1Entries.map((e) => {
@@ -1854,7 +1865,7 @@ function EarningsCalendarWidget({ markets }: { markets: ParsedMarket[] }) {
       {/* Footer */}
       <div className="mt-4 flex items-center justify-between">
         <span className="text-[10px] text-white/20">
-          Finnhub earnings calendar &middot; Polymarket predictions
+          FMP earnings calendar
         </span>
       </div>
 
@@ -2535,7 +2546,12 @@ function CatalystCalendarGrid({
       <div className="grid grid-cols-7 gap-1.5 mb-5">
         {weekDays.map((day, i) => {
           const key = dateKey(day);
-          const entries = dateMap.get(key) || [];
+          const entries = (dateMap.get(key) || []).filter(
+            (ev) =>
+              !/^Will\s/i.test(ev.title || "") &&
+              (ev.symbol || "").trim() !== "???" &&
+              ev.raw?.source !== "polymarket"
+          );
           const isToday = dateKey(new Date()) === key;
           const isSelected = selectedDayKey === key;
           const count = entries.length;
@@ -2717,7 +2733,18 @@ function CatalystListTab({
           if (process.env.NODE_ENV !== "production") {
             console.debug(`[CatalystListTab] tab=${tabKey} range=${dateRange} count=${arr.length}`, arr[0] ?? "(empty)");
           }
-          setEvents(arr);
+          const filtered =
+            tabKey === "earnings_dates"
+              ? arr.filter(
+                  (ev: CatalystEvent) =>
+                    ev.source !== "polymarket" &&
+                    (ev.ticker || "").trim() !== "???" &&
+                    !/^Will\s/i.test(ev.title || "") &&
+                    !/^Will\s/i.test(ev.company || "") &&
+                    !/^Will\s/i.test(ev.ticker || "")
+                )
+              : arr;
+          setEvents(filtered);
         }
       })
       .catch(() => { if (!cancelled) setError("Could not load recent data."); })
@@ -3253,7 +3280,7 @@ export default function StocksEarningsCalendarPage() {
                       Earnings Dates
                       <span className="text-white/30 font-normal text-xs ml-2">/ Loading...</span>
                     </h3>
-                    <p className="text-[10px] text-white/30">Polymarket predictions &amp; Finnhub fundamentals</p>
+                    <p className="text-[10px] text-white/30">FMP earnings data</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2">

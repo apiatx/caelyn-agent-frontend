@@ -1,0 +1,136 @@
+Catalyst Calendar Earnings tab needs a display/source cleanup.
+
+Current problem:
+The Earnings Calendar main view is showing Polymarket prediction market questions as calendar/list items, such as:
+- "Will Google say YouTube during earnings..."
+- "Will Google say Alphabet during earnings..."
+This is wrong.
+
+Required behavior:
+The main Earnings Calendar should display actual FMP company earnings events only.
+
+Polymarket should NOT appear as main calendar/list rows.
+
+Important guardrails:
+- Do NOT break the existing Earnings calendar UI.
+- Do NOT break day cards.
+- Do NOT break Smart/All toggle.
+- Do NOT break the existing earnings click popup/modal.
+- Keep Polymarket available only inside the popup detail enrichment when a user clicks a real company earnings event.
+
+Frontend requirements:
+
+1. Main Earnings Calendar rendering:
+Render only FMP/company earnings events in:
+- weekly day cards
+- selected day event list
+- Smart/All view
+- Recent earnings list
+
+Rows/cards must look like company earnings events:
+- Symbol
+- Company name
+- Quarter/period
+- Time
+- EPS estimate
+- Revenue estimate if available
+- View full details
+
+Do NOT render prediction market questions as main cards:
+- no "Will Google say..."
+- no Polymarket market question cards
+- no beat odds as standalone rows
+
+2. Source filtering safety:
+Even after backend fix, add frontend guardrails.
+
+When rendering main Earnings Calendar, exclude events where:
+- event.source === "polymarket"
+- title/question starts with "Will "
+- event has market/question text but no valid company earnings symbol
+- event.eventType is not "earnings"
+
+Do not hide valid earnings rows with symbols.
+
+3. Popup behavior:
+When a user clicks a real earnings event:
+- Keep opening the existing earnings popup/modal exactly as before.
+- Inside popup, Polymarket enrichment can remain.
+- If backend now provides FMP enrichment, display it in the popup cleanly.
+
+Popup can show sections like:
+- Earnings Snapshot
+- FMP Fundamentals
+- Analyst/Fundamental Context
+- Prediction Markets / Polymarket Odds
+
+But main calendar should remain clean.
+
+4. Update labels/copy:
+Remove any text implying the main calendar is Polymarket-driven.
+
+Remove or change:
+- "Polymarket Earnings"
+as a main section header in the selected day list.
+
+If Polymarket appears in popup only, label it there as:
+"Prediction Markets"
+or
+"Polymarket Earnings Odds"
+
+Also remove/replace:
+- "AI-curated via Grok + Perplexity"
+from the main earnings calendar if it implies the list is AI/Polymarket curated.
+
+Main source text should be something like:
+"FMP earnings calendar"
+or simply omit source copy.
+
+5. Selected day list:
+Currently selected day shows a "POLYMARKET EARNINGS" section.
+Replace this with a company earnings section:
+- "Earnings Calls"
+- "Company Earnings"
+- or no section label if unnecessary
+
+Each card should be a company/ticker earnings event.
+
+6. Ask Caelyn:
+Ask Caelyn should still be global at the top-right of the Catalyst Calendar glasscard.
+Its context should include FMP catalyst data across all tabs.
+If it includes Polymarket, only include Polymarket as enrichment tied to specific earnings symbols, not as standalone main events.
+
+7. Recent earnings:
+When Earnings > Recent is selected:
+- Show list/table of recent FMP earnings reports/events.
+- Do not show Polymarket market questions.
+- Event Type should be "Earnings"
+- Company/Event should be "{symbol/company} Earnings"
+- Key Details should include EPS actual/estimate/revenue/surprise if available.
+
+8. Validation:
+Test Earnings > Upcoming:
+- Calendar still appears.
+- Day cards still appear.
+- Selected day event list shows company earnings only.
+- No "Will X say Y" cards.
+- No "POLYMARKET EARNINGS" main section.
+- Existing earnings popup still opens.
+
+Test Earnings > Recent:
+- List view shows company earnings only.
+- No Polymarket questions.
+
+Test clicked earnings popup:
+- Existing popup behavior works.
+- Polymarket odds/markets can still appear inside popup if available.
+- FMP enrichment appears if backend provides it.
+
+Final response:
+Tell me:
+- Which files changed
+- Confirm main Earnings Calendar shows FMP/company earnings only
+- Confirm Polymarket question cards are removed from main calendar/list
+- Confirm Polymarket remains available inside clicked-stock popup enrichment
+- Confirm existing earnings popup behavior was preserved
+- Confirm source/copy labels were cleaned up
