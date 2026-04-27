@@ -1062,7 +1062,23 @@ function WeeklyEarningsBoard({
     };
   }
 
-  function SessionSection({ label, entries, colorClass }: { label: string; entries: WeekCleanEntry[]; colorClass: string }) {
+  function buildReason(e: WeekCleanEntry): string | null {
+    const tag = e.themeTags && e.themeTags.length > 0 ? e.themeTags[0] : null;
+    const qualifier = e.isThemeAnchor ? "Anchor" : e.isBottleneck ? "Bottleneck" : null;
+    if (tag) return qualifier ? `${tag} · ${qualifier}` : tag;
+    if (qualifier) return qualifier;
+    if (e.marketCapBucket) {
+      const b = e.marketCapBucket.toLowerCase();
+      if (b === "mega") return "Mega cap";
+      if (b === "large") return "Large cap";
+      if (b === "mid") return "Mid cap";
+      if (b === "small") return "Small cap";
+      return e.marketCapBucket;
+    }
+    return null;
+  }
+
+  function SessionSection({ label, entries, colorClass, topSymbols }: { label: string; entries: WeekCleanEntry[]; colorClass: string; topSymbols?: Set<string> }) {
     if (entries.length === 0) return null;
     return (
       <div className="mb-2">
@@ -1073,7 +1089,11 @@ function WeeklyEarningsBoard({
             const name = e.companyName || ticker;
             const logo = e.logo || e.image || null;
             const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
-            const isFocus = e.isThemeAnchor || e.isBottleneck || (e.importanceScore != null && e.importanceScore >= 8);
+            const isFocus = !!e.isThemeAnchor
+              || !!e.isBottleneck
+              || (e.importanceScore != null && e.importanceScore >= 70)
+              || (topSymbols?.has(ticker) ?? false);
+            const reason = buildReason(e);
             return (
               <button
                 key={`${ticker}-${e.date ?? ""}-${idx}`}
@@ -1102,6 +1122,9 @@ function WeeklyEarningsBoard({
                       </span>
                     )}
                   </div>
+                  {reason && (
+                    <p className="text-[8px] text-white/25 truncate mt-0.5 leading-tight">{reason}</p>
+                  )}
                 </div>
                 {isFocus && (
                   <span className="text-[7px] font-bold text-amber-400/70 border border-amber-400/25 rounded px-1 py-0.5 flex-shrink-0">FOCUS</span>
@@ -1219,18 +1242,31 @@ function WeeklyEarningsBoard({
                 {/* Content */}
                 {!hasAny ? (
                   <p className="text-[9px] text-white/15 italic">No major calls</p>
-                ) : (
-                  <>
-                    <SessionSection label="Pre-Market" entries={day!.preMarket} colorClass="text-sky-400/60" />
-                    <SessionSection label="Market Hours" entries={day!.duringMarket} colorClass="text-emerald-400/60" />
-                    <SessionSection label="After Hours" entries={day!.afterHours} colorClass="text-purple-400/60" />
-                    <SessionSection
-                      label={allUnknown ? "Scheduled" : "TBD"}
-                      entries={day!.unknown}
-                      colorClass="text-white/30"
-                    />
-                  </>
-                )}
+                ) : (() => {
+                  const allEntries = [
+                    ...(day!.preMarket), ...(day!.duringMarket),
+                    ...(day!.afterHours), ...(day!.unknown),
+                  ];
+                  const top3 = new Set(
+                    [...allEntries]
+                      .sort((a, b) => (b.importanceScore ?? 0) - (a.importanceScore ?? 0))
+                      .slice(0, 3)
+                      .map(e => (e.symbol || "").toUpperCase())
+                  );
+                  return (
+                    <>
+                      <SessionSection label="Pre-Market" entries={day!.preMarket} colorClass="text-sky-400/60" topSymbols={top3} />
+                      <SessionSection label="Market Hours" entries={day!.duringMarket} colorClass="text-emerald-400/60" topSymbols={top3} />
+                      <SessionSection label="After Hours" entries={day!.afterHours} colorClass="text-purple-400/60" topSymbols={top3} />
+                      <SessionSection
+                        label={allUnknown ? "Key Calls" : "TBD"}
+                        entries={day!.unknown}
+                        colorClass="text-white/30"
+                        topSymbols={top3}
+                      />
+                    </>
+                  );
+                })()}
               </div>
             );
           })}
