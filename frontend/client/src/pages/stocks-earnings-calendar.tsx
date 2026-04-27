@@ -1246,8 +1246,17 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
               {callCount > 0 && (
                 <div className="flex justify-center gap-0.5 mt-1.5">
                   {entries.slice(0, 4).map((e) => (
-                    <div key={e.market?.marketId || `fh-${e.ticker}`} className={`w-4 h-4 rounded-sm bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center`}>
-                      <span className="text-[6px] font-bold text-white">{e.ticker.slice(0, 1)}</span>
+                    <div key={e.market?.marketId || `fh-${e.ticker}`} className={`w-4 h-4 rounded-sm bg-gradient-to-br ${tickerColor(e.ticker)} flex items-center justify-center overflow-hidden`}>
+                      {e.logo ? (
+                        <img
+                          src={e.logo}
+                          alt={e.ticker}
+                          className="w-full h-full object-contain p-[1px]"
+                          onError={ev => { ev.currentTarget.style.display = "none"; }}
+                        />
+                      ) : (
+                        <span className="text-[6px] font-bold text-white">{e.ticker.slice(0, 1)}</span>
+                      )}
                     </div>
                   ))}
                   {callCount > 4 && (
@@ -1336,7 +1345,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate">{name}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-[11px] font-mono text-white/40">{ticker}</span>
+                      {name !== ticker && <span className="text-[11px] font-mono text-white/40">{ticker}</span>}
                       {timeStr && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-white/[0.04] text-white/30 flex items-center gap-0.5">
                           <Clock className="w-2.5 h-2.5" /> {timeStr}
