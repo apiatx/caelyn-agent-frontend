@@ -3185,7 +3185,7 @@ function CatalystListTab({
 export default function StocksEarningsCalendarPage() {
   // ── Tab + mode state ─────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
-  const [earningsMode, setEarningsMode] = useState<"upcoming" | "recent">("upcoming");
+  const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent">("upcoming");
   const switchTab = (key: string) => {
     setActiveTab(key);
     if (key === "earnings_dates") setEarningsMode("upcoming");
@@ -3346,7 +3346,7 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
-          {/* ── Earnings Upcoming / Recent toggle ───────────────── */}
+          {/* ── Earnings Day / This Week / Recent toggle ─────────── */}
           {isEarningsTab && (
             <div className="flex items-center gap-3 mb-4">
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
@@ -3357,7 +3357,16 @@ export default function StocksEarningsCalendarPage() {
                     ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
                     : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
                 >
-                  Calendar
+                  Day
+                </button>
+                <button
+                  onClick={() => setEarningsMode("thisweek")}
+                  className="px-4 py-1.5 transition-all"
+                  style={earningsMode === "thisweek"
+                    ? { background: "rgba(99,102,241,0.18)", color: "#a5b4fc", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  This Week
                 </button>
                 <button
                   onClick={() => setEarningsMode("recent")}
@@ -3370,14 +3379,14 @@ export default function StocksEarningsCalendarPage() {
                 </button>
               </div>
               <span className="text-[10px] text-white/25">
-                {earningsMode === "upcoming" ? "Calendar — this week's earnings calls" : "List — recent earnings reports"}
+                {earningsMode === "upcoming" ? "Selected day's earnings calls" : earningsMode === "thisweek" ? "All earnings calls this week" : "List — recent earnings reports"}
               </span>
             </div>
           )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab && earningsMode === "upcoming" ? (
-            /* ── Earnings Upcoming — real calendar widget ──────── */
+          {isEarningsTab && (earningsMode === "upcoming" || earningsMode === "thisweek") ? (
+            /* ── Earnings Day / This Week — real calendar widget ── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
