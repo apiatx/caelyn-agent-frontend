@@ -1091,7 +1091,7 @@ function WeeklyEarningsBoard({
             const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
             const isFocus = !!e.isThemeAnchor
               || !!e.isBottleneck
-              || (e.importanceScore != null && e.importanceScore >= 70)
+              || (e.importanceScore != null && e.importanceScore >= 85)
               || (topSymbols?.has(ticker) ?? false);
             const reason = buildReason(e);
             return (
@@ -1186,6 +1186,41 @@ function WeeklyEarningsBoard({
         <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.05] mb-4">
           <AlertCircle className="w-4 h-4 text-rose-400/60 flex-shrink-0" />
           <p className="text-[11px] text-rose-400/70">{weekError}</p>
+        </div>
+      )}
+
+      {/* ── Top watches this week ───────────────────────────── */}
+      {!weekLoading && !weekError && (weekData?.topEvents || []).length > 0 && (
+        <div className="mb-4">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-white/25 mb-2">Top watches this week</p>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {(weekData!.topEvents || []).slice(0, 8).map((e, idx) => {
+              const ticker = (e.symbol || "").toUpperCase();
+              const logo = e.logo || e.image || null;
+              return (
+                <button
+                  key={`topwatch-${ticker}-${idx}`}
+                  onClick={() => setModalEntry(toEarningsEntry(e))}
+                  title={e.companyName || ticker}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/[0.14] transition-all flex-shrink-0 group"
+                >
+                  <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                    {logo ? (
+                      <img
+                        src={logo}
+                        alt={ticker}
+                        className="w-full h-full object-contain p-0.5"
+                        onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <span className="text-[7px] font-bold text-white">{ticker.slice(0, 2)}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold text-white/65 group-hover:text-white/90 transition-colors">{ticker}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 

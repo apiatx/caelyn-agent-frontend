@@ -1,0 +1,129 @@
+The backend /api/catalysts/earnings/week-clean endpoint is now ready and scoring has been tuned.
+
+Make only the This Week earnings board polish changes.
+
+Do NOT touch:
+- Day mode
+- Recent mode
+- earnings popup internals
+- non-earnings Catalyst tabs
+- Home/Sectors/Macro
+- backend
+- API fetch behavior unless necessary
+
+Current This Week endpoint:
+GET /api/catalysts/earnings/week-clean
+
+Backend now returns ranked events with:
+- companyName
+- logo/image
+- symbol
+- priceChangePct
+- marketCap
+- marketCapBucket
+- themeTags
+- isThemeAnchor
+- isBottleneck
+- importanceScore
+- scoreBreakdown.qualityLiquidity
+
+Use backend order as-is. Do not re-sort client-side.
+
+Frontend changes:
+
+1. Rename section label
+If session is unknown, do not show “Scheduled.”
+Show:
+“Key Calls”
+
+If backend later returns preMarket or afterHours, render those labels normally:
+- Pre-Market
+- After Hours
+- During Market
+- Key Calls for unknown
+
+2. Fix FOCUS badge behavior
+Do not show FOCUS on every card.
+
+Show FOCUS only when:
+- event.isThemeAnchor === true
+- event.isBottleneck === true
+- event.importanceScore >= 85
+- OR event is top 3 within that day
+
+Otherwise hide the badge.
+
+3. Add deterministic reason line
+Under symbol / price row, add a small muted reason line when data exists.
+
+Build from:
+- event.themeTags[0] or first 2 theme tags
+- event.isThemeAnchor => “Anchor”
+- event.isBottleneck => “Bottleneck”
+- event.marketCapBucket === "mega" => “Mega cap”
+- event.marketCapBucket === "large" => “Large cap”
+
+Examples:
+- AI Buildout · Anchor
+- AI Data Center / Power · Bottleneck
+- Cloud / Software Infra · Mega cap
+- Large cap
+
+Keep it subtle. One line max. Truncate if too long.
+
+4. Add “Top watches this week” strip
+Above the weekday board, add a compact strip using response.topEvents.slice(0, 8).
+
+Label:
+“Top watches this week”
+
+Each chip:
+- logo/avatar
+- symbol
+- optional companyName tooltip/title
+- click opens the existing earnings popup for that symbol/date
+
+Do not create a new modal.
+
+5. Keep card layout clean
+Card should show:
+- logo/avatar
+- companyName
+- symbol
+- priceChangePct if available
+- optional FOCUS badge based on rules above
+- plus/details action
+
+If logo missing:
+- show fallback avatar with ticker initials
+
+If priceChangePct missing:
+- hide it or show “—”; do not make the card ugly
+
+6. No debug/scoring UI
+Do not show:
+- importanceScore
+- scoreBreakdown
+- qualityLiquidity
+- raw JSON
+These are backend/internal only.
+
+7. Validation
+Confirm:
+- This Week still calls /api/catalysts/earnings/week-clean
+- Day unchanged
+- Recent unchanged
+- popup still opens
+- FOCUS no longer appears on every card
+- Unknown session renders as “Key Calls”
+- Top watches strip appears
+- No Finnhub/Polymarket/beat odds appear
+- Backend event order is preserved
+
+Final response:
+Tell me:
+- files changed
+- confirm FOCUS threshold logic
+- confirm reason line logic
+- confirm Top watches strip
+- confirm Day/Recent/popup untouched
