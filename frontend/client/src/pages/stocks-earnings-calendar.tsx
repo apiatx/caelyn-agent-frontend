@@ -101,6 +101,54 @@ interface EarningsEntry {
   earningsDate: string | null;
 }
 
+interface WeekCleanEntry {
+  id?: string;
+  date?: string;
+  session?: string;
+  symbol: string;
+  companyName?: string | null;
+  logo?: string | null;
+  image?: string | null;
+  price?: number | null;
+  priceChangePct?: number | null;
+  marketCap?: number | null;
+  marketCapBucket?: string | null;
+  sector?: string | null;
+  industry?: string | null;
+  time?: string | null;
+  period?: string | null;
+  epsEstimated?: number | null;
+  revenueEstimated?: number | null;
+  themeTags?: string[];
+  isThemeAnchor?: boolean;
+  isBottleneck?: boolean;
+  importanceScore?: number | null;
+  source?: string;
+}
+
+interface WeekCleanDay {
+  date: string;
+  label: string;
+  weekday: string;
+  count: number;
+  preMarket: WeekCleanEntry[];
+  afterHours: WeekCleanEntry[];
+  duringMarket: WeekCleanEntry[];
+  unknown: WeekCleanEntry[];
+  entries: WeekCleanEntry[];
+}
+
+interface WeekCleanResponse {
+  asOf?: string;
+  source?: string;
+  weekStart: string;
+  weekEnd: string;
+  days: WeekCleanDay[];
+  topEvents?: WeekCleanEntry[];
+  status?: string;
+  errors?: string[];
+}
+
 interface EarningsDetailData {
   ticker: string;
   company_name?: string;
@@ -376,6 +424,16 @@ function getSunday(d: Date): Date {
   const day = dt.getDay();
   dt.setDate(dt.getDate() - day);
   dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+function getMonday(d: Date): Date {
+  const dt = new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  const day = dt.getDay();
+  if (day === 0) dt.setDate(dt.getDate() + 1);
+  else if (day === 6) dt.setDate(dt.getDate() + 2);
+  else dt.setDate(dt.getDate() - (day - 1));
   return dt;
 }
 
@@ -955,6 +1013,238 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
       </div>
     </div>,
     document.body
+  );
+}
+
+// ─── Weekly Earnings Board (This Week mode) ───────────────────────
+
+function WeeklyEarningsBoard({
+  weekStart,
+  weekData,
+  weekLoading,
+  weekError,
+  identityMap,
+  onNavigate,
+}: {
+  weekStart: Date;
+  weekData: WeekCleanResponse | null;
+  weekLoading: boolean;
+  weekError: string | null;
+  identityMap: Record<string, IdentityData>;
+  onNavigate: (delta: -1 | 0 | 1) => void;
+}) {
+  const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
+  const todayKey = dateKey(new Date());
+  const weekEnd = addDays(weekStart, 4);
+  const isCurrentWeek = dateKey(weekStart) === dateKey(getMonday(new Date()));
+
+  function toEarningsEntry(e: WeekCleanEntry): EarningsEntry {
+    const epsStr = e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : null;
+    const revStr = e.revenueEstimated != null ? formatRevenue(e.revenueEstimated) : null;
+    const timeStr =
+      e.time === "bmo" || e.session === "pre_market" ? "Pre-Market"
+      : e.time === "amc" || e.session === "after_hours" ? "After Hours"
+      : e.time || null;
+    return {
+      market: null,
+      ticker: (e.symbol || "").toUpperCase(),
+      company: e.companyName || (e.symbol || "").toUpperCase(),
+      companyName: e.companyName || (e.symbol || "").toUpperCase(),
+      logo: (e.logo || e.image || undefined) as string | undefined,
+      eps: epsStr,
+      quarter: e.period || null,
+      time: timeStr,
+      exchange: null,
+      beatPct: -1,
+      revenueEstimate: revStr,
+      source: "fmp",
+      earningsDate: e.date || null,
+    };
+  }
+
+  function SessionSection({ label, entries, colorClass }: { label: string; entries: WeekCleanEntry[]; colorClass: string }) {
+    if (entries.length === 0) return null;
+    return (
+      <div className="mb-2">
+        <p className={`text-[8px] font-bold uppercase tracking-wider mb-1.5 ${colorClass}`}>{label}</p>
+        <div className="space-y-1">
+          {entries.map((e, idx) => {
+            const ticker = (e.symbol || "").toUpperCase();
+            const name = e.companyName || ticker;
+            const logo = e.logo || e.image || null;
+            const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
+            const isFocus = e.isThemeAnchor || e.isBottleneck || (e.importanceScore != null && e.importanceScore >= 8);
+            return (
+              <button
+                key={`${ticker}-${e.date ?? ""}-${idx}`}
+                className="w-full text-left rounded-lg border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2 flex items-center gap-2"
+                onClick={() => setModalEntry(toEarningsEntry(e))}
+              >
+                <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                  {logo ? (
+                    <img
+                      src={logo}
+                      alt={ticker}
+                      className="w-full h-full object-contain p-0.5"
+                      onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : (
+                    <span className="text-[8px] font-bold text-white">{ticker.slice(0, 2)}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-white">{name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[9px] font-mono text-white/35">{ticker}</span>
+                    {pct != null && (
+                      <span className={`text-[8px] font-semibold ${pct >= 0 ? "text-emerald-400/80" : "text-rose-400/80"}`}>
+                        {pct >= 0 ? "+" : ""}{pct.toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {isFocus && (
+                  <span className="text-[7px] font-bold text-amber-400/70 border border-amber-400/25 rounded px-1 py-0.5 flex-shrink-0">FOCUS</span>
+                )}
+                <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0 leading-none">+</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const dayMap = new Map<string, WeekCleanDay>();
+  for (const d of (weekData?.days || [])) {
+    dayMap.set(d.weekday, d);
+  }
+  const totalCalls = (weekData?.days || []).reduce((s, d) => s + (d.count || 0), 0);
+
+  return (
+    <>
+      {/* ── Week navigation header ───────────────────────────── */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onNavigate(-1)}
+            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          {!isCurrentWeek && (
+            <button
+              onClick={() => onNavigate(0)}
+              className="px-2.5 py-1 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/40 hover:text-white/70"
+            >
+              This Week
+            </button>
+          )}
+          <button
+            onClick={() => onNavigate(1)}
+            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="text-right">
+          <p className="text-[11px] font-semibold text-white/60">
+            {MONTH_NAMES_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_NAMES_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}
+          </p>
+          {weekData && totalCalls > 0 && (
+            <p className="text-[9px] text-white/25 mt-0.5">{totalCalls.toLocaleString()} calls this week</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Error ───────────────────────────────────────────── */}
+      {weekError && (
+        <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.05] mb-4">
+          <AlertCircle className="w-4 h-4 text-rose-400/60 flex-shrink-0" />
+          <p className="text-[11px] text-rose-400/70">{weekError}</p>
+        </div>
+      )}
+
+      {/* ── Loading skeletons ────────────────────────────────── */}
+      {weekLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {WEEKDAYS.map(day => (
+            <div key={day} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3">
+              <Skeleton className="h-4 w-16 mb-1 rounded" />
+              <Skeleton className="h-3 w-10 mb-3 rounded" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-11 w-full mb-1.5 rounded-lg" />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Weekly board ────────────────────────────────────── */}
+      {!weekLoading && !weekError && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {WEEKDAYS.map(weekday => {
+            const day = dayMap.get(weekday);
+            const dayDate = day?.date || "";
+            const isToday = !!dayDate && dayDate === todayKey;
+            const allUnknown = !!day && day.unknown.length > 0
+              && day.preMarket.length === 0
+              && day.afterHours.length === 0
+              && day.duringMarket.length === 0;
+            const hasAny = !!day && (
+              day.preMarket.length + day.afterHours.length + day.duringMarket.length + day.unknown.length > 0
+            );
+
+            return (
+              <div
+                key={weekday}
+                className={`rounded-xl border p-3 ${isToday ? "border-blue-500/20 bg-blue-500/[0.02]" : "border-white/[0.06] bg-white/[0.01]"}`}
+              >
+                {/* Day header */}
+                <div className="mb-2.5">
+                  <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-blue-400" : "text-white/50"}`}>
+                    {weekday.slice(0, 3)}
+                  </p>
+                  {dayDate && (
+                    <p className={`text-[9px] ${isToday ? "text-blue-400/70" : "text-white/25"}`}>
+                      {MONTH_NAMES_SHORT[new Date(`${dayDate}T12:00:00`).getMonth()]} {new Date(`${dayDate}T12:00:00`).getDate()}
+                    </p>
+                  )}
+                  {day && day.count > 0 && (
+                    <p className="text-[8px] text-white/20 mt-0.5">{day.count.toLocaleString()} calls</p>
+                  )}
+                </div>
+
+                {/* Content */}
+                {!hasAny ? (
+                  <p className="text-[9px] text-white/15 italic">No major calls</p>
+                ) : (
+                  <>
+                    <SessionSection label="Pre-Market" entries={day!.preMarket} colorClass="text-sky-400/60" />
+                    <SessionSection label="Market Hours" entries={day!.duringMarket} colorClass="text-emerald-400/60" />
+                    <SessionSection label="After Hours" entries={day!.afterHours} colorClass="text-purple-400/60" />
+                    <SessionSection
+                      label={allUnknown ? "Scheduled" : "TBD"}
+                      entries={day!.unknown}
+                      colorClass="text-white/30"
+                    />
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Earnings popup ───────────────────────────────────── */}
+      {modalEntry && (
+        <EarningsModal
+          entry={modalEntry}
+          onClose={() => setModalEntry(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -3228,6 +3518,53 @@ export default function StocksEarningsCalendarPage() {
     }
   }, []);
 
+  // ── This Week state ──────────────────────────────────────────────
+  const [weekCleanStart, setWeekCleanStart] = useState<Date>(() => getMonday(new Date()));
+  const [weekCleanData, setWeekCleanData] = useState<WeekCleanResponse | null>(null);
+  const [weekCleanLoading, setWeekCleanLoading] = useState(false);
+  const [weekCleanError, setWeekCleanError] = useState<string | null>(null);
+  const weekCleanFetchedRef = useRef<Set<string>>(new Set());
+
+  const navigateWeekClean = useCallback((delta: -1 | 0 | 1) => {
+    if (delta === 0) {
+      setWeekCleanStart(getMonday(new Date()));
+    } else {
+      setWeekCleanStart(prev => addDays(prev, delta * 7));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (earningsMode !== "thisweek") return;
+    const key = dateKey(weekCleanStart);
+    if (weekCleanFetchedRef.current.has(key)) return;
+    weekCleanFetchedRef.current.add(key);
+    setWeekCleanLoading(true);
+    setWeekCleanError(null);
+    setWeekCleanData(null);
+    const weekEnd = addDays(weekCleanStart, 4);
+    const params = new URLSearchParams({
+      weekStart: dateKey(weekCleanStart),
+      weekEnd: dateKey(weekEnd),
+      limit_per_session: "8",
+      max_total: "60",
+    });
+    fetch(`/api/catalysts/earnings/week-clean?${params}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then((data: WeekCleanResponse) => {
+        setWeekCleanData(data);
+        const allTickers = (data.days || [])
+          .flatMap(d => d.entries || [])
+          .map(e => e.symbol)
+          .filter(Boolean);
+        if (allTickers.length > 0) fetchIdentity(allTickers);
+      })
+      .catch(() => {
+        weekCleanFetchedRef.current.delete(key);
+        setWeekCleanError("Could not load curated earnings for this week.");
+      })
+      .finally(() => setWeekCleanLoading(false));
+  }, [earningsMode, weekCleanStart, fetchIdentity]);
+
   // ── Earnings tab state ───────────────────────────────────────────
   const [earningsMarkets, setEarningsMarkets] = useState<ParsedMarket[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(true);
@@ -3386,8 +3723,15 @@ export default function StocksEarningsCalendarPage() {
 
           {/* ── Tab content ─────────────────────────────────────── */}
           {isEarningsTab && earningsMode === "thisweek" ? (
-            /* ── This Week — placeholder until backend is ready ─── */
-            <div />
+            /* ── This Week — weekly earnings board ─────────────── */
+            <WeeklyEarningsBoard
+              weekStart={weekCleanStart}
+              weekData={weekCleanData}
+              weekLoading={weekCleanLoading}
+              weekError={weekCleanError}
+              identityMap={identityMap}
+              onNavigate={navigateWeekClean}
+            />
           ) : isEarningsTab && earningsMode === "upcoming" ? (
             /* ── Day — real calendar widget ────────────────────── */
             earningsLoading && earningsMarkets.length === 0 ? (

@@ -1,0 +1,204 @@
+Wire the existing Catalyst Calendar > Earnings Dates > This Week toggle to the new backend endpoint.
+
+Backend endpoint is ready:
+GET /api/catalysts/earnings/week-clean
+
+Backend response shape:
+{
+  "asOf": string,
+  "source": "fmp",
+  "weekStart": "YYYY-MM-DD",
+  "weekEnd": "YYYY-MM-DD",
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "label": "Mon, Apr 27",
+      "weekday": "Monday",
+      "count": number,
+      "preMarket": [],
+      "afterHours": [],
+      "duringMarket": [],
+      "unknown": [],
+      "entries": []
+    }
+  ],
+  "topEvents": [],
+  "status": "ok" | "partial" | "error",
+  "errors": []
+}
+
+Each event includes:
+- id
+- date
+- session
+- symbol
+- companyName
+- logo/image
+- price
+- priceChangePct
+- marketCap
+- marketCapBucket
+- sector
+- industry
+- time
+- period
+- epsEstimated
+- revenueEstimated
+- themeTags
+- isThemeAnchor
+- isBottleneck
+- importanceScore
+- scoreBreakdown
+- source=fmp
+- raw
+
+Important:
+Only wire the This Week branch.
+Do NOT touch:
+- Day mode, internally earningsMode="upcoming"
+- Recent mode
+- earnings popup behavior
+- non-earnings Catalyst tabs
+- Home/Sectors/Macro
+
+Current frontend facts:
+- File: frontend/client/src/pages/stocks-earnings-calendar.tsx
+- earningsMode values:
+  - This Week = "thisweek"
+  - Day = "upcoming"
+  - Recent = "recent"
+- This Week currently renders a blank <div /> branch.
+- Day and Recent already work and must remain untouched.
+
+Goal:
+Replace the blank This Week branch with a curated weekly earnings board like the reference screenshot.
+
+Data fetch:
+When earningsMode === "thisweek", call:
+
+GET /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}&limit_per_session=8&max_total=60
+
+Use camelCase params if easier:
+weekStart / weekEnd
+
+Week controls:
+Add/use:
+- Last Week
+- Current Week
+- Next Week
+
+Default:
+- current week Monday-Friday
+
+When user clicks Last/Next:
+- update weekStart/weekEnd
+- refetch week-clean
+
+Query behavior:
+- No polling
+- No refetch-on-window-focus
+- retry max 1 or false
+- do not call when earningsMode !== "thisweek"
+
+Do NOT call:
+- /api/catalysts/events?tab=earnings_dates&mode=upcoming
+- /api/catalysts/earnings/upcoming-clean
+- /api/catalysts/earnings/day-clean
+- Finnhub
+- Polymarket
+for the This Week branch.
+
+Layout:
+Create a weekly board with weekday columns:
+- Monday
+- Tuesday
+- Wednesday
+- Thursday
+- Friday
+
+Each day column should show session groups:
+- Pre-Market if preMarket has entries
+- After Hours if afterHours has entries
+- During Market if duringMarket has entries
+- Scheduled / Unknown if unknown has entries
+
+Important:
+Backend currently may return all events under unknown because FMP may not provide reliable time/session for this week. That is okay.
+If all sessions are unknown, render a clean "Scheduled" section instead of making the UI look broken.
+
+Card design:
+Each card should show:
+- logo/avatar
+- companyName
+- symbol
+- priceChangePct if available
+- optional small Focus badge if isThemeAnchor or isBottleneck or importanceScore is high
+- plus/details button
+
+Suggested card:
+[logo] Company Name       +
+       TICKER     +5.78%
+
+If companyName missing:
+- show symbol
+If logo/image missing:
+- show fallback avatar with ticker initials
+If priceChangePct missing:
+- omit or show "—"
+
+Do NOT show:
+- beat odds
+- probability
+- Polymarket
+- Smart score
+- AI labels
+
+Use backend order:
+Backend already sorts by importanceScore. Preserve event order inside each session.
+Do not re-sort by client except for grouping/rendering.
+
+Click behavior:
+Clicking the card or plus/details button should open the existing earnings popup.
+Do not rewrite the popup.
+Pass symbol/date as the existing popup expects.
+
+Top events:
+Use days[] as the main board source.
+topEvents can be used later for a summary strip, but not required for v1.
+
+Empty state:
+If a day/session has no entries:
+- hide that session
+If a day has no entries:
+- show "No major calls" or leave a subtle empty state.
+
+Loading:
+Show skeleton columns/cards.
+
+Error:
+Show:
+"Could not load curated earnings for this week."
+
+Network validation:
+For This Week mode:
+- calls /api/catalysts/earnings/week-clean only
+- no old upcoming endpoint
+- no day-clean
+- no Finnhub
+- no Polymarket
+
+Regression validation:
+- Day mode still works exactly as before
+- Recent mode still works exactly as before
+- Popup still opens
+- Non-earnings tabs unchanged
+
+Final response:
+Tell me:
+- Which frontend files changed
+- Confirm This Week uses /api/catalysts/earnings/week-clean
+- Confirm Day and Recent were untouched
+- Confirm Last/Current/Next week controls work
+- Confirm unknown session renders as Scheduled/Unknown cleanly
+- Confirm card click opens existing popup
+- Confirm no Finnhub/Polymarket/old upcoming calls in This Week
