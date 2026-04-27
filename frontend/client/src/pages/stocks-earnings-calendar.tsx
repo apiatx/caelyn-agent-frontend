@@ -1025,6 +1025,7 @@ function WeeklyEarningsBoard({
   weekError,
   identityMap,
   onNavigate,
+  hideNav,
 }: {
   weekStart: Date;
   weekData: WeekCleanResponse | null;
@@ -1032,6 +1033,7 @@ function WeeklyEarningsBoard({
   weekError: string | null;
   identityMap: Record<string, IdentityData>;
   onNavigate: (delta: -1 | 0 | 1) => void;
+  hideNav?: boolean;
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const todayKey = dateKey(new Date());
@@ -1157,38 +1159,40 @@ function WeeklyEarningsBoard({
   return (
     <>
       {/* ── Week navigation header ───────────────────────────── */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onNavigate(-1)}
-            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          {!isCurrentWeek && (
+      {!hideNav && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => onNavigate(0)}
-              className="px-2.5 py-1 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/40 hover:text-white/70"
+              onClick={() => onNavigate(-1)}
+              className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
             >
-              This Week
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-          )}
-          <button
-            onClick={() => onNavigate(1)}
-            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+            {!isCurrentWeek && (
+              <button
+                onClick={() => onNavigate(0)}
+                className="px-2.5 py-1 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/40 hover:text-white/70"
+              >
+                This Week
+              </button>
+            )}
+            <button
+              onClick={() => onNavigate(1)}
+              className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/40 hover:text-white/70"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] font-semibold text-white/60">
+              {MONTH_NAMES_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_NAMES_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}
+            </p>
+            {weekData && totalCalls > 0 && (
+              <p className="text-[9px] text-white/25 mt-0.5">{totalCalls.toLocaleString()} calls this week</p>
+            )}
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-[11px] font-semibold text-white/60">
-            {MONTH_NAMES_SHORT[weekStart.getMonth()]} {weekStart.getDate()} – {MONTH_NAMES_SHORT[weekEnd.getMonth()]} {weekEnd.getDate()}, {weekEnd.getFullYear()}
-          </p>
-          {weekData && totalCalls > 0 && (
-            <p className="text-[9px] text-white/25 mt-0.5">{totalCalls.toLocaleString()} calls this week</p>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ── Error ───────────────────────────────────────────── */}
       {weekError && (
@@ -3673,15 +3677,6 @@ export default function StocksEarningsCalendarPage() {
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GlassCard className="p-5 w-full">
 
-          {/* ── Page header ─────────────────────────────────────── */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #f59e0b, #f97316, #ef4444)" }}>
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-lg font-bold text-white leading-tight">Calendar</h1>
-          </div>
-
           {/* ── Tab bar + Ask Caelyn ─────────────────────────────── */}
           <div className="flex items-center gap-2 mb-4">
             <div className="flex gap-1 overflow-x-auto scrollbar-hide flex-1 pb-1">
@@ -3762,8 +3757,8 @@ export default function StocksEarningsCalendarPage() {
 
           {/* ── Earnings Day / This Week / Recent toggle ─────────── */}
           {isEarningsTab && (
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
                 <button
                   onClick={() => setEarningsMode("thisweek")}
                   className="px-4 py-1.5 transition-all"
@@ -3792,9 +3787,44 @@ export default function StocksEarningsCalendarPage() {
                   Recent
                 </button>
               </div>
-              <span className="text-[10px] text-white/25">
-                {earningsMode === "thisweek" ? "All earnings calls this week" : earningsMode === "upcoming" ? "Selected day's earnings calls" : "List — recent earnings reports"}
-              </span>
+              {earningsMode === "thisweek" ? (
+                <>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => navigateWeekClean(-1)}
+                      className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    {dateKey(weekCleanStart) !== dateKey(getMonday(new Date())) && (
+                      <button
+                        onClick={() => navigateWeekClean(0)}
+                        className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
+                      >
+                        Now
+                      </button>
+                    )}
+                    <button
+                      onClick={() => navigateWeekClean(1)}
+                      className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
+                    >
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <span className="text-[11px] font-semibold text-white/50 flex-shrink-0">
+                    {MONTH_NAMES_SHORT[weekCleanStart.getMonth()]} {weekCleanStart.getDate()} – {MONTH_NAMES_SHORT[addDays(weekCleanStart, 4).getMonth()]} {addDays(weekCleanStart, 4).getDate()}, {addDays(weekCleanStart, 4).getFullYear()}
+                  </span>
+                  {weekCleanData && (weekCleanData.days || []).reduce((s, d) => s + (d.count || 0), 0) > 0 && (
+                    <span className="text-[9px] text-white/25 flex-shrink-0">
+                      {(weekCleanData.days || []).reduce((s, d) => s + (d.count || 0), 0).toLocaleString()} calls this week
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-[10px] text-white/25">
+                  {earningsMode === "upcoming" ? "Selected day's earnings calls" : "List — recent earnings reports"}
+                </span>
+              )}
             </div>
           )}
 
@@ -3808,6 +3838,7 @@ export default function StocksEarningsCalendarPage() {
               weekError={weekCleanError}
               identityMap={identityMap}
               onNavigate={navigateWeekClean}
+              hideNav
             />
           ) : isEarningsTab && earningsMode === "upcoming" ? (
             /* ── Day — real calendar widget ────────────────────── */
