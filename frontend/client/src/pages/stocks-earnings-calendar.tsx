@@ -1062,6 +1062,15 @@ function WeeklyEarningsBoard({
     };
   }
 
+  function isJunkEntry(e: WeekCleanEntry): boolean {
+    const sym = (e.symbol || "").toUpperCase();
+    const noName = !e.companyName || e.companyName.toUpperCase() === sym;
+    const unknownBucket = (e.marketCapBucket || "").toLowerCase() === "unknown";
+    const noTags = !e.themeTags || e.themeTags.length === 0;
+    const noSignal = !e.isThemeAnchor && !e.isBottleneck;
+    return noName && unknownBucket && noTags && noSignal;
+  }
+
   function buildReason(e: WeekCleanEntry): string | null {
     const tag = e.themeTags && e.themeTags.length > 0 ? e.themeTags[0] : null;
     const qualifier = e.isThemeAnchor ? "Anchor" : e.isBottleneck ? "Bottleneck" : null;
@@ -1073,18 +1082,18 @@ function WeeklyEarningsBoard({
       if (b === "large") return "Large cap";
       if (b === "mid") return "Mid cap";
       if (b === "small") return "Small cap";
-      return e.marketCapBucket;
     }
     return null;
   }
 
   function SessionSection({ label, entries, colorClass, topSymbols }: { label: string; entries: WeekCleanEntry[]; colorClass: string; topSymbols?: Set<string> }) {
-    if (entries.length === 0) return null;
+    const clean = entries.filter(e => !isJunkEntry(e));
+    if (clean.length === 0) return null;
     return (
       <div className="mb-2">
         <p className={`text-[8px] font-bold uppercase tracking-wider mb-1.5 ${colorClass}`}>{label}</p>
         <div className="space-y-1">
-          {entries.map((e, idx) => {
+          {clean.map((e, idx) => {
             const ticker = (e.symbol || "").toUpperCase();
             const name = e.companyName || ticker;
             const logo = e.logo || e.image || null;
@@ -1194,7 +1203,7 @@ function WeeklyEarningsBoard({
         <div className="mb-4">
           <p className="text-[9px] font-bold uppercase tracking-wider text-white/25 mb-2">Top watches this week</p>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {(weekData!.topEvents || []).slice(0, 8).map((e, idx) => {
+            {(weekData!.topEvents || []).filter(e => !isJunkEntry(e)).slice(0, 8).map((e, idx) => {
               const ticker = (e.symbol || "").toUpperCase();
               const logo = e.logo || e.image || null;
               return (
