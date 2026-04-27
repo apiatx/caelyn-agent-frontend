@@ -3594,16 +3594,40 @@ export default function StocksEarningsCalendarPage() {
         <GlassCard className="p-5 w-full">
 
           {/* ── Page header ─────────────────────────────────────── */}
-          <div className="flex items-center gap-4 mb-5">
+          <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: "linear-gradient(135deg, #f59e0b, #f97316, #ef4444)" }}>
               <Calendar className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-white leading-tight">Catalyst Calendar</h1>
-              <p className="text-[11px] text-white/35 mt-0.5 leading-snug">
-                Track earnings, dividends, IPOs, splits, macro releases, SEC filings, analyst changes, and insider activity in one place.
-              </p>
+            <h1 className="text-lg font-bold text-white leading-tight">Calendar</h1>
+          </div>
+
+          {/* ── Tab bar + Ask Caelyn ─────────────────────────────── */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide flex-1 pb-1">
+              {CATALYST_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => switchTab(tab.key)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                    style={active ? {
+                      background: "rgba(245,158,11,0.15)",
+                      border: "1px solid rgba(245,158,11,0.3)",
+                      color: "#fbbf24",
+                    } : {
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      color: "rgba(255,255,255,0.45)",
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
             {/* ── Ask Caelyn — global, all tabs ─────────────────── */}
             <button
@@ -3618,33 +3642,6 @@ export default function StocksEarningsCalendarPage() {
               <Sparkles className="w-3 h-3" />
               Ask Caelyn
             </button>
-          </div>
-
-          {/* ── Tab bar ─────────────────────────────────────────── */}
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide mb-4 pb-1">
-            {CATALYST_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => switchTab(tab.key)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all flex-shrink-0"
-                  style={active ? {
-                    background: "rgba(245,158,11,0.15)",
-                    border: "1px solid rgba(245,158,11,0.3)",
-                    color: "#fbbf24",
-                  } : {
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: "rgba(255,255,255,0.45)",
-                  }}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
           </div>
 
           {/* ── Filter bar ───────────────────────────────────────── */}

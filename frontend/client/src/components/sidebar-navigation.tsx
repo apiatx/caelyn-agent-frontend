@@ -140,7 +140,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'stocks-earnings-calendar',
-          label: 'Catalyst Calendar',
+          label: 'Calendar',
           icon: <CalendarDays className="w-4 h-4" />,
           path: '/app/stocks/earnings-calendar'
         },
