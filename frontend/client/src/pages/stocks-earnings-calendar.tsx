@@ -3357,7 +3357,7 @@ export default function StocksEarningsCalendarPage() {
                     ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
                     : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
                 >
-                  Upcoming
+                  Calendar
                 </button>
                 <button
                   onClick={() => setEarningsMode("recent")}
