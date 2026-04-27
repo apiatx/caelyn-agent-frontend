@@ -1,0 +1,62 @@
+Let me check the logs and find the earnings calendar frontend code simultaneously:
+
+
+2 actions
+Let me find the earnings calendar frontend page and check what API it actually calls:
+
+
+17 actions
+Now I understand — the "earnings calendar page" is the Catalyst Calendar's earnings_dates tab via /api/catalysts/events. Let me test it directly and read the route to see exactly what it fetches:
+
+
+3 actions
+The backend is returning 1000 events. Let me take a screenshot to see what the user is actually looking at and check the network for any frontend call errors:
+
+
+2 actions
+The preview pane just shows the raw API — the real UI is your external frontend. Let me check the actual request logs to see what endpoint the frontend is calling and whether it's getting a response:
+
+
+5 actions
+No actual frontend hits logged yet — the frontend is your external UI. Let me test the two endpoints exactly as the frontend would call them (no params = default window), and check what the response looks like:
+
+
+5 actions
+Found it — the spec (line 91) requires "raw": object in each event, and the V2 service removed it. But let me also check CORS and the limit issue — 490 events for today (Sunday) with limit=500 means the calendar is getting truncated before it shows the full week. Let me check all angles at once:
+
+
+3 actions
+Found two real bugs causing the blank calendar:
+
+raw field missing — the spec requires it and the frontend accesses event.raw. Without it, a JS crash silences the whole component.
+Limit applied before countsByDate is built — with 469 events on April 28 alone and limit=500, all remaining dates get zero counts. The calendar shows no dots for the full week.
+Fixing both now:
+
+
+2 actions
+Now fix the limit ordering bug — countsByDate must be computed from ALL events, limit only trims the flat list:
+
+
+2 actions
+Both fixes applied. Restarting and testing:
+
+
+4 actions
+Both fixes confirmed working. Let me write the commit message:
+
+
+2 actions
+Two bugs found and fixed. Here's what was causing the blank calendar:
+
+Bug 1 — raw field removed from events
+The V2 service's normalize function dropped the "raw": object field that the spec requires and the frontend uses. Any frontend code reading event.raw.someField would throw a JavaScript exception the moment it tried to render, silencing the whole component. Restored.
+
+Bug 2 — countsByDate computed after the limit cut
+With 469+ events on a single day and a limit=500, all subsequent days in the week were getting zero counts — so the calendar showed no dots for those days. The fix: build countsByDate and eventsByDate from the full event set first, then trim the flat events list. The calendar dots now reflect every FMP event in the range.
+
+After fix — countsByDate for the 7-day window:
+
+Apr 27: 490   Apr 28: 469   Apr 29: 641
+Apr 30: 613   May 1: 120    May 2:  2    May 4: 252
+
+All dates populated, raw field present, fmpCallsUsed=2, rateLimited=false. Home/Macro/Sectors all HTTP 200.

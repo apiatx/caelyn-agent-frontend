@@ -970,8 +970,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const [enrichments, setEnrichments] = useState<Record<string, EarningsDetailData>>({});
   const [enrichLoading, setEnrichLoading] = useState<Set<string>>(new Set());
-  // ── Feature flag: flip to true once backend /api/catalysts/earnings/* router is re-enabled ──
-  const EARNINGS_CLEAN_ENABLED = false;
+  // ── Feature flag: flip to false to disable backend /api/catalysts/earnings/* calls ──
+  const EARNINGS_CLEAN_ENABLED = true;
 
   const [fmpDateMap, setFmpDateMap] = useState<Map<string, EarningsEntry[]>>(new Map());
   const [fmpLoading, setFmpLoading] = useState(false);
