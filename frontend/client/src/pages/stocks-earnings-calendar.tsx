@@ -3185,10 +3185,10 @@ function CatalystListTab({
 export default function StocksEarningsCalendarPage() {
   // ── Tab + mode state ─────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
-  const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent">("upcoming");
+  const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent">("thisweek");
   const switchTab = (key: string) => {
     setActiveTab(key);
-    if (key === "earnings_dates") setEarningsMode("upcoming");
+    if (key === "earnings_dates") setEarningsMode("thisweek");
   };
 
   // ── Ask Caelyn global state ───────────────────────────────────────
@@ -3351,15 +3351,6 @@ export default function StocksEarningsCalendarPage() {
             <div className="flex items-center gap-3 mb-4">
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
                 <button
-                  onClick={() => setEarningsMode("upcoming")}
-                  className="px-4 py-1.5 transition-all"
-                  style={earningsMode === "upcoming"
-                    ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
-                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-                >
-                  Day
-                </button>
-                <button
                   onClick={() => setEarningsMode("thisweek")}
                   className="px-4 py-1.5 transition-all"
                   style={earningsMode === "thisweek"
@@ -3367,6 +3358,15 @@ export default function StocksEarningsCalendarPage() {
                     : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
                 >
                   This Week
+                </button>
+                <button
+                  onClick={() => setEarningsMode("upcoming")}
+                  className="px-4 py-1.5 transition-all"
+                  style={earningsMode === "upcoming"
+                    ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  Day
                 </button>
                 <button
                   onClick={() => setEarningsMode("recent")}
@@ -3379,14 +3379,17 @@ export default function StocksEarningsCalendarPage() {
                 </button>
               </div>
               <span className="text-[10px] text-white/25">
-                {earningsMode === "upcoming" ? "Selected day's earnings calls" : earningsMode === "thisweek" ? "All earnings calls this week" : "List — recent earnings reports"}
+                {earningsMode === "thisweek" ? "All earnings calls this week" : earningsMode === "upcoming" ? "Selected day's earnings calls" : "List — recent earnings reports"}
               </span>
             </div>
           )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab && (earningsMode === "upcoming" || earningsMode === "thisweek") ? (
-            /* ── Earnings Day / This Week — real calendar widget ── */
+          {isEarningsTab && earningsMode === "thisweek" ? (
+            /* ── This Week — placeholder until backend is ready ─── */
+            <div />
+          ) : isEarningsTab && earningsMode === "upcoming" ? (
+            /* ── Day — real calendar widget ────────────────────── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
