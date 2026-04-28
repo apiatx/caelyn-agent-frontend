@@ -3661,7 +3661,7 @@ export default function TradingAgent() {
                 { id: 'grok' as const,        label: 'Pulse (Sentiment)',   icon: '⚡' },
                 { id: 'gemini' as const,      label: 'Atlas (Research)',    icon: '🔵' },
                 { id: 'perplexity' as const,  label: 'Beacon (News)',       icon: '🌐' },
-                { id: 'deepseek' as const,    label: 'Deepseek',    icon: '🔷' },
+                { id: 'deepseek' as const,    label: 'Forge (Efficient Analyst)', icon: '🔷' },
               ]).map(({ id, label, icon }) => {
                 const isActive = !collabConfig && selectedModel === id;
                 return (
@@ -3730,7 +3730,7 @@ export default function TradingAgent() {
                   { id: 'gemini', label: 'Atlas (Research)',    icon: '🔵' },
                   { id: 'grok', label: 'Pulse (Sentiment)',    icon: '⚡' },
                   { id: 'perplexity', label: 'Beacon (News)',  icon: '🌐' },
-                  { id: 'deepseek', label: 'Deepseek',         icon: '🔷' },
+                  { id: 'deepseek', label: 'Forge (Efficient Analyst)', icon: '🔷' },
                 ]).map((m: any) => (
                   <div key={m.id} onClick={() => { if (!isReasoningLocked) setCollabConfig(prev => prev ? { ...prev, primaryModel: m.id, reasoningModelUI: m.id } : { ...DEFAULT_COLLAB_STATE, primaryModel: m.id, reasoningModelUI: m.id }); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: collabConfig?.reasoningModelUI === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:'50%', border: collabConfig?.reasoningModelUI === m.id ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -3750,7 +3750,7 @@ export default function TradingAgent() {
                   { id: 'gpt-4o', label: 'Nexus (Coordinator)', icon: '🟢' },
                   { id: 'gemini', label: 'Atlas (Research)',    icon: '🔵' },
                   { id: 'perplexity', label: 'Beacon (News)',  icon: '🌐' },
-                  { id: 'deepseek', label: 'Deepseek', icon: '🔷' },
+                  { id: 'deepseek', label: 'Forge (Efficient Analyst)', icon: '🔷' },
                 ]).map((a: any) => {
                   const agents = collabConfig?.collabAgents || [];
                   const isChecked = agents.includes(a.id);
