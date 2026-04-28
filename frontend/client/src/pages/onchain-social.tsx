@@ -1643,7 +1643,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const C = {
     bg: 'rgba(10,12,28,0.85)',
     border: 'rgba(255,255,255,0.07)',
-    headerBg: 'rgba(255,255,255,0.025)',
+    headerBg: '#0c0e22',
     rowHover: 'rgba(255,255,255,0.03)',
     text: '#e2e8f0',
     dim: '#64748b',
@@ -1669,13 +1669,15 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
     color: C.subtle,
-    borderBottom: `1px solid ${C.border}`,
+    borderBottom: `1px solid rgba(255,255,255,0.12)`,
     background: C.headerBg,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     userSelect: 'none',
     position: 'sticky',
     top: 0,
+    zIndex: 2,
   });
 
   const tdStyle = (align: 'left' | 'right' = 'right'): CSSProperties => ({
