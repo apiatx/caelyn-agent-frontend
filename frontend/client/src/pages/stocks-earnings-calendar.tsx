@@ -1604,10 +1604,9 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Reset visible count and clear day cards when day changes
+  // Reset visible count when day changes (day card data managed by React Query cache)
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
-    setDayCleanEntries([]);
   }, [selectedDayKey]);
 
   // IntersectionObserver to load more day-clean cards as user scrolls
