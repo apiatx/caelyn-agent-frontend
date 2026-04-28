@@ -1,0 +1,129 @@
+Now wire the Earnings tab frontend to the stabilized backend cache architecture.
+
+Backend is ready:
+- raw FMP earnings chunks are cached for 24h
+- LKG is retained for 30 days
+- Day/Week/Month All and Curated share the same raw chunk cache
+- toggling views should not trigger new raw FMP calendar calls while chunks are warm
+
+Do NOT touch backend.
+Do NOT touch popup internals.
+Do NOT touch non-earnings tabs.
+Do NOT use Finnhub, Polymarket, or AI.
+
+Current main modes:
+- Recent
+- Day
+- Week
+- Month
+
+Signal modes:
+- Curated
+- All
+Only show Curated/All for Day, Week, Month.
+Do not show it for Recent.
+
+Endpoint mapping:
+
+Day + Curated:
+GET /api/catalysts/earnings/day-curated?date={selectedDate}
+
+Day + All:
+GET /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Week + Curated:
+GET /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}
+
+Week + All:
+GET /api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+Month + Curated:
+GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+
+Month + All:
+GET /api/catalysts/earnings/month-all?year={year}&month={month}
+
+Recent:
+Keep existing behavior unchanged.
+
+Frontend cache/query requirements:
+Use stable query keys:
+
+["earnings", "day", "curated", selectedDate]
+["earnings", "day", "all", selectedDate]
+["earnings", "week", "curated", weekStart, weekEnd]
+["earnings", "week", "all", weekStart, weekEnd]
+["earnings", "month", "curated", year, month]
+["earnings", "month", "all", year, month]
+
+Use:
+- staleTime: at least 15 minutes
+- cacheTime/gcTime: at least 60 minutes
+- refetchOnWindowFocus: false
+- retry: 1 max
+- no polling
+- keep previous data visible while new data loads
+
+Preloading:
+On Calendar/Earnings page mount:
+1. preload current Month Curated
+2. preload current Week Curated
+3. preload selected Day Curated
+
+Do NOT preload Month All on page load.
+Do NOT preload Week All on page load.
+Do NOT preload Day All on page load.
+All views load only when user clicks All.
+
+State behavior:
+- Day defaults to Curated.
+- Week defaults to Curated.
+- Month defaults to Curated.
+- Recent ignores Curated/All.
+- Switching Curated/All should not reset selected date/week/month.
+- Switching Day/Week/Month should not wipe cached data.
+- April → May → April should restore April from cache.
+- Day Apr 27 and Day Apr 28 must show different data.
+
+Rendering:
+Curated:
+- render backend events directly.
+- do not hide backend curated events because logo/marketCap/themeTags are missing.
+- fallback avatar if logo missing.
+- symbol fallback if companyName missing.
+- hide visible “unknown” reason labels.
+- no junk fallback rows.
+
+All:
+- render full backend events directly.
+- do not apply curated filters.
+- no FOCUS badge needed.
+
+Month view:
+- Month Curated uses day.topEvents.
+- Month All uses day.entries or equivalent.
+- Normalize month response by day.date, not array index.
+- If topEvents/entries exist, render them.
+- If count > rendered events, show +X more.
+- If count > 0 and no topEvents/entries, show “X calls.”
+
+Validation:
+1. Day Curated Apr 27 differs from Day Curated Apr 28.
+2. Day All Apr 27 differs from Day All Apr 28.
+3. Week Curated works.
+4. Week All no longer says no data if backend returns events.
+5. Month Curated shows events across the month, not only one week.
+6. Month All shows all month counts/events and does not say recent data unavailable.
+7. April → May → April restores from cache.
+8. Recent unchanged.
+9. Popup opens unchanged.
+10. Network tab shows no Finnhub/Polymarket calls.
+
+Final response:
+- files changed
+- query keys used
+- preload behavior
+- confirm Month All uses month-all
+- confirm Day dates do not reuse stale data
+- confirm Month Curated/All render across the full month
+- confirm no polling/retry storm

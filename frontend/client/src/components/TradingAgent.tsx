@@ -293,6 +293,15 @@ function FollowUpInput({ panelId, onSubmit, C, font, sansFont, suggestions }: { 
   );
 }
 
+const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  'claude':     'Athena (Strategist)',
+  'gpt-4o':     'Nexus (Coordinator)',
+  'grok':       'Pulse (Sentiment)',
+  'gemini':     'Atlas (Research)',
+  'perplexity': 'Beacon (News)',
+  'deepseek':   'Forge (Efficient Analyst)',
+};
+
 export default function TradingAgent() {
   const { logout } = useAuth();
   const [prompt, setPrompt] = useState('');
@@ -3737,7 +3746,7 @@ export default function TradingAgent() {
                       {collabConfig?.reasoningModelUI === m.id && <div style={{ width:7, height:7, borderRadius:'50%', background:'#3b82f6' }} />}
                     </div>
                     <span style={{ fontSize:13, marginRight:2 }}>{m.icon?.length > 2 ? '' : m.icon}</span>
-                    <span style={{ fontSize:11, color: collabConfig?.reasoningModelUI === m.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{m.label || m.name || m.id}</span>
+                    <span style={{ fontSize:11, color: collabConfig?.reasoningModelUI === m.id ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{AGENT_DISPLAY_NAMES[m.id] || m.label || m.name || m.id}</span>
                   </div>
                 ))}
               </div>
@@ -3760,7 +3769,7 @@ export default function TradingAgent() {
                       {isChecked && <span style={{ color:'#fff', fontSize:9, fontWeight:700 }}>✓</span>}
                     </div>
                     <span style={{ fontSize:13, marginRight:2 }}>{a.icon?.length > 2 ? '' : a.icon}</span>
-                    <span style={{ fontSize:11, color: isChecked ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{a.label || a.name || a.id}</span>
+                    <span style={{ fontSize:11, color: isChecked ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{AGENT_DISPLAY_NAMES[a.id] || a.label || a.name || a.id}</span>
                   </div>
                   );
                 })}
