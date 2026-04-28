@@ -3645,21 +3645,47 @@ export default function TradingAgent() {
         <button onClick={() => csvInputRef.current?.click()} title="Upload CSV watchlist" style={{ width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', background: csvData ? 'rgba(32,144,208,0.2)' : 'transparent', border: csvData ? '1px solid rgba(32,144,208,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius:3, color: csvData ? '#a78bfa' : '#666', cursor:'pointer', fontSize:14, flexShrink:0 }}>+</button>
         {csvFileName && <div style={{ display:'flex', alignItems:'center', gap:4, padding:'2px 8px', background:'rgba(32,144,208,0.15)', border:'1px solid rgba(32,144,208,0.3)', borderRadius:3, fontSize:10, color:'#a78bfa', fontFamily:'monospace', flexShrink:0, maxWidth:160, overflow:'hidden' }}><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{csvFileName}</span><span onClick={() => { setCsvData(null); setCsvFileName(null); }} style={{ cursor:'pointer', color:'#ef4444', fontWeight:700, flexShrink:0 }}>x</span></div>}
         <div style={{ display:'flex', gap:3, alignItems:'center', flexShrink:0 }}>
-          {/* Caelyn — Default mode only */}
-          {selectedStrategy === 'default' && <button
-            onClick={() => { if (!collabConfig) setCollabConfig(DEFAULT_COLLAB_STATE); }}
-            title="Automatic multi-model intelligence"
-            style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", background: collabConfig ? 'linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4)' : 'rgba(139,92,246,0.08)', color: collabConfig ? '#ffffff' : '#a78bfa', border: collabConfig ? 'none' : '1px solid rgba(139,92,246,0.25)', cursor:'pointer', transition:'all 0.15s', textShadow: collabConfig ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', boxShadow: collabConfig ? '0 0 8px rgba(139,92,246,0.4)' : 'none', flexShrink:0 }}
-          >Caelyn</button>}
-          {/* Customize — Default mode only */}
+          {/* Single Agent — Default mode only */}
+          {selectedStrategy === 'default' && <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
+            <button key="single_agent_trigger" style={{ padding:'3px 7px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)', color: !collabConfig ? '#60a5fa' : '#4b5563', border: !collabConfig ? '1px solid rgba(59,130,246,0.25)' : '1px solid rgba(255,255,255,0.07)', cursor:'pointer', transition:'all 0.15s', letterSpacing:'0.2px' }}>
+              Single Agent ▾
+            </button>
+            <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:200, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(59,130,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', zIndex:1000, paddingTop:0 }}>
+              <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', marginBottom:4 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#93c5fd', fontFamily:"'JetBrains Mono', monospace", letterSpacing:'0.3px' }}>Single Agent</div>
+                <div style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Route to one model directly</div>
+              </div>
+              {([
+                { id: 'claude' as const,      label: 'Claude',      icon: '🟣' },
+                { id: 'gpt-4o' as const,      label: 'ChatGPT',     icon: '🟢' },
+                { id: 'grok' as const,        label: 'Grok',        icon: '⚡' },
+                { id: 'gemini' as const,      label: 'Gemini',      icon: '🔵' },
+                { id: 'perplexity' as const,  label: 'Perplexity',  icon: '🌐' },
+                { id: 'deepseek' as const,    label: 'Deepseek',    icon: '🔷' },
+              ]).map(({ id, label, icon }) => {
+                const isActive = !collabConfig && selectedModel === id;
+                return (
+                  <div key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 14px', cursor:'pointer', borderRadius:6, background: isActive ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s', margin:'0 4px' }}>
+                    <div style={{ width:14, height:14, borderRadius:'50%', border: isActive ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {isActive && <div style={{ width:7, height:7, borderRadius:'50%', background:'#3b82f6' }} />}
+                    </div>
+                    <span style={{ fontSize:12 }}>{icon}</span>
+                    <span style={{ fontSize:11, color: isActive ? '#e0e0e0' : '#9ca3af', fontFamily:"'JetBrains Mono', monospace" }}>{label}</span>
+                  </div>
+                );
+              })}
+              <div style={{ height:8 }} />
+            </div>
+          </div>}
+          {/* Agent Collaboration — Default mode only */}
           {selectedStrategy === 'default' && <div className="agent-collab-wrapper" style={{ position:'relative', display:'inline-block' }}>
             <button key="customize_trigger" style={{ padding:'3px 7px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: 'rgba(255,255,255,0.03)', color: collabConfig ? 'rgba(167,139,250,0.7)' : '#4b5563', border: '1px solid rgba(255,255,255,0.07)', cursor:'pointer', transition:'all 0.15s', letterSpacing:'0.2px' }}>
-              Customize ▾
+              Agent Collaboration ▾
             </button>
             <div className="agent-collab-dropdown" style={{ position:'absolute', top:'100%', left:0, minWidth:290, background:'rgba(15,15,30,0.98)', border:'1px solid rgba(139,92,246,0.25)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.5)', padding:'8px 0', zIndex:1000, paddingTop:0 }}>
-              {/* CUSTOMIZE HEADER */}
+              {/* AGENT COLLABORATION HEADER */}
               <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', marginBottom:4 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:'#c4b5fd', fontFamily:"'JetBrains Mono', monospace", letterSpacing:'0.3px' }}>Customize</div>
+                <div style={{ fontSize:11, fontWeight:700, color:'#c4b5fd', fontFamily:"'JetBrains Mono', monospace", letterSpacing:'0.3px' }}>Agent Collaboration</div>
                 <div style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Advanced collaboration settings</div>
               </div>
               {/* PRESETS */}
@@ -3743,17 +3769,6 @@ export default function TradingAgent() {
               })()}
             </div>
           </div>}
-          {/* Model pills — Default mode only */}
-          {selectedStrategy === 'default' && ([
-            { id: 'claude', label: 'Claude' },
-            { id: 'gpt-4o', label: 'ChatGPT' },
-            { id: 'grok', label: 'Grok' },
-            { id: 'gemini', label: 'Gemini' },
-            { id: 'perplexity', label: 'Perplexity' },
-            { id: 'deepseek', label: 'Deepseek' },
-          ] as const).map(({ id, label }) => (
-            <button key={id} onClick={() => { setSelectedModel(id); setCollabConfig(null); }} style={{ padding:'3px 8px', borderRadius:10, fontSize:9, fontWeight:600, fontFamily:"'JetBrains Mono', monospace", background: !collabConfig && selectedModel === id ? '#3b82f6' : 'rgba(255,255,255,0.04)', color: !collabConfig && selectedModel === id ? '#ffffff' : '#6b7280', border:'none', cursor:'pointer', transition:'all 0.15s' }}>{label}</button>
-          ))}
           {/* Non-default: Guided Brain indicator */}
           {selectedStrategy !== 'default' && (
             <div style={{ display:'flex', alignItems:'center', gap:5, padding:'2px 10px', background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)', borderRadius:10 }}>
