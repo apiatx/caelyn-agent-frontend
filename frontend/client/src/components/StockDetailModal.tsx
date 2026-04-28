@@ -292,7 +292,7 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
 /* ═══ Overview Tab ═══════════════════════════════════════════════════ */
 function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
   const exchange = ticker.startsWith('BTC') || ticker.startsWith('ETH') ? 'BINANCE' : 'NASDAQ';
-  const tvUrl = `https://s.tradingview.com/widgetembed/?frameElementId=tv_${ticker}&symbol=${exchange}:${ticker}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0d1623&studies=[]&theme=dark&style=1&timezone=exchange&locale=en`;
+  const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${exchange}:${ticker}`;
 
   const isNewFmt = stock?._format === 'new';
 
@@ -303,7 +303,7 @@ function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
         <iframe
           key={ticker}
           src={tvUrl}
-          style={{ width: '100%', height: 380, border: 'none', display: 'block' }}
+          style={{ width: '100%', height: 520, border: 'none', display: 'block' }}
           title={`${ticker} chart`}
         />
       </div>

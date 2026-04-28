@@ -1138,7 +1138,7 @@ export default function TradingAgent() {
         {intervals.map(iv => <button key={iv.v} onClick={(e) => { e.stopPropagation(); setIvl(iv.v); }} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:font, background: ivl === iv.v ? C.blue+'20' : 'transparent', color: ivl === iv.v ? C.blue : C.dim, border:`1px solid ${ivl === iv.v ? C.blue+'40' : C.border}`, borderRadius:3, cursor:'pointer' }}>{iv.l}</button>)}
       </div>
       <div style={{ borderRadius:8, overflow:'hidden', border:`1px solid ${C.border}` }}>
-        <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(sym)}&interval=${ivl}&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=200`} style={{ width:'100%', height:200, border:'none', display:'block' }} title={`${sym} chart`} />
+        <iframe src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=400&interval=${ivl}&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(sym)}`} style={{ width:'100%', height:400, border:'none', display:'block' }} title={`${sym} chart`} />
       </div>
     </div>;
   }
@@ -2790,7 +2790,7 @@ export default function TradingAgent() {
             {intervals.map(iv => <button key={iv.v} onClick={(e) => { e.stopPropagation(); setCsvChartInterval(iv.v); }} style={{ padding:'2px 8px', fontSize:9, fontWeight:600, fontFamily:font, background: csvChartInterval === iv.v ? C.blue+'20' : 'transparent', color: csvChartInterval === iv.v ? C.blue : C.dim, border:`1px solid ${csvChartInterval === iv.v ? C.blue+'40' : C.border}`, borderRadius:3, cursor:'pointer' }}>{iv.l}</button>)}
           </div>
           <div style={{ borderRadius:6, overflow:'hidden', border:`1px solid ${C.border}` }}>
-            <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSym)}&interval=${csvChartInterval}&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=200`} style={{ width:'100%', height:200, border:'none', display:'block' }} title={`${tvSym} chart`} />
+            <iframe src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=400&interval=${csvChartInterval}&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSym)}`} style={{ width:'100%', height:400, border:'none', display:'block' }} title={`${tvSym} chart`} />
           </div>
         </div>}
       </div>;
@@ -3622,7 +3622,7 @@ export default function TradingAgent() {
                 </div>
               </div>
               <div style={{ borderRadius:10, overflow:'hidden', border:`1px solid ${C.border}` }}>
-                <iframe src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(signalPopup.ticker)}&interval=${signalChartInterval}&theme=dark&style=1&locale=en&hide_top_toolbar=1&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=320`} style={{ width:'100%', height:320, border:'none', display:'block' }} title={`${signalPopup.ticker} chart`} />
+                <iframe src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=450&interval=${signalChartInterval}&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(signalPopup.ticker)}`} style={{ width:'100%', height:450, border:'none', display:'block' }} title={`${signalPopup.ticker} chart`} />
               </div>
             </div>
           </div>

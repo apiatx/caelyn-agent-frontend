@@ -532,6 +532,12 @@ function TradingViewChart({ ticker }: { ticker: string }) {
       save_image: false,
       hide_volume: false,
       support_host: "https://www.tradingview.com",
+      enabled_features: ["use_localstorage_for_settings","study_templates","header_indicators","header_compare","header_undo_redo","header_screenshot","header_chart_type","header_settings","header_resolutions","header_fullscreen_button","left_toolbar","drawing_templates"],
+      disabled_features: ["volume_force_overlay","create_volume_indicator_by_default"],
+      timeframes: [
+        {text:"1m",resolution:"1"},{text:"15m",resolution:"15"},{text:"30m",resolution:"30"},
+        {text:"1h",resolution:"60"},{text:"4h",resolution:"240"},{text:"1d",resolution:"D"},{text:"1w",resolution:"W"},
+      ],
     });
     container.appendChild(script);
 
@@ -544,7 +550,7 @@ function TradingViewChart({ ticker }: { ticker: string }) {
     <div
       ref={containerRef}
       className="tradingview-widget-container"
-      style={{ height: 380, width: "100%" }}
+      style={{ height: 540, width: "100%" }}
     />
   );
 }
