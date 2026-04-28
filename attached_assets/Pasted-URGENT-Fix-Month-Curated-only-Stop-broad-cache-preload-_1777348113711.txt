@@ -1,0 +1,164 @@
+URGENT: Fix Month Curated only. Stop broad cache/preload work.
+
+Current bug:
+Earnings > Month > Curated only shows the last few earnings days of April, specifically Apr 27–30. The rest of April is blank. Next month is also blank.
+
+This means Month Curated is only using the current week’s curated data, not the whole selected month.
+
+Do NOT touch:
+- Day
+- Week
+- Recent
+- popup
+- non-earnings tabs
+- Home/Sectors/Macro
+- backend scoring unless proven needed
+
+Goal:
+Month Curated must call /api/catalysts/earnings/month-curated for the selected month and render that full month’s days.
+
+Expected behavior:
+For April 2026, Month Curated should call:
+
+GET /api/catalysts/earnings/month-curated?year=2026&month=4
+
+It must NOT call week-clean for Month Curated.
+It must NOT derive Month Curated from the currently selected week.
+It must NOT use selectedDate/weekStart as the month data source.
+
+Step 1 — Network proof first
+In browser Network tab, switch to:
+Earnings > Month > Curated
+
+Report the exact request URL and response shape.
+
+Expected request:
+GET /api/catalysts/earnings/month-curated?year=2026&month=4
+
+If you see any of these instead, that is the bug:
+- /api/catalysts/earnings/week-clean
+- /api/catalysts/earnings/day-curated
+- /api/catalysts/earnings/upcoming-clean
+- any request using weekStart/weekEnd for Month Curated
+
+Step 2 — Inspect backend response
+If month-curated is called, inspect the response.
+
+For April 2026, response.days should include every April date, or at minimum all dates in the month grid.
+
+Log:
+console.log("[Month Curated URL]", url);
+console.log("[Month Curated days]", data.days?.map(d => ({
+  date: d.date,
+  count: d.count,
+  topEvents: d.topEvents?.map(e => e.symbol)
+})));
+
+If backend response only includes Apr 27–30, then backend month-curated is wrong.
+If backend response includes the full month but UI only shows Apr 27–30, then frontend mapping/rendering is wrong.
+
+Step 3 — Frontend fix if response is correct
+Month Curated state must be based on visibleMonth/visibleYear only.
+
+Use a dedicated query key:
+["earnings", "month", "curated", visibleYear, visibleMonth]
+
+Do NOT use:
+- selectedDate
+- weekStart
+- weekEnd
+- current Week Curated cache
+- Day Curated cache
+
+Fetch:
+GET /api/catalysts/earnings/month-curated?year={visibleYear}&month={visibleMonth}
+
+Normalize response by date:
+const monthCuratedByDate = new Map(
+  data.days.map(day => [day.date, day])
+);
+
+When rendering each calendar cell:
+const dayData = monthCuratedByDate.get(dateKey);
+const topEvents = dayData?.topEvents ?? [];
+const count = Math.max(dayData?.count ?? 0, topEvents.length);
+
+If topEvents.length > 0:
+- render topEvents
+
+If count > 0 but topEvents.length === 0:
+- show “{count} calls”
+
+If count > topEvents.length:
+- show “+{count - topEvents.length} more”
+
+Do not hide a date just because topEvents is empty.
+Do not rely on array indexes matching calendar grid cells.
+Do not reuse current week data for month cells.
+
+Step 4 — Backend fix if response is wrong
+If /api/catalysts/earnings/month-curated?year=2026&month=4 returns only Apr 27–30, fix backend.
+
+Backend month-curated must:
+1. Compute monthStart = 2026-04-01
+2. Compute monthEnd = 2026-04-30
+3. Split the entire month into week ranges:
+   - Apr 1–Apr 3
+   - Apr 6–Apr 10
+   - Apr 13–Apr 17
+   - Apr 20–Apr 24
+   - Apr 27–Apr 30
+4. Call the shared curated engine for each week.
+5. Merge all week results.
+6. Group by actual event.date.
+7. Return days[] for the entire month, not just the current week.
+
+Important:
+Do not use the currently selected week to determine month-curated.
+Do not cap month to only the current week.
+Do not reuse week-clean response as the entire month response.
+
+Step 5 — Month navigation
+When user clicks next month:
+- visibleMonth/visibleYear updates
+- fetch month-curated for that exact month
+
+When user clicks previous month:
+- fetch/render that exact month
+
+Query key must be:
+["earnings", "month", "curated", visibleYear, visibleMonth]
+
+April → May → April:
+- April should restore from cache if still fresh
+- but the main fix is correctness first, cache second
+
+Step 6 — Validation
+Test exactly:
+
+A. April 2026 Month Curated
+Expected:
+- request URL: /api/catalysts/earnings/month-curated?year=2026&month=4
+- response has dates across April, not only Apr 27–30
+- UI shows curated/count data across all April dates where backend has data
+
+B. May 2026 Month Curated
+Expected:
+- request URL: /api/catalysts/earnings/month-curated?year=2026&month=5
+- response has May dates
+- UI is not blank unless backend truly returns zero
+
+C. April → May → April
+Expected:
+- April data returns, not blank
+- no accidental week-clean data source
+
+Final response:
+Tell me:
+- exact request URL Month Curated was using before fix
+- whether backend response or frontend rendering was the problem
+- files changed
+- confirm Month Curated now calls month-curated by year/month
+- confirm April 2026 includes more than Apr 27–30
+- confirm May 2026 loads
+- confirm Day/Week/Recent/popup untouched

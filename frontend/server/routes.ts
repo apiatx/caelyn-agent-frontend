@@ -3665,15 +3665,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/catalysts/earnings/month-curated', async (req, res) => {
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 25000);
+    // The external backend's month-curated only returns the current week.
+    // We fix this by calling week-clean for every Mon–Fri week in the month,
+    // in parallel, then merging the results into a full-month response.
     try {
-      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
-      const r = await fetch(`${FC_URL}/api/catalysts/earnings/month-curated${qs ? '?' + qs : ''}`, { headers: fcHdr(), signal: ctrl.signal });
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      return res.json(await r.json());
+      const { year, month } = req.query as Record<string, string>;
+      const y = parseInt(year) || new Date().getFullYear();
+      const m = parseInt(month) || (new Date().getMonth() + 1);
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+      const monthEnd = new Date(y, m, 0); // last day of month
+
+      // Walk from the Monday of the first week that overlaps the month
+      const cursor = new Date(y, m - 1, 1);
+      const dow = cursor.getDay();            // 0=Sun, 1=Mon…6=Sat
+      cursor.setDate(cursor.getDate() + (dow === 0 ? -6 : 1 - dow));
+
+      const weekRanges: { weekStart: string; weekEnd: string }[] = [];
+      while (cursor <= monthEnd) {
+        const friday = new Date(cursor);
+        friday.setDate(friday.getDate() + 4);
+        weekRanges.push({ weekStart: toDateStr(cursor), weekEnd: toDateStr(friday) });
+        cursor.setDate(cursor.getDate() + 7);
+      }
+
+      // Fetch week-clean for every week in parallel (20 s per-week timeout)
+      const weekResults = await Promise.all(weekRanges.map(async ({ weekStart, weekEnd }) => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 20000);
+        try {
+          const params = new URLSearchParams({ weekStart, weekEnd, limit_per_session: '8', max_total: '60' });
+          const r = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${params}`, {
+            headers: fcHdr(),
+            signal: ctrl.signal,
+          });
+          clearTimeout(timer);
+          return r.ok ? (r.json() as Promise<any>) : null;
+        } catch {
+          clearTimeout(timer);
+          return null;
+        }
+      }));
+
+      // Merge: date → { count, topEvents[] }
+      const byDate = new Map<string, { count: number; topEvents: any[] }>();
+      for (const weekData of weekResults) {
+        if (!weekData?.days) continue;
+        for (const day of weekData.days) {
+          const dateStr: string = (day.date ?? '').slice(0, 10);
+          if (!dateStr) continue;
+          // Only keep dates that belong to the requested month
+          const parts = dateStr.split('-');
+          if (parseInt(parts[1]) !== m || parseInt(parts[0]) !== y) continue;
+          // entries is the combined list; fall back to sub-arrays if empty
+          const all: any[] = day.entries?.length > 0
+            ? day.entries
+            : [...(day.preMarket || []), ...(day.afterHours || []), ...(day.duringMarket || []), ...(day.unknown || [])];
+          // Deduplicate by symbol
+          const seen = new Set<string>();
+          const deduped: any[] = [];
+          for (const e of all) { if (e.symbol && !seen.has(e.symbol)) { seen.add(e.symbol); deduped.push(e); } }
+          byDate.set(dateStr, { count: day.count || deduped.length, topEvents: deduped.slice(0, 4) });
+        }
+      }
+
+      // Build full-month days array (all calendar days 1…daysInMonth)
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const days = Array.from({ length: daysInMonth }, (_, i) => {
+        const dateStr = `${y}-${pad(m)}-${pad(i + 1)}`;
+        const data = byDate.get(dateStr);
+        return { date: dateStr, dayOfMonth: i + 1, isCurrentMonth: true, count: data?.count ?? 0, topEvents: data?.topEvents ?? [] };
+      });
+
+      return res.json({ asOf: new Date().toISOString().slice(0, 10), source: 'fmp', year: y, month: m, days });
     } catch (e: any) {
-      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+      return res.status(500).json({ error: e?.message || 'Aggregation failed' });
     }
   });
 

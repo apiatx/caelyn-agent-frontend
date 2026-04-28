@@ -1,0 +1,168 @@
+URGENT: Fix Earnings > Day view showing the same earnings for every selected day.
+
+This is almost certainly a frontend query-key/state bug.
+
+Current bug:
+In Earnings tab > Day mode, clicking different dates shows the same earnings list for each day.
+
+Expected:
+Each selected day must fetch/render earnings for that exact date.
+
+Do NOT touch:
+- backend
+- Week
+- Month
+- Recent
+- popup internals
+- non-earnings tabs
+- Home/Sectors/Macro
+
+Do NOT use:
+- Finnhub
+- Polymarket
+- old Smart/beat odds logic
+
+Step 1 — Prove the actual URL
+In browser dev logs / Network tab, when clicking different days in Day mode, log the request URL.
+
+For Day + Curated:
+Expected:
+GET /api/catalysts/earnings/day-curated?date=YYYY-MM-DD
+
+For Day + All:
+Expected:
+GET /api/catalysts/earnings/day-clean?date=YYYY-MM-DD&enrich=false
+
+Click these dates and verify URLs are different:
+- Apr 27
+- Apr 28
+- Apr 29
+- Apr 30
+
+If the URL does not change, fix the selectedDate wiring.
+
+Step 2 — Fix query keys
+Every Day query key must include selectedDate AND earningsSignalMode.
+
+Use separate keys:
+
+Day Curated:
+["earnings", "day", "curated", selectedDate]
+
+Day All:
+["earnings", "day", "all", selectedDate]
+
+Do NOT use a generic key like:
+["earnings", "day"]
+["day-clean"]
+["day-curated"]
+["earnings", selectedMonth]
+
+Those will reuse stale data across dates.
+
+Step 3 — Fix local cache maps
+If there are local refs/maps like:
+dayCleanFetchedRef
+dayCleanEntries
+dayCuratedData
+dayCuratedCache
+selectedDayEntries
+
+They must be keyed by date.
+
+Bad:
+dayCleanEntries = [...]
+dayCuratedEntries = [...]
+
+Good:
+dayCleanEntriesByDate[dateKey] = [...]
+dayCuratedEntriesByDate[dateKey] = [...]
+
+When rendering:
+const dateKey = formatDateKey(selectedDate)
+const entries =
+  earningsSignalMode === "curated"
+    ? dayCuratedEntriesByDate[dateKey] ?? []
+    : dayCleanEntriesByDate[dateKey] ?? []
+
+Step 4 — Do not render stale previous-day data
+When selectedDate changes:
+- If new date has cached data, render it immediately.
+- If new date has no cached data, show loading/skeleton or empty state for that date.
+- Do NOT keep showing previous day’s data as if it belongs to the new day.
+
+If using React Query:
+- use isFetching to show subtle loading state
+- keepPreviousData is okay only if the UI clearly indicates loading, but better for Day view: do not show previous date’s entries under the new date.
+
+Step 5 — Fix selectedDate update
+When user clicks a day cell or day card:
+- set selectedDate to that exact date string
+- do not derive selectedDate from weekStart/currentMonth incorrectly
+- do not mutate Date objects in place
+
+Use immutable date helpers:
+const nextDateKey = formatYYYYMMDD(clickedDate)
+setSelectedDate(nextDateKey)
+
+Avoid:
+selectedDate.setDate(...)
+because mutating Date objects can cause React/query cache bugs.
+
+Step 6 — Verify rendering source
+Add temporary dev-only log:
+
+console.log("[Day render]", {
+  earningsSignalMode,
+  selectedDate,
+  queryKey,
+  entriesCount: entries.length,
+  symbols: entries.slice(0, 10).map(e => e.symbol || e.ticker)
+});
+
+Click Apr 27, Apr 28, Apr 29, Apr 30.
+The selectedDate and symbols must change.
+
+Step 7 — Backend sanity check only from frontend
+Manually call from browser/proxy:
+
+/api/catalysts/earnings/day-curated?date=2026-04-27
+/api/catalysts/earnings/day-curated?date=2026-04-28
+
+/api/catalysts/earnings/day-clean?date=2026-04-27&enrich=false
+/api/catalysts/earnings/day-clean?date=2026-04-28&enrich=false
+
+Confirm backend responses differ.
+If backend responses differ but UI does not, it is 100% frontend cache/render bug.
+
+Step 8 — Validation
+Test:
+
+Day + Curated:
+- Apr 27 shows Apr 27 curated events only.
+- Apr 28 shows Apr 28 curated events only.
+- Apr 29 shows Apr 29 curated events only.
+- Switching back to Apr 27 restores Apr 27 from cache.
+
+Day + All:
+- Apr 27 shows Apr 27 all events only.
+- Apr 28 shows Apr 28 all events only.
+- Apr 29 shows Apr 29 all events only.
+- Switching back restores correct cached data.
+
+Also confirm:
+- Week unchanged
+- Month unchanged
+- Recent unchanged
+- popup still opens
+- no Finnhub/Polymarket calls
+
+Final response:
+Tell me:
+- exact bug found
+- whether URL was stale or query key/cache was stale
+- files changed
+- final Day Curated query key
+- final Day All query key
+- confirm Apr 27/28/29 show different events
+- confirm Week/Month/Recent/popup untouched
