@@ -162,8 +162,10 @@ interface WeekAllDay {
   date: string;
   label?: string;
   weekday?: string;
-  count: number;
-  entries: WeekAllEntry[];
+  count?: number;
+  entries?: WeekAllEntry[];
+  stocks?: WeekAllEntry[];
+  events?: WeekAllEntry[];
 }
 interface WeekAllResponse {
   weekStart: string;
@@ -1433,6 +1435,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     if (dayCuratedFetchedRef.current.has(key)) return;
     dayCuratedFetchedRef.current.add(key);
     setDayCuratedLoading(true);
+    setDayCuratedEntries([]);
     fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((data) => {
@@ -1747,19 +1750,12 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
         ) : dayCuratedEntries.length === 0 ? (
           <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
             <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
-            <p className="text-sm text-white/25">No high-signal earnings found for this day</p>
+            <p className="text-sm text-white/25">No curated earnings for this day</p>
             <p className="text-[10px] text-white/15 mt-1">Switch to All to see every call</p>
           </div>
         ) : (
           <div className="space-y-1.5">
-            {dayCuratedEntries.filter(e => {
-              const sym = (e.symbol || "").toUpperCase();
-              const noName = !e.companyName || e.companyName.toUpperCase() === sym;
-              const unknownBucket = (e.marketCapBucket || "").toLowerCase() === "unknown";
-              const noTags = !e.themeTags || e.themeTags.length === 0;
-              const noSignal = !e.isThemeAnchor && !e.isBottleneck;
-              return !(noName && unknownBucket && noTags && noSignal);
-            }).map((e, idx) => {
+            {dayCuratedEntries.filter(e => !!(e.symbol)).map((e, idx) => {
               const ticker = (e.symbol || "").toUpperCase();
               const name = e.companyName || ticker;
               const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
@@ -3723,7 +3719,10 @@ function WeekAllList({
     );
   }
 
-  if (!weekData || (weekData.days || []).every(d => (d.entries || []).length === 0)) {
+  const resolveEntries = (day: WeekAllDay): WeekAllEntry[] =>
+    day.entries || day.stocks || day.events || [];
+
+  if (!weekData || (weekData.days || []).every(d => resolveEntries(d).length === 0)) {
     return (
       <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
         <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
@@ -3736,13 +3735,13 @@ function WeekAllList({
     <>
       <div className="space-y-5">
         {(weekData.days || []).map(day => {
-          const dayEntries = day.entries || [];
+          const dayEntries = resolveEntries(day);
           if (dayEntries.length === 0) return null;
           return (
             <div key={day.date}>
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2">
                 {day.weekday || day.label || day.date}
-                <span className="ml-2 text-white/15 normal-case font-normal tracking-normal">{dayEntries.length} calls</span>
+                <span className="ml-2 text-white/15 normal-case font-normal tracking-normal">{day.count ?? dayEntries.length} calls</span>
               </p>
               <div className="rounded-xl border border-white/[0.05] overflow-hidden">
                 <table className="w-full text-[11px]">
@@ -3889,8 +3888,8 @@ function MonthCuratedGrid({
           if (!dateStr) return <div key={`empty-${i}`} className="rounded-lg" style={{ minHeight: 72 }} />;
           const dayNum = parseInt(dateStr.split("-")[2]);
           const dayData = dayMap.get(dateStr);
-          const count = dayData?.count || 0;
           const topEvents = (dayData?.topEvents || []).slice(0, 3);
+          const count = dayData ? Math.max(dayData.count ?? 0, (dayData.topEvents || []).length) : 0;
           const extra = count - topEvents.length;
           const todayStr = dateKey(new Date());
           const isToday = dateStr === todayStr;

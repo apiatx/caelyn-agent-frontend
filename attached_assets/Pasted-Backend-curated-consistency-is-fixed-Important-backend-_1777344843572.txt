@@ -1,0 +1,112 @@
+Backend curated consistency is fixed.
+
+Important backend behavior:
+- Week Curated, Day Curated, and Month Curated now use the same canonical curated engine.
+- Day Curated returns the selected date’s slice from the same week-curated dataset.
+- Month Curated groups weekly curated results into calendar dates.
+- Same events now appear across Week / Day / Month for the same date, with different caps only.
+
+Frontend task:
+Fix display/wiring only.
+
+Do NOT touch:
+- backend
+- Recent
+- earnings popup internals
+- non-earnings Catalyst tabs
+- Home/Sectors/Macro
+- auth
+
+Keep endpoint mapping:
+
+Day:
+- Curated: GET /api/catalysts/earnings/day-curated?date={selectedDate}
+- All: GET /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Week:
+- Curated: GET /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}
+- All: GET /api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+Month:
+- Curated: GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+- All: keep current working full-month All behavior
+
+Recent:
+- unchanged
+- no Curated/All toggle
+
+Main requirement:
+If a stock appears in Week Curated for a date, it must also appear in Day Curated for that date and Month Curated for that date if within visible cap.
+
+Do not add frontend filters that hide backend curated events.
+
+Day Curated:
+- render every event returned by /day-curated
+- do not require logo, marketCap, themeTags, or reason line to show the card
+- if companyName missing, use symbol
+- if logo missing, use fallback avatar
+- if events.length > 0, never show “No high-signal earnings found”
+- card click opens existing earnings popup
+
+Month Curated:
+- render day.topEvents inside the correct calendar date cell
+- do not require logo, marketCap, themeTags, or reason line to show event chip/card
+- if topEvents.length > 0, show them
+- show day.count as total earnings count if available
+- if day.count > topEvents.length, show “+X more”
+- clicking a date switches to Day mode and sets selectedDate to that date
+- when clicking a date from Month Curated, Day should default to Curated
+- clicking an event opens existing earnings popup
+
+Week All:
+- render all events returned by /week-all grouped by date
+- if events exist, do not show “No earnings data for this week”
+- do not accidentally apply curated defensive filters to Week All
+- All means all valid FMP earnings, not curated
+
+Curated/All toggle behavior:
+- Day defaults to Curated
+- Week defaults to Curated
+- Month defaults to Curated
+- switching between Curated and All should only change the endpoint/render branch, not clear selected date/week/month
+- Recent does not show Curated/All
+
+Critical bug to avoid:
+Do not reuse the old defensive frontend filter for Curated that hides cards when:
+- marketCapBucket unknown
+- no themeTags
+- companyName fallback
+Backend now owns curation. Frontend should render what backend returns.
+
+Allowed frontend fallback:
+- fallback avatar when logo missing
+- symbol when companyName missing
+- hide “unknown” reason label
+But do not hide the entire event unless it is truly malformed with no symbol.
+
+Validation:
+Pick a known backend-verified date: 2026-04-28.
+
+Expected:
+Week Curated Apr 28 includes:
+TER, BE, GLW, STX, HOOD, V, KO, GLXY
+
+Day Curated Apr 28 should show those same symbols, plus possibly more.
+
+Month Curated Apr 28 should show:
+TER, BE, GLW, STX, HOOD
+or whatever topEvents backend returns for that date.
+
+Week All:
+Should no longer show “No earnings data for this week” if backend returns events.
+
+Final response:
+Tell me:
+- files changed
+- confirm Day Curated renders backend events directly
+- confirm Month Curated renders day.topEvents directly
+- confirm Week All renders backend events directly
+- confirm no frontend curated filters are hiding backend events
+- confirm clicking Month date switches to Day Curated for that date
+- confirm popup untouched
+- confirm Recent untouched
