@@ -3872,7 +3872,7 @@ function MonthCuratedGrid({
       {/* Calendar grid */}
       <div className="grid grid-cols-5 gap-1">
         {cells.map((dateStr, i) => {
-          if (!dateStr) return <div key={`empty-${i}`} className="rounded-lg" style={{ minHeight: 72 }} />;
+          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl aspect-square" />;
           const dayNum = parseInt(dateStr.split("-")[2]);
           const dayData = dayMap.get(dateStr);
           const topEvents = (dayData?.topEvents || []).slice(0, 3);
@@ -3883,17 +3883,23 @@ function MonthCuratedGrid({
           return (
             <div
               key={dateStr}
-              className={`rounded-lg p-1.5 border transition-all cursor-pointer flex flex-col ${
-                count > 0 ? "hover:border-purple-500/30 hover:bg-purple-500/[0.04]" : "opacity-50 cursor-default"
-              } ${isToday ? "border-purple-500/25 bg-purple-500/[0.04]" : "border-white/[0.05] bg-white/[0.01]"}`}
-              style={{ minHeight: 72 }}
+              className={`rounded-xl border transition-all flex flex-col aspect-square ${
+                count > 0 ? "cursor-pointer hover:border-purple-500/35 hover:bg-purple-500/[0.05]" : "opacity-40 cursor-default"
+              } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
               onClick={() => count > 0 && onSelectDate(dateStr)}
             >
-              <p className={`text-[10px] font-bold mb-1 ${isToday ? "text-purple-400" : "text-white/40"}`}>{dayNum}</p>
+              {/* Day number + count */}
+              <div className="flex items-start justify-between px-2 pt-2 pb-0.5 flex-shrink-0">
+                <p className={`text-[11px] font-bold leading-none ${isToday ? "text-purple-400" : "text-white/45"}`}>{dayNum}</p>
+                {count > 0 && (
+                  <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
+                )}
+              </div>
+
+              {/* Logo bubbles + tickers — centred in remaining space */}
               {count > 0 && (
-                <>
-                  <p className="text-[8px] text-white/25 mb-1">{count} call{count !== 1 ? "s" : ""}</p>
-                  <div className="space-y-0.5 flex-1">
+                <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1 pb-2">
+                  <div className="flex items-end justify-center gap-2">
                     {topEvents.map((e, idx) => {
                       const ticker = (e.symbol || "").toUpperCase();
                       const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
@@ -3907,21 +3913,27 @@ function MonthCuratedGrid({
                         revenueEstimate: revEst, source: "fmp", earningsDate: dateStr,
                       };
                       return (
-                        <div
+                        <button
                           key={`${ticker}-${idx}`}
-                          className="flex items-center gap-1 rounded hover:bg-white/[0.04] px-0.5 py-0.5 transition-colors group"
+                          className="flex flex-col items-center gap-1 group focus:outline-none"
                           onClick={ev => { ev.stopPropagation(); setModalEntry(modalE); }}
                         >
-                          <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center overflow-hidden text-[6px] font-bold text-white ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
-                            {logo ? <img src={logo} alt={ticker} className="w-full h-full object-contain p-[1px]" onError={ev2 => { (ev2.currentTarget as HTMLImageElement).style.display = "none"; }} /> : ticker.slice(0, 1)}
+                          <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-bold text-white ring-1 ring-white/10 group-hover:ring-purple-400/40 transition-all ${logo ? "bg-white/[0.07]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                            {logo ? (
+                              <img src={logo} alt={ticker} className="w-full h-full object-contain p-1" onError={ev2 => { (ev2.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                            ) : (
+                              ticker.slice(0, 2)
+                            )}
                           </div>
-                          <span className="text-[8px] text-white/50 group-hover:text-white/80 truncate font-mono">{ticker}</span>
-                        </div>
+                          <span className="text-[9px] font-semibold text-white/55 group-hover:text-white/85 transition-colors font-mono leading-none truncate max-w-[36px]">{ticker}</span>
+                        </button>
                       );
                     })}
-                    {extra > 0 && <p className="text-[8px] text-white/20 pl-0.5">+{extra} more</p>}
                   </div>
-                </>
+                  {extra > 0 && (
+                    <p className="text-[9px] text-white/25 mt-0.5">+{extra} more</p>
+                  )}
+                </div>
               )}
             </div>
           );
