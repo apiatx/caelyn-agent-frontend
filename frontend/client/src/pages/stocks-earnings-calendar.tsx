@@ -4016,7 +4016,7 @@ function MonthCuratedGrid({
       {/* Calendar grid */}
       <div className="grid grid-cols-5 gap-1">
         {cells.map((dateStr, i) => {
-          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl h-[100px]" />;
+          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl h-[118px]" />;
           const dayNum = parseInt(dateStr.split("-")[2]);
           const dayData = dayMap.get(dateStr);
           const topEvents = (dayData?.topEvents || []).slice(0, 3);
@@ -4027,7 +4027,7 @@ function MonthCuratedGrid({
           return (
             <div
               key={dateStr}
-              className={`rounded-xl border transition-all flex flex-col h-[100px] ${
+              className={`rounded-xl border transition-all flex flex-col h-[118px] ${
                 count > 0 ? "cursor-pointer hover:border-purple-500/35 hover:bg-purple-500/[0.05]" : "opacity-40 cursor-default"
               } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
               onClick={() => count > 0 && onSelectDate(dateStr)}
