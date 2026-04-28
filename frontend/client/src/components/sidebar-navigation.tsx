@@ -80,16 +80,40 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/stocks/sectors'
     },
     {
-      id: 'notifai',
-      label: 'NotifAI',
-      icon: <Newspaper className="w-4 h-4" />,
-      path: '/app/notifai'
+      id: 'stocks-earnings-calendar',
+      label: 'Calendar',
+      icon: <CalendarDays className="w-4 h-4" />,
+      path: '/app/stocks/earnings-calendar'
     },
     {
       id: 'onchain-social',
       label: 'Social',
       icon: <MessageSquare className="w-4 h-4" />,
       path: '/app/onchain/social'
+    },
+    {
+      id: 'notifai',
+      label: 'NotifAI',
+      icon: <Newspaper className="w-4 h-4" />,
+      path: '/app/notifai'
+    },
+    {
+      id: 'strategy-screener',
+      label: 'Chain Reaction',
+      icon: <ScrollText className="w-4 h-4" />,
+      path: '/app/strategy-screener'
+    },
+    {
+      id: 'stocks-screening',
+      label: 'Stock Screener',
+      icon: <Search className="w-4 h-4" />,
+      path: '/app/stocks/screening'
+    },
+    {
+      id: 'stocks-fundamentals',
+      label: 'Fundamentals',
+      icon: <TrendingUp className="w-4 h-4" />,
+      path: '/app/stocks/fundamentals'
     },
     {
       id: 'watchlist',
@@ -102,6 +126,24 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Portfolio',
       icon: <Monitor className="w-4 h-4" />,
       path: '/app/caelyn-terminal'
+    },
+    {
+      id: 'options-flow',
+      label: 'Options Flow',
+      icon: <Zap className="w-4 h-4" />,
+      path: '/app/options'
+    },
+    {
+      id: 'whale-watch',
+      label: 'Whale Watch',
+      icon: <Waves className="w-4 h-4" />,
+      path: '/app/stocks/whale-watch'
+    },
+    {
+      id: 'stocks-insider-activity',
+      label: 'Insider Activity',
+      icon: <Eye className="w-4 h-4" />,
+      path: '/app/stocks/insider-activity'
     },
     {
       id: 'hyperliquid-screener',
@@ -120,48 +162,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       label: 'Bittensor',
       icon: <Brain className="w-4 h-4" />,
       path: '/app/bittensor'
-    },
-    {
-      id: 'strategy-screener',
-      label: 'Chain Reaction',
-      icon: <ScrollText className="w-4 h-4" />,
-      path: '/app/strategy-screener'
-    },
-    {
-      id: 'stocks-screening',
-      label: 'Stock Screener',
-      icon: <Search className="w-4 h-4" />,
-      path: '/app/stocks/screening'
-    },
-    {
-      id: 'stocks-earnings-calendar',
-      label: 'Calendar',
-      icon: <CalendarDays className="w-4 h-4" />,
-      path: '/app/stocks/earnings-calendar'
-    },
-    {
-      id: 'stocks-insider-activity',
-      label: 'Insider Activity',
-      icon: <Eye className="w-4 h-4" />,
-      path: '/app/stocks/insider-activity'
-    },
-    {
-      id: 'whale-watch',
-      label: 'Whale Watch',
-      icon: <Waves className="w-4 h-4" />,
-      path: '/app/stocks/whale-watch'
-    },
-    {
-      id: 'options-flow',
-      label: 'Options Flow',
-      icon: <Zap className="w-4 h-4" />,
-      path: '/app/options'
-    },
-    {
-      id: 'stocks-fundamentals',
-      label: 'Fundamentals',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/stocks/fundamentals'
     },
     {
       id: 'crypto',
