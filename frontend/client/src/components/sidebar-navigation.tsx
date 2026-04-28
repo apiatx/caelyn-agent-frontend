@@ -93,12 +93,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/stocks/earnings-calendar'
         },
         {
-          id: 'onchain-social',
-          label: 'Social',
-          icon: <MessageSquare className="w-4 h-4" />,
-          path: '/app/onchain/social'
-        },
-        {
           id: 'notifai',
           label: 'NotifAI',
           icon: <Newspaper className="w-4 h-4" />,
@@ -109,6 +103,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     {
       label: 'DISCOVERY',
       items: [
+        {
+          id: 'onchain-social',
+          label: 'Social',
+          icon: <MessageSquare className="w-4 h-4" />,
+          path: '/app/onchain/social'
+        },
         {
           id: 'strategy-screener',
           label: 'Chain Reaction',
