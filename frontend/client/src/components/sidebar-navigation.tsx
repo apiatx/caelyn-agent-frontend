@@ -25,7 +25,7 @@ interface NavItem {
 
 export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['crypto-stocks']);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const { logout } = useAuth();
@@ -122,53 +122,46 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       path: '/app/bittensor'
     },
     {
-      id: 'crypto-stocks',
-      label: 'Stocks',
+      id: 'strategy-screener',
+      label: 'Strategy Screener',
+      icon: <ScrollText className="w-4 h-4" />,
+      path: '/app/strategy-screener'
+    },
+    {
+      id: 'stocks-screening',
+      label: 'Screening',
+      icon: <Search className="w-4 h-4" />,
+      path: '/app/stocks/screening'
+    },
+    {
+      id: 'stocks-earnings-calendar',
+      label: 'Calendar',
+      icon: <CalendarDays className="w-4 h-4" />,
+      path: '/app/stocks/earnings-calendar'
+    },
+    {
+      id: 'stocks-insider-activity',
+      label: 'Insider Activity',
+      icon: <Eye className="w-4 h-4" />,
+      path: '/app/stocks/insider-activity'
+    },
+    {
+      id: 'whale-watch',
+      label: 'Whale Watch',
+      icon: <Waves className="w-4 h-4" />,
+      path: '/app/stocks/whale-watch'
+    },
+    {
+      id: 'options-flow',
+      label: 'Options Flow',
+      icon: <Zap className="w-4 h-4" />,
+      path: '/app/options'
+    },
+    {
+      id: 'stocks-fundamentals',
+      label: 'Fundamentals',
       icon: <TrendingUp className="w-4 h-4" />,
-      children: [
-        {
-          id: 'strategy-screener',
-          label: 'Strategy Screener',
-          icon: <ScrollText className="w-4 h-4" />,
-          path: '/app/strategy-screener'
-        },
-        {
-          id: 'stocks-screening',
-          label: 'Screening',
-          icon: <Search className="w-4 h-4" />,
-          path: '/app/stocks/screening'
-        },
-        {
-          id: 'stocks-earnings-calendar',
-          label: 'Calendar',
-          icon: <CalendarDays className="w-4 h-4" />,
-          path: '/app/stocks/earnings-calendar'
-        },
-        {
-          id: 'stocks-insider-activity',
-          label: 'Insider Activity',
-          icon: <Eye className="w-4 h-4" />,
-          path: '/app/stocks/insider-activity'
-        },
-        {
-          id: 'whale-watch',
-          label: 'Whale Watch',
-          icon: <Waves className="w-4 h-4" />,
-          path: '/app/stocks/whale-watch'
-        },
-        {
-          id: 'options-flow',
-          label: 'Options Flow',
-          icon: <Zap className="w-4 h-4" />,
-          path: '/app/options'
-        },
-        {
-          id: 'stocks-fundamentals',
-          label: 'Fundamentals',
-          icon: <TrendingUp className="w-4 h-4" />,
-          path: '/app/stocks/fundamentals'
-        }
-      ]
+      path: '/app/stocks/fundamentals'
     },
     {
       id: 'crypto',
