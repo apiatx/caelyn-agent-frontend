@@ -547,60 +547,37 @@ async function fetchSmartEarnings(date: string): Promise<SmartDayData | null> {
 // ─── TradingView Chart ────────────────────────────────────────────
 
 function TradingViewChart({ ticker }: { ticker: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.innerHTML = "";
-
-    const innerDiv = document.createElement("div");
-    innerDiv.className = "tradingview-widget-container__widget";
-    innerDiv.style.height = "100%";
-    innerDiv.style.width = "100%";
-    container.appendChild(innerDiv);
-
-    const script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: ticker,
-      interval: "D",
-      timezone: "Etc/UTC",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      backgroundColor: "rgba(12,12,15,0)",
-      gridColor: "rgba(255,255,255,0.04)",
-      enable_publishing: false,
-      allow_symbol_change: false,
-      hide_top_toolbar: false,
-      hide_legend: false,
-      save_image: false,
-      hide_volume: false,
-      support_host: "https://www.tradingview.com",
-      enabled_features: ["use_localstorage_for_settings","study_templates","header_indicators","header_compare","header_undo_redo","header_screenshot","header_chart_type","header_settings","header_resolutions","header_fullscreen_button","left_toolbar","drawing_templates"],
-      disabled_features: ["volume_force_overlay","create_volume_indicator_by_default"],
-      timeframes: [
-        {text:"1m",resolution:"1"},{text:"15m",resolution:"15"},{text:"30m",resolution:"30"},
-        {text:"1h",resolution:"60"},{text:"4h",resolution:"240"},{text:"1d",resolution:"D"},{text:"1w",resolution:"W"},
-      ],
-    });
-    container.appendChild(script);
-
-    return () => {
-      if (container) container.innerHTML = "";
-    };
-  }, [ticker]);
+  const url =
+    `https://s.tradingview.com/embed-widget/advanced-chart/` +
+    `?locale=en` +
+    `&width=100%25` +
+    `&height=620` +
+    `&interval=D` +
+    `&range=3M` +
+    `&style=1` +
+    `&toolbar_bg=0a0a0a` +
+    `&enable_publishing=true` +
+    `&withdateranges=true` +
+    `&hide_side_toolbar=false` +
+    `&allow_symbol_change=false` +
+    `&calendar=false` +
+    `&studies=%5B%5D` +
+    `&theme=dark` +
+    `&timezone=Etc%2FUTC` +
+    `&hide_top_toolbar=false` +
+    `&disabled_features=[%22volume_force_overlay%22,%22create_volume_indicator_by_default%22]` +
+    `&enabled_features=[%22use_localstorage_for_settings%22,%22study_templates%22,%22header_indicators%22,%22header_compare%22,%22header_undo_redo%22,%22header_screenshot%22,%22header_chart_type%22,%22header_settings%22,%22header_resolutions%22,%22header_fullscreen_button%22,%22left_toolbar%22,%22drawing_templates%22]` +
+    `&symbol=${encodeURIComponent(ticker)}`;
 
   return (
-    <div
-      ref={containerRef}
-      className="tradingview-widget-container"
-      style={{ height: 540, width: "100%" }}
-    />
+    <div style={{ width: "100%", height: 620 }}>
+      <iframe
+        key={ticker}
+        src={url}
+        style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+        allowFullScreen
+      />
+    </div>
   );
 }
 
@@ -718,7 +695,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] bg-[#0c0c0f] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto"
+        className="relative w-full max-w-6xl max-h-[92vh] bg-[#0c0c0f] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -767,8 +744,8 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
         </div>
 
         {/* ─── TradingView Chart ─── */}
-        <div className="px-6 pt-4 pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-1.5 mb-2">
+        <div className="border-b border-white/[0.06]">
+          <div className="flex items-center gap-1.5 px-6 pt-4 pb-2">
             <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">Chart</span>
             <span className="text-[9px] text-white/20 font-mono">{entry.ticker}</span>
           </div>
