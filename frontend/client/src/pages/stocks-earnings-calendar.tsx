@@ -4016,7 +4016,7 @@ function MonthCuratedGrid({
       {/* Calendar grid */}
       <div className="grid grid-cols-5 gap-1">
         {cells.map((dateStr, i) => {
-          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl aspect-square" />;
+          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl h-[100px]" />;
           const dayNum = parseInt(dateStr.split("-")[2]);
           const dayData = dayMap.get(dateStr);
           const topEvents = (dayData?.topEvents || []).slice(0, 3);
@@ -4027,13 +4027,13 @@ function MonthCuratedGrid({
           return (
             <div
               key={dateStr}
-              className={`rounded-xl border transition-all flex flex-col aspect-square ${
+              className={`rounded-xl border transition-all flex flex-col h-[100px] ${
                 count > 0 ? "cursor-pointer hover:border-purple-500/35 hover:bg-purple-500/[0.05]" : "opacity-40 cursor-default"
               } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
               onClick={() => count > 0 && onSelectDate(dateStr)}
             >
               {/* Day number + count */}
-              <div className="flex items-start justify-between px-2 pt-2 pb-0.5 flex-shrink-0">
+              <div className="flex items-start justify-between px-2 pt-1.5 pb-0 flex-shrink-0">
                 <p className={`text-[11px] font-bold leading-none ${isToday ? "text-purple-400" : "text-white/45"}`}>{dayNum}</p>
                 {count > 0 && (
                   <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
@@ -4042,8 +4042,8 @@ function MonthCuratedGrid({
 
               {/* Logo bubbles + tickers — centred in remaining space */}
               {count > 0 && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1 pb-2">
-                  <div className="flex items-end justify-center gap-2">
+                <div className="flex-1 flex flex-col items-center justify-center gap-0.5 px-1 pb-1">
+                  <div className="flex items-end justify-center gap-1.5">
                     {topEvents.map((e, idx) => {
                       const ticker = (e.symbol || "").toUpperCase();
                       const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
@@ -4059,17 +4059,17 @@ function MonthCuratedGrid({
                       return (
                         <button
                           key={`${ticker}-${idx}`}
-                          className="flex flex-col items-center gap-1 group focus:outline-none"
+                          className="flex flex-col items-center gap-1 group focus:outline-none min-w-0"
                           onClick={ev => { ev.stopPropagation(); setModalEntry(modalE); }}
                         >
-                          <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-bold text-white ring-1 ring-white/10 group-hover:ring-purple-400/40 transition-all ${logo ? "bg-white/[0.07]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                          <div className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[11px] font-bold text-white ring-1 ring-white/10 group-hover:ring-purple-400/40 transition-all ${logo ? "bg-white/[0.07]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
                             {logo ? (
                               <img src={logo} alt={ticker} className="w-full h-full object-contain p-1" onError={ev2 => { (ev2.currentTarget as HTMLImageElement).style.display = "none"; }} />
                             ) : (
                               ticker.slice(0, 2)
                             )}
                           </div>
-                          <span className="text-[9px] font-semibold text-white/55 group-hover:text-white/85 transition-colors font-mono leading-none truncate max-w-[36px]">{ticker}</span>
+                          <span className="text-[11px] font-semibold text-white/60 group-hover:text-white/90 transition-colors font-mono leading-none truncate max-w-[46px]">{ticker}</span>
                         </button>
                       );
                     })}
