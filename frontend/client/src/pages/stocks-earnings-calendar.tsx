@@ -3831,22 +3831,26 @@ function MonthCuratedGrid({
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
 
-  const monthName = MONTH_NAMES[month - 1];
   const firstDay = new Date(year, month - 1, 1);
-  const startDow = firstDay.getDay();
+  const firstDayMonBased = (firstDay.getDay() + 6) % 7; // Mon=0…Fri=4, Sat=5, Sun=6
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const dayMap = new Map<string, MonthCuratedDay>();
   for (const d of (data?.days || [])) dayMap.set(d.date, d);
 
   const cells: (string | null)[] = [];
-  for (let i = 0; i < startDow; i++) cells.push(null);
+  // Leading blank Mon-based offset (only for weekdays Mon–Fri)
+  const leadOffset = firstDayMonBased < 5 ? firstDayMonBased : 0;
+  for (let i = 0; i < leadOffset; i++) cells.push(null);
+  // All month days, weekends skipped entirely
   for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    if (dow === 0 || dow === 6) continue;
     const mm = String(month).padStart(2, "0");
     const dd = String(d).padStart(2, "0");
     cells.push(`${year}-${mm}-${dd}`);
   }
-  while (cells.length % 7 !== 0) cells.push(null);
+  while (cells.length % 5 !== 0) cells.push(null);
 
   if (loading) {
     return (
@@ -3859,32 +3863,14 @@ function MonthCuratedGrid({
 
   return (
     <>
-      {/* Month nav header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1">
-          <button onClick={() => onNavigateMonth(-1)} className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65">
-            <ChevronLeft className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => { const n = new Date(); onNavigateMonth(0); }}
-            className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
-          >
-            Now
-          </button>
-          <button onClick={() => onNavigateMonth(1)} className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65">
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
-        <span className="text-[12px] font-semibold text-white/50">{monthName} {year}</span>
-      </div>
-      {/* Day-of-week header */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+      {/* Day-of-week header — Mon through Fri only */}
+      <div className="grid grid-cols-5 gap-1 mb-1">
+        {["Mon","Tue","Wed","Thu","Fri"].map(d => (
           <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
         ))}
       </div>
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {cells.map((dateStr, i) => {
           if (!dateStr) return <div key={`empty-${i}`} className="rounded-lg" style={{ minHeight: 72 }} />;
           const dayNum = parseInt(dateStr.split("-")[2]);
@@ -4302,9 +4288,33 @@ export default function StocksEarningsCalendarPage() {
                     </span>
                   )}
                 </div>
+              ) : earningsMode === "month" ? (
+                <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => navigateMonthCurated(-1)}
+                    className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => navigateMonthCurated(0)}
+                    className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
+                  >
+                    {MONTH_NAMES[monthCuratedMonth - 1]}
+                  </button>
+                  <button
+                    onClick={() => navigateMonthCurated(1)}
+                    className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                  {monthCuratedYear !== new Date().getFullYear() && (
+                    <span className="text-[11px] text-white/35 ml-1">{monthCuratedYear}</span>
+                  )}
+                </div>
               ) : (
                 <span className="ml-auto text-[10px] text-white/25 flex-shrink-0">
-                  {earningsMode === "upcoming" ? "Selected day's earnings calls" : earningsMode === "month" ? "This month's earnings reports" : "List — recent earnings reports"}
+                  {earningsMode === "upcoming" ? "Selected day's earnings calls" : "List — recent earnings reports"}
                 </span>
               )}
             </div>
