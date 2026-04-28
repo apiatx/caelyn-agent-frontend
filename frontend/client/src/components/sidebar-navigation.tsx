@@ -54,115 +54,146 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     );
   };
 
-  const navItems: NavItem[] = [
+  const navSections: { label?: string; items: NavItem[] }[] = [
     {
-      id: 'home',
-      label: 'Home',
-      icon: <Home className="w-4 h-4" />,
-      path: '/app/home'
+      items: [
+        {
+          id: 'home',
+          label: 'Home',
+          icon: <Home className="w-4 h-4" />,
+          path: '/app/home'
+        },
+        {
+          id: 'caelyn-ai',
+          label: 'Terminal',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/caelyn-ai'
+        },
+      ]
     },
     {
-      id: 'caelyn-ai',
-      label: 'Terminal',
-      icon: <Brain className="w-4 h-4" />,
-      path: '/app/caelyn-ai'
+      label: 'MARKET INTELLIGENCE',
+      items: [
+        {
+          id: 'macro-terminal',
+          label: 'Macro',
+          icon: <ChartLine className="w-4 h-4" />,
+          path: '/app/macro-terminal'
+        },
+        {
+          id: 'stocks-sectors',
+          label: 'Sectors',
+          icon: <Layers className="w-4 h-4" />,
+          path: '/app/stocks/sectors'
+        },
+        {
+          id: 'stocks-earnings-calendar',
+          label: 'Calendar',
+          icon: <CalendarDays className="w-4 h-4" />,
+          path: '/app/stocks/earnings-calendar'
+        },
+        {
+          id: 'onchain-social',
+          label: 'Social',
+          icon: <MessageSquare className="w-4 h-4" />,
+          path: '/app/onchain/social'
+        },
+        {
+          id: 'notifai',
+          label: 'NotifAI',
+          icon: <Newspaper className="w-4 h-4" />,
+          path: '/app/notifai'
+        },
+      ]
     },
     {
-      id: 'macro-terminal',
-      label: 'Macro',
-      icon: <ChartLine className="w-4 h-4" />,
-      path: '/app/macro-terminal'
+      label: 'DISCOVERY',
+      items: [
+        {
+          id: 'strategy-screener',
+          label: 'Chain Reaction',
+          icon: <ScrollText className="w-4 h-4" />,
+          path: '/app/strategy-screener'
+        },
+        {
+          id: 'stocks-screening',
+          label: 'Screener',
+          icon: <Search className="w-4 h-4" />,
+          path: '/app/stocks/screening'
+        },
+        {
+          id: 'stocks-fundamentals',
+          label: 'Fundamentals',
+          icon: <TrendingUp className="w-4 h-4" />,
+          path: '/app/stocks/fundamentals'
+        },
+      ]
     },
     {
-      id: 'stocks-sectors',
-      label: 'Sectors',
-      icon: <Layers className="w-4 h-4" />,
-      path: '/app/stocks/sectors'
+      label: 'PORTFOLIO',
+      items: [
+        {
+          id: 'watchlist',
+          label: 'Watchlist',
+          icon: <Eye className="w-4 h-4" />,
+          path: '/app/watchlist'
+        },
+        {
+          id: 'caelyn-terminal',
+          label: 'Portfolio',
+          icon: <Monitor className="w-4 h-4" />,
+          path: '/app/caelyn-terminal'
+        },
+      ]
     },
     {
-      id: 'stocks-earnings-calendar',
-      label: 'Calendar',
-      icon: <CalendarDays className="w-4 h-4" />,
-      path: '/app/stocks/earnings-calendar'
+      label: 'POSITIONING',
+      items: [
+        {
+          id: 'options-flow',
+          label: 'Options Flow',
+          icon: <Zap className="w-4 h-4" />,
+          path: '/app/options'
+        },
+        {
+          id: 'whale-watch',
+          label: 'Whale Watch',
+          icon: <Waves className="w-4 h-4" />,
+          path: '/app/stocks/whale-watch'
+        },
+        {
+          id: 'stocks-insider-activity',
+          label: 'Insider Activity',
+          icon: <Eye className="w-4 h-4" />,
+          path: '/app/stocks/insider-activity'
+        },
+      ]
     },
     {
-      id: 'onchain-social',
-      label: 'Social',
-      icon: <MessageSquare className="w-4 h-4" />,
-      path: '/app/onchain/social'
+      label: 'ALT MARKETS',
+      items: [
+        {
+          id: 'hyperliquid-screener',
+          label: 'Hyperliquid',
+          icon: <Activity className="w-4 h-4" />,
+          path: '/app/hyperliquid-screener'
+        },
+        {
+          id: 'predict',
+          label: 'Prophetik',
+          icon: <TrendingUp className="w-4 h-4" />,
+          path: '/app/predict'
+        },
+        {
+          id: 'bittensor',
+          label: 'Bittensor',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/bittensor'
+        },
+      ]
     },
     {
-      id: 'notifai',
-      label: 'NotifAI',
-      icon: <Newspaper className="w-4 h-4" />,
-      path: '/app/notifai'
-    },
-    {
-      id: 'strategy-screener',
-      label: 'Chain Reaction',
-      icon: <ScrollText className="w-4 h-4" />,
-      path: '/app/strategy-screener'
-    },
-    {
-      id: 'stocks-screening',
-      label: 'Stock Screener',
-      icon: <Search className="w-4 h-4" />,
-      path: '/app/stocks/screening'
-    },
-    {
-      id: 'stocks-fundamentals',
-      label: 'Fundamentals',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/stocks/fundamentals'
-    },
-    {
-      id: 'watchlist',
-      label: 'Watchlist',
-      icon: <Eye className="w-4 h-4" />,
-      path: '/app/watchlist'
-    },
-    {
-      id: 'caelyn-terminal',
-      label: 'Portfolio',
-      icon: <Monitor className="w-4 h-4" />,
-      path: '/app/caelyn-terminal'
-    },
-    {
-      id: 'options-flow',
-      label: 'Options Flow',
-      icon: <Zap className="w-4 h-4" />,
-      path: '/app/options'
-    },
-    {
-      id: 'whale-watch',
-      label: 'Whale Watch',
-      icon: <Waves className="w-4 h-4" />,
-      path: '/app/stocks/whale-watch'
-    },
-    {
-      id: 'stocks-insider-activity',
-      label: 'Insider Activity',
-      icon: <Eye className="w-4 h-4" />,
-      path: '/app/stocks/insider-activity'
-    },
-    {
-      id: 'hyperliquid-screener',
-      label: 'Hyperliquid',
-      icon: <Activity className="w-4 h-4" />,
-      path: '/app/hyperliquid-screener'
-    },
-    {
-      id: 'predict',
-      label: 'Prophetik',
-      icon: <TrendingUp className="w-4 h-4" />,
-      path: '/app/predict'
-    },
-    {
-      id: 'bittensor',
-      label: 'Bittensor',
-      icon: <Brain className="w-4 h-4" />,
-      path: '/app/bittensor'
-    },
+      items: [
     {
       id: 'crypto',
       label: 'Crypto',
@@ -393,6 +424,8 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       icon: <FlaskConical className="w-4 h-4" />,
       path: '/app/dev/qa'
     },
+      ]
+    },
   ];
 
   const hasActiveDescendant = (item: NavItem): boolean => {
@@ -529,7 +562,18 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
 
       {/* Navigation Items - Scrollable Area */}
       <div className={`flex-1 min-h-0 overflow-y-auto pl-2 pr-3 py-4 space-y-1 scrollbar-thin scrollbar-thumb-crypto-silver/20 scrollbar-track-transparent ${isMobile ? 'pt-16' : ''}`}>
-        {navItems.map(item => renderNavItem(item))}
+        {navSections.map((section, sIdx) => (
+          <div key={sIdx} className={sIdx > 0 ? 'mt-3' : ''}>
+            {section.label && !isCollapsed && (
+              <div className="px-2 mb-1 text-[9px] font-bold tracking-widest text-white/20 uppercase select-none">
+                {section.label}
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map(item => renderNavItem(item))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Pinned Bottom: Settings + About */}
