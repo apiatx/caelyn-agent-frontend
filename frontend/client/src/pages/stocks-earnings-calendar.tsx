@@ -1410,7 +1410,11 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     period?: string | null;
   }
   const dayAllEnabled = !!selectedDayKey && selectedDayKey !== "undated";
-  const { data: dayCleanRaw, isLoading: dayCleanLoading } = useQuery<DayCleanEntry[]>({
+  const {
+    data: dayCleanRaw,
+    isLoading: dayCleanLoading,
+    isFetching: dayCleanFetching,
+  } = useQuery<DayCleanEntry[]>({
     queryKey: ["earnings", "day", "all", selectedDayKey],
     queryFn: async () => {
       const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&enrich=false`;
@@ -1426,28 +1430,40 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    // No placeholderData/keepPreviousData: stale previous-day data must NOT
+    // be shown under a newly selected date. Empty → loading spinner instead.
   });
   const dayCleanEntries = dayCleanRaw ?? [];
 
   // Day-curated state (React Query — separate cache key from "all")
   const dayCuratedEnabled = signalMode === "curated" && !!selectedDayKey && selectedDayKey !== "undated";
-  const { data: dayCuratedRaw, isLoading: dayCuratedLoading } = useQuery<WeekCleanEntry[]>({
+  const {
+    data: dayCuratedRaw,
+    isLoading: dayCuratedLoading,
+    isFetching: dayCuratedFetching,
+  } = useQuery<WeekCleanEntry[]>({
     queryKey: ["earnings", "day", "curated", selectedDayKey],
     queryFn: async () => {
-      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key] day curated", selectedDayKey);
+      if (process.env.NODE_ENV !== "production") console.log("[day-curated request]", selectedDayKey);
       const r = await fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`);
       if (!r.ok) throw new Error(`${r.status}`);
       const data = await r.json();
       if (process.env.NODE_ENV !== "production") console.log("[Day Curated response]", data);
       const arr: WeekCleanEntry[] = Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
+      if (process.env.NODE_ENV !== "production") console.log("[Day render]", {
+        signalMode, selectedDayKey,
+        queryKey: ["earnings","day","curated", selectedDayKey],
+        entriesCount: arr.length,
+        symbols: arr.slice(0,5).map(e => e.symbol),
+      });
       return arr;
     },
     enabled: dayCuratedEnabled,
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    // No placeholderData/keepPreviousData: stale previous-day data must NOT
+    // be shown under a newly selected date.
   });
   const dayCuratedEntries = dayCuratedRaw ?? [];
   // Notify parent to enrich logos when curated data lands
@@ -1721,11 +1737,13 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
           <h4 className="text-sm font-bold text-white/90">
             {DAY_NAMES_FULL[selectedDate.getDay()]}, {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getDate()}
           </h4>
-          {dayCleanLoading ? (
+          {(signalMode === "curated" ? dayCuratedFetching : dayCleanFetching) ? (
             <Loader2 className="w-3 h-3 text-blue-400/50 animate-spin" />
           ) : (
             <span className="text-[10px] text-white/30">
-              {dayCleanEntries.length} earning{dayCleanEntries.length !== 1 ? "s" : ""} call{dayCleanEntries.length !== 1 ? "s" : ""}
+              {signalMode === "curated"
+                ? `${dayCuratedEntries.length} curated pick${dayCuratedEntries.length !== 1 ? "s" : ""}`
+                : `${dayCleanEntries.length} earning${dayCleanEntries.length !== 1 ? "s" : ""} call${dayCleanEntries.length !== 1 ? "s" : ""}`}
             </span>
           )}
         </div>
