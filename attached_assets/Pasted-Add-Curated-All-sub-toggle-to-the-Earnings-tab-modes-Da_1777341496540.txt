@@ -1,0 +1,235 @@
+Add Curated / All sub-toggle to the Earnings tab modes: Day, Week, and Month.
+
+Current main Earnings modes:
+- Recent
+- Day
+- Week
+- Month
+
+New requirement:
+Day, Week, and Month each get a secondary toggle:
+- Curated
+- All
+
+Recent does NOT need this toggle.
+
+Important:
+Do NOT break:
+- Recent mode
+- existing earnings popup
+- non-earnings Catalyst tabs
+- Home/Sectors/Macro
+
+Do NOT use:
+- Finnhub
+- Polymarket
+- AI calls
+- old Smart/beat odds/high-conviction logic
+
+Backend endpoints are ready:
+
+Day:
+- Curated: GET /api/catalysts/earnings/day-curated?date={selectedDate}
+- All: GET /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Week:
+- Curated: GET /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}
+- All: GET /api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+Month:
+- Curated: GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+- All: keep the current working Month All behavior. If the current Month All path needs an endpoint, use the existing all/range endpoint already powering the full monthly list/calendar. Do not rebuild it.
+
+Frontend state:
+Add a new state variable:
+
+earningsSignalMode: "curated" | "all"
+
+Default:
+"curated"
+
+When user switches main earnings mode:
+- Day => set earningsSignalMode to "curated"
+- Week => set earningsSignalMode to "curated"
+- Month => set earningsSignalMode to "curated"
+- Recent => hide/ignore earningsSignalMode
+
+Main toggle order:
+- Recent
+- Day
+- Week
+- Month
+
+Sub-toggle:
+Only show when earningsMode is:
+- Day
+- Week
+- Month
+
+Render:
+[Curated] [All]
+
+Do not show the Curated/All toggle for Recent.
+
+Behavior by mode:
+
+1. Day + Curated
+Call:
+GET /api/catalysts/earnings/day-curated?date={selectedDate}
+
+Render a curated selected-day list using the same card style as Week Curated where practical.
+
+Cards should show:
+- logo/avatar
+- companyName
+- symbol
+- priceChangePct if available
+- marketCapBucket or reason line if available
+- selective FOCUS badge
+- click/details opens existing earnings popup
+
+If no curated events:
+Show:
+“No high-signal earnings found for this day. Switch to All to see every call.”
+
+2. Day + All
+Use existing Day full earnings behavior:
+GET /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Do not change the existing full Day list behavior except to make sure it only appears when All is selected.
+
+3. Week + Curated
+Use existing working weekly curated board:
+GET /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}
+
+Keep the current This Week board layout:
+- weekday columns
+- Key Calls / sessions
+- top watches strip
+- selective FOCUS badge
+- backend order preserved
+
+4. Week + All
+Call:
+GET /api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+Render a full earnings list grouped by day.
+This does not need to look like the curated board.
+It can be a clean grouped list/table:
+- Date
+- Symbol
+- Company
+- EPS Est
+- Revenue Est
+- Time/Period
+- View details
+
+No FOCUS badge needed in All.
+
+5. Month + Curated
+Call:
+GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+
+Render the monthly calendar grid.
+Each date cell should show:
+- day number
+- total earnings count
+- top curated events from day.topEvents
+- if count > topEvents.length, show “+X more”
+
+Clicking a date:
+- switches to Day mode
+- sets selectedDate to that date
+- default Day sub-toggle should be Curated
+
+Clicking an event:
+- opens existing earnings popup
+
+6. Month + All
+Keep current working Month All behavior that shows all earnings this month.
+Do not rebuild it.
+Do not make it use curated data.
+
+Query keys:
+Include both earningsMode and earningsSignalMode so caches do not collide.
+
+Examples:
+["earnings", "day", "curated", selectedDate]
+["earnings", "day", "all", selectedDate]
+["earnings", "week", "curated", weekStart, weekEnd]
+["earnings", "week", "all", weekStart, weekEnd]
+["earnings", "month", "curated", year, month]
+["earnings", "month", "all", year, month]
+
+Fetch behavior:
+- no polling
+- no refetch-on-window-focus
+- retry max 1
+- do not call curated endpoint when All is selected
+- do not call All endpoint when Curated is selected
+
+Rendering rules:
+
+Curated cards:
+- use backend order as-is
+- do not re-sort client-side
+- do not pad with old/fallback rows
+- do not show junk fallback rows
+- hide visible “unknown” reason labels
+- use fallback avatar if logo missing
+- FOCUS only for:
+  - isThemeAnchor
+  - isBottleneck
+  - importanceScore >= 85
+  - top 3 for that day/week section
+
+All views:
+- show full lists/calendars
+- no reason line required
+- no FOCUS badge required
+- no curated filtering
+
+Empty states:
+Curated:
+“No high-signal earnings found for this period. Switch to All to see every call.”
+
+All:
+Use existing empty state.
+
+Navigation:
+Day:
+- date navigation keeps current selected date state
+- Curated/All changes endpoint only
+
+Week:
+- Last/Current/Next week controls remain
+- Curated/All changes endpoint only
+
+Month:
+- prev/current/next month controls remain
+- Curated/All changes endpoint only
+
+Validation checklist:
+1. Recent has no Curated/All toggle and remains unchanged.
+2. Day defaults to Curated.
+3. Day Curated calls /api/catalysts/earnings/day-curated.
+4. Day All calls /api/catalysts/earnings/day-clean.
+5. Week defaults to Curated.
+6. Week Curated calls /api/catalysts/earnings/week-clean.
+7. Week All calls /api/catalysts/earnings/week-all.
+8. Month defaults to Curated.
+9. Month Curated calls /api/catalysts/earnings/month-curated.
+10. Month All keeps the existing full-month behavior.
+11. Popup still opens from every earnings card/list row.
+12. No Finnhub, Polymarket, beat odds, or Smart/high-conviction legacy calls.
+13. Non-earnings Catalyst tabs unchanged.
+
+Final response:
+Tell me:
+- files changed
+- state variable added
+- endpoint mapping for each mode/signal combination
+- confirm defaults are Curated for Day/Week/Month
+- confirm All paths still work
+- confirm Recent untouched
+- confirm popup untouched

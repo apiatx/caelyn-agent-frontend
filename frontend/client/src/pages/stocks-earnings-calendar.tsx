@@ -149,6 +149,39 @@ interface WeekCleanResponse {
   errors?: string[];
 }
 
+interface WeekAllEntry {
+  symbol: string;
+  companyName?: string | null;
+  date?: string;
+  time?: string | null;
+  period?: string | null;
+  epsEstimated?: number | null;
+  revenueEstimated?: number | null;
+}
+interface WeekAllDay {
+  date: string;
+  label?: string;
+  weekday?: string;
+  count: number;
+  entries: WeekAllEntry[];
+}
+interface WeekAllResponse {
+  weekStart: string;
+  weekEnd: string;
+  days: WeekAllDay[];
+}
+
+interface MonthCuratedDay {
+  date: string;
+  count: number;
+  topEvents: WeekCleanEntry[];
+}
+interface MonthCuratedResponse {
+  year: number;
+  month: number;
+  days: MonthCuratedDay[];
+}
+
 interface EarningsDetailData {
   ticker: string;
   company_name?: string;
@@ -1340,10 +1373,12 @@ function WeeklyEarningsBoard({
 
 // ─── Earnings Calendar Component ──────────────────────────────────
 
-function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
+function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalMode, jumpToDate }: {
   markets: ParsedMarket[];
   identityMap: Record<string, IdentityData>;
   onFetchIdentity: (tickers: string[]) => void;
+  signalMode?: "curated" | "all";
+  jumpToDate?: string | null;
 }) {
   const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
   const [selectedDayKey, setSelectedDayKey] = useState<string>(dateKey(new Date()));
@@ -1374,6 +1409,41 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
   const [dayCleanEntries, setDayCleanEntries] = useState<DayCleanEntry[]>([]);
   const [dayCleanLoading, setDayCleanLoading] = useState(false);
   const dayCleanFetchedRef = useRef<Set<string>>(new Set());
+
+  // Day-curated state
+  const [dayCuratedEntries, setDayCuratedEntries] = useState<WeekCleanEntry[]>([]);
+  const [dayCuratedLoading, setDayCuratedLoading] = useState(false);
+  const dayCuratedFetchedRef = useRef<Set<string>>(new Set());
+
+  // Sync jumpToDate → selectedDayKey + scroll week view
+  useEffect(() => {
+    if (!jumpToDate) return;
+    const d = new Date(jumpToDate);
+    if (!isNaN(d.getTime())) {
+      setSelectedDayKey(jumpToDate);
+      setWeekStart(getSunday(d));
+    }
+  }, [jumpToDate]);
+
+  // Fetch day-curated when signalMode === "curated"
+  useEffect(() => {
+    if (signalMode !== "curated") return;
+    if (!selectedDayKey || selectedDayKey === "undated") return;
+    const key = `curated-${selectedDayKey}`;
+    if (dayCuratedFetchedRef.current.has(key)) return;
+    dayCuratedFetchedRef.current.add(key);
+    setDayCuratedLoading(true);
+    fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then((data) => {
+        const arr: WeekCleanEntry[] = Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
+        setDayCuratedEntries(arr);
+        const tickers = arr.map(e => e.symbol).filter(Boolean);
+        if (tickers.length > 0) onFetchIdentity(tickers);
+      })
+      .catch(() => { dayCuratedFetchedRef.current.delete(key); })
+      .finally(() => setDayCuratedLoading(false));
+  }, [signalMode, selectedDayKey, onFetchIdentity]);
 
   // Build Polymarket date map
   const polyDateMap = new Map<string, EarningsEntry[]>();
@@ -1667,8 +1737,77 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity }: {
         </div>
       </div>
 
-      {/* Day earnings list — powered by day-clean endpoint */}
-      {dayCleanLoading ? (
+      {/* Day earnings list — Curated or All */}
+      {signalMode === "curated" ? (
+        dayCuratedLoading ? (
+          <div className="text-center py-10">
+            <Loader2 className="w-5 h-5 text-amber-400/40 mx-auto mb-2 animate-spin" />
+            <p className="text-[11px] text-white/25">Loading curated picks...</p>
+          </div>
+        ) : dayCuratedEntries.length === 0 ? (
+          <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+            <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+            <p className="text-sm text-white/25">No high-signal earnings found for this day</p>
+            <p className="text-[10px] text-white/15 mt-1">Switch to All to see every call</p>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {dayCuratedEntries.filter(e => {
+              const sym = (e.symbol || "").toUpperCase();
+              const noName = !e.companyName || e.companyName.toUpperCase() === sym;
+              const unknownBucket = (e.marketCapBucket || "").toLowerCase() === "unknown";
+              const noTags = !e.themeTags || e.themeTags.length === 0;
+              const noSignal = !e.isThemeAnchor && !e.isBottleneck;
+              return !(noName && unknownBucket && noTags && noSignal);
+            }).map((e, idx) => {
+              const ticker = (e.symbol || "").toUpperCase();
+              const name = e.companyName || ticker;
+              const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
+              const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
+              const isFocus = !!e.isThemeAnchor || !!e.isBottleneck || (e.importanceScore != null && e.importanceScore >= 85) || idx < 3;
+              const tag = e.themeTags && e.themeTags.length > 0 ? e.themeTags[0] : null;
+              const qualifier = e.isThemeAnchor ? "Anchor" : e.isBottleneck ? "Bottleneck" : null;
+              const reason = tag ? (qualifier ? `${tag} · ${qualifier}` : tag) : qualifier || (e.marketCapBucket && e.marketCapBucket.toLowerCase() !== "unknown" ? e.marketCapBucket.charAt(0).toUpperCase() + e.marketCapBucket.slice(1) + " cap" : null);
+              const timeStr = e.time === "bmo" || e.session === "pre_market" ? "Pre-Market" : e.time === "amc" || e.session === "after_hours" ? "After Hours" : e.time || null;
+              const epsEst = e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : null;
+              const revEst = e.revenueEstimated != null ? formatRevenue(Number(e.revenueEstimated)) : null;
+              const modalEntry: EarningsEntry = {
+                market: null, ticker, company: name, companyName: name,
+                logo: (logo || undefined) as string | undefined,
+                eps: epsEst, quarter: e.period || null, time: timeStr,
+                exchange: null, beatPct: -1, revenueEstimate: revEst, source: "fmp", earningsDate: e.date || selectedDayKey,
+              };
+              return (
+                <button
+                  key={`dc-${ticker}-${idx}`}
+                  className="w-full text-left rounded-lg border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2.5 flex items-center gap-2.5"
+                  onClick={() => handleEntryClick(modalEntry)}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                    {logo ? (
+                      <img src={logo} alt={ticker} className="w-full h-full object-contain p-0.5" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <span className="text-[9px] font-bold text-white">{ticker.slice(0, 2)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-white/90 truncate leading-tight group-hover:text-white">{name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-[9px] font-mono text-white/35">{ticker}</span>
+                      {pct != null && <span className={`text-[8px] font-semibold ${pct >= 0 ? "text-emerald-400/80" : "text-rose-400/80"}`}>{pct >= 0 ? "+" : ""}{pct.toFixed(2)}%</span>}
+                      {timeStr && <span className="text-[8px] px-1 py-0.5 rounded bg-white/[0.04] text-white/30">{timeStr}</span>}
+                      {e.period && <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/10 text-blue-400/60">{e.period}</span>}
+                    </div>
+                    {reason && <p className="text-[8px] text-white/25 truncate mt-0.5">{reason}</p>}
+                  </div>
+                  {isFocus && <span className="text-[7px] font-bold text-amber-400/70 border border-amber-400/25 rounded px-1 py-0.5 flex-shrink-0">FOCUS</span>}
+                  <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0">+</span>
+                </button>
+              );
+            })}
+          </div>
+        )
+      ) : dayCleanLoading ? (
         <div className="text-center py-10">
           <Loader2 className="w-5 h-5 text-blue-400/40 mx-auto mb-2 animate-spin" />
           <p className="text-[11px] text-white/25">Loading earnings...</p>
@@ -3562,15 +3701,262 @@ function CatalystListTab({
 }
 
 
+// ─── Week All List ────────────────────────────────────────────────
+
+function WeekAllList({
+  weekData,
+  weekLoading,
+  identityMap,
+}: {
+  weekData: WeekAllResponse | null;
+  weekLoading: boolean;
+  identityMap: Record<string, IdentityData>;
+}) {
+  const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
+
+  if (weekLoading) {
+    return (
+      <div className="text-center py-12">
+        <Loader2 className="w-5 h-5 text-indigo-400/40 mx-auto mb-2 animate-spin" />
+        <p className="text-[11px] text-white/25">Loading all earnings...</p>
+      </div>
+    );
+  }
+
+  if (!weekData || (weekData.days || []).every(d => (d.entries || []).length === 0)) {
+    return (
+      <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+        <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+        <p className="text-sm text-white/25">No earnings data for this week</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-5">
+        {(weekData.days || []).map(day => {
+          const dayEntries = day.entries || [];
+          if (dayEntries.length === 0) return null;
+          return (
+            <div key={day.date}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2">
+                {day.weekday || day.label || day.date}
+                <span className="ml-2 text-white/15 normal-case font-normal tracking-normal">{dayEntries.length} calls</span>
+              </p>
+              <div className="rounded-xl border border-white/[0.05] overflow-hidden">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-white/[0.05]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                      <th className="text-left px-3 py-2 text-white/25 font-semibold">Company</th>
+                      <th className="text-left px-3 py-2 text-white/25 font-semibold hidden sm:table-cell">EPS Est</th>
+                      <th className="text-left px-3 py-2 text-white/25 font-semibold hidden md:table-cell">Rev Est</th>
+                      <th className="text-left px-3 py-2 text-white/25 font-semibold hidden sm:table-cell">Time</th>
+                      <th className="text-left px-3 py-2 text-white/25 font-semibold hidden md:table-cell">Period</th>
+                      <th className="px-3 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dayEntries.map((e, idx) => {
+                      const ticker = (e.symbol || "").toUpperCase();
+                      const name = e.companyName || ticker;
+                      const logo = identityMap[ticker]?.logo || null;
+                      const epsEst = e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : "—";
+                      const revEst = e.revenueEstimated != null ? formatRevenue(Number(e.revenueEstimated)) : "—";
+                      const rawTime = e.time || "";
+                      const timeStr = rawTime === "bmo" ? "Pre-Market" : rawTime === "amc" ? "After Hours" : rawTime || "—";
+                      const modalE: EarningsEntry = {
+                        market: null, ticker, company: name, companyName: name,
+                        logo: (logo || undefined) as string | undefined,
+                        eps: epsEst === "—" ? null : epsEst, quarter: e.period || null, time: timeStr === "—" ? null : timeStr,
+                        exchange: null, beatPct: -1, revenueEstimate: revEst === "—" ? null : revEst, source: "fmp", earningsDate: e.date || day.date,
+                      };
+                      return (
+                        <tr
+                          key={`${ticker}-${idx}`}
+                          className="border-b border-white/[0.03] hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                          onClick={() => setModalEntry(modalE)}
+                        >
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden text-[7px] font-bold text-white ${logo ? "bg-white/[0.05]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                                {logo ? <img src={logo} alt={ticker} className="w-full h-full object-contain p-0.5" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : ticker.slice(0, 2)}
+                              </div>
+                              <div>
+                                <p className="text-white/80 font-semibold group-hover:text-white transition-colors truncate max-w-[140px]">{name}</p>
+                                <p className="text-white/30 text-[10px] font-mono">{ticker}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-white/40 hidden sm:table-cell">{epsEst}</td>
+                          <td className="px-3 py-2 text-white/40 hidden md:table-cell">{revEst}</td>
+                          <td className="px-3 py-2 text-white/40 hidden sm:table-cell">{timeStr}</td>
+                          <td className="px-3 py-2 text-white/40 hidden md:table-cell">{e.period || "—"}</td>
+                          <td className="px-3 py-2 text-right">
+                            <span className="text-[10px] text-blue-400/40 group-hover:text-blue-400 transition-colors">View</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modalEntry && <EarningsModal entry={modalEntry} onClose={() => setModalEntry(null)} />}
+    </>
+  );
+}
+
+// ─── Month Curated Grid ───────────────────────────────────────────
+
+function MonthCuratedGrid({
+  data,
+  loading,
+  year,
+  month,
+  identityMap,
+  onNavigateMonth,
+  onSelectDate,
+}: {
+  data: MonthCuratedResponse | null;
+  loading: boolean;
+  year: number;
+  month: number;
+  identityMap: Record<string, IdentityData>;
+  onNavigateMonth: (delta: number) => void;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
+
+  const monthName = MONTH_NAMES[month - 1];
+  const firstDay = new Date(year, month - 1, 1);
+  const startDow = firstDay.getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const dayMap = new Map<string, MonthCuratedDay>();
+  for (const d of (data?.days || [])) dayMap.set(d.date, d);
+
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const mm = String(month).padStart(2, "0");
+    const dd = String(d).padStart(2, "0");
+    cells.push(`${year}-${mm}-${dd}`);
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <Loader2 className="w-5 h-5 text-purple-400/40 mx-auto mb-2 animate-spin" />
+        <p className="text-[11px] text-white/25">Loading curated month...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Month nav header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1">
+          <button onClick={() => onNavigateMonth(-1)} className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65">
+            <ChevronLeft className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => { const n = new Date(); onNavigateMonth(0); }}
+            className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
+          >
+            Now
+          </button>
+          <button onClick={() => onNavigateMonth(1)} className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65">
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+        <span className="text-[12px] font-semibold text-white/50">{monthName} {year}</span>
+      </div>
+      {/* Day-of-week header */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+          <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
+        ))}
+      </div>
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) return <div key={`empty-${i}`} className="rounded-lg" style={{ minHeight: 72 }} />;
+          const dayNum = parseInt(dateStr.split("-")[2]);
+          const dayData = dayMap.get(dateStr);
+          const count = dayData?.count || 0;
+          const topEvents = (dayData?.topEvents || []).slice(0, 3);
+          const extra = count - topEvents.length;
+          const todayStr = dateKey(new Date());
+          const isToday = dateStr === todayStr;
+          return (
+            <div
+              key={dateStr}
+              className={`rounded-lg p-1.5 border transition-all cursor-pointer flex flex-col ${
+                count > 0 ? "hover:border-purple-500/30 hover:bg-purple-500/[0.04]" : "opacity-50 cursor-default"
+              } ${isToday ? "border-purple-500/25 bg-purple-500/[0.04]" : "border-white/[0.05] bg-white/[0.01]"}`}
+              style={{ minHeight: 72 }}
+              onClick={() => count > 0 && onSelectDate(dateStr)}
+            >
+              <p className={`text-[10px] font-bold mb-1 ${isToday ? "text-purple-400" : "text-white/40"}`}>{dayNum}</p>
+              {count > 0 && (
+                <>
+                  <p className="text-[8px] text-white/25 mb-1">{count} call{count !== 1 ? "s" : ""}</p>
+                  <div className="space-y-0.5 flex-1">
+                    {topEvents.map((e, idx) => {
+                      const ticker = (e.symbol || "").toUpperCase();
+                      const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
+                      const epsEst = e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : null;
+                      const revEst = e.revenueEstimated != null ? formatRevenue(Number(e.revenueEstimated)) : null;
+                      const timeStr = e.time === "bmo" || e.session === "pre_market" ? "Pre-Market" : e.time === "amc" || e.session === "after_hours" ? "After Hours" : e.time || null;
+                      const modalE: EarningsEntry = {
+                        market: null, ticker, company: e.companyName || ticker, companyName: e.companyName || ticker,
+                        logo: (logo || undefined) as string | undefined,
+                        eps: epsEst, quarter: e.period || null, time: timeStr, exchange: null, beatPct: -1,
+                        revenueEstimate: revEst, source: "fmp", earningsDate: dateStr,
+                      };
+                      return (
+                        <div
+                          key={`${ticker}-${idx}`}
+                          className="flex items-center gap-1 rounded hover:bg-white/[0.04] px-0.5 py-0.5 transition-colors group"
+                          onClick={ev => { ev.stopPropagation(); setModalEntry(modalE); }}
+                        >
+                          <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center overflow-hidden text-[6px] font-bold text-white ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                            {logo ? <img src={logo} alt={ticker} className="w-full h-full object-contain p-[1px]" onError={ev2 => { (ev2.currentTarget as HTMLImageElement).style.display = "none"; }} /> : ticker.slice(0, 1)}
+                          </div>
+                          <span className="text-[8px] text-white/50 group-hover:text-white/80 truncate font-mono">{ticker}</span>
+                        </div>
+                      );
+                    })}
+                    {extra > 0 && <p className="text-[8px] text-white/20 pl-0.5">+{extra} more</p>}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {modalEntry && <EarningsModal entry={modalEntry} onClose={() => setModalEntry(null)} />}
+    </>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
   // ── Tab + mode state ─────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
   const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent" | "month">("thisweek");
+  const [earningsSignalMode, setEarningsSignalMode] = useState<"curated" | "all">("curated");
+  const [earningsJumpDate, setEarningsJumpDate] = useState<string | null>(null);
   const switchTab = (key: string) => {
     setActiveTab(key);
-    if (key === "earnings_dates") setEarningsMode("thisweek");
+    if (key === "earnings_dates") { setEarningsMode("thisweek"); setEarningsSignalMode("curated"); }
   };
 
   // ── Ask Caelyn global state ───────────────────────────────────────
@@ -3656,6 +4042,61 @@ export default function StocksEarningsCalendarPage() {
       })
       .finally(() => setWeekCleanLoading(false));
   }, [earningsMode, weekCleanStart, fetchIdentity]);
+
+  // ── Week All state ────────────────────────────────────────────────
+  const [weekAllData, setWeekAllData] = useState<WeekAllResponse | null>(null);
+  const [weekAllLoading, setWeekAllLoading] = useState(false);
+  const weekAllFetchedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (earningsMode !== "thisweek" || earningsSignalMode !== "all") return;
+    const key = dateKey(weekCleanStart);
+    if (weekAllFetchedRef.current.has(key)) return;
+    weekAllFetchedRef.current.add(key);
+    setWeekAllLoading(true);
+    setWeekAllData(null);
+    const weekEnd = addDays(weekCleanStart, 4);
+    fetch(`/api/catalysts/earnings/week-all?weekStart=${dateKey(weekCleanStart)}&weekEnd=${dateKey(weekEnd)}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then(data => setWeekAllData(data))
+      .catch(() => { weekAllFetchedRef.current.delete(key); })
+      .finally(() => setWeekAllLoading(false));
+  }, [earningsMode, earningsSignalMode, weekCleanStart]);
+
+  // ── Month Curated state ───────────────────────────────────────────
+  const [monthCuratedYear, setMonthCuratedYear] = useState<number>(() => new Date().getFullYear());
+  const [monthCuratedMonth, setMonthCuratedMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [monthCuratedData, setMonthCuratedData] = useState<MonthCuratedResponse | null>(null);
+  const [monthCuratedLoading, setMonthCuratedLoading] = useState(false);
+  const monthCuratedFetchedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (earningsMode !== "month" || earningsSignalMode !== "curated") return;
+    const key = `${monthCuratedYear}-${monthCuratedMonth}`;
+    if (monthCuratedFetchedRef.current.has(key)) return;
+    monthCuratedFetchedRef.current.add(key);
+    setMonthCuratedLoading(true);
+    setMonthCuratedData(null);
+    fetch(`/api/catalysts/earnings/month-curated?year=${monthCuratedYear}&month=${monthCuratedMonth}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then(data => setMonthCuratedData(data))
+      .catch(() => { monthCuratedFetchedRef.current.delete(key); })
+      .finally(() => setMonthCuratedLoading(false));
+  }, [earningsMode, earningsSignalMode, monthCuratedYear, monthCuratedMonth]);
+
+  const navigateMonthCurated = useCallback((delta: number) => {
+    if (delta === 0) {
+      const n = new Date();
+      setMonthCuratedYear(n.getFullYear());
+      setMonthCuratedMonth(n.getMonth() + 1);
+    } else {
+      setMonthCuratedYear(prev => {
+        const d = new Date(prev, monthCuratedMonth - 1 + delta, 1);
+        setMonthCuratedMonth(d.getMonth() + 1);
+        return d.getFullYear();
+      });
+    }
+  }, [monthCuratedMonth]);
 
   // ── Earnings tab state ───────────────────────────────────────────
   const [earningsMarkets, setEarningsMarkets] = useState<ParsedMarket[]>([]);
@@ -3777,7 +4218,7 @@ export default function StocksEarningsCalendarPage() {
                   Recent
                 </button>
                 <button
-                  onClick={() => setEarningsMode("upcoming")}
+                  onClick={() => { setEarningsMode("upcoming"); setEarningsSignalMode("curated"); }}
                   className="px-4 py-1.5 transition-all"
                   style={earningsMode === "upcoming"
                     ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
@@ -3786,7 +4227,7 @@ export default function StocksEarningsCalendarPage() {
                   Day
                 </button>
                 <button
-                  onClick={() => setEarningsMode("thisweek")}
+                  onClick={() => { setEarningsMode("thisweek"); setEarningsSignalMode("curated"); }}
                   className="px-4 py-1.5 transition-all"
                   style={earningsMode === "thisweek"
                     ? { background: "rgba(99,102,241,0.18)", color: "#a5b4fc", borderRight: "1px solid rgba(255,255,255,0.06)" }
@@ -3795,7 +4236,7 @@ export default function StocksEarningsCalendarPage() {
                   Week
                 </button>
                 <button
-                  onClick={() => setEarningsMode("month")}
+                  onClick={() => { setEarningsMode("month"); setEarningsSignalMode("curated"); }}
                   className="px-4 py-1.5 transition-all"
                   style={earningsMode === "month"
                     ? { background: "rgba(168,85,247,0.18)", color: "#c084fc" }
@@ -3804,6 +4245,29 @@ export default function StocksEarningsCalendarPage() {
                   Month
                 </button>
               </div>
+              {/* Curated / All sub-toggle — shown for Day, Week, Month only */}
+              {earningsMode !== "recent" && (
+                <div className="flex rounded-lg border border-white/[0.06] overflow-hidden text-[10px] font-semibold flex-shrink-0">
+                  <button
+                    onClick={() => setEarningsSignalMode("curated")}
+                    className="px-3 py-1.5 transition-all"
+                    style={earningsSignalMode === "curated"
+                      ? { background: "rgba(245,158,11,0.15)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                      : { color: "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    Curated
+                  </button>
+                  <button
+                    onClick={() => setEarningsSignalMode("all")}
+                    className="px-3 py-1.5 transition-all"
+                    style={earningsSignalMode === "all"
+                      ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }
+                      : { color: "rgba(255,255,255,0.35)" }}
+                  >
+                    All
+                  </button>
+                </div>
+              )}
               {earningsMode === "thisweek" ? (
                 <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                   <div className="flex items-center gap-1">
@@ -3846,8 +4310,8 @@ export default function StocksEarningsCalendarPage() {
           )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab && earningsMode === "thisweek" ? (
-            /* ── This Week — weekly earnings board ─────────────── */
+          {isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "curated" ? (
+            /* ── Week · Curated — curated board ────────────────── */
             <WeeklyEarningsBoard
               weekStart={weekCleanStart}
               weekData={weekCleanData}
@@ -3857,8 +4321,15 @@ export default function StocksEarningsCalendarPage() {
               onNavigate={navigateWeekClean}
               hideNav
             />
+          ) : isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "all" ? (
+            /* ── Week · All — full grouped list ────────────────── */
+            <WeekAllList
+              weekData={weekAllData}
+              weekLoading={weekAllLoading}
+              identityMap={identityMap}
+            />
           ) : isEarningsTab && earningsMode === "upcoming" ? (
-            /* ── Day — real calendar widget ────────────────────── */
+            /* ── Day — calendar widget (Curated or All via prop) ── */
             earningsLoading && earningsMarkets.length === 0 ? (
               <div>
                 <div className="flex items-center gap-3 mb-3">
@@ -3880,10 +4351,16 @@ export default function StocksEarningsCalendarPage() {
                 </div>
               </div>
             ) : (
-              <EarningsCalendarWidget markets={earningsMarkets} identityMap={identityMap} onFetchIdentity={fetchIdentity} />
+              <EarningsCalendarWidget
+                markets={earningsMarkets}
+                identityMap={identityMap}
+                onFetchIdentity={fetchIdentity}
+                signalMode={earningsSignalMode}
+                jumpToDate={earningsJumpDate}
+              />
             )
           ) : isEarningsTab && earningsMode === "recent" ? (
-            /* ── Earnings Recent — list/table via CatalystListTab ─ */
+            /* ── Earnings Recent — unchanged ────────────────────── */
             <CatalystListTab
               key="earnings_dates-recent"
               tabKey="earnings_dates"
@@ -3893,10 +4370,25 @@ export default function StocksEarningsCalendarPage() {
               identityMap={identityMap}
               onFetchIdentity={fetchIdentity}
             />
-          ) : isEarningsTab && earningsMode === "month" ? (
-            /* ── Earnings Month — this month via CatalystListTab ── */
+          ) : isEarningsTab && earningsMode === "month" && earningsSignalMode === "curated" ? (
+            /* ── Month · Curated — calendar grid ───────────────── */
+            <MonthCuratedGrid
+              data={monthCuratedData}
+              loading={monthCuratedLoading}
+              year={monthCuratedYear}
+              month={monthCuratedMonth}
+              identityMap={identityMap}
+              onNavigateMonth={navigateMonthCurated}
+              onSelectDate={(dateStr) => {
+                setEarningsMode("upcoming");
+                setEarningsSignalMode("curated");
+                setEarningsJumpDate(dateStr);
+              }}
+            />
+          ) : isEarningsTab && earningsMode === "month" && earningsSignalMode === "all" ? (
+            /* ── Month · All — full month list (unchanged) ───────── */
             <CatalystListTab
-              key="earnings_dates-month"
+              key="earnings_dates-month-all"
               tabKey="earnings_dates"
               scope={scope}
               search={search}
