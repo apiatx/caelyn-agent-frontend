@@ -4292,7 +4292,8 @@ export default function StocksEarningsCalendarPage() {
       queryFn: async () => {
         const r = await fetch(`/api/catalysts/earnings/day-curated?date=${today}`);
         if (!r.ok) throw new Error(`${r.status}`);
-        return r.json();
+        const data = await r.json();
+        return Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
       },
       staleTime: 15 * 60 * 1000,
     });
