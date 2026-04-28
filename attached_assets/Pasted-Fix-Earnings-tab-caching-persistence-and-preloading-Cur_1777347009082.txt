@@ -1,0 +1,218 @@
+Fix Earnings tab caching, persistence, and preloading.
+
+Current issue:
+The new Earnings tab views now call the right endpoints, but data disappears when:
+- switching toggles
+- switching months
+- leaving the Calendar page and coming back
+- moving next month then back
+- toggling Curated/All
+
+Example:
+Month + Curated only shows some days, then after switching next month and back, events disappear.
+
+Goal:
+Earnings data should stay loaded and cached across:
+- Recent / Day / Week / Month mode changes
+- Curated / All changes
+- selected date changes
+- week navigation
+- month navigation
+- leaving and returning to the Calendar page
+
+Important:
+Do NOT touch backend.
+Do NOT touch earnings popup internals.
+Do NOT touch non-earnings tabs.
+Do NOT reintroduce Finnhub/Polymarket/AI.
+Do NOT make huge FMP-bursting requests.
+
+Use the existing frontend fetch/cache pattern if the app already uses React Query or SWR.
+If using React Query, prefer queryClient.prefetchQuery and stable query keys.
+If not using React Query, create a page-level/module-level cache map that survives component unmounts.
+
+Required behavior:
+
+1. Stable query keys
+Every earnings query must have a stable key that includes:
+- main mode
+- signal mode
+- date/week/month
+- endpoint type
+
+Examples:
+["earnings", "day", "curated", selectedDate]
+["earnings", "day", "all", selectedDate]
+["earnings", "week", "curated", weekStart, weekEnd]
+["earnings", "week", "all", weekStart, weekEnd]
+["earnings", "month", "curated", year, month]
+["earnings", "month", "all", year, month]
+["earnings", "recent", search, scope]
+
+Do not use unstable object literals in query keys unless serialized consistently.
+Do not use the same query key for Curated and All.
+
+2. Cache settings
+Use:
+- staleTime: 15 minutes minimum
+- gcTime/cacheTime: 60 minutes minimum
+- refetchOnWindowFocus: false
+- retry: 1 max
+- keepPreviousData / placeholderData where available
+
+The UI should not blank out when navigating between cached months/weeks.
+
+3. Do not clear state on toggle switch
+When user switches:
+- Day ↔ Week ↔ Month
+- Curated ↔ All
+
+Do not clear the previously fetched data.
+Do not reset month/week/date unless explicitly required.
+Do not set arrays to [] before fetch finishes.
+Keep previous cached data visible while new data loads.
+
+4. Month Curated persistence
+For Month + Curated:
+GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+
+Cache by:
+["earnings", "month", "curated", year, month]
+
+When user goes April → May → April:
+- April should render from cache immediately.
+- It should not show a blank calendar unless the cached response genuinely had no topEvents.
+
+5. Month Curated rendering
+Month cells should render day.topEvents if present.
+Do not hide topEvents because count is missing or 0.
+
+Use:
+const visibleCount = Math.max(day.count ?? 0, day.topEvents?.length ?? 0)
+
+If topEvents.length > 0:
+- render them.
+- do not show blank cell.
+
+If count > topEvents.length:
+show "+X more"
+
+If no topEvents but count > 0:
+show count-only indicator:
+"34 calls"
+
+6. Normalize backend month days into a date map
+When month-curated response arrives, normalize:
+
+monthCuratedByDate[day.date] = day
+
+Then the calendar grid should look up by date string.
+Do not rely on array index matching the calendar grid.
+
+This likely explains why only half the days show events.
+
+7. Preload on Calendar page mount
+When Calendar page mounts and Earnings tab exists, prefetch:
+- current week curated
+- current week all
+- current selected day curated
+- current selected day all
+- current month curated
+- current month all if endpoint/path exists
+- recent earnings if already cheap
+
+Do this gently:
+- no polling
+- no parallel FMP bomb from frontend
+- stagger prefetches if needed
+- do not block page render
+
+Suggested:
+First paint:
+- current active view
+Then after 500-1000ms:
+- current week curated
+- current month curated
+- current day curated
+Then optionally:
+- next week curated
+- next month curated
+
+8. Optional global warmup
+If there is an app-level bootstrap/home layout where lightweight prefetches can happen safely, add a conservative warmup for Calendar Earnings:
+- current week curated
+- current month curated
+
+But do not block home page.
+Do not preload every month/week.
+Do not preload All monthly universe if expensive.
+
+9. Add a shared hook
+Create a hook if helpful:
+
+useEarningsCalendarCache()
+
+It should expose:
+- prefetchCurrentEarningsViews()
+- prefetchMonth(year, month, signalMode)
+- prefetchWeek(weekStart, weekEnd, signalMode)
+- getCachedMonth(year, month, signalMode)
+
+Or use existing query hooks.
+
+10. Prevent retry storms
+For all new earnings endpoints:
+- retry: 1 max
+- no polling
+- no refetchOnWindowFocus
+- no interval refetch
+
+11. Debug logs
+Temporarily add dev-only logs:
+console.log("[Earnings cache key]", key)
+console.log("[Month Curated normalized dates]", Object.keys(monthCuratedByDate))
+console.log("[Month Curated cache hit]", year, month)
+
+Also log network calls when switching months:
+- April → May → April should not call April again if still fresh.
+
+12. Validation
+Test this exact flow:
+
+A. Go to Earnings > Month > Curated
+- April shows curated events in date cells.
+
+B. Click next month.
+- May loads.
+
+C. Click previous month.
+- April immediately reappears from cache.
+- No blank calendar.
+
+D. Switch Month Curated → Month All → Month Curated
+- Month Curated still has events.
+
+E. Switch Month → Week → Month
+- Month data persists.
+
+F. Switch Week Curated → Week All → Week Curated
+- Week Curated persists.
+- Week All shows all events.
+
+G. Switch Day Curated → Day All → Day Curated
+- Day Curated persists.
+
+H. Leave Calendar page and come back within cache window.
+- Current earnings views are still loaded or instantly restored.
+
+Final response:
+Tell me:
+- files changed
+- whether React Query or local cache is used
+- exact query keys added
+- staleTime/cacheTime values
+- confirm Month Curated normalizes days by date
+- confirm April → May → April restores from cache
+- confirm switching toggles no longer clears data
+- confirm no polling/retry storm
+- confirm popup untouched

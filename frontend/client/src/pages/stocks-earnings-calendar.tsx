@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -1394,7 +1395,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
   const [fmpLoading, setFmpLoading] = useState(false);
   const fmpFetchedWeeks = useRef<Set<string>>(new Set());
 
-  // Day-clean state: enriched cards for the selected day
+  // Day-clean state: enriched cards for the selected day (React Query — survives mode switches)
   interface DayCleanEntry {
     symbol: string;
     companyName?: string;
@@ -1408,14 +1409,53 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     time?: string | null;
     period?: string | null;
   }
-  const [dayCleanEntries, setDayCleanEntries] = useState<DayCleanEntry[]>([]);
-  const [dayCleanLoading, setDayCleanLoading] = useState(false);
-  const dayCleanFetchedRef = useRef<Set<string>>(new Set());
+  const dayAllEnabled = !!selectedDayKey && selectedDayKey !== "undated";
+  const { data: dayCleanRaw, isLoading: dayCleanLoading } = useQuery<DayCleanEntry[]>({
+    queryKey: ["earnings", "day", "all", selectedDayKey],
+    queryFn: async () => {
+      const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&enrich=false`;
+      if (process.env.NODE_ENV !== "production") console.log("[day-clean request]", url);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${r.status}`);
+      const data = await r.json();
+      const arr = Array.isArray(data) ? data : (data.events || data.results || data.earnings || []);
+      if (process.env.NODE_ENV !== "production") console.log("[day-clean returned]", arr.length, "for", selectedDayKey);
+      return arr;
+    },
+    enabled: dayAllEnabled,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
+  const dayCleanEntries = dayCleanRaw ?? [];
 
-  // Day-curated state
-  const [dayCuratedEntries, setDayCuratedEntries] = useState<WeekCleanEntry[]>([]);
-  const [dayCuratedLoading, setDayCuratedLoading] = useState(false);
-  const dayCuratedFetchedRef = useRef<Set<string>>(new Set());
+  // Day-curated state (React Query — separate cache key from "all")
+  const dayCuratedEnabled = signalMode === "curated" && !!selectedDayKey && selectedDayKey !== "undated";
+  const { data: dayCuratedRaw, isLoading: dayCuratedLoading } = useQuery<WeekCleanEntry[]>({
+    queryKey: ["earnings", "day", "curated", selectedDayKey],
+    queryFn: async () => {
+      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key] day curated", selectedDayKey);
+      const r = await fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      const data = await r.json();
+      if (process.env.NODE_ENV !== "production") console.log("[Day Curated response]", data);
+      const arr: WeekCleanEntry[] = Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
+      return arr;
+    },
+    enabled: dayCuratedEnabled,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
+  const dayCuratedEntries = dayCuratedRaw ?? [];
+  // Notify parent to enrich logos when curated data lands
+  useEffect(() => {
+    if (!dayCuratedRaw || dayCuratedRaw.length === 0) return;
+    const tickers = dayCuratedRaw.map(e => e.symbol).filter(Boolean);
+    if (tickers.length > 0) onFetchIdentity(tickers);
+  }, [dayCuratedRaw, onFetchIdentity]);
 
   // Sync jumpToDate → selectedDayKey + scroll week view
   useEffect(() => {
@@ -1426,28 +1466,6 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
       setWeekStart(getSunday(d));
     }
   }, [jumpToDate]);
-
-  // Fetch day-curated when signalMode === "curated"
-  useEffect(() => {
-    if (signalMode !== "curated") return;
-    if (!selectedDayKey || selectedDayKey === "undated") return;
-    const key = `curated-${selectedDayKey}`;
-    if (dayCuratedFetchedRef.current.has(key)) return;
-    dayCuratedFetchedRef.current.add(key);
-    setDayCuratedLoading(true);
-    setDayCuratedEntries([]);
-    fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then((data) => {
-        console.log("[Day Curated response]", data);
-        const arr: WeekCleanEntry[] = Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
-        setDayCuratedEntries(arr);
-        const tickers = arr.map(e => e.symbol).filter(Boolean);
-        if (tickers.length > 0) onFetchIdentity(tickers);
-      })
-      .catch(() => { dayCuratedFetchedRef.current.delete(key); })
-      .finally(() => setDayCuratedLoading(false));
-  }, [signalMode, selectedDayKey, onFetchIdentity]);
 
   // Build Polymarket date map
   const polyDateMap = new Map<string, EarningsEntry[]>();
@@ -1517,34 +1535,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
       .finally(() => setFmpLoading(false));
   }, [weekStart, EARNINGS_CLEAN_ENABLED]);
 
-  // day-clean: fetch selected day once, only when backend router is enabled
-  useEffect(() => {
-    if (!EARNINGS_CLEAN_ENABLED) return;
-    if (!selectedDayKey || selectedDayKey === "undated") return;
-    if (dayCleanFetchedRef.current.has(selectedDayKey)) return;
-    dayCleanFetchedRef.current.add(selectedDayKey);
-    setDayCleanLoading(true);
-
-    const url = `/api/catalysts/earnings/day-clean?date=${encodeURIComponent(selectedDayKey)}&enrich=false`;
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[day-clean request]", url);
-    }
-
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then((data) => {
-        const arr = Array.isArray(data) ? data : (data.events || data.results || data.earnings || []);
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[day-clean returned]", arr.length, "for", selectedDayKey);
-        }
-        setDayCleanEntries(arr);
-      })
-      .catch(() => {
-        dayCleanFetchedRef.current.delete(selectedDayKey);
-        setDayCleanEntries([]);
-      })
-      .finally(() => setDayCleanLoading(false));
-  }, [selectedDayKey, EARNINGS_CLEAN_ENABLED]);
+  // day-clean and day-curated are now handled by useQuery above
 
   // Calendar date map: FMP upcoming-clean data (counts for day chips)
   const dateMap = new Map<string, EarningsEntry[]>(fmpDateMap);
@@ -3835,8 +3826,18 @@ function MonthCuratedGrid({
   const firstDayMonBased = (firstDay.getDay() + 6) % 7; // Mon=0…Fri=4, Sat=5, Sun=6
   const daysInMonth = new Date(year, month, 0).getDate();
 
+  // Normalize date keys to YYYY-MM-DD (backend may return YYYY-M-D or YYYY-MM-DD)
   const dayMap = new Map<string, MonthCuratedDay>();
-  for (const d of (data?.days || [])) dayMap.set(d.date, d);
+  for (const d of (data?.days || [])) {
+    const parts = d.date.split("-");
+    const normalizedKey = parts.length === 3
+      ? `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`
+      : d.date;
+    dayMap.set(normalizedKey, d);
+  }
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[Month Curated normalized dates]", [...dayMap.keys()].slice(0, 5));
+  }
 
   const cells: (string | null)[] = [];
   // Leading blank Mon-based offset (only for weekdays Mon–Fri)
@@ -3997,10 +3998,6 @@ export default function StocksEarningsCalendarPage() {
 
   // ── This Week state ──────────────────────────────────────────────
   const [weekCleanStart, setWeekCleanStart] = useState<Date>(() => getMonday(new Date()));
-  const [weekCleanData, setWeekCleanData] = useState<WeekCleanResponse | null>(null);
-  const [weekCleanLoading, setWeekCleanLoading] = useState(false);
-  const [weekCleanError, setWeekCleanError] = useState<string | null>(null);
-  const weekCleanFetchedRef = useRef<Set<string>>(new Set());
 
   const navigateWeekClean = useCallback((delta: -1 | 0 | 1) => {
     if (delta === 0) {
@@ -4010,78 +4007,79 @@ export default function StocksEarningsCalendarPage() {
     }
   }, []);
 
+  // Week Curated — React Query (stable key, 15 min stale, 60 min cache)
+  const weekCleanQueryKey = ["earnings", "week", "curated", dateKey(weekCleanStart)] as const;
+  const { data: weekCleanData, isLoading: weekCleanLoading, error: _weekCleanErr } = useQuery<WeekCleanResponse>({
+    queryKey: weekCleanQueryKey,
+    queryFn: async () => {
+      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key]", weekCleanQueryKey);
+      const weekEnd = addDays(weekCleanStart, 4);
+      const params = new URLSearchParams({
+        weekStart: dateKey(weekCleanStart),
+        weekEnd: dateKey(weekEnd),
+        limit_per_session: "8",
+        max_total: "60",
+      });
+      const r = await fetch(`/api/catalysts/earnings/week-clean?${params}`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      return r.json();
+    },
+    enabled: activeTab === "earnings_dates" && earningsMode === "thisweek",
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
+  const weekCleanError = _weekCleanErr ? "Could not load curated earnings for this week." : null;
+  // Enrich tickers when week-clean data arrives
   useEffect(() => {
-    if (earningsMode !== "thisweek") return;
-    const key = dateKey(weekCleanStart);
-    if (weekCleanFetchedRef.current.has(key)) return;
-    weekCleanFetchedRef.current.add(key);
-    setWeekCleanLoading(true);
-    setWeekCleanError(null);
-    setWeekCleanData(null);
-    const weekEnd = addDays(weekCleanStart, 4);
-    const params = new URLSearchParams({
-      weekStart: dateKey(weekCleanStart),
-      weekEnd: dateKey(weekEnd),
-      limit_per_session: "8",
-      max_total: "60",
-    });
-    fetch(`/api/catalysts/earnings/week-clean?${params}`)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then((data: WeekCleanResponse) => {
-        setWeekCleanData(data);
-        const allTickers = (data.days || [])
-          .flatMap(d => d.entries || [])
-          .map(e => e.symbol)
-          .filter(Boolean);
-        if (allTickers.length > 0) fetchIdentity(allTickers);
-      })
-      .catch(() => {
-        weekCleanFetchedRef.current.delete(key);
-        setWeekCleanError("Could not load curated earnings for this week.");
-      })
-      .finally(() => setWeekCleanLoading(false));
-  }, [earningsMode, weekCleanStart, fetchIdentity]);
+    if (!weekCleanData) return;
+    const tickers = (weekCleanData.days || []).flatMap(d => d.entries || []).map(e => e.symbol).filter(Boolean);
+    if (tickers.length > 0) fetchIdentity(tickers);
+  }, [weekCleanData, fetchIdentity]);
 
-  // ── Week All state ────────────────────────────────────────────────
-  const [weekAllData, setWeekAllData] = useState<WeekAllResponse | null>(null);
-  const [weekAllLoading, setWeekAllLoading] = useState(false);
-  const weekAllFetchedRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (earningsMode !== "thisweek" || earningsSignalMode !== "all") return;
-    const key = dateKey(weekCleanStart);
-    if (weekAllFetchedRef.current.has(key)) return;
-    weekAllFetchedRef.current.add(key);
-    setWeekAllLoading(true);
-    setWeekAllData(null);
-    const weekEnd = addDays(weekCleanStart, 4);
-    fetch(`/api/catalysts/earnings/week-all?weekStart=${dateKey(weekCleanStart)}&weekEnd=${dateKey(weekEnd)}`)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then(data => { console.log("[Week All response]", data); setWeekAllData(data); })
-      .catch(() => { weekAllFetchedRef.current.delete(key); })
-      .finally(() => setWeekAllLoading(false));
-  }, [earningsMode, earningsSignalMode, weekCleanStart]);
+  // Week All — React Query (separate key from curated)
+  const weekAllQueryKey = ["earnings", "week", "all", dateKey(weekCleanStart)] as const;
+  const { data: weekAllData, isLoading: weekAllLoading } = useQuery<WeekAllResponse>({
+    queryKey: weekAllQueryKey,
+    queryFn: async () => {
+      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key]", weekAllQueryKey);
+      const weekEnd = addDays(weekCleanStart, 4);
+      const r = await fetch(`/api/catalysts/earnings/week-all?weekStart=${dateKey(weekCleanStart)}&weekEnd=${dateKey(weekEnd)}`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      const data = await r.json();
+      if (process.env.NODE_ENV !== "production") console.log("[Week All response]", data);
+      return data;
+    },
+    enabled: activeTab === "earnings_dates" && earningsMode === "thisweek" && earningsSignalMode === "all",
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
 
   // ── Month Curated state ───────────────────────────────────────────
   const [monthCuratedYear, setMonthCuratedYear] = useState<number>(() => new Date().getFullYear());
   const [monthCuratedMonth, setMonthCuratedMonth] = useState<number>(() => new Date().getMonth() + 1);
-  const [monthCuratedData, setMonthCuratedData] = useState<MonthCuratedResponse | null>(null);
-  const [monthCuratedLoading, setMonthCuratedLoading] = useState(false);
-  const monthCuratedFetchedRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (earningsMode !== "month" || earningsSignalMode !== "curated") return;
-    const key = `${monthCuratedYear}-${monthCuratedMonth}`;
-    if (monthCuratedFetchedRef.current.has(key)) return;
-    monthCuratedFetchedRef.current.add(key);
-    setMonthCuratedLoading(true);
-    setMonthCuratedData(null);
-    fetch(`/api/catalysts/earnings/month-curated?year=${monthCuratedYear}&month=${monthCuratedMonth}`)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then(data => { console.log("[Month Curated response]", data); setMonthCuratedData(data); })
-      .catch(() => { monthCuratedFetchedRef.current.delete(key); })
-      .finally(() => setMonthCuratedLoading(false));
-  }, [earningsMode, earningsSignalMode, monthCuratedYear, monthCuratedMonth]);
+  // Month Curated — React Query (Apr→May→Apr restores from cache instantly)
+  const monthCuratedQueryKey = ["earnings", "month", "curated", monthCuratedYear, monthCuratedMonth] as const;
+  const { data: monthCuratedData, isLoading: monthCuratedLoading } = useQuery<MonthCuratedResponse>({
+    queryKey: monthCuratedQueryKey,
+    queryFn: async () => {
+      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key]", monthCuratedQueryKey);
+      const r = await fetch(`/api/catalysts/earnings/month-curated?year=${monthCuratedYear}&month=${monthCuratedMonth}`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      const data = await r.json();
+      if (process.env.NODE_ENV !== "production") console.log("[Month Curated response]", data);
+      return data;
+    },
+    enabled: activeTab === "earnings_dates" && earningsMode === "month" && earningsSignalMode === "curated",
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
 
   const navigateMonthCurated = useCallback((delta: number) => {
     if (delta === 0) {
