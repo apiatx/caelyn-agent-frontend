@@ -1,0 +1,120 @@
+The UI still has not changed. Do not keep editing render filters blindly.
+
+The likely issue is that the new backend endpoints are not actually being called successfully from the browser, or the Express proxy does not forward them.
+
+New backend endpoints that must work from the frontend browser:
+
+GET /api/catalysts/earnings/day-curated?date=YYYY-MM-DD
+GET /api/catalysts/earnings/week-all?weekStart=YYYY-MM-DD&weekEnd=YYYY-MM-DD
+GET /api/catalysts/earnings/month-curated?year=YYYY&month=M
+
+Critical task:
+Verify the actual browser Network tab and frontend server proxy.
+
+Step 1 — Network verification
+In the browser Network tab, switch to each mode and confirm exact request URLs, status codes, and response bodies:
+
+1. Day + Curated
+Expected request:
+GET /api/catalysts/earnings/day-curated?date={selectedDate}
+
+2. Week + All
+Expected request:
+GET /api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+3. Month + Curated
+Expected request:
+GET /api/catalysts/earnings/month-curated?year={year}&month={month}
+
+For each, report:
+- Was the request made?
+- Status code?
+- Response body shape?
+- Number of events/topEvents/days returned?
+- Any 404, 401, 402, 500, or proxy error?
+
+Step 2 — Check Express proxy routes
+Open frontend/server/routes.ts.
+
+Confirm proxy routes exist for all three new endpoints:
+- /api/catalysts/earnings/day-curated
+- /api/catalysts/earnings/week-all
+- /api/catalysts/earnings/month-curated
+
+If they do not exist, add them.
+
+They should forward to the FastAPI backend exactly like the existing working earnings routes:
+- /api/catalysts/earnings/day-clean
+- /api/catalysts/earnings/week-clean
+- /api/catalysts/earnings/upcoming-clean
+
+Do not change backend.
+Do not touch Day All, Week Curated, Month All, Recent, popup, non-earnings tabs.
+
+Step 3 — Add proxy routes if missing
+Add safe proxy handlers for:
+
+GET /api/catalysts/earnings/day-curated
+GET /api/catalysts/earnings/week-all
+GET /api/catalysts/earnings/month-curated
+
+Forward all query params exactly.
+Include the same auth/API key headers used by existing earnings-clean proxy routes.
+Use the same timeout/error pattern as existing routes.
+
+Step 4 — Confirm frontend mode endpoint mapping
+In stocks-earnings-calendar.tsx, verify:
+
+Day + Curated calls:
+/api/catalysts/earnings/day-curated?date={selectedDate}
+
+Day + All calls:
+existing /api/catalysts/earnings/day-clean?date={selectedDate}&enrich=false
+
+Week + Curated calls:
+existing /api/catalysts/earnings/week-clean?weekStart={weekStart}&weekEnd={weekEnd}
+
+Week + All calls:
+/api/catalysts/earnings/week-all?weekStart={weekStart}&weekEnd={weekEnd}
+
+Month + Curated calls:
+/api/catalysts/earnings/month-curated?year={year}&month={month}
+
+Month + All calls:
+existing working Month All path
+
+Step 5 — Render validation
+After proxy/routes are confirmed:
+
+Day Curated:
+- if backend returns events.length > 0, render them.
+- do not show empty state.
+
+Week All:
+- if backend returns days/events/eventsByDate with entries, render them.
+- do not show “No earnings data for this week.”
+
+Month Curated:
+- if backend returns day.topEvents, render them in calendar cells.
+- do not show blank month calendar.
+
+Step 6 — Add temporary dev logs
+Add development-only logs:
+
+console.log("[Earnings mode]", earningsMode, earningsSignalMode);
+console.log("[Day Curated response]", dayCuratedData);
+console.log("[Week All response]", weekAllData);
+console.log("[Month Curated response]", monthCuratedData);
+
+Remove or keep dev-only guarded logs after validation.
+
+Final response:
+Tell me:
+- Whether the three new requests were being made from the browser
+- Status code for each
+- Whether proxy routes were missing
+- Which file changed
+- Confirm Day Curated now renders backend events
+- Confirm Week All now renders backend events
+- Confirm Month Curated now renders day.topEvents
+- Confirm Recent/popup untouched

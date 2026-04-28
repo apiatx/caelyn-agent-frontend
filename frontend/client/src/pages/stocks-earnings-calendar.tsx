@@ -1439,6 +1439,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     fetch(`/api/catalysts/earnings/day-curated?date=${encodeURIComponent(selectedDayKey)}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((data) => {
+        console.log("[Day Curated response]", data);
         const arr: WeekCleanEntry[] = Array.isArray(data) ? data : (data.events || data.entries || data.earnings || []);
         setDayCuratedEntries(arr);
         const tickers = arr.map(e => e.symbol).filter(Boolean);
@@ -3953,6 +3954,7 @@ export default function StocksEarningsCalendarPage() {
   const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent" | "month">("thisweek");
   const [earningsSignalMode, setEarningsSignalMode] = useState<"curated" | "all">("curated");
   const [earningsJumpDate, setEarningsJumpDate] = useState<string | null>(null);
+  useEffect(() => { console.log("[Earnings mode]", earningsMode, earningsSignalMode); }, [earningsMode, earningsSignalMode]);
   const switchTab = (key: string) => {
     setActiveTab(key);
     if (key === "earnings_dates") { setEarningsMode("thisweek"); setEarningsSignalMode("curated"); }
@@ -4057,7 +4059,7 @@ export default function StocksEarningsCalendarPage() {
     const weekEnd = addDays(weekCleanStart, 4);
     fetch(`/api/catalysts/earnings/week-all?weekStart=${dateKey(weekCleanStart)}&weekEnd=${dateKey(weekEnd)}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then(data => setWeekAllData(data))
+      .then(data => { console.log("[Week All response]", data); setWeekAllData(data); })
       .catch(() => { weekAllFetchedRef.current.delete(key); })
       .finally(() => setWeekAllLoading(false));
   }, [earningsMode, earningsSignalMode, weekCleanStart]);
@@ -4078,7 +4080,7 @@ export default function StocksEarningsCalendarPage() {
     setMonthCuratedData(null);
     fetch(`/api/catalysts/earnings/month-curated?year=${monthCuratedYear}&month=${monthCuratedMonth}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then(data => setMonthCuratedData(data))
+      .then(data => { console.log("[Month Curated response]", data); setMonthCuratedData(data); })
       .catch(() => { monthCuratedFetchedRef.current.delete(key); })
       .finally(() => setMonthCuratedLoading(false));
   }, [earningsMode, earningsSignalMode, monthCuratedYear, monthCuratedMonth]);

@@ -3638,6 +3638,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/catalysts/earnings/day-curated', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${FC_URL}/api/catalysts/earnings/day-curated${qs ? '?' + qs : ''}`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/catalysts/earnings/week-all', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${FC_URL}/api/catalysts/earnings/week-all${qs ? '?' + qs : ''}`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/catalysts/earnings/month-curated', async (req, res) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${FC_URL}/api/catalysts/earnings/month-curated${qs ? '?' + qs : ''}`, { headers: fcHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      return res.status(500).json({ error: e?.message || 'Fetch failed' });
+    }
+  });
+
   app.get('/api/catalysts/filters', async (req, res) => {
     const ctrl = new AbortController();
     setTimeout(() => ctrl.abort(), 10000);
