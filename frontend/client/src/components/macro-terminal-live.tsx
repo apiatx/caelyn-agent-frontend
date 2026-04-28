@@ -57,14 +57,14 @@ const T = {
 
 // ─── Tab config ─────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'overview',   label: 'OVERVIEW',   shortcut: '1' },
-  { id: 'rates',      label: 'RATES',      shortcut: '2' },
-  { id: 'inflation',  label: 'INFLATION',  shortcut: '3' },
-  { id: 'growth',     label: 'GROWTH',     shortcut: '4' },
-  { id: 'labor',      label: 'LABOR',      shortcut: '5' },
-  { id: 'sentiment',  label: 'RISK',       shortcut: '6' },
-  { id: 'watch',      label: 'WATCH',      shortcut: '7' },
-  { id: 'trade',      label: 'TRADE',      shortcut: '8' },
+  { id: 'overview',   label: 'OVERVIEW',              shortcut: '1' },
+  { id: 'trade',      label: 'SHOULD I TRADE TODAY?', shortcut: '2' },
+  { id: 'rates',      label: 'RATES',                 shortcut: '3' },
+  { id: 'inflation',  label: 'INFLATION',             shortcut: '4' },
+  { id: 'growth',     label: 'GROWTH',                shortcut: '5' },
+  { id: 'labor',      label: 'LABOR',                 shortcut: '6' },
+  { id: 'sentiment',  label: 'RISK',                  shortcut: '7' },
+  { id: 'watch',      label: 'WORLD',                 shortcut: '8' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -2105,26 +2105,8 @@ function RiskTab({ data }: { data: any }) {
   );
 }
 
-// ─── TAB 7: WATCH ─────────────────────────────────────────────────────────────
-// All TradingView market widgets in a scrollable terminal panel
-
-const WatchMarketOverview = memo(function WatchMarketOverview({ config }: { config: object }) {
-  const container = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!container.current) return;
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
-    script.type = 'text/javascript';
-    script.async = true;
-    script.innerHTML = JSON.stringify(config);
-    container.current.appendChild(script);
-  }, []);
-  return (
-    <div className="tradingview-widget-container" ref={container} style={{ width: '100%', height: '100%' }}>
-      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
-    </div>
-  );
-});
+// ─── TAB 8: WORLD ─────────────────────────────────────────────────────────────
+// Forex heatmap + Economic map
 
 const WatchForexHeatmap = memo(function WatchForexHeatmap() {
   const container = useRef<HTMLDivElement>(null);
@@ -2135,24 +2117,6 @@ const WatchForexHeatmap = memo(function WatchForexHeatmap() {
     script.type = 'text/javascript';
     script.async = true;
     script.innerHTML = JSON.stringify({ colorTheme: 'dark', isTransparent: true, locale: 'en', currencies: ['EUR','USD','JPY','GBP','CHF','AUD','CAD','NZD','CNY'], width: '100%', height: '100%' });
-    container.current.appendChild(script);
-  }, []);
-  return (
-    <div className="tradingview-widget-container" ref={container} style={{ width: '100%', height: '100%' }}>
-      <div className="tradingview-widget-container__widget" style={{ width: '100%', height: '100%' }} />
-    </div>
-  );
-});
-
-const WatchEconomicCalendar = memo(function WatchEconomicCalendar() {
-  const container = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!container.current) return;
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
-    script.type = 'text/javascript';
-    script.async = true;
-    script.innerHTML = JSON.stringify({ colorTheme: 'dark', isTransparent: false, locale: 'en', countryFilter: 'ar,au,br,ca,cn,fr,de,in,id,it,jp,kr,mx,ru,sa,za,tr,gb,us,eu', importanceFilter: '-1,0,1', width: '100%', height: '100%' });
     container.current.appendChild(script);
   }, []);
   return (
@@ -2187,11 +2151,6 @@ function WatchEconomicMap() {
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }
 
-const watchIndicesConfig = { title: 'Indices', tabs: [{ title: 'US & Canada', symbols: [{ s: 'FOREXCOM:SPXUSD', d: 'S&P 500' }, { s: 'FOREXCOM:NSXUSD', d: 'US 100' }, { s: 'INDEX:DXY', d: 'U.S. Dollar Index' }, { s: 'FOREXCOM:DJI', d: 'Dow 30' }, { s: 'BMFBOVESPA:ISP1!', d: 'S&P Futures' }] }, { title: 'Europe', symbols: [{ s: 'INDEX:SX5E', d: 'Euro Stoxx 50' }, { s: 'FOREXCOM:UKXGBP', d: 'UK 100' }, { s: 'INDEX:DEU40', d: 'DAX' }, { s: 'INDEX:CAC40', d: 'CAC 40' }] }, { title: 'Asia/Pacific', symbols: [{ s: 'INDEX:NKY', d: 'Nikkei 225' }, { s: 'INDEX:HSI', d: 'Hang Seng' }, { s: 'BSE:SENSEX', d: 'Sensex' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
-const watchStocksConfig = { title: 'Stocks', tabs: [{ title: 'Financial', symbols: [{ s: 'NYSE:JPM', d: 'JPMorgan' }, { s: 'NYSE:WFC', d: 'Wells Fargo' }, { s: 'NYSE:BAC', d: 'Bank of America' }, { s: 'NYSE:C', d: 'Citigroup' }, { s: 'NYSE:MA', d: 'Mastercard' }] }, { title: 'Technology', symbols: [{ s: 'NASDAQ:AAPL', d: 'Apple' }, { s: 'NASDAQ:GOOGL', d: 'Alphabet' }, { s: 'NASDAQ:MSFT', d: 'Microsoft' }, { s: 'NASDAQ:NVDA', d: 'NVIDIA' }, { s: 'NASDAQ:META', d: 'Meta' }] }, { title: 'Services', symbols: [{ s: 'NASDAQ:AMZN', d: 'Amazon' }, { s: 'NYSE:T', d: 'AT&T' }, { s: 'NYSE:WMT', d: 'Walmart' }, { s: 'NYSE:V', d: 'Visa' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
-const watchCurrenciesConfig = { title: 'Currencies', tabs: [{ title: 'Major', symbols: [{ s: 'FX_IDC:EURUSD', d: 'EUR/USD' }, { s: 'FX_IDC:USDJPY', d: 'USD/JPY' }, { s: 'FX_IDC:GBPUSD', d: 'GBP/USD' }, { s: 'FX_IDC:AUDUSD', d: 'AUD/USD' }, { s: 'FX_IDC:USDCAD', d: 'USD/CAD' }, { s: 'FX_IDC:USDCHF', d: 'USD/CHF' }] }, { title: 'Minor', symbols: [{ s: 'FX_IDC:EURGBP', d: 'EUR/GBP' }, { s: 'FX_IDC:EURJPY', d: 'EUR/JPY' }, { s: 'FX_IDC:GBPJPY', d: 'GBP/JPY' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
-const watchCryptoConfig = { title: 'Cryptocurrencies', tabs: [{ title: 'Overview', symbols: [{ s: 'CRYPTOCAP:TOTAL' }, { s: 'BITSTAMP:BTCUSD' }, { s: 'BITSTAMP:ETHUSD' }, { s: 'COINBASE:SOLUSD' }, { s: 'BINANCE:AVAXUSD' }] }, { title: 'Bitcoin', symbols: [{ s: 'BITSTAMP:BTCUSD' }, { s: 'COINBASE:BTCEUR' }, { s: 'COINBASE:BTCGBP' }] }, { title: 'Ethereum', symbols: [{ s: 'BITSTAMP:ETHUSD' }, { s: 'KRAKEN:ETHEUR' }, { s: 'BINANCE:ETHBTC' }] }], width: '100%', height: '100%', showChart: true, showFloatingTooltip: false, locale: 'en', plotLineColorGrowing: '#2962FF', plotLineColorFalling: '#2962FF', belowLineFillColorGrowing: 'rgba(41,98,255,0.12)', belowLineFillColorFalling: 'rgba(41,98,255,0.12)', belowLineFillColorGrowingBottom: 'rgba(41,98,255,0)', belowLineFillColorFallingBottom: 'rgba(41,98,255,0)', gridLineColor: 'rgba(240,243,250,0)', scaleFontColor: 'rgba(120,123,134,1)', showSymbolLogo: true, symbolActiveColor: 'rgba(41,98,255,0.12)', colorTheme: 'dark' };
-
 function WatchTab() {
   const panelStyle = {
     background: T.surface, border: `1px solid ${T.border}`, borderRadius: 2, overflow: 'hidden',
@@ -2202,46 +2161,6 @@ function WatchTab() {
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-      {/* ── ECONOMIC CALENDAR — full width ───────────────────────────── */}
-      <div style={{ ...panelStyle, height: 580 }}>
-        <div style={labelStyle}>ECONOMIC CALENDAR</div>
-        <div style={{ height: 'calc(100% - 37px)' }}>
-          <WatchEconomicCalendar />
-        </div>
-      </div>
-
-      {/* ── INDICES + STOCKS — side by side ──────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ ...panelStyle, height: 500 }}>
-          <div style={labelStyle}>INDICES</div>
-          <div style={{ height: 'calc(100% - 37px)' }}>
-            <WatchMarketOverview config={watchIndicesConfig} />
-          </div>
-        </div>
-        <div style={{ ...panelStyle, height: 500 }}>
-          <div style={labelStyle}>STOCKS</div>
-          <div style={{ height: 'calc(100% - 37px)' }}>
-            <WatchMarketOverview config={watchStocksConfig} />
-          </div>
-        </div>
-      </div>
-
-      {/* ── CURRENCIES + CRYPTO — side by side ───────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ ...panelStyle, height: 500 }}>
-          <div style={labelStyle}>CURRENCIES</div>
-          <div style={{ height: 'calc(100% - 37px)' }}>
-            <WatchMarketOverview config={watchCurrenciesConfig} />
-          </div>
-        </div>
-        <div style={{ ...panelStyle, height: 500 }}>
-          <div style={labelStyle}>CRYPTOCURRENCIES</div>
-          <div style={{ height: 'calc(100% - 37px)' }}>
-            <WatchMarketOverview config={watchCryptoConfig} />
-          </div>
-        </div>
-      </div>
 
       {/* ── FOREX HEATMAP — full width ────────────────────────────────── */}
       <div style={{ ...panelStyle, height: 520 }}>
