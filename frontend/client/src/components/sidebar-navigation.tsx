@@ -63,7 +63,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'caelyn-ai',
-      label: 'AI Terminal',
+      label: 'Terminal',
       icon: <Brain className="w-4 h-4" />,
       path: '/app/caelyn-ai'
     },
@@ -123,13 +123,13 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
     },
     {
       id: 'strategy-screener',
-      label: 'Strategy Screener',
+      label: 'Chain Reaction',
       icon: <ScrollText className="w-4 h-4" />,
       path: '/app/strategy-screener'
     },
     {
       id: 'stocks-screening',
-      label: 'Screening',
+      label: 'Stock Screener',
       icon: <Search className="w-4 h-4" />,
       path: '/app/stocks/screening'
     },

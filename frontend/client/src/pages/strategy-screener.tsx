@@ -566,9 +566,12 @@ export default function StrategyScreenerPage() {
                   </>
                 )}
               </div>
-              <h1 style={{ fontFamily:C.sans, fontSize:28, fontWeight:700, color:C.bright, margin:'0 0 8px', letterSpacing:'-0.01em' }}>
-                Strategy Screener
+              <h1 style={{ fontFamily:C.sans, fontSize:28, fontWeight:700, color:C.bright, margin:'0 0 6px', letterSpacing:'-0.01em' }}>
+                Chain Reaction
               </h1>
+              <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 10px', maxWidth:620, lineHeight:1.65 }}>
+                Find anchor stocks that control major themes — and map the suppliers, beneficiaries, catalysts, fundamentals, and technical setups moving around them.
+              </p>
               {snapshot?.summary && (
                 <p style={{ fontFamily:C.sans, fontSize:14, color:C.dim, margin:'0 0 10px', maxWidth:600, lineHeight:1.7 }}>
                   {snapshot.summary}
