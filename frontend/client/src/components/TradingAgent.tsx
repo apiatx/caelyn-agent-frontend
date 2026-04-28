@@ -3656,11 +3656,11 @@ export default function TradingAgent() {
                 <div style={{ fontSize:9, color:'#4b5563', fontFamily:"'JetBrains Mono', monospace", marginTop:2 }}>Route to one model directly</div>
               </div>
               {([
-                { id: 'claude' as const,      label: 'Agent Athena (Strategist) - Claude',      icon: '🟣' },
-                { id: 'gpt-4o' as const,      label: 'Agent Nexus (Coordinator) - ChatGPT',     icon: '🟢' },
-                { id: 'grok' as const,        label: 'Agent Pulse (Sentiment) - Grok',          icon: '⚡' },
-                { id: 'gemini' as const,      label: 'Agent Atlas (Research) - Gemini',         icon: '🔵' },
-                { id: 'perplexity' as const,  label: 'Agent Beacon (News) - Perplexity',        icon: '🌐' },
+                { id: 'claude' as const,      label: 'Athena (Strategist)', icon: '🟣' },
+                { id: 'gpt-4o' as const,      label: 'Nexus (Coordinator)', icon: '🟢' },
+                { id: 'grok' as const,        label: 'Pulse (Sentiment)',   icon: '⚡' },
+                { id: 'gemini' as const,      label: 'Atlas (Research)',    icon: '🔵' },
+                { id: 'perplexity' as const,  label: 'Beacon (News)',       icon: '🌐' },
                 { id: 'deepseek' as const,    label: 'Deepseek',    icon: '🔷' },
               ]).map(({ id, label, icon }) => {
                 const isActive = !collabConfig && selectedModel === id;
@@ -3725,12 +3725,12 @@ export default function TradingAgent() {
               <div style={{ padding:'6px 14px 8px', borderBottom:'1px solid rgba(255,255,255,0.06)', opacity: isReasoningLocked ? 0.5 : 1, pointerEvents: isReasoningLocked ? 'none' : 'auto' }}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>Reasoning Model{isReasoningLocked && <span title="Locked in this preset" style={{ fontSize:9, opacity:0.7 }}>🔒</span>}</div>
                 {(collabOptions?.reasoning_models || [
-                  { id: 'claude', label: 'Agent Athena (Strategist) - Claude', icon: '🟣' },
-                  { id: 'gpt-4o', label: 'Agent Nexus (Coordinator) - ChatGPT', icon: '🟢' },
-                  { id: 'gemini', label: 'Agent Atlas (Research) - Gemini', icon: '🔵' },
-                  { id: 'grok', label: 'Agent Pulse (Sentiment) - Grok', icon: '⚡' },
-                  { id: 'perplexity', label: 'Agent Beacon (News) - Perplexity', icon: '🌐' },
-                  { id: 'deepseek', label: 'Deepseek', icon: '🔷' },
+                  { id: 'claude', label: 'Athena (Strategist)', icon: '🟣' },
+                  { id: 'gpt-4o', label: 'Nexus (Coordinator)', icon: '🟢' },
+                  { id: 'gemini', label: 'Atlas (Research)',    icon: '🔵' },
+                  { id: 'grok', label: 'Pulse (Sentiment)',    icon: '⚡' },
+                  { id: 'perplexity', label: 'Beacon (News)',  icon: '🌐' },
+                  { id: 'deepseek', label: 'Deepseek',         icon: '🔷' },
                 ]).map((m: any) => (
                   <div key={m.id} onClick={() => { if (!isReasoningLocked) setCollabConfig(prev => prev ? { ...prev, primaryModel: m.id, reasoningModelUI: m.id } : { ...DEFAULT_COLLAB_STATE, primaryModel: m.id, reasoningModelUI: m.id }); }} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 8px', cursor:'pointer', borderRadius:6, background: collabConfig?.reasoningModelUI === m.id ? 'rgba(59,130,246,0.15)' : 'transparent', transition:'background 0.1s' }}>
                     <div style={{ width:14, height:14, borderRadius:'50%', border: collabConfig?.reasoningModelUI === m.id ? '2px solid #3b82f6' : '2px solid #4b5563', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -3745,11 +3745,11 @@ export default function TradingAgent() {
               <div style={{ padding:'6px 14px 8px', opacity: isAgentsLocked ? 0.5 : 1, pointerEvents: isAgentsLocked ? 'none' : 'auto' }}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.5px', color:'#6b7280', marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>Collaborating Agents{isAgentsLocked && <span title="Locked in this preset" style={{ fontSize:9, opacity:0.7 }}>🔒</span>}</div>
                 {(collabOptions?.collab_agents || [
-                  { id: 'claude', label: 'Agent Athena (Strategist) - Claude', icon: '🟣' },
-                  { id: 'grok', label: 'Agent Pulse (Sentiment) - Grok', icon: '⚡' },
-                  { id: 'gpt-4o', label: 'Agent Nexus (Coordinator) - ChatGPT', icon: '🟢' },
-                  { id: 'gemini', label: 'Agent Atlas (Research) - Gemini', icon: '🔵' },
-                  { id: 'perplexity', label: 'Agent Beacon (News) - Perplexity', icon: '🌐' },
+                  { id: 'claude', label: 'Athena (Strategist)', icon: '🟣' },
+                  { id: 'grok', label: 'Pulse (Sentiment)',   icon: '⚡' },
+                  { id: 'gpt-4o', label: 'Nexus (Coordinator)', icon: '🟢' },
+                  { id: 'gemini', label: 'Atlas (Research)',    icon: '🔵' },
+                  { id: 'perplexity', label: 'Beacon (News)',  icon: '🌐' },
                   { id: 'deepseek', label: 'Deepseek', icon: '🔷' },
                 ]).map((a: any) => {
                   const agents = collabConfig?.collabAgents || [];
