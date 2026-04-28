@@ -3805,8 +3805,8 @@ export default function StocksEarningsCalendarPage() {
                 </button>
               </div>
               {earningsMode === "thisweek" ? (
-                <>
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => navigateWeekClean(-1)}
                       className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
@@ -3828,17 +3828,17 @@ export default function StocksEarningsCalendarPage() {
                       <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
-                  <span className="text-[11px] font-semibold text-white/50 flex-shrink-0">
+                  <span className="text-[11px] font-semibold text-white/50">
                     {MONTH_NAMES_SHORT[weekCleanStart.getMonth()]} {weekCleanStart.getDate()} – {MONTH_NAMES_SHORT[addDays(weekCleanStart, 4).getMonth()]} {addDays(weekCleanStart, 4).getDate()}, {addDays(weekCleanStart, 4).getFullYear()}
                   </span>
                   {weekCleanData && (weekCleanData.days || []).reduce((s, d) => s + (d.count || 0), 0) > 0 && (
-                    <span className="text-[9px] text-white/25 flex-shrink-0">
+                    <span className="text-[9px] text-white/25">
                       {(weekCleanData.days || []).reduce((s, d) => s + (d.count || 0), 0).toLocaleString()} calls this week
                     </span>
                   )}
-                </>
+                </div>
               ) : (
-                <span className="text-[10px] text-white/25">
+                <span className="ml-auto text-[10px] text-white/25 flex-shrink-0">
                   {earningsMode === "upcoming" ? "Selected day's earnings calls" : earningsMode === "month" ? "This month's earnings reports" : "List — recent earnings reports"}
                 </span>
               )}
