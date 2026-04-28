@@ -1441,6 +1441,489 @@ const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "", sty
   );
 };
 
+// ─── Social/Fundamental Screener ─────────────────────────────────
+type ScreenerTab = 'social' | 'fundamental';
+
+const DASH = '—';
+
+function fmtCompact(n: any): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9)  return `${sign}${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6)  return `${sign}${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3)  return `${sign}${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}${abs.toFixed(0)}`;
+}
+
+function fmtCurrencyCompact(n: any): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9)  return `${sign}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6)  return `${sign}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3)  return `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}$${abs.toFixed(0)}`;
+}
+
+function fmtPercent(n: any, digits = 2): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  const sign = num > 0 ? '+' : '';
+  return `${sign}${num.toFixed(digits)}%`;
+}
+
+function fmtRatio(n: any): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  return `${num.toFixed(2)}x`;
+}
+
+function fmtScore(n: any): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  return `${Math.round(num)}`;
+}
+
+function fmtInt(n: any): string {
+  if (n === null || n === undefined || n === '') return DASH;
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return DASH;
+  return `${Math.round(num).toLocaleString()}`;
+}
+
+function pctColor(n: any): string {
+  if (n === null || n === undefined || n === '') return '#94a3b8';
+  const num = typeof n === 'number' ? n : Number(n);
+  if (!Number.isFinite(num)) return '#94a3b8';
+  if (num > 0) return '#22c55e';
+  if (num < 0) return '#ef4444';
+  return '#94a3b8';
+}
+
+function getSortableValue(row: any, key: string): number | string | null {
+  const v = row?.[key];
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return v;
+  const num = Number(v);
+  if (Number.isFinite(num)) return num;
+  return String(v).toLowerCase();
+}
+
+interface SocialScreenerSectionProps {
+  socialScreener: any;
+  bundledFundamental: any;
+  onTickerClick: (sym: string, dataObj?: any, context?: string, name?: string) => void;
+}
+
+function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerClick }: SocialScreenerSectionProps) {
+  const [tab, setTab] = useState<ScreenerTab>('social');
+  const [search, setSearch] = useState('');
+  const [themeFilter, setThemeFilter] = useState<string>('');
+  const [sortKey, setSortKey] = useState<string>('social_acceleration_score');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // Lazy fundamental state
+  const [lazyFundamental, setLazyFundamental] = useState<any>(null);
+  const [lazyLoading, setLazyLoading] = useState(false);
+  const [lazyError, setLazyError] = useState(false);
+  const lazyAttempted = useRef(false);
+
+  const bundledFundIsUsable = !!(
+    bundledFundamental &&
+    Array.isArray(bundledFundamental.rows) &&
+    bundledFundamental.rows.length > 0
+  );
+
+  const fundamentalData = bundledFundIsUsable ? bundledFundamental : lazyFundamental;
+
+  // When user opens fundamentals tab and bundled is not usable, lazy-fetch once
+  useEffect(() => {
+    if (tab !== 'fundamental') return;
+    if (bundledFundIsUsable) return;
+    if (lazyAttempted.current) return;
+    lazyAttempted.current = true;
+    setLazyLoading(true);
+    fetch('/api/social/fundamental-screener')
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
+      .then(json => { setLazyFundamental(json); })
+      .catch(() => { setLazyError(true); })
+      .finally(() => { setLazyLoading(false); });
+  }, [tab, bundledFundIsUsable]);
+
+  // Reset sort defaults when tab changes
+  useEffect(() => {
+    if (tab === 'social') {
+      setSortKey('social_acceleration_score');
+      setSortDir('desc');
+    } else {
+      setSortKey('market_cap');
+      setSortDir('desc');
+    }
+  }, [tab]);
+
+  const socialRows: any[] = Array.isArray(socialScreener?.rows) ? socialScreener.rows : [];
+  const fundRows: any[] = Array.isArray(fundamentalData?.rows) ? fundamentalData.rows : [];
+
+  // Theme list from social rows
+  const themeOptions = (() => {
+    const set = new Set<string>();
+    socialRows.forEach(r => { if (r?.theme && typeof r.theme === 'string') set.add(r.theme); });
+    return Array.from(set).sort();
+  })();
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const sortRows = (rows: any[]) => {
+    const out = [...rows];
+    out.sort((a, b) => {
+      const av = getSortableValue(a, sortKey);
+      const bv = getSortableValue(b, sortKey);
+      // Nulls always sort last
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      let cmp = 0;
+      if (typeof av === 'number' && typeof bv === 'number') cmp = av - bv;
+      else cmp = String(av).localeCompare(String(bv));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    // Secondary sort for default social view
+    if (tab === 'social' && sortKey === 'social_acceleration_score') {
+      out.sort((a, b) => {
+        const aa = getSortableValue(a, 'social_acceleration_score');
+        const bb = getSortableValue(b, 'social_acceleration_score');
+        const an = typeof aa === 'number' ? aa : -Infinity;
+        const bn = typeof bb === 'number' ? bb : -Infinity;
+        if (bn !== an) return sortDir === 'asc' ? an - bn : bn - an;
+        const ac = getSortableValue(a, 'consensus_score');
+        const bc = getSortableValue(b, 'consensus_score');
+        const acn = typeof ac === 'number' ? ac : -Infinity;
+        const bcn = typeof bc === 'number' ? bc : -Infinity;
+        return bcn - acn;
+      });
+    }
+    return out;
+  };
+
+  const filterRows = (rows: any[]) => {
+    const q = search.trim().toLowerCase();
+    return rows.filter(r => {
+      if (themeFilter && tab === 'social') {
+        if ((r?.theme || '') !== themeFilter) return false;
+      }
+      if (!q) return true;
+      const sym = String(r?.symbol || '').toLowerCase();
+      const name = String(r?.company_name || '').toLowerCase();
+      const theme = String(r?.theme || '').toLowerCase();
+      return sym.includes(q) || name.includes(q) || theme.includes(q);
+    });
+  };
+
+  const displaySocial = sortRows(filterRows(socialRows));
+  const displayFund = sortRows(filterRows(fundRows));
+
+  // ── Styles ───────────────────────────────────────────────────────
+  const C = {
+    bg: 'rgba(10,12,28,0.85)',
+    border: 'rgba(255,255,255,0.07)',
+    headerBg: 'rgba(255,255,255,0.025)',
+    rowHover: 'rgba(255,255,255,0.03)',
+    text: '#e2e8f0',
+    dim: '#64748b',
+    subtle: '#94a3b8',
+    accent: '#5cc8f0',
+    purple: '#a78bfa',
+  };
+
+  const cardStyle: CSSProperties = {
+    background: C.bg,
+    border: `1px solid ${C.border}`,
+    borderRadius: 12,
+    padding: '1.25rem 1.25rem 1rem',
+    fontFamily: sansFont,
+  };
+
+  const thStyle = (align: 'left' | 'right' = 'right'): CSSProperties => ({
+    padding: '0.55rem 0.65rem',
+    textAlign: align,
+    fontFamily: font,
+    fontSize: '0.62rem',
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: C.subtle,
+    borderBottom: `1px solid ${C.border}`,
+    background: C.headerBg,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+    position: 'sticky',
+    top: 0,
+  });
+
+  const tdStyle = (align: 'left' | 'right' = 'right'): CSSProperties => ({
+    padding: '0.55rem 0.65rem',
+    textAlign: align,
+    fontFamily: font,
+    fontSize: '0.72rem',
+    color: C.text,
+    borderBottom: `1px solid ${C.border}`,
+    whiteSpace: 'nowrap',
+  });
+
+  const sortArrow = (key: string) => {
+    if (sortKey !== key) return '';
+    return sortDir === 'asc' ? ' ▲' : ' ▼';
+  };
+
+  const tickerCell = (row: any) => (
+    <button
+      onClick={() => onTickerClick(row.symbol, row, undefined, row.company_name)}
+      title={row.company_name || row.symbol}
+      style={{
+        padding: '3px 8px',
+        borderRadius: 6,
+        background: 'rgba(167,139,250,0.10)',
+        border: '1px solid rgba(167,139,250,0.25)',
+        color: C.purple,
+        fontFamily: font,
+        fontWeight: 700,
+        fontSize: '0.72rem',
+        cursor: 'pointer',
+      }}
+    >${row.symbol}</button>
+  );
+
+  const pctCell = (v: any) => (
+    <span style={{ color: pctColor(v), fontWeight: 600 }}>{fmtPercent(v)}</span>
+  );
+
+  // Social table column config
+  const socialCols: Array<{ key: string; label: string; align?: 'left' | 'right'; render: (r: any) => React.ReactNode }> = [
+    { key: 'symbol',                    label: 'Ticker',         align: 'left',  render: r => tickerCell(r) },
+    { key: 'theme',                     label: 'Theme',          align: 'left',  render: r => <span style={{ color: C.subtle }}>{r.theme || DASH}</span> },
+    { key: 'market_cap',                label: 'Market Cap',                     render: r => fmtCurrencyCompact(r.market_cap) },
+    { key: 'volume',                    label: 'Volume',                         render: r => r.volume_display || fmtCompact(r.volume) },
+    { key: 'price_change_1d',           label: '1D',                             render: r => pctCell(r.price_change_1d) },
+    { key: 'price_change_7d',           label: '7D',                             render: r => pctCell(r.price_change_7d) },
+    { key: 'price_change_30d',          label: '30D',                            render: r => pctCell(r.price_change_30d) },
+    { key: 'price_change_ytd',          label: 'YTD',                            render: r => pctCell(r.price_change_ytd) },
+    { key: 'price_change_1y',           label: '1Y',                             render: r => pctCell(r.price_change_1y) },
+    { key: 'mentions_1d',               label: '1D Mentions',                    render: r => fmtInt(r.mentions_1d) },
+    { key: 'mentions_7d',               label: '7D Mentions',                    render: r => fmtInt(r.mentions_7d) },
+    { key: 'consensus_score',           label: 'Consensus',                      render: r => fmtScore(r.consensus_score) },
+    { key: 'freshness_score',           label: 'Freshness',                      render: r => fmtScore(r.freshness_score) },
+    { key: 'social_acceleration_score', label: 'Social Accel',                   render: r => fmtScore(r.social_acceleration_score) },
+  ];
+
+  const fundCols: Array<{ key: string; label: string; align?: 'left' | 'right'; render: (r: any) => React.ReactNode }> = [
+    { key: 'symbol',          label: 'Ticker',        align: 'left',  render: r => tickerCell(r) },
+    { key: 'market_cap',      label: 'Market Cap',                    render: r => fmtCurrencyCompact(r.market_cap) },
+    { key: 'revenue',         label: 'Revenue',                       render: r => fmtCurrencyCompact(r.revenue) },
+    { key: 'revenue_growth',  label: 'Rev Growth',                    render: r => pctCell(r.revenue_growth) },
+    { key: 'gross_profit',    label: 'Gross Profit',                  render: r => fmtCurrencyCompact(r.gross_profit) },
+    { key: 'gross_margin',    label: 'Gross Margin',                  render: r => fmtPercent(r.gross_margin) },
+    { key: 'net_income',      label: 'Net Income',                    render: r => fmtCurrencyCompact(r.net_income) },
+    { key: 'eps_diluted',     label: 'EPS Diluted',                   render: r => (r.eps_diluted == null || r.eps_diluted === '' ? DASH : `$${Number(r.eps_diluted).toFixed(2)}`) },
+    { key: 'ebitda',          label: 'EBITDA',                        render: r => fmtCurrencyCompact(r.ebitda) },
+    { key: 'free_cash_flow',  label: 'Free Cash Flow',                render: r => fmtCurrencyCompact(r.free_cash_flow) },
+    { key: 'fcf_margin',      label: 'FCF Margin',                    render: r => fmtPercent(r.fcf_margin) },
+    { key: 'total_debt',      label: 'Total Debt',                    render: r => fmtCurrencyCompact(r.total_debt) },
+    { key: 'debt_to_equity',  label: 'Debt / Equity',                 render: r => fmtRatio(r.debt_to_equity) },
+    { key: 'current_ratio',   label: 'Current Ratio',                 render: r => fmtRatio(r.current_ratio) },
+    { key: 'ps_ratio',        label: 'P/S',                           render: r => fmtRatio(r.ps_ratio) },
+    { key: 'pe_ratio',        label: 'P/E',                           render: r => fmtRatio(r.pe_ratio) },
+  ];
+
+  const cols = tab === 'social' ? socialCols : fundCols;
+  const displayRows = tab === 'social' ? displaySocial : displayFund;
+
+  // Empty / loading messaging
+  const socialEmptyMsg = !socialScreener || socialRows.length === 0
+    ? 'Social screener unavailable from latest run.'
+    : null;
+
+  const fundEmptyMsg = (() => {
+    if (tab !== 'fundamental') return null;
+    if (lazyLoading) return 'Loading fundamentals…';
+    if (bundledFundIsUsable) return null;
+    if (lazyFundamental && Array.isArray(lazyFundamental.rows) && lazyFundamental.rows.length > 0) return null;
+    return 'Fundamental enrichment is unavailable or still warming up.';
+  })();
+
+  const enrichmentStatus = socialScreener?.meta?.enrichment_status;
+  const cacheStatus = fundamentalData?.meta?.cache_status;
+
+  const statusBadge = (label: string) => {
+    const colorMap: Record<string, string> = {
+      ok: '#22c55e', fresh: '#22c55e',
+      partial: '#f59e0b', stale: '#f59e0b',
+      unavailable: '#ef4444',
+    };
+    const color = colorMap[label] || C.dim;
+    return (
+      <span style={{
+        padding: '2px 8px', borderRadius: 100, fontSize: '0.58rem', fontFamily: font,
+        fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+        color, border: `1px solid ${color}40`, background: `${color}10`,
+      }}>{label}</span>
+    );
+  };
+
+  const tabBtn = (id: ScreenerTab, label: string) => (
+    <button
+      onClick={() => setTab(id)}
+      style={{
+        padding: '5px 14px',
+        borderRadius: 6,
+        fontFamily: font,
+        fontSize: '0.7rem',
+        fontWeight: 700,
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        background: tab === id ? 'rgba(92,200,240,0.12)' : 'transparent',
+        border: tab === id ? '1px solid rgba(92,200,240,0.4)' : '1px solid rgba(255,255,255,0.08)',
+        color: tab === id ? C.accent : C.subtle,
+      }}
+    >{label}</button>
+  );
+
+  return (
+    <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0.5rem 1.5rem 0', position: 'relative', zIndex: 1 }}>
+      <div style={cardStyle}>
+        {/* Header */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.85rem' }}>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{
+              fontFamily: font, fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.1em',
+              textTransform: 'uppercase', color: C.accent, margin: 0,
+            }}>Social Screener</h3>
+            <p style={{ margin: '0.35rem 0 0', color: C.subtle, fontSize: '0.78rem', fontFamily: sansFont }}>
+              Every ticker mentioned by tracked X accounts, ranked by consensus, freshness, and acceleration.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {tab === 'social' && enrichmentStatus && statusBadge(enrichmentStatus)}
+            {tab === 'fundamental' && cacheStatus && statusBadge(cacheStatus)}
+            {tabBtn('social', 'Social')}
+            {tabBtn('fundamental', 'Fundamentals')}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '0.75rem' }}>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search ticker, company, or theme…"
+            style={{
+              flex: '1 1 220px',
+              minWidth: 0,
+              padding: '6px 10px',
+              borderRadius: 6,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: C.text,
+              fontFamily: sansFont,
+              fontSize: '0.78rem',
+              outline: 'none',
+            }}
+          />
+          {tab === 'social' && themeOptions.length > 0 && (
+            <select
+              value={themeFilter}
+              onChange={e => setThemeFilter(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 6,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: C.text,
+                fontFamily: sansFont,
+                fontSize: '0.78rem',
+                outline: 'none',
+              }}
+            >
+              <option value="">All themes</option>
+              {themeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          )}
+          <div style={{ alignSelf: 'center', color: C.dim, fontFamily: font, fontSize: '0.65rem' }}>
+            {displayRows.length} {displayRows.length === 1 ? 'row' : 'rows'}
+          </div>
+        </div>
+
+        {/* Body */}
+        {tab === 'social' && socialEmptyMsg ? (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: C.dim, fontSize: '0.78rem', fontFamily: sansFont }}>
+            {socialEmptyMsg}
+          </div>
+        ) : tab === 'fundamental' && fundEmptyMsg ? (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: C.dim, fontSize: '0.78rem', fontFamily: sansFont }}>
+            {fundEmptyMsg}
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto', borderRadius: 8, border: `1px solid ${C.border}` }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: tab === 'social' ? 1100 : 1300 }}>
+              <thead>
+                <tr>
+                  {cols.map(c => (
+                    <th key={c.key} style={thStyle(c.align || 'right')} onClick={() => handleSort(c.key)}>
+                      {c.label}{sortArrow(c.key)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={cols.length} style={{ ...tdStyle('left'), color: C.dim, textAlign: 'center', padding: '1.25rem' }}>
+                      No matches.
+                    </td>
+                  </tr>
+                ) : displayRows.map((r, i) => (
+                  <tr key={`${r.symbol || 'row'}-${i}`} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                    {cols.map(c => (
+                      <td key={c.key} style={tdStyle(c.align || 'right')}>
+                        {c.render(r)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {tab === 'fundamental' && lazyError && (
+          <div style={{ marginTop: '0.6rem', color: '#f59e0b', fontSize: '0.7rem', fontFamily: sansFont }}>
+            Could not load fundamental enrichment.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function SocialTickerPopup({
   symbol, tvSymbol, name, context, onClose,
 }: {
@@ -1577,6 +2060,17 @@ export default function OnchainSocialPage() {
             <XSnapshotSections tx={tx} onTickerClick={openTicker} />
           ) : null}
         </div>
+
+        {/* ═══ Social Screener (under top sections) ═══ */}
+        {tx && (
+          <div style={{ marginTop: '1.25rem' }}>
+            <SocialScreenerSection
+              socialScreener={tx.social_screener}
+              bundledFundamental={tx.fundamental_screener}
+              onTickerClick={openTicker}
+            />
+          </div>
+        )}
 
         {/* ═══ Grok Social Agent ═══ */}
         <div style={{ marginTop: '1.5rem' }}>
