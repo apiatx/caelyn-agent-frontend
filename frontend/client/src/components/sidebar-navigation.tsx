@@ -110,16 +110,16 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/onchain/social'
         },
         {
-          id: 'strategy-screener',
-          label: 'Chain Reaction',
-          icon: <ScrollText className="w-4 h-4" />,
-          path: '/app/strategy-screener'
-        },
-        {
           id: 'stocks-screening',
           label: 'Screener',
           icon: <Search className="w-4 h-4" />,
           path: '/app/stocks/screening'
+        },
+        {
+          id: 'strategy-screener',
+          label: 'Chain Reaction',
+          icon: <ScrollText className="w-4 h-4" />,
+          path: '/app/strategy-screener'
         },
         {
           id: 'stocks-fundamentals',
