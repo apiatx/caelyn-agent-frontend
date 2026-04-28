@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -183,6 +183,19 @@ interface MonthCuratedResponse {
   year: number;
   month: number;
   days: MonthCuratedDay[];
+}
+
+interface MonthAllDay {
+  date: string;
+  dayOfMonth?: number;
+  isCurrentMonth?: boolean;
+  count: number;
+  entries: WeekAllEntry[];
+}
+interface MonthAllResponse {
+  year: number;
+  month: number;
+  days: MonthAllDay[];
 }
 
 interface EarningsDetailData {
@@ -3818,6 +3831,142 @@ function WeekAllList({
   );
 }
 
+// ─── Month All Grid ───────────────────────────────────────────────
+
+function MonthAllGrid({
+  data,
+  loading,
+  year,
+  month,
+  identityMap,
+  onNavigateMonth,
+  onSelectDate,
+}: {
+  data: MonthAllResponse | null;
+  loading: boolean;
+  year: number;
+  month: number;
+  identityMap: Record<string, IdentityData>;
+  onNavigateMonth: (delta: number) => void;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
+
+  const firstDay = new Date(year, month - 1, 1);
+  const firstDayMonBased = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const dayMap = new Map<string, MonthAllDay>();
+  for (const d of (data?.days || [])) {
+    const parts = d.date.split("-");
+    const normalizedKey = parts.length === 3
+      ? `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`
+      : d.date;
+    dayMap.set(normalizedKey, d);
+  }
+
+  const cells: (string | null)[] = [];
+  const leadOffset = firstDayMonBased < 5 ? firstDayMonBased : 0;
+  for (let i = 0; i < leadOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    if (dow === 0 || dow === 6) continue;
+    const mm = String(month).padStart(2, "0");
+    const dd = String(d).padStart(2, "0");
+    cells.push(`${year}-${mm}-${dd}`);
+  }
+  while (cells.length % 5 !== 0) cells.push(null);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <Loader2 className="w-5 h-5 text-indigo-400/40 mx-auto mb-2 animate-spin" />
+        <p className="text-[11px] text-white/25">Loading all earnings for month...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-5 gap-1 mb-1">
+        {["Mon","Tue","Wed","Thu","Fri"].map(d => (
+          <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-5 gap-1">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) return <div key={`empty-${i}`} className="rounded-xl aspect-square" />;
+          const dayNum = parseInt(dateStr.split("-")[2]);
+          const dayData = dayMap.get(dateStr);
+          const entries = (dayData?.entries || []).slice(0, 3);
+          const count = dayData ? Math.max(dayData.count ?? 0, (dayData.entries || []).length) : 0;
+          const extra = count - entries.length;
+          const todayStr = dateKey(new Date());
+          const isToday = dateStr === todayStr;
+          return (
+            <div
+              key={dateStr}
+              className={`rounded-xl border transition-all flex flex-col aspect-square ${
+                count > 0 ? "cursor-pointer hover:border-indigo-500/35 hover:bg-indigo-500/[0.05]" : "opacity-40 cursor-default"
+              } ${isToday ? "border-indigo-500/30 bg-indigo-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
+              onClick={() => count > 0 && onSelectDate(dateStr)}
+            >
+              <div className="flex items-start justify-between px-2 pt-2 pb-0.5 flex-shrink-0">
+                <p className={`text-[11px] font-bold leading-none ${isToday ? "text-indigo-400" : "text-white/45"}`}>{dayNum}</p>
+                {count > 0 && (
+                  <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
+                )}
+              </div>
+              {count > 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1 pb-2">
+                  {entries.length > 0 ? (
+                    <>
+                      <div className="flex items-end justify-center gap-2">
+                        {entries.map((e, idx) => {
+                          const ticker = (e.symbol || "").toUpperCase();
+                          const logo = identityMap[ticker]?.logo || null;
+                          const modalE: EarningsEntry = {
+                            market: null, ticker, company: e.companyName || ticker, companyName: e.companyName || ticker,
+                            logo: (logo || undefined) as string | undefined,
+                            eps: e.epsEstimated != null ? `$${Number(e.epsEstimated).toFixed(2)}` : null,
+                            quarter: e.period || null,
+                            time: e.time === "bmo" ? "Pre-Market" : e.time === "amc" ? "After Hours" : e.time || null,
+                            exchange: null, beatPct: -1,
+                            revenueEstimate: e.revenueEstimated != null ? formatRevenue(Number(e.revenueEstimated)) : null,
+                            source: "fmp", earningsDate: dateStr,
+                          };
+                          return (
+                            <button
+                              key={`${ticker}-${idx}`}
+                              className="flex flex-col items-center gap-1 group focus:outline-none"
+                              onClick={ev => { ev.stopPropagation(); setModalEntry(modalE); }}
+                            >
+                              <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-bold text-white ring-1 ring-white/10 group-hover:ring-indigo-400/40 transition-all ${logo ? "bg-white/[0.07]" : `bg-gradient-to-br ${tickerColor(ticker)}`}`}>
+                                {logo ? <img src={logo} alt={ticker} className="w-full h-full object-contain p-1" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = "none"; }} /> : ticker.slice(0, 2)}
+                              </div>
+                              <p className="text-[8px] text-white/40 font-mono leading-none">{ticker}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {extra > 0 && (
+                        <p className="text-[8px] text-white/25 mt-0.5">+{extra} more</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[9px] text-white/30">{count} calls</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {modalEntry && <EarningsModal entry={modalEntry} onClose={() => setModalEntry(null)} />}
+    </>
+  );
+}
+
 // ─── Month Curated Grid ───────────────────────────────────────────
 
 function MonthCuratedGrid({
@@ -3965,6 +4114,8 @@ function MonthCuratedGrid({
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
+  const queryClient = useQueryClient();
+
   // ── Tab + mode state ─────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
   const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent" | "month">("thisweek");
@@ -4112,6 +4263,25 @@ export default function StocksEarningsCalendarPage() {
     }
   }, [monthCuratedMonth]);
 
+  // Month All — React Query (same year/month state as Month Curated)
+  const monthAllQueryKey = ["earnings", "month", "all", monthCuratedYear, monthCuratedMonth] as const;
+  const { data: monthAllData, isLoading: monthAllLoading } = useQuery<MonthAllResponse>({
+    queryKey: monthAllQueryKey,
+    queryFn: async () => {
+      if (process.env.NODE_ENV !== "production") console.log("[Earnings cache key]", monthAllQueryKey);
+      const r = await fetch(`/api/catalysts/earnings/month-all?year=${monthCuratedYear}&month=${monthCuratedMonth}`);
+      if (!r.ok) throw new Error(`${r.status}`);
+      const data = await r.json();
+      if (process.env.NODE_ENV !== "production") console.log("[Month All response]", data);
+      return data;
+    },
+    enabled: activeTab === "earnings_dates" && earningsMode === "month" && earningsSignalMode === "all",
+    staleTime: 15 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    placeholderData: keepPreviousData,
+  });
+
   // ── Earnings tab state ───────────────────────────────────────────
   const [earningsMarkets, setEarningsMarkets] = useState<ParsedMarket[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(true);
@@ -4130,6 +4300,52 @@ export default function StocksEarningsCalendarPage() {
     const iv = setInterval(fetchEarnings, REFRESH_INTERVAL);
     return () => clearInterval(iv);
   }, [fetchEarnings]);
+
+  // ── Prefetch on mount: Day Curated (today), Week Curated, Month Curated ──
+  useEffect(() => {
+    const now = new Date();
+    const today = dateKey(now);
+    const thisMonday = getMonday(now);
+    const thisWeekEnd = addDays(thisMonday, 4);
+    const thisYear = now.getFullYear();
+    const thisMonth = now.getMonth() + 1;
+
+    queryClient.prefetchQuery({
+      queryKey: ["earnings", "day", "curated", today],
+      queryFn: async () => {
+        const r = await fetch(`/api/catalysts/earnings/day-curated?date=${today}`);
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      },
+      staleTime: 15 * 60 * 1000,
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: ["earnings", "week", "curated", dateKey(thisMonday)],
+      queryFn: async () => {
+        const params = new URLSearchParams({
+          weekStart: dateKey(thisMonday),
+          weekEnd: dateKey(thisWeekEnd),
+          limit_per_session: "8",
+          max_total: "60",
+        });
+        const r = await fetch(`/api/catalysts/earnings/week-clean?${params}`);
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      },
+      staleTime: 15 * 60 * 1000,
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: ["earnings", "month", "curated", thisYear, thisMonth],
+      queryFn: async () => {
+        const r = await fetch(`/api/catalysts/earnings/month-curated?year=${thisYear}&month=${thisMonth}`);
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      },
+      staleTime: 15 * 60 * 1000,
+    });
+  }, [queryClient]);
 
   const isEarningsTab   = activeTab === "earnings_dates";
   const showFilterBar   = isEarningsTab;
@@ -4424,16 +4640,20 @@ export default function StocksEarningsCalendarPage() {
               }}
             />
           ) : isEarningsTab && earningsMode === "month" && earningsSignalMode === "all" ? (
-            /* ── Month · All — full month list (unchanged) ───────── */
-            <CatalystListTab
+            /* ── Month · All — month-all endpoint ───────────────── */
+            <MonthAllGrid
               key="earnings_dates-month-all"
-              tabKey="earnings_dates"
-              scope={scope}
-              search={search}
-              hideRangeToggle
-              defaultRange="this_month"
+              data={monthAllData ?? null}
+              loading={monthAllLoading}
+              year={monthCuratedYear}
+              month={monthCuratedMonth}
               identityMap={identityMap}
-              onFetchIdentity={fetchIdentity}
+              onNavigateMonth={navigateMonthCurated}
+              onSelectDate={(dateStr) => {
+                setEarningsMode("upcoming");
+                setEarningsSignalMode("curated");
+                setEarningsJumpDate(dateStr);
+              }}
             />
           ) : (
             /* ── All other tabs — range-toggle + list/table ─────── */
