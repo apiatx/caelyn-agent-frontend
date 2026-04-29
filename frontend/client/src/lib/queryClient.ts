@@ -58,6 +58,10 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
+      // Keep cached data for 30 minutes after a component unmounts so that
+      // navigating back to any page immediately shows the last-known data
+      // instead of a blank loading state.
+      gcTime: 30 * 60_000,
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors (client errors), except 429 (rate limit)
         if (error instanceof Error) {
@@ -69,8 +73,9 @@ export const queryClient = new QueryClient({
             }
           }
         }
-        // Retry network errors and 429s up to 3 times
-        return failureCount < 3;
+        // Retry once for 5xx / network errors — reduces excessive call volume
+        // when multiple queries fail simultaneously (backend down, timeout, etc.)
+        return failureCount < 1;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },

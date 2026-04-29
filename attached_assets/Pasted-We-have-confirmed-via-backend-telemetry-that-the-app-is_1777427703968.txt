@@ -1,0 +1,146 @@
+We have confirmed via backend telemetry that the app is making excessive API calls (hundreds per load in some cases), and failures during these calls are causing blank UI states.
+
+Your job is to fix the frontend so that:
+1. Existing data is NEVER wiped during refetch
+2. Failed API calls do NOT result in blank tables
+3. Previously loaded data persists across navigation
+4. The UI gracefully handles partial/missing data
+
+Do NOT redesign UI. Fix data handling.
+
+----------------------------------------
+PART 1 — FIND THE ROOT CAUSE
+----------------------------------------
+
+Search for:
+
+- setRows([])
+- setData([])
+- setState(null)
+- conditional rendering that hides tables on error
+- loading states that clear previous data
+- useEffect patterns that reset state before fetch completes
+
+Also inspect:
+- Social page (Social Screener)
+- Fundamentals toggle logic
+- Calendar page
+- any shared data hooks
+
+Document EXACTLY:
+- where rows are cleared
+- where errors replace data
+- where navigation remount resets state
+
+----------------------------------------
+PART 2 — FIX STATE HANDLING (CRITICAL)
+----------------------------------------
+
+RULE:
+A failed fetch must NEVER delete existing data.
+
+Replace patterns like:
+
+setRows([])
+
+With:
+
+if (response?.rows?.length) {
+  setRows(response.rows)
+} else {
+  // KEEP OLD DATA
+  setWarning("Refresh failed — showing cached data")
+}
+
+----------------------------------------
+PART 3 — FIX LOADING BEHAVIOR
+----------------------------------------
+
+During refetch:
+- DO NOT clear the table
+- Show a small loading indicator instead
+
+BAD:
+setRows([])
+setLoading(true)
+
+GOOD:
+setLoading(true) // keep rows
+
+----------------------------------------
+PART 4 — HANDLE PARTIAL DATA
+----------------------------------------
+
+If fundamentals fail:
+- still render tickers
+- show missing values as "—"
+
+DO NOT:
+- hide the table
+- throw full-page error
+
+----------------------------------------
+PART 5 — ADD DEFENSIVE RESPONSE HANDLING
+----------------------------------------
+
+Normalize backend responses:
+
+const rows =
+  response.rows ??
+  response.data ??
+  response.entries ??
+  []
+
+----------------------------------------
+PART 6 — PERSIST DATA ACROSS NAVIGATION
+----------------------------------------
+
+If using React Query:
+- increase staleTime
+- increase cacheTime
+- enable keepPreviousData
+
+If NOT:
+- persist key datasets in:
+  - localStorage OR
+  - a global store (Zustand/Redux)
+
+Pages that MUST persist:
+- Social Screener
+- Calendar
+- Fundamentals
+- Sectors/Themes
+- Watchlist/Portfolio
+
+----------------------------------------
+PART 7 — TEST SCENARIOS
+----------------------------------------
+
+Verify:
+
+1. Load Social → rows appear
+2. Navigate away → come back
+   → rows should instantly be there (no blank)
+
+3. Force backend failure
+   → rows should remain
+   → show warning instead
+
+4. Toggle fundamentals
+   → if it fails → tickers still visible
+
+5. Refresh page
+   → last data should rehydrate (if persisted)
+
+----------------------------------------
+DELIVERABLE
+----------------------------------------
+
+Return:
+
+1. Files changed
+2. Exact lines where blanking was occurring
+3. Confirmation that:
+   - rows are never cleared on failure
+   - navigation preserves data
+   - partial data still renders
