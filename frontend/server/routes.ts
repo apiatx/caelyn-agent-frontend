@@ -2592,6 +2592,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Social — lazy fundamental screener (FMP-enriched, separate from dashboard) ===
+  app.get('/api/social/fundamental-screener', async (req, res) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 55_000);
+    try {
+      const r = await fetch(`${SR_URL}/api/social/fundamental-screener`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body });
+      }
+      const data = await r.json();
+      return res.json(data);
+    } catch (e: any) {
+      clearTimeout(tid);
+      const msg = e?.name === 'AbortError' ? 'Fundamental screener timed out (55s)' : (e?.message || 'Fetch failed');
+      return res.status(500).json({ error: msg });
+    }
+  });
+
   // === Social — X intelligence dashboard (flat payload: top_tickers + new sibling keys) ===
   app.get('/api/social/x-dashboard', async (req, res) => {
     const controller = new AbortController();

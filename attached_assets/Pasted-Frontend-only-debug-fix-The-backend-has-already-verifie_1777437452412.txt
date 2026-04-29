@@ -1,0 +1,82 @@
+Frontend-only debug/fix.
+
+The backend has already verified that GET /api/social/x-dashboard returns social_screener.rows with 57 rows. The UI still shows no Social Screener data and no Fundamental toggle data.
+
+Do not touch backend.
+Do not change API routes.
+Do not add new API calls except the existing lazy fundamentals endpoint behavior.
+Do not change styling except if needed to reveal existing rows.
+
+Goal:
+Find exactly where the rows disappear between API response and table render.
+
+Add temporary console logs in the Social page data flow, then fix the actual mapping.
+
+Log these exact objects once after the dashboard response loads:
+
+1. Full dashboard response keys:
+   Object.keys(dashboardData || {})
+
+2. Exact social screener object:
+   dashboardData?.social_screener
+
+3. Exact social rows:
+   dashboardData?.social_screener?.rows
+   dashboardData?.social_screener?.rows?.length
+
+4. Exact fundamental screener object from bundled dashboard:
+   dashboardData?.fundamental_screener
+
+5. The props passed into SocialScreenerSection:
+   socialScreener
+   socialScreener?.rows
+   socialScreener?.rows?.length
+   fundamentalScreener
+   fundamentalScreener?.rows
+   fundamentalScreener?.rows?.length
+
+6. Inside SocialScreenerSection, after strict extraction:
+   socialRows.length
+   fundamentalRows.length
+   displayRows.length
+   activeTab
+   searchTerm/filter state if applicable
+
+7. When clicking Fundamentals, log lazy endpoint response:
+   response
+   response?.rows
+   response?.rows?.length
+   response?.fundamental_screener?.rows
+   response?.fundamental_screener?.rows?.length
+
+Then fix based on what the logs prove.
+
+Likely fixes:
+- If the API wrapper returns { data: { social_screener } }, pass response.data.social_screener, not response.social_screener.
+- If the prop name is camelized, normalize once at the parent:
+  const socialScreener = dashboardData?.social_screener
+  const fundamentalScreener = dashboardData?.fundamental_screener
+- If lazy fundamentals returns { fundamental_screener: { rows } }, read that exact path.
+- If lazy fundamentals returns { rows }, read rows directly.
+- If displayRows is 0 while socialRows.length > 0, fix the search/filter/sort pipeline.
+- If activeTab is Social but displayRows is using fundamentalRows, fix tab mapping.
+
+Use strict backend contract for dashboard:
+const socialRows = Array.isArray(socialScreener?.rows) ? socialScreener.rows : []
+const bundledFundRows = Array.isArray(fundamentalScreener?.rows) ? fundamentalScreener.rows : []
+
+For lazy fundamentals, support the actual endpoint shape after logging it:
+const lazyRows =
+  Array.isArray(lazyResponse?.rows) ? lazyResponse.rows :
+  Array.isArray(lazyResponse?.fundamental_screener?.rows) ? lazyResponse.fundamental_screener.rows :
+  []
+
+Do not reintroduce a generic extractRowsFromAny helper for the main dashboard response.
+
+Acceptance:
+- Social tab displays 57-ish rows from social_screener.rows.
+- Social columns show symbol/theme/social scores even when FMP fields are null.
+- Fundamentals tab lazy-loads once and displays rows if returned by /api/social/fundamental-screener.
+- If fundamentals returns no rows, only the fundamentals table area shows the empty state.
+- Top Social sections remain unchanged.
+- Remove temporary console logs after confirming the fix.
