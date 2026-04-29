@@ -3,78 +3,78 @@
     "data": {
       "quote": {
         "USD": {
-          "total_market_cap": 2559686175237.208,
-          "total_volume_24h": 117072452122.5,
-          "total_volume_24h_reported": 407541114981.36,
-          "altcoin_volume_24h": 84969347605.86217,
-          "altcoin_volume_24h_reported": 279094461048.71313,
-          "altcoin_market_cap": 1026080204561.2489,
-          "defi_volume_24h": 8550432801.258681,
-          "defi_market_cap": 61560741610.65075,
-          "defi_volume_24h_reported": 32952367294.901134,
-          "defi_24h_percentage_change": -14.0650741103,
-          "stablecoin_volume_24h": 157358990817.87772,
-          "stablecoin_volume_24h_reported": 443504458135.16974,
-          "stablecoin_market_cap": 292426549124.87335,
-          "stablecoin_24h_percentage_change": -12.9193371055,
-          "derivatives_volume_24h": 745587181915.1257,
-          "derivatives_volume_24h_reported": 996916756682.254,
-          "derivatives_24h_percentage_change": -4.6672104966,
-          "total_market_cap_yesterday": 2575011493112.463,
-          "total_volume_24h_yesterday": 134855596738.92,
-          "total_market_cap_yesterday_percentage_change": -0.59515532,
-          "total_volume_24h_yesterday_percentage_change": -13.18680503,
-          "last_updated": "2026-04-29T01:50:59.999Z"
+          "total_market_cap": 2556237341822.6323,
+          "total_volume_24h": 115980521380.09,
+          "total_volume_24h_reported": 404393658956.11,
+          "altcoin_volume_24h": 83883622785.53662,
+          "altcoin_volume_24h_reported": 276910330933.21576,
+          "altcoin_market_cap": 1024982339894.075,
+          "defi_volume_24h": 8491995589.758729,
+          "defi_market_cap": 61504190150.81703,
+          "defi_volume_24h_reported": 32691395141.136303,
+          "defi_24h_percentage_change": -14.5309576534,
+          "stablecoin_volume_24h": 155222080479.91125,
+          "stablecoin_volume_24h_reported": 439378996184.4387,
+          "stablecoin_market_cap": 292484722955.16437,
+          "stablecoin_24h_percentage_change": -13.5847075804,
+          "derivatives_volume_24h": 736120496261.5094,
+          "derivatives_volume_24h_reported": 982068281701.005,
+          "derivatives_24h_percentage_change": -6.4585845022,
+          "total_market_cap_yesterday": 2565399833404.032,
+          "total_volume_24h_yesterday": 134155620853.19,
+          "total_market_cap_yesterday_percentage_change": -0.35715647,
+          "total_volume_24h_yesterday_percentage_change": -13.54777337,
+          "last_updated": "2026-04-29T02:50:59.999Z"
         }
       },
-      "btc_dominance": 59.913827933764,
-      "eth_dominance": 10.820640400308,
+      "btc_dominance": 59.902692792867,
+      "eth_dominance": 10.800033104461,
       "active_cryptocurrencies": 8492,
       "total_cryptocurrencies": 37435,
-      "active_market_pairs": 113694,
+      "active_market_pairs": 113692,
       "active_exchanges": 936,
       "total_exchanges": 12105,
-      "last_updated": "2026-04-29T01:50:59.999Z",
-      "eth_dominance_yesterday": 10.77925419,
-      "btc_dominance_yesterday": 59.94727251,
-      "eth_dominance_24h_percentage_change": 0.041386210308,
-      "btc_dominance_24h_percentage_change": -0.033444576236,
-      "defi_volume_24h": 8550432801.258681,
-      "defi_volume_24h_reported": 32952367294.901134,
-      "defi_market_cap": 61560741610.65075,
-      "defi_24h_percentage_change": -14.065074110277,
-      "stablecoin_volume_24h": 157358990817.87772,
-      "stablecoin_volume_24h_reported": 443504458135.16974,
-      "stablecoin_market_cap": 292426549124.87335,
-      "stablecoin_24h_percentage_change": -12.91933710548,
-      "derivatives_volume_24h": 745587181915.1257,
-      "derivatives_volume_24h_reported": 996916756682.254,
-      "derivatives_24h_percentage_change": -4.66721049658,
-      "total_crypto_dex_currencies": 49643747,
-      "today_incremental_crypto_number": 0,
-      "past_24h_incremental_crypto_number": 62723,
-      "past_7d_incremental_crypto_number": 362643,
-      "past_30d_incremental_crypto_number": 2171872,
-      "today_change_percent": 0.000012086116,
+      "last_updated": "2026-04-29T02:50:59.999Z",
+      "eth_dominance_yesterday": 10.76550814,
+      "btc_dominance_yesterday": 59.97956784,
+      "eth_dominance_24h_percentage_change": 0.034524964461,
+      "btc_dominance_24h_percentage_change": -0.076875047133,
+      "defi_volume_24h": 8491995589.758729,
+      "defi_volume_24h_reported": 32691395141.136303,
+      "defi_market_cap": 61504190150.81703,
+      "defi_24h_percentage_change": -14.530957653377,
+      "stablecoin_volume_24h": 155222080479.91125,
+      "stablecoin_volume_24h_reported": 439378996184.4387,
+      "stablecoin_market_cap": 292484722955.16437,
+      "stablecoin_24h_percentage_change": -13.584707580387,
+      "derivatives_volume_24h": 736120496261.5094,
+      "derivatives_volume_24h_reported": 982068281701.005,
+      "derivatives_24h_percentage_change": -6.458584502207,
+      "total_crypto_dex_currencies": 49706504,
+      "today_incremental_crypto_number": 13,
+      "past_24h_incremental_crypto_number": 62822,
+      "past_7d_incremental_crypto_number": 354410,
+      "past_30d_incremental_crypto_number": 2130740,
+      "today_change_percent": 0.000040236199,
       "tracked_yearly_number": {
         "maxIncrementalNumber": 7681147,
-        "minIncrementalNumber": 7,
+        "minIncrementalNumber": 20,
         "maxIncrementalDate": "2026-03-19T00:00:00.000Z",
-        "minIncrementalDate": "2026-04-28T00:00:00.000Z"
+        "minIncrementalDate": "2026-04-29T00:00:00.000Z"
       }
     },
-    "lastFetch": 1777427531631
+    "lastFetch": 1777431163896
   },
   "altSeasonCache": {
     "data": {
       "index_value": 36,
-      "timestamp": "2026-04-29T01:52:11.635Z",
+      "timestamp": "2026-04-29T02:52:43.955Z",
       "is_alt_season": false,
       "description": "Alt Season approaching",
       "historical": {
-        "yesterday": 35,
-        "last_week": 40,
-        "last_month": 40,
+        "yesterday": 34,
+        "last_week": 36,
+        "last_month": 36,
         "last_month_description": "Mixed Season"
       },
       "yearly": {
@@ -86,12 +86,12 @@
         "low_description": "Bitcoin Season"
       }
     },
-    "lastFetch": 1777427531635
+    "lastFetch": 1777431163955
   },
   "fearGreedCache": {
     "data": {
       "index_value": 41,
-      "timestamp": "2026-04-29T01:53:10.036Z",
+      "timestamp": "2026-04-29T02:38:10.035Z",
       "classification": "Neutral",
       "historical": {
         "yesterday": 43,
@@ -110,7 +110,7 @@
         "low_classification": "Extreme Fear"
       }
     },
-    "lastFetch": 1777428185631
+    "lastFetch": 1777431164096
   },
-  "lastSaved": "2026-04-29T02:03:05.631Z"
+  "lastSaved": "2026-04-29T02:52:44.096Z"
 }

@@ -833,9 +833,9 @@ function XSnapshotSections({ tx, onTickerClick }: {
           )}
         </div>
 
-        {/* ② Freshest Alpha */}
+        {/* ② Fresh */}
         <div style={cardStyle}>
-          {sectionTitle('Freshest Alpha', C.green)}
+          {sectionTitle('Fresh', C.green)}
           {!freshAlpha && freshTrades.length === 0 ? emptyState('No fresh alpha data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {freshAlpha && (freshAlpha.ticker || freshAlpha.symbol) && (() => {
@@ -902,24 +902,17 @@ function XSnapshotSections({ tx, onTickerClick }: {
           )}
         </div>
 
-        {/* ③ Theme Leadership */}
+        {/* ③ Leading Themes */}
         <div style={cardStyle}>
-          {sectionTitle('Theme Leadership', C.gold, keyThemes.length)}
+          {sectionTitle('Leading Themes', C.gold, keyThemes.length)}
           {keyThemes.length === 0 ? emptyState('No theme data yet.') : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', maxHeight: 480 }}>
               {keyThemes.map((h: any, i: number) => {
                 const themeKey = h.theme || h.name || `theme-${i}`;
-                const buzzLvl  = h.buzz_level || h.buzz || '';
-                const bc       = buzzColor(buzzLvl);
                 return (
                   <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0.7rem 0.85rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: 6 }}>
                       <span style={{ color: C.bright, fontWeight: 700, fontSize: '0.78rem', fontFamily: font }}>{themeKey}</span>
-                      {buzzLvl && (
-                        <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700,
-                          fontFamily: font, color: bc, border: `1px solid ${bc}40`,
-                          background: `${bc}12`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{buzzLvl}</span>
-                      )}
                     </div>
                     {(h.why_hot || h.description) && (
                       <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55, marginBottom: 8 }}>
@@ -1519,13 +1512,20 @@ function getSortableValue(row: any, key: string): number | string | null {
   return String(v).toLowerCase();
 }
 
+interface SectionTickers {
+  consensus: Set<string>;
+  fresh: Set<string>;
+  accel: Set<string>;
+}
+
 interface SocialScreenerSectionProps {
   socialScreener: any;
   bundledFundamental: any;
   onTickerClick: (sym: string, dataObj?: any, context?: string, name?: string) => void;
+  sectionTickers?: SectionTickers;
 }
 
-function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerClick }: SocialScreenerSectionProps) {
+function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerClick, sectionTickers }: SocialScreenerSectionProps) {
   const [tab, setTab] = useState<ScreenerTab>('social');
   const [search, setSearch] = useState('');
   const [themeFilter, setThemeFilter] = useState<string>('');
@@ -1697,6 +1697,13 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     return sortDir === 'asc' ? ' ▲' : ' ▼';
   };
 
+  const inSection = (set: Set<string> | undefined, sym: string) =>
+    !!(set && sym && set.has(sym.toUpperCase()));
+
+  const greenDot = (active: boolean): React.ReactNode => active
+    ? <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', verticalAlign: 'middle' }} />
+    : <span style={{ color: C.dim }}>—</span>;
+
   const tickerCell = (row: any) => (
     <button
       onClick={() => onTickerClick(row.symbol, row, undefined, row.company_name)}
@@ -1732,9 +1739,9 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     { key: 'price_change_1y',           label: '1Y',                             render: r => pctCell(r.price_change_1y) },
     { key: 'mentions_1d',               label: '1D Mentions',                    render: r => fmtInt(r.mentions_1d) },
     { key: 'mentions_7d',               label: '7D Mentions',                    render: r => fmtInt(r.mentions_7d) },
-    { key: 'consensus_score',           label: 'Consensus',                      render: r => fmtScore(r.consensus_score) },
-    { key: 'freshness_score',           label: 'Freshness',                      render: r => fmtScore(r.freshness_score) },
-    { key: 'social_acceleration_score', label: 'Social Accel',                   render: r => fmtScore(r.social_acceleration_score) },
+    { key: 'consensus_score',           label: 'Consensus',  render: r => greenDot(inSection(sectionTickers?.consensus, r.symbol)) },
+    { key: 'freshness_score',           label: 'Fresh',      render: r => greenDot(inSection(sectionTickers?.fresh, r.symbol)) },
+    { key: 'social_acceleration_score', label: 'Social Accel', render: r => greenDot(inSection(sectionTickers?.accel, r.symbol)) },
   ];
 
   const fundCols: Array<{ key: string; label: string; align?: 'left' | 'right'; render: (r: any) => React.ReactNode }> = [
@@ -2082,6 +2089,18 @@ export default function OnchainSocialPage() {
               socialScreener={tx.social_screener}
               bundledFundamental={tx.fundamental_screener}
               onTickerClick={openTicker}
+              sectionTickers={{
+                consensus: new Set<string>(
+                  (tx.top_tickers || []).map((t: any) => String(t.symbol || t.ticker || '').toUpperCase()).filter(Boolean)
+                ),
+                fresh: new Set<string>([
+                  ...((tx.freshest_alpha?.trades || tx.fresh_trades || []).map((t: any) => String(t.ticker || t.symbol || '').toUpperCase())),
+                  ...((() => { const sp = tx.freshest_alpha?.spotlight || tx.spotlight; return sp ? [String(sp.ticker || sp.symbol || '').toUpperCase()] : []; })()),
+                ].filter(Boolean)),
+                accel: new Set<string>(
+                  (Array.isArray(tx.sentiment_acceleration) ? tx.sentiment_acceleration : []).map((t: any) => String(t.ticker || t.symbol || '').toUpperCase()).filter(Boolean)
+                ),
+              }}
             />
           </div>
         )}
