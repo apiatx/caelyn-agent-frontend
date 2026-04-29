@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, AlertCircle } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, ChevronUp, AlertCircle, Crown, Gem } from "lucide-react";
 
 // ─── DATA FLOW (Catalyst Calendar) ────────────────────────────
 //
@@ -4088,6 +4088,430 @@ function MonthCuratedGrid({
   );
 }
 
+// ─── Pre-IPO Watchlist (premium private-market intelligence) ──────
+
+interface PreIPOPolymarket {
+  ipo_probability_12m?: number;
+  valuation_markets?: { question: string; probability?: number; url?: string }[];
+  summary?: string;
+}
+
+interface PreIPONewsItem {
+  title: string;
+  source?: string;
+  url?: string;
+  published_at?: string;
+}
+
+interface PreIPOSourceItem {
+  title: string;
+  url?: string;
+  source?: string;
+}
+
+interface PreIPOCompany {
+  company: string;
+  ipo_status?: string;
+  estimated_valuation?: string;
+  valuation_notes?: string[];
+  polymarket?: PreIPOPolymarket | null;
+  catalysts?: string[];
+  expected_window?: { earliest?: string; likely?: string } | null;
+  confidence_score?: string;
+  latest_news?: PreIPONewsItem[];
+  sources?: PreIPOSourceItem[];
+}
+
+interface PreIPOWatchlistResponse {
+  status?: string;
+  updated_at?: string;
+  cached?: boolean;
+  message?: string;
+  companies?: PreIPOCompany[];
+}
+
+const PRE_IPO_GOLD = "#f4c25b";
+const PRE_IPO_GOLD_DEEP = "#d4a23c";
+
+function PreIPOConfidenceBadge({ score }: { score?: string }) {
+  if (!score) return null;
+  const normalized = score.toLowerCase();
+  const palette: Record<string, { bg: string; text: string; border: string }> = {
+    high:   { bg: "rgba(52,211,153,0.14)", text: "#34d399", border: "rgba(52,211,153,0.32)" },
+    medium: { bg: "rgba(244,194,91,0.14)", text: PRE_IPO_GOLD, border: "rgba(244,194,91,0.32)" },
+    low:    { bg: "rgba(255,255,255,0.05)", text: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.12)" },
+  };
+  const c = palette[normalized] || palette.low;
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase"
+      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+    >
+      {score}
+    </span>
+  );
+}
+
+function formatProbability(p: number | undefined | null): string {
+  if (p == null || isNaN(Number(p))) return "—";
+  return `${Math.round(Number(p) * 100)}%`;
+}
+
+function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
+  const [expanded, setExpanded] = useState(false);
+  const probability12m = company.polymarket?.ipo_probability_12m;
+  const probabilityPct = formatProbability(probability12m);
+  const valuationMarkets = company.polymarket?.valuation_markets || [];
+  const polyExists = !!company.polymarket && (
+    probability12m != null || valuationMarkets.length > 0 || company.polymarket?.summary
+  );
+  const newsItems = company.latest_news || [];
+  const sources = company.sources || [];
+  const catalysts = company.catalysts || [];
+  const valuationNotes = company.valuation_notes || [];
+  const window = company.expected_window || null;
+
+  const testIdSafeName = company.company.replace(/[^A-Za-z0-9]/g, "-").toLowerCase();
+
+  return (
+    <div
+      data-testid={`pre-ipo-card-${testIdSafeName}`}
+      className="rounded-2xl overflow-hidden transition-all"
+      style={{
+        background: "linear-gradient(180deg, rgba(244,194,91,0.05) 0%, rgba(255,255,255,0.015) 100%)",
+        border: "1px solid rgba(244,194,91,0.18)",
+        boxShadow: "0 0 0 1px rgba(244,194,91,0.04), 0 8px 30px rgba(0,0,0,0.25)",
+      }}
+    >
+      {/* Top summary row */}
+      <div className="px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.12))",
+              border: "1px solid rgba(244,194,91,0.32)",
+            }}
+          >
+            <Crown className="w-4 h-4" style={{ color: PRE_IPO_GOLD }} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-white truncate" data-testid={`pre-ipo-company-${testIdSafeName}`}>
+              {company.company}
+            </h3>
+            {company.ipo_status && (
+              <p className="text-[11px] text-white/45 truncate">{company.ipo_status}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] flex-shrink-0">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-white/35">Est. Valuation</span>
+            <span className="font-semibold text-white/85">{company.estimated_valuation || "—"}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-white/35">12M IPO Odds</span>
+            <span className="font-semibold" style={{ color: probability12m != null ? PRE_IPO_GOLD : "rgba(255,255,255,0.5)" }}>
+              {probabilityPct}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-white/35">Confidence</span>
+            <PreIPOConfidenceBadge score={company.confidence_score} />
+          </div>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+            style={{
+              background: "rgba(244,194,91,0.08)",
+              border: "1px solid rgba(244,194,91,0.22)",
+              color: PRE_IPO_GOLD,
+            }}
+            data-testid={`pre-ipo-toggle-${testIdSafeName}`}
+          >
+            {expanded ? "Hide" : "Details"}
+            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="px-5 pb-5 pt-1 border-t border-white/[0.05] space-y-4">
+          {/* Expected window */}
+          {window && (window.earliest || window.likely) && (
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Expected IPO Window</h4>
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                {window.earliest && (
+                  <span
+                    className="px-2.5 py-1 rounded-lg"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  >
+                    <span className="text-white/45 mr-1">Earliest:</span>
+                    <span className="text-white/85 font-medium">{window.earliest}</span>
+                  </span>
+                )}
+                {window.likely && (
+                  <span
+                    className="px-2.5 py-1 rounded-lg"
+                    style={{ background: "rgba(244,194,91,0.08)", border: "1px solid rgba(244,194,91,0.22)" }}
+                  >
+                    <span className="text-white/45 mr-1">Likely:</span>
+                    <span className="font-medium" style={{ color: PRE_IPO_GOLD }}>{window.likely}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Valuation notes */}
+          {valuationNotes.length > 0 && (
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Valuation Notes</h4>
+              <ul className="space-y-1 text-[11px] text-white/70">
+                {valuationNotes.map((n, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-white/30">•</span>
+                    <span>{n}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Catalysts */}
+          {catalysts.length > 0 && (
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Catalysts</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {catalysts.map((c, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 rounded-md text-[10px] font-medium"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.78)" }}
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Polymarket */}
+          <div>
+            <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Polymarket</h4>
+            {polyExists ? (
+              <div className="space-y-2">
+                {company.polymarket?.summary && (
+                  <p className="text-[11px] text-white/65 leading-relaxed">{company.polymarket.summary}</p>
+                )}
+                {valuationMarkets.length > 0 && (
+                  <div className="space-y-1.5">
+                    {valuationMarkets.map((m, i) => (
+                      <a
+                        key={i}
+                        href={m.url || undefined}
+                        target={m.url ? "_blank" : undefined}
+                        rel="noopener noreferrer"
+                        className="flex items-start justify-between gap-3 px-2.5 py-1.5 rounded-md transition-all group"
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                      >
+                        <span className="text-[11px] text-white/75 group-hover:text-white">
+                          {m.question}
+                        </span>
+                        <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: PRE_IPO_GOLD }}>
+                          {formatProbability(m.probability)}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-white/40 italic">No direct prediction market found.</p>
+            )}
+          </div>
+
+          {/* Latest News */}
+          <div>
+            <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Latest News / Confirmations</h4>
+            {newsItems.length > 0 ? (
+              <ul className="space-y-1.5">
+                {newsItems.map((n, i) => (
+                  <li key={i} className="text-[11px]">
+                    {n.url ? (
+                      <a
+                        href={n.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/80 hover:text-white inline-flex items-center gap-1.5"
+                      >
+                        <ExternalLink className="w-3 h-3 flex-shrink-0 text-white/35" />
+                        <span>{n.title}</span>
+                      </a>
+                    ) : (
+                      <span className="text-white/80">{n.title}</span>
+                    )}
+                    {(n.source || n.published_at) && (
+                      <span className="text-white/35 ml-1.5">
+                        {n.source ? `· ${n.source}` : ""}
+                        {n.published_at ? ` · ${String(n.published_at).slice(0, 10)}` : ""}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[11px] text-white/40 italic">No recent confirmation news found.</p>
+            )}
+          </div>
+
+          {/* Sources */}
+          {sources.length > 0 && (
+            <div>
+              <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-1.5">Sources</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {sources.map((s, i) => (
+                  <a
+                    key={i}
+                    href={s.url || undefined}
+                    target={s.url ? "_blank" : undefined}
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 rounded-md text-[10px] font-medium inline-flex items-center gap-1 transition-all"
+                    style={{ background: "rgba(244,194,91,0.06)", border: "1px solid rgba(244,194,91,0.18)", color: PRE_IPO_GOLD }}
+                  >
+                    {s.url && <ExternalLink className="w-2.5 h-2.5" />}
+                    <span>{s.title}{s.source ? ` (${s.source})` : ""}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreIPOWatchlistView() {
+  const { data, isLoading, error } = useQuery<PreIPOWatchlistResponse>({
+    queryKey: ["pre-ipo-watchlist"],
+    queryFn: async () => {
+      const r = await fetch("/api/calendar/pre-ipo-watchlist");
+      if (!r.ok) throw new Error(`${r.status}`);
+      return r.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+
+  const companies = data?.companies || [];
+  const isStaleCache = data?.status && data.status !== "ok";
+
+  return (
+    <div data-testid="pre-ipo-watchlist-view">
+      {/* Header */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.12))",
+              border: "1px solid rgba(244,194,91,0.32)",
+            }}
+          >
+            <Gem className="w-3.5 h-3.5" style={{ color: PRE_IPO_GOLD }} />
+          </div>
+          <h2 className="text-base font-bold text-white">Pre-IPO Watchlist</h2>
+          <span
+            className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
+            style={{
+              background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.14))",
+              border: "1px solid rgba(244,194,91,0.32)",
+              color: PRE_IPO_GOLD,
+            }}
+          >
+            Premium
+          </span>
+        </div>
+        <p className="text-[12px] text-white/65 mb-1">
+          Private-market IPO intelligence for SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
+        </p>
+        <p className="text-[10.5px] text-white/40 leading-relaxed">
+          Tracks IPO rumors, valuation estimates, prediction-market odds, and recent news confirmations.
+          This is signal intelligence, not an official IPO calendar.
+        </p>
+        {data?.updated_at && (
+          <p className="text-[10px] text-white/30 mt-1.5">
+            Updated {String(data.updated_at).slice(0, 19).replace("T", " ")} UTC
+          </p>
+        )}
+      </div>
+
+      {/* Stale-cache banner */}
+      {isStaleCache && (
+        <div
+          className="mb-4 px-3 py-2 rounded-lg flex items-start gap-2"
+          style={{ background: "rgba(244,194,91,0.06)", border: "1px solid rgba(244,194,91,0.2)" }}
+        >
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: PRE_IPO_GOLD }} />
+          <p className="text-[11px]" style={{ color: PRE_IPO_GOLD }}>
+            Latest intelligence unavailable — showing cached data.
+          </p>
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl h-[88px] animate-pulse"
+              style={{
+                background: "linear-gradient(180deg, rgba(244,194,91,0.04) 0%, rgba(255,255,255,0.015) 100%)",
+                border: "1px solid rgba(244,194,91,0.12)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Error */}
+      {!isLoading && error && companies.length === 0 && (
+        <div
+          className="px-4 py-6 rounded-xl text-center"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <AlertCircle className="w-5 h-5 mx-auto mb-2 text-white/35" />
+          <p className="text-[12px] text-white/55">Could not load Pre-IPO Watchlist intelligence.</p>
+        </div>
+      )}
+
+      {/* Empty */}
+      {!isLoading && !error && companies.length === 0 && (
+        <div
+          className="px-4 py-6 rounded-xl text-center"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <p className="text-[12px] text-white/55">No pre-IPO companies tracked at this time.</p>
+        </div>
+      )}
+
+      {/* Cards */}
+      {!isLoading && companies.length > 0 && (
+        <div className="space-y-3">
+          {companies.map((c, i) => (
+            <PreIPOCompanyCard key={`${c.company}-${i}`} company={c} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
@@ -4098,6 +4522,8 @@ export default function StocksEarningsCalendarPage() {
   const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent" | "month">("thisweek");
   const [earningsSignalMode, setEarningsSignalMode] = useState<"curated" | "all">("curated");
   const [earningsJumpDate, setEarningsJumpDate] = useState<string | null>(null);
+  // Pre-IPO Watchlist (premium private-market intelligence) toggle within IPO tab
+  const [ipoView, setIpoView] = useState<"calendar" | "pre_ipo_watchlist">("calendar");
   useEffect(() => { console.log("[Earnings mode]", earningsMode, earningsSignalMode); }, [earningsMode, earningsSignalMode]);
   const switchTab = (key: string) => {
     setActiveTab(key);
@@ -4326,6 +4752,7 @@ export default function StocksEarningsCalendarPage() {
   }, [queryClient]);
 
   const isEarningsTab   = activeTab === "earnings_dates";
+  const isIpoTab        = activeTab === "ipos";
   const showFilterBar   = isEarningsTab;
 
   return (
@@ -4541,8 +4968,62 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
+          {/* ── IPO Tab — Calendar / Pre-IPO Watchlist toggle ──── */}
+          {isIpoTab && (
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <button
+                onClick={() => setIpoView("calendar")}
+                data-testid="ipo-view-calendar"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                style={ipoView === "calendar" ? {
+                  background: "rgba(139,92,246,0.15)",
+                  border: "1px solid rgba(139,92,246,0.3)",
+                  color: "#a78bfa",
+                } : {
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  color: "rgba(255,255,255,0.45)",
+                }}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                IPO Calendar
+              </button>
+              <button
+                onClick={() => setIpoView("pre_ipo_watchlist")}
+                data-testid="ipo-view-pre-ipo-watchlist"
+                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide transition-all overflow-hidden"
+                style={ipoView === "pre_ipo_watchlist" ? {
+                  background: "linear-gradient(135deg, rgba(244,194,91,0.28) 0%, rgba(212,162,60,0.18) 100%)",
+                  border: "1px solid rgba(244,194,91,0.55)",
+                  color: "#f4c25b",
+                  boxShadow: "0 0 0 1px rgba(244,194,91,0.18), 0 0 14px rgba(244,194,91,0.18)",
+                } : {
+                  background: "linear-gradient(135deg, rgba(244,194,91,0.10) 0%, rgba(212,162,60,0.05) 100%)",
+                  border: "1px solid rgba(244,194,91,0.32)",
+                  color: "#f4c25b",
+                  boxShadow: "0 0 8px rgba(244,194,91,0.08)",
+                }}
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Pre-IPO Watchlist</span>
+                <span
+                  className="ml-1 px-1.5 py-px rounded-full text-[8px] font-extrabold uppercase tracking-wider"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(244,194,91,0.35), rgba(212,162,60,0.2))",
+                    border: "1px solid rgba(244,194,91,0.5)",
+                    color: "#fde7a8",
+                  }}
+                >
+                  Premium
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "curated" ? (
+          {isIpoTab && ipoView === "pre_ipo_watchlist" ? (
+            <PreIPOWatchlistView />
+          ) : isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "curated" ? (
             /* ── Week · Curated — curated board ────────────────── */
             <WeeklyEarningsBoard
               weekStart={weekCleanStart}
