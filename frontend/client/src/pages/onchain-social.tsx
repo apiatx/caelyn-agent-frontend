@@ -1439,6 +1439,26 @@ type ScreenerTab = 'social' | 'fundamental';
 
 const DASH = '—';
 
+// Try every common envelope shape the backend may use.
+function extractRowsFromAny(data: any): any[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  // Direct row arrays at common keys
+  for (const key of ['rows', 'data', 'entries'] as const) {
+    if (Array.isArray((data as any)[key]) && (data as any)[key].length > 0)
+      return (data as any)[key];
+  }
+  // Nested: { fundamental_screener: { rows/data/entries: [...] } }
+  const nested = (data as any).fundamental_screener ?? (data as any).social_screener;
+  if (nested) {
+    for (const key of ['rows', 'data', 'entries'] as const) {
+      if (Array.isArray((nested as any)[key]) && (nested as any)[key].length > 0)
+        return (nested as any)[key];
+    }
+  }
+  return [];
+}
+
 function fmtCompact(n: any): string {
   if (n === null || n === undefined || n === '') return DASH;
   const num = typeof n === 'number' ? n : Number(n);
@@ -1538,12 +1558,10 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const [lazyError, setLazyError] = useState(false);
   const lazyAttempted = useRef(false);
 
-  // Bundled is usable when it has actual rows — empty bundled triggers the lazy fetch.
-  const bundledFundIsUsable = !!(
-    bundledFundamental &&
-    Array.isArray(bundledFundamental.rows) &&
-    bundledFundamental.rows.length > 0
-  );
+  // Bundled is usable when extractRowsFromAny finds actual rows — covers .rows, .data,
+  // .entries, and nested .fundamental_screener.rows shapes.
+  const bundledFundRows = extractRowsFromAny(bundledFundamental);
+  const bundledFundIsUsable = bundledFundRows.length > 0;
 
   const fundamentalData = bundledFundIsUsable ? bundledFundamental : lazyFundamental;
 
@@ -1572,9 +1590,16 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     }
   }, [tab]);
 
-  // Strict contract — rows are always at .rows; status fields do not gate rendering.
-  const socialRows: any[] = Array.isArray(socialScreener?.rows) ? socialScreener.rows : [];
-  const fundRows: any[]   = Array.isArray(fundamentalData?.rows) ? fundamentalData.rows : [];
+  // Extract rows tolerantly — backend may use .rows, .data, .entries, or nest under
+  // .fundamental_screener.rows.  extractRowsFromAny tries each path in order.
+  const socialRows: any[] = extractRowsFromAny(socialScreener);
+  const fundRows: any[]   = bundledFundIsUsable
+    ? bundledFundRows
+    : extractRowsFromAny(lazyFundamental);
+
+  // When fundamental rows are unavailable, fall back to the social ticker universe
+  // so the table is never empty — all fund metric cells render "—" via their formatters.
+  const fundFallbackToSocial = tab === 'fundamental' && fundRows.length === 0 && socialRows.length > 0 && !lazyLoading;
 
   // Theme list from social rows
   const themeOptions = (() => {
@@ -1639,7 +1664,9 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   };
 
   const displaySocial = sortRows(filterRows(socialRows));
-  const displayFund = sortRows(filterRows(fundRows));
+  // When fund rows are absent, fall back to the social ticker universe so the
+  // table always renders with the known tickers (all fund columns show "—").
+  const displayFund = sortRows(filterRows(fundFallbackToSocial ? socialRows : fundRows));
 
   // ── Styles ───────────────────────────────────────────────────────
   const C = {
@@ -1773,14 +1800,14 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   const fundEmptyMsg = (() => {
     if (tab !== 'fundamental') return null;
-    if (bundledFundIsUsable) return null;
+    if (fundRows.length > 0) return null;                // we have real fund rows
     if (lazyLoading) return 'Loading fundamentals…';
-    // Has lazy rows — render them regardless of cache_status.
-    if (lazyFundamental && Array.isArray(lazyFundamental.rows) && lazyFundamental.rows.length > 0) return null;
-    // Lazy was attempted and returned nothing useful, or errored.
+    // Social rows exist → we'll render the table with "—" metrics (fundFallbackToSocial).
+    // Do NOT show a full-panel error; a small inline warning handles this case instead.
+    if (socialRows.length > 0) return null;
+    // Nothing at all — true empty state.
     if (lazyError) return 'Could not load fundamentals — please try again later.';
     if (lazyAttempted.current) return 'Fundamental enrichment is unavailable or still warming up.';
-    // Lazy not yet triggered (effect will fire after this render).
     return null;
   })();
 
@@ -1898,39 +1925,50 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
             {fundEmptyMsg}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto', borderRadius: 8, border: `1px solid ${C.border}` }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: tab === 'social' ? 1100 : 1300 }}>
-              <thead>
-                <tr>
-                  {cols.map(c => (
-                    <th key={c.key} style={thStyle(c.align || 'right')} onClick={() => handleSort(c.key)}>
-                      {c.label}{sortArrow(c.key)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {displayRows.length === 0 ? (
+          <>
+            {fundFallbackToSocial && (
+              <div style={{
+                marginBottom: '0.5rem', padding: '5px 10px', borderRadius: 6,
+                background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                color: '#f59e0b', fontSize: '0.65rem', fontFamily: sansFont,
+              }}>
+                Fundamental enrichment is warming up — showing ticker universe with available metrics.
+              </div>
+            )}
+            <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto', borderRadius: 8, border: `1px solid ${C.border}` }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: tab === 'social' ? 1100 : 1300 }}>
+                <thead>
                   <tr>
-                    <td colSpan={cols.length} style={{ ...tdStyle('left'), color: C.dim, textAlign: 'center', padding: '1.25rem' }}>
-                      No matches.
-                    </td>
-                  </tr>
-                ) : displayRows.map((r, i) => (
-                  <tr key={`${r.symbol || 'row'}-${i}`} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
                     {cols.map(c => (
-                      <td key={c.key} style={tdStyle(c.align || 'right')}>
-                        {c.render(r)}
-                      </td>
+                      <th key={c.key} style={thStyle(c.align || 'right')} onClick={() => handleSort(c.key)}>
+                        {c.label}{sortArrow(c.key)}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {displayRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={cols.length} style={{ ...tdStyle('left'), color: C.dim, textAlign: 'center', padding: '1.25rem' }}>
+                        No matches.
+                      </td>
+                    </tr>
+                  ) : displayRows.map((r, i) => (
+                    <tr key={`${r.symbol || 'row'}-${i}`} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
+                      {cols.map(c => (
+                        <td key={c.key} style={tdStyle(c.align || 'right')}>
+                          {c.render(r)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
-        {tab === 'fundamental' && lazyError && (
+        {tab === 'fundamental' && lazyError && !fundFallbackToSocial && (
           <div style={{ marginTop: '0.6rem', color: '#f59e0b', fontSize: '0.7rem', fontFamily: sansFont }}>
             Could not load fundamental enrichment.
           </div>
