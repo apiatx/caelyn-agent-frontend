@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, ChevronUp, AlertCircle, Crown, Gem } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, TrendingDown, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, ChevronUp, AlertCircle, Crown, Gem, Flame, Eye, Minus } from "lucide-react";
 
 // ─── DATA FLOW (Catalyst Calendar) ────────────────────────────
 //
@@ -4109,6 +4109,25 @@ interface PreIPOSourceItem {
   source?: string;
 }
 
+interface PreIPOScoreBreakdown {
+  ipo_probability_score?: number;
+  valuation_momentum_score?: number;
+  news_recency_score?: number;
+  source_quality_score?: number;
+  catalyst_strength_score?: number;
+}
+
+interface PreIPOChangeTracking {
+  valuation_change?: string;
+  ipo_probability_change?: string;
+  new_catalysts?: string[];
+  previous_score?: number | null;
+  score_change?: number | null;
+  last_snapshot_at?: string | null;
+}
+
+type PreIPOMomentumBadge = "Heating Up" | "Watch" | "Dormant" | string;
+
 interface PreIPOCompany {
   company: string;
   ipo_status?: string;
@@ -4120,6 +4139,12 @@ interface PreIPOCompany {
   confidence_score?: string;
   latest_news?: PreIPONewsItem[];
   sources?: PreIPOSourceItem[];
+  // ── Ranked intelligence fields (additive) ───────────────────────
+  opportunity_score?: number;
+  rank?: number;
+  momentum_badge?: PreIPOMomentumBadge;
+  score_breakdown?: PreIPOScoreBreakdown;
+  change_tracking?: PreIPOChangeTracking;
 }
 
 interface PreIPOWatchlistResponse {
@@ -4157,7 +4182,242 @@ function formatProbability(p: number | undefined | null): string {
   return `${Math.round(Number(p) * 100)}%`;
 }
 
-function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
+type MomentumStyle = {
+  label: string;
+  bg: string;
+  text: string;
+  border: string;
+  Icon: typeof Flame;
+};
+
+function momentumStyle(badge?: string): MomentumStyle {
+  const norm = (badge || "").trim().toLowerCase();
+  if (norm === "heating up" || norm === "heating_up") {
+    return {
+      label: "Heating Up",
+      bg: "linear-gradient(135deg, rgba(244,194,91,0.28) 0%, rgba(212,123,40,0.18) 100%)",
+      text: "#fde7a8",
+      border: "rgba(244,194,91,0.55)",
+      Icon: Flame,
+    };
+  }
+  if (norm === "watch") {
+    return {
+      label: "Watch",
+      bg: "rgba(96,165,250,0.12)",
+      text: "#93c5fd",
+      border: "rgba(96,165,250,0.32)",
+      Icon: Eye,
+    };
+  }
+  // Dormant or unknown → muted grey
+  return {
+    label: badge && badge.length > 0 ? badge : "Dormant",
+    bg: "rgba(255,255,255,0.04)",
+    text: "rgba(255,255,255,0.5)",
+    border: "rgba(255,255,255,0.12)",
+    Icon: Minus,
+  };
+}
+
+function MomentumBadge({ badge }: { badge?: string }) {
+  const s = momentumStyle(badge);
+  const Icon = s.Icon;
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide"
+      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
+    >
+      <Icon className="w-3 h-3" />
+      {s.label}
+    </span>
+  );
+}
+
+const SCORE_BREAKDOWN_ROWS: { key: keyof PreIPOScoreBreakdown; label: string; max: number }[] = [
+  { key: "ipo_probability_score",     label: "IPO Probability",     max: 30 },
+  { key: "valuation_momentum_score",  label: "Valuation Momentum",  max: 25 },
+  { key: "news_recency_score",        label: "News Recency",        max: 20 },
+  { key: "source_quality_score",      label: "Source Quality",      max: 15 },
+  { key: "catalyst_strength_score",   label: "Catalyst Strength",   max: 10 },
+];
+
+function ScoreBreakdownBars({ breakdown }: { breakdown?: PreIPOScoreBreakdown }) {
+  if (!breakdown) {
+    return (
+      <p className="text-[11px] text-white/40 italic">Score breakdown not available.</p>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {SCORE_BREAKDOWN_ROWS.map((row) => {
+        const val = Number(breakdown[row.key] ?? 0);
+        const pct = Math.max(0, Math.min(100, (val / row.max) * 100));
+        return (
+          <div key={row.key} className="flex items-center gap-2.5">
+            <span className="text-[10.5px] text-white/65 w-[120px] flex-shrink-0">{row.label}</span>
+            <div
+              className="flex-1 h-1.5 rounded-full overflow-hidden"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${pct}%`,
+                  background: `linear-gradient(90deg, ${PRE_IPO_GOLD_DEEP}, ${PRE_IPO_GOLD})`,
+                }}
+              />
+            </div>
+            <span
+              className="text-[10.5px] font-semibold tabular-nums w-[44px] text-right flex-shrink-0"
+              style={{ color: PRE_IPO_GOLD }}
+            >
+              {Number.isFinite(val) ? Math.round(val) : 0}/{row.max}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChangeDeltaPill({ value }: { value?: number | null }) {
+  if (value == null || !Number.isFinite(Number(value))) {
+    return <span className="text-white/45">—</span>;
+  }
+  const v = Number(value);
+  const positive = v > 0;
+  const negative = v < 0;
+  const color = positive ? "#34d399" : negative ? "#f87171" : "rgba(255,255,255,0.55)";
+  const bg = positive
+    ? "rgba(52,211,153,0.10)"
+    : negative
+    ? "rgba(248,113,113,0.10)"
+    : "rgba(255,255,255,0.04)";
+  const border = positive
+    ? "rgba(52,211,153,0.28)"
+    : negative
+    ? "rgba(248,113,113,0.28)"
+    : "rgba(255,255,255,0.10)";
+  const Arrow = positive ? TrendingUp : negative ? TrendingDown : Minus;
+  const sign = positive ? "+" : "";
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold tabular-nums"
+      style={{ background: bg, color, border: `1px solid ${border}` }}
+    >
+      <Arrow className="w-2.5 h-2.5" />
+      {sign}{Math.round(v)}
+    </span>
+  );
+}
+
+function ChangeTextPill({ value }: { value?: string }) {
+  const v = (value || "").trim();
+  if (!v || v.toLowerCase() === "unknown") {
+    return <span className="text-white/45">Unknown</span>;
+  }
+  const norm = v.toLowerCase();
+  const positive = /(up|increase|increased|rising|expand|higher|↑|\+)/.test(norm);
+  const negative = /(down|decrease|decreased|falling|lower|↓|-)/.test(norm) && !positive;
+  const color = positive ? "#34d399" : negative ? "#f87171" : "rgba(255,255,255,0.7)";
+  const bg = positive
+    ? "rgba(52,211,153,0.08)"
+    : negative
+    ? "rgba(248,113,113,0.08)"
+    : "rgba(255,255,255,0.04)";
+  const border = positive
+    ? "rgba(52,211,153,0.24)"
+    : negative
+    ? "rgba(248,113,113,0.24)"
+    : "rgba(255,255,255,0.10)";
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10.5px] font-medium"
+      style={{ background: bg, color, border: `1px solid ${border}` }}
+    >
+      {v}
+    </span>
+  );
+}
+
+function ChangeTrackingSection({ tracking }: { tracking?: PreIPOChangeTracking }) {
+  const hasAny =
+    !!tracking &&
+    (
+      tracking.previous_score != null ||
+      tracking.score_change != null ||
+      (tracking.valuation_change && tracking.valuation_change.toLowerCase() !== "unknown") ||
+      (tracking.ipo_probability_change && tracking.ipo_probability_change.toLowerCase() !== "unknown") ||
+      (tracking.new_catalysts && tracking.new_catalysts.length > 0) ||
+      !!tracking.last_snapshot_at
+    );
+
+  if (!tracking || !hasAny) {
+    return (
+      <p className="text-[11px] text-white/40 italic">Not enough history yet.</p>
+    );
+  }
+
+  const newCatalysts = tracking.new_catalysts || [];
+
+  return (
+    <div className="space-y-2.5">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10.5px] text-white/55">Previous score</span>
+          <span className="text-[11px] font-semibold text-white/85 tabular-nums">
+            {tracking.previous_score != null ? Math.round(Number(tracking.previous_score)) : "—"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10.5px] text-white/55">Score change</span>
+          <ChangeDeltaPill value={tracking.score_change} />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10.5px] text-white/55">Valuation change</span>
+          <ChangeTextPill value={tracking.valuation_change} />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10.5px] text-white/55">IPO probability change</span>
+          <ChangeTextPill value={tracking.ipo_probability_change} />
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-white/45 mb-1">New catalysts</p>
+        {newCatalysts.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {newCatalysts.map((c, i) => (
+              <span
+                key={i}
+                className="px-2 py-1 rounded-md text-[10px] font-medium inline-flex items-center gap-1"
+                style={{
+                  background: "rgba(244,194,91,0.08)",
+                  border: "1px solid rgba(244,194,91,0.28)",
+                  color: PRE_IPO_GOLD,
+                }}
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+                {c}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-white/40 italic">No new catalysts since last snapshot.</p>
+        )}
+      </div>
+
+      {tracking.last_snapshot_at && (
+        <p className="text-[10px] text-white/35">
+          Last snapshot {String(tracking.last_snapshot_at).slice(0, 19).replace("T", " ")} UTC
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PreIPOCompanyCard({ company, displayRank }: { company: PreIPOCompany; displayRank: number }) {
   const [expanded, setExpanded] = useState(false);
   const probability12m = company.polymarket?.ipo_probability_12m;
   const probabilityPct = formatProbability(probability12m);
@@ -4173,9 +4433,16 @@ function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
 
   const testIdSafeName = company.company.replace(/[^A-Za-z0-9]/g, "-").toLowerCase();
 
+  const rank = company.rank ?? displayRank;
+  const opportunityScore =
+    company.opportunity_score != null && Number.isFinite(Number(company.opportunity_score))
+      ? Math.round(Number(company.opportunity_score))
+      : null;
+
   return (
     <div
       data-testid={`pre-ipo-card-${testIdSafeName}`}
+      data-rank={rank}
       className="rounded-2xl overflow-hidden transition-all"
       style={{
         background: "linear-gradient(180deg, rgba(244,194,91,0.05) 0%, rgba(255,255,255,0.015) 100%)",
@@ -4187,25 +4454,48 @@ function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
       <div className="px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative"
             style={{
               background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.12))",
               border: "1px solid rgba(244,194,91,0.32)",
             }}
+            data-testid={`pre-ipo-rank-${testIdSafeName}`}
           >
-            <Crown className="w-4 h-4" style={{ color: PRE_IPO_GOLD }} />
+            <span
+              className="text-[13px] font-extrabold tabular-nums"
+              style={{ color: PRE_IPO_GOLD }}
+            >
+              #{rank}
+            </span>
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-white truncate" data-testid={`pre-ipo-company-${testIdSafeName}`}>
-              {company.company}
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-bold text-white truncate" data-testid={`pre-ipo-company-${testIdSafeName}`}>
+                {company.company}
+              </h3>
+              {company.momentum_badge && (
+                <span data-testid={`pre-ipo-momentum-${testIdSafeName}`}>
+                  <MomentumBadge badge={company.momentum_badge} />
+                </span>
+              )}
+            </div>
             {company.ipo_status && (
-              <p className="text-[11px] text-white/45 truncate">{company.ipo_status}</p>
+              <p className="text-[11px] text-white/45 truncate mt-0.5">{company.ipo_status}</p>
             )}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] flex-shrink-0">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-white/35">Opportunity</span>
+            <span
+              className="font-extrabold tabular-nums text-[13px] leading-tight"
+              style={{ color: opportunityScore != null ? PRE_IPO_GOLD : "rgba(255,255,255,0.5)" }}
+              data-testid={`pre-ipo-score-${testIdSafeName}`}
+            >
+              {opportunityScore != null ? `${opportunityScore}/100` : "—"}
+            </span>
+          </div>
           <div className="flex flex-col">
             <span className="text-[9px] uppercase tracking-wider text-white/35">Est. Valuation</span>
             <span className="font-semibold text-white/85">{company.estimated_valuation || "—"}</span>
@@ -4214,6 +4504,12 @@ function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
             <span className="text-[9px] uppercase tracking-wider text-white/35">12M IPO Odds</span>
             <span className="font-semibold" style={{ color: probability12m != null ? PRE_IPO_GOLD : "rgba(255,255,255,0.5)" }}>
               {probabilityPct}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-white/35">Window</span>
+            <span className="font-semibold text-white/85">
+              {window?.likely || window?.earliest || "—"}
             </span>
           </div>
           <div className="flex flex-col">
@@ -4238,6 +4534,18 @@ function PreIPOCompanyCard({ company }: { company: PreIPOCompany }) {
 
       {expanded && (
         <div className="px-5 pb-5 pt-1 border-t border-white/[0.05] space-y-4">
+          {/* Score breakdown */}
+          <div data-testid={`pre-ipo-score-breakdown-${testIdSafeName}`}>
+            <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Score Breakdown</h4>
+            <ScoreBreakdownBars breakdown={company.score_breakdown} />
+          </div>
+
+          {/* Change tracking */}
+          <div data-testid={`pre-ipo-change-tracking-${testIdSafeName}`}>
+            <h4 className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Change Tracking</h4>
+            <ChangeTrackingSection tracking={company.change_tracking} />
+          </div>
+
           {/* Expected window */}
           {window && (window.earliest || window.likely) && (
             <div>
@@ -4407,7 +4715,18 @@ function PreIPOWatchlistView() {
     retry: 1,
   });
 
-  const companies = data?.companies || [];
+  const rawCompanies = data?.companies || [];
+  // Sort by rank ascending (with explicit rank winning), then by opportunity_score desc
+  const companies = [...rawCompanies].sort((a, b) => {
+    const ra = a.rank;
+    const rb = b.rank;
+    if (ra != null && rb != null) return ra - rb;
+    if (ra != null) return -1;
+    if (rb != null) return 1;
+    const sa = a.opportunity_score ?? -Infinity;
+    const sb = b.opportunity_score ?? -Infinity;
+    return Number(sb) - Number(sa);
+  });
   const isStaleCache = data?.status && data.status !== "ok";
 
   return (
@@ -4424,7 +4743,7 @@ function PreIPOWatchlistView() {
           >
             <Gem className="w-3.5 h-3.5" style={{ color: PRE_IPO_GOLD }} />
           </div>
-          <h2 className="text-base font-bold text-white">Pre-IPO Watchlist</h2>
+          <h2 className="text-base font-bold text-white">IPO Opportunities</h2>
           <span
             className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
             style={{
@@ -4437,7 +4756,7 @@ function PreIPOWatchlistView() {
           </span>
         </div>
         <p className="text-[12px] text-white/65 mb-1">
-          Private-market IPO intelligence for SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
+          Ranked private-market IPO intelligence across SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
         </p>
         <p className="text-[10.5px] text-white/40 leading-relaxed">
           Tracks IPO rumors, valuation estimates, prediction-market odds, and recent news confirmations.
@@ -4504,7 +4823,7 @@ function PreIPOWatchlistView() {
       {!isLoading && companies.length > 0 && (
         <div className="space-y-3">
           {companies.map((c, i) => (
-            <PreIPOCompanyCard key={`${c.company}-${i}`} company={c} />
+            <PreIPOCompanyCard key={`${c.company}-${i}`} company={c} displayRank={i + 1} />
           ))}
         </div>
       )}
