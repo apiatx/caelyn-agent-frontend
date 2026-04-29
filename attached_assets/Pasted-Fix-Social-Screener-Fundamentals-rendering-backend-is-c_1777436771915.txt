@@ -1,0 +1,114 @@
+Fix Social Screener + Fundamentals rendering — backend is confirmed returning valid data.
+
+Root cause:
+Frontend is reading camelCase fields, but backend returns snake_case fields.
+
+This causes all values to render as undefined → shown as “—”.
+
+Backend confirmed fields:
+
+SOCIAL TAB:
+- market_cap
+- volume
+- price_change_1d
+- price_change_7d
+- price_change_30d
+- price_change_ytd
+- price_change_1y
+
+FUNDAMENTALS TAB:
+- pe_ratio
+- revenue
+- gross_margin
+- profit_margin
+- eps_diluted
+- operating_income
+- net_income
+- ebitda
+- free_cash_flow
+- total_debt
+- data_quality
+
+----------------------------------------
+TASK 1 — FIX FIELD ACCESS
+----------------------------------------
+
+Replace ALL camelCase usage with snake_case.
+
+Examples:
+
+❌ row.marketCap
+✅ row.market_cap
+
+❌ row.change1d / row.changesPercentage
+✅ row.price_change_1d
+
+❌ row.peRatio
+✅ row.pe_ratio
+
+----------------------------------------
+TASK 2 — ADD SAFE FALLBACK MAPPING (TEMPORARY)
+----------------------------------------
+
+To avoid future breaks:
+
+const marketCap =
+  row.market_cap ?? row.marketCap ?? null
+
+const change1d =
+  row.price_change_1d ?? row.change1d ?? row.changesPercentage ?? null
+
+const pe =
+  row.pe_ratio ?? row.peRatio ?? null
+
+----------------------------------------
+TASK 3 — DEBUG LOG (TEMPORARY)
+----------------------------------------
+
+Add:
+
+console.log("SOCIAL ROW SAMPLE:", rows[0])
+
+Confirm:
+- market_cap exists
+- price_change_1d exists
+- pe_ratio exists
+
+----------------------------------------
+TASK 4 — REMOVE FALSE EMPTY STATE
+----------------------------------------
+
+DO NOT show:
+“Could not load fundamentals”
+IF rows exist.
+
+Instead:
+- Render rows
+- Show “—” only for truly missing values
+
+----------------------------------------
+TASK 5 — VERIFY
+----------------------------------------
+
+After fix:
+
+Social tab:
+- price_change_1d visible
+- volume visible
+- market_cap visible
+
+Fundamentals tab:
+- pe_ratio visible (NVDA, AMZN, etc.)
+- revenue visible
+- gross_margin visible
+
+EU tickers (LPKF, etc.):
+- still show “—” (correct)
+
+----------------------------------------
+ACCEPTANCE
+----------------------------------------
+
+- No more blank tables
+- Values appear immediately
+- Only unsupported tickers show “—”

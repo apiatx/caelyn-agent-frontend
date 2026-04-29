@@ -1601,6 +1601,17 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   // so the table is never empty — all fund metric cells render "—" via their formatters.
   const fundFallbackToSocial = tab === 'fundamental' && fundRows.length === 0 && socialRows.length > 0 && !lazyLoading;
 
+  // DEBUG (temporary) — logs the first row of each dataset once, to confirm field names.
+  const _debuggedRef = useRef({ social: false, fund: false });
+  if (!_debuggedRef.current.social && socialRows.length > 0) {
+    _debuggedRef.current.social = true;
+    console.log('SOCIAL ROW SAMPLE:', socialRows[0]);
+  }
+  if (!_debuggedRef.current.fund && fundRows.length > 0) {
+    _debuggedRef.current.fund = true;
+    console.log('FUND ROW SAMPLE:', fundRows[0]);
+  }
+
   // Theme list from social rows
   const themeOptions = (() => {
     const set = new Set<string>();
@@ -1731,63 +1742,68 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     ? <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', verticalAlign: 'middle' }} />
     : <span style={{ color: C.dim }}>—</span>;
 
-  const tickerCell = (row: any) => (
-    <button
-      onClick={() => onTickerClick(row.symbol, row, undefined, row.company_name)}
-      title={row.company_name || row.symbol}
-      style={{
-        padding: '3px 8px',
-        borderRadius: 6,
-        background: 'rgba(167,139,250,0.10)',
-        border: '1px solid rgba(167,139,250,0.25)',
-        color: C.purple,
-        fontFamily: font,
-        fontWeight: 700,
-        fontSize: '0.72rem',
-        cursor: 'pointer',
-      }}
-    >${row.symbol}</button>
-  );
+  const tickerCell = (row: any) => {
+    const sym  = row.symbol  ?? row.ticker  ?? '';
+    const name = row.company_name ?? row.name ?? row.companyName ?? sym;
+    return (
+      <button
+        onClick={() => onTickerClick(sym, row, undefined, name)}
+        title={name || sym}
+        style={{
+          padding: '3px 8px',
+          borderRadius: 6,
+          background: 'rgba(167,139,250,0.10)',
+          border: '1px solid rgba(167,139,250,0.25)',
+          color: C.purple,
+          fontFamily: font,
+          fontWeight: 700,
+          fontSize: '0.72rem',
+          cursor: 'pointer',
+        }}
+      >${sym}</button>
+    );
+  };
 
   const pctCell = (v: any) => (
     <span style={{ color: pctColor(v), fontWeight: 600 }}>{fmtPercent(v)}</span>
   );
 
   // Social table column config
+  // Each render tries the confirmed snake_case field first, then common camelCase aliases.
   const socialCols: Array<{ key: string; label: string; align?: 'left' | 'right'; render: (r: any) => React.ReactNode }> = [
-    { key: 'symbol',                    label: 'Ticker',         align: 'left',  render: r => tickerCell(r) },
-    { key: 'theme',                     label: 'Theme',          align: 'left',  render: r => <span style={{ color: C.subtle }}>{r.theme || DASH}</span> },
-    { key: 'market_cap',                label: 'Market Cap',                     render: r => fmtCurrencyCompact(r.market_cap) },
-    { key: 'volume',                    label: 'Volume',                         render: r => r.volume_display || fmtCompact(r.volume) },
-    { key: 'price_change_1d',           label: '1D',                             render: r => pctCell(r.price_change_1d) },
-    { key: 'price_change_7d',           label: '7D',                             render: r => pctCell(r.price_change_7d) },
-    { key: 'price_change_30d',          label: '30D',                            render: r => pctCell(r.price_change_30d) },
-    { key: 'price_change_ytd',          label: 'YTD',                            render: r => pctCell(r.price_change_ytd) },
-    { key: 'price_change_1y',           label: '1Y',                             render: r => pctCell(r.price_change_1y) },
-    { key: 'mentions_1d',               label: '1D Mentions',                    render: r => fmtInt(r.mentions_1d) },
-    { key: 'mentions_7d',               label: '7D Mentions',                    render: r => fmtInt(r.mentions_7d) },
-    { key: 'consensus_score',           label: 'Consensus',  render: r => greenDot(inSection(sectionTickers?.consensus, r.symbol)) },
-    { key: 'freshness_score',           label: 'Fresh',      render: r => greenDot(inSection(sectionTickers?.fresh, r.symbol)) },
-    { key: 'social_acceleration_score', label: 'Social Accel', render: r => greenDot(inSection(sectionTickers?.accel, r.symbol)) },
+    { key: 'symbol',                    label: 'Ticker',       align: 'left', render: r => tickerCell(r) },
+    { key: 'theme',                     label: 'Theme',        align: 'left', render: r => <span style={{ color: C.subtle }}>{r.theme || DASH}</span> },
+    { key: 'market_cap',                label: 'Market Cap',                  render: r => fmtCurrencyCompact(r.market_cap ?? r.marketCap ?? null) },
+    { key: 'volume',                    label: 'Volume',                      render: r => r.volume_display || fmtCompact(r.volume ?? r.vol ?? null) },
+    { key: 'price_change_1d',           label: '1D',                          render: r => pctCell(r.price_change_1d ?? r.change1d ?? r.changesPercentage ?? null) },
+    { key: 'price_change_7d',           label: '7D',                          render: r => pctCell(r.price_change_7d ?? r.change7d ?? null) },
+    { key: 'price_change_30d',          label: '30D',                         render: r => pctCell(r.price_change_30d ?? r.change30d ?? null) },
+    { key: 'price_change_ytd',          label: 'YTD',                         render: r => pctCell(r.price_change_ytd ?? r.changeYtd ?? null) },
+    { key: 'price_change_1y',           label: '1Y',                          render: r => pctCell(r.price_change_1y ?? r.change1y ?? null) },
+    { key: 'mentions_1d',               label: '1D Mentions',                 render: r => fmtInt(r.mentions_1d ?? r.mentions1d ?? null) },
+    { key: 'mentions_7d',               label: '7D Mentions',                 render: r => fmtInt(r.mentions_7d ?? r.mentions7d ?? null) },
+    { key: 'consensus_score',           label: 'Consensus',                   render: r => greenDot(inSection(sectionTickers?.consensus, r.symbol ?? r.ticker ?? '')) },
+    { key: 'freshness_score',           label: 'Fresh',                       render: r => greenDot(inSection(sectionTickers?.fresh,     r.symbol ?? r.ticker ?? '')) },
+    { key: 'social_acceleration_score', label: 'Social Accel',                render: r => greenDot(inSection(sectionTickers?.accel,     r.symbol ?? r.ticker ?? '')) },
   ];
 
   const fundCols: Array<{ key: string; label: string; align?: 'left' | 'right'; render: (r: any) => React.ReactNode }> = [
-    { key: 'symbol',          label: 'Ticker',        align: 'left',  render: r => tickerCell(r) },
-    { key: 'market_cap',      label: 'Market Cap',                    render: r => fmtCurrencyCompact(r.market_cap) },
-    { key: 'revenue',         label: 'Revenue',                       render: r => fmtCurrencyCompact(r.revenue) },
-    { key: 'revenue_growth',  label: 'Rev Growth',                    render: r => pctCell(r.revenue_growth) },
-    { key: 'gross_profit',    label: 'Gross Profit',                  render: r => fmtCurrencyCompact(r.gross_profit) },
-    { key: 'gross_margin',    label: 'Gross Margin',                  render: r => fmtPercent(r.gross_margin) },
-    { key: 'net_income',      label: 'Net Income',                    render: r => fmtCurrencyCompact(r.net_income) },
-    { key: 'eps_diluted',     label: 'EPS Diluted',                   render: r => (r.eps_diluted == null || r.eps_diluted === '' ? DASH : `$${Number(r.eps_diluted).toFixed(2)}`) },
-    { key: 'ebitda',          label: 'EBITDA',                        render: r => fmtCurrencyCompact(r.ebitda) },
-    { key: 'free_cash_flow',  label: 'Free Cash Flow',                render: r => fmtCurrencyCompact(r.free_cash_flow) },
-    { key: 'fcf_margin',      label: 'FCF Margin',                    render: r => fmtPercent(r.fcf_margin) },
-    { key: 'total_debt',      label: 'Total Debt',                    render: r => fmtCurrencyCompact(r.total_debt) },
-    { key: 'debt_to_equity',  label: 'Debt / Equity',                 render: r => fmtRatio(r.debt_to_equity) },
-    { key: 'current_ratio',   label: 'Current Ratio',                 render: r => fmtRatio(r.current_ratio) },
-    { key: 'ps_ratio',        label: 'P/S',                           render: r => fmtRatio(r.ps_ratio) },
-    { key: 'pe_ratio',        label: 'P/E',                           render: r => fmtRatio(r.pe_ratio) },
+    { key: 'symbol',           label: 'Ticker',        align: 'left', render: r => tickerCell(r) },
+    { key: 'market_cap',       label: 'Market Cap',                   render: r => fmtCurrencyCompact(r.market_cap ?? r.marketCap ?? null) },
+    { key: 'revenue',          label: 'Revenue',                      render: r => fmtCurrencyCompact(r.revenue ?? r.totalRevenue ?? null) },
+    { key: 'revenue_growth',   label: 'Rev Growth',                   render: r => pctCell(r.revenue_growth ?? r.revenueGrowth ?? null) },
+    { key: 'gross_margin',     label: 'Gross Margin',                 render: r => fmtPercent(r.gross_margin ?? r.grossMargin ?? r.grossMarginTTM ?? null) },
+    { key: 'profit_margin',    label: 'Profit Margin',                render: r => fmtPercent(r.profit_margin ?? r.profitMargin ?? r.netProfitMargin ?? null) },
+    { key: 'operating_income', label: 'Op. Income',                   render: r => fmtCurrencyCompact(r.operating_income ?? r.operatingIncome ?? null) },
+    { key: 'net_income',       label: 'Net Income',                   render: r => fmtCurrencyCompact(r.net_income ?? r.netIncome ?? null) },
+    { key: 'eps_diluted',      label: 'EPS',                          render: r => { const eps = r.eps_diluted ?? r.epsDiluted ?? r.eps ?? null; return (eps == null || eps === '') ? DASH : `$${Number(eps).toFixed(2)}`; } },
+    { key: 'ebitda',           label: 'EBITDA',                       render: r => fmtCurrencyCompact(r.ebitda ?? r.ebitdaTTM ?? null) },
+    { key: 'free_cash_flow',   label: 'Free Cash Flow',               render: r => fmtCurrencyCompact(r.free_cash_flow ?? r.freeCashFlow ?? null) },
+    { key: 'total_debt',       label: 'Total Debt',                   render: r => fmtCurrencyCompact(r.total_debt ?? r.totalDebt ?? null) },
+    { key: 'debt_to_equity',   label: 'Debt / Equity',                render: r => fmtRatio(r.debt_to_equity ?? r.debtToEquity ?? null) },
+    { key: 'current_ratio',    label: 'Current Ratio',                render: r => fmtRatio(r.current_ratio ?? r.currentRatio ?? null) },
+    { key: 'ps_ratio',         label: 'P/S',                          render: r => fmtRatio(r.ps_ratio ?? r.priceToSalesRatioTTM ?? null) },
+    { key: 'pe_ratio',         label: 'P/E',                          render: r => fmtRatio(r.pe_ratio ?? r.peRatio ?? r.priceEarningsRatioTTM ?? null) },
   ];
 
   const cols = tab === 'social' ? socialCols : fundCols;
