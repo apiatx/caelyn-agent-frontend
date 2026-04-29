@@ -4147,12 +4147,115 @@ interface PreIPOCompany {
   change_tracking?: PreIPOChangeTracking;
 }
 
+interface PreIPODataConfidence {
+  status?: string;
+  label?: string;
+  reason?: string;
+}
+
 interface PreIPOWatchlistResponse {
   status?: string;
   updated_at?: string;
   cached?: boolean;
+  stale?: boolean;
   message?: string;
+  fallback_reason?: string;
+  data_confidence?: PreIPODataConfidence | null;
   companies?: PreIPOCompany[];
+}
+
+type PreIPOConfidenceLevel = "live" | "cached" | "limited";
+
+function resolvePreIPOConfidence(
+  data: (PreIPOWatchlistResponse & { __fetchFailed?: boolean }) | undefined,
+  hasCompanies: boolean,
+  fetchFailed: boolean,
+): { level: PreIPOConfidenceLevel; label: string; reason?: string } {
+  const dc = data?.data_confidence ?? null;
+  const explicit = (dc?.status || "").toLowerCase().trim();
+  const reason = dc?.reason || data?.fallback_reason || data?.message || undefined;
+
+  if (fetchFailed || explicit === "limited" || data?.fallback_reason) {
+    return {
+      level: "limited",
+      label: dc?.label || "Limited data available",
+      reason,
+    };
+  }
+  if (explicit === "cached" || data?.cached === true || data?.stale === true) {
+    return {
+      level: "cached",
+      label: dc?.label || "Using cached intelligence",
+      reason,
+    };
+  }
+  if (explicit === "live") {
+    return {
+      level: "live",
+      label: dc?.label || "Live intelligence",
+      reason,
+    };
+  }
+  if (hasCompanies) {
+    return { level: "live", label: dc?.label || "Live intelligence", reason };
+  }
+  return { level: "limited", label: dc?.label || "Limited data available", reason };
+}
+
+function PreIPOConfidenceIndicator({
+  level,
+  label,
+  reason,
+}: {
+  level: PreIPOConfidenceLevel;
+  label: string;
+  reason?: string;
+}) {
+  const palette: Record<PreIPOConfidenceLevel, { dot: string; ring: string; bg: string; border: string; text: string; aria: string }> = {
+    live: {
+      dot: "#34d399",
+      ring: "rgba(52,211,153,0.35)",
+      bg: "rgba(52,211,153,0.08)",
+      border: "rgba(52,211,153,0.28)",
+      text: "rgba(209,250,229,0.92)",
+      aria: "Data confidence: live",
+    },
+    cached: {
+      dot: PRE_IPO_GOLD,
+      ring: "rgba(244,194,91,0.35)",
+      bg: "rgba(244,194,91,0.08)",
+      border: "rgba(244,194,91,0.28)",
+      text: "rgba(253,231,168,0.92)",
+      aria: "Data confidence: using cached intelligence",
+    },
+    limited: {
+      dot: "#f87171",
+      ring: "rgba(248,113,113,0.32)",
+      bg: "rgba(248,113,113,0.07)",
+      border: "rgba(248,113,113,0.26)",
+      text: "rgba(254,202,202,0.92)",
+      aria: "Data confidence: limited data available",
+    },
+  };
+  const c = palette[level];
+  const title = reason ? `${label} — ${reason}` : label;
+  return (
+    <span
+      role="status"
+      aria-label={c.aria}
+      title={title}
+      data-testid={`pre-ipo-confidence-${level}`}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}
+    >
+      <span
+        aria-hidden="true"
+        className="inline-block w-1.5 h-1.5 rounded-full"
+        style={{ background: c.dot, boxShadow: `0 0 0 2px ${c.ring}` }}
+      />
+      {label}
+    </span>
+  );
 }
 
 const PRE_IPO_GOLD = "#f4c25b";
@@ -4724,7 +4827,10 @@ function PreIPOWatchlistView() {
             companies: Array.isArray(body?.companies) ? body!.companies : [],
             updated_at: body?.updated_at,
             cached: body?.cached,
+            stale: body?.stale,
             message: body?.message,
+            fallback_reason: body?.fallback_reason,
+            data_confidence: body?.data_confidence ?? null,
             __fetchFailed: true,
           };
         }
@@ -4733,7 +4839,10 @@ function PreIPOWatchlistView() {
           companies: Array.isArray(body?.companies) ? body!.companies : [],
           updated_at: body?.updated_at,
           cached: body?.cached,
+          stale: body?.stale,
           message: body?.message,
+          fallback_reason: body?.fallback_reason,
+          data_confidence: body?.data_confidence ?? null,
         };
       } catch {
         return { status: "error", companies: [], __fetchFailed: true };
@@ -4758,6 +4867,7 @@ function PreIPOWatchlistView() {
   });
   const fetchFailed = !!data?.__fetchFailed || !!error;
   const isStaleCache = !fetchFailed && data?.status && data.status !== "ok";
+  const confidence = resolvePreIPOConfidence(data, companies.length > 0, fetchFailed);
 
   return (
     <div data-testid="pre-ipo-watchlist-view">
@@ -4784,6 +4894,13 @@ function PreIPOWatchlistView() {
           >
             Premium
           </span>
+          {!isLoading && (
+            <PreIPOConfidenceIndicator
+              level={confidence.level}
+              label={confidence.label}
+              reason={confidence.reason}
+            />
+          )}
         </div>
         <p className="text-[12px] text-white/65 mb-1">
           Ranked private-market IPO intelligence across SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
