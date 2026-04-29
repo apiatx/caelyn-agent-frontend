@@ -1538,11 +1538,11 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const [lazyError, setLazyError] = useState(false);
   const lazyAttempted = useRef(false);
 
-  // Treat bundled fundamental as usable whenever the rows key is a real array,
-  // regardless of cache_status or length — missing rows show "—" per cell.
+  // Bundled is usable when it has actual rows — empty bundled triggers the lazy fetch.
   const bundledFundIsUsable = !!(
     bundledFundamental &&
-    Array.isArray(bundledFundamental.rows)
+    Array.isArray(bundledFundamental.rows) &&
+    bundledFundamental.rows.length > 0
   );
 
   const fundamentalData = bundledFundIsUsable ? bundledFundamental : lazyFundamental;
@@ -1572,18 +1572,9 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     }
   }, [tab]);
 
-  // Robustly extract rows regardless of enrichment_status — status only affects
-  // whether enrichment fields are present, not whether rows should render.
-  const socialRows: any[] = (() => {
-    if (!socialScreener) return [];
-    const r = socialScreener.rows ?? socialScreener.data ?? socialScreener.entries;
-    return Array.isArray(r) ? r : [];
-  })();
-  const fundRows: any[] = (() => {
-    if (!fundamentalData) return [];
-    const r = fundamentalData.rows ?? fundamentalData.data ?? fundamentalData.entries;
-    return Array.isArray(r) ? r : [];
-  })();
+  // Strict contract — rows are always at .rows; status fields do not gate rendering.
+  const socialRows: any[] = Array.isArray(socialScreener?.rows) ? socialScreener.rows : [];
+  const fundRows: any[]   = Array.isArray(fundamentalData?.rows) ? fundamentalData.rows : [];
 
   // Theme list from social rows
   const themeOptions = (() => {
@@ -1775,12 +1766,15 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   const fundEmptyMsg = (() => {
     if (tab !== 'fundamental') return null;
-    if (lazyLoading) return 'Loading fundamentals…';
-    // Show the table as long as a rows array is present, even if empty or partial.
-    // Missing enrichment fields will show "—" per cell; do NOT blank the whole table.
     if (bundledFundIsUsable) return null;
-    if (lazyFundamental && Array.isArray(lazyFundamental.rows)) return null;
-    return 'Fundamental enrichment is unavailable or still warming up.';
+    if (lazyLoading) return 'Loading fundamentals…';
+    // Has lazy rows — render them regardless of cache_status.
+    if (lazyFundamental && Array.isArray(lazyFundamental.rows) && lazyFundamental.rows.length > 0) return null;
+    // Lazy was attempted and returned nothing useful, or errored.
+    if (lazyError) return 'Could not load fundamentals — please try again later.';
+    if (lazyAttempted.current) return 'Fundamental enrichment is unavailable or still warming up.';
+    // Lazy not yet triggered (effect will fire after this render).
+    return null;
   })();
 
   const enrichmentStatus = socialScreener?.meta?.enrichment_status;

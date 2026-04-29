@@ -1,0 +1,99 @@
+Frontend-only fix.
+
+Backend is now fixed:
+- GET /api/social/x-dashboard returns fast.
+- It does not perform live FMP enrichment on main page load.
+- social_screener.rows is the contract.
+- fundamental_screener.rows is the contract if bundled.
+- GET /api/social/fundamental-screener is the lazy endpoint for heavier fundamentals if needed.
+
+Task:
+Clean up the Social Screener frontend rendering and loading behavior.
+
+Requirements:
+
+1. Use exact backend contract only:
+   - social_screener.rows
+   - fundamental_screener.rows
+
+2. Remove loose fallback logic like:
+   - rows ?? data ?? entries
+   - data ?? entries
+   - any similar response-shape guessing
+
+3. Use strict defensive extraction:
+   const socialRows = Array.isArray(socialScreener?.rows) ? socialScreener.rows : []
+   const fundamentalRows = Array.isArray(fundamentalScreener?.rows) ? fundamentalScreener.rows : []
+
+4. Top Social sections must render independently:
+   - X Consensus
+   - Freshest Alpha
+   - Theme Leadership
+   - Sentiment Acceleration
+
+   The Social Screener and Fundamentals Screener must not control page-level loading.
+
+5. Social Screener has its own independent empty/loading/error state.
+
+6. Fundamentals has its own independent empty/loading/error state.
+
+7. Do not treat meta statuses as table availability:
+   - social_screener.meta.enrichment_status === "unavailable" or "partial" must not hide rows.
+   - fundamental_screener.meta.cache_status === "unavailable" or "partial" must not hide rows.
+
+8. Only show Social Screener unavailable/empty state if:
+   - social_screener is missing, or
+   - social_screener.rows is missing, or
+   - social_screener.rows.length === 0
+
+9. Only show Fundamentals unavailable/empty state if:
+   - fundamental_screener is missing, or
+   - fundamental_screener.rows is missing, or
+   - fundamental_screener.rows.length === 0
+   - OR lazy endpoint was attempted and returned no rows
+
+10. Missing FMP fields should render cell-by-cell as "—":
+   - market cap
+   - volume
+   - price changes
+   - fundamental metrics
+
+11. Social fields should still render when present:
+   - symbol
+   - theme
+   - mentions_1d
+   - mentions_7d
+   - consensus_score
+   - freshness_score
+   - social_acceleration_score
+
+12. Keep/fix the table header:
+   - solid background
+   - proper z-index
+   - bottom border or shadow
+   - applies to both Social and Fundamentals views
+
+13. Do not refetch /api/social/x-dashboard when toggling Social/Fundamentals.
+    Toggle should be local state only.
+
+14. Lazy fundamentals:
+    If bundled fundamental_screener.rows is missing/empty and user clicks Fundamentals, call:
+    GET /api/social/fundamental-screener
+    only once.
+    Cache the result in component state.
+    Do not call it repeatedly on every toggle.
+
+15. Do not change backend.
+    Do not add new API routes.
+    Do not change top-section rendering logic except to ensure it is not blocked by screener loading.
+
+Validation:
+- Top four Social sections render even if social_screener is empty.
+- Top four Social sections render even if fundamental_screener is empty.
+- Social Screener renders rows when social_screener.rows.length > 0 regardless of enrichment_status.
+- Fundamentals renders rows when fundamental_screener.rows.length > 0 regardless of cache_status.
+- Null cells show "—".
+- No rows ?? data ?? entries fallback remains.
+- Header no longer overlaps rows.
+- No duplicate dashboard calls on toggle.
+- Lazy fundamentals endpoint is called only once when needed.
