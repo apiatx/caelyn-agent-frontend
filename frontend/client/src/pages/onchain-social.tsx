@@ -39,12 +39,12 @@ function renderGrokResponse(text: string) {
     let remaining = line;
 
     const patterns: Array<{ regex: RegExp; color: string }> = [
-      { regex: /\b(bullish|buy|strong buy|long|upgrade|breakout|moon|pump|rally|green|accumulate)\b/gi, color: '#22c55e' },
-      { regex: /\b(bearish|sell|short|downgrade|breakdown|dump|crash|red|distribute|warning|risk|avoid)\b/gi, color: '#ef4444' },
-      { regex: /\b(neutral|hold|mixed|sideways|consolidat\w*|uncertain|wait)\b/gi, color: '#6b7280' },
+      { regex: /\b(bullish|buy|strong buy|long|upgrade|breakout|moon|pump|rally|green|accumulate)\b/gi, color: '#5cc8f0' },
+      { regex: /\b(bearish|sell|short|downgrade|breakdown|dump|crash|red|distribute|warning|risk|avoid)\b/gi, color: 'rgba(255,255,255,0.4)' },
+      { regex: /\b(neutral|hold|mixed|sideways|consolidat\w*|uncertain|wait)\b/gi, color: '#64748b' },
       { regex: /(@\w+)/g, color: '#5cc8f0' },
-      { regex: /(\$[A-Z]{1,6})/g, color: '#a78bfa' },
-      { regex: /(Sentiment Score:?\s*\d+\/10|Confidence:?\s*\d+\/10|\d+\/10)/gi, color: '#f59e0b' },
+      { regex: /(\$[A-Z]{1,6})/g, color: '#5cc8f0' },
+      { regex: /(Sentiment Score:?\s*\d+\/10|Confidence:?\s*\d+\/10|\d+\/10)/gi, color: '#5cc8f0' },
     ];
 
     // Simple approach: just highlight keywords inline
@@ -86,16 +86,8 @@ function isBriefingResponse(obj: any): obj is BriefingResponse {
 }
 
 function renderBriefingCard(data: BriefingResponse) {
-  const sentimentColor = (data.sentiment_score ?? 5) >= 7
-    ? '#22c55e'
-    : (data.sentiment_score ?? 5) >= 4
-      ? '#f59e0b'
-      : '#ef4444';
-  const confidenceColor = (data.confidence ?? 5) >= 7
-    ? '#22c55e'
-    : (data.confidence ?? 5) >= 4
-      ? '#f59e0b'
-      : '#64748b';
+  const sentimentColor = '#5cc8f0';
+  const confidenceColor = '#5cc8f0';
 
   return (
     <div style={{
@@ -198,7 +190,7 @@ const font = "'JetBrains Mono', monospace";
 const sansFont = "'Outfit', sans-serif";
 
 function ConvictionBadge({ value }: { value: string }) {
-  const color = /high/i.test(value) ? '#22c55e' : /medium/i.test(value) ? '#f59e0b' : '#64748b';
+  const color = '#5cc8f0';
   return (
     <span style={{
       padding: '1px 7px', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700,
@@ -210,9 +202,9 @@ function ConvictionBadge({ value }: { value: string }) {
 
 function renderConsensusResponse(structured: any, fallbackText?: string) {
   const C = {
-    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
-    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+    blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
+    purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
   };
 
   const tickers: any[] = structured.consensus_tickers || [];
@@ -415,9 +407,9 @@ function ConsensusBriefingCard({ data }: { data: any }) {
   const [expandedHypeTicker, setExpandedHypeTicker] = useState<string | null>(null);
 
   const C = {
-    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
-    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+    blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
+    purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
   };
   const mp = data.market_pulse || {};
   const hypeRadar: any[] = data.hype_radar || [];
@@ -426,12 +418,10 @@ function ConsensusBriefingCard({ data }: { data: any }) {
   const freshTrades: any[] = data.fresh_trades || [];
   const bias = data.portfolio_bias || '';
 
-  const verdictColor = /bull/i.test(mp.verdict || '') ? C.green : /bear/i.test(mp.verdict || '') ? C.red : C.gold;
+  const verdictColor = C.blue;
 
   const buzzColor = (level: string) => {
-    if (/extreme/i.test(level)) return C.red;
-    if (/high/i.test(level)) return C.gold;
-    if (/moderate/i.test(level)) return '#eab308';
+    if (/extreme|high|moderate/i.test(level)) return C.blue;
     return C.dim;
   };
 
@@ -653,9 +643,9 @@ function XSnapshotSections({ tx, onTickerClick }: {
 }) {
 
   const C = {
-    blue: '#38bdf8', gold: '#f59e0b', green: '#22c55e', red: '#ef4444',
-    purple: '#a78bfa', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,28,0.85)', border: 'rgba(255,255,255,0.07)',
+    blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
+    purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
+    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
   };
 
   const mp          = tx.market_pulse      || {};
@@ -672,7 +662,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
   const isStale      = tx.is_stale === true || tx.stale === true;
   const isRefreshing = tx.refresh_in_progress === true;
   const generatedAt  = tx.generated_at ? new Date(tx.generated_at) : null;
-  const verdictColor = /bull/i.test(mp.verdict || '') ? C.green : /bear/i.test(mp.verdict || '') ? C.red : C.gold;
+  const verdictColor = C.blue;
 
   const relTime = (() => {
     if (!generatedAt) return null;
@@ -687,13 +677,13 @@ function XSnapshotSections({ tx, onTickerClick }: {
   })();
 
   const sentColor = (s: string | null | undefined) =>
-    !s ? C.dim : /bull/i.test(s) ? C.green : /bear/i.test(s) ? C.red : C.gold;
+    !s ? C.dim : /bull/i.test(s) ? C.blue : C.dim;
 
   const buzzColor = (lvl: string) =>
-    /extreme/i.test(lvl) ? C.red : /high/i.test(lvl) ? C.gold : /moderate/i.test(lvl) ? '#eab308' : C.dim;
+    /extreme|high|moderate/i.test(lvl) ? C.blue : C.dim;
 
   const cardStyle: CSSProperties = {
-    background: '#0a0b1e',
+    background: 'rgba(10,12,18,0.85)',
     border: '1px solid rgba(255,255,255,0.06)',
     borderRadius: 12,
     padding: '1.25rem 1.25rem 1rem',
@@ -774,13 +764,13 @@ function XSnapshotSections({ tx, onTickerClick }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
         {relTime && <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Updated {relTime}</span>}
         {isStale && (
-          <span style={{ color: '#f59e0b', fontSize: '0.58rem', fontFamily: font, fontWeight: 700,
-            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+          <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, fontWeight: 700,
+            background: 'rgba(92,200,240,0.08)', border: '1px solid rgba(92,200,240,0.2)',
             borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>STALE</span>
         )}
         {isRefreshing && (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.dim, fontSize: '0.6rem', fontFamily: font }}>
-            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', opacity: 0.8 }} />
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: C.blue, opacity: 0.8 }} />
             Refreshing…
           </span>
         )}
@@ -1167,9 +1157,9 @@ function GrokSocialAgent() {
                 fontFamily: font,
                 fontSize: '0.68rem',
                 fontWeight: 700,
-                color: '#38bdf8',
-                background: 'rgba(56,189,248,0.08)',
-                border: '1px solid rgba(56,189,248,0.3)',
+                color: '#5cc8f0',
+                background: 'rgba(92,200,240,0.08)',
+                border: '1px solid rgba(92,200,240,0.2)',
                 borderRadius: 8,
                 padding: '0.45rem 1rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -1183,13 +1173,13 @@ function GrokSocialAgent() {
               }}
               onMouseOver={e => {
                 if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(92,200,240,0.14)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(92,200,240,0.4)';
                 }
               }}
               onMouseOut={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(92,200,240,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(92,200,240,0.2)';
               }}
             >
               <span style={{ fontSize: '0.7rem' }}>𝕏</span>
@@ -1325,9 +1315,9 @@ function GrokSocialAgent() {
                 fontFamily: font,
                 fontSize: '0.68rem',
                 fontWeight: 700,
-                color: '#38bdf8',
-                background: 'rgba(56,189,248,0.08)',
-                border: '1px solid rgba(56,189,248,0.3)',
+                color: '#5cc8f0',
+                background: 'rgba(92,200,240,0.08)',
+                border: '1px solid rgba(92,200,240,0.2)',
                 borderRadius: 8,
                 padding: '0.45rem 1rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -1341,13 +1331,13 @@ function GrokSocialAgent() {
               }}
               onMouseOver={e => {
                 if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.15)';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.5)';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(92,200,240,0.14)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(92,200,240,0.4)';
                 }
               }}
               onMouseOut={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(56,189,248,0.08)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.3)';
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(92,200,240,0.08)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(92,200,240,0.2)';
               }}
             >
               <span style={{ fontSize: '0.7rem' }}>𝕏</span>
@@ -1495,12 +1485,12 @@ function fmtInt(n: any): string {
 }
 
 function pctColor(n: any): string {
-  if (n === null || n === undefined || n === '') return '#94a3b8';
+  if (n === null || n === undefined || n === '') return '#64748b';
   const num = typeof n === 'number' ? n : Number(n);
-  if (!Number.isFinite(num)) return '#94a3b8';
-  if (num > 0) return '#22c55e';
-  if (num < 0) return '#ef4444';
-  return '#94a3b8';
+  if (!Number.isFinite(num)) return '#64748b';
+  if (num > 0) return '#5cc8f0';
+  if (num < 0) return 'rgba(255,255,255,0.3)';
+  return '#64748b';
 }
 
 function getSortableValue(row: any, key: string): number | string | null {
@@ -1641,15 +1631,15 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   // ── Styles ───────────────────────────────────────────────────────
   const C = {
-    bg: 'rgba(10,12,28,0.85)',
-    border: 'rgba(255,255,255,0.07)',
-    headerBg: '#0c0e22',
+    bg: 'rgba(10,12,18,0.85)',
+    border: 'rgba(255,255,255,0.06)',
+    headerBg: 'rgba(10,12,18,0.95)',
     rowHover: 'rgba(255,255,255,0.03)',
     text: '#e2e8f0',
     dim: '#64748b',
     subtle: '#94a3b8',
     accent: '#5cc8f0',
-    purple: '#a78bfa',
+    purple: '#5cc8f0',
   };
 
   const cardStyle: CSSProperties = {
@@ -1699,7 +1689,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     !!(set && sym && set.has(sym.toUpperCase()));
 
   const greenDot = (active: boolean): React.ReactNode => active
-    ? <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', verticalAlign: 'middle' }} />
+    ? <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#5cc8f0', verticalAlign: 'middle' }} />
     : <span style={{ color: C.dim }}>—</span>;
 
   const tickerCell = (row: any) => {
@@ -1712,9 +1702,9 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
         style={{
           padding: '3px 8px',
           borderRadius: 6,
-          background: 'rgba(167,139,250,0.10)',
-          border: '1px solid rgba(167,139,250,0.25)',
-          color: C.purple,
+          background: 'rgba(92,200,240,0.08)',
+          border: '1px solid rgba(92,200,240,0.2)',
+          color: C.accent,
           fontFamily: font,
           fontWeight: 700,
           fontSize: '0.72rem',
@@ -1785,17 +1775,13 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const cacheStatus = fundamentalData?.meta?.cache_status;
 
   const statusBadge = (label: string) => {
-    const colorMap: Record<string, string> = {
-      ok: '#22c55e', fresh: '#22c55e',
-      partial: '#f59e0b', stale: '#f59e0b',
-      unavailable: '#ef4444',
-    };
-    const color = colorMap[label] || C.dim;
+    const color = /unavailable|stale|partial/i.test(label) ? 'rgba(255,255,255,0.3)' : C.accent;
     return (
       <span style={{
         padding: '2px 8px', borderRadius: 100, fontSize: '0.58rem', fontFamily: font,
         fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-        color, border: `1px solid ${color}40`, background: `${color}10`,
+        color, border: `1px solid ${color === C.accent ? 'rgba(92,200,240,0.2)' : 'rgba(255,255,255,0.12)'}`,
+        background: color === C.accent ? 'rgba(92,200,240,0.08)' : 'rgba(255,255,255,0.04)',
       }}>{label}</span>
     );
   };
@@ -1930,7 +1916,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
         )}
 
         {tab === 'fundamental' && lazyError && (
-          <div style={{ marginTop: '0.6rem', color: '#f59e0b', fontSize: '0.7rem', fontFamily: sansFont }}>
+          <div style={{ marginTop: '0.6rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem', fontFamily: sansFont }}>
             Could not load fundamental enrichment.
           </div>
         )}
@@ -2003,9 +1989,9 @@ function SocialTickerPopup({
                     <span style={{
                       fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
                       padding: '1px 5px', borderRadius: 3,
-                      background: m.sentiment === 'bullish' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                      color: m.sentiment === 'bullish' ? '#22c55e' : '#ef4444',
-                      border: `1px solid ${m.sentiment === 'bullish' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                      background: 'rgba(92,200,240,0.08)',
+                      color: '#5cc8f0',
+                      border: '1px solid rgba(92,200,240,0.2)',
                     }}>{m.sentiment}</span>
                     <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.22)', fontFamily: "'Outfit', sans-serif" }}>
                       {m.recency_days === 0 ? 'today' : m.recency_days === 1 ? 'yesterday' : `${m.recency_days}d ago`}
@@ -2019,8 +2005,8 @@ function SocialTickerPopup({
                       {m.catalysts.map((cat: string, ci: number) => (
                         <span key={ci} style={{
                           fontSize: '0.54rem', padding: '1px 6px', borderRadius: 3,
-                          background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.18)',
-                          color: '#a78bfa', fontFamily: "'Outfit', sans-serif",
+                          background: 'rgba(92,200,240,0.06)', border: '1px solid rgba(92,200,240,0.15)',
+                          color: 'rgba(255,255,255,0.45)', fontFamily: "'Outfit', sans-serif",
                         }}>{cat}</span>
                       ))}
                     </div>
