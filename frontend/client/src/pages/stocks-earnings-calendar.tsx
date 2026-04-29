@@ -4986,6 +4986,15 @@ function PreIPOWatchlistView() {
           Tracks IPO rumors, valuation estimates, prediction-market odds, and recent news confirmations.
           This is signal intelligence, not an official IPO calendar.
         </p>
+        {!isLoading && confidence.level === "limited" && (
+          <p
+            className="text-[10.5px] mt-1.5 italic"
+            style={{ color: "rgba(244,194,91,0.7)" }}
+            data-testid="pre-ipo-limited-data-note"
+          >
+            Using conservative baseline estimates until live sources refresh.
+          </p>
+        )}
         {data?.updated_at && (
           <p className="text-[10px] text-white/30 mt-1.5">
             Updated {String(data.updated_at).slice(0, 19).replace("T", " ")} UTC
