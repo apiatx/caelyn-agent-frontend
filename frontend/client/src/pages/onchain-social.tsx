@@ -1773,6 +1773,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   const enrichmentStatus = socialScreener?.meta?.enrichment_status;
   const cacheStatus = fundamentalData?.meta?.cache_status;
+  const marketHoursOpen: boolean | null = socialScreener?.meta?.market_hours_open ?? null;
 
   const statusBadge = (label: string) => {
     const color = /unavailable|stale|partial/i.test(label) ? 'rgba(255,255,255,0.3)' : C.accent;
@@ -1821,6 +1822,14 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
           </div>
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {tab === 'social' && enrichmentStatus && statusBadge(enrichmentStatus)}
+            {tab === 'social' && marketHoursOpen !== null && (
+              <span style={{
+                fontSize: '0.58rem', fontFamily: font, fontWeight: 500,
+                letterSpacing: '0.04em', color: 'rgba(255,255,255,0.22)',
+              }}>
+                {marketHoursOpen ? '· Market Open' : '· Last Close / Cached'}
+              </span>
+            )}
             {tab === 'fundamental' && cacheStatus && statusBadge(cacheStatus)}
             {tabBtn('social', 'Social')}
             {tabBtn('fundamental', 'Fundamentals')}
