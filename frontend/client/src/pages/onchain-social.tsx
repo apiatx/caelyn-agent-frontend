@@ -1940,15 +1940,17 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 }
 
 function SocialTickerPopup({
-  symbol, tvSymbol, name, context, onClose,
+  symbol, tvSymbol, name, context, data, onClose,
 }: {
   symbol: string;
   tvSymbol: string;
   name?: string;
   context?: string;
+  data?: any;
   onClose: () => void;
 }) {
   const tvSrc = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=D&range=3M&style=1&toolbar_bg=0b1217&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
+  const mentions: any[] = Array.isArray(data?.sample_mentions) && data.sample_mentions.length > 0 ? data.sample_mentions : [];
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -1971,7 +1973,7 @@ function SocialTickerPopup({
             style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.85rem' }}
           >✕</button>
         </div>
-        <div style={{ height: 420 }}>
+        <div style={{ height: 380 }}>
           <iframe
             key={tvSymbol}
             src={tvSrc}
@@ -1980,11 +1982,58 @@ function SocialTickerPopup({
             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
           />
         </div>
-        {context && (
+        {mentions.length > 0 ? (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', maxHeight: 210, overflowY: 'auto' }}>
+            <div style={{ padding: '0.55rem 1.25rem 0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', fontFamily: "'JetBrains Mono', monospace" }}>X Intelligence</span>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.18)', fontFamily: "'JetBrains Mono', monospace" }}>·</span>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.2)', fontFamily: "'Outfit', sans-serif" }}>{mentions.length} accounts</span>
+            </div>
+            <div style={{ padding: '0 1.25rem 0.75rem' }}>
+              {mentions.map((m: any, i: number) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '0.45rem 0',
+                    borderBottom: i < mentions.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.67rem', fontWeight: 700, color: '#5cc8f0', fontFamily: "'JetBrains Mono', monospace" }}>@{m.handle}</span>
+                    <span style={{
+                      fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                      padding: '1px 5px', borderRadius: 3,
+                      background: m.sentiment === 'bullish' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                      color: m.sentiment === 'bullish' ? '#22c55e' : '#ef4444',
+                      border: `1px solid ${m.sentiment === 'bullish' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+                    }}>{m.sentiment}</span>
+                    <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.22)', fontFamily: "'Outfit', sans-serif" }}>
+                      {m.recency_days === 0 ? 'today' : m.recency_days === 1 ? 'yesterday' : `${m.recency_days}d ago`}
+                    </span>
+                  </div>
+                  {m.thesis && (
+                    <div style={{ fontSize: '0.69rem', color: 'rgba(255,255,255,0.58)', lineHeight: 1.55, fontFamily: "'Outfit', sans-serif" }}>{m.thesis}</div>
+                  )}
+                  {Array.isArray(m.catalysts) && m.catalysts.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.3rem' }}>
+                      {m.catalysts.map((cat: string, ci: number) => (
+                        <span key={ci} style={{
+                          fontSize: '0.54rem', padding: '1px 6px', borderRadius: 3,
+                          background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.18)',
+                          color: '#a78bfa', fontFamily: "'Outfit', sans-serif",
+                        }}>{cat}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : context ? (
           <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, fontFamily: "'Outfit', sans-serif" }}>{context}</div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -1994,9 +2043,9 @@ export default function OnchainSocialPage() {
   const openInNewTab = (url: string) => { openSecureLink(url); };
   const queryClient = useQueryClient();
 
-  const [tickerPopup, setTickerPopup] = useState<{ symbol: string; tvSymbol: string; name?: string; context?: string } | null>(null);
+  const [tickerPopup, setTickerPopup] = useState<{ symbol: string; tvSymbol: string; name?: string; context?: string; data?: any } | null>(null);
   const openTicker = (sym: string, dataObj?: any, context?: string, name?: string) =>
-    setTickerPopup({ symbol: sym, tvSymbol: resolveTVSymbol(sym, dataObj), name, context });
+    setTickerPopup({ symbol: sym, tvSymbol: resolveTVSymbol(sym, dataObj), name, context, data: dataObj });
 
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
     queryKey: ['/api/social/x-dashboard'],
@@ -2544,6 +2593,7 @@ export default function OnchainSocialPage() {
           tvSymbol={tickerPopup.tvSymbol}
           name={tickerPopup.name}
           context={tickerPopup.context}
+          data={tickerPopup.data}
           onClose={() => setTickerPopup(null)}
         />
       )}
