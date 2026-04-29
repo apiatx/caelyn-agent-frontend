@@ -4166,6 +4166,65 @@ interface PreIPOWatchlistResponse {
 
 type PreIPOConfidenceLevel = "live" | "cached" | "limited";
 
+// Fixed pre-IPO watchlist. The frontend always renders these six companies so
+// that the watchlist never collapses to an empty state. If the backend cannot
+// supply intelligence for one of them, we still render a dormant fallback card.
+const PRE_IPO_FIXED_WATCHLIST: string[] = [
+  "SpaceX",
+  "OpenAI",
+  "Anthropic",
+  "Databricks",
+  "Anduril",
+  "Stripe",
+];
+
+function buildFallbackPreIPOCompany(name: string): PreIPOCompany {
+  return {
+    company: name,
+    ipo_status: "Unknown",
+    estimated_valuation: "Unknown",
+    valuation_notes: [],
+    polymarket: null,
+    catalysts: [],
+    expected_window: null,
+    confidence_score: undefined,
+    latest_news: [],
+    sources: [],
+    opportunity_score: 0,
+    momentum_badge: "Dormant",
+    score_breakdown: undefined,
+    change_tracking: undefined,
+  };
+}
+
+function mergePreIPOCompaniesWithFallback(
+  companies: PreIPOCompany[],
+): { merged: PreIPOCompany[]; usedFallback: boolean } {
+  const byName = new Map<string, PreIPOCompany>();
+  for (const c of companies) {
+    if (c && typeof c.company === "string" && c.company.trim().length > 0) {
+      byName.set(c.company.trim().toLowerCase(), c);
+    }
+  }
+  let usedFallback = false;
+  const merged: PreIPOCompany[] = PRE_IPO_FIXED_WATCHLIST.map((name) => {
+    const existing = byName.get(name.toLowerCase());
+    if (existing) return existing;
+    usedFallback = true;
+    return buildFallbackPreIPOCompany(name);
+  });
+  // Append any backend-provided companies that aren't on the fixed list, so we
+  // don't drop intelligence the backend goes out of its way to surface.
+  for (const c of companies) {
+    const key = (c?.company || "").trim().toLowerCase();
+    if (!key) continue;
+    if (!PRE_IPO_FIXED_WATCHLIST.some((n) => n.toLowerCase() === key)) {
+      merged.push(c);
+    }
+  }
+  return { merged, usedFallback };
+}
+
 function resolvePreIPOConfidence(
   data: (PreIPOWatchlistResponse & { __fetchFailed?: boolean }) | undefined,
   hasCompanies: boolean,
@@ -4854,8 +4913,16 @@ function PreIPOWatchlistView() {
   });
 
   const rawCompanies = Array.isArray(data?.companies) ? data!.companies : [];
+  const fetchFailed = !!data?.__fetchFailed || !!error;
+  const backendOkButEmpty = !fetchFailed && !isLoading && rawCompanies.length === 0;
+  // The watchlist is fixed (SpaceX, OpenAI, Anthropic, Databricks, Anduril,
+  // Stripe). When the backend returns an empty list — or the fetch fails
+  // entirely — we render dormant fallback cards so the UI never collapses to
+  // an empty state for this fixed set.
+  const { merged: companiesWithFallback, usedFallback } =
+    mergePreIPOCompaniesWithFallback(rawCompanies);
   // Sort by rank ascending (with explicit rank winning), then by opportunity_score desc
-  const companies = [...rawCompanies].sort((a, b) => {
+  const companies = [...companiesWithFallback].sort((a, b) => {
     const ra = a?.rank;
     const rb = b?.rank;
     if (ra != null && rb != null) return Number(ra) - Number(rb);
@@ -4865,9 +4932,19 @@ function PreIPOWatchlistView() {
     const sb = b?.opportunity_score ?? -Infinity;
     return Number(sb) - Number(sa);
   });
-  const fetchFailed = !!data?.__fetchFailed || !!error;
   const isStaleCache = !fetchFailed && data?.status && data.status !== "ok";
-  const confidence = resolvePreIPOConfidence(data, companies.length > 0, fetchFailed);
+  const baseConfidence = resolvePreIPOConfidence(data, rawCompanies.length > 0, fetchFailed);
+  // If we had to substitute any fallback cards, force the confidence pill into
+  // "limited" so users know the data isn't fully live.
+  const confidence = usedFallback
+    ? {
+        level: "limited" as PreIPOConfidenceLevel,
+        label: baseConfidence.label && baseConfidence.level === "limited"
+          ? baseConfidence.label
+          : "Limited data available",
+        reason: baseConfidence.reason,
+      }
+    : baseConfidence;
 
   return (
     <div data-testid="pre-ipo-watchlist-view">
@@ -4945,28 +5022,33 @@ function PreIPOWatchlistView() {
         </div>
       )}
 
-      {/* Error */}
-      {!isLoading && fetchFailed && companies.length === 0 && (
+      {/* Fetch-failed banner (cards still render below from the fixed watchlist) */}
+      {!isLoading && fetchFailed && (
         <div
-          className="px-4 py-6 rounded-xl text-center"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+          className="mb-4 px-3 py-2 rounded-lg flex items-start gap-2"
+          style={{ background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.2)" }}
         >
-          <AlertCircle className="w-5 h-5 mx-auto mb-2 text-white/35" />
-          <p className="text-[12px] text-white/55">Could not load live Pre-IPO intelligence. Try refreshing.</p>
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#f87171" }} />
+          <p className="text-[11px]" style={{ color: "rgba(254,202,202,0.92)" }}>
+            Could not load live Pre-IPO intelligence. Showing tracked companies in limited-data mode.
+          </p>
         </div>
       )}
 
-      {/* Empty */}
-      {!isLoading && !fetchFailed && companies.length === 0 && (
+      {/* Backend-ok-but-empty banner (cards still render below from the fixed watchlist) */}
+      {!isLoading && !fetchFailed && backendOkButEmpty && (
         <div
-          className="px-4 py-6 rounded-xl text-center"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+          className="mb-4 px-3 py-2 rounded-lg flex items-start gap-2"
+          style={{ background: "rgba(244,194,91,0.06)", border: "1px solid rgba(244,194,91,0.2)" }}
         >
-          <p className="text-[12px] text-white/55">No Pre-IPO intelligence available yet.</p>
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: PRE_IPO_GOLD }} />
+          <p className="text-[11px]" style={{ color: PRE_IPO_GOLD }}>
+            Tracked pre-IPO companies are loading in limited-data mode.
+          </p>
         </div>
       )}
 
-      {/* Cards */}
+      {/* Cards (fixed watchlist always renders, with fallback dormant cards when needed) */}
       {!isLoading && companies.length > 0 && (
         <div className="space-y-3">
           {companies.map((c, i) => (
