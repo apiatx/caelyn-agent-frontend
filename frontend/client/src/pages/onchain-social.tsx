@@ -1574,10 +1574,6 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const lazyFundRows: any[] = Array.isArray(lazyFundamental?.rows) ? lazyFundamental.rows : [];
   const fundRows: any[] = lazyFundRows.length > 0 ? lazyFundRows : bundledFundRows;
 
-  // When fundamental rows are unavailable, fall back to the social ticker universe
-  // so the table is never empty — all fund metric cells render "—" via their formatters.
-  const fundFallbackToSocial = tab === 'fundamental' && fundRows.length === 0 && socialRows.length > 0 && !lazyLoading;
-
   // Theme list from social rows
   const themeOptions = (() => {
     const set = new Set<string>();
@@ -1641,9 +1637,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   };
 
   const displaySocial = sortRows(filterRows(socialRows));
-  // When fund rows are absent, fall back to the social ticker universe so the
-  // table always renders with the known tickers (all fund columns show "—").
-  const displayFund = sortRows(filterRows(fundFallbackToSocial ? socialRows : fundRows));
+  const displayFund   = sortRows(filterRows(fundRows));
 
   // ── Styles ───────────────────────────────────────────────────────
   const C = {
@@ -1759,8 +1753,6 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     { key: 'revenue',          label: 'Revenue',                      render: r => fmtCurrencyCompact(r.revenue ?? r.totalRevenue ?? null) },
     { key: 'revenue_growth',   label: 'Rev Growth',                   render: r => pctCell(r.revenue_growth ?? r.revenueGrowth ?? null) },
     { key: 'gross_margin',     label: 'Gross Margin',                 render: r => fmtPercent(r.gross_margin ?? r.grossMargin ?? r.grossMarginTTM ?? null) },
-    { key: 'profit_margin',    label: 'Profit Margin',                render: r => fmtPercent(r.profit_margin ?? r.profitMargin ?? r.netProfitMargin ?? null) },
-    { key: 'operating_income', label: 'Op. Income',                   render: r => fmtCurrencyCompact(r.operating_income ?? r.operatingIncome ?? null) },
     { key: 'net_income',       label: 'Net Income',                   render: r => fmtCurrencyCompact(r.net_income ?? r.netIncome ?? null) },
     { key: 'eps_diluted',      label: 'EPS',                          render: r => { const eps = r.eps_diluted ?? r.epsDiluted ?? r.eps ?? null; return (eps == null || eps === '') ? DASH : `$${Number(eps).toFixed(2)}`; } },
     { key: 'ebitda',           label: 'EBITDA',                       render: r => fmtCurrencyCompact(r.ebitda ?? r.ebitdaTTM ?? null) },
@@ -1782,12 +1774,8 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   const fundEmptyMsg = (() => {
     if (tab !== 'fundamental') return null;
-    if (fundRows.length > 0) return null;                // we have real fund rows
+    if (fundRows.length > 0) return null;
     if (lazyLoading) return 'Loading fundamentals…';
-    // Social rows exist → we'll render the table with "—" metrics (fundFallbackToSocial).
-    // Do NOT show a full-panel error; a small inline warning handles this case instead.
-    if (socialRows.length > 0) return null;
-    // Nothing at all — true empty state.
     if (lazyError) return 'Could not load fundamentals — please try again later.';
     if (lazyAttempted.current) return 'Fundamental enrichment is unavailable or still warming up.';
     return null;
@@ -1908,15 +1896,6 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
           </div>
         ) : (
           <>
-            {fundFallbackToSocial && (
-              <div style={{
-                marginBottom: '0.5rem', padding: '5px 10px', borderRadius: 6,
-                background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
-                color: '#f59e0b', fontSize: '0.65rem', fontFamily: sansFont,
-              }}>
-                Fundamental enrichment is warming up — showing ticker universe with available metrics.
-              </div>
-            )}
             <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto', borderRadius: 8, border: `1px solid ${C.border}` }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: tab === 'social' ? 1100 : 1300 }}>
                 <thead>
@@ -1950,7 +1929,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
           </>
         )}
 
-        {tab === 'fundamental' && lazyError && !fundFallbackToSocial && (
+        {tab === 'fundamental' && lazyError && (
           <div style={{ marginTop: '0.6rem', color: '#f59e0b', fontSize: '0.7rem', fontFamily: sansFont }}>
             Could not load fundamental enrichment.
           </div>
