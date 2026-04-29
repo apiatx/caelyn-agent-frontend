@@ -1439,26 +1439,6 @@ type ScreenerTab = 'social' | 'fundamental';
 
 const DASH = '—';
 
-// Try every common envelope shape the backend may use.
-function extractRowsFromAny(data: any): any[] {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  // Direct row arrays at common keys
-  for (const key of ['rows', 'data', 'entries'] as const) {
-    if (Array.isArray((data as any)[key]) && (data as any)[key].length > 0)
-      return (data as any)[key];
-  }
-  // Nested: { fundamental_screener: { rows/data/entries: [...] } }
-  const nested = (data as any).fundamental_screener ?? (data as any).social_screener;
-  if (nested) {
-    for (const key of ['rows', 'data', 'entries'] as const) {
-      if (Array.isArray((nested as any)[key]) && (nested as any)[key].length > 0)
-        return (nested as any)[key];
-    }
-  }
-  return [];
-}
-
 function fmtCompact(n: any): string {
   if (n === null || n === undefined || n === '') return DASH;
   const num = typeof n === 'number' ? n : Number(n);
@@ -1558,9 +1538,8 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const [lazyError, setLazyError] = useState(false);
   const lazyAttempted = useRef(false);
 
-  // Bundled is usable when extractRowsFromAny finds actual rows — covers .rows, .data,
-  // .entries, and nested .fundamental_screener.rows shapes.
-  const bundledFundRows = extractRowsFromAny(bundledFundamental);
+  // Strict contract: rows always at .rows — no envelope guessing.
+  const bundledFundRows: any[] = Array.isArray(bundledFundamental?.rows) ? bundledFundamental.rows : [];
   const bundledFundIsUsable = bundledFundRows.length > 0;
 
   const fundamentalData = bundledFundIsUsable ? bundledFundamental : lazyFundamental;
@@ -1590,27 +1569,14 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     }
   }, [tab]);
 
-  // Extract rows tolerantly — backend may use .rows, .data, .entries, or nest under
-  // .fundamental_screener.rows.  extractRowsFromAny tries each path in order.
-  const socialRows: any[] = extractRowsFromAny(socialScreener);
-  const fundRows: any[]   = bundledFundIsUsable
-    ? bundledFundRows
-    : extractRowsFromAny(lazyFundamental);
+  // Strict contract: social_screener.rows and fundamental_screener.rows only.
+  const socialRows: any[] = Array.isArray(socialScreener?.rows) ? socialScreener.rows : [];
+  const lazyFundRows: any[] = Array.isArray(lazyFundamental?.rows) ? lazyFundamental.rows : [];
+  const fundRows: any[] = lazyFundRows.length > 0 ? lazyFundRows : bundledFundRows;
 
   // When fundamental rows are unavailable, fall back to the social ticker universe
   // so the table is never empty — all fund metric cells render "—" via their formatters.
   const fundFallbackToSocial = tab === 'fundamental' && fundRows.length === 0 && socialRows.length > 0 && !lazyLoading;
-
-  // DEBUG (temporary) — logs the first row of each dataset once, to confirm field names.
-  const _debuggedRef = useRef({ social: false, fund: false });
-  if (!_debuggedRef.current.social && socialRows.length > 0) {
-    _debuggedRef.current.social = true;
-    console.log('SOCIAL ROW SAMPLE:', socialRows[0]);
-  }
-  if (!_debuggedRef.current.fund && fundRows.length > 0) {
-    _debuggedRef.current.fund = true;
-    console.log('FUND ROW SAMPLE:', fundRows[0]);
-  }
 
   // Theme list from social rows
   const themeOptions = (() => {
