@@ -2001,12 +2001,10 @@ export default function OnchainSocialPage() {
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
     queryKey: ['/api/social/x-dashboard'],
     queryFn: () => fetch('/api/social/x-dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    // 15 min staleTime: avoids re-fetching on every navigation while still
-    // picking up fresh data on longer return visits.
-    staleTime: 15 * 60_000,
-    // 60 min gcTime: data persists in cache for an hour after unmounting so
-    // navigating back always shows the last-known data immediately.
-    gcTime: 60 * 60_000,
+    // staleTime: 0 — always fetch fresh data on page visit so enriched
+    // market data (market_cap, volume, price_change_*) is never stale.
+    staleTime: 0,
+    gcTime: 30 * 60_000,
     retry: 1,
   });
 
