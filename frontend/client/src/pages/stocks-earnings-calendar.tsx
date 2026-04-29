@@ -4431,9 +4431,12 @@ function PreIPOCompanyCard({ company, displayRank }: { company: PreIPOCompany; d
   const valuationNotes = company.valuation_notes || [];
   const window = company.expected_window || null;
 
-  const testIdSafeName = company.company.replace(/[^A-Za-z0-9]/g, "-").toLowerCase();
+  const companyName = company.company || "Unknown";
+  const testIdSafeName = companyName.replace(/[^A-Za-z0-9]/g, "-").toLowerCase();
 
-  const rank = company.rank ?? displayRank;
+  const rank = company.rank != null && Number.isFinite(Number(company.rank))
+    ? Number(company.rank)
+    : displayRank;
   const opportunityScore =
     company.opportunity_score != null && Number.isFinite(Number(company.opportunity_score))
       ? Math.round(Number(company.opportunity_score))
@@ -4471,7 +4474,7 @@ function PreIPOCompanyCard({ company, displayRank }: { company: PreIPOCompany; d
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-bold text-white truncate" data-testid={`pre-ipo-company-${testIdSafeName}`}>
-                {company.company}
+                {companyName}
               </h3>
               {company.momentum_badge && (
                 <span data-testid={`pre-ipo-momentum-${testIdSafeName}`}>
@@ -4703,31 +4706,58 @@ function PreIPOCompanyCard({ company, displayRank }: { company: PreIPOCompany; d
 }
 
 function PreIPOWatchlistView() {
-  const { data, isLoading, error } = useQuery<PreIPOWatchlistResponse>({
+  const { data, isLoading, error } = useQuery<PreIPOWatchlistResponse & { __fetchFailed?: boolean }>({
     queryKey: ["pre-ipo-watchlist"],
     queryFn: async () => {
-      const r = await fetch("/api/calendar/pre-ipo-watchlist");
-      if (!r.ok) throw new Error(`${r.status}`);
-      return r.json();
+      try {
+        const r = await fetch("/api/calendar/pre-ipo-watchlist");
+        // Tolerate non-2xx responses that still carry a JSON body
+        let body: PreIPOWatchlistResponse | null = null;
+        try {
+          body = await r.json();
+        } catch {
+          body = null;
+        }
+        if (!r.ok) {
+          return {
+            status: body?.status || "error",
+            companies: Array.isArray(body?.companies) ? body!.companies : [],
+            updated_at: body?.updated_at,
+            cached: body?.cached,
+            message: body?.message,
+            __fetchFailed: true,
+          };
+        }
+        return {
+          status: body?.status || "ok",
+          companies: Array.isArray(body?.companies) ? body!.companies : [],
+          updated_at: body?.updated_at,
+          cached: body?.cached,
+          message: body?.message,
+        };
+      } catch {
+        return { status: "error", companies: [], __fetchFailed: true };
+      }
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
   });
 
-  const rawCompanies = data?.companies || [];
+  const rawCompanies = Array.isArray(data?.companies) ? data!.companies : [];
   // Sort by rank ascending (with explicit rank winning), then by opportunity_score desc
   const companies = [...rawCompanies].sort((a, b) => {
-    const ra = a.rank;
-    const rb = b.rank;
-    if (ra != null && rb != null) return ra - rb;
+    const ra = a?.rank;
+    const rb = b?.rank;
+    if (ra != null && rb != null) return Number(ra) - Number(rb);
     if (ra != null) return -1;
     if (rb != null) return 1;
-    const sa = a.opportunity_score ?? -Infinity;
-    const sb = b.opportunity_score ?? -Infinity;
+    const sa = a?.opportunity_score ?? -Infinity;
+    const sb = b?.opportunity_score ?? -Infinity;
     return Number(sb) - Number(sa);
   });
-  const isStaleCache = data?.status && data.status !== "ok";
+  const fetchFailed = !!data?.__fetchFailed || !!error;
+  const isStaleCache = !fetchFailed && data?.status && data.status !== "ok";
 
   return (
     <div data-testid="pre-ipo-watchlist-view">
@@ -4799,23 +4829,23 @@ function PreIPOWatchlistView() {
       )}
 
       {/* Error */}
-      {!isLoading && error && companies.length === 0 && (
+      {!isLoading && fetchFailed && companies.length === 0 && (
         <div
           className="px-4 py-6 rounded-xl text-center"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <AlertCircle className="w-5 h-5 mx-auto mb-2 text-white/35" />
-          <p className="text-[12px] text-white/55">Could not load Pre-IPO Watchlist intelligence.</p>
+          <p className="text-[12px] text-white/55">Could not load live Pre-IPO intelligence. Try refreshing.</p>
         </div>
       )}
 
       {/* Empty */}
-      {!isLoading && !error && companies.length === 0 && (
+      {!isLoading && !fetchFailed && companies.length === 0 && (
         <div
           className="px-4 py-6 rounded-xl text-center"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <p className="text-[12px] text-white/55">No pre-IPO companies tracked at this time.</p>
+          <p className="text-[12px] text-white/55">No Pre-IPO intelligence available yet.</p>
         </div>
       )}
 
@@ -4823,7 +4853,7 @@ function PreIPOWatchlistView() {
       {!isLoading && companies.length > 0 && (
         <div className="space-y-3">
           {companies.map((c, i) => (
-            <PreIPOCompanyCard key={`${c.company}-${i}`} company={c} displayRank={i + 1} />
+            <PreIPOCompanyCard key={`${c?.company ?? "unknown"}-${i}`} company={c} displayRank={i + 1} />
           ))}
         </div>
       )}
