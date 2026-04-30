@@ -3718,12 +3718,14 @@ function CatalystSnapshotTab({
   search,
   identityMap = {},
   onFetchIdentity = () => {},
+  rightSlot,
 }: {
   tabKey: string;
   scope: string;
   search: string;
   identityMap?: Record<string, IdentityData>;
   onFetchIdentity?: (tickers: string[]) => void;
+  rightSlot?: React.ReactNode;
 }) {
   const [mode, setMode] = useState<SnapshotMode>("week");
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
@@ -3848,6 +3850,8 @@ function CatalystSnapshotTab({
             );
           })}
         </div>
+
+        {rightSlot && <div className="flex-shrink-0">{rightSlot}</div>}
 
         <div className="ml-auto flex items-center gap-2 text-[10px] text-white/30 flex-shrink-0">
           {isLoading && (
@@ -5688,7 +5692,7 @@ function PreIPOCompanyCard({ company, displayRank }: { company: PreIPOCompany; d
   );
 }
 
-function PreIPOWatchlistView() {
+function PreIPOWatchlistView({ headerRight }: { headerRight?: React.ReactNode }) {
   const { data, isLoading, error } = useQuery<PreIPOWatchlistResponse & { __fetchFailed?: boolean }>({
     queryKey: ["pre-ipo-watchlist"],
     queryFn: async () => {
@@ -5773,7 +5777,7 @@ function PreIPOWatchlistView() {
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1.5">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{
               background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.12))",
               border: "1px solid rgba(244,194,91,0.32)",
@@ -5799,6 +5803,7 @@ function PreIPOWatchlistView() {
               reason={confidence.reason}
             />
           )}
+          {headerRight && <div className="ml-auto flex-shrink-0">{headerRight}</div>}
         </div>
         <p className="text-[12px] text-white/65 mb-1">
           Ranked private-market IPO intelligence across SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
@@ -6324,39 +6329,30 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
-          {/* ── IPO Tab — Calendar / Pre-IPO Watchlist toggle ──── */}
-          {isIpoTab && (
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
-                <button
-                  onClick={() => setIpoView("calendar")}
-                  data-testid="ipo-view-calendar"
-                  className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
-                  style={ipoView === "calendar"
-                    ? { background: "rgba(139,92,246,0.18)", color: "#a5b4fc", borderRight: "1px solid rgba(255,255,255,0.06)" }
-                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-                >
-                  <TrendingUp className="w-3 h-3" />
-                  IPO Calendar
-                </button>
-                <button
-                  onClick={() => setIpoView("pre_ipo_watchlist")}
-                  data-testid="ipo-view-pre-ipo-watchlist"
-                  className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
-                  style={ipoView === "pre_ipo_watchlist"
-                    ? { background: "rgba(244,194,91,0.18)", color: "#f4c25b" }
-                    : { color: "rgba(255,255,255,0.4)" }}
-                >
-                  <Crown className="w-3 h-3" />
-                  Pre-IPO Watchlist
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* ── Tab content ─────────────────────────────────────── */}
           {isIpoTab && ipoView === "pre_ipo_watchlist" ? (
-            <PreIPOWatchlistView />
+            <PreIPOWatchlistView
+              headerRight={
+                <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
+                  <button
+                    onClick={() => setIpoView("calendar")}
+                    className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                    style={{ color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    IPO Calendar
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                    style={{ background: "rgba(244,194,91,0.18)", color: "#f4c25b" }}
+                  >
+                    <Crown className="w-3 h-3" />
+                    Pre-IPO Watchlist
+                  </button>
+                </div>
+              }
+            />
           ) : isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "curated" ? (
             /* ── Week · Curated — curated board ────────────────── */
             <WeeklyEarningsBoard
@@ -6459,6 +6455,26 @@ export default function StocksEarningsCalendarPage() {
               search={search}
               identityMap={identityMap}
               onFetchIdentity={fetchIdentity}
+              rightSlot={isIpoTab ? (
+                <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
+                  <button
+                    onClick={() => setIpoView("calendar")}
+                    className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                    style={{ background: "rgba(139,92,246,0.18)", color: "#a5b4fc", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    IPO Calendar
+                  </button>
+                  <button
+                    onClick={() => setIpoView("pre_ipo_watchlist")}
+                    className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                    style={{ color: "rgba(255,255,255,0.4)" }}
+                  >
+                    <Crown className="w-3 h-3" />
+                    Pre-IPO Watchlist
+                  </button>
+                </div>
+              ) : undefined}
             />
           )}
 
