@@ -5786,24 +5786,16 @@ function PreIPOWatchlistView({ headerRight }: { headerRight?: React.ReactNode })
             <Gem className="w-3.5 h-3.5" style={{ color: PRE_IPO_GOLD }} />
           </div>
           <h2 className="text-base font-bold text-white">IPO Opportunities</h2>
-          <span
-            className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
-            style={{
-              background: "linear-gradient(135deg, rgba(244,194,91,0.22), rgba(212,162,60,0.14))",
-              border: "1px solid rgba(244,194,91,0.32)",
-              color: PRE_IPO_GOLD,
-            }}
-          >
-            Premium
-          </span>
+          {headerRight && <div className="flex-shrink-0">{headerRight}</div>}
           {!isLoading && (
-            <PreIPOConfidenceIndicator
-              level={confidence.level}
-              label={confidence.label}
-              reason={confidence.reason}
-            />
+            <div className="ml-auto flex-shrink-0">
+              <PreIPOConfidenceIndicator
+                level={confidence.level}
+                label={confidence.label}
+                reason={confidence.reason}
+              />
+            </div>
           )}
-          {headerRight && <div className="ml-auto flex-shrink-0">{headerRight}</div>}
         </div>
         <p className="text-[12px] text-white/65 mb-1">
           Ranked private-market IPO intelligence across SpaceX, OpenAI, Anthropic, Databricks, Anduril, and Stripe.
