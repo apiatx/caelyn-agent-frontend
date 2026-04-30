@@ -3894,6 +3894,7 @@ function CatalystSnapshotTab({
         <CatalystSnapshotDayView
           events={normalized}
           loading={isLoading}
+          tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
         />
       )}
@@ -4155,13 +4156,15 @@ function CatalystSnapshotWeekBoard({
 function CatalystSnapshotDayView({
   events,
   loading,
+  tabLabel,
   onEventClick,
 }: {
   events: CalendarEvent[];
   loading: boolean;
+  tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
 }) {
-  // Default to today; users can pick any day present in the snapshot
+  const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
   const [selectedKey, setSelectedKey] = useState<string>(() => dateKey(new Date()));
 
   const dateMap = new Map<string, CalendarEvent[]>();
@@ -4170,58 +4173,112 @@ function CatalystSnapshotDayView({
     const list = dateMap.get(ev.date) || [];
     dateMap.set(ev.date, [...list, ev]);
   }
-  const presentDates = Array.from(dateMap.keys()).sort();
-  // If the selected key isn't in the snapshot, fall back to first available date
-  const effectiveKey = dateMap.has(selectedKey)
-    ? selectedKey
-    : presentDates[0] || selectedKey;
-  const entries = dateMap.get(effectiveKey) || [];
-  const selectedDate = (() => {
-    const [y, m, d] = effectiveKey.split("-").map((s) => parseInt(s, 10));
-    if (!y || !m || !d) return new Date();
-    return new Date(y, m - 1, d);
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekMonth = MONTH_NAMES[weekStart.getMonth()];
+  const weekYear = weekStart.getFullYear();
+  const totalThisWeek = weekDays.reduce((sum, d) => sum + (dateMap.get(dateKey(d))?.length || 0), 0);
+
+  const prevWeek = () => {
+    const s = addDays(weekStart, -7);
+    setWeekStart(s);
+    setSelectedKey(dateKey(s));
+  };
+  const nextWeek = () => {
+    const s = addDays(weekStart, 7);
+    setWeekStart(s);
+    setSelectedKey(dateKey(s));
+  };
+  const goToday = () => {
+    setWeekStart(getSunday(new Date()));
+    setSelectedKey(dateKey(new Date()));
+  };
+
+  const entries = dateMap.get(selectedKey) || [];
+  const selectedDate = weekDays.find((d) => dateKey(d) === selectedKey) || (() => {
+    const [y, m, d] = selectedKey.split("-").map((s) => parseInt(s, 10));
+    return y && m && d ? new Date(y, m - 1, d) : new Date();
   })();
 
   return (
     <div>
-      {/* Day chip selector — shows every date in the snapshot */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-        {presentDates.length === 0 ? (
-          <span className="text-[10px] text-white/25">
-            {loading ? "Loading…" : "No days in snapshot"}
-          </span>
-        ) : (
-          presentDates.map((k) => {
-            const [y, m, d] = k.split("-").map((s) => parseInt(s, 10));
-            const dt = new Date(y, m - 1, d);
-            const count = dateMap.get(k)?.length || 0;
-            const isSel = k === effectiveKey;
-            const isToday = dateKey(new Date()) === k;
-            return (
-              <button
-                key={k}
-                onClick={() => setSelectedKey(k)}
-                className={`flex-shrink-0 rounded-xl px-3 py-2 text-center transition-all border ${
-                  isSel
-                    ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20"
-                    : isToday
-                    ? "bg-white/[0.03] border-blue-500/15 hover:bg-white/[0.05]"
-                    : "bg-white/[0.015] border-white/[0.05] hover:bg-white/[0.04]"
-                }`}
-              >
-                <p className={`text-[10px] font-semibold ${isSel ? "text-blue-400" : "text-white/40"}`}>
-                  {DAY_NAMES_FULL[dt.getDay()]}
-                </p>
-                <p className={`text-xs font-bold ${isSel ? "text-white" : isToday ? "text-blue-400" : "text-white/70"}`}>
-                  {MONTH_NAMES_SHORT[dt.getMonth()]} {dt.getDate()}
-                </p>
-                <p className={`text-[9px] mt-0.5 ${count > 0 ? (isSel ? "text-blue-400/70" : "text-white/40") : "text-white/20"}`}>
-                  {count} event{count !== 1 ? "s" : ""}
-                </p>
-              </button>
-            );
-          })
-        )}
+      {/* Calendar navigation — matches EarningsCalendarWidget header */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] text-white/40">
+          {weekMonth} {weekYear} &middot; {totalThisWeek} {(tabLabel || "catalyst").toLowerCase()} event{totalThisWeek !== 1 ? "s" : ""} this week
+          {loading && <Loader2 className="w-2.5 h-2.5 animate-spin inline ml-1.5 text-blue-400/50" />}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={goToday}
+            className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white/50 border border-white/[0.08] hover:bg-white/5 hover:text-white/70 transition-all mr-1"
+          >
+            Today
+          </button>
+          <button onClick={prevWeek} className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all">
+            <ChevronLeft className="w-4 h-4 text-white/50" />
+          </button>
+          <button onClick={nextWeek} className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all">
+            <ChevronRight className="w-4 h-4 text-white/50" />
+          </button>
+        </div>
+      </div>
+
+      {/* Week day selector grid — 7 columns, matches EarningsCalendarWidget exactly */}
+      <div className="grid grid-cols-7 gap-1.5 mb-5">
+        {weekDays.map((day, i) => {
+          const key = dateKey(day);
+          const dayEntries = dateMap.get(key) || [];
+          const isToday = dateKey(new Date()) === key;
+          const isSelected = selectedKey === key;
+          const count = dayEntries.length;
+          return (
+            <button
+              key={key}
+              onClick={() => setSelectedKey(key)}
+              className={`rounded-xl p-2.5 text-center transition-all border ${
+                isSelected
+                  ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20"
+                  : isToday
+                  ? "bg-white/[0.03] border-blue-500/15 hover:bg-white/[0.05]"
+                  : "bg-white/[0.015] border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.08]"
+              }`}
+            >
+              <p className={`text-[10px] font-semibold mb-0.5 ${isSelected ? "text-blue-400" : "text-white/40"}`}>
+                {DAY_NAMES_FULL[i]}
+              </p>
+              <p className={`text-xs font-bold ${isSelected ? "text-white" : isToday ? "text-blue-400" : "text-white/70"}`}>
+                {MONTH_NAMES_SHORT[day.getMonth()]} {day.getDate()}
+              </p>
+              <p className={`text-[9px] mt-1 ${count > 0 ? (isSelected ? "text-blue-400/70" : "text-white/40") : "text-white/20"}`}>
+                {count > 0 ? `${count} Event${count > 1 ? "s" : ""}` : "No Events"}
+              </p>
+              {count > 0 && (
+                <div className="flex justify-center gap-0.5 mt-1.5">
+                  {dayEntries.slice(0, 4).map((e, ei) => {
+                    const typeKey = (e.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                    const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                    const letter = (e.symbol || e.title || "?").slice(0, 1).toUpperCase();
+                    return (
+                      <div
+                        key={e.id || ei}
+                        className="w-4 h-4 rounded-sm flex items-center justify-center overflow-hidden"
+                        style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                      >
+                        <span className="text-[6px] font-bold" style={{ color: c.text }}>{letter}</span>
+                      </div>
+                    );
+                  })}
+                  {count > 4 && (
+                    <div className="w-4 h-4 rounded-sm bg-white/[0.06] flex items-center justify-center">
+                      <span className="text-[6px] font-bold text-white/40">+{count - 4}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Selected day header */}
@@ -4244,9 +4301,7 @@ function CatalystSnapshotDayView({
         <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
           <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
           <p className="text-sm text-white/25">No events on this day</p>
-          <p className="text-[10px] text-white/15 mt-1">
-            {events.length === 0 ? "Snapshot has no events for this slice." : "Pick another day above."}
-          </p>
+          <p className="text-[10px] text-white/15 mt-1">Pick another day above.</p>
         </div>
       ) : (
         <div className="space-y-2">
