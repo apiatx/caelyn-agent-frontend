@@ -3698,9 +3698,10 @@ function CatalystListTab({
 // Consumes /api/catalysts/events?tab=...&scope=...&search=... which
 // returns { current_week, previous_week, last_updated, status } for
 // the target non-earnings tabs (dividends, ipos, splits,
-// economic_releases, treasury_macro). Renders Day/Week/Month views
-// matching the Earnings tab UX, with a [Current Week] / [Recent]
-// snapshot toggle that selects which envelope slice to display.
+// economic_releases, treasury_macro). Renders Recent / Day / Week /
+// Month views that mirror the Earnings tab UX. Recent uses the
+// previous_week slice as a list view; Day/Week/Month use the
+// current_week slice rendered as calendar layouts.
 
 interface CatalystSnapshotEnvelope {
   current_week?: CatalystEvent[];
@@ -3709,8 +3710,7 @@ interface CatalystSnapshotEnvelope {
   status?: "ready" | "stale" | "empty" | string;
 }
 
-type SnapshotSlice = "current_week" | "previous_week";
-type SnapshotView = "day" | "week" | "month";
+type SnapshotMode = "recent" | "day" | "week" | "month";
 
 function CatalystSnapshotTab({
   tabKey,
@@ -3725,8 +3725,7 @@ function CatalystSnapshotTab({
   identityMap?: Record<string, IdentityData>;
   onFetchIdentity?: (tickers: string[]) => void;
 }) {
-  const [slice, setSlice] = useState<SnapshotSlice>("current_week");
-  const [view, setView] = useState<SnapshotView>("week");
+  const [mode, setMode] = useState<SnapshotMode>("week");
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
 
   // Snapshot fetch — long staleTime, no polling/refetch on window focus.
@@ -3769,13 +3768,14 @@ function CatalystSnapshotTab({
   const previousWeek = envelope.previous_week || [];
   const status = envelope.status || (currentWeek.length === 0 && previousWeek.length === 0 ? "empty" : "ready");
 
-  // Effective slice — if status is "stale" and current_week is empty,
-  // fall back to previous_week (per UI semantics in spec)
-  const effectiveSlice: SnapshotSlice =
-    slice === "current_week" && status === "stale" && currentWeek.length === 0 && previousWeek.length > 0
-      ? "previous_week"
-      : slice;
-  const rawEvents = effectiveSlice === "current_week" ? currentWeek : previousWeek;
+  // Recent → previous_week list view; Day/Week/Month use current_week.
+  // If current_week is empty but previous_week has data (stale snapshot),
+  // fall back to previous_week so the calendar still shows something.
+  const useCurrentWeek = mode !== "recent";
+  const rawEvents =
+    useCurrentWeek
+      ? (currentWeek.length === 0 && previousWeek.length > 0 ? previousWeek : currentWeek)
+      : previousWeek;
 
   // Normalize once
   const normalized: CalendarEvent[] = rawEvents
@@ -3813,53 +3813,40 @@ function CatalystSnapshotTab({
     treasury_macro: "Treasury / Macro",
   };
 
+  // Toggle styling mirrors Earnings tab: Recent=emerald, Day=amber,
+  // Week=indigo, Month=purple. Single combined toggle replaces the
+  // legacy slice + view toggles ("Current Week" is no longer exposed).
+  const TOGGLE_BUTTONS: { key: SnapshotMode; label: string; activeStyle: React.CSSProperties }[] = [
+    { key: "recent", label: "Recent", activeStyle: { background: "rgba(16,185,129,0.15)", color: "#34d399" } },
+    { key: "day",    label: "Day",    activeStyle: { background: "rgba(245,158,11,0.18)", color: "#fbbf24" } },
+    { key: "week",   label: "Week",   activeStyle: { background: "rgba(99,102,241,0.18)", color: "#a5b4fc" } },
+    { key: "month",  label: "Month",  activeStyle: { background: "rgba(168,85,247,0.18)", color: "#c084fc" } },
+  ];
+
   return (
     <div>
-      {/* ── Snapshot status + toggles ─────────────────────────────── */}
+      {/* ── Mode toggle: Recent / Day / Week / Month ──────────────── */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        {/* Slice toggle: Current Week / Recent */}
         <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
-          <button
-            onClick={() => setSlice("current_week")}
-            className="px-4 py-1.5 transition-all"
-            style={slice === "current_week"
-              ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
-              : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            Current Week
-          </button>
-          <button
-            onClick={() => setSlice("previous_week")}
-            className="px-4 py-1.5 transition-all"
-            style={slice === "previous_week"
-              ? { background: "rgba(16,185,129,0.15)", color: "#34d399" }
-              : { color: "rgba(255,255,255,0.4)" }}
-          >
-            Recent
-          </button>
-        </div>
-
-        {/* View mode toggle: Day / Week / Month */}
-        <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
-          {(["day", "week", "month"] as SnapshotView[]).map((v, i) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className="px-4 py-1.5 transition-all capitalize"
-              style={{
-                borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : undefined,
-                ...(view === v
-                  ? v === "day"
-                    ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24" }
-                    : v === "week"
-                    ? { background: "rgba(99,102,241,0.18)", color: "#a5b4fc" }
-                    : { background: "rgba(168,85,247,0.18)", color: "#c084fc" }
-                  : { color: "rgba(255,255,255,0.4)" }),
-              }}
-            >
-              {v}
-            </button>
-          ))}
+          {TOGGLE_BUTTONS.map((btn, i) => {
+            const active = mode === btn.key;
+            const baseStyle: React.CSSProperties = {
+              borderRight: i < TOGGLE_BUTTONS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+            };
+            const style: React.CSSProperties = active
+              ? { ...baseStyle, ...btn.activeStyle }
+              : { ...baseStyle, color: "rgba(255,255,255,0.4)" };
+            return (
+              <button
+                key={btn.key}
+                onClick={() => setMode(btn.key)}
+                className="px-4 py-1.5 transition-all"
+                style={style}
+              >
+                {btn.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="ml-auto flex items-center gap-2 text-[10px] text-white/30 flex-shrink-0">
@@ -3894,15 +3881,16 @@ function CatalystSnapshotTab({
       )}
 
       {/* ── View body ─────────────────────────────────────────────── */}
-      {view === "week" && (
-        <CatalystCalendarGrid
+      {mode === "recent" && (
+        <CatalystSnapshotRecentList
           events={normalized}
           loading={isLoading}
+          tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
         />
       )}
 
-      {view === "day" && (
+      {mode === "day" && (
         <CatalystSnapshotDayView
           events={normalized}
           loading={isLoading}
@@ -3910,7 +3898,16 @@ function CatalystSnapshotTab({
         />
       )}
 
-      {view === "month" && (
+      {mode === "week" && (
+        <CatalystSnapshotWeekBoard
+          events={normalized}
+          loading={isLoading}
+          tabLabel={TAB_LABELS[tabKey] || "catalyst"}
+          onEventClick={(ev) => setSelectedEvent(ev.raw)}
+        />
+      )}
+
+      {mode === "month" && (
         <CatalystSnapshotMonthView
           events={normalized}
           loading={isLoading}
@@ -3921,6 +3918,234 @@ function CatalystSnapshotTab({
       {selectedEvent && (
         <CatalystDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
       )}
+    </div>
+  );
+}
+
+// ─── Snapshot Recent list — date-grouped list view ────────────────
+// Mirrors the Earnings Recent list pattern (CatalystListTab) but
+// reads events from the snapshot envelope (no new API calls).
+
+function CatalystSnapshotRecentList({
+  events,
+  loading,
+  tabLabel,
+  onEventClick,
+}: {
+  events: CalendarEvent[];
+  loading: boolean;
+  tabLabel: string;
+  onEventClick: (ev: CalendarEvent) => void;
+}) {
+  if (loading && events.length === 0) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-12 rounded-xl bg-white/[0.03] animate-pulse border border-white/[0.04]" />
+        ))}
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+        <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+        <p className="text-sm text-white/25">No recent {tabLabel.toLowerCase()} events</p>
+      </div>
+    );
+  }
+
+  // Group by date (most-recent first) using the previous_week slice
+  const dateGroups = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    if (!ev.date) continue;
+    const list = dateGroups.get(ev.date) || [];
+    dateGroups.set(ev.date, [...list, ev]);
+  }
+  const sortedDates = Array.from(dateGroups.keys()).sort().reverse();
+
+  return (
+    <div className="space-y-5">
+      {sortedDates.map((dk) => {
+        const [y, m, d] = dk.split("-").map((s) => parseInt(s, 10));
+        const dt = (y && m && d) ? new Date(y, m - 1, d) : new Date();
+        const entries = dateGroups.get(dk) || [];
+        return (
+          <div key={dk}>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2">
+              {DAY_NAMES_FULL[dt.getDay()]}, {MONTH_NAMES_SHORT[dt.getMonth()]} {dt.getDate()}
+              <span className="ml-2 text-white/15 normal-case font-normal tracking-normal">
+                {entries.length} event{entries.length !== 1 ? "s" : ""}
+              </span>
+            </p>
+            <div className="space-y-2">
+              {entries.map((ev, i) => {
+                const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+                return (
+                  <button
+                    key={ev.id || `${dk}-${i}`}
+                    onClick={() => onEventClick(ev)}
+                    className="w-full text-left rounded-xl border border-white/[0.06] p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                    >
+                      <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {ev.symbol && (
+                          <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                        )}
+                        <span className="text-xs text-white/70 truncate">{ev.title}</span>
+                        <EventTypeBadge type={ev.eventType} />
+                        {ev.importance && <ImportanceBadge importance={ev.importance} />}
+                      </div>
+                      {ev.subtitle && (
+                        <p className="text-[10px] text-white/35 mt-0.5 truncate">{ev.subtitle}</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Snapshot Week Board — Mon-Fri grid mirroring Earnings ────────
+// Layout parity with WeeklyEarningsBoard: 5-column grid for the
+// active snapshot week. No logos / percent-move enrichment — the
+// snapshot data only carries symbol + title + event metadata.
+
+function CatalystSnapshotWeekBoard({
+  events,
+  loading,
+  tabLabel,
+  onEventClick,
+}: {
+  events: CalendarEvent[];
+  loading: boolean;
+  tabLabel: string;
+  onEventClick: (ev: CalendarEvent) => void;
+}) {
+  // Anchor the week to the Monday containing the most snapshot events
+  // (typically the current week). Fall back to today's Monday if empty.
+  const dateMap = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    if (!ev.date) continue;
+    const list = dateMap.get(ev.date) || [];
+    dateMap.set(ev.date, [...list, ev]);
+  }
+
+  const anchorMonday = (() => {
+    if (dateMap.size === 0) return getMonday(new Date());
+    const counts = new Map<string, number>();
+    Array.from(dateMap.entries()).forEach(([k, list]) => {
+      const [y, m, d] = k.split("-").map((s) => parseInt(s, 10));
+      if (!y || !m || !d) return;
+      const monday = getMonday(new Date(y, m - 1, d));
+      const mk = dateKey(monday);
+      counts.set(mk, (counts.get(mk) || 0) + list.length);
+    });
+    if (counts.size === 0) return getMonday(new Date());
+    const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+    const [y, m, d] = top.split("-").map((s) => parseInt(s, 10));
+    return new Date(y, m - 1, d);
+  })();
+
+  const todayKey = dateKey(new Date());
+  const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {WEEKDAYS.map((day) => (
+          <div key={day} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3">
+            <Skeleton className="h-4 w-16 mb-1 rounded" />
+            <Skeleton className="h-3 w-10 mb-3 rounded" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-11 w-full mb-1.5 rounded-lg" />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {WEEKDAYS.map((weekday, idx) => {
+        const dayDate = addDays(anchorMonday, idx);
+        const dk = dateKey(dayDate);
+        const entries = dateMap.get(dk) || [];
+        const isToday = dk === todayKey;
+
+        return (
+          <div
+            key={weekday}
+            className={`rounded-xl border p-3 ${isToday ? "border-blue-500/20 bg-blue-500/[0.02]" : "border-white/[0.06] bg-white/[0.01]"}`}
+          >
+            {/* Day header */}
+            <div className="mb-2.5">
+              <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-blue-400" : "text-white/50"}`}>
+                {weekday.slice(0, 3)}
+              </p>
+              <p className={`text-[9px] ${isToday ? "text-blue-400/70" : "text-white/25"}`}>
+                {MONTH_NAMES_SHORT[dayDate.getMonth()]} {dayDate.getDate()}
+              </p>
+              {entries.length > 0 && (
+                <p className="text-[8px] text-white/20 mt-0.5">
+                  {entries.length} event{entries.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+
+            {/* Content */}
+            {entries.length === 0 ? (
+              <p className="text-[9px] text-white/15">—</p>
+            ) : (
+              <div className="space-y-1">
+                {entries.map((ev, i) => {
+                  const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                  const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                  const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+                  return (
+                    <button
+                      key={ev.id || `${dk}-${i}`}
+                      onClick={() => onEventClick(ev)}
+                      className="w-full text-left rounded-lg border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2 flex items-center gap-2"
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center"
+                        style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                      >
+                        <span className="text-[9px] font-bold" style={{ color: c.text }}>{letter}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-white">
+                          {ev.symbol || ev.title}
+                        </p>
+                        <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
+                          {ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel)}
+                        </p>
+                      </div>
+                      <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0 leading-none">+</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -4063,7 +4288,10 @@ function CatalystSnapshotDayView({
   );
 }
 
-// ─── Snapshot Month View — client-side bucket of snapshot ─────────
+// ─── Snapshot Month View — Mon-Fri grid, parity with Earnings ─────
+// Layout mirrors MonthCuratedGrid: weekends are skipped, days render
+// as 5 across (Mon-Fri). No logos/percent moves — snapshot data only
+// carries lightweight event metadata.
 
 function CatalystSnapshotMonthView({
   events,
@@ -4092,11 +4320,12 @@ function CatalystSnapshotMonthView({
   const [anchor, setAnchor] = useState<string>(defaultMonth);
 
   const [year, monthNum] = anchor.split("-").map((s) => parseInt(s, 10));
-  const monthIdx = (monthNum || 1) - 1;
-  const firstOfMonth = new Date(year || new Date().getFullYear(), monthIdx, 1);
-  const daysInMonth = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + 1, 0).getDate();
-  const startWeekday = firstOfMonth.getDay(); // 0 = Sunday
-  const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+  const month = monthNum || 1;
+  const monthIdx = month - 1;
+  const safeYear = year || new Date().getFullYear();
+  const firstDay = new Date(safeYear, monthIdx, 1);
+  const firstDayMonBased = (firstDay.getDay() + 6) % 7; // Mon=0…Fri=4, Sat=5, Sun=6
+  const daysInMonth = new Date(safeYear, monthIdx + 1, 0).getDate();
 
   const dateMap = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
@@ -4108,12 +4337,25 @@ function CatalystSnapshotMonthView({
 
   const totalThisMonth = Array.from(dateMap.values()).reduce((s, a) => s + a.length, 0);
 
+  // Build Mon-Fri cells, skipping weekends (matches MonthCuratedGrid)
+  const cells: (string | null)[] = [];
+  const leadOffset = firstDayMonBased < 5 ? firstDayMonBased : 0;
+  for (let i = 0; i < leadOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(safeYear, monthIdx, d).getDay();
+    if (dow === 0 || dow === 6) continue;
+    const mm = String(month).padStart(2, "0");
+    const dd = String(d).padStart(2, "0");
+    cells.push(`${safeYear}-${mm}-${dd}`);
+  }
+  while (cells.length % 5 !== 0) cells.push(null);
+
   const navigateMonth = (delta: -1 | 0 | 1) => {
     if (delta === 0) {
       setAnchor(defaultMonth);
       return;
     }
-    const d = new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + delta, 1);
+    const d = new Date(safeYear, monthIdx + delta, 1);
     setAnchor(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
@@ -4122,7 +4364,7 @@ function CatalystSnapshotMonthView({
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm font-bold text-white">
-            {MONTH_NAMES[monthIdx]} {year}
+            {MONTH_NAMES[monthIdx]} {safeYear}
           </p>
           <p className="text-[10px] text-white/30">
             {totalThisMonth} event{totalThisMonth !== 1 ? "s" : ""} in snapshot for this month
@@ -4132,84 +4374,85 @@ function CatalystSnapshotMonthView({
         <div className="flex items-center gap-1">
           <button
             onClick={() => navigateMonth(-1)}
-            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all"
+            className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
           >
-            <ChevronLeft className="w-4 h-4 text-white/50" />
+            <ChevronLeft className="w-3 h-3" />
           </button>
           <button
             onClick={() => navigateMonth(0)}
-            className="px-2.5 py-1 text-[10px] font-semibold text-white/40 hover:text-white/70 hover:bg-white/5 transition-all rounded-lg border border-white/[0.08]"
+            className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
           >
-            Reset
+            {MONTH_NAMES[monthIdx]}
           </button>
           <button
             onClick={() => navigateMonth(1)}
-            className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/5 transition-all"
+            className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65"
           >
-            <ChevronRight className="w-4 h-4 text-white/50" />
+            <ChevronRight className="w-3 h-3" />
           </button>
+          {safeYear !== new Date().getFullYear() && (
+            <span className="text-[11px] text-white/35 ml-1">{safeYear}</span>
+          )}
         </div>
       </div>
 
-      {/* Weekday header */}
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-        {DAY_NAMES_FULL.map((d) => (
-          <div key={d} className="text-center text-[10px] font-semibold text-white/30">{d}</div>
+      {/* Weekday header — Mon through Fri only */}
+      <div className="grid grid-cols-5 gap-1 mb-1">
+        {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
+          <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
         ))}
       </div>
 
-      {/* Month grid */}
-      <div className="grid grid-cols-7 gap-1.5">
-        {Array.from({ length: totalCells }).map((_, i) => {
-          const dayNum = i - startWeekday + 1;
-          if (dayNum < 1 || dayNum > daysInMonth) {
-            return (
-              <div
-                key={i}
-                className="rounded-xl border border-white/[0.02] bg-white/[0.005] min-h-[70px]"
-              />
-            );
+      {/* Month grid (5 columns, weekends skipped) */}
+      <div className="grid grid-cols-5 gap-1">
+        {cells.map((dateStr, i) => {
+          if (!dateStr) {
+            return <div key={`empty-${i}`} className="rounded-xl h-[118px]" />;
           }
-          const k = `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-          const entries = dateMap.get(k) || [];
-          const isToday = dateKey(new Date()) === k;
+          const dayNum = parseInt(dateStr.split("-")[2], 10);
+          const entries = dateMap.get(dateStr) || [];
+          const count = entries.length;
+          const todayStr = dateKey(new Date());
+          const isToday = dateStr === todayStr;
+          const top = entries.slice(0, 3);
+          const extra = count - top.length;
           return (
             <div
-              key={i}
-              className={`rounded-xl p-1.5 border min-h-[70px] ${
-                isToday
-                  ? "bg-white/[0.03] border-blue-500/15"
-                  : "bg-white/[0.015] border-white/[0.05]"
-              }`}
+              key={dateStr}
+              className={`rounded-xl border transition-all flex flex-col h-[118px] ${
+                count > 0 ? "cursor-default" : "opacity-40 cursor-default"
+              } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-[10px] font-bold ${isToday ? "text-blue-400" : "text-white/60"}`}>
-                  {dayNum}
-                </span>
-                {entries.length > 0 && (
-                  <span className="text-[8px] text-white/40">{entries.length}</span>
+              {/* Day number + count */}
+              <div className="flex items-start justify-between px-2 pt-1.5 pb-0 flex-shrink-0">
+                <p className={`text-[11px] font-bold leading-none ${isToday ? "text-purple-400" : "text-white/45"}`}>{dayNum}</p>
+                {count > 0 && (
+                  <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
                 )}
               </div>
-              <div className="space-y-0.5">
-                {entries.slice(0, 3).map((ev, idx) => {
-                  const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
-                  const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
-                  return (
-                    <button
-                      key={ev.id || idx}
-                      onClick={() => onEventClick(ev)}
-                      className="w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity"
-                      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
-                      title={ev.title}
-                    >
-                      {ev.symbol || ev.title}
-                    </button>
-                  );
-                })}
-                {entries.length > 3 && (
-                  <p className="text-[8px] text-white/30 px-1">+{entries.length - 3} more</p>
-                )}
-              </div>
+
+              {count > 0 && (
+                <div className="flex-1 flex flex-col items-stretch justify-start gap-0.5 px-1.5 pb-1.5 pt-1 overflow-hidden">
+                  {top.map((ev, idx) => {
+                    const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                    const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                    return (
+                      <button
+                        key={ev.id || `${dateStr}-${idx}`}
+                        onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                        className="w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity"
+                        style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+                        title={ev.title}
+                      >
+                        {ev.symbol || ev.title}
+                      </button>
+                    );
+                  })}
+                  {extra > 0 && (
+                    <p className="text-[8px] text-white/30 px-1">+{extra} more</p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
