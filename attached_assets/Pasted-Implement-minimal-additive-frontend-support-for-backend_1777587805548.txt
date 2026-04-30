@@ -1,0 +1,134 @@
+Implement minimal, additive frontend support for backend thematic context fields without adding a bunch of new columns.
+
+Context:
+Backend may now return optional thematic fields on ticker rows from Options Flow and TA / Strategy Screener.
+
+Possible row fields:
+- theme_name
+- theme_state
+- regime_alignment_score
+- regime_alignment_label
+- thematic_badges
+- dead_zone_warning
+- base_score
+- final_score
+- sector_alignment
+- macro_fit
+- theme_score if present
+
+TA / Strategy Screener response may also include top-level:
+- regime_context
+
+Backend endpoint:
+GET /api/thematic-context/snapshot
+
+Goal:
+Show pure signal only. Do not clutter the UI with many new columns.
+
+Default row/card UI should show only:
+1. Theme name, if present
+2. A small theme state badge:
+   - Active
+   - Emerging
+   - Dead Zone
+   - Neutral / Unknown
+3. A small regime alignment badge:
+   - Strong Regime Fit
+   - Neutral Regime Fit
+   - Weak Regime Fit
+4. Optionally one compact score:
+   - Theme Fit: 86
+   Use regime_alignment_score or theme_score if available, but do not show multiple overlapping scores.
+
+Do not add separate visible columns for:
+- sector_alignment
+- macro_fit
+- thematic_badges
+- dead_zone_warning
+- base_score
+- final_score
+unless the page already has a natural score display.
+
+Options Flow changes:
+1. Find the Options Flow page/components.
+2. Update TypeScript interfaces/types to include optional thematic fields.
+3. Do not add many columns.
+4. In each ticker card/row, add a compact badge cluster near the ticker or score:
+   - theme_name
+   - theme_state badge
+   - regime alignment badge
+5. If dead_zone_warning is true, show a small “Dead Zone” warning badge.
+6. If final_composite_score exists, use it internally/display it where the current score already appears, but do not add a separate extra score column.
+7. Existing Options Flow layout and unusual flow scoring should remain unchanged.
+8. Do not hide rows based on theme_state.
+
+TA / Strategy Screener changes:
+1. Find the TA Screener / Strategy Screener frontend components used by the Terminal page.
+2. Update row types to include optional thematic fields.
+3. Do not add many columns.
+4. Add a compact badge cluster near each ticker:
+   - theme_name
+   - theme_state badge
+   - regime alignment badge
+5. If final_score exists, use it where current score is displayed, but do not show both base_score and final_score by default.
+6. If top-level regime_context exists, show a compact context strip above results:
+   - Macro Regime
+   - Active Themes
+   - Emerging Themes
+   - Dead Zones
+Keep this strip short and collapsible if possible.
+
+Universal ticker detail behavior:
+Create or reuse a shared component/pattern so that clicking a ticker can open a detail drawer/modal showing full thematic context when available.
+
+Suggested component names:
+- TickerThematicBadge
+- TickerInsightDrawer
+
+The detail drawer/modal should show:
+- ticker
+- theme_name
+- theme_state
+- theme_score if present
+- regime_alignment_score
+- regime_alignment_label
+- sector_alignment
+- macro_fit
+- thematic_badges
+- dead_zone_warning
+- base_score and final_score if present
+- short explanation if backend provides one
+
+This should be reusable across pages later. For now wire it into:
+- Options Flow ticker rows/cards
+- TA / Strategy Screener ticker rows/cards
+
+Guardrails:
+- Do not change backend.
+- Do not change Earnings.
+- Do not remove existing scores or existing columns.
+- Do not add lots of new columns.
+- Do not hard-require new fields.
+- If thematic fields are missing, the UI should behave exactly as before.
+- Keep it additive, compact, and clean.
+- No hard filtering by theme unless a filter already exists.
+
+Optional Thematic Context card:
+Only if simple and low layout risk, add a small read-only collapsible card on the Terminal page using GET /api/thematic-context/snapshot.
+
+It should show:
+- macro_regime
+- top 3 active_themes
+- top 2 emerging_themes
+- top 3 dead_zones
+
+Do not add this to Home yet unless it is trivial.
+
+Validation:
+- Run build.
+- Confirm Options Flow still renders if backend does not include thematic fields.
+- Confirm Options Flow shows compact theme/regime badges if fields exist.
+- Confirm TA Screener still renders if backend does not include thematic fields.
+- Confirm TA Screener shows compact badges and optional regime context if fields exist.
+- Confirm clicking a ticker can show fuller thematic detail where available.
+- Confirm Earnings page/components were untouched.

@@ -41,6 +41,17 @@ export interface ScreenerEntry {
   why_now?: string;
   why_hidden?: string;
   thesis_summary?: string;
+  // Thematic context — optional, backend may not yet return these
+  theme_name?: string | null;
+  theme_state?: string | null;
+  regime_alignment_score?: number | null;
+  regime_alignment_label?: string | null;
+  thematic_badges?: string[] | null;
+  dead_zone_warning?: boolean | null;
+  base_score?: number | null;
+  sector_alignment?: string | null;
+  macro_fit?: string | null;
+  theme_score?: number | null;
   [key: string]: unknown;
 }
 
@@ -62,6 +73,14 @@ export interface ScreenerSnapshot {
   candidates?: ScreenerEntry[];
   results?: ScreenerEntry[];
   error?: string;
+  // Optional thematic regime context returned by backend
+  regime_context?: {
+    macro_regime?: string | null;
+    active_themes?: string[] | null;
+    emerging_themes?: string[] | null;
+    dead_zones?: string[] | null;
+    [key: string]: unknown;
+  } | null;
   [key: string]: unknown;
 }
 

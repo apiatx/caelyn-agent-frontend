@@ -54,6 +54,16 @@ Token stored as `caelyn_token` in localStorage/sessionStorage.
 - **Portfolio** (`portfolio-section.tsx`): `StrategySelector` below header; `PortfolioScorePanel` uses DeBankPortfolio `topTokens` as holdings
 - **FastAPI playbooks**: `serenity` and `sjcapital`; backend returns `id`, `name`, `short_label`, `ui_color`, `description`, `enabled`
 
+## Thematic Context System (Additive)
+- **Shared component**: `frontend/client/src/components/ui/ticker-thematic.tsx`
+  - `TickerThematicBadge` — compact inline badge cluster (theme_name, theme_state pill, regime alignment pill, dead_zone warning, theme fit score). Renders nothing if no thematic fields present.
+  - `ThematicSection` — full detail block for use inside existing detail panels. Renders nothing if no thematic fields.
+  - `RegimeContextStrip` — collapsible strip above the Screener table showing macro_regime, active/emerging themes, dead zones.
+  - `TickerInsightDrawer` — standalone slide-out modal for full thematic context (not currently wired but exported for future use).
+- **Options Flow** (`options.tsx`): `TickerThematicBadge` added to first column of `TickerRows`; `ThematicSection` added at end of `TickerDetailPanel`.
+- **Strategy Screener** (`strategy-screener.tsx`): `RegimeContextStrip` added above table (uses `snapshot.regime_context`); `TickerThematicBadge` in ticker cell; `ThematicSection` at end of `ReportPanel`.
+- **Guardrails**: All thematic fields optional — if backend doesn't return them the UI is identical to before. No new columns. Earnings page untouched.
+
 ## Dev Notes
 - Vite config requires `server.allowedHosts: 'all'` for Replit preview
 - Backend API key in `AGENT_API_KEY` constant across various pages

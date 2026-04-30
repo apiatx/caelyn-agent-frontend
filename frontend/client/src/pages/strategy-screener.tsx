@@ -4,6 +4,7 @@ import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screene
 import type { ScreenerFilters } from '@/lib/screener';
 import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { TickerThematicBadge, ThematicSection, RegimeContextStrip } from '@/components/ui/ticker-thematic';
 
 /* ── Design tokens — premium dark publication ─────────────────────── */
 const C = {
@@ -436,6 +437,7 @@ function ReportPanel({
             {entry.why_now && <ReportSection title="Why Now" content={entry.why_now} />}
           </div>
         )}
+        <ThematicSection fields={entry} />
         </div>
       </div>
     </div>
@@ -685,6 +687,9 @@ export default function StrategyScreenerPage() {
               )}
             </div>
 
+            {/* ── Regime context strip ──────────────────────────── */}
+            <RegimeContextStrip context={snapshot?.regime_context} />
+
             {/* ── Ranked list table ─────────────────────────────── */}
             {entries.length === 0 ? (
               <div style={{ padding:'48px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
@@ -727,6 +732,7 @@ export default function StrategyScreenerPage() {
                                 score {Math.round(score)}
                               </div>
                             )}
+                            <TickerThematicBadge fields={e} />
                           </td>
                           <td style={{ padding:'12px 12px', maxWidth:220 }}>
                             <div style={{ fontFamily:C.sans, fontSize:12, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>

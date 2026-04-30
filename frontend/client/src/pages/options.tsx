@@ -35,6 +35,7 @@ import {
   Area,
   ReferenceLine,
 } from "recharts";
+import { TickerThematicBadge, ThematicSection } from "@/components/ui/ticker-thematic";
 
 const API_BASE = "/api/options";
 
@@ -213,6 +214,18 @@ interface TickerResult {
   premium_change_pct?: number | null;
   oi_change_pct?: number | null;
   unusual_otm?: boolean | null;
+  // Thematic context — optional, backend may not yet return these
+  theme_name?: string | null;
+  theme_state?: string | null;
+  regime_alignment_score?: number | null;
+  regime_alignment_label?: string | null;
+  thematic_badges?: string[] | null;
+  dead_zone_warning?: boolean | null;
+  base_score?: number | null;
+  final_composite_score?: number | null;
+  sector_alignment?: string | null;
+  macro_fit?: string | null;
+  theme_score?: number | null;
 }
 
 interface OptionsDashboardResponse {
@@ -984,6 +997,8 @@ function TickerDetailPanel({ symbol, ticker }: { symbol: string; ticker: TickerR
         </div>
       )}
 
+      <ThematicSection fields={ticker} />
+
       <TimeSalesPanel symbol={symbol} />
     </div>
   );
@@ -1066,6 +1081,7 @@ function TickerRows({ t, index, isExp, onToggle }: { t: TickerResult; index: num
               <span style={{ color: C.bright, fontFamily: font, fontWeight: 800, fontSize: 14 }}>{t.ticker}</span>
               {t.category ? <Badge color={t.category === "etf" ? C.purple : C.blue} sm>{t.category}</Badge> : null}
             </div>
+            <TickerThematicBadge fields={t} />
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontFamily: font, fontSize: 11 }}>
               <span style={{ color: C.bright }}>{fmtMoney(t.underlying_price)}</span>
               <span style={{ color: (safeNum(t.price_change_pct) ?? 0) >= 0 ? C.green : C.red }}>{fmtSmartPct(t.price_change_pct)}</span>

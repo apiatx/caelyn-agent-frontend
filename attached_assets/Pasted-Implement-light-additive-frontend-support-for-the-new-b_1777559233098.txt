@@ -1,0 +1,80 @@
+Implement light additive frontend support for the new backend thematic context fields.
+
+Context:
+Backend now exposes:
+GET /api/thematic-context/snapshot
+
+Options Flow rows may now include:
+- theme_name
+- theme_state
+- sector_alignment
+- macro_fit
+- regime_alignment_score
+- thematic_badges
+- dead_zone_warning
+- base_composite_score
+- final_composite_score
+
+TA / Strategy Screener rows may now include:
+- theme_name
+- theme_state
+- regime_alignment_score
+- regime_alignment_label
+- thematic_badges
+- dead_zone_warning
+- base_score
+- final_score
+
+TA / Strategy Screener response may also include top-level:
+- regime_context
+
+Goal:
+Display these new fields without breaking existing UI or response handling.
+
+Guardrails:
+- Do not change Earnings.
+- Do not change backend.
+- Do not remove existing scores.
+- Do not hard-require the new fields; they are optional.
+- If fields are missing, existing UI should behave exactly as before.
+- Keep this additive and visually clean.
+
+Options Flow changes:
+1. Find the Options Flow page/components.
+2. Update TypeScript interfaces/types to include optional thematic fields.
+3. Where each option flow card/row displays score, prefer final_composite_score if present, otherwise fall back to existing composite_score.
+4. Display small badges for thematic_badges.
+5. Display theme_name and theme_state if present.
+6. If dead_zone_warning is true, show a warning badge like “Dead Zone”.
+7. Do not hide rows based on theme_state.
+8. Do not change existing unusual flow scoring logic.
+
+TA / Strategy Screener changes:
+1. Find the TA Screener / Strategy Screener frontend components used by the Terminal page.
+2. Update types to include optional thematic fields.
+3. Display final_score if present, with base_score optionally shown subtly.
+4. Display theme_name, theme_state, regime_alignment_label, thematic_badges, and dead_zone_warning if present.
+5. If top-level regime_context exists, show a compact context strip near the screener header:
+   - macro regime
+   - active themes
+   - emerging themes
+   - dead zones
+6. Do not hard-filter results unless a filter already exists.
+
+Optional small Thematic Context card:
+If there is a natural place on the Terminal or Home page, add a small read-only card using GET /api/thematic-context/snapshot showing:
+- macro_regime
+- top 3 active_themes
+- top 2 emerging_themes
+- top 3 dead_zones
+- sector_leaders
+
+Only add this if it is simple and does not create layout risk.
+
+Validation:
+- Run build.
+- Confirm Options Flow still renders if backend does not include thematic fields.
+- Confirm Options Flow displays theme badges if fields are present.
+- Confirm TA Screener still renders if backend does not include thematic fields.
+- Confirm TA Screener displays regime/theme context if present.
+- Confirm Earnings page/components were untouched.
