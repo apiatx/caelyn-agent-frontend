@@ -5931,7 +5931,7 @@ function TopCatalystsTab({
     setLoading(true);
     setError(null);
     fetch(`${AGENT_BACKEND_URL}/api/catalysts/top`, {
-      headers: agentHeaders(),
+      headers: authHeaders(),
     })
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
