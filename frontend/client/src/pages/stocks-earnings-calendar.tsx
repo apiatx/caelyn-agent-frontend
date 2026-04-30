@@ -1750,7 +1750,6 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
           <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
             <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
             <p className="text-sm text-white/25">No curated earnings for this day</p>
-            <p className="text-[10px] text-white/15 mt-1">Switch to All to see every call</p>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -1919,7 +1918,6 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
             <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
               <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
               <p className="text-sm text-white/25">No high-signal earnings for this day</p>
-              <p className="text-[10px] text-white/15 mt-1">Switch to &ldquo;All&rdquo; view to see every ticker</p>
             </div>
           );
         }
@@ -5962,29 +5960,7 @@ export default function StocksEarningsCalendarPage() {
                   Month
                 </button>
               </div>
-              {/* Curated / All sub-toggle — shown for Day, Week, Month only */}
-              {earningsMode !== "recent" && (
-                <div className="flex rounded-lg border border-white/[0.06] overflow-hidden text-[10px] font-semibold flex-shrink-0">
-                  <button
-                    onClick={() => setEarningsSignalMode("curated")}
-                    className="px-3 py-1.5 transition-all"
-                    style={earningsSignalMode === "curated"
-                      ? { background: "rgba(245,158,11,0.15)", color: "#fbbf24", borderRight: "1px solid rgba(255,255,255,0.06)" }
-                      : { color: "rgba(255,255,255,0.35)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
-                  >
-                    Curated
-                  </button>
-                  <button
-                    onClick={() => setEarningsSignalMode("all")}
-                    className="px-3 py-1.5 transition-all"
-                    style={earningsSignalMode === "all"
-                      ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }
-                      : { color: "rgba(255,255,255,0.35)" }}
-                  >
-                    All
-                  </button>
-                </div>
-              )}
+              {/* Curated / All sub-toggle hidden from normal UI — Curated is the default and only user-facing mode. */}
               {earningsMode === "thisweek" ? (
                 <div className="ml-auto flex items-center gap-2 flex-shrink-0">
                   <div className="flex items-center gap-1">
