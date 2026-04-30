@@ -2725,6 +2725,7 @@ interface CatalystEvent {
 }
 
 const CATALYST_TABS: { key: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: "top_catalysts",      label: "Top Catalysts This Week", icon: Flame     },
   { key: "earnings_dates",     label: "Earnings",           icon: CalendarDays   },
   { key: "dividends",          label: "Dividends",          icon: DollarSign     },
   { key: "ipos",               label: "IPOs",               icon: TrendingUp     },
@@ -5887,6 +5888,260 @@ function PreIPOWatchlistView({ headerRight }: { headerRight?: React.ReactNode })
   );
 }
 
+// ─── Top Catalysts This Week ───────────────────────────────────────
+// Consumes /api/catalysts/top — returns:
+//   { tab: "top_catalysts", mode: "weekly",
+//     current_week: [...], previous_week: [],
+//     last_updated: "...", status: "ready"|"stale"|"empty" }
+// Renders a ranked list (current_week) reusing Earnings Recent list
+// styling (CatalystListTab table). Fetches once when this tab mounts;
+// no polling and no extra loops.
+
+interface TopCatalystEntry extends CatalystEvent {
+  score?: number;
+  rank?: number;
+  reasons?: string[];
+  source_tab?: string;
+}
+
+interface TopCatalystsResponse {
+  tab?: string;
+  mode?: string;
+  current_week?: TopCatalystEntry[];
+  previous_week?: TopCatalystEntry[];
+  last_updated?: string | null;
+  status?: "ready" | "stale" | "empty" | string;
+}
+
+function TopCatalystsTab({
+  identityMap = {},
+  onFetchIdentity = () => {},
+}: {
+  identityMap?: Record<string, IdentityData>;
+  onFetchIdentity?: (tickers: string[]) => void;
+}) {
+  const [data, setData] = useState<TopCatalystsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/catalysts/top`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
+      .then((payload: TopCatalystsResponse) => {
+        if (cancelled) return;
+        setData(payload || null);
+        const list = Array.isArray(payload?.current_week) ? payload!.current_week! : [];
+        const syms = list.map((ev) => (ev.symbol || "")).filter(Boolean) as string[];
+        if (syms.length > 0) onFetchIdentity(syms);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load top catalysts.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [refreshKey, onFetchIdentity]);
+
+  const entries: TopCatalystEntry[] = Array.isArray(data?.current_week) ? data!.current_week! : [];
+  const status = data?.status;
+  const lastUpdated = data?.last_updated;
+
+  const TAB_LABELS: Record<string, string> = {
+    dividends:          "Dividend",
+    ipos:               "IPO",
+    splits:             "Stock Split",
+    economic_releases:  "Economic Release",
+    treasury_macro:     "Treasury / Macro",
+    earnings_dates:     "Earnings",
+  };
+
+  const resolveDisplayName = (ev: TopCatalystEntry): string => {
+    const r = ev.raw || {};
+    return (
+      (ev.title as string | undefined) ||
+      (ev.companyName as string | undefined) ||
+      (r.companyName as string | undefined) ||
+      (r.company as string | undefined) ||
+      (r.name as string | undefined) ||
+      (ev.event_name as string | undefined) ||
+      (ev.indicatorName as string | undefined) ||
+      (ev.company as string | undefined) ||
+      (ev.symbol ? `${ev.symbol}` : "—")
+    );
+  };
+
+  const resolveEventType = (ev: TopCatalystEntry): string => {
+    if (ev.eventLabel) return ev.eventLabel;
+    const sourceTab = (ev.source_tab as string | undefined) || (ev.raw?.source_tab as string | undefined);
+    if (sourceTab && TAB_LABELS[sourceTab]) return TAB_LABELS[sourceTab];
+    const TAB_TYPES: Record<string, string> = {
+      dividends:          "dividend",
+      ipos:               "ipo",
+      splits:             "split",
+      economic_releases:  "economic_release",
+      treasury_macro:     "macro",
+      earnings_dates:     "earnings",
+    };
+    if (sourceTab && TAB_TYPES[sourceTab]) return TAB_TYPES[sourceTab];
+    const raw = (ev.eventType as string | undefined) || ev.event_type;
+    if (raw) return raw;
+    return "macro";
+  };
+
+  const resolveDetails = (ev: TopCatalystEntry): string => {
+    if (ev.keyDetails) return ev.keyDetails as string;
+    if (Array.isArray(ev.reasons) && ev.reasons.length > 0) return ev.reasons.join(" · ");
+    return (ev.subtitle as string | undefined) || "—";
+  };
+
+  return (
+    <div>
+      {/* ── Header row ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold"
+            style={{ background: "rgba(245,158,11,0.15)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.3)" }}>
+            <Flame className="w-3 h-3" />
+            Top Catalysts · This Week
+          </span>
+          {status && (
+            <span className="text-[10px] text-white/30">
+              status: {status}
+            </span>
+          )}
+          {lastUpdated && (
+            <span className="text-[10px] text-white/25">
+              updated {String(lastUpdated).slice(0, 16).replace("T", " ")}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => setRefreshKey((k) => k + 1)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh
+        </button>
+      </div>
+
+      <p className="text-[10px] text-white/25 mb-2">
+        {loading ? "Loading…" : `${entries.length} catalyst${entries.length !== 1 ? "s" : ""}`}
+      </p>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15 text-[11px] text-red-400/70">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* ── Table (mirrors CatalystListTab styling) ─────────────── */}
+      <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 780 }}>
+          <thead>
+            <tr style={{ backgroundColor: "#111827" }} className="border-b border-white/10">
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>#</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Date</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Symbol</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Company / Event</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Event Type</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Key Details</th>
+              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i} className="border-b border-white/5">
+                  {Array.from({ length: 7 }).map((__, j) => (
+                    <td key={j} className="py-2.5 px-3">
+                      <div className="h-3 rounded bg-white/5 animate-pulse" style={{ width: j === 3 || j === 5 ? "80%" : "50%" }} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+
+            {!loading && entries.length === 0 && !error && (
+              <tr>
+                <td colSpan={7} className="py-10 text-center text-white/30 text-xs">
+                  No top catalysts available for this week.
+                </td>
+              </tr>
+            )}
+
+            {!loading && entries.map((ev, i) => {
+              const displayName = resolveDisplayName(ev);
+              const eventType   = resolveEventType(ev);
+              const keyDetails  = resolveDetails(ev);
+              const rank        = ev.rank ?? i + 1;
+              const score       = ev.score;
+              return (
+                <tr
+                  key={ev.id || `${ev.symbol || "row"}-${i}`}
+                  onClick={() => setSelectedEvent(ev)}
+                  className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  style={{ backgroundColor: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}
+                >
+                  <td className="py-2.5 px-3 text-white/40 whitespace-nowrap font-semibold">{rank}</td>
+                  <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
+                    {ev.date?.slice(0, 10) || "—"}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {ev.symbol ? (
+                      <CompanyIdentity
+                        symbol={ev.symbol as string}
+                        companyName={
+                          identityMap[(ev.symbol as string).toUpperCase()]?.name ||
+                          (ev.companyName as string | undefined) ||
+                          ((ev.raw as Record<string, unknown>)?.companyName as string | undefined) ||
+                          ((ev.raw as Record<string, unknown>)?.company as string | undefined) ||
+                          undefined
+                        }
+                        logoUrl={
+                          identityMap[(ev.symbol as string).toUpperCase()]?.logo ||
+                          (ev.logo as string | undefined) ||
+                          (ev.image as string | undefined) ||
+                          undefined
+                        }
+                        size="sm"
+                      />
+                    ) : (
+                      <span className="text-white/25 text-[10px]">—</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 text-white/80 max-w-[240px] truncate font-medium">
+                    {displayName}
+                  </td>
+                  <td className="py-2.5 px-3">
+                    <EventTypeBadge type={eventType} />
+                  </td>
+                  <td className="py-2.5 px-3 text-white/50 max-w-[280px] truncate">
+                    {keyDetails}
+                  </td>
+                  <td className="py-2.5 px-3 text-white/70 whitespace-nowrap font-semibold">
+                    {typeof score === "number" ? score.toFixed(1) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedEvent && (
+        <CatalystDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function StocksEarningsCalendarPage() {
@@ -6323,7 +6578,13 @@ export default function StocksEarningsCalendarPage() {
 
 
           {/* ── Tab content ─────────────────────────────────────── */}
-          {isIpoTab && ipoView === "pre_ipo_watchlist" ? (
+          {activeTab === "top_catalysts" ? (
+            /* ── Top Catalysts This Week — ranked list ─────────── */
+            <TopCatalystsTab
+              identityMap={identityMap}
+              onFetchIdentity={fetchIdentity}
+            />
+          ) : isIpoTab && ipoView === "pre_ipo_watchlist" ? (
             <PreIPOWatchlistView
               headerRight={
                 <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
