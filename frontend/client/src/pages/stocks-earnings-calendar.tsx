@@ -6324,20 +6324,28 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
-          {/* ── IPO Tab — Pre-IPO Watchlist toggle ──── */}
+          {/* ── IPO Tab — Calendar / Pre-IPO Watchlist toggle ──── */}
           {isIpoTab && (
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
                 <button
-                  onClick={() => setIpoView(ipoView === "pre_ipo_watchlist" ? "calendar" : "pre_ipo_watchlist")}
+                  onClick={() => setIpoView("calendar")}
+                  data-testid="ipo-view-calendar"
+                  className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                  style={ipoView === "calendar"
+                    ? { background: "rgba(139,92,246,0.18)", color: "#a5b4fc", borderRight: "1px solid rgba(255,255,255,0.06)" }
+                    : { color: "rgba(255,255,255,0.4)", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                  IPO Calendar
+                </button>
+                <button
+                  onClick={() => setIpoView("pre_ipo_watchlist")}
                   data-testid="ipo-view-pre-ipo-watchlist"
                   className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
-                  style={ipoView === "pre_ipo_watchlist" ? {
-                    background: "rgba(244,194,91,0.18)",
-                    color: "#f4c25b",
-                  } : {
-                    color: "rgba(255,255,255,0.4)",
-                  }}
+                  style={ipoView === "pre_ipo_watchlist"
+                    ? { background: "rgba(244,194,91,0.18)", color: "#f4c25b" }
+                    : { color: "rgba(255,255,255,0.4)" }}
                 >
                   <Crown className="w-3 h-3" />
                   Pre-IPO Watchlist
