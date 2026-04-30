@@ -5930,7 +5930,9 @@ function TopCatalystsTab({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(`/api/catalysts/top`)
+    fetch(`${AGENT_BACKEND_URL}/api/catalysts/top`, {
+      headers: agentHeaders(),
+    })
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json();
