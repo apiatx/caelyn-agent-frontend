@@ -6269,55 +6269,25 @@ export default function StocksEarningsCalendarPage() {
             </div>
           )}
 
-          {/* ── IPO Tab — Calendar / Pre-IPO Watchlist toggle ──── */}
+          {/* ── IPO Tab — Pre-IPO Watchlist toggle ──── */}
           {isIpoTab && (
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <button
-                onClick={() => setIpoView("calendar")}
-                data-testid="ipo-view-calendar"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                style={ipoView === "calendar" ? {
-                  background: "rgba(139,92,246,0.15)",
-                  border: "1px solid rgba(139,92,246,0.3)",
-                  color: "#a78bfa",
-                } : {
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  color: "rgba(255,255,255,0.45)",
-                }}
-              >
-                <TrendingUp className="w-3.5 h-3.5" />
-                IPO Calendar
-              </button>
-              <button
-                onClick={() => setIpoView("pre_ipo_watchlist")}
-                data-testid="ipo-view-pre-ipo-watchlist"
-                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide transition-all overflow-hidden"
-                style={ipoView === "pre_ipo_watchlist" ? {
-                  background: "linear-gradient(135deg, rgba(244,194,91,0.28) 0%, rgba(212,162,60,0.18) 100%)",
-                  border: "1px solid rgba(244,194,91,0.55)",
-                  color: "#f4c25b",
-                  boxShadow: "0 0 0 1px rgba(244,194,91,0.18), 0 0 14px rgba(244,194,91,0.18)",
-                } : {
-                  background: "linear-gradient(135deg, rgba(244,194,91,0.10) 0%, rgba(212,162,60,0.05) 100%)",
-                  border: "1px solid rgba(244,194,91,0.32)",
-                  color: "#f4c25b",
-                  boxShadow: "0 0 8px rgba(244,194,91,0.08)",
-                }}
-              >
-                <Crown className="w-3.5 h-3.5" />
-                <span>Pre-IPO Watchlist</span>
-                <span
-                  className="ml-1 px-1.5 py-px rounded-full text-[8px] font-extrabold uppercase tracking-wider"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(244,194,91,0.35), rgba(212,162,60,0.2))",
-                    border: "1px solid rgba(244,194,91,0.5)",
-                    color: "#fde7a8",
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold flex-shrink-0">
+                <button
+                  onClick={() => setIpoView(ipoView === "pre_ipo_watchlist" ? "calendar" : "pre_ipo_watchlist")}
+                  data-testid="ipo-view-pre-ipo-watchlist"
+                  className="flex items-center gap-1.5 px-4 py-1.5 transition-all"
+                  style={ipoView === "pre_ipo_watchlist" ? {
+                    background: "rgba(244,194,91,0.18)",
+                    color: "#f4c25b",
+                  } : {
+                    color: "rgba(255,255,255,0.4)",
                   }}
                 >
-                  Premium
-                </span>
-              </button>
+                  <Crown className="w-3 h-3" />
+                  Pre-IPO Watchlist
+                </button>
+              </div>
             </div>
           )}
 
