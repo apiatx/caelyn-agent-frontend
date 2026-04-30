@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-quer
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, TrendingDown, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, ChevronUp, AlertCircle, Crown, Gem, Flame, Eye, Minus } from "lucide-react";
+import { ExternalLink, Loader2, Sparkles, Calendar, ChevronLeft, ChevronRight, CalendarDays, X, Clock, Send, MessageSquare, TrendingUp, TrendingDown, DollarSign, Scissors, BarChart2, Landmark, RefreshCw, Search, ChevronDown, ChevronUp, AlertCircle, Crown, Gem, Flame, Eye, Minus, Star, LayoutGrid, List } from "lucide-react";
 
 // ─── DATA FLOW (Catalyst Calendar) ────────────────────────────
 //
@@ -5889,28 +5889,256 @@ function PreIPOWatchlistView({ headerRight }: { headerRight?: React.ReactNode })
 }
 
 // ─── Top Catalysts This Week ───────────────────────────────────────
-// Consumes /api/catalysts/top — returns:
-//   { tab: "top_catalysts", mode: "weekly",
-//     current_week: [...], previous_week: [],
-//     last_updated: "...", status: "ready"|"stale"|"empty" }
-// Renders a ranked list (current_week) reusing Earnings Recent list
-// styling (CatalystListTab table). Fetches once when this tab mounts;
-// no polling and no extra loops.
+// Consumes /api/catalysts/top — returns weekly grouped payload:
+//   { tab: "top_catalysts", mode: "weekly", week: "...",
+//     days: [ { date, earnings:[...], macro:[...], other:[...] } ],
+//     previous_week: [], last_updated: "...",
+//     status: "ready"|"stale"|"empty" }
+//
+// Two views:
+//   • Calendar View (default)  — day-column buckets mirroring Earnings tab
+//   • Event Type View          — sectioned (Earnings / Macro / Other)
+//
+// Always signal-only (no All toggle, no Signal toggle). Fetches once when
+// the tab mounts; no polling and no fetch loops.
 
 interface TopCatalystEntry extends CatalystEvent {
   score?: number;
   rank?: number;
   reasons?: string[];
   source_tab?: string;
+  watchlist_boost?: boolean;
+  options_activity?: boolean;
+  unusual_options?: boolean;
+  sector_momentum?: string | boolean;
+  why?: string | string[];
+}
+
+interface TopCatalystDay {
+  date: string;
+  earnings?: TopCatalystEntry[];
+  macro?: TopCatalystEntry[];
+  other?: TopCatalystEntry[];
 }
 
 interface TopCatalystsResponse {
   tab?: string;
   mode?: string;
+  week?: string;
+  days?: TopCatalystDay[];
+  // Backwards-compat (legacy flat list during rollout)
   current_week?: TopCatalystEntry[];
   previous_week?: TopCatalystEntry[];
   last_updated?: string | null;
   status?: "ready" | "stale" | "empty" | string;
+}
+
+const TC_TAB_LABELS: Record<string, string> = {
+  dividends:          "Dividend",
+  ipos:               "IPO",
+  splits:             "Stock Split",
+  economic_releases:  "Economic Release",
+  treasury_macro:     "Treasury / Macro",
+  earnings_dates:     "Earnings",
+};
+
+const TC_TAB_TYPES: Record<string, string> = {
+  dividends:          "dividend",
+  ipos:               "ipo",
+  splits:             "split",
+  economic_releases:  "economic_release",
+  treasury_macro:     "macro",
+  earnings_dates:     "earnings",
+};
+
+function tcResolveDisplayName(ev: TopCatalystEntry): string {
+  const r = ev.raw || {};
+  return (
+    (ev.title as string | undefined) ||
+    (ev.companyName as string | undefined) ||
+    (r.companyName as string | undefined) ||
+    (r.company as string | undefined) ||
+    (r.name as string | undefined) ||
+    (ev.event_name as string | undefined) ||
+    (ev.indicatorName as string | undefined) ||
+    (ev.company as string | undefined) ||
+    (ev.symbol ? `${ev.symbol}` : "—")
+  );
+}
+
+function tcResolveEventType(ev: TopCatalystEntry): string {
+  if (ev.eventLabel) return ev.eventLabel;
+  const sourceTab = (ev.source_tab as string | undefined) || (ev.raw?.source_tab as string | undefined);
+  if (sourceTab && TC_TAB_LABELS[sourceTab]) return TC_TAB_LABELS[sourceTab];
+  if (sourceTab && TC_TAB_TYPES[sourceTab]) return TC_TAB_TYPES[sourceTab];
+  const raw = (ev.eventType as string | undefined) || ev.event_type;
+  if (raw) return raw;
+  return "macro";
+}
+
+function tcIsEarnings(ev: TopCatalystEntry): boolean {
+  const t = tcResolveEventType(ev).toLowerCase();
+  return t === "earnings" || t.includes("earning");
+}
+
+function tcIsMacro(ev: TopCatalystEntry): boolean {
+  const t = tcResolveEventType(ev).toLowerCase();
+  return t === "macro" || t.includes("treasury") || t.includes("economic") || t.includes("fed") || t.includes("fomc");
+}
+
+function tcIsWatchlist(ev: TopCatalystEntry): boolean {
+  const r = (ev.raw || {}) as Record<string, unknown>;
+  return Boolean(
+    ev.watchlist_boost ||
+    (r.watchlist_boost as boolean | undefined) ||
+    (r.in_watchlist as boolean | undefined) ||
+    (r.portfolio_relevant as boolean | undefined),
+  );
+}
+
+function tcWhyReasons(ev: TopCatalystEntry): string[] {
+  const r = (ev.raw || {}) as Record<string, unknown>;
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (s?: string | null) => {
+    if (!s) return;
+    const k = s.trim();
+    if (!k) return;
+    const key = k.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(k);
+  };
+
+  // Backend-provided reasons array(s)
+  if (Array.isArray(ev.reasons)) ev.reasons.forEach((s) => push(String(s)));
+  if (Array.isArray((r.reasons as unknown))) (r.reasons as unknown[]).forEach((s) => push(String(s)));
+  if (Array.isArray(ev.why)) (ev.why as string[]).forEach((s) => push(String(s)));
+  if (typeof ev.why === "string") push(ev.why);
+
+  // Structured signals
+  const optionsActivity = ev.options_activity || ev.unusual_options || (r.options_activity as boolean | undefined) || (r.unusual_options as boolean | undefined);
+  if (optionsActivity) push("Unusual options activity");
+
+  const sectorMom = ev.sector_momentum ?? (r.sector_momentum as unknown);
+  if (sectorMom) {
+    if (typeof sectorMom === "string" && sectorMom.length > 0) push(`${sectorMom} sector momentum`);
+    else push("Sector momentum");
+  }
+
+  if (tcIsWatchlist(ev)) push("Watchlist Boost");
+
+  return out;
+}
+
+function tcKeyDetails(ev: TopCatalystEntry): string {
+  if (ev.keyDetails) return ev.keyDetails as string;
+  const reasons = tcWhyReasons(ev);
+  if (reasons.length > 0) return reasons.join(" + ");
+  return (ev.subtitle as string | undefined) || "";
+}
+
+function tcEventTime(ev: TopCatalystEntry): string | null {
+  const r = (ev.raw || {}) as Record<string, unknown>;
+  const t = (ev.time as string | undefined) || (r.time as string | undefined) || (r.session as string | undefined);
+  if (!t) return null;
+  if (t === "bmo" || t === "pre_market") return "Pre-Market";
+  if (t === "amc" || t === "after_hours") return "After Hours";
+  return t;
+}
+
+// Compact event row used inside calendar day columns and in event-type sections.
+function TopCatalystEventRow({
+  ev,
+  identityMap,
+  variant,
+  onClick,
+}: {
+  ev: TopCatalystEntry;
+  identityMap: Record<string, IdentityData>;
+  variant: "earnings" | "macro" | "other";
+  onClick: () => void;
+}) {
+  const symbol = (ev.symbol || "").toUpperCase();
+  const ident  = symbol ? identityMap[symbol] : undefined;
+  const name   = tcResolveDisplayName(ev);
+  const eventType = tcResolveEventType(ev);
+  const reasons = tcWhyReasons(ev);
+  const why = reasons.length > 0 ? reasons.join(" + ") : (ev.subtitle as string | undefined) || "";
+  const watchlist = tcIsWatchlist(ev);
+  const time = tcEventTime(ev);
+  const score = typeof ev.score === "number" ? ev.score : null;
+  const logo = ident?.logo || (ev.logo as string | undefined) || (ev.image as string | undefined);
+
+  const variantStyle = variant === "earnings"
+    ? { bg: "bg-amber-500/[0.06] hover:bg-amber-500/[0.12]", border: "border-amber-500/20 hover:border-amber-500/40" }
+    : variant === "macro"
+    ? { bg: "bg-pink-500/[0.05] hover:bg-pink-500/[0.10]", border: "border-pink-500/20 hover:border-pink-500/40" }
+    : { bg: "bg-white/[0.02] hover:bg-white/[0.05]", border: "border-white/[0.06] hover:border-white/[0.12]" };
+
+  const tooltip = why
+    ? `Why this matters: ${why}`
+    : `${eventType}${time ? ` · ${time}` : ""}`;
+
+  return (
+    <button
+      onClick={onClick}
+      title={tooltip}
+      className={`group w-full text-left rounded-lg border ${variantStyle.border} ${variantStyle.bg} transition-all p-2 flex items-center gap-2`}
+    >
+      {/* Symbol bubble (earnings) or icon-style label (macro/other) */}
+      {variant === "earnings" && symbol ? (
+        <div className="relative flex-shrink-0">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden ${logo ? "bg-white/[0.06]" : `bg-gradient-to-br ${tickerColor(symbol)}`}`}>
+            {logo ? (
+              <img
+                src={logo}
+                alt={symbol}
+                loading="lazy"
+                className="w-full h-full object-contain p-0.5"
+                onError={(ev2) => { (ev2.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <span className="text-[9px] font-bold text-white">{symbol.slice(0, 2)}</span>
+            )}
+          </div>
+          {watchlist && (
+            <span
+              title="On your watchlist"
+              className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 border border-[#0b0f1a] flex items-center justify-center"
+            >
+              <Star className="w-2 h-2 text-white" fill="white" />
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${variant === "macro" ? "bg-pink-500/15 text-pink-300" : "bg-white/5 text-white/50"}`}>
+          {variant === "macro" ? <Landmark className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {variant === "earnings" && symbol && (
+            <span className="text-[10px] font-mono font-bold text-white/85 flex-shrink-0">{symbol}</span>
+          )}
+          <p className={`truncate leading-tight ${variant === "earnings" ? "text-[11px] font-semibold text-white/90 group-hover:text-white" : "text-[11px] font-medium text-white/75 group-hover:text-white/95"}`}>
+            {name}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <EventTypeBadge type={eventType} />
+          {time && <span className="text-[8px] px-1 py-0.5 rounded bg-white/[0.04] text-white/35">{time}</span>}
+          {variant === "earnings" && score != null && (
+            <span className="text-[8px] font-semibold text-amber-300/80">{score.toFixed(1)}</span>
+          )}
+        </div>
+        {why && (
+          <p className="text-[9px] text-white/35 truncate mt-0.5">{why}</p>
+        )}
+      </div>
+    </button>
+  );
 }
 
 function TopCatalystsTab({
@@ -5925,6 +6153,7 @@ function TopCatalystsTab({
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [view, setView] = useState<"calendar" | "type">("calendar");
 
   useEffect(() => {
     let cancelled = false;
@@ -5940,9 +6169,20 @@ function TopCatalystsTab({
       .then((payload: TopCatalystsResponse) => {
         if (cancelled) return;
         setData(payload || null);
-        const list = Array.isArray(payload?.current_week) ? payload!.current_week! : [];
-        const syms = list.map((ev) => (ev.symbol || "")).filter(Boolean) as string[];
-        if (syms.length > 0) onFetchIdentity(syms);
+        // Collect symbols from days[] (preferred) or current_week[] (legacy)
+        const collected: string[] = [];
+        if (Array.isArray(payload?.days)) {
+          for (const d of payload!.days!) {
+            for (const ev of [...(d.earnings || []), ...(d.macro || []), ...(d.other || [])]) {
+              if (ev.symbol) collected.push(String(ev.symbol));
+            }
+          }
+        } else if (Array.isArray(payload?.current_week)) {
+          for (const ev of payload!.current_week!) {
+            if (ev.symbol) collected.push(String(ev.symbol));
+          }
+        }
+        if (collected.length > 0) onFetchIdentity(collected);
       })
       .catch(() => {
         if (!cancelled) setError("Could not load top catalysts.");
@@ -5951,90 +6191,120 @@ function TopCatalystsTab({
     return () => { cancelled = true; };
   }, [refreshKey, onFetchIdentity]);
 
-  const entries: TopCatalystEntry[] = Array.isArray(data?.current_week) ? data!.current_week! : [];
   const status = data?.status;
   const lastUpdated = data?.last_updated;
 
-  const TAB_LABELS: Record<string, string> = {
-    dividends:          "Dividend",
-    ipos:               "IPO",
-    splits:             "Stock Split",
-    economic_releases:  "Economic Release",
-    treasury_macro:     "Treasury / Macro",
-    earnings_dates:     "Earnings",
-  };
+  // Normalize backend payload into days[] regardless of which shape it sent.
+  const normalizedDays: TopCatalystDay[] = (() => {
+    if (Array.isArray(data?.days) && data!.days!.length > 0) {
+      return data!.days!.map((d) => ({
+        date: d.date,
+        earnings: Array.isArray(d.earnings) ? d.earnings : [],
+        macro: Array.isArray(d.macro) ? d.macro : [],
+        other: Array.isArray(d.other) ? d.other : [],
+      }));
+    }
+    // Legacy fallback: bucket flat current_week[] into days by event.date and type.
+    if (Array.isArray(data?.current_week)) {
+      const map = new Map<string, TopCatalystDay>();
+      for (const ev of data!.current_week!) {
+        const key = (ev.date || "").slice(0, 10) || "undated";
+        if (!map.has(key)) map.set(key, { date: key, earnings: [], macro: [], other: [] });
+        const bucket = map.get(key)!;
+        if (tcIsEarnings(ev)) bucket.earnings!.push(ev);
+        else if (tcIsMacro(ev)) bucket.macro!.push(ev);
+        else bucket.other!.push(ev);
+      }
+      return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+    return [];
+  })();
 
-  const resolveDisplayName = (ev: TopCatalystEntry): string => {
-    const r = ev.raw || {};
-    return (
-      (ev.title as string | undefined) ||
-      (ev.companyName as string | undefined) ||
-      (r.companyName as string | undefined) ||
-      (r.company as string | undefined) ||
-      (r.name as string | undefined) ||
-      (ev.event_name as string | undefined) ||
-      (ev.indicatorName as string | undefined) ||
-      (ev.company as string | undefined) ||
-      (ev.symbol ? `${ev.symbol}` : "—")
-    );
-  };
+  // Flat collections for Event Type view + counts.
+  const allEarnings: TopCatalystEntry[] = [];
+  const allMacro:    TopCatalystEntry[] = [];
+  const allOther:    TopCatalystEntry[] = [];
+  for (const d of normalizedDays) {
+    if (d.earnings) allEarnings.push(...d.earnings);
+    if (d.macro)    allMacro.push(...d.macro);
+    if (d.other)    allOther.push(...d.other);
+  }
+  // Earnings: sort by score desc when present
+  allEarnings.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  const resolveEventType = (ev: TopCatalystEntry): string => {
-    if (ev.eventLabel) return ev.eventLabel;
-    const sourceTab = (ev.source_tab as string | undefined) || (ev.raw?.source_tab as string | undefined);
-    if (sourceTab && TAB_LABELS[sourceTab]) return TAB_LABELS[sourceTab];
-    const TAB_TYPES: Record<string, string> = {
-      dividends:          "dividend",
-      ipos:               "ipo",
-      splits:             "split",
-      economic_releases:  "economic_release",
-      treasury_macro:     "macro",
-      earnings_dates:     "earnings",
-    };
-    if (sourceTab && TAB_TYPES[sourceTab]) return TAB_TYPES[sourceTab];
-    const raw = (ev.eventType as string | undefined) || ev.event_type;
-    if (raw) return raw;
-    return "macro";
-  };
+  const totalCount = allEarnings.length + allMacro.length + allOther.length;
 
-  const resolveDetails = (ev: TopCatalystEntry): string => {
-    if (ev.keyDetails) return ev.keyDetails as string;
-    if (Array.isArray(ev.reasons) && ev.reasons.length > 0) return ev.reasons.join(" · ");
-    return (ev.subtitle as string | undefined) || "—";
-  };
+  // Calendar day-columns: prefer Mon–Fri layout; if backend returned non-weekday
+  // dates we still render whatever the backend gave us in order.
+  const dayColumns: TopCatalystDay[] = (() => {
+    if (normalizedDays.length === 0) return [];
+    // If the backend gave us 5 Mon–Fri dates, just use them.
+    if (normalizedDays.length <= 7) return normalizedDays;
+    return normalizedDays.slice(0, 7);
+  })();
 
   return (
     <div>
       {/* ── Header row ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold"
             style={{ background: "rgba(245,158,11,0.15)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.3)" }}>
             <Flame className="w-3 h-3" />
             Top Catalysts · This Week
           </span>
+          <span className="text-[10px] text-white/40">
+            What actually matters this week to trade
+          </span>
           {status && (
-            <span className="text-[10px] text-white/30">
-              status: {status}
-            </span>
+            <span className="text-[10px] text-white/30">· status: {status}</span>
           )}
           {lastUpdated && (
             <span className="text-[10px] text-white/25">
-              updated {String(lastUpdated).slice(0, 16).replace("T", " ")}
+              · updated {String(lastUpdated).slice(0, 16).replace("T", " ")}
             </span>
           )}
         </div>
-        <button
-          onClick={() => setRefreshKey((k) => k + 1)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
-        >
-          <RefreshCw className="w-3 h-3" />
-          Refresh
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[10px] font-semibold">
+            <button
+              onClick={() => setView("calendar")}
+              className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
+              style={view === "calendar"
+                ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24" }
+                : { color: "rgba(255,255,255,0.4)" }}
+            >
+              <LayoutGrid className="w-3 h-3" />
+              Calendar View
+            </button>
+            <button
+              onClick={() => setView("type")}
+              className="flex items-center gap-1.5 px-3 py-1.5 transition-all"
+              style={view === "type"
+                ? { background: "rgba(245,158,11,0.18)", color: "#fbbf24" }
+                : { color: "rgba(255,255,255,0.4)" }}
+            >
+              <List className="w-3 h-3" />
+              Event Type View
+            </button>
+          </div>
+
+          <button
+            onClick={() => setRefreshKey((k) => k + 1)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] text-white/40 border border-white/[0.08] hover:bg-white/5 hover:text-white/60 transition-all"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Refresh
+          </button>
+        </div>
       </div>
 
-      <p className="text-[10px] text-white/25 mb-2">
-        {loading ? "Loading…" : `${entries.length} catalyst${entries.length !== 1 ? "s" : ""}`}
+      <p className="text-[10px] text-white/25 mb-3">
+        {loading
+          ? "Loading…"
+          : `${totalCount} catalyst${totalCount !== 1 ? "s" : ""} · ${allEarnings.length} earnings · ${allMacro.length} macro${allOther.length > 0 ? ` · ${allOther.length} other` : ""}`}
       </p>
 
       {error && (
@@ -6044,98 +6314,211 @@ function TopCatalystsTab({
         </div>
       )}
 
-      {/* ── Table (mirrors CatalystListTab styling) ─────────────── */}
-      <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: 780 }}>
-          <thead>
-            <tr style={{ backgroundColor: "#111827" }} className="border-b border-white/10">
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>#</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Date</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Symbol</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Company / Event</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Event Type</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Key Details</th>
-              <th className="text-left py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "#9ca3af" }}>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading &&
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} className="border-b border-white/5">
-                  {Array.from({ length: 7 }).map((__, j) => (
-                    <td key={j} className="py-2.5 px-3">
-                      <div className="h-3 rounded bg-white/5 animate-pulse" style={{ width: j === 3 || j === 5 ? "80%" : "50%" }} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
+      {/* ── Loading skeleton ─────────────────────────────────────── */}
+      {loading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3 min-h-[180px]">
+              <div className="h-3 w-12 rounded bg-white/5 animate-pulse mb-2" />
+              <div className="h-2.5 w-16 rounded bg-white/5 animate-pulse mb-3" />
+              <div className="space-y-1.5">
+                {Array.from({ length: 3 }).map((__, j) => (
+                  <div key={j} className="h-10 rounded-lg bg-white/[0.03] animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-            {!loading && entries.length === 0 && !error && (
-              <tr>
-                <td colSpan={7} className="py-10 text-center text-white/30 text-xs">
-                  No top catalysts available for this week.
-                </td>
-              </tr>
-            )}
+      {/* ── Empty state ──────────────────────────────────────────── */}
+      {!loading && totalCount === 0 && !error && (
+        <div className="text-center py-14 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+          <Flame className="w-7 h-7 text-amber-400/20 mx-auto mb-2" />
+          <p className="text-sm text-white/30">No top catalysts available for this week.</p>
+          <p className="text-[10px] text-white/20 mt-1">Check back after the next signal sweep.</p>
+        </div>
+      )}
 
-            {!loading && entries.map((ev, i) => {
-              const displayName = resolveDisplayName(ev);
-              const eventType   = resolveEventType(ev);
-              const keyDetails  = resolveDetails(ev);
-              const rank        = ev.rank ?? i + 1;
-              const score       = ev.score;
-              return (
-                <tr
-                  key={ev.id || `${ev.symbol || "row"}-${i}`}
-                  onClick={() => setSelectedEvent(ev)}
-                  className="border-b border-white/[0.04] hover:bg-white/[0.04] cursor-pointer transition-colors"
-                  style={{ backgroundColor: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}
-                >
-                  <td className="py-2.5 px-3 text-white/40 whitespace-nowrap font-semibold">{rank}</td>
-                  <td className="py-2.5 px-3 text-white/60 whitespace-nowrap">
-                    {ev.date?.slice(0, 10) || "—"}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {ev.symbol ? (
-                      <CompanyIdentity
-                        symbol={ev.symbol as string}
-                        companyName={
-                          identityMap[(ev.symbol as string).toUpperCase()]?.name ||
-                          (ev.companyName as string | undefined) ||
-                          ((ev.raw as Record<string, unknown>)?.companyName as string | undefined) ||
-                          ((ev.raw as Record<string, unknown>)?.company as string | undefined) ||
-                          undefined
-                        }
-                        logoUrl={
-                          identityMap[(ev.symbol as string).toUpperCase()]?.logo ||
-                          (ev.logo as string | undefined) ||
-                          (ev.image as string | undefined) ||
-                          undefined
-                        }
-                        size="sm"
+      {/* ── Calendar View (default) ──────────────────────────────── */}
+      {!loading && totalCount > 0 && view === "calendar" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {dayColumns.map((d) => {
+            const dt = new Date(`${d.date}T12:00:00`);
+            const valid = !isNaN(dt.getTime());
+            const dayName = valid ? DAY_NAMES_FULL[dt.getDay()] : "—";
+            const dateLabel = valid
+              ? `${MONTH_NAMES_SHORT[dt.getMonth()]} ${dt.getDate()}`
+              : d.date;
+            const isToday = valid && dateKey(new Date()) === d.date;
+            const earnings = (d.earnings || []).slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+            const macro = d.macro || [];
+            const other = d.other || [];
+            const dayCount = earnings.length + macro.length + other.length;
+
+            return (
+              <div
+                key={d.date}
+                className={`rounded-xl border p-2.5 min-h-[180px] flex flex-col ${
+                  isToday
+                    ? "bg-amber-500/[0.04] border-amber-500/25"
+                    : "bg-white/[0.015] border-white/[0.05]"
+                }`}
+              >
+                {/* Day header */}
+                <div className="flex items-baseline justify-between mb-2 pb-1.5 border-b border-white/[0.05]">
+                  <div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? "text-amber-400" : "text-white/40"}`}>
+                      {dayName}
+                    </p>
+                    <p className={`text-xs font-bold ${isToday ? "text-amber-300" : "text-white/80"}`}>
+                      {dateLabel}
+                    </p>
+                  </div>
+                  <span className="text-[9px] text-white/30">
+                    {dayCount > 0 ? `${dayCount}` : "—"}
+                  </span>
+                </div>
+
+                {dayCount === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-[10px] text-white/20">
+                    No catalysts
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 flex-1">
+                    {/* Earnings — primary, visually dominant */}
+                    {earnings.map((ev, i) => (
+                      <TopCatalystEventRow
+                        key={ev.id || `e-${ev.symbol || i}-${i}`}
+                        ev={ev}
+                        identityMap={identityMap}
+                        variant="earnings"
+                        onClick={() => setSelectedEvent(ev)}
                       />
-                    ) : (
-                      <span className="text-white/25 text-[10px]">—</span>
+                    ))}
+                    {/* Macro — secondary, clearly labeled */}
+                    {macro.length > 0 && (
+                      <>
+                        {earnings.length > 0 && (
+                          <p className="text-[8px] uppercase tracking-wider text-pink-400/50 font-semibold pt-1">
+                            Macro
+                          </p>
+                        )}
+                        {macro.map((ev, i) => (
+                          <TopCatalystEventRow
+                            key={ev.id || `m-${i}`}
+                            ev={ev}
+                            identityMap={identityMap}
+                            variant="macro"
+                            onClick={() => setSelectedEvent(ev)}
+                          />
+                        ))}
+                      </>
                     )}
-                  </td>
-                  <td className="py-2.5 px-3 text-white/80 max-w-[240px] truncate font-medium">
-                    {displayName}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <EventTypeBadge type={eventType} />
-                  </td>
-                  <td className="py-2.5 px-3 text-white/50 max-w-[280px] truncate">
-                    {keyDetails}
-                  </td>
-                  <td className="py-2.5 px-3 text-white/70 whitespace-nowrap font-semibold">
-                    {typeof score === "number" ? score.toFixed(1) : "—"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    {/* Other — tertiary if present */}
+                    {other.length > 0 && (
+                      <>
+                        <p className="text-[8px] uppercase tracking-wider text-white/35 font-semibold pt-1">
+                          Other
+                        </p>
+                        {other.map((ev, i) => (
+                          <TopCatalystEventRow
+                            key={ev.id || `o-${i}`}
+                            ev={ev}
+                            identityMap={identityMap}
+                            variant="other"
+                            onClick={() => setSelectedEvent(ev)}
+                          />
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Event Type View ──────────────────────────────────────── */}
+      {!loading && totalCount > 0 && view === "type" && (
+        <div className="space-y-5">
+          {/* === EARNINGS === */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300">=== Earnings ===</span>
+              <span className="text-[10px] text-white/30">
+                {allEarnings.length} top ranked earning{allEarnings.length !== 1 ? "s" : ""} across week
+              </span>
+            </div>
+            {allEarnings.length === 0 ? (
+              <p className="text-[11px] text-white/25 px-2 py-3 border border-white/[0.04] rounded-lg bg-white/[0.01]">
+                No earnings catalysts ranked this week.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {allEarnings.map((ev, i) => (
+                  <TopCatalystEventRow
+                    key={ev.id || `te-${ev.symbol || i}-${i}`}
+                    ev={ev}
+                    identityMap={identityMap}
+                    variant="earnings"
+                    onClick={() => setSelectedEvent(ev)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* === MACRO === */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-pink-300">=== Macro ===</span>
+              <span className="text-[10px] text-white/30">
+                {allMacro.length} CPI/PPI/NFP/FOMC/GDP/Treasury event{allMacro.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {allMacro.length === 0 ? (
+              <p className="text-[11px] text-white/25 px-2 py-3 border border-white/[0.04] rounded-lg bg-white/[0.01]">
+                No macro events this week.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {allMacro.map((ev, i) => (
+                  <TopCatalystEventRow
+                    key={ev.id || `tm-${i}`}
+                    ev={ev}
+                    identityMap={identityMap}
+                    variant="macro"
+                    onClick={() => setSelectedEvent(ev)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* === OTHER (RARE) === */}
+          {allOther.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white/55">=== Other (Rare) ===</span>
+                <span className="text-[10px] text-white/30">{allOther.length} event{allOther.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {allOther.map((ev, i) => (
+                  <TopCatalystEventRow
+                    key={ev.id || `to-${i}`}
+                    ev={ev}
+                    identityMap={identityMap}
+                    variant="other"
+                    onClick={() => setSelectedEvent(ev)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
 
       {selectedEvent && (
         <CatalystDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
