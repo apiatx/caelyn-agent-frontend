@@ -1,0 +1,207 @@
+Update the renamed Themes page UI so the current standalone “Relative Strength” section is merged into the main “Market Performance” section as a view toggle.
+
+Goal:
+The main card/section should support 3 view modes:
+1. Market Performance
+2. Relative Strength
+3. Line Graph
+
+The old separate Relative Strength section below should be removed as a standalone section and turned into a view mode inside the main Market Performance card.
+
+Do not change backend.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not change Watchlist.
+Do not change Portfolio.
+
+Use the same canonical backend endpoint already wired for the page:
+GET /api/themes/relative-strength?timeframe=1D|7D|30D|YTD|1Y&classification=all|sector|theme|sub_theme
+If current UI uses Themes / Sectors / All filters by frontend filtering of classification=all, keep that if already implemented cleanly.
+
+Current UI change requested:
+
+1. Consolidate the two sections
+Right now there are effectively two separate sections/cards:
+- Market Performance (table)
+- Relative Strength (bar chart section below)
+
+Change this so there is one unified card/section only.
+
+Inside that one card, add a segmented toggle for the 3 views:
+- Market Performance
+- Relative Strength
+- Line Graph
+
+2. Replace the “All · Themes + Sectors” pill/text
+Where the current badge/text like:
+- “All · Themes + Sectors”
+or similar subtitle/pill appears near the section title,
+remove that and replace it with the new view-mode toggle:
+- Market Performance
+- Relative Strength
+- Line Graph
+
+The active selection should control the body content of the main card.
+
+3. Keep the classification toggle
+Keep the current classification toggle on the right side:
+- Themes
+- Sectors
+- All
+
+This classification toggle should continue to filter the dataset.
+
+Behavior:
+- Themes = non-sector rows
+- Sectors = classification=sector rows
+- All = sectors + themes + sub-themes
+
+4. Keep the timeframe toggle
+Keep the current timeframe buttons:
+- 1D
+- 7D
+- 30D
+- YTD
+- 1Y
+
+These should apply to all 3 view modes:
+- Market Performance
+- Relative Strength
+- Line Graph
+
+5. View mode behavior
+
+A. Market Performance view
+This should show the current table view (the current main card table).
+
+Use the current canonical theme/sector data and preserve:
+- rank
+- ticker
+- name
+- 1D / 7D / 30D / YTD / 1Y columns if already supported
+- score
+- trend
+- status
+- classification/sub-theme indicator if already implemented
+
+This should remain the default base table view.
+
+B. Relative Strength view
+This should display the content that is currently in the separate Relative Strength section:
+- Top Leaders card
+- Bottom Laggards card
+- colored chips/legend
+- horizontal bar chart
+
+Important:
+- Do not keep this as a separate section below anymore.
+- Render it inside the same main card area when the Relative Strength toggle is active.
+
+Preserve the prior fixes:
+- show all rows for the selected classification
+- do not hide negative rows
+- do not grey out normal rows by default
+- every chip/series should have a visible deterministic color
+- bars should render for both positive and negative values
+- sort by selected timeframe return descending
+
+C. Line Graph view
+Add a third view mode labeled exactly:
+- Line Graph
+
+This should restore/reuse the prior line graph behavior that used to exist in the old Sectors Relative Strength view, and apply it to all three classification filters:
+- Themes
+- Sectors
+- All
+
+Important:
+- Reuse the prior line graph implementation/component if it still exists in the codebase.
+- Do not invent a totally unrelated chart style if the old one already exists.
+- The goal is to bring back the old line-chart visualization and make it work for Themes, Sectors, and All.
+
+Data behavior for Line Graph:
+- It should use the same currently loaded dataset for the selected classification.
+- It should visualize performance across the existing timeframe buckets:
+  1D, 7D, 30D, YTD, 1Y
+- Each row/entity (theme/sector/sub-theme) should be a line series if supported by the prior implementation.
+- If showing all rows at once is too cluttered, preserve or reuse the previous legend/chip/series-selection behavior from the old line graph implementation if it exists.
+- If no such selection behavior exists, default to the top ranked rows for visibility, but allow the user to inspect/select more series if easy and low-risk.
+
+Preferred x-axis for Line Graph:
+- 1D
+- 7D
+- 30D
+- YTD
+- 1Y
+
+Preferred y-axis:
+- return %
+
+Use deterministic colors matching or closely aligned with the chips/legend colors from Relative Strength view.
+
+6. Header layout
+Within the unified card header:
+- Keep the section title/icon area
+- Replace the old small subtitle/badge with the 3-way view toggle:
+  - Market Performance
+  - Relative Strength
+  - Line Graph
+- Keep the “Updated X ago” freshness text if already present
+- Keep the classification toggle on the right:
+  - Themes / Sectors / All
+- Keep the timeframe toggle on the right:
+  - 1D / 7D / 30D / YTD / 1Y
+
+If needed, stack these controls cleanly on smaller widths, but keep desktop UX clean and aligned.
+
+7. Default state
+On page load:
+- Default classification = Themes
+- Default timeframe should remain whatever is currently intended (if already 7D, keep 7D unless current code uses another default)
+- Default view mode = Market Performance
+
+Users can then switch to:
+- Relative Strength
+- Line Graph
+
+8. Remove standalone duplicate section
+After this change:
+- There should not be a separate standalone Relative Strength section below the main Market Performance section.
+- The same functionality should exist only via the new view-mode toggle in the unified card.
+
+9. Reuse existing data/query state
+Do not create redundant backend calls just because the view mode changes.
+Switching between:
+- Market Performance
+- Relative Strength
+- Line Graph
+should reuse the already-fetched dataset for the current classification/timeframe whenever possible.
+
+10. Validation
+Run build.
+
+Then confirm all of the following:
+1. The page still loads correctly.
+2. The main section is a single unified card.
+3. The old “All · Themes + Sectors” badge/text is gone.
+4. It is replaced by a 3-way view toggle:
+   - Market Performance
+   - Relative Strength
+   - Line Graph
+5. Classification toggle still works:
+   - Themes
+   - Sectors
+   - All
+6. Timeframe toggle still works:
+   - 1D / 7D / 30D / YTD / 1Y
+7. Market Performance view shows the table.
+8. Relative Strength view shows the current leaders/laggards + chips + bar chart content inside the same card.
+9. Line Graph view restores the previous line-chart style and works for:
+   - Themes
+   - Sectors
+   - All
+10. No separate standalone Relative Strength section remains below.
+11. No duplicate backend requests are introduced when switching views.
+12. No backend changes.
+13. No Earnings, Options Flow, TA Screener, Watchlist, or Portfolio changes.

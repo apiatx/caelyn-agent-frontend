@@ -296,6 +296,120 @@ function SectionHeader({ icon: Icon, title, badge, right, color = "teal" }: {
   );
 }
 
+// ─── View mode toggle ─────────────────────────────────────────────────────────
+type ViewMode = "table" | "rs" | "line";
+function ViewModeToggle({ mode, setMode }: { mode: ViewMode; setMode: (m: ViewMode) => void }) {
+  const opts: { val: ViewMode; label: string }[] = [
+    { val: "table", label: "Market Performance" },
+    { val: "rs",    label: "Relative Strength" },
+    { val: "line",  label: "Line Graph" },
+  ];
+  return (
+    <div className="flex items-center rounded border border-white/[0.08] bg-black/30 p-0.5 flex-shrink-0">
+      {opts.map(o => (
+        <button key={o.val} onClick={() => setMode(o.val)}
+          className={`px-2.5 py-1 rounded text-[10px] font-medium tracking-wide transition-colors whitespace-nowrap ${
+            mode === o.val
+              ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+              : "text-white/35 hover:text-white/60"
+          }`}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Line Graph view ──────────────────────────────────────────────────────────
+const LINE_TFS: ThemeTf[] = ["1D", "7D", "30D", "YTD", "1Y"];
+
+function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Record<string, string> }) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(themes.map(t => t.theme_id))
+  );
+  useEffect(() => {
+    setSelectedIds(new Set(themes.map(t => t.theme_id)));
+  }, [themes.length]);
+
+  const toggleId = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const lineData = useMemo(() =>
+    LINE_TFS.map(tfKey => {
+      const pt: Record<string, any> = { tf: tfKey };
+      themes.forEach(t => {
+        if (selectedIds.has(t.theme_id)) {
+          const v = t.performance?.[tfKey];
+          if (v != null) pt[t.theme_id] = +v.toFixed(3);
+        }
+      });
+      return pt;
+    }),
+    [themes, selectedIds]
+  );
+
+  const visibleThemes = useMemo(
+    () => themes.filter(t => selectedIds.has(t.theme_id)),
+    [themes, selectedIds]
+  );
+
+  return (
+    <>
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+        {themes.map((t, i) => {
+          const on    = selectedIds.has(t.theme_id);
+          const color = colorMap[t.theme_id] ?? THEME_PALETTE[i % THEME_PALETTE.length];
+          const label = t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6);
+          const tip   = `${t.display_name}${t.proxy_symbols_used?.length ? ` · ${t.proxy_symbols_used.join(", ")}` : ""}`;
+          return (
+            <button key={t.theme_id} onClick={() => toggleId(t.theme_id)} title={tip}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${
+                on ? "text-white border-transparent" : "text-gray-600 border-white/10"
+              }`}
+              style={on ? { background: `${color}25`, borderColor: `${color}50` } : {}}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {visibleThemes.length === 0 ? (
+        <div className="h-[280px] flex items-center justify-center text-gray-600 text-sm">Select items above to display</div>
+      ) : (
+        <div style={{ height: Math.max(260, Math.min(400, visibleThemes.length * 6 + 200)) }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={lineData} margin={{ top: 4, right: 16, left: -12, bottom: 0 }}>
+              <XAxis dataKey="tf" tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
+                tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
+              <Tooltip
+                contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
+                labelStyle={{ color: "#94a3b8" }}
+                formatter={(v: any, id: string) => {
+                  const t = themes.find(x => x.theme_id === id);
+                  const pct = Number(v);
+                  return [`${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`, t?.display_name ?? id];
+                }}
+              />
+              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} />
+              {visibleThemes.map(t => (
+                <Line key={t.theme_id} type="monotone" dataKey={t.theme_id}
+                  dot={{ r: 2.5, fill: colorMap[t.theme_id] ?? "#64748b" }}
+                  activeDot={{ r: 4 }}
+                  strokeWidth={1.5} stroke={colorMap[t.theme_id] ?? "#64748b"}
+                  strokeOpacity={0.9} connectNulls />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Classification toggle (Themes | Sectors | All) ──────────────────────────
 function ClassificationToggle({ cls, setCls }: { cls: Classification; setCls: (c: Classification) => void }) {
   return (
@@ -1025,39 +1139,48 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
   );
 }
 
-// ─── B: Market Performance Table ──────────────────────────────────────────────
+// ─── B + C: Unified Themes Card ───────────────────────────────────────────────
 type SortKey = "ticker" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "rotation_score";
 
-function SectorPerformanceTable({
+function UnifiedThemesCard({
   loading: sectorLoading,
 }: {
   sectors: SectorRow[]; loading: boolean;
   selectedTickers: Set<string>; onSelectTicker: (t: string) => void;
+  onToggleTicker: (t: string) => void;
 }) {
-  const [sortKey, setSortKey] = useState<SortKey>("rotation_score");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [viewMode, setViewMode]       = useState<ViewMode>("table");
+  const [cls, setCls]                 = useState<Classification>("themes");
+  const [tf, setTf]                   = useState<ThemeTf>("7D");
+  const [sortKey, setSortKey]         = useState<SortKey>("rotation_score");
+  const [sortDir, setSortDir]         = useState<"asc" | "desc">("desc");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [cls, setCls] = useState<Classification>("themes");
 
-  // single fetch — performance{} already has all 5 TFs
+  // Single fetch — performance{} has all 5 TFs, shared across all 3 view modes
   const apiCls = cls === "sectors" ? "sector" : "all";
   const { data: raw, isLoading, isError } = useQuery<{ themes: ThemeRow[] }>({
-    queryKey: ["themes-rs-perf", cls],
+    queryKey: ["themes-unified", cls],
     queryFn: () => fetch(`/api/themes/relative-strength?timeframe=1D&classification=${apiCls}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
     retry: 1,
   });
 
+  const allThemes = useMemo(() => applyClassFilter(raw?.themes ?? [], cls), [raw, cls]);
+  const freshness = fmtFreshness(raw?.themes?.[0]?.last_updated);
+
+  const colorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allThemes.forEach((t, i) => { map[t.theme_id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
+    return map;
+  }, [allThemes]);
+
   const handleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const rows = useMemo(() => {
-    const filtered = applyClassFilter(raw?.themes ?? [], cls);
-    return filtered.map((t, i) => normalizeThemeToRow(t, i));
-  }, [raw, cls]);
+  const rows = useMemo(() => allThemes.map((t, i) => normalizeThemeToRow(t, i)), [allThemes]);
 
   const sorted = useMemo(() => [...rows].sort((a, b) => {
     const av = a[sortKey as keyof DisplayRow] as number | string | null;
@@ -1082,36 +1205,46 @@ function SectorPerformanceTable({
     </th>
   );
 
-  const badge = cls === "sectors" ? "SPDR Sectors" : cls === "all" ? "All · Themes + Sectors" : "Theme ETF Baskets";
-  const freshness = fmtFreshness(raw?.themes?.[0]?.last_updated);
-
-  if (sectorLoading && !raw && isLoading) {
-    return (
-      <GlassCard className="p-4 sm:p-6">
-        <SectionHeader icon={BarChart3} title="Market Performance" badge={badge} right={<ClassificationToggle cls={cls} setCls={setCls} />} />
-        <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex gap-3"><Skel w={50} h={14} /><Skel w={120} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
-        ))}</div>
-      </GlassCard>
-    );
-  }
+  const titleLabel =
+    viewMode === "rs"   ? "Relative Strength" :
+    viewMode === "line" ? "Line Graph" : "Market Performance";
 
   return (
     <GlassCard className="p-4 sm:p-6 overflow-hidden">
-      <SectionHeader icon={BarChart3} title="Market Performance" badge={badge}
-        right={
-          <div className="flex items-center gap-2">
-            {freshness && <span className="text-[10px] text-gray-600 hidden sm:block">{freshness}</span>}
-            {isLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
-            <ClassificationToggle cls={cls} setCls={setCls} />
+      {/* ── Unified header ── */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-5">
+        <div className="flex items-center gap-2.5 flex-wrap gap-y-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <BarChart3 className="w-3.5 h-3.5 text-white" />
           </div>
-        }
-      />
+          <h3 className="text-base font-semibold text-white whitespace-nowrap">{titleLabel}</h3>
+          <ViewModeToggle mode={viewMode} setMode={v => { setViewMode(v); setExpandedKey(null); }} />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {freshness && <span className="text-[10px] text-gray-600 hidden lg:block">{freshness}</span>}
+          {isLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
+          <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
+            {TF_THEME_OPTIONS.map(t => (
+              <button key={t} onClick={() => setTf(t)}
+                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <ClassificationToggle cls={cls} setCls={v => { setCls(v); setExpandedKey(null); }} />
+        </div>
+      </div>
+
       {isError ? (
         <div className="flex items-center gap-2 text-sm text-amber-400 py-4">
-          <AlertTriangle className="w-4 h-4" /> Failed to load market performance data.
+          <AlertTriangle className="w-4 h-4" /> Failed to load data.
         </div>
-      ) : (
+      ) : isLoading && allThemes.length === 0 ? (
+        <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex gap-3"><Skel w={40} h={14} /><Skel w={120} h={14} /><Skel w={60} h={14} /><Skel w={60} h={14} /></div>
+        ))}</div>
+      ) : viewMode === "table" ? (
+        /* ── TABLE VIEW ── */
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px]">
             <thead>
@@ -1127,6 +1260,7 @@ function SectorPerformanceTable({
               {sorted.map(row => {
                 const expanded = expandedKey === row.key;
                 const tagCls   = row.regime_tag ? (TAG_STYLES[row.regime_tag] ?? "") : "";
+                const color    = colorMap[row.key] ?? row.dotColor;
                 const tipText  = [
                   row.name,
                   row.classification ? `(${row.classification})` : "",
@@ -1136,6 +1270,10 @@ function SectorPerformanceTable({
                   row.rs_vs_qqq != null ? ` vs QQQ: ${row.rs_vs_qqq > 0 ? "+" : ""}${row.rs_vs_qqq.toFixed(2)}%` : "",
                   row.proxy_symbols_used.length > 1 ? `\nProxies: ${row.proxy_symbols_used.join(", ")}` : "",
                 ].filter(Boolean).join(" ");
+                const tfClsActive = (c: string) =>
+                  (tf === "1D" && c === "change_1d") || (tf === "7D" && c === "change_7d") ||
+                  (tf === "30D" && c === "change_30d") || (tf === "YTD" && c === "change_ytd") ||
+                  (tf === "1Y" && c === "change_1y") ? "ring-1 ring-inset ring-white/10 bg-white/[0.03]" : "";
                 return (
                   <React.Fragment key={row.key}>
                     <tr onClick={() => setExpandedKey(prev => prev === row.key ? null : row.key)}
@@ -1148,7 +1286,7 @@ function SectorPerformanceTable({
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: row.dotColor }} />
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
                           <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
                         </div>
                       </td>
@@ -1158,16 +1296,16 @@ function SectorPerformanceTable({
                           <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace("_", " ")}</div>
                         )}
                       </td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)}`}>{fmtPct(row.change_1d)}</td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)}`}>{fmtPct(row.change_7d)}</td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)}`}>{fmtPct(row.change_30d)}</td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)}`}>{fmtPct(row.change_ytd)}</td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)}`}>{fmtPct(row.change_1y)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)} ${tfClsActive("change_1d")}`}>{fmtPct(row.change_1d)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)} ${tfClsActive("change_7d")}`}>{fmtPct(row.change_7d)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)} ${tfClsActive("change_30d")}`}>{fmtPct(row.change_30d)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)} ${tfClsActive("change_ytd")}`}>{fmtPct(row.change_ytd)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)} ${tfClsActive("change_1y")}`}>{fmtPct(row.change_1y)}</td>
                       <td className="px-3 py-2.5">
                         {row.rotation_score != null ? (
                           <div className="flex items-center gap-2 min-w-[68px]">
                             <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, row.rotation_score)}%`, background: row.dotColor }} />
+                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, row.rotation_score)}%`, background: color }} />
                             </div>
                             <span className="text-xs text-gray-400 tabular-nums">{row.rotation_score.toFixed(0)}</span>
                           </div>
@@ -1183,7 +1321,7 @@ function SectorPerformanceTable({
                     {expanded && (
                       <tr key={`${row.key}-detail`} className="bg-black/30">
                         <td colSpan={11} className="px-4 py-4">
-                          <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={row.dotColor} name={row.name} />
+                          <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
                         </td>
                       </tr>
                     )}
@@ -1193,82 +1331,15 @@ function SectorPerformanceTable({
               {sorted.length === 0 && !isLoading && (
                 <tr><td colSpan={11} className="px-3 py-8 text-center text-gray-500 text-sm">No data available</td></tr>
               )}
-              {isLoading && sorted.length === 0 && (
-                <tr><td colSpan={11} className="px-3 py-6">
-                  <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="flex gap-3"><Skel w={50} h={12} /><Skel w={120} h={12} /><Skel w={60} h={12} /><Skel w={60} h={12} /></div>
-                  ))}</div>
-                </td></tr>
-              )}
             </tbody>
           </table>
         </div>
-      )}
-    </GlassCard>
-  );
-}
-
-// ─── C: Relative Strength Chart ───────────────────────────────────────────────
-function SectorRotationChart({
-  loading: sectorLoading,
-}: {
-  sectors: SectorRow[]; loading: boolean;
-  selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
-}) {
-  const [themeTf, setThemeTf] = useState<ThemeTf>("7D");
-  const [cls, setCls] = useState<Classification>("themes");
-
-  const apiCls = cls === "sectors" ? "sector" : "all";
-  const { data: raw, isLoading: rsLoading, isError: rsError } = useQuery<{ themes: ThemeRow[] }>({
-    queryKey: ["themes-rs-chart", cls, themeTf],
-    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=${themeTf}&classification=${apiCls}`)
-      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
-
-  const filteredThemes = useMemo(() => applyClassFilter(raw?.themes ?? [], cls), [raw, cls]);
-
-  const badge = cls === "sectors" ? "SPDR Sectors" : cls === "all" ? "All" : "Theme ETFs";
-  const freshness = fmtFreshness(raw?.themes?.[0]?.last_updated);
-
-  if (sectorLoading && !raw) {
-    return (
-      <GlassCard className="p-4 sm:p-6">
-        <SectionHeader icon={TrendingUp} title="Relative Strength" color="blue"
-          right={<ClassificationToggle cls={cls} setCls={setCls} />}
-        />
-        <Skel h={220} />
-      </GlassCard>
-    );
-  }
-
-  return (
-    <GlassCard className="p-4 sm:p-6">
-      <SectionHeader icon={TrendingUp} title="Relative Strength" badge={badge} color="blue"
-        right={
-          <div className="flex items-center gap-2">
-            {freshness && <span className="text-[10px] text-gray-600 hidden sm:block">{freshness}</span>}
-            <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
-              {TF_THEME_OPTIONS.map(t => (
-                <button key={t} onClick={() => setThemeTf(t)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${themeTf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            <ClassificationToggle cls={cls} setCls={setCls} />
-          </div>
-        }
-      />
-      {rsLoading && filteredThemes.length === 0 ? (
-        <div className="space-y-2 mt-2">{Array.from({ length: 8 }).map((_, i) => <Skel key={i} h={44} />)}</div>
-      ) : rsError ? (
-        <div className="flex items-center gap-2 text-sm text-amber-400 py-4">
-          <AlertTriangle className="w-4 h-4" /> Failed to load relative strength data.
-        </div>
+      ) : viewMode === "rs" ? (
+        /* ── RELATIVE STRENGTH VIEW ── */
+        <ThemeRSView themes={allThemes} tf={tf} />
       ) : (
-        <ThemeRSView themes={filteredThemes} tf={themeTf} />
+        /* ── LINE GRAPH VIEW ── */
+        <LineGraphView themes={allThemes} colorMap={colorMap} />
       )}
     </GlassCard>
   );
@@ -1669,17 +1740,11 @@ export default function StocksSectorsPage() {
           </GlassCard>
         )}
 
-        {/* B: Performance Table */}
-        <SectorPerformanceTable
+        {/* B + C: Unified card — Market Performance / Relative Strength / Line Graph */}
+        <UnifiedThemesCard
           sectors={sectors} loading={dashLoading && !dash}
           selectedTickers={selectedTickers} onSelectTicker={selectTicker}
-        />
-
-        {/* C: Chart — full width */}
-        <SectorRotationChart
-          sectors={sectors}
-          loading={dashLoading && !dash}
-          selectedTickers={selectedTickers} onToggleTicker={toggleTicker}
+          onToggleTicker={toggleTicker}
         />
 
         {/* D: Top Stocks in Winning Sectors — winning sector chips in header */}
