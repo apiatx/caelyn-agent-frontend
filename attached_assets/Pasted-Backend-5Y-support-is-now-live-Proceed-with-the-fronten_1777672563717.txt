@@ -1,0 +1,101 @@
+Backend 5Y support is now live. Proceed with the frontend 5Y + Performance Curve fixes.
+
+Backend endpoint:
+GET /api/themes/relative-strength?timeframe=1D|7D|30D|YTD|1Y|5Y&classification=all|sector|theme|sub_theme
+
+Confirmed:
+- 5Y returns 55 themes
+- 5Y theme-level returns are non-null
+- Existing 1D/7D/30D/YTD/1Y still work
+
+Tasks:
+
+1. Add 5Y everywhere timeframe options exist
+Add 5Y to:
+- Relative Strength timeframe toggle
+- Performance Curve timeframe toggle
+- Market Performance table columns
+- timeframe constants/types
+- API fetch/merge logic
+- sorting logic
+
+Final timeframe list:
+1D, 7D, 30D, YTD, 1Y, 5Y
+
+2. Market Performance view
+- Keep the top timeframe segmented control hidden in Market Performance view.
+- Add a sortable 5Y column to the table.
+- Keep 1D/7D/30D/YTD/1Y columns.
+- Users should sort by table headers in Market Performance view.
+
+3. Relative Strength view
+- Keep the timeframe toggle visible.
+- Add 5Y to the toggle.
+- Selecting 5Y should use 5Y return_pct for:
+  - top leaders
+  - bottom laggards
+  - bar chart
+  - sorting
+- If 5Y leaders/laggards arrays are empty for some rows, the page should still work using theme-level return_pct.
+
+4. Performance Curve view
+Restore the timeframe toggle here.
+
+Important:
+Performance Curve is a cross-lookback curve, not a true date-indexed historical chart.
+
+The x-axis should be:
+1D → 7D → 30D → YTD → 1Y → 5Y
+
+The timeframe toggle should:
+- remain visible
+- include 5Y
+- highlight/emphasize the selected lookback point on the curve
+- sort/rank/default chip order by the selected lookback
+- optionally update leader/laggard emphasis if shown
+
+Do not:
+- remove the timeframe toggle from Performance Curve
+- change the x-axis to only the selected timeframe
+- fabricate fake historical daily lines
+- pretend these are date-indexed price history lines
+
+Keep/adjust subtitle:
+“Cumulative returns by lookback window”
+
+5. API behavior
+If the page fetches all timeframes in parallel:
+- add 5Y to the fetch list
+- merge by theme_id
+- populate performance.5Y or equivalent field
+
+If the page fetches selected timeframe only:
+- make sure 5Y can be selected and fetched
+
+Avoid duplicate unnecessary requests when switching between:
+- Market Performance
+- Relative Strength
+- Performance Curve
+
+6. Classification behavior
+Themes / Sectors / All should continue to work:
+- Themes = non-sector rows
+- Sectors = classification=sector
+- All = all rows
+
+7. Validation
+Run build.
+
+Confirm:
+- 5Y appears in Relative Strength timeframe toggle.
+- 5Y appears in Performance Curve timeframe toggle.
+- Market Performance table has a sortable 5Y column.
+- Market Performance still does not show the duplicate top timeframe toggle.
+- Relative Strength 5Y sorting/bar chart works.
+- Performance Curve x-axis is 1D / 7D / 30D / YTD / 1Y / 5Y.
+- Selecting 1D/7D/30D/YTD/1Y/5Y in Performance Curve changes highlighted point and sorting/emphasis.
+- Performance Curve subtitle still makes clear this is cumulative returns by lookback window.
+- No fake/interpolated historical charting is introduced.
+- Themes/Sectors/All classification still works.
+- No backend changes.
+- No Earnings, Options Flow, TA Screener, Watchlist, or Portfolio changes.

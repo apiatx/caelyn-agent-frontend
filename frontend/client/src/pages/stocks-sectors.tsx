@@ -121,7 +121,7 @@ interface ThemeRow {
   lead_proxy:          string | null;
   timeframe:           string | null;
   return_pct:          number | null;
-  performance:         { "1D"?: number; "7D"?: number; "30D"?: number; "YTD"?: number; "1Y"?: number } | null;
+  performance:         { "1D"?: number; "7D"?: number; "30D"?: number; "YTD"?: number; "1Y"?: number; "5Y"?: number } | null;
   breadth_pct:         number | null;
   pct_from_50d:        number | null;
   trend_accel_20d:     number | null;
@@ -165,7 +165,7 @@ const SECTOR_COLOR = Object.fromEntries(SECTORS.map(s => [s.ticker, s.color]));
 const SECTOR_NAME  = Object.fromEntries(SECTORS.map(s => [s.ticker, s.name]));
 const TF_OPTIONS   = ["1d", "7d", "30d", "ytd", "1y"] as const;
 type Timeframe = typeof TF_OPTIONS[number];
-const TF_THEME_OPTIONS = ["1D", "7D", "30D", "YTD", "1Y"] as const;
+const TF_THEME_OPTIONS = ["1D", "7D", "30D", "YTD", "1Y", "5Y"] as const;
 type ThemeTf = typeof TF_THEME_OPTIONS[number];
 type Classification = "themes" | "sectors" | "all";
 const THEME_PALETTE = [
@@ -321,9 +321,9 @@ function ViewModeToggle({ mode, setMode }: { mode: ViewMode; setMode: (m: ViewMo
 }
 
 // ─── Line Graph view ──────────────────────────────────────────────────────────
-const LINE_TFS: ThemeTf[] = ["1D", "7D", "30D", "YTD", "1Y"];
+const LINE_TFS: ThemeTf[] = ["1D", "7D", "30D", "YTD", "1Y", "5Y"];
 
-function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Record<string, string> }) {
+function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap: Record<string, string>; tf: ThemeTf }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(themes.map(t => t.theme_id))
   );
@@ -336,6 +336,14 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
   });
+
+  // Chips sorted by selected-TF value (best first) so the ordering matches the chart
+  const sortedThemes = useMemo(() =>
+    [...themes].sort((a, b) =>
+      (b.performance?.[tf] ?? -Infinity) - (a.performance?.[tf] ?? -Infinity)
+    ),
+    [themes, tf]
+  );
 
   const lineData = useMemo(() =>
     LINE_TFS.map(tfKey => {
@@ -359,14 +367,15 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
   return (
     <>
       <p className="text-[10px] text-gray-500 mb-3 -mt-1">
-        Cumulative returns by lookback window · toggle items below to show/hide
+        Cumulative returns by lookback window · selected lookback highlighted · toggle items below to show/hide
       </p>
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-        {themes.map((t, i) => {
+        {sortedThemes.map((t, i) => {
           const on    = selectedIds.has(t.theme_id);
           const color = colorMap[t.theme_id] ?? THEME_PALETTE[i % THEME_PALETTE.length];
           const label = t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6);
-          const tip   = `${t.display_name}${t.proxy_symbols_used?.length ? ` · ${t.proxy_symbols_used.join(", ")}` : ""}`;
+          const tfVal = t.performance?.[tf];
+          const tip   = `${t.display_name} · ${tf}: ${tfVal != null ? `${tfVal > 0 ? "+" : ""}${tfVal.toFixed(2)}%` : "n/a"}`;
           return (
             <button key={t.theme_id} onClick={() => toggleId(t.theme_id)} title={tip}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${
@@ -375,6 +384,11 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
               style={on ? { background: `${color}25`, borderColor: `${color}50` } : {}}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
               {label}
+              {on && tfVal != null && (
+                <span className={`ml-0.5 ${tfVal >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {tfVal >= 0 ? "+" : ""}{tfVal.toFixed(1)}%
+                </span>
+              )}
             </button>
           );
         })}
@@ -385,12 +399,19 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
         <div style={{ height: Math.max(260, Math.min(400, visibleThemes.length * 6 + 200)) }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={lineData} margin={{ top: 4, right: 16, left: -12, bottom: 0 }}>
-              <XAxis dataKey="tf" tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="tf" tick={({ x, y, payload }) => (
+                <text x={x} y={y + 12} textAnchor="middle" fontSize={10}
+                  fill={payload.value === tf ? "#38bdf8" : "#64748b"}
+                  fontWeight={payload.value === tf ? 700 : 400}>
+                  {payload.value}
+                </text>
+              )} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip
                 contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
                 labelStyle={{ color: "#94a3b8" }}
+                labelFormatter={(lbl: string) => `${lbl}${lbl === tf ? " ◀ selected" : ""}`}
                 formatter={(v: any, id: string) => {
                   const t = themes.find(x => x.theme_id === id);
                   const pct = Number(v);
@@ -398,10 +419,17 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
                 }}
               />
               <ReferenceLine y={0} stroke="#475569" strokeWidth={1} />
+              <ReferenceLine x={tf} stroke="#38bdf8" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.6} />
               {visibleThemes.map(t => (
                 <Line key={t.theme_id} type="monotone" dataKey={t.theme_id}
-                  dot={{ r: 2.5, fill: colorMap[t.theme_id] ?? "#64748b" }}
-                  activeDot={{ r: 4 }}
+                  dot={(props: any) => {
+                    const isSel = props.payload?.tf === tf;
+                    const col = colorMap[t.theme_id] ?? "#64748b";
+                    return <circle key={props.key} cx={props.cx} cy={props.cy}
+                      r={isSel ? 5 : 2.5} fill={isSel ? col : col}
+                      stroke={isSel ? "#fff" : "none"} strokeWidth={isSel ? 1.5 : 0} />;
+                  }}
+                  activeDot={{ r: 5 }}
                   strokeWidth={1.5} stroke={colorMap[t.theme_id] ?? "#64748b"}
                   strokeOpacity={0.9} connectNulls />
               ))}
@@ -511,6 +539,7 @@ interface DisplayRow {
   change_30d:             number | null;
   change_ytd:             number | null;
   change_1y:              number | null;
+  change_5y:              number | null;
   rotation_score:         number | null;
   relative_strength_rank: number | null;
   regime_tag:             string | null;
@@ -530,7 +559,7 @@ interface DisplayRow {
 function buildThemeSparkline(theme: ThemeRow): number[] {
   const p = theme.performance;
   // Build synthetic price series from longest → shortest timeframe
-  const vals = [p?.["1Y"], p?.["YTD"], p?.["30D"], p?.["7D"], p?.["1D"]]
+  const vals = [p?.["5Y"], p?.["1Y"], p?.["YTD"], p?.["30D"], p?.["7D"], p?.["1D"]]
     .filter((v): v is number => v != null);
   if (vals.length < 2) return [];
   return vals.reduce<number[]>((acc, pct, i) => {
@@ -569,6 +598,7 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     change_30d:             p?.["30D"] ?? null,
     change_ytd:             p?.["YTD"] ?? null,
     change_1y:              p?.["1Y"] ?? null,
+    change_5y:              p?.["5Y"] ?? null,
     rotation_score:         theme.rs_score,
     relative_strength_rank: theme.momentum_rank ?? idx + 1,
     regime_tag:             normalizeThemeStatus(theme.state),
@@ -1143,7 +1173,7 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
 }
 
 // ─── B + C: Unified Themes Card ───────────────────────────────────────────────
-type SortKey = "ticker" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "rotation_score";
+type SortKey = "ticker" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "change_5y" | "rotation_score";
 
 function UnifiedThemesCard({
   loading: sectorLoading,
@@ -1226,7 +1256,7 @@ function UnifiedThemesCard({
         <div className="flex items-center gap-2 flex-wrap">
           {freshness && <span className="text-[10px] text-gray-600 hidden lg:block">{freshness}</span>}
           {isLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
-          {viewMode === "rs" && (
+          {(viewMode === "rs" || viewMode === "line") && (
             <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
               {TF_THEME_OPTIONS.map(t => (
                 <button key={t} onClick={() => setTf(t)}
@@ -1257,7 +1287,7 @@ function UnifiedThemesCard({
                 <Th label="#" /><Th label="Ticker" k="ticker" /><Th label="Name" />
                 <Th label="1D" k="change_1d" /><Th label="7D" k="change_7d" />
                 <Th label="30D" k="change_30d" /><Th label="YTD" k="change_ytd" />
-                <Th label="1Y" k="change_1y" />
+                <Th label="1Y" k="change_1y" /><Th label="5Y" k="change_5y" />
                 <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
               </tr>
             </thead>
@@ -1303,6 +1333,7 @@ function UnifiedThemesCard({
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)} ${tfClsActive("change_30d")}`}>{fmtPct(row.change_30d)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)} ${tfClsActive("change_ytd")}`}>{fmtPct(row.change_ytd)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)} ${tfClsActive("change_1y")}`}>{fmtPct(row.change_1y)}</td>
+                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_5y)}`}>{fmtPct(row.change_5y)}</td>
                       <td className="px-3 py-2.5">
                         {row.rotation_score != null ? (
                           <div className="flex items-center gap-2 min-w-[68px]">
@@ -1322,7 +1353,7 @@ function UnifiedThemesCard({
                     </tr>
                     {expanded && (
                       <tr key={`${row.key}-detail`} className="bg-black/30">
-                        <td colSpan={11} className="px-4 py-4">
+                        <td colSpan={12} className="px-4 py-4">
                           <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
                         </td>
                       </tr>
@@ -1341,7 +1372,7 @@ function UnifiedThemesCard({
         <ThemeRSView themes={allThemes} tf={tf} />
       ) : (
         /* ── LINE GRAPH VIEW ── */
-        <LineGraphView themes={allThemes} colorMap={colorMap} />
+        <LineGraphView themes={allThemes} colorMap={colorMap} tf={tf} />
       )}
     </GlassCard>
   );
