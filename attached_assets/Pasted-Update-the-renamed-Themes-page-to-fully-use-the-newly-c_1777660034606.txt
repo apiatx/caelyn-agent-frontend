@@ -1,0 +1,237 @@
+Update the renamed Themes page to fully use the newly consolidated backend theme/sector universe.
+
+Context:
+Backend has consolidated the old Sectors/Themes data into the canonical Themes by Relative Strength endpoint.
+
+Use this as the single source of truth for the page:
+
+GET /api/themes/relative-strength?timeframe=1D|7D|30D|YTD|1Y&classification=all|sector|theme|sub_theme
+
+Backend now supports:
+- classification=sector → 11 SPDR sector rows
+- classification=theme → broad/cross-sector theme rows
+- classification=sub_theme → narrower sub-theme rows
+- classification=all → all rows combined
+
+Old sector/theme endpoints are now compatibility wrappers, but the frontend should prefer the new endpoint directly.
+
+Do not change backend.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not change Watchlist.
+Do not change Portfolio.
+
+Goal:
+The Themes page should become one clean market leadership page powered by the canonical backend universe.
+
+Page behavior:
+1. Page should be labeled “Themes”.
+2. Default view should be Themes, not Sectors.
+3. Existing visual layout should remain mostly the same.
+4. Relative Strength and Sector Performance sections should both use /api/themes/relative-strength directly.
+5. Remove duplicated theme/sector rendering logic in frontend.
+6. Do not hardcode theme lists in frontend.
+
+Classification filter UI:
+Replace or adjust the current Sectors/Themes toggle so it reflects the new backend classifications.
+
+Preferred simple UI:
+- Themes
+- Sectors
+- All
+
+Mapping:
+- Themes → classification=theme,sub_theme if easy; otherwise classification=all with sector rows filtered out client-side.
+- Sectors → classification=sector
+- All → classification=all
+
+If supporting multi-class query params is not already backend-supported, call:
+- Themes mode: /api/themes/relative-strength?...&classification=all, then filter out classification === "sector" in frontend.
+- Sectors mode: /api/themes/relative-strength?...&classification=sector
+- All mode: /api/themes/relative-strength?...&classification=all
+
+Default:
+- Default selected classification should be Themes.
+- Both Relative Strength and Sector Performance sections should default to this same classification.
+
+Timeframe mapping:
+- 1D → timeframe=1D
+- 7D → timeframe=7D
+- 30D → timeframe=30D
+- YTD → timeframe=YTD
+- 1Y → timeframe=1Y
+
+Do not show unsupported timeframes.
+Do not fake 3M if backend does not support it.
+
+Data fields to consume:
+Each row may include:
+- theme_id
+- display_name
+- classification
+- parent_sector
+- sector_tags
+- timeframe
+- return_pct
+- rs_score
+- state
+- state_reason
+- rs_vs_spy
+- rs_vs_qqq
+- breadth
+- proxy_symbols
+- proxy_symbols_used
+- proxy_source_health
+- leader_universe_source
+- leaders
+- laggards
+- last_updated
+- cache_age_seconds
+- source
+- source_health
+
+Relative Strength section:
+Use the selected classification/timeframe data.
+
+Requirements:
+- Render every row returned for the selected classification.
+- Do not show only gainers.
+- Do not hide negative-return rows.
+- Do not grey out rows or chips unless the user explicitly deselects them.
+- Every chip should have a visible deterministic color.
+- Every row should appear in the chart or scrollable chart area.
+- Sort by return_pct descending.
+- Positive values should extend right.
+- Negative values should extend left if the chart supports diverging bars.
+- If current chart cannot support left-extending bars, negative rows should still render visibly with a red/negative bar, not disappear.
+- Axis/domain must include both positive and negative values:
+  min = Math.min(0, lowest return_pct)
+  max = Math.max(0, highest return_pct)
+
+Top Leaders / Bottom Laggards cards:
+- Top Leaders = top 3 rows by return_pct for selected timeframe/classification.
+- Bottom Laggards = bottom 3 rows by return_pct for selected timeframe/classification.
+- These cards are summaries only. They should not control which rows appear in the full chart.
+
+Sector Performance / Theme ETF Baskets table:
+Use the same selected classification/timeframe data.
+
+Column mapping:
+- Rank = sorted rank
+- Ticker = proxy_symbols_used[0] if available, else proxy_symbols[0], else theme_id
+- Sector/Theme = display_name
+- Classification = classification if there is room, or show as a small badge
+- Parent Sector = parent_sector if useful, preferably tooltip/detail not a noisy column
+- Price = only show if backend provides a reliable price. Do not fake it.
+- Selected timeframe return = return_pct
+- Score = rs_score
+- Trend = keep current sparkline if available; otherwise do not fabricate it
+- Status = state
+
+If the current table expects multi-timeframe columns:
+Option A:
+Fetch all five timeframes in parallel and merge rows by theme_id so the table can show 1D/7D/30D/YTD/1Y columns.
+
+Option B:
+Simplify Themes mode to selected timeframe + score + status.
+
+Prefer Option A if clean and performant. Prefer Option B if safer. Do not show incorrect values.
+
+Duplicate handling:
+- Use theme_id as the unique key.
+- Do not duplicate rows for the same theme_id.
+- If multiple proxies map to one theme, show one row.
+- Show proxy_symbols_used in tooltip/detail.
+- Examples:
+  - Memory & Storage should be one row, not separate DRAM/SMH/SOXX rows.
+  - Uranium & Nuclear should be one row, not separate URA/URNM/NLR rows.
+  - Energy sector and Oil & Gas sub-theme can both exist because one is classification=sector and one is classification=sub_theme.
+  - Healthcare sector and Medical Devices/Biotech can both exist because they are different classification levels.
+
+Detail/tooltip behavior:
+On hover or row click, show a compact detail popover/drawer if already easy in the UI.
+
+Include:
+- display_name
+- classification
+- parent_sector
+- return_pct
+- rs_score
+- state
+- state_reason
+- rs_vs_spy
+- rs_vs_qqq
+- breadth
+- proxy_symbols_used
+- leader_universe_source
+- top leaders
+- top laggards
+- last_updated/cache_age_seconds if available
+
+Freshness display:
+If backend returns cache_age_seconds or last_updated, show a small freshness label somewhere unobtrusive:
+- “Updated just now”
+- “Updated 2m ago”
+- “Updated 14m ago”
+
+Do not make this visually loud.
+
+Loading behavior:
+Backend may return cache/LKG immediately and refresh in background.
+- Show loading state only when there is no data yet.
+- If data source is LKG/stale, still render it and show freshness/source if available.
+- Do not block the page unnecessarily.
+
+Important preserved themes:
+Confirm the page can display old preserved themes now supplied by backend:
+- Quantum Computing
+- Data Center Infrastructure
+- Crypto Equities / Blockchain
+- Space Economy
+- Cloud Software
+- LNG & Natural Gas
+- Medical Devices
+- Oil Services
+
+Confirm the page can display new canonical themes:
+- Memory & Storage
+- Rare Earth Metals
+- Uranium & Nuclear Energy
+- Gold
+- Silver
+- Copper Miners
+- Drones
+- Tech Equal-Weight
+- Consumer Retail
+- Tech Mega Caps
+
+Confirm the page can display sectors:
+- Technology
+- Energy
+- Financials
+- Industrials
+- Utilities
+- Health Care
+- Materials
+- Consumer Discretionary
+- Consumer Staples
+- Communication Services
+- Real Estate
+
+Validation:
+1. Run build.
+2. Open the renamed Themes page.
+3. Confirm default classification is Themes, not Sectors.
+4. Confirm Relative Strength calls /api/themes/relative-strength directly.
+5. Confirm Sector Performance/Theme ETF Baskets calls /api/themes/relative-strength directly.
+6. Confirm frontend is not using old /api/sectors/performance or /api/sectors/relative-strength as the primary page data source.
+7. Confirm Themes view displays broad themes + sub-themes, not sectors.
+8. Confirm Sectors view displays exactly 11 SPDR sector rows.
+9. Confirm All view displays sectors + themes + sub-themes together.
+10. Confirm all returned rows render, including negative-return rows.
+11. Confirm all chips are colored unless user-deselected.
+12. Confirm no duplicate theme_id rows.
+13. Confirm Memory & Storage appears as one row with DRAM/SMH/SOXX proxy details if returned.
+14. Confirm old preserved themes like QTUM/SRVR/BLOK/ARKX/SKYY/FCG/IHI/OIH appear when in Themes or All view.
+15. Confirm no backend, Earnings, Options Flow, TA Screener, Watchlist, or Portfolio changes.
