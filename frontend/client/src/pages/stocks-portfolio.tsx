@@ -2,6 +2,8 @@ import { Fragment, useState, useEffect, useCallback, useMemo, type ReactNode } f
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase, Pencil, Check, X } from 'lucide-react';
+import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
+import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 
 interface Holding {
@@ -333,17 +335,60 @@ export default function StocksPortfolioPage() {
     }
   };
 
+  // Realtime hydration for equity/ETF holdings (skip crypto/commodities — different feeds).
+  const equitySymbols = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const h of holdings) {
+      const t = (h.assetType || 'stock').toLowerCase();
+      if (t !== 'stock' && t !== 'etf' && t !== 'index' && t !== 'indices') continue;
+      const sym = h.ticker?.toUpperCase();
+      if (!sym || seen.has(sym)) continue;
+      seen.add(sym);
+      out.push(sym);
+    }
+    return out;
+  }, [holdings.map(h => `${h.ticker}:${h.assetType || 'stock'}`).join('|')]);
+  const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(equitySymbols, { enabled: equitySymbols.length > 0 });
+
   const enrichedHoldings = useMemo(() => {
     return holdings.map(h => {
       const q = quotes[h.ticker] || quotes[h.ticker.toUpperCase()];
-      const currentPrice = q?.price || 0;
-      const dailyChange = q?.change || 0;
+      const rt = realtimeQuotes[h.ticker?.toUpperCase()];
+
+      // Prefer realtime price/change when available; fallback to FMP quote.
+      const rtPrice = typeof rt?.price === 'number' && Number.isFinite(rt.price) ? rt.price
+        : typeof rt?.last === 'number' && Number.isFinite(rt.last) ? rt.last
+        : null;
+      const rtChange = typeof rt?.change === 'number' && Number.isFinite(rt.change) ? rt.change : null;
+
+      const currentPrice = rtPrice != null ? rtPrice : (q?.price || 0);
+      const dailyChange = rtChange != null ? rtChange : (q?.change || 0);
       const dailyPL = dailyChange * h.shares;
       const totalPL = (currentPrice - h.avgCost) * h.shares;
       const totalValue = currentPrice * h.shares;
-      return { ...h, currentPrice, dailyChange, dailyPL, totalPL, totalValue, quote: q };
+      return {
+        ...h,
+        currentPrice,
+        dailyChange,
+        dailyPL,
+        totalPL,
+        totalValue,
+        quote: q,
+        priceMeta: rt
+          ? {
+              source: rt.source,
+              is_realtime: rt.is_realtime,
+              is_live_backup: rt.is_live_backup,
+              is_stale: rt.is_stale,
+              staleness_seconds: rt.staleness_seconds,
+              quote_timestamp: rt.quote_timestamp,
+              updated_at: rt.updated_at,
+            }
+          : null,
+      };
     });
-  }, [holdings, quotes]);
+  }, [holdings, quotes, realtimeQuotes]);
 
   const totalPortfolioValue = useMemo(() => enrichedHoldings.reduce((sum, h) => sum + h.totalValue, 0), [enrichedHoldings]);
   const totalDailyPL = useMemo(() => enrichedHoldings.reduce((sum, h) => sum + h.dailyPL, 0), [enrichedHoldings]);
@@ -838,7 +883,12 @@ export default function StocksPortfolioPage() {
                                   }
                                 </td>
                                 <td className="text-right py-2.5 px-3" style={{ color: '#5cc8f0', fontWeight: 600 }}>
-                                  {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
+                                  <span className="inline-flex items-center justify-end gap-1.5">
+                                    {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">Loading...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">Unavailable</span> : h.currentPrice > 0 ? fmt(h.currentPrice) : <span className="text-crypto-silver/50">—</span>}
+                                    {h.priceMeta && h.currentPrice > 0 && (
+                                      <PriceFreshnessBadge compact meta={h.priceMeta} />
+                                    )}
+                                  </span>
                                 </td>
                                 {/* Invested — live preview when editing */}
                                 <td className="text-right py-2.5 px-3 font-medium" style={{ color: isEditing ? '#c4b5fd' : '#a78bfa' }}>

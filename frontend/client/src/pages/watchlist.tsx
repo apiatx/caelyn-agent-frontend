@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
@@ -8,6 +8,9 @@ import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
 import type { PlaybookSummary, WatchlistPlaybookResponse } from '@/types/playbook';
+import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
+import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
+import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -719,13 +722,31 @@ export default function WatchlistPage() {
   /* ── merged ticker list: all CSV tickers + analysis data where available ── */
   const allTickerSymbols: string[] = watchlist?.tickers || [];
   const analyzedMap = new Map<string, any>(allStocks.map(s => [s.ticker?.toUpperCase(), s]));
-  const mergedTickers = allTickerSymbols.length > 0
+  const baseMergedTickers = allTickerSymbols.length > 0
     ? allTickerSymbols.map(sym => {
         const key = sym.toUpperCase();
         const analyzed = analyzedMap.get(key);
         return analyzed ? { ...analyzed, _pending: false } : { ticker: sym, _pending: true };
       })
     : allStocks.map(s => ({ ...s, _pending: false }));
+
+  /* ── realtime hydration: overlay live quote prices over analysis data ── */
+  const realtimeSymbols = useMemo(() => {
+    const out: string[] = [];
+    for (const t of baseMergedTickers) {
+      const sym = (t.ticker || '').toString().trim();
+      if (sym) out.push(sym);
+    }
+    return out;
+  }, [baseMergedTickers.map(t => t.ticker).join('|')]);
+  const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(realtimeSymbols, { enabled: realtimeSymbols.length > 0 });
+
+  const mergedTickers = useMemo(() => baseMergedTickers.map((t) => {
+    const sym = (t.ticker || '').toString().toUpperCase();
+    const rt = sym ? realtimeQuotes[sym] : undefined;
+    return rt ? mergeRealtimeQuote(t, rt) : t;
+  }), [baseMergedTickers, realtimeQuotes]);
+
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
 
@@ -1255,8 +1276,22 @@ export default function WatchlistPage() {
               <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                 {isPending ? '' : (stock.company || '\u2014')}
               </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 {!isPending && stock.price != null ? `$${stock.price.toFixed(2)}` : '\u2014'}
+                {!isPending && stock.price_source && (
+                  <PriceFreshnessBadge
+                    compact
+                    meta={{
+                      source: stock.price_source,
+                      is_realtime: stock.price_is_realtime,
+                      is_live_backup: stock.price_is_live_backup,
+                      is_stale: stock.price_is_stale,
+                      staleness_seconds: stock.staleness_seconds,
+                      quote_timestamp: stock.quote_timestamp,
+                      updated_at: stock.price_updated_at,
+                    }}
+                  />
+                )}
               </span>
               <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font }}>
                 {!isPending && stock.change_pct != null

@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square } from 'lucide-react';
+import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
+import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
+import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens ─────────────────────────────────────────────────── */
 const C = {
@@ -112,7 +115,16 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
   const [reportModel, setReportModel] = useState<'claude' | 'gpt'>('claude');
 
   /* ── find stock ─────────────────────────────────────────────────── */
-  const stock = findStockInAnalysis(analysis, ticker);
+  const baseStock = findStockInAnalysis(analysis, ticker);
+
+  /* ── realtime hydration ──────────────────────────────────────────── */
+  const tickerSymbols = useMemo(() => (ticker ? [ticker] : []), [ticker]);
+  const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(tickerSymbols, { enabled: !!ticker });
+  const stock = useMemo(() => {
+    const rt = ticker ? realtimeQuotes[ticker.toUpperCase()] : undefined;
+    if (!baseStock && !rt) return null;
+    return rt ? mergeRealtimeQuote(baseStock || { symbol: ticker }, rt) : baseStock;
+  }, [baseStock, realtimeQuotes, ticker]);
 
   /* ── find CSV row ───────────────────────────────────────────────── */
   const csvRow = csvData?.find((r: any) => {
@@ -233,6 +245,19 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
             }}>
               {stock.change_pct >= 0 ? '+' : ''}{typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%
             </span>
+          )}
+          {stock?.price_source && (
+            <PriceFreshnessBadge
+              meta={{
+                source: stock.price_source,
+                is_realtime: stock.price_is_realtime,
+                is_live_backup: stock.price_is_live_backup,
+                is_stale: stock.price_is_stale,
+                staleness_seconds: stock.staleness_seconds,
+                quote_timestamp: stock.quote_timestamp,
+                updated_at: stock.price_updated_at,
+              }}
+            />
           )}
           <div style={{ flex: 1 }} />
           <button onClick={onClose} style={{ color: C.dim, cursor: 'pointer', padding: 4, background: 'none', border: 'none' }}>

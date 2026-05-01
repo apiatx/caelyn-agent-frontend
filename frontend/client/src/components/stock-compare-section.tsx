@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { Search, Star, ChevronDown, X, Download, Link, RotateCcw, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtimeQuotes } from "@/hooks/useRealtimeQuotes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -815,9 +816,37 @@ export function StockCompareSection() {
 
   const series = compareData?.series || [];
   // Prefer backend screener rows (camelCase); fall back to snapshot
-  const screenerRows: ScreenerRow[] = compareData?.screener?.length
+  const baseScreenerRows: ScreenerRow[] = compareData?.screener?.length
     ? compareData.screener
     : (compareData?.snapshot || []);
+
+  // Realtime price hydration: overlay live price/change% onto screener rows.
+  const compareSymbols = useMemo(
+    () => symbols.map((s) => s.symbol).filter(Boolean),
+    [symbols]
+  );
+  const { quotesBySymbol: rtCompareQuotes } = useRealtimeQuotes(compareSymbols, {
+    enabled: compareSymbols.length > 0,
+  });
+  const screenerRows: ScreenerRow[] = useMemo(() => baseScreenerRows.map((row) => {
+    const sym = (row.symbol || row.ticker || "").toString().toUpperCase();
+    const rt = sym ? rtCompareQuotes[sym] : undefined;
+    if (!rt) return row;
+    const out: ScreenerRow = { ...row };
+    if (typeof rt.price === "number" && Number.isFinite(rt.price)) {
+      out.price = rt.price;
+    } else if (typeof rt.last === "number" && Number.isFinite(rt.last)) {
+      out.price = rt.last;
+    }
+    if (typeof rt.change_percent === "number" && Number.isFinite(rt.change_percent)) {
+      out.priceChangePercent = rt.change_percent;
+      out.price_change_percent = rt.change_percent;
+    }
+    out.price_source = rt.source;
+    out.price_is_realtime = rt.is_realtime;
+    out.price_is_stale = rt.is_stale;
+    return out;
+  }), [baseScreenerRows, rtCompareQuotes]);
   const news = compareData?.news || {};
   const warnings = compareData?.meta?.warnings || [];
   const isNewsMetric = false; // recent_news is no longer a chart metric
