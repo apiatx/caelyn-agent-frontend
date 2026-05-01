@@ -1,0 +1,137 @@
+Update the existing Sectors page Themes mode to use the new canonical backend theme relative-strength endpoint.
+
+Important:
+Backend has already merged the old Sectors Themes universe and the new Theme RS universe into one canonical 49-theme backend registry.
+
+Do NOT merge theme lists in frontend.
+Do NOT preserve old hardcoded theme data in frontend.
+Do NOT keep old ETF-theme rows as a separate source.
+Use the backend as the single source of truth.
+
+Backend source:
+GET /api/themes/relative-strength?timeframe=1D|7D|30D|YTD|1Y
+GET /api/themes/list
+
+Goal:
+When the Sectors page toggle is set to THEMES, both existing sections should use /api/themes/relative-strength:
+1. Relative Strength section
+2. Sector Performance / Theme ETF Baskets table
+
+Do not create a new page.
+Do not change backend.
+Do not change Sectors mode behavior.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+
+Find the current Sectors page components that render:
+- Relative Strength
+- Theme ETFs
+- Theme ETF Baskets
+- Sectors/Themes toggle
+- rows like SMH, SOXX, QTUM, LIT, SRVR, BLOK, OIH, BOTZ, KRE, ARKX, CIBR, SKYY, FINX, COPX, URA, XBI, ITA, XHB, FCG, IHI
+
+Replace the data source for THEMES mode only.
+
+Timeframe mapping:
+- 1D → 1D
+- 7D → 7D
+- 1M or 30D → 30D
+- YTD → YTD
+- 1Y → 1Y if the UI supports it
+- If the current UI has 3M and backend does not support 3M, hide/disable 3M in Themes mode or clearly map it to 30D. Do not fabricate 3M.
+
+Use backend fields:
+- theme_id
+- display_name
+- timeframe
+- return_pct
+- rs_score
+- state
+- state_reason
+- rs_vs_spy
+- rs_vs_qqq
+- breadth
+- proxy_symbols
+- proxy_symbols_used
+- proxy_source_health
+- leader_universe_source
+- leaders
+- laggards
+- last_updated
+
+Relative Strength section:
+- Top Leaders = top 3 themes by return_pct for selected timeframe
+- Bottom Laggards = bottom 3 themes by return_pct
+- Horizontal chart = sorted themes by return_pct
+- Use display_name as the label
+- Use return_pct as the bar value
+- Tooltip/details should show state, state_reason, proxy_symbols_used, leaders, laggards
+- Keep current visual style as much as possible
+
+Theme chips:
+- Generate chips from backend theme rows.
+- Use theme_id as unique key.
+- Display either display_name or primary proxy from proxy_symbols_used depending on what fits.
+- Tooltip should show display_name + proxy_symbols_used.
+- Do not show duplicate chips for the same theme.
+
+Theme ETF Baskets table:
+In THEMES mode, rows should come from /api/themes/relative-strength.
+
+Column mapping:
+- Rank = sorted rank
+- Ticker = proxy_symbols_used[0] if available, else proxy_symbols[0], else theme_id
+- Sector/Theme = display_name
+- Selected timeframe return = return_pct
+- Score = rs_score
+- Status = state
+- State tooltip = state_reason
+- Leaders/Laggards can be shown in tooltip or expandable detail, not as cluttered columns
+
+Do not fabricate missing multi-timeframe columns.
+If the current table expects 1D/7D/30D/YTD/1Y columns, either:
+A) fetch all supported timeframes in parallel and merge by theme_id, or
+B) simplify Themes mode to selected timeframe + score + state.
+Prefer B if safer.
+
+Required visible result:
+Themes mode should now include the canonical 49-theme backend universe, including old preserved themes:
+- Quantum Computing
+- Data Center Infrastructure
+- Crypto Equities / Blockchain
+- Space Economy
+- Cloud Software
+- LNG & Natural Gas
+- Medical Devices
+- Oil Services
+
+And new themes:
+- Memory & Storage
+- Rare Earth Metals
+- Uranium & Nuclear Energy
+- Gold
+- Silver
+- Copper Miners
+- Tech Mega Caps
+- Drones
+- Tech Equal-Weight
+- Consumer Retail
+- etc.
+
+Loading/caching:
+The backend can be slow on cold load. Show a loading state.
+Do not timeout too aggressively.
+Once cached, it should be fast.
+
+Validation:
+1. Run build.
+2. Confirm Sectors mode still works unchanged.
+3. Confirm Themes mode calls /api/themes/relative-strength.
+4. Confirm it no longer relies on old /api/sectors/relative-strength?mode=themes as the primary source in Themes mode.
+5. Confirm Relative Strength section shows the canonical backend theme rows.
+6. Confirm Theme ETF Baskets table shows canonical backend theme rows.
+7. Confirm old preserved themes appear: QTUM/Quantum, SRVR/Data Center Infrastructure, BLOK/Crypto Equities, ARKX/Space, SKYY/Cloud Software, FCG/LNG & Natural Gas, IHI/Medical Devices, OIH/Oil Services.
+8. Confirm new themes appear: Memory & Storage, Rare Earth Metals, Gold, Silver, etc.
+9. Confirm no duplicate rows for the same theme_id.
+10. Confirm no backend, Earnings, Options Flow, or TA Screener changes.

@@ -3474,6 +3474,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Canonical Themes Registry ────────────────────────────────────────
+  app.get('/api/themes/relative-strength', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 45000);
+      const qs = new URLSearchParams(req.query as Record<string,string>).toString();
+      const r = await fetch(`${PB_URL}/api/themes/relative-strength${qs ? `?${qs}` : ''}`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'themes/relative-strength failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/relative-strength] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/themes/list', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 30000);
+      const r = await fetch(`${PB_URL}/api/themes/list`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'themes/list failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/list] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── Thematic Context ─────────────────────────────────────────────────
   app.get('/api/thematic-context/snapshot', async (req, res) => {
     try {

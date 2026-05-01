@@ -109,24 +109,30 @@ interface Analysis {
   theme_rotation?:         string | null;
 }
 interface ThemeRow {
-  id:                      string;
-  label:                   string | null;
-  parent_sector:           string | null;
-  theme_type:              string | null;
-  symbols:                 string[];
-  leader_symbol:           string | null;
-  ticker:                  string | null;
-  price:                   number | null;
-  leader_price:            number | null;
-  current_price:           number | null;
-  quote:                   { price?: number; last?: number; close?: number } | null;
-  performance:             { "1d"?: number; "5d"?: number; "7d"?: number; "1m"?: number; "3m"?: number; "6m"?: number; ytd?: number; "1y"?: number } | null;
-  pct_from_50d:            number | null;
-  trend_accel_20d:         number | null;
-  relative_strength_score: number | null;
-  momentum_rank:           number | null;
-  trend_state:             string | null;
-  rotation_state:          string | null;
+  // Canonical fields from /api/themes/relative-strength
+  theme_id:            string;
+  display_name:        string;
+  proxy_symbols:       string[];
+  proxy_symbols_used:  string[];
+  price:               number | null;
+  lead_proxy:          string | null;
+  timeframe:           string | null;
+  return_pct:          number | null;
+  performance:         { "1D"?: number; "7D"?: number; "30D"?: number; "YTD"?: number; "1Y"?: number } | null;
+  breadth_pct:         number | null;
+  pct_from_50d:        number | null;
+  trend_accel_20d:     number | null;
+  rs_score:            number | null;
+  rs_vs_spy:           number | null;
+  rs_vs_qqq:           number | null;
+  state:               string | null;
+  state_reason:        string | null;
+  momentum_rank:       number | null;
+  leader_universe_source: string | null;
+  leaders:             Array<{ symbol: string; return_pct: number }> | null;
+  laggards:            Array<{ symbol: string; return_pct: number }> | null;
+  last_updated:        string | null;
+  proxy_source_health: Record<string, string> | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -156,7 +162,7 @@ const SECTOR_COLOR = Object.fromEntries(SECTORS.map(s => [s.ticker, s.color]));
 const SECTOR_NAME  = Object.fromEntries(SECTORS.map(s => [s.ticker, s.name]));
 const TF_OPTIONS   = ["1d", "7d", "30d", "ytd", "1y"] as const;
 type Timeframe = typeof TF_OPTIONS[number];
-const TF_THEME_OPTIONS = ["1d", "7d", "1m", "3m", "ytd"] as const;
+const TF_THEME_OPTIONS = ["1D", "7D", "30D", "YTD", "1Y"] as const;
 type ThemeTf = typeof TF_THEME_OPTIONS[number];
 const THEME_PALETTE = [
   "#a855f7","#3b82f6","#22c55e","#f59e0b","#ec4899",
@@ -366,16 +372,18 @@ interface DisplayRow {
   rotation_score:         number | null;
   relative_strength_rank: number | null;
   regime_tag:             string | null;
+  state_reason:           string | null;
   spkPrices:              number[];
   spkPos:                 boolean;
   dotColor:               string;
   tvSymbol:               string;
+  series?:                any;
 }
 
 function buildThemeSparkline(theme: ThemeRow): number[] {
-  const p = (k: string): number | null => (theme.performance as any)?.[k] ?? null;
+  const p = theme.performance;
   // Build synthetic price series from longest → shortest timeframe
-  const vals = [p("1y"), p("ytd"), p("3m"), p("1m"), p("5d"), p("1d")]
+  const vals = [p?.["1Y"], p?.["YTD"], p?.["30D"], p?.["7D"], p?.["1D"]]
     .filter((v): v is number => v != null);
   if (vals.length < 2) return [];
   return vals.reduce<number[]>((acc, pct, i) => {
@@ -392,27 +400,30 @@ function normalizeThemeStatus(state: string | null): string | null {
   if (s.includes("weak") || s.includes("deteriorat")) return "Weakening";
   if (s.includes("lag"))                       return "Lagging";
   if (s.includes("neutral"))                   return "Neutral";
+  if (s.includes("active"))                    return "Leading";
+  if (s.includes("dead"))                      return "Lagging";
   return state;
 }
 
 function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
-  const ticker  = theme.leader_symbol ?? theme.symbols?.[0] ?? theme.id;
-  const p       = (k: string): number | null => (theme.performance as any)?.[k] ?? null;
-  const ch7     = p("7d") ?? p("5d");
+  const ticker  = theme.proxy_symbols_used?.[0] ?? theme.proxy_symbols?.[0] ?? theme.theme_id;
+  const p       = theme.performance;
+  const ch7     = p?.["7D"] ?? null;
   const spkPrices = buildThemeSparkline(theme);
   return {
-    key:                    theme.id,
+    key:                    theme.theme_id,
     ticker,
-    name:                   theme.label,
-    price:                  theme.price ?? theme.leader_price ?? theme.current_price ?? theme.quote?.price ?? theme.quote?.last ?? theme.quote?.close ?? null,
-    change_1d:              p("1d"),
+    name:                   theme.display_name,
+    price:                  theme.price ?? null,
+    change_1d:              p?.["1D"] ?? theme.return_pct ?? null,
     change_7d:              ch7,
-    change_30d:             p("30d") ?? p("1m"),
-    change_ytd:             p("ytd"),
-    change_1y:              p("1y"),
-    rotation_score:         theme.relative_strength_score,
+    change_30d:             p?.["30D"] ?? null,
+    change_ytd:             p?.["YTD"] ?? null,
+    change_1y:              p?.["1Y"] ?? null,
+    rotation_score:         theme.rs_score,
     relative_strength_rank: theme.momentum_rank ?? idx + 1,
-    regime_tag:             normalizeThemeStatus(theme.trend_state ?? theme.rotation_state),
+    regime_tag:             normalizeThemeStatus(theme.state),
+    state_reason:           theme.state_reason ?? null,
     spkPrices,
     spkPos:                 (ch7 ?? 0) >= 0,
     dotColor:               THEME_PALETTE[idx % THEME_PALETTE.length],
@@ -423,11 +434,11 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
 function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(themes.slice(0, 8).map(t => t.id))
+    () => new Set(themes.slice(0, 8).map(t => t.theme_id))
   );
 
   useEffect(() => {
-    setSelectedIds(new Set(themes.slice(0, 8).map(t => t.id)));
+    setSelectedIds(new Set(themes.slice(0, 8).map(t => t.theme_id)));
   }, [themes.length]);
 
   const toggleId = (id: string) => setSelectedIds(prev => {
@@ -436,15 +447,12 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
     return next;
   });
 
-  const p = (item: ThemeRow, key: string): number | null => (item.performance as any)?.[key] ?? null;
-
-  // "7d" uses "7d" first, falls back to "5d" if backend still returns 5d key
   const pctForItem = (item: ThemeRow): number | null =>
-    tf === "7d" ? (p(item, "7d") ?? p(item, "5d")) : p(item, tf);
+    item.performance?.[tf] ?? (tf === "1D" ? item.return_pct : null) ?? null;
 
   const colorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    themes.forEach((t, i) => { map[t.id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
+    themes.forEach((t, i) => { map[t.theme_id] = THEME_PALETTE[i % THEME_PALETTE.length]; });
     return map;
   }, [themes]);
 
@@ -457,21 +465,25 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const topLeaders  = sorted.slice(0, 3);
   const topLaggards = [...sorted].reverse().slice(0, 3);
 
-  const selectedThemes = useMemo(() => themes.filter(t => selectedIds.has(t.id)), [themes, selectedIds]);
+  const selectedThemes = useMemo(() => themes.filter(t => selectedIds.has(t.theme_id)), [themes, selectedIds]);
 
   // Bar chart: one bar per selected theme for the chosen TF, sorted best → worst
   const barData = useMemo(() => {
     return selectedThemes
       .map(t => ({
-        name:  t.leader_symbol ?? t.symbols?.[0] ?? t.id.slice(0, 6),
-        value: pctForItem(t),
-        color: colorMap[t.id] ?? "#64748b",
+        name:        t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6),
+        displayName: t.display_name,
+        value:       pctForItem(t),
+        color:       colorMap[t.theme_id] ?? "#64748b",
+        stateReason: t.state_reason ?? "",
+        rsSpy:       t.rs_vs_spy,
+        rsQqq:       t.rs_vs_qqq,
       }))
-      .filter((d): d is { name: string; value: number; color: string } => d.value != null)
+      .filter((d): d is typeof d & { value: number } => d.value != null)
       .sort((a, b) => b.value - a.value);
   }, [selectedThemes, tf]);
 
-  const tfLabel = tf.toUpperCase();
+  const tfLabel = tf;
 
   return (
     <>
@@ -480,9 +492,12 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
           <div className="text-xs text-emerald-400 font-medium mb-2 flex items-center gap-1"><TrendingUp className="w-3 h-3" />Top Leaders</div>
           {topLeaders.length ? topLeaders.map(r => (
-            <div key={r.id} className="flex items-center gap-2 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.id] }} />
-              <span className="text-xs font-mono font-bold text-white truncate max-w-[110px]">{r.leader_symbol ?? r.symbols?.[0] ?? r.id}</span>
+            <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
+              <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
+                {r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
+              </span>
+              <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
               <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
@@ -490,22 +505,27 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
         <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3">
           <div className="text-xs text-red-400 font-medium mb-2 flex items-center gap-1"><TrendingDown className="w-3 h-3" />Bottom Laggards</div>
           {topLaggards.length ? topLaggards.map(r => (
-            <div key={r.id} className="flex items-center gap-2 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.id] }} />
-              <span className="text-xs font-mono font-bold text-white truncate max-w-[110px]">{r.leader_symbol ?? r.symbols?.[0] ?? r.id}</span>
+            <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
+              <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
+                {r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
+              </span>
+              <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
               <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
       </div>
-      {/* Theme filter pills */}
+      {/* Theme filter pills — show proxy ticker, tooltip shows display_name + proxies */}
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
         {themes.map((t, i) => {
-          const on    = selectedIds.has(t.id);
+          const on    = selectedIds.has(t.theme_id);
           const color = THEME_PALETTE[i % THEME_PALETTE.length];
-          const label = t.leader_symbol ?? t.symbols?.[0] ?? t.id.slice(0, 6);
+          const label = t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6);
+          const tip   = `${t.display_name}${t.proxy_symbols_used?.length ? ` · ${t.proxy_symbols_used.join(", ")}` : ""}`;
           return (
-            <button key={t.id} onClick={() => toggleId(t.id)}
+            <button key={t.theme_id} onClick={() => toggleId(t.theme_id)}
+              title={tip}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
               style={on ? { background: `${color}30`, borderColor: `${color}60` } : {}}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
@@ -516,11 +536,11 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
       </div>
       {/* Chart label */}
       <div className="text-[10px] uppercase tracking-wider text-gray-600 mb-2 px-0.5">
-        {tfLabel} relative performance — summary return
+        {tfLabel} relative performance — {themes.length} canonical themes
       </div>
       {/* Horizontal bar chart — one bar per theme, updates on TF change */}
       {barData.length > 0 ? (
-        <div style={{ height: Math.max(180, barData.length * 26 + 16) }}>
+        <div style={{ height: Math.max(180, barData.length * 22 + 16) }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 48, left: 4, bottom: 0 }}>
               <XAxis type="number" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
@@ -531,10 +551,18 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
               <Tooltip
                 contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                formatter={(v: any) => [`${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`, tfLabel + " return"]}
+                formatter={(v: any, _name: any, props: any) => {
+                  const d = props.payload;
+                  const lines: string[] = [
+                    `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}% (${tfLabel})`,
+                  ];
+                  if (d?.rsSpy != null) lines.push(`vs SPY: ${d.rsSpy > 0 ? "+" : ""}${d.rsSpy.toFixed(2)}%`);
+                  if (d?.rsQqq != null) lines.push(`vs QQQ: ${d.rsQqq > 0 ? "+" : ""}${d.rsQqq.toFixed(2)}%`);
+                  return [lines.join(" · "), d?.displayName ?? ""];
+                }}
               />
               <ReferenceLine x={0} stroke="#374151" strokeWidth={1} />
-              <Bar dataKey="value" radius={[0, 3, 3, 0]} maxBarSize={16}>
+              <Bar dataKey="value" radius={[0, 3, 3, 0]} maxBarSize={14}>
                 {barData.map((entry, idx) => (
                   <Cell key={idx} fill={entry.color} fillOpacity={0.8} />
                 ))}
@@ -964,9 +992,9 @@ function SectorPerformanceTable({
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [perfMode, setPerfMode] = useState<"sectors" | "themes">("sectors");
 
-  const { data: themePerfRaw, isLoading: themePerfLoading, isError: themePerfError } = useQuery<{ items: ThemeRow[] }>({
-    queryKey: ["sector-performance", "themes"],
-    queryFn: () => fetch("/api/sectors/performance?mode=themes").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+  const { data: themePerfRaw, isLoading: themePerfLoading, isError: themePerfError } = useQuery<{ themes: ThemeRow[] }>({
+    queryKey: ["themes-rs-canonical"],
+    queryFn: () => fetch("/api/themes/relative-strength?timeframe=1D").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     enabled: perfMode === "themes",
     staleTime: 5 * 60_000,
     retry: 1,
@@ -995,7 +1023,7 @@ function SectorPerformanceTable({
   }, [sectors, sortKey, sortDir]);
 
   const themeSorted = useMemo(() => {
-    const rows = (themePerfRaw?.items ?? []).map((t, i) => normalizeThemeToRow(t, i));
+    const rows = (themePerfRaw?.themes ?? []).map((t, i) => normalizeThemeToRow(t, i));
     return rows.sort((a, b) => {
       const av = a[sortKey as keyof DisplayRow] as number | string | null;
       const bv = b[sortKey as keyof DisplayRow] as number | string | null;
@@ -1096,7 +1124,7 @@ function SectorPerformanceTable({
                         <td className="px-3 py-2.5"><Sparkline prices={row.spkPrices} positive={row.spkPos} /></td>
                         <td className="px-3 py-2.5">
                           {row.regime_tag
-                            ? <Badge className={`border text-[10px] px-1.5 py-0 ${tagCls}`}>{row.regime_tag}</Badge>
+                            ? <Badge title={row.state_reason ?? undefined} className={`border text-[10px] px-1.5 py-0 cursor-help ${tagCls}`}>{row.regime_tag}</Badge>
                             : <span className="text-gray-600 text-xs">—</span>}
                         </td>
                       </tr>
@@ -1221,12 +1249,12 @@ function SectorRotationChart({
   selectedTickers: Set<string>; onToggleTicker: (t: string) => void;
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
-  const [themeTf, setThemeTf] = useState<ThemeTf>("7d");
+  const [themeTf, setThemeTf] = useState<ThemeTf>("7D");
   const [rsMode, setRsMode] = useState<"sectors" | "themes">("sectors");
 
-  const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ ranked: ThemeRow[] }>({
-    queryKey: ["sector-relative-strength", "themes"],
-    queryFn: () => fetch("/api/sectors/relative-strength?mode=themes").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+  const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ themes: ThemeRow[] }>({
+    queryKey: ["themes-rs-canonical"],
+    queryFn: () => fetch("/api/themes/relative-strength?timeframe=1D").then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     enabled: rsMode === "themes",
     staleTime: 5 * 60_000,
     retry: 1,
@@ -1292,7 +1320,7 @@ function SectorRotationChart({
             <AlertTriangle className="w-4 h-4" /> Failed to load theme relative strength data.
           </div>
         ) : (
-          <ThemeRSView themes={themeRSRaw?.ranked ?? []} tf={themeTf} />
+          <ThemeRSView themes={themeRSRaw?.themes ?? []} tf={themeTf} />
         )}
       </GlassCard>
     );

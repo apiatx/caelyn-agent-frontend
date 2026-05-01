@@ -1,0 +1,150 @@
+Update the existing Sectors page Themes tab to use the new backend Themes by Relative Strength endpoint.
+
+Goal:
+Do not create a new page.
+Do not create a duplicate Themes dashboard.
+Reuse the existing Sectors page sections:
+1. Relative Strength
+2. Sector Performance / Theme ETF Baskets table
+
+When the user toggles to Themes, these sections should fetch and render the new canonical backend theme relative-strength data.
+
+Backend endpoint:
+GET /api/themes/relative-strength?timeframe=1D|7D|30D|YTD|1Y
+
+Important:
+The existing Sectors page already has Theme ETF sections. Replace the old theme data source for the Themes toggle with the new endpoint, but keep the existing visual style as much as possible.
+
+Do not change backend.
+Do not change Sectors mode behavior.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not create a separate new Themes page.
+
+Data mapping:
+Use backend fields:
+- theme_id
+- display_name
+- timeframe
+- return_pct
+- rs_score
+- state
+- state_reason
+- rs_vs_spy
+- rs_vs_qqq
+- breadth
+- proxy_symbols
+- proxy_symbols_used
+- proxy_source_health
+- leader_universe_source
+- leaders
+- laggards
+- last_updated
+
+Timeframe mapping:
+Existing frontend buttons:
+- 1D → timeframe=1D
+- 7D → timeframe=7D
+- 1M or 30D → timeframe=30D
+- 3M → if backend does not support 3M, either hide/disable 3M in Themes mode or map to 30D with clear label
+- YTD → timeframe=YTD
+If existing UI has 1Y available, map to timeframe=1Y.
+
+Relative Strength section:
+Currently shows top leaders/bottom laggards and a horizontal relative performance chart.
+
+Update it in Themes mode to use the new endpoint:
+- Top Leaders = top 3 themes by return_pct for selected timeframe
+- Bottom Laggards = bottom 3 themes by return_pct for selected timeframe
+- Horizontal chart = sorted themes by return_pct or rs_score
+- Use display_name as the label
+- Use return_pct as the bar value
+- Use state/state_reason for tooltip or hover details
+- Keep existing colors/style as much as possible
+
+Theme chips:
+If the existing UI shows ETF chips like SMH, SOXX, QTUM, etc., update chips to represent canonical theme rows.
+For each chip:
+- label can be primary proxy symbol if short, or display_name if better
+- tooltip/detail should show display_name and proxy_symbols_used
+Avoid duplicate chips for overlapping proxies.
+
+Sector Performance / Theme ETF Baskets table:
+When in Themes mode, use the new endpoint as rows.
+
+Column mapping:
+- Rank = sorted rank
+- Ticker = primary proxy from proxy_symbols_used[0] if available, else proxy_symbols[0], else theme_id
+- Sector/Theme = display_name
+- Price = optional; if backend does not return current proxy price, leave blank, hide column, or keep existing if available from old data
+- 1D = theme 1D return if available. If current endpoint only returns selected timeframe, use selected return_pct for the active timeframe and avoid fake values.
+- 7D/30D/YTD/1Y = only show if backend response includes those values. Otherwise keep timeframe-specific view simple.
+- Score = rs_score
+- Trend = use existing mini trend if possible; otherwise hide safely
+- Status = state
+
+Important:
+Do not fabricate missing timeframe columns.
+If the backend endpoint only returns the selected timeframe, do not show wrong values in the other timeframe columns.
+Either:
+A) fetch all supported timeframes in parallel for the table, or
+B) simplify the table in Themes mode to selected timeframe + rs_score + state.
+Prefer A only if it is clean and not slow.
+Prefer B if safer.
+
+Duplicate handling:
+Do not show duplicate/overlapping rows in the same Themes section.
+Use theme_id as the unique key.
+If multiple ETFs/proxies map to the same theme, show one row with proxy_symbols_used listed in tooltip/detail.
+Examples:
+- Semiconductors should not appear separately as SMH and SOXX unless backend returns them as intentionally separate themes.
+- Uranium & Nuclear should be one theme, not URA plus Uranium separately.
+- Memory & Storage should be one theme, with DRAM/SMH/SOXX proxies if available.
+
+Preserve useful old themes:
+If the old Sectors Themes tab had themes like:
+- Quantum Computing
+- Data Center Infrastructure
+- Crypto Equities / Blockchain
+- Space Economy
+- Cloud Software
+- LNG & Natural Gas
+- Medical Devices
+- Oil Services
+
+and they are returned by the new endpoint, render them.
+If they are not returned by the new endpoint, do not re-add them in frontend. Backend should be the source of truth.
+
+Theme details:
+On row click or hover, show a compact detail popover/drawer if easy:
+- display_name
+- state
+- state_reason
+- return_pct
+- rs_score
+- rs_vs_spy
+- rs_vs_qqq
+- breadth
+- proxy_symbols_used
+- leader_universe_source
+- top leaders
+- top laggards
+
+Keep this optional and low-risk. Do not break the table for it.
+
+Loading/error behavior:
+- Show loading state while fetching.
+- If endpoint fails, show a non-breaking message and fall back to existing old theme data only if it already exists safely.
+- Do not crash the Sectors page.
+
+Validation:
+- Run build.
+- Confirm Sectors mode still works unchanged.
+- Confirm Themes mode uses /api/themes/relative-strength.
+- Confirm timeframe buttons call the matching backend timeframe.
+- Confirm no duplicate theme rows in the same section.
+- Confirm top leaders/bottom laggards populate from theme data.
+- Confirm table shows all returned canonical themes.
+- Confirm old useful theme concepts appear if backend returns them.
+- Confirm no Earnings, Options Flow, TA Screener, or backend changes.
