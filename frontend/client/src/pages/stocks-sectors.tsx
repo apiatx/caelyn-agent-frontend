@@ -1275,10 +1275,7 @@ function UnifiedThemesCard({
                   row.rs_vs_qqq != null ? ` vs QQQ: ${row.rs_vs_qqq > 0 ? "+" : ""}${row.rs_vs_qqq.toFixed(2)}%` : "",
                   row.proxy_symbols_used.length > 1 ? `\nProxies: ${row.proxy_symbols_used.join(", ")}` : "",
                 ].filter(Boolean).join(" ");
-                const tfClsActive = (c: string) =>
-                  (tf === "1D" && c === "change_1d") || (tf === "7D" && c === "change_7d") ||
-                  (tf === "30D" && c === "change_30d") || (tf === "YTD" && c === "change_ytd") ||
-                  (tf === "1Y" && c === "change_1y") ? "ring-1 ring-inset ring-white/10 bg-white/[0.03]" : "";
+                const tfClsActive = (_c: string) => "";
                 return (
                   <React.Fragment key={row.key}>
                     <tr onClick={() => setExpandedKey(prev => prev === row.key ? null : row.key)}
