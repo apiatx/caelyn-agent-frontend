@@ -208,6 +208,16 @@ function themeRelated(t: string | ThemeEntry): string[] {
   return t.related_tickers || [];
 }
 
+// Safely coerce any value (string or object) to a display string
+function safeStr(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return String(o.sector || o.ticker || o.name || o.label || '');
+  }
+  return '';
+}
+
 export function RegimeContextStrip({ context }: { context?: RegimeContextData | null }) {
   const [collapsed, setCollapsed] = useState(false);
   if (!context) return null;
@@ -302,16 +312,17 @@ export function RegimeContextStrip({ context }: { context?: RegimeContextData | 
             <div>
               <div style={{ fontFamily: T.font, fontSize: 8, color: '#38bdf8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Sector Leaders</div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
-                {leaderList.map(s => <Pill key={s} label={s} color="#38bdf8" bg="rgba(56,189,248,0.10)" />)}
+                {leaderList.map((s, i) => { const lbl = safeStr(s); return lbl ? <Pill key={lbl + i} label={lbl} color="#38bdf8" bg="rgba(56,189,248,0.10)" /> : null; })}
               </div>
             </div>
           )}
           {noteList.length > 0 && (
             <div style={{ flex: '1 1 200px' }}>
               <div style={{ fontFamily: T.font, fontSize: 8, color: '#f97316', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Risk Notes</div>
-              {noteList.map((n, i) => (
-                <div key={i} style={{ fontFamily: T.sans, fontSize: 10, color: T.dim, marginBottom: 2 }}>• {n}</div>
-              ))}
+              {noteList.map((n, i) => {
+                const txt = safeStr(n);
+                return txt ? <div key={i} style={{ fontFamily: T.sans, fontSize: 10, color: T.dim, marginBottom: 2 }}>• {txt}</div> : null;
+              })}
             </div>
           )}
         </div>

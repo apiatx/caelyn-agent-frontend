@@ -1,0 +1,107 @@
+Update the Themes page frontend for 5Y support and restore the timeframe toggle in Performance Curve view.
+
+Context:
+Backend now supports:
+GET /api/themes/relative-strength?timeframe=5Y
+
+The Themes page has 3 view modes:
+- Market Performance
+- Relative Strength
+- Performance Curve
+
+Current issue:
+The Performance Curve view removed the timeframe toggle entirely. That was not what I wanted.
+
+Correct behavior:
+Performance Curve should keep the timeframe toggle, including:
+1D / 7D / 30D / YTD / 1Y / 5Y
+
+But do not pretend it is a real date-indexed chart if the backend only provides cumulative lookback returns.
+
+Do not change backend.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not change Watchlist.
+Do not change Portfolio.
+
+Tasks:
+
+1. Add 5Y everywhere timeframe options exist
+Add 5Y to:
+- Relative Strength timeframe toggle
+- Performance Curve timeframe toggle
+- Market Performance table columns if table shows multi-timeframe columns
+- Any timeframe constants/types
+- API fetch/merge logic
+- sorting logic
+
+Timeframes should be:
+1D, 7D, 30D, YTD, 1Y, 5Y
+
+2. Market Performance view
+Keep the recent simplification:
+- Do not show the top timeframe segmented control in Market Performance view if the table already has sortable timeframe columns.
+- Add a 5Y column to the table.
+- Make 5Y sortable like 1D/7D/30D/YTD/1Y.
+- Do not remove existing table columns.
+
+3. Relative Strength view
+- Show the timeframe toggle.
+- Add 5Y.
+- Selecting 5Y should use 5Y return_pct for:
+  - top leaders
+  - bottom laggards
+  - bar chart
+  - sorting
+
+4. Performance Curve view
+Restore the timeframe toggle here.
+
+Important:
+The Performance Curve is a cross-lookback curve, not a true historical date-indexed chart.
+
+The x-axis should now be:
+1D → 7D → 30D → YTD → 1Y → 5Y
+
+The timeframe toggle should:
+- remain visible
+- include 5Y
+- highlight/emphasize the selected lookback point on the curve
+- sort/rank/default chip order by the selected lookback
+- optionally update leader/laggard emphasis if shown
+
+But:
+- do not change the x-axis to only the selected timeframe
+- do not fabricate fake historical lines
+- do not pretend these are daily historical points
+- keep the explanatory subtitle:
+  "Cumulative returns by lookback window"
+
+5. API behavior
+If the page currently fetches all timeframes in parallel for Market Performance / Performance Curve:
+- add 5Y to the fetch list.
+
+If the page only fetches selected timeframe:
+- ensure 5Y can be selected and fetched.
+
+Avoid duplicate unnecessary requests when switching between:
+- Market Performance
+- Relative Strength
+- Performance Curve
+
+6. Validation
+Run build.
+
+Confirm:
+1. 5Y appears wherever timeframe options are shown.
+2. Market Performance table has a sortable 5Y column.
+3. Market Performance still does not show the duplicate top timeframe toggle.
+4. Relative Strength has 5Y and uses it correctly.
+5. Performance Curve has the timeframe toggle restored.
+6. Performance Curve x-axis is 1D / 7D / 30D / YTD / 1Y / 5Y.
+7. Selecting 1D/7D/30D/YTD/1Y/5Y in Performance Curve changes highlighted point and sorting/emphasis.
+8. Performance Curve subtitle still makes clear this is cumulative returns by lookback window.
+9. No fake/interpolated historical charting is introduced.
+10. Themes/Sectors/All classification still works.
+11. No backend or unrelated page changes.
