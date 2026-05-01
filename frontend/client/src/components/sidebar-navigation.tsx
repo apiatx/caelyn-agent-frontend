@@ -82,7 +82,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'stocks-sectors',
-          label: 'Sectors',
+          label: 'Themes',
           icon: <Layers className="w-4 h-4" />,
           path: '/app/stocks/sectors'
         },

@@ -1,0 +1,103 @@
+Fix the Sectors page → Themes mode → Relative Strength section, set Themes as the default view, and rename the page from “Sectors” to “Themes”.
+
+Problem:
+The new canonical theme endpoint is working and returns 49 themes, but the Relative Strength chart only renders colored bars for gainers/top themes. Many theme chips are greyed out, and many themes do not appear as colored bars on the chart.
+
+Also, the page currently defaults to “Sectors” mode. I want “Themes” mode to be the default for both:
+1. Relative Strength section
+2. Sector Performance section
+
+Finally, rename the page label/title from “Sectors” to “Themes”.
+
+Do not change backend.
+Do not change Options Flow.
+Do not change Earnings.
+Do not change TA Screener.
+
+Target:
+Existing Sectors page and its existing sections:
+- Relative Strength
+- Sector Performance / Theme ETF Baskets
+- Sectors/Themes toggle
+- Sidebar/nav/page title label currently named “Sectors”
+
+Requirements:
+
+1. Rename page from “Sectors” to “Themes”
+- Update the visible page title/header from “Sectors” to “Themes”.
+- Update the sidebar/nav label from “Sectors” to “Themes” if this page appears in navigation.
+- Do not rename backend routes.
+- Do not break existing route paths unless the app already has a safe aliasing pattern.
+- Keep the existing URL/path if changing routes is risky. This is primarily a display/nav label rename.
+
+2. Make Themes mode the default
+- When the page first loads, the toggle should default to THEMES, not SECTORS.
+- This should apply to both:
+  - Relative Strength section
+  - Sector Performance section
+- If there are separate state variables for each section, both should initialize to Themes mode.
+- Users should still be able to manually switch back to Sectors mode.
+- Sectors mode should still work unchanged after switching.
+
+3. Render all themes in Relative Strength chart
+- Use every row returned by GET /api/themes/relative-strength?timeframe=<selected>
+- Do not filter out negative-return themes.
+- Do not filter out neutral/dead_zone themes.
+- Do not filter out themes just because return_pct <= 0.
+- Do not only render top leaders.
+
+4. Color all theme chips
+- Every theme chip should have a visible color.
+- Do not grey out inactive/lower-ranked themes unless the user explicitly deselects them.
+- If there is a selected/active chip concept, grey only user-deselected items, not normal themes by default.
+- Use deterministic colors by theme_id or rank so colors are stable across renders.
+
+5. Chart bars
+- Every theme should appear as a bar.
+- Positive returns should extend right from the zero line.
+- Negative returns should extend left from the zero line if the current chart supports diverging bars.
+- If the current chart cannot support left-extending negative bars, render negative bars with visible width in the negative color direction instead of hiding them.
+- Do not hide bars for negative values.
+
+6. Sorting
+- Sort themes by return_pct descending for the selected timeframe.
+- Top gainers appear first.
+- Bottom laggards still appear at the bottom with visible bars/colors.
+
+7. Axis scaling
+- Use a symmetric or min/max domain that includes both positive and negative values.
+- Example:
+  min = Math.min(0, lowest return_pct)
+  max = Math.max(0, highest return_pct)
+- Do not set chart min to 0 if that causes negative bars to disappear.
+- Do not calculate bar width with Math.max(value, 0) unless separately handling negative values.
+
+8. Top Leaders / Bottom Laggards cards
+- Keep these as top 3 and bottom 3.
+- This only affects the cards, not the full chart.
+- The full chart should still render all themes.
+
+9. Tooltip/detail
+- Keep existing tooltip behavior.
+- Tooltip should work for positive, neutral, and negative themes.
+
+10. Theme endpoint usage
+- In Themes mode, both Relative Strength and Sector Performance / Theme ETF Baskets should use:
+  GET /api/themes/relative-strength?timeframe=<selected>
+- Do not use the old /api/sectors/relative-strength?mode=themes as the primary source for Themes mode.
+- Sectors mode can keep using the old sector endpoints.
+
+Validation:
+- Run build.
+- Open the page formerly labeled “Sectors”.
+- Confirm visible page/nav label is now “Themes”.
+- Confirm the page defaults to THEMES mode for both Relative Strength and Sector Performance.
+- Confirm user can still switch to SECTORS mode.
+- Confirm Relative Strength section uses /api/themes/relative-strength.
+- Confirm Sector Performance / Theme ETF Baskets uses /api/themes/relative-strength in Themes mode.
+- Confirm all 49 themes are represented in the chart or scrollable chart area.
+- Confirm negative themes like Gold/Silver/Medical Devices, if negative, still show colored bars.
+- Confirm grey chips are not used for normal returned themes.
+- Confirm only user-deselected/disabled chips are greyed out, if that feature exists.
+- Confirm Sectors mode still works unchanged when manually selected.
+- Confirm no backend, Earnings, Options Flow, or TA Screener changes.

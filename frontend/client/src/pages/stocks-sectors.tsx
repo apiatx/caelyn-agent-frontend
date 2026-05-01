@@ -434,11 +434,11 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
 function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(themes.slice(0, 8).map(t => t.theme_id))
+    () => new Set(themes.map(t => t.theme_id))
   );
 
   useEffect(() => {
-    setSelectedIds(new Set(themes.slice(0, 8).map(t => t.theme_id)));
+    setSelectedIds(new Set(themes.map(t => t.theme_id)));
   }, [themes.length]);
 
   const toggleId = (id: string) => setSelectedIds(prev => {
@@ -473,15 +473,24 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
       .map(t => ({
         name:        t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6),
         displayName: t.display_name,
-        value:       pctForItem(t),
+        value:       pctForItem(t) ?? 0,
+        hasData:     pctForItem(t) != null,
         color:       colorMap[t.theme_id] ?? "#64748b",
         stateReason: t.state_reason ?? "",
         rsSpy:       t.rs_vs_spy,
         rsQqq:       t.rs_vs_qqq,
       }))
-      .filter((d): d is typeof d & { value: number } => d.value != null)
       .sort((a, b) => b.value - a.value);
   }, [selectedThemes, tf]);
+
+  const barDomain = useMemo((): [number, number] => {
+    const vals = barData.filter(d => d.hasData).map(d => d.value);
+    if (vals.length === 0) return [-5, 5];
+    const minV = Math.min(0, ...vals);
+    const maxV = Math.max(0, ...vals);
+    const pad = Math.max(0.5, (maxV - minV) * 0.08);
+    return [minV - pad, maxV + pad];
+  }, [barData]);
 
   const tfLabel = tf;
 
@@ -540,10 +549,10 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
       </div>
       {/* Horizontal bar chart — one bar per theme, updates on TF change */}
       {barData.length > 0 ? (
-        <div style={{ height: Math.max(180, barData.length * 22 + 16) }}>
+        <div style={{ height: Math.max(220, barData.length * 20 + 16) }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 48, left: 4, bottom: 0 }}>
-              <XAxis type="number" tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
+            <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 52, left: 4, bottom: 0 }}>
+              <XAxis type="number" domain={barDomain} tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <YAxis type="category" dataKey="name" width={44}
                 tick={{ fontSize: 9, fill: "#94a3b8", fontFamily: "monospace", fontWeight: 600 }}
@@ -553,6 +562,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
                 formatter={(v: any, _name: any, props: any) => {
                   const d = props.payload;
+                  if (!d?.hasData) return ["No data", d?.displayName ?? ""];
                   const lines: string[] = [
                     `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}% (${tfLabel})`,
                   ];
@@ -561,17 +571,17 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                   return [lines.join(" · "), d?.displayName ?? ""];
                 }}
               />
-              <ReferenceLine x={0} stroke="#374151" strokeWidth={1} />
-              <Bar dataKey="value" radius={[0, 3, 3, 0]} maxBarSize={14}>
+              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} />
+              <Bar dataKey="value" radius={[0, 3, 3, 0]} maxBarSize={13}>
                 {barData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.color} fillOpacity={0.8} />
+                  <Cell key={idx} fill={entry.hasData ? entry.color : "#1e293b"} fillOpacity={entry.hasData ? 0.85 : 0.4} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="h-[180px] flex items-center justify-center text-gray-600 text-sm">
+        <div className="h-[220px] flex items-center justify-center text-gray-600 text-sm">
           {selectedThemes.length === 0
             ? "Select themes above to compare performance"
             : `No ${tfLabel} data available`}
@@ -591,7 +601,7 @@ function RegimeSummaryHeader({ data, loading }: { data: DashboardData | undefine
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <BarChart3 className="w-5 h-5 text-teal-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Sectors</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Themes</h1>
             {data?.updated_at && (
               <span className="flex items-center gap-1 text-xs text-gray-500 ml-1">
                 <Clock className="w-3 h-3" /> Market: {fmtTs(data.updated_at)}
@@ -990,7 +1000,7 @@ function SectorPerformanceTable({
   const [sortKey, setSortKey] = useState<SortKey>("rotation_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [perfMode, setPerfMode] = useState<"sectors" | "themes">("sectors");
+  const [perfMode, setPerfMode] = useState<"sectors" | "themes">("themes");
 
   const { data: themePerfRaw, isLoading: themePerfLoading, isError: themePerfError } = useQuery<{ themes: ThemeRow[] }>({
     queryKey: ["themes-rs-canonical"],
@@ -1250,7 +1260,7 @@ function SectorRotationChart({
 }) {
   const [tf, setTf] = useState<Timeframe>("7d");
   const [themeTf, setThemeTf] = useState<ThemeTf>("7D");
-  const [rsMode, setRsMode] = useState<"sectors" | "themes">("sectors");
+  const [rsMode, setRsMode] = useState<"sectors" | "themes">("themes");
 
   const { data: themeRSRaw, isLoading: themeRSLoading, isError: themeRSError } = useQuery<{ themes: ThemeRow[] }>({
     queryKey: ["themes-rs-canonical"],
