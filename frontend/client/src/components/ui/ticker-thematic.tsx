@@ -22,11 +22,26 @@ export interface ThematicFields {
   theme_score?: number | null;
 }
 
+export interface ThemeEntry {
+  name?: string;
+  score?: number;
+  source?: string;
+  evidence?: string[];
+  related_etfs?: string[];
+  related_tickers?: string[];
+}
+
 export interface RegimeContextData {
   macro_regime?: string | null;
-  active_themes?: string[] | null;
-  emerging_themes?: string[] | null;
-  dead_zones?: string[] | null;
+  active_themes?: Array<string | ThemeEntry> | null;
+  emerging_themes?: Array<string | ThemeEntry> | null;
+  dead_zones?: Array<string | ThemeEntry> | null;
+  sector_leaders?: string[] | null;
+  sector_laggards?: string[] | null;
+  risk_notes?: string[] | null;
+  source_health?: Record<string, string> | null;
+  last_updated?: string | null;
+  snapshot_age_minutes?: number | null;
   [key: string]: unknown;
 }
 
@@ -180,13 +195,42 @@ export function ThematicSection({ fields }: { fields: ThematicFields }) {
 
 // ── RegimeContextStrip ────────────────────────────────────────────────────────
 // Compact collapsible strip above the TA/Screener results table.
+// Handles both plain-string arrays (from embedded screener regime_context)
+// and rich ThemeEntry objects (from /api/thematic-context/snapshot).
+
+function themeName(t: string | ThemeEntry): string {
+  if (typeof t === 'string') return t;
+  return t.name || '';
+}
+
+function themeRelated(t: string | ThemeEntry): string[] {
+  if (typeof t === 'string') return [];
+  return t.related_tickers || [];
+}
 
 export function RegimeContextStrip({ context }: { context?: RegimeContextData | null }) {
   const [collapsed, setCollapsed] = useState(false);
   if (!context) return null;
 
-  const { macro_regime, active_themes = [], emerging_themes = [], dead_zones = [] } = context;
-  if (!macro_regime && !active_themes.length && !emerging_themes.length && !dead_zones.length) return null;
+  const {
+    macro_regime,
+    active_themes = [],
+    emerging_themes = [],
+    dead_zones = [],
+    sector_leaders = [],
+    risk_notes = [],
+    snapshot_age_minutes,
+  } = context;
+
+  const hasContent = macro_regime || active_themes!.length || emerging_themes!.length ||
+    dead_zones!.length || sector_leaders!.length || risk_notes!.length;
+  if (!hasContent) return null;
+
+  const activeList   = (active_themes   || []).filter(t => themeName(t));
+  const emergingList = (emerging_themes || []).filter(t => themeName(t));
+  const deadList     = (dead_zones      || []).filter(t => themeName(t));
+  const leaderList   = (sector_leaders  || []).slice(0, 4);
+  const noteList     = (risk_notes      || []).slice(0, 2);
 
   return (
     <div style={{ marginBottom: 14, border: `1px solid ${T.border}`, borderRadius: 6, background: 'rgba(99,102,241,0.04)', overflow: 'hidden' }}>
@@ -198,36 +242,76 @@ export function RegimeContextStrip({ context }: { context?: RegimeContextData | 
           Macro Regime
         </span>
         {macro_regime && (
-          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.text }}>{macro_regime}</span>
+          <span style={{ fontFamily: T.sans, fontSize: 11, color: T.text, textTransform: 'capitalize' as const }}>{macro_regime}</span>
+        )}
+        {snapshot_age_minutes != null && (
+          <span style={{ fontFamily: T.font, fontSize: 8, color: T.dim }}>
+            {snapshot_age_minutes < 1 ? 'just now' : `${Math.round(snapshot_age_minutes)}m ago`}
+          </span>
         )}
         <span style={{ marginLeft: 'auto', fontFamily: T.font, fontSize: 9, color: T.dim }}>
           {collapsed ? '▸ expand' : '▾ collapse'}
         </span>
       </div>
       {!collapsed && (
-        <div style={{ display: 'flex', gap: 24, padding: '8px 14px 10px', borderTop: `1px solid ${T.border}`, flexWrap: 'wrap' as const }}>
-          {active_themes.slice(0, 3).length > 0 && (
+        <div style={{ display: 'flex', gap: 24, padding: '8px 14px 12px', borderTop: `1px solid ${T.border}`, flexWrap: 'wrap' as const }}>
+          {activeList.slice(0, 3).length > 0 && (
             <div>
               <div style={{ fontFamily: T.font, fontSize: 8, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Active Themes</div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
-                {active_themes.slice(0, 3).map(t => <Pill key={t} label={t} color="#22c55e" bg="rgba(34,197,94,0.10)" />)}
+                {activeList.slice(0, 3).map(t => {
+                  const n = themeName(t);
+                  const rel = themeRelated(t);
+                  return (
+                    <span key={n} title={rel.length ? `Tickers: ${rel.join(', ')}` : undefined}>
+                      <Pill label={n} color="#22c55e" bg="rgba(34,197,94,0.10)" />
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
-          {emerging_themes.slice(0, 2).length > 0 && (
+          {emergingList.slice(0, 3).length > 0 && (
             <div>
               <div style={{ fontFamily: T.font, fontSize: 8, color: '#f59e0b', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Emerging Themes</div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
-                {emerging_themes.slice(0, 2).map(t => <Pill key={t} label={t} color="#f59e0b" bg="rgba(245,158,11,0.10)" />)}
+                {emergingList.slice(0, 3).map(t => {
+                  const n = themeName(t);
+                  const rel = themeRelated(t);
+                  return (
+                    <span key={n} title={rel.length ? `Tickers: ${rel.join(', ')}` : undefined}>
+                      <Pill label={n} color="#f59e0b" bg="rgba(245,158,11,0.10)" />
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
-          {dead_zones.slice(0, 3).length > 0 && (
+          {deadList.slice(0, 3).length > 0 && (
             <div>
               <div style={{ fontFamily: T.font, fontSize: 8, color: '#ef4444', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Dead Zones</div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
-                {dead_zones.slice(0, 3).map(t => <Pill key={t} label={t} color="#ef4444" bg="rgba(239,68,68,0.10)" />)}
+                {deadList.slice(0, 3).map(t => {
+                  const n = themeName(t);
+                  return <Pill key={n} label={n} color="#ef4444" bg="rgba(239,68,68,0.10)" />;
+                })}
               </div>
+            </div>
+          )}
+          {leaderList.length > 0 && (
+            <div>
+              <div style={{ fontFamily: T.font, fontSize: 8, color: '#38bdf8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Sector Leaders</div>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
+                {leaderList.map(s => <Pill key={s} label={s} color="#38bdf8" bg="rgba(56,189,248,0.10)" />)}
+              </div>
+            </div>
+          )}
+          {noteList.length > 0 && (
+            <div style={{ flex: '1 1 200px' }}>
+              <div style={{ fontFamily: T.font, fontSize: 8, color: '#f97316', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Risk Notes</div>
+              {noteList.map((n, i) => (
+                <div key={i} style={{ fontFamily: T.sans, fontSize: 10, color: T.dim, marginBottom: 2 }}>• {n}</div>
+              ))}
             </div>
           )}
         </div>

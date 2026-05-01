@@ -3474,6 +3474,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Thematic Context ─────────────────────────────────────────────────
+  app.get('/api/thematic-context/snapshot', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 30000);
+      const r = await fetch(`${PB_URL}/api/thematic-context/snapshot`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'thematic-context/snapshot failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[thematic-context/snapshot] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/thematic-context/refresh', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 60000);
+      const r = await fetch(`${PB_URL}/api/thematic-context/refresh`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'thematic-context/refresh failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[thematic-context/refresh] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Options Flow Master ───────────────────────────────────────────────
+  app.get('/api/options-flow/master/latest', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 30000);
+      const qs = new URLSearchParams(req.query as Record<string,string>).toString();
+      const r = await fetch(`${PB_URL}/api/options-flow/master/latest${qs ? `?${qs}` : ''}`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'options-flow/master/latest failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[options-flow/master/latest] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/playbooks/serenity-regime', async (req, res) => {
     try {
       const ctrl = new AbortController();

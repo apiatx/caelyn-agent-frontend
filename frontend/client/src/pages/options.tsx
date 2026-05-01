@@ -35,7 +35,8 @@ import {
   Area,
   ReferenceLine,
 } from "recharts";
-import { TickerThematicBadge, ThematicSection } from "@/components/ui/ticker-thematic";
+import { TickerThematicBadge, ThematicSection, RegimeContextStrip } from "@/components/ui/ticker-thematic";
+import type { RegimeContextData } from "@/components/ui/ticker-thematic";
 
 const API_BASE = "/api/options";
 
@@ -2291,6 +2292,15 @@ function MasterScreener({
 
 // ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
+  // ── Thematic context (global macro strip) ─────────────────────────────────
+  const [thematicContext, setThematicContext] = useState<RegimeContextData | null>(null);
+  useEffect(() => {
+    fetch('/api/thematic-context/snapshot', { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.snapshot) setThematicContext(d.snapshot); })
+      .catch(() => null);
+  }, []);
+
   // ── Screener data (single fetch, all categories merged by backend) ────────
   const [screenerData, setScreenerData] = useState<any>(null);
   const [pageLoading, setPageLoading]   = useState(true);
@@ -2387,6 +2397,13 @@ export default function OptionsPage() {
         <div style={{ margin: "10px 16px 0", padding: "10px 14px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ color: C.red, fontSize: 11, fontFamily: font }}>⚠ {fetchError}</span>
           <button onClick={() => fetchScreener(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
+        </div>
+      )}
+
+      {/* Macro regime context strip */}
+      {thematicContext && (
+        <div style={{ padding: "8px 16px 0" }}>
+          <RegimeContextStrip context={thematicContext} />
         </div>
       )}
 
