@@ -1,0 +1,145 @@
+Fix the Themes page Line Graph behavior and remove the duplicate timeframe toggle from Market Performance view only.
+
+Context:
+The unified Themes page card now has 3 view modes:
+- Market Performance
+- Relative Strength
+- Line Graph
+
+The Line Graph view looks good visually, but it is wrong functionally:
+Changing the selected timeframe button between 1D / 7D / 30D / YTD / 1Y does not change the line graph. The chart is always showing the same x-axis buckets:
+1D → 7D → 30D → YTD → 1Y
+
+That means the selected timeframe toggle is meaningless in Line Graph view right now.
+
+Also:
+In Market Performance view, the timeframe button bar is duplicative because the table already has sortable 1D / 7D / 30D / YTD / 1Y columns. Remove the timeframe toggle only from Market Performance view.
+
+Do not change backend.
+Do not change Earnings.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not change Watchlist.
+Do not change Portfolio.
+
+Tasks:
+
+1. Remove timeframe toggle from Market Performance view only
+- When viewMode === "market_performance" or equivalent:
+  - Hide/remove the top timeframe segmented control: 1D / 7D / 30D / YTD / 1Y.
+  - Keep the classification toggle: Themes / Sectors / All.
+  - Keep the table columns for 1D / 7D / 30D / YTD / 1Y.
+  - Users can sort by those table headers instead.
+- Do not remove the timeframe toggle from Relative Strength view.
+- Do not remove the timeframe toggle from Line Graph view.
+
+2. Fix Line Graph so selected timeframe actually changes the chart
+The Line Graph should not always use 1D/7D/30D/YTD/1Y as the x-axis regardless of selection.
+
+Implement selected-timeframe-specific line charts.
+
+Expected behavior:
+- If selected timeframe = 1D:
+  - Show intraday or short-period line behavior if backend provides data.
+  - If backend does not provide true intraday history, show a clear fallback, but do not pretend the 1D/7D/30D/YTD/1Y cumulative buckets are a 1D chart.
+- If selected timeframe = 7D:
+  - The line graph should show performance progression across the 7-day window.
+- If selected timeframe = 30D:
+  - The line graph should show performance progression across the 30-day window.
+- If selected timeframe = YTD:
+  - The line graph should show performance progression from start of year to now.
+- If selected timeframe = 1Y:
+  - The line graph should show performance progression across the 1-year window.
+
+3. First inspect available data
+Before rewriting the chart, inspect the current frontend data objects from /api/themes/relative-strength and the old line graph implementation.
+
+Find whether rows include any historical series fields like:
+- series
+- history
+- trend
+- sparkline
+- performance_series
+- price_series
+- returns_series
+
+Also search for the previous Sectors Relative Strength line graph implementation that existed before the recent change. Reuse it if possible.
+
+4. If real series data already exists
+If the backend/frontend already has real series data:
+- Use that series for the selected timeframe.
+- X-axis should be dates or normalized time points inside the selected timeframe.
+- Y-axis should be return % from the start of that selected timeframe.
+- Changing selected timeframe must change the data series and x-axis.
+
+5. If real series data does not exist
+If /api/themes/relative-strength only provides cumulative returns for:
+1D, 7D, 30D, YTD, 1Y
+
+then do not keep pretending this is a selected-timeframe line chart.
+
+In that case, change Line Graph view behavior to one of these safer options:
+
+Preferred safe option:
+- Rename the chart internally/visually to "Performance Curve" or keep label "Line Graph" but clarify in small text:
+  "Cumulative returns by lookback window"
+- Hide/disable the timeframe toggle in Line Graph view too, because the chart already includes all lookback buckets.
+- The x-axis remains 1D / 7D / 30D / YTD / 1Y.
+- This makes the chart honest.
+
+Better option if low-risk:
+- Add a backend request only if an existing endpoint already returns per-symbol history/sparkline data.
+- Do not create new backend requirements.
+- Do not fabricate time series from cumulative returns.
+
+6. Do not fabricate fake historical lines
+Do not interpolate fake lines between:
+1D, 7D, 30D, YTD, 1Y
+and present them as actual price/strength history for the selected timeframe.
+
+If the only available data points are those five cumulative returns, then the line graph is a cross-lookback performance curve, not a selected timeframe historical chart.
+
+7. Relative Strength view behavior
+Keep the timeframe toggle in Relative Strength view.
+That view should continue to use selected timeframe return_pct for:
+- top leaders
+- bottom laggards
+- bar chart
+- sorting
+
+8. Header control behavior
+Final desired behavior:
+
+Market Performance view:
+- Show view mode toggle: Market Performance / Relative Strength / Line Graph
+- Hide timeframe toggle
+- Show classification toggle: Themes / Sectors / All
+
+Relative Strength view:
+- Show view mode toggle
+- Show timeframe toggle
+- Show classification toggle
+
+Line Graph view:
+- If real selected-timeframe series exists:
+  - Show timeframe toggle and make it change chart data
+- If no real selected-timeframe series exists:
+  - Hide timeframe toggle
+  - Treat chart as cumulative lookback performance curve
+  - Add small explanatory label
+
+9. Validation
+Run build.
+
+Confirm:
+1. Market Performance view no longer shows the top 1D/7D/30D/YTD/1Y button bar.
+2. Market Performance table still has sortable 1D/7D/30D/YTD/1Y columns.
+3. Relative Strength view still has the timeframe toggle and uses it correctly.
+4. Line Graph no longer has a meaningless timeframe toggle.
+5. If real series data exists, changing timeframe changes the plotted lines and x-axis.
+6. If real series data does not exist, Line Graph is shown as a cross-lookback performance curve and does not show the timeframe toggle.
+7. No fake/interpolated historical lines are presented as real selected-timeframe history.
+8. Themes / Sectors / All classification toggle still works in all views.
+9. No duplicate backend requests are introduced when switching views.
+10. No backend changes.
+11. No Earnings, Options Flow, TA Screener, Watchlist, or Portfolio changes.

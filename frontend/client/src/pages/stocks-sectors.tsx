@@ -302,7 +302,7 @@ function ViewModeToggle({ mode, setMode }: { mode: ViewMode; setMode: (m: ViewMo
   const opts: { val: ViewMode; label: string }[] = [
     { val: "table", label: "Market Performance" },
     { val: "rs",    label: "Relative Strength" },
-    { val: "line",  label: "Line Graph" },
+    { val: "line",  label: "Performance Curve" },
   ];
   return (
     <div className="flex items-center rounded border border-white/[0.08] bg-black/30 p-0.5 flex-shrink-0">
@@ -358,6 +358,9 @@ function LineGraphView({ themes, colorMap }: { themes: ThemeRow[]; colorMap: Rec
 
   return (
     <>
+      <p className="text-[10px] text-gray-500 mb-3 -mt-1">
+        Cumulative returns by lookback window · toggle items below to show/hide
+      </p>
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
         {themes.map((t, i) => {
           const on    = selectedIds.has(t.theme_id);
@@ -1207,7 +1210,7 @@ function UnifiedThemesCard({
 
   const titleLabel =
     viewMode === "rs"   ? "Relative Strength" :
-    viewMode === "line" ? "Line Graph" : "Market Performance";
+    viewMode === "line" ? "Performance Curve" : "Market Performance";
 
   return (
     <GlassCard className="p-4 sm:p-6 overflow-hidden">
@@ -1223,14 +1226,16 @@ function UnifiedThemesCard({
         <div className="flex items-center gap-2 flex-wrap">
           {freshness && <span className="text-[10px] text-gray-600 hidden lg:block">{freshness}</span>}
           {isLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
-          <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
-            {TF_THEME_OPTIONS.map(t => (
-              <button key={t} onClick={() => setTf(t)}
-                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
-                {t}
-              </button>
-            ))}
-          </div>
+          {viewMode === "rs" && (
+            <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
+              {TF_THEME_OPTIONS.map(t => (
+                <button key={t} onClick={() => setTf(t)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
           <ClassificationToggle cls={cls} setCls={v => { setCls(v); setExpandedKey(null); }} />
         </div>
       </div>
