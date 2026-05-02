@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import CryptoStocksSection from "@/components/crypto-stocks-section";
+import ScreenerHub from "@/components/ScreenerHub";
 
 function MarketSummaryWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,9 @@ export default function StocksScreeningPage() {
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="w-full rounded-lg overflow-hidden border border-white/[0.06] mb-4">
           <MarketSummaryWidget />
+        </div>
+        <div className="mb-4" data-testid="screener-hub-section">
+          <ScreenerHub />
         </div>
         <CryptoStocksSection />
       </main>
