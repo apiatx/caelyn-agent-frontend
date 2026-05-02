@@ -123,8 +123,10 @@ interface WeekCleanEntry {
   themeTags?: string[];
   isThemeAnchor?: boolean;
   isBottleneck?: boolean;
+  isFocus?: boolean;
   importanceScore?: number | null;
   source?: string;
+  snapshot_source?: string;
 }
 
 interface WeekCleanDay {
@@ -1132,7 +1134,8 @@ function WeeklyEarningsBoard({
             const name = e.companyName || ticker;
             const logo = e.logo || e.image || null;
             const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
-            const isFocus = !!e.isThemeAnchor
+            const isFocus = !!e.isFocus
+              || !!e.isThemeAnchor
               || !!e.isBottleneck
               || (e.importanceScore != null && e.importanceScore >= 85)
               || (topSymbols?.has(ticker) ?? false);
@@ -1399,7 +1402,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     time?: string | null;
     period?: string | null;
   }
-  const dayAllEnabled = !!selectedDayKey && selectedDayKey !== "undated";
+  // Only fire day-clean when explicitly in "all" mode; curated mode uses day-curated exclusively.
+  const dayAllEnabled = !!selectedDayKey && selectedDayKey !== "undated" && signalMode !== "curated";
   const {
     data: dayCleanRaw,
     isLoading: dayCleanLoading,
@@ -1758,7 +1762,7 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
               const name = e.companyName || ticker;
               const logo = e.logo || e.image || identityMap[ticker]?.logo || null;
               const pct = e.priceChangePct != null ? Number(e.priceChangePct) : null;
-              const isFocus = !!e.isThemeAnchor || !!e.isBottleneck || (e.importanceScore != null && e.importanceScore >= 85) || idx < 3;
+              const isFocus = !!e.isFocus || !!e.isThemeAnchor || !!e.isBottleneck || (e.importanceScore != null && e.importanceScore >= 85) || idx < 3;
               const tag = e.themeTags && e.themeTags.length > 0 ? e.themeTags[0] : null;
               const qualifier = e.isThemeAnchor ? "Anchor" : e.isBottleneck ? "Bottleneck" : null;
               const reason = tag ? (qualifier ? `${tag} · ${qualifier}` : tag) : qualifier || (e.marketCapBucket && e.marketCapBucket.toLowerCase() !== "unknown" ? e.marketCapBucket.charAt(0).toUpperCase() + e.marketCapBucket.slice(1) + " cap" : null);
@@ -6610,7 +6614,8 @@ export default function StocksEarningsCalendarPage() {
       if (!r.ok) throw new Error(`${r.status}`);
       return r.json();
     },
-    enabled: activeTab === "earnings_dates" && earningsMode === "thisweek",
+    // Don't fire alongside week-all when signalMode is "all"
+    enabled: activeTab === "earnings_dates" && earningsMode === "thisweek" && earningsSignalMode !== "all",
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,

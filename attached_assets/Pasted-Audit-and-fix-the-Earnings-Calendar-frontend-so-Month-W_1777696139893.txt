@@ -1,0 +1,96 @@
+Audit and fix the Earnings Calendar frontend so Month / Week / Day views use the backend snapshot responses efficiently.
+
+Problem:
+Backend now has disk-backed curated weekly earnings snapshots and month view should be composed from snapshots. But frontend Month and Day toggles are still slow.
+
+Goal:
+The Earnings Calendar frontend should fetch snapshot-backed data once per needed range and render Month / Week / Day views from that data without triggering unnecessary requests or waiting on live enrichment.
+
+Do not change backend.
+Do not change Themes page.
+Do not change Options Flow.
+Do not change TA Screener.
+Do not change Watchlist.
+Do not change Portfolio.
+Do not change Chain Reaction.
+
+Tasks:
+
+1. Audit current endpoint usage
+Find the Earnings Calendar page/components and report:
+- endpoint called on initial page load
+- endpoint called when switching Week view
+- endpoint called when switching Day view
+- endpoint called when switching Month view
+- whether it calls one endpoint per day
+- whether it calls one endpoint per week
+- whether it calls month endpoint once
+- whether it calls old/legacy endpoints
+- whether it triggers admin/rebuild/refresh endpoint accidentally
+
+Search:
+- earnings
+- calendar
+- week-clean
+- day-clean
+- month
+- snapshot
+- catalysts/earnings
+- rebuild-week
+- refresh
+- Focus
+- isFocus
+
+2. Correct data flow
+Use backend snapshot-backed data as the source of truth.
+
+Expected UI behavior:
+- Month view should request month/range data once, or request the required weekly snapshots once, then group locally.
+- Week view should use the selected week snapshot.
+- Day view should filter the selected date from the already-loaded week/month snapshot when possible.
+- Switching Month → Week → Day should not trigger live rebuilds.
+- Switching views should not refetch if data for that range is already loaded.
+
+3. Avoid request explosions
+Do not do:
+- one request per calendar cell
+- one request per day across the month
+- repeated calls when toggling views
+- admin rebuild calls from normal UI
+- force refresh on normal tab/view switch
+
+4. Use snapshot metadata
+If backend response includes source/snapshot_source/duration/cache flags, display or log them lightly.
+Do not block rendering because snapshot is stale if valid rows exist.
+
+5. Loading behavior
+- Show loading only while first data request is in flight.
+- If month has partial snapshot data, render available days and show a subtle “updating” state.
+- Do not keep the whole month blank while waiting for missing weeks to rebuild.
+
+6. Date alignment
+Verify:
+- week start/end matches backend canonical Mon–Fri weeks
+- day view filters by the same date format backend returns
+- month view does not accidentally shift dates due to timezone
+- Friday cells are not skipped unless backend returns zero rows for that date
+
+7. Focus rendering
+Confirm:
+- isFocus is read from backend
+- Focus labels render if isFocus=true
+- frontend does not recompute or hide Focus rows
+
+8. Validation
+Run build.
+
+Then validate:
+- Initial Earnings Calendar load is fast.
+- Month view loads using snapshot-backed endpoint/data.
+- Week view loads quickly.
+- Day view loads quickly.
+- Switching views does not trigger repeated network calls.
+- No calls to admin/rebuild endpoints during normal UI use.
+- SIMO appears on Apr 28, 2026 if backend returns it.
+- Focus labels appear.
+- Friday dates show backend-returned events if present.
