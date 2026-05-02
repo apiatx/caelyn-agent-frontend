@@ -3934,5 +3934,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Caelyn Screener Hub ─────────────────────────────────────────────────────
+  // Proxies /api/screener-hub/* to the backend. First request after restart can
+  // take 30–60 s while the Tradier quote cache warms on-demand; use 90 s timeout.
+  const SH_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const SH_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+  const shHdr  = () => ({ 'X-API-Key': SH_KEY, 'Content-Type': 'application/json' });
+
+  app.get('/api/screener-hub/themes', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    try {
+      const r = await fetch(`${SH_URL}/api/screener-hub/themes`, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
+  app.get('/api/screener-hub', async (req, res) => {
+    const ctrl = new AbortController();
+    // 90 s to handle cold-cache Tradier warm-up on first request after restart
+    const timer = setTimeout(() => ctrl.abort(), 90_000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const url = `${SH_URL}/api/screener-hub${qs ? `?${qs}` : ''}`;
+      const r = await fetch(url, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out — quote cache warming, please retry' : (e?.message || 'Fetch failed') });
+    }
+  });
+
+  app.get('/api/admin/screener-hub/status', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15_000);
+    try {
+      const r = await fetch(`${SH_URL}/api/admin/screener-hub/status`, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
   return httpServer;
 }

@@ -53,7 +53,7 @@ const COLUMNS: Array<{ key: string; label: string; numeric?: boolean; aliases?: 
   { key: "rs_4w", label: "RS 0-4W", numeric: true, aliases: ["rs0_4w", "rs4w"] },
   { key: "rs_10w", label: "RS 0-10W", numeric: true, aliases: ["rs0_10w", "rs10w"] },
   { key: "rs_accel", label: "RS Accel", numeric: true, aliases: ["rs_acceleration", "accel"] },
-  { key: "from_52w_high", label: "52W High", numeric: true, aliases: ["pct_from_52w_high", "from52wHigh"] },
+  { key: "from_52w_high", label: "52W High", numeric: true, aliases: ["pct_from_52w_high", "from52wHigh", "distance_52w_high", "dist52whigh"] },
   { key: "volume_surge", label: "Vol Surge", numeric: true, aliases: ["vol_surge", "volSurge"] },
   { key: "accumulation", label: "Accumulation", numeric: true, aliases: ["accum"] },
   { key: "coc", label: "CoC", aliases: ["coc_signal", "change_of_character"] },

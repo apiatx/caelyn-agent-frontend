@@ -1,0 +1,66 @@
+Pull latest main.
+
+Do not create branches.
+Do not open PRs.
+Do not modify unrelated functionality.
+
+This is only to validate and, only if necessary, minimally fix the Screener Hub frontend integration against the already-working backend.
+
+Backend validation already completed:
+- /api/screener-hub/themes returns 55 themes and now includes id + label fields.
+- /api/screener-hub?tab=thematic&theme=clean_energy returns 60 rows.
+- /api/screener-hub?tab=social returns 32 rows.
+- /api/screener-hub?tab=bottlenecks returns 85 rows.
+- /api/screener-hub?tab=watchlist_portfolio returns 125 rows.
+- /api/admin/screener-hub/status returns ok.
+- Neon tables exist and migration is applied.
+
+Important known backend behavior:
+The first request to a Screener Hub tab after backend restart can take 30–60 seconds because Tradier quote cache warms on-demand. Subsequent requests are faster. The frontend must not treat this as a permanent failure or blank the component.
+
+Tasks:
+1. Pull latest main.
+2. Run frontend build.
+3. Open the Screener page.
+4. Confirm the new Caelyn Screener Hub appears between:
+   - the top TradingView ticker tape / market summary area
+   - the existing TradingView screener widget
+5. Confirm existing TradingView widgets still render.
+6. Confirm default tab is Thematic.
+7. Confirm default theme selection works using backend theme id/label fields.
+   - Prefer Semiconductors if present.
+   - Otherwise Clean Energy.
+   - Otherwise first returned theme.
+8. Confirm Thematic tab calls backend with theme id format, for example:
+   /api/screener-hub?tab=thematic&theme=clean_energy
+   not:
+   /api/screener-hub?tab=thematic&theme=Clean%20Energy
+9. Confirm tabs work:
+   - Thematic
+   - Social
+   - Bottlenecks
+   - Watchlist+Portfolio
+10. Confirm category filters work:
+   - Show all
+   - Leading
+   - Improving
+   - Weakening
+   - Lagging
+11. Confirm score sorting works.
+12. Confirm copy-to-clipboard works if implemented.
+13. Confirm missing/null fields do not crash or blank the table.
+14. Confirm slow cold-cache responses show a loading or warming state, not a blank/broken table.
+15. Confirm frontend only calls backend Screener Hub endpoints and does not call FMP or Tradier directly.
+
+Only make minimal fixes if something is broken. Do not redesign the page. Do not touch unrelated pages, Social page, Chain Reaction page, Watchlist, Portfolio, or global quote logic.
+
+Return:
+- pull status
+- frontend build result
+- Screener page render result
+- whether Thematic uses clean theme ids like clean_energy
+- tab validation results
+- loading/cold-cache behavior result
+- any minimal fixes made
+- commit hash if any frontend fix was committed
+- remaining issues
