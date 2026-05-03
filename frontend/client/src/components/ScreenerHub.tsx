@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, BarChart2, X } from "lucide-react";
 
 type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio";
 
@@ -177,22 +177,20 @@ const SIGNAL_TO_COLUMN: Record<SignalKey, string> = {
   volume_surge: "volume_surge",
 };
 
-// ── TradingView chart row ────────────────────────────────────────────────────
-// Renders an expandable full-width row with a TradingView advanced chart.
-// The iframe src is set lazily on first open to avoid loading all charts at once.
-function TvChartRow({ symbol, colSpan }: { symbol: string; colSpan: number }) {
+// ── TradingView chart modal ───────────────────────────────────────────────────
+// Fixed popup overlay that renders a TradingView advanced chart for the given
+// symbol. The iframe src is set lazily on first mount. Closes on backdrop click
+// or Escape key.
+function TvChartModal({ symbol, onClose }: { symbol: string; onClose: () => void }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
     const iframe = iframeRef.current;
     if (!iframe) return;
     const params = new URLSearchParams({
       locale: "en",
       width: "100%",
-      height: "420",
+      height: "100%",
       interval: "D",
       range: "3M",
       style: "1",
@@ -210,13 +208,77 @@ function TvChartRow({ symbol, colSpan }: { symbol: string; colSpan: number }) {
     iframe.src = `https://s.tradingview.com/embed-widget/advanced-chart/?${params.toString()}`;
   }, [symbol]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <tr>
-      <td
-        colSpan={colSpan}
-        style={{ padding: 0, background: "rgba(7,3,16,0.97)", borderTop: "1px solid rgba(168,85,247,0.18)" }}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        background: "rgba(0,0,0,0.72)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 1100,
+          height: "min(680px, calc(100vh - 80px))",
+          background: "#070310",
+          borderRadius: 12,
+          border: "1px solid rgba(168,85,247,0.35)",
+          boxShadow: "0 8px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(168,85,247,0.15)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
       >
-        <div style={{ width: "100%", height: 420, overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 16px",
+          borderBottom: "1px solid rgba(168,85,247,0.2)",
+          flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 15, color: "#e2d9f3", letterSpacing: "0.02em" }}>
+            {symbol}
+          </span>
+          <button
+            onClick={onClose}
+            title="Close chart"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 6,
+              color: "rgba(255,255,255,0.7)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 28,
+              height: 28,
+              padding: 0,
+            }}
+          >
+            <X style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+
+        {/* Chart */}
+        <div style={{ flex: 1, overflow: "hidden" }}>
           <iframe
             ref={iframeRef}
             title={`Chart ${symbol}`}
@@ -225,8 +287,8 @@ function TvChartRow({ symbol, colSpan }: { symbol: string; colSpan: number }) {
             sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
           />
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -401,19 +463,18 @@ export default function ScreenerHub() {
     }
   };
 
-  const renderCell = (row: RowData, c: (typeof COLUMNS)[number], expanded?: boolean, onToggle?: () => void) => {
+  const renderCell = (row: RowData, c: (typeof COLUMNS)[number], onOpenChart?: () => void) => {
     const v = getField(row, c.key, c.aliases);
     if (c.key === "symbol") {
       const sym = String(v ?? "—");
-      const Caret = expanded ? ChevronUp : ChevronDown;
       return (
         <button
-          onClick={onToggle}
+          onClick={onOpenChart}
           className="flex items-center gap-1.5 font-semibold text-white hover:text-purple-300 transition-colors group"
-          title={expanded ? `Hide chart for ${sym}` : `Show chart for ${sym}`}
+          title={`Open chart for ${sym}`}
         >
           {sym}
-          <Caret className="w-3.5 h-3.5 text-purple-400/60 group-hover:text-purple-300 flex-shrink-0" />
+          <BarChart2 className="w-3 h-3 text-purple-400/50 group-hover:text-purple-300 flex-shrink-0" />
         </button>
       );
     }
@@ -761,19 +822,13 @@ export default function ScreenerHub() {
                         </tr>
                       </tbody>
                     ) : (
-                      /* Each row group is its own <tbody> — valid HTML5, lets the chart
-                         row be a sibling of the data row inside the same section. */
-                      sortedRows.map((row, i) => {
-                        const sym = (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`;
-                        const isExpanded = expandedSymbol === sym;
-                        const toggle = () => setExpandedSymbol(isExpanded ? null : sym);
-                        return (
-                          <tbody key={sym} data-testid={i === 0 ? "screener-hub-tbody" : undefined}>
+                      <tbody data-testid="screener-hub-tbody">
+                        {sortedRows.map((row, i) => {
+                          const sym = (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`;
+                          return (
                             <tr
-                              className={classNames(
-                                "border-t border-white/5 hover:bg-purple-500/5 transition-colors",
-                                isExpanded && "bg-purple-950/20",
-                              )}
+                              key={sym}
+                              className="border-t border-white/5 hover:bg-purple-500/5 transition-colors"
                             >
                               {visibleColumns.map((c) => (
                                 <td
@@ -781,16 +836,13 @@ export default function ScreenerHub() {
                                   className="px-3 py-2 whitespace-nowrap text-white/90"
                                   data-testid={`screener-hub-cell-${c.key}-${i}`}
                                 >
-                                  {renderCell(row, c, isExpanded, toggle)}
+                                  {renderCell(row, c, c.key === "symbol" ? () => setExpandedSymbol(sym) : undefined)}
                                 </td>
                               ))}
                             </tr>
-                            {isExpanded && (
-                              <TvChartRow symbol={sym} colSpan={visibleColumns.length} />
-                            )}
-                          </tbody>
-                        );
-                      })
+                          );
+                        })}
+                      </tbody>
                     )}
                   </table>
                 </div>
@@ -805,6 +857,13 @@ export default function ScreenerHub() {
           ))}
         </Tabs>
       </div>
+
+      {expandedSymbol && (
+        <TvChartModal
+          symbol={expandedSymbol}
+          onClose={() => setExpandedSymbol(null)}
+        />
+      )}
     </Card>
   );
 }
