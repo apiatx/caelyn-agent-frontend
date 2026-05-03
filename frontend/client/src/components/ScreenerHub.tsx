@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 
 type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio";
 
@@ -177,6 +177,59 @@ const SIGNAL_TO_COLUMN: Record<SignalKey, string> = {
   volume_surge: "volume_surge",
 };
 
+// ── TradingView chart row ────────────────────────────────────────────────────
+// Renders an expandable full-width row with a TradingView advanced chart.
+// The iframe src is set lazily on first open to avoid loading all charts at once.
+function TvChartRow({ symbol, colSpan }: { symbol: string; colSpan: number }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const params = new URLSearchParams({
+      locale: "en",
+      width: "100%",
+      height: "420",
+      interval: "D",
+      range: "3M",
+      style: "1",
+      toolbar_bg: "%23070310",
+      enable_publishing: "false",
+      withdateranges: "true",
+      hide_side_toolbar: "false",
+      allow_symbol_change: "false",
+      calendar: "false",
+      theme: "dark",
+      timezone: "exchange",
+      hide_top_toolbar: "false",
+      symbol,
+    });
+    iframe.src = `https://s.tradingview.com/embed-widget/advanced-chart/?${params.toString()}`;
+  }, [symbol]);
+
+  return (
+    <tr>
+      <td
+        colSpan={colSpan}
+        style={{ padding: 0, background: "rgba(7,3,16,0.97)", borderTop: "1px solid rgba(168,85,247,0.18)" }}
+      >
+        <div style={{ width: "100%", height: 420, overflow: "hidden" }}>
+          <iframe
+            ref={iframeRef}
+            title={`Chart ${symbol}`}
+            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+          />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export default function ScreenerHub() {
   const [tab, setTab] = useState<TabKey>("thematic");
   const [themes, setThemes] = useState<ThemeOption[]>([]);
@@ -204,6 +257,7 @@ export default function ScreenerHub() {
   const [sortKey, setSortKey] = useState<string>("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [copied, setCopied] = useState<boolean>(false);
+  const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
   const themeBootstrappedRef = useRef<boolean>(false);
 
   // Load themes
@@ -347,11 +401,21 @@ export default function ScreenerHub() {
     }
   };
 
-  const renderCell = (row: RowData, c: (typeof COLUMNS)[number]) => {
+  const renderCell = (row: RowData, c: (typeof COLUMNS)[number], expanded?: boolean, onToggle?: () => void) => {
     const v = getField(row, c.key, c.aliases);
     if (c.key === "symbol") {
-      const sym = v ?? "—";
-      return <span className="font-semibold text-white">{String(sym)}</span>;
+      const sym = String(v ?? "—");
+      const Caret = expanded ? ChevronUp : ChevronDown;
+      return (
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-1.5 font-semibold text-white hover:text-purple-300 transition-colors group"
+          title={expanded ? `Hide chart for ${sym}` : `Show chart for ${sym}`}
+        >
+          {sym}
+          <Caret className="w-3.5 h-3.5 text-purple-400/60 group-hover:text-purple-300 flex-shrink-0" />
+        </button>
+      );
     }
     if (c.key === "history") {
       // Show a tiny placeholder/sparkline marker if backend provides any history hint
@@ -657,8 +721,9 @@ export default function ScreenerHub() {
                         })}
                       </tr>
                     </thead>
-                    <tbody data-testid="screener-hub-tbody">
-                      {loading && rows.length === 0 ? (
+                    {/* Loading / error / empty — single tbody */}
+                    {(loading && rows.length === 0) ? (
+                      <tbody data-testid="screener-hub-tbody">
                         <tr>
                           <td
                             colSpan={visibleColumns.length}
@@ -670,7 +735,9 @@ export default function ScreenerHub() {
                             </span>
                           </td>
                         </tr>
-                      ) : error ? (
+                      </tbody>
+                    ) : error ? (
+                      <tbody data-testid="screener-hub-tbody">
                         <tr>
                           <td
                             colSpan={visibleColumns.length}
@@ -680,7 +747,9 @@ export default function ScreenerHub() {
                             {error}
                           </td>
                         </tr>
-                      ) : sortedRows.length === 0 ? (
+                      </tbody>
+                    ) : sortedRows.length === 0 ? (
+                      <tbody data-testid="screener-hub-tbody">
                         <tr>
                           <td
                             colSpan={visibleColumns.length}
@@ -690,27 +759,39 @@ export default function ScreenerHub() {
                             No results.
                           </td>
                         </tr>
-                      ) : (
-                        sortedRows.map((row, i) => (
-                          <tr
-                            key={
-                              (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`
-                            }
-                            className="border-t border-white/5 hover:bg-purple-500/5"
-                          >
-                            {visibleColumns.map((c) => (
-                              <td
-                                key={c.key}
-                                className="px-3 py-2 whitespace-nowrap text-white/90"
-                                data-testid={`screener-hub-cell-${c.key}-${i}`}
-                              >
-                                {renderCell(row, c)}
-                              </td>
-                            ))}
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
+                      </tbody>
+                    ) : (
+                      /* Each row group is its own <tbody> — valid HTML5, lets the chart
+                         row be a sibling of the data row inside the same section. */
+                      sortedRows.map((row, i) => {
+                        const sym = (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`;
+                        const isExpanded = expandedSymbol === sym;
+                        const toggle = () => setExpandedSymbol(isExpanded ? null : sym);
+                        return (
+                          <tbody key={sym} data-testid={i === 0 ? "screener-hub-tbody" : undefined}>
+                            <tr
+                              className={classNames(
+                                "border-t border-white/5 hover:bg-purple-500/5 transition-colors",
+                                isExpanded && "bg-purple-950/20",
+                              )}
+                            >
+                              {visibleColumns.map((c) => (
+                                <td
+                                  key={c.key}
+                                  className="px-3 py-2 whitespace-nowrap text-white/90"
+                                  data-testid={`screener-hub-cell-${c.key}-${i}`}
+                                >
+                                  {renderCell(row, c, isExpanded, toggle)}
+                                </td>
+                              ))}
+                            </tr>
+                            {isExpanded && (
+                              <TvChartRow symbol={sym} colSpan={visibleColumns.length} />
+                            )}
+                          </tbody>
+                        );
+                      })
+                    )}
                   </table>
                 </div>
               </div>
