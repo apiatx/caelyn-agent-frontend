@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves, LogOut, FlaskConical, Home } from "lucide-react";
+import { Activity, BarChart3, TrendingUp, ChartLine, Brain, Zap, DollarSign, Building2, Layers, Coins, ChevronRight, ChevronDown, ChevronLeft, Wallet, Users, MessageSquare, Rocket, Globe, ArrowLeftRight, Search, Menu, X, Gamepad2, Gem, CalendarDays, Settings, Info, Newspaper, ScrollText, Monitor, Eye, Waves, LogOut, FlaskConical, Home, LayoutGrid } from "lucide-react";
 import { useLocation } from "wouter";
 import caelynLogo from "@assets/ChatGPT_Image_Feb_20,_2026,_01_10_21_AM_1771571543846.png";
 import { SettingsModal } from "@/pages/settings";
@@ -143,6 +143,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           label: 'Portfolio',
           icon: <Monitor className="w-4 h-4" />,
           path: '/app/caelyn-terminal'
+        },
+        {
+          id: 'multicharts',
+          label: 'MultiCharts',
+          icon: <LayoutGrid className="w-4 h-4" />,
+          path: '/app/multicharts'
         },
       ]
     },

@@ -1,0 +1,176 @@
+Implement a new frontend-only MultiCharts page using TradingView chart embeds/widgets.
+
+Goal:
+Create a true multi-chart workspace similar to Dexscreener’s multichart page, but using TradingView charts. This must be frontend only. Do not create or modify backend endpoints. Do not touch unrelated pages.
+
+Repository rules:
+- Work on main.
+- Do not create branches.
+- Do not create PRs.
+- Keep the change scoped to the frontend UI only.
+- Commit and push directly to main when complete.
+
+Feature requirements:
+
+1. New page
+- Add a new page called MultiCharts.
+- Add it to the left sidebar navigation.
+- Place it near the trading/market pages, ideally around Watchlist / Options Flow / Fundamentals depending on current sidebar structure.
+- Route should be something like:
+  /multicharts
+
+2. Layout
+- The page should look like a professional trading dashboard.
+- Dark theme, consistent with the current CaelynAI UI.
+- Top control bar should include:
+  - Manage tabs / saved views
+  - Active tab name
+  - Add tab
+  - Rename tab
+  - Delete tab
+  - Columns selector: 1, 2, 3, 4 across
+  - Add chart button
+  - Optional compact chart height selector
+  - Clear current tab button
+
+3. Multi-chart grid
+- User can configure charts across:
+  - 1 column
+  - 2 columns
+  - 3 columns
+  - 4 columns
+- Maximum 15 charts per tab.
+- Default state should show one empty chart slot ready for a ticker.
+- User can add another chart slot by clicking Add Chart or an empty box next to/below the existing chart.
+- Charts should resize responsively based on selected column count.
+- Use CSS grid:
+  grid-template-columns should change based on selected columns.
+- Chart cards should be clean and compact, similar to Dexscreener’s multi-chart layout.
+
+4. TradingView chart behavior
+- Each chart slot starts blank with an input field / placeholder:
+  “Enter ticker, e.g. NASDAQ:NVDA, NYSE:PLTR, AMEX:SPY, BINANCE:BTCUSDT”
+- Once the user enters a ticker and presses Enter or clicks Load, render a TradingView chart iframe/widget for that symbol.
+- The symbol stays saved indefinitely until the user changes it or deletes that chart.
+- Each chart card should have:
+  - Ticker input/edit field
+  - Load / update behavior
+  - Delete chart button
+  - TradingView iframe once symbol exists
+- Do not make backend calls for symbol validation.
+- Do not block the UI if a symbol is invalid. TradingView can handle invalid symbols inside the iframe.
+
+5. TradingView embed implementation
+Use TradingView iframe embeds, not backend APIs.
+
+Recommended iframe format:
+
+https://s.tradingview.com/widgetembed/?frameElementId=tradingview_{id}&symbol={ENCODED_SYMBOL}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=1e222d&studies=[]&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hideideas=1&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=caelyn.ai&utm_medium=widget&utm_campaign=chart
+
+Important:
+- The ticker should be user-editable inside our UI.
+- The TradingView iframe should allow the user to interact with the chart.
+- It is okay if TradingView also allows changing symbol inside the widget, but our saved state should only update when the user changes the ticker in our UI.
+- Default interval should be Daily.
+- Keep chart interval independent inside TradingView if the user changes it.
+
+6. Saved views / tabs
+- Users should be able to create multiple MultiChart tabs/views.
+- Each tab stores:
+  - id
+  - name
+  - columns
+  - charts array
+    - chart id
+    - symbol
+- Example:
+  {
+    id: "default",
+    name: "Main Tab",
+    columns: 2,
+    charts: [
+      { id: "chart-1", symbol: "NASDAQ:NVDA" },
+      { id: "chart-2", symbol: "AMEX:SPY" }
+    ]
+  }
+
+7. Persistence
+- Since this is frontend only, persist everything in localStorage.
+- Use a stable key like:
+  caelyn_multicharts_views_v1
+- State must survive:
+  - page refresh
+  - logout/login on same browser
+  - browser close/reopen
+- Do not use backend persistence yet.
+
+8. Default state
+If localStorage has no saved data, initialize with:
+- One tab named “Main Tab”
+- columns: 2
+- one empty chart slot
+- maxCharts: 15
+
+9. UX details
+- Empty chart card should look intentional, not broken.
+- Add Chart button should be disabled once there are 15 charts in the active tab.
+- Delete chart should remove only that chart from the active tab.
+- Clear tab should remove all charts from active tab and reset to one empty slot.
+- Delete tab should require that at least one tab remains.
+- Rename tab can be inline or prompt-based; keep it simple.
+- Add tab should create a fresh blank tab:
+  “New Tab”
+  columns: 2
+  charts: one empty slot
+- Switching tabs should immediately show that tab’s saved chart grid.
+- Changing columns should save immediately.
+
+10. Files to inspect first
+Before coding, inspect the existing frontend structure:
+- router setup
+- sidebar/nav component
+- page folder structure
+- existing dashboard styling/components
+- any reusable card/button/input/select components
+
+Likely files may include:
+- frontend/client/src/App.tsx
+- frontend/client/src/components/sidebar*
+- frontend/client/src/components/layout*
+- frontend/client/src/pages/*
+- frontend/client/src/lib/*
+But inspect first and use the actual project structure.
+
+11. Implementation preference
+Create a dedicated page component, for example:
+frontend/client/src/pages/multicharts.tsx
+
+If helpful, create a small local utility/hook inside the same file:
+- loadViews()
+- saveViews()
+- createDefaultViews()
+- buildTradingViewUrl(symbol, chartId)
+
+Keep this feature self-contained. Avoid large shared refactors.
+
+12. Validation
+After implementation:
+- Run npm build for the frontend.
+- Confirm /multicharts loads.
+- Confirm sidebar link works.
+- Confirm default one empty chart slot appears.
+- Add ticker NASDAQ:NVDA and confirm TradingView chart renders.
+- Add second chart AMEX:SPY and confirm both render.
+- Change columns 1/2/3/4 and confirm layout updates.
+- Refresh browser and confirm saved tickers/tabs persist.
+- Add a second tab and confirm it has separate chart state.
+- Rename/delete tab works.
+- Delete chart works.
+- Clear tab works.
+- Confirm no backend changes were made.
+
+13. Commit
+Commit with message:
+Add frontend MultiCharts TradingView workspace
+
+Then push to origin main.
