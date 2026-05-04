@@ -1,0 +1,208 @@
+Keep this scoped to the Screener page / Screener Hub component.
+Do not change backend.
+Do not change TradingView widgets.
+Do not change Social, Watchlist, Portfolio, Chain Reaction, Options Flow, or Fundamentals pages.
+
+Goal:
+Clean up the Screener Hub UI so the Thematic tab displays the new simplified backend row shape and removes unnecessary historical/RS clutter.
+
+Current product direction:
+Thematic Screener is a clean hidden-gem / supply-chain discovery table. It should not look like a historical performance table.
+
+Important:
+Thematic is separate from Watchlist + Portfolio.
+Do not show watchlist/portfolio overlap labels, badges, sources, roles, or columns in the Thematic tab.
+Watchlist + Portfolio belongs only in its own tab.
+
+Placement:
+Keep Screener Hub where it already is:
+between the top TradingView ticker tape/market summary area and the existing TradingView screener widget.
+
+Tabs:
+Keep:
+- Thematic
+- Social
+- Bottlenecks
+- Watchlist + Portfolio
+
+For now, apply the clean column set primarily to Thematic. Do not break the other tabs.
+
+Part 1 — Thematic visible columns
+
+For Thematic tab, display these columns:
+
+1. Symbol
+2. Company Name
+3. Market Cap
+4. Sector
+5. Industry
+6. Beta
+7. Price
+8. 1D %
+9. Last Annual Dividend
+10. Volume
+11. Dollar Volume
+12. Vol / Market Cap
+13. Exchange
+14. Vol Surge
+15. Accumulation
+16. Options OI
+17. OI Change
+18. Options Activity
+19. Role
+20. Score
+
+Remove/hide these from Thematic:
+- RS 0-2W
+- RS 0-4W
+- RS 0-10W
+- RS Accel
+- 52W High
+- 7D %
+- 30D %
+- YTD %
+- 1Y %
+- Market Cap Bucket
+- Country
+- Exchange Short Name
+- Is ETF
+- Is Fund
+- Is Actively Trading
+- Watchlist
+- Portfolio
+- Watchlist Overlap
+- Watchlist + Portfolio
+- discovery source badges that say watchlist/portfolio
+
+ETFs/funds/inactive names should already be excluded by backend, so no need to show those columns.
+
+Part 2 — Formatting
+
+Use clean formatting:
+- Market Cap: compact currency, e.g. $4.2B, $850M
+- Price: currency
+- 1D %: percent with +/-
+- Beta: 2 decimals
+- Last Annual Dividend: currency or —
+- Volume: compact number
+- Dollar Volume: compact currency
+- Vol / Market Cap: percent or bps-style percent, whichever is readable
+- Vol Surge: numeric multiplier, e.g. 2.1x, or —
+- Accumulation: checkmark/yes/no or simple badge
+- Options OI: compact number
+- OI Change: percent or number depending backend field
+- Options Activity: numeric score or —
+- Score: numeric pill/badge
+
+Part 3 — Sorting
+
+Default sort for Thematic:
+- Score / hidden_gem_score descending
+
+Allow sortable columns at minimum:
+- Symbol
+- Market Cap
+- Industry
+- Beta
+- Price
+- 1D %
+- Volume
+- Dollar Volume
+- Vol / Market Cap
+- Vol Surge
+- Options OI
+- Options Activity
+- Score
+
+Part 4 — Filters / controls
+
+Keep existing:
+- Theme dropdown
+- Category buttons only if still useful
+- Score mode toggle if still wired
+
+Remove or hide Thematic controls that correspond to removed/unused fields:
+- RS 0-2W
+- RS 0-4W
+- RS 0-10W
+- RS Accel
+- % from 52W High
+- CoC filter, unless it is still meaningful and backed by data
+
+Keep signal controls only if they map to visible/current fields:
+- Vol Surge
+- Accumulation
+- Options Activity if available
+- Score mode
+
+Do not break other tabs if they still use older fields.
+
+Part 5 — Defensive parsing
+
+Frontend should read backend aliases safely:
+
+- company_name OR companyName
+- market_cap OR marketCap
+- last_annual_dividend OR lastAnnualDividend
+- dollar_volume OR dollarVolume
+- volume_to_market_cap OR volumeToMarketCap
+- change_percent_1d OR changePercent1d OR oneDayChange
+- volume_surge OR vol_surge
+- options_oi OR optionsOi
+- options_oi_change OR optionsOiChange
+- options_activity_score OR optionsActivityScore
+- hidden_gem_score OR score
+
+If a field is null/missing, show —
+Do not crash or blank table.
+
+Part 6 — Loading behavior
+
+The page should:
+- show loading state on first load
+- preserve old rows while refreshing if possible
+- never blank the whole component because one row has missing fields
+- handle partial/empty backend response gracefully
+- show backend message/error_code only subtly if needed
+
+Part 7 — API usage
+
+Frontend must only call backend Screener Hub endpoints:
+- /api/screener-hub/themes
+- /api/screener-hub?tab=...
+
+No direct FMP calls.
+No direct Tradier calls.
+No direct options provider calls.
+
+Part 8 — Validation
+
+Run frontend build.
+
+Validate Screener page:
+1. Thematic tab loads.
+2. Theme dropdown works.
+3. Semiconductors displays the clean columns above.
+4. Semiconductors Thematic does not show Watchlist/Portfolio labels, roles, badges, or sources.
+5. Drones does not 502 or crash.
+6. Clean Energy loads.
+7. Social tab still loads.
+8. Bottlenecks tab still loads.
+9. Watchlist + Portfolio tab still loads.
+10. Existing TradingView widgets still render.
+11. Missing/null fields render as —.
+12. No old historical clutter appears on Thematic:
+   - no RS 0-2W
+   - no RS 0-4W
+   - no RS 0-10W
+   - no RS Accel
+   - no 7D/30D/YTD/1Y
+   - no 52W High
+
+Return:
+- files changed
+- build result
+- Thematic columns confirmed
+- confirmation that Thematic does not show Watchlist/Portfolio overlap
+- tabs validated
+- any remaining issues
