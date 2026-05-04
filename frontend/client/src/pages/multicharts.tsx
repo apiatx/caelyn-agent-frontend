@@ -18,7 +18,7 @@ interface MultiChartsView {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "caelyn_multicharts_views_v1";
-const MAX_CHARTS = 15;
+const MAX_CHARTS = 20;
 const COLS_OPTIONS: Array<1 | 2 | 3 | 4> = [1, 2, 3, 4];
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -92,11 +92,12 @@ const GRID_COLS: Record<number, string> = {
 
 interface ChartCardProps {
   slot: ChartSlot;
+  autoFocus?: boolean;
   onSymbolChange: (id: string, symbol: string) => void;
   onDelete: (id: string) => void;
 }
 
-function ChartCard({ slot, onSymbolChange, onDelete }: ChartCardProps) {
+function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps) {
   const [inputValue, setInputValue] = useState(slot.symbol);
   const [loaded, setLoaded] = useState(!!slot.symbol);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +107,14 @@ function ChartCard({ slot, onSymbolChange, onDelete }: ChartCardProps) {
     setInputValue(slot.symbol);
     setLoaded(!!slot.symbol);
   }, [slot.id, slot.symbol]);
+
+  // Focus input when this card was just added
+  useEffect(() => {
+    if (autoFocus) {
+      const t = setTimeout(() => inputRef.current?.focus(), 60);
+      return () => clearTimeout(t);
+    }
+  }, [autoFocus]);
 
   const handleLoad = useCallback(() => {
     const sym = inputValue.trim().toUpperCase();
@@ -198,6 +207,7 @@ export default function MultiChartsPage() {
   const [activeId, setActiveId] = useState<string>(() => loadViews()[0]?.id ?? "");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [focusChartId, setFocusChartId] = useState<string | null>(null);
   const renameRef = useRef<HTMLInputElement>(null);
 
   // Keep activeId pointing at a real view
@@ -252,7 +262,9 @@ export default function MultiChartsPage() {
 
   const addChart = () => {
     if (!activeView || activeView.charts.length >= MAX_CHARTS) return;
-    updateView((v) => ({ ...v, charts: [...v.charts, emptySlot()] }));
+    const slot = emptySlot();
+    setFocusChartId(slot.id);
+    updateView((v) => ({ ...v, charts: [...v.charts, slot] }));
   };
 
   const deleteChart = (chartId: string) => {
@@ -305,10 +317,13 @@ export default function MultiChartsPage() {
                     <button onClick={cancelRename} className="text-white/30 hover:text-white/60"><X className="w-3 h-3" /></button>
                   </div>
                 ) : (
-                  <button
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setActiveId(v.id)}
                     onDoubleClick={() => startRename(v.id, v.name)}
-                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveId(v.id); }}
+                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer select-none ${
                       activeId === v.id
                         ? "border-purple-500/50 text-purple-200"
                         : "border-white/10 text-white/50 hover:text-white/80 hover:border-white/20"
@@ -333,7 +348,7 @@ export default function MultiChartsPage() {
                         <X className="w-2.5 h-2.5" />
                       </button>
                     )}
-                  </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -411,6 +426,7 @@ export default function MultiChartsPage() {
             <ChartCard
               key={slot.id}
               slot={slot}
+              autoFocus={slot.id === focusChartId}
               onSymbolChange={setSymbol}
               onDelete={deleteChart}
             />
