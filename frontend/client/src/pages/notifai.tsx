@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Send, Loader2, MessageSquare, ExternalLink, Clock, RefreshCw, Sparkles, CalendarDays, TrendingUp } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
@@ -496,6 +497,15 @@ function NewsFeed() {
   useEffect(() => {
     fetchNews(category);
   }, [category, fetchNews]);
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = [`[Page: NotifAI — News & Market Intelligence]`, `Active news category: ${category}`];
+    const symbols = articles.flatMap((a:any)=>a.symbol?[a.symbol]:[]).filter(Boolean).slice(0,10);
+    if (symbols.length) parts.push(`Tickers mentioned in news: ${[...new Set(symbols)].join(', ')}`);
+    parts.push('Use for breaking news analysis, news-driven catalysts, and macro event impact on markets.');
+    return parts.join('\n');
+  })(), [category, articles]);
 
   return (
     <div>

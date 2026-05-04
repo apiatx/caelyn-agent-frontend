@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -1428,6 +1429,19 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
     // be shown under a newly selected date. Empty → loading spinner instead.
   });
   const dayCleanEntries = dayCleanRaw ?? [];
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Earnings Calendar & Catalyst Calendar]'];
+    if (selectedDayKey) parts.push(`Selected date: ${selectedDayKey}`);
+    if (dayCleanEntries.length) {
+      const tickers = dayCleanEntries.slice(0,20).map((e:any)=>e.ticker).filter(Boolean);
+      parts.push(`Earnings today (${dayCleanEntries.length} companies): ${tickers.join(', ')}`);
+    } else {
+      parts.push('Showing upcoming earnings calendar. Ask about earnings estimates, EPS expectations, or pre/post-market timing for any stock.');
+    }
+    return parts.join('\n');
+  })(), [selectedDayKey, dayCleanEntries]);
 
   // Day-curated state (React Query — separate cache key from "all")
   const dayCuratedEnabled = signalMode === "curated" && !!selectedDayKey && selectedDayKey !== "undated";

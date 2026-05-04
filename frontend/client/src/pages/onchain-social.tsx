@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { openSecureLink } from '@/utils/security';
 import { resolveTVSymbol } from '@/utils/tvSymbol';
@@ -2065,6 +2066,17 @@ export default function OnchainSocialPage() {
   });
 
   const isRefreshing     = refreshMutation.isPending || tx?.refresh_in_progress === true;
+
+  const _socialCtx = (() => {
+    const parts = ['[Page: Social Sentiment — X/Twitter Analysis]'];
+    const tickers = (tx?.tickers_discussed || tx?.top_tickers || []).slice(0, 10).map((t: any) => t.ticker || t.symbol || t).filter((t: any) => typeof t === 'string');
+    if (tickers.length) parts.push(`Trending tickers on X: ${tickers.join(', ')}`);
+    const sentiment = tx?.overall_sentiment || tx?.market_sentiment;
+    if (sentiment) parts.push(`Overall X sentiment: ${sentiment}`);
+    parts.push('Use for social-driven momentum, retail sentiment, narrative analysis, and what traders are discussing on X right now.');
+    return parts.join('\n');
+  })();
+  useSetPageContext(_socialCtx, [tx]);
   const windowOpen       = tx?.refresh_window_open !== false;
   const autoResumeRaw    = tx?.next_allowed_refresh_at ?? null;
   const autoResumeDate   = autoResumeRaw ? new Date(autoResumeRaw) : null;

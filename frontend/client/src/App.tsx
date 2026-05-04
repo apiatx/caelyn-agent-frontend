@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MainLayout } from "@/components/main-layout";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
+import { PageContextProvider } from "@/contexts/PageContextContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
@@ -213,15 +214,17 @@ function AppInner() {
   return (
     <AuthGuard>
       <GlobalPrefetch />
-      <ChatbotProvider>
-        <TooltipProvider>
-          <Toaster />
-          <MainLayout>
-            <Router />
-          </MainLayout>
-          <ChatbotWidget />
-        </TooltipProvider>
-      </ChatbotProvider>
+      <PageContextProvider>
+        <ChatbotProvider>
+          <TooltipProvider>
+            <Toaster />
+            <MainLayout>
+              <Router />
+            </MainLayout>
+            <ChatbotWidget />
+          </TooltipProvider>
+        </ChatbotProvider>
+      </PageContextProvider>
     </AuthGuard>
   );
 }

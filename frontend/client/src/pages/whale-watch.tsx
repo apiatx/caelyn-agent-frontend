@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   RefreshCw, X, ChevronUp, ChevronDown, ChevronsUpDown,
@@ -477,6 +478,20 @@ export default function WhaleWatchPage() {
   const [sortKey, setSortKey]             = useState<SortKey>("return_1y");
   const [sortDir, setSortDir]             = useState<SortDir>("desc");
   const [selected, setSelected]           = useState<Whale | null>(null);
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Whale Watch — Institutional & Famous Investor Tracking]'];
+    if (selected) {
+      parts.push(`Viewing: ${selected.name} (${selected.category}) — AI theme: ${selected.ai_theme||'—'}`);
+      if (selected.return_1y!=null) parts.push(`1Y return: ${selected.return_1y>0?'+':''}${selected.return_1y.toFixed(1)}%`);
+    } else if (whales.length) {
+      const topWhales = whales.slice(0,8).map(w=>w.name).join(', ');
+      parts.push(`Tracked investors: ${topWhales}`);
+    }
+    parts.push('Ask about holdings, recent buys, portfolio themes, or performance for any tracked whale or famous investor.');
+    return parts.join('\n');
+  })(), [selected, whales]);
 
   const loadStats = useCallback(async () => {
     setStatsLoading(true);

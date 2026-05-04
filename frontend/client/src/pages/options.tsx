@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import type { ReactNode } from "react";
 import {
   RefreshCw,
@@ -2304,6 +2305,23 @@ export default function OptionsPage() {
   // ── Screener data (single fetch, all categories merged by backend) ────────
   const [screenerData, setScreenerData] = useState<any>(null);
   const [pageLoading, setPageLoading]   = useState(true);
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Options Flow — Unusual Options Activity]'];
+    const resp = screenerData?.response ?? screenerData;
+    const tickers: TickerResult[] = Array.isArray(resp?.tickers) ? resp.tickers : [];
+    if (tickers.length) {
+      const top = tickers.slice(0,15).map((t:any)=>`${t.ticker||t.symbol}${t.score!=null?`(score:${Math.round(t.score)})`:''}`.trim()).filter(Boolean);
+      parts.push(`Top options flow tickers (${tickers.length} total): ${top.join(', ')}`);
+      const calls = tickers.filter((t:any)=>(t.call_put_ratio||1)>1.2).slice(0,5).map((t:any)=>t.ticker||t.symbol).filter(Boolean);
+      const puts  = tickers.filter((t:any)=>(t.call_put_ratio||1)<0.8).slice(0,5).map((t:any)=>t.ticker||t.symbol).filter(Boolean);
+      if (calls.length) parts.push(`Bullish flow: ${calls.join(', ')}`);
+      if (puts.length)  parts.push(`Bearish flow: ${puts.join(', ')}`);
+    }
+    parts.push('Use for unusual options activity analysis, smart money positioning, gamma exposure, and options-driven price targets.');
+    return parts.join('\n');
+  })(), [screenerData]);
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);

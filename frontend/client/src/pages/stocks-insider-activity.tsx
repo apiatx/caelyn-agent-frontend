@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -995,6 +996,33 @@ export default function InsiderActivityPage() {
     queryFn: async () => { const r=await fetch("/api/congressional-trades/stats"); if(!r.ok) throw new Error("Failed"); return r.json(); },
     staleTime: 10*60*1000, enabled: activeTab==="congress",
   });
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = [`[Page: ${activeTab === 'congress' ? 'Congressional Trades' : 'Insider Activity'} — Smart Money Tracking]`];
+    parts.push(`Active tab: ${activeTab === 'congress' ? 'Congressional trading disclosures' : 'Corporate insider transactions'}`);
+    if (activeTab === 'insider') {
+      const txs: InsiderTransaction[] = (iApiData as any)?.transactions ?? [];
+      if (txs.length) {
+        const buys  = txs.filter(t=>/buy|purchase/i.test(t.transaction_type||'')).slice(0,8).map(t=>t.ticker).filter(Boolean);
+        const sells = txs.filter(t=>/sale|sell/i.test(t.transaction_type||'')).slice(0,8).map(t=>t.ticker).filter(Boolean);
+        if (buys.length)  parts.push(`Insider buys: ${[...new Set(buys)].join(', ')}`);
+        if (sells.length) parts.push(`Insider sells: ${[...new Set(sells)].join(', ')}`);
+        if (!buys.length && !sells.length) {
+          const all = txs.slice(0,12).map(t=>t.ticker).filter(Boolean);
+          parts.push(`Recent insider transactions: ${[...new Set(all)].join(', ')}`);
+        }
+      }
+    } else {
+      const cTxs: any[] = (cApiData as any)?.trades ?? [];
+      if (cTxs.length) {
+        const tickers = cTxs.slice(0,12).map((t:any)=>t.ticker||t.symbol).filter(Boolean);
+        parts.push(`Congressional trades: ${[...new Set(tickers)].join(', ')}`);
+      }
+    }
+    parts.push('Use for insider sentiment signals, cluster buys, high-conviction executive purchases, and congressional disclosure analysis.');
+    return parts.join('\n');
+  })(), [activeTab, iApiData, cApiData]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const { mutate: iRefresh, isPending: iRefreshing } = useMutation({

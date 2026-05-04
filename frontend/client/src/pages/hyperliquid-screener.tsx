@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, Component } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -1809,6 +1810,22 @@ export default function HyperliquidScreenerPage() {
     const am = new Map(agentResult.rankedCoins.map(a=>[a.coin,a]));
     return base.map(row => { const ag=am.get(row.coin); if(!ag) return row; return {...row, agentRank:ag.agentRank, agentScore:ag.agentScore, agentRationale:ag.rationale, rankDelta:row.rank-ag.agentRank}; });
   }, [displayData, agentResult]);
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Hyperliquid Screener — Perp & Spot DEX Intelligence]'];
+    parts.push(`Filter: ${marketType === 'all' ? 'All markets' : marketType === 'perp' ? 'Perpetuals only' : 'Spot only'} · ${rows.length} rows loaded`);
+    if (rows.length) {
+      const bullish = rows.filter(r=>r.signalDirection==='bullish').slice(0,8).map(r=>r.coin);
+      const bearish = rows.filter(r=>r.signalDirection==='bearish').slice(0,6).map(r=>r.coin);
+      const topBySignal = [...rows].filter(r=>r.compositeSignal!=null).sort((a,b)=>(b.compositeSignal??0)-(a.compositeSignal??0)).slice(0,10).map(r=>r.coin);
+      if (topBySignal.length) parts.push(`Top by composite signal: ${topBySignal.join(', ')}`);
+      if (bullish.length) parts.push(`Bullish signals: ${bullish.join(', ')}`);
+      if (bearish.length) parts.push(`Bearish signals: ${bearish.join(', ')}`);
+    }
+    parts.push('Use for Hyperliquid perp analysis, funding rates, OI changes, breakout detection, and DEX-specific signals.');
+    return parts.join('\n');
+  })(), [rows, marketType]);
 
   const filtered = useMemo(() => {
     let r = rows;

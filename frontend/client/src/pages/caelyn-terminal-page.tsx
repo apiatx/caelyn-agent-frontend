@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
 import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
 import { useQuery } from '@tanstack/react-query';
@@ -199,6 +200,21 @@ export default function CaelynTerminalPage() {
   // Always render the full layout — use placeholder when backend not yet connected
   const d   = data ?? PLACEHOLDER;
   const ph  = d.is_placeholder ?? !data;
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Portfolio Terminal]'];
+    if (!ph && d.holdings?.length) {
+      const holdings = d.holdings.map((h:any)=>`${h.ticker}${h.allocation_pct!=null?`(${Number(h.allocation_pct).toFixed(1)}%)`:''}`).join(', ');
+      parts.push(`Portfolio holdings: ${holdings}`);
+      const p = d.portfolio;
+      if (p.perf_1d!=null) parts.push(`Today: ${p.perf_1d>0?'+':''}${Number(p.perf_1d).toFixed(2)}% · 1M: ${p.perf_1m!=null?(p.perf_1m>0?'+':'')+Number(p.perf_1m).toFixed(2)+'%':'—'}`);
+      if (p.sentiment) parts.push(`Sentiment: ${p.sentiment}`);
+    } else {
+      parts.push('Portfolio analytics terminal — shows holdings, performance, risk metrics, correlation matrix, and earnings calendar for the connected portfolio.');
+    }
+    return parts.join('\n');
+  })(), [d, ph]);
   const p   = d.portfolio;
   const cm  = d.correlation_matrix;
 

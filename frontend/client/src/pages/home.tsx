@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { AreaChart, Area, LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
   TrendingUp,
@@ -1070,6 +1071,26 @@ export default function HomePage() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  const _homeCtx = (() => {
+    const parts = ['[Page: Market Dashboard — Home]'];
+    const hc = (data as any)?.highlighted_companies;
+    if (Array.isArray(hc) && hc.length) parts.push(`Featured stocks: ${hc.slice(0,8).map((c:any)=>c.ticker||c.symbol).filter(Boolean).join(', ')}`);
+    const themes = (data as any)?.theme_performance || (data as any)?.themes;
+    if (Array.isArray(themes) && themes.length) parts.push(`Top themes: ${themes.slice(0,5).map((t:any)=>t.name||t.theme_name||t.theme).filter(Boolean).join(', ')}`);
+    const fg = (data as any)?.fear_greed;
+    if (fg) parts.push(`Market sentiment: ${fg.label||fg.value||fg.classification||''}`);
+    const movers = (data as any)?.movers;
+    if (movers) {
+      const g = (movers.gainers||[]).slice(0,5).map((m:any)=>m.ticker||m.symbol||m.name).filter(Boolean);
+      const l = (movers.losers||[]).slice(0,5).map((m:any)=>m.ticker||m.symbol||m.name).filter(Boolean);
+      if (g.length) parts.push(`Top gainers: ${g.join(', ')}`);
+      if (l.length) parts.push(`Top losers: ${l.join(', ')}`);
+    }
+    return parts.join('\n');
+  })();
+  useSetPageContext(_homeCtx, [data]);
 
   // Map a card's symbol/label to a sparkline key
   const cardSparklineKey = (card: HomeMacroCard): string | null => {

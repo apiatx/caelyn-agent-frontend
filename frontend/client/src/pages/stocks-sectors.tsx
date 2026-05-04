@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -1748,6 +1749,22 @@ export default function StocksSectorsPage() {
   const analysis     = dash?.analysis ?? analysisRaw ?? null;
   const analysisTs   = dash?.analysis_updated_at ?? (analysis as any)?.generated_at ?? null;
   const analysisNull = !analysisLoading && !dashLoading && analysis === null;
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  const _sectorsCtx = (() => {
+    const parts = ['[Page: Themes & Sector Rotation]'];
+    const regime = (dash as any)?.regime;
+    if (regime?.market_posture) parts.push(`Market posture: ${regime.market_posture}`);
+    if (regime?.leadership_style) parts.push(`Leadership style: ${regime.leadership_style}`);
+    if (leaders.length) parts.push(`Leading sectors: ${leaders.join(', ')}`);
+    if (laggards.length) parts.push(`Lagging sectors: ${laggards.join(', ')}`);
+    if (sectors.length) {
+      const top = sectors.slice(0,10).map(s=>`${s.ticker}(${s.regime_tag||'—'} ${s.change_1d!=null?`${s.change_1d>0?'+':''}${s.change_1d.toFixed(1)}%`:''})`).join(', ');
+      parts.push(`Sector performance: ${top}`);
+    }
+    return parts.join('\n');
+  })();
+  useSetPageContext(_sectorsCtx, [dash, sectors, leaders, laggards]);
 
   return (
     <div className="min-h-screen text-white" style={{ background: "#050608" }}>

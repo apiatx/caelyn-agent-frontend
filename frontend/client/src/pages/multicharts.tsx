@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { Plus, Trash2, LayoutGrid, Pencil, Check, X, ChevronDown } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -223,6 +224,21 @@ export default function MultiChartsPage() {
   }, [views]);
 
   const activeView = views.find((v) => v.id === activeId) ?? views[0];
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const lines: string[] = ['[Page: MultiCharts — TradingView Chart Workspace]'];
+    let anyTickers = false;
+    for (const view of views) {
+      const tickers = view.charts.map((c:any)=>c.symbol).filter(Boolean);
+      if (!tickers.length) continue;
+      anyTickers = true;
+      lines.push(`Tab "${view.name}": ${tickers.join(', ')}`);
+    }
+    if (!anyTickers) lines.push('No charts loaded yet.');
+    lines.push('When the user asks about "my charts", "these tickers", or comparisons, use the tickers above as the subject of analysis.');
+    return lines.join('\n');
+  })(), [views]);
 
   // ── Tab operations ──────────────────────────────────────────────────────────
 

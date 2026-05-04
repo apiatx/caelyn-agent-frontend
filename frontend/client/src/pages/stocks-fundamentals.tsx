@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink } from "lucide-react";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { StockCompareSection } from "@/components/stock-compare-section";
 
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -10,6 +11,7 @@ const GlassCard = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 export default function StocksFundamentalsPage() {
+  useSetPageContext('[Page: Fundamentals]\nDisplays stock fundamental analysis tools: Fiscal.ai AI-powered dashboard and a side-by-side stock comparison tool. Ask about P/E ratios, revenue growth, earnings beats, debt levels, free cash flow, or comparative valuation between any stocks.', []);
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };

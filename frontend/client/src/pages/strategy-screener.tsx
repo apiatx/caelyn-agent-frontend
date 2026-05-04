@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ChevronRight, ArrowLeft, AlertCircle, Loader2, SlidersHorizontal } from 'lucide-react';
 import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
 import type { ScreenerFilters } from '@/lib/screener';
@@ -540,6 +541,18 @@ export default function StrategyScreenerPage() {
   const layerLabel = LAYER_OPTIONS.find(o => o.value === layer)?.label ?? 'All Layers';
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Best Fit';
   const filterSummary = `Showing ${resultCount} · ${mcLabel} · ${layerLabel} · ${sortLabel}`;
+
+  // ── Page context for chatbot ──────────────────────────────────────────────
+  useSetPageContext((() => {
+    const parts = ['[Page: Chain Reaction Screener — Crypto Intelligence]'];
+    parts.push(`Filters: ${mcLabel} · ${layerLabel} · Sort: ${sortLabel}`);
+    if (entries.length) {
+      const topEntries = entries.slice(0,15).map(e=>`${e.ticker||e.symbol||''}${e.grade?`(${e.grade})`:''}`.trim()).filter(Boolean);
+      parts.push(`Screener results (${entries.length} entries): ${topEntries.join(', ')}`);
+    }
+    parts.push('Use for crypto project quality scoring, layer analysis, and relative crypto strength ranking.');
+    return parts.join('\n');
+  })(), [entries, mcLabel, layerLabel, sortLabel]);
 
   return (
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text }}>
