@@ -18,7 +18,7 @@ interface MultiChartsView {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "caelyn_multicharts_views_v1";
-const MAX_CHARTS = 20;
+const MAX_CHARTS = 25;
 const COLS_OPTIONS: Array<1 | 2 | 3 | 4> = [1, 2, 3, 4];
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
