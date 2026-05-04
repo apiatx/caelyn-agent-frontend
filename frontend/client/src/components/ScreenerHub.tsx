@@ -120,6 +120,7 @@ interface RowData { [k: string]: any; }
 interface HubResponse {
   status?: string; tab?: string; theme?: string; generated_at?: string;
   fundamentals_cache_status?: string; quote_cache_status?: string;
+  message?: string; error_code?: string; theme_state?: string; theme_state_reason?: string;
   rows?: any; data?: any; items?: any; results?: any;
 }
 
@@ -162,10 +163,18 @@ function classNames(...xs: Array<string | false | undefined | null>): string {
 function preferredDefaultTheme(themes: ThemeOption[]): string | undefined {
   if (themes.length === 0) return undefined;
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  const semi = themes.find((t) => norm(t.label).includes("semiconductor") || norm(t.id).includes("semiconductor"));
-  if (semi) return semi.id;
-  const clean = themes.find((t) => norm(t.label).includes("cleanenergy") || norm(t.id).includes("cleanenergy"));
-  if (clean) return clean.id;
+  // Exact ID matches — highest priority (avoids "semicap_equipment" matching before "semiconductors")
+  const exactIds = ["semiconductors", "semiconductor", "semis", "clean_energy", "cleanenergy", "drones"];
+  for (const id of exactIds) {
+    const found = themes.find((t) => norm(t.id) === id);
+    if (found) return found.id;
+  }
+  // Exact label match
+  const byLabel = themes.find((t) => norm(t.label) === "semiconductors");
+  if (byLabel) return byLabel.id;
+  // Substring on ID — but require the full word "semiconductor" as a standalone slug segment
+  const semiSlug = themes.find((t) => /^semiconductor(s)?$/.test(norm(t.id)));
+  if (semiSlug) return semiSlug.id;
   return themes[0].id;
 }
 
@@ -354,7 +363,7 @@ export default function ScreenerHub() {
 
   const [rows, setRows] = useState<RowData[]>([]);
   const [meta, setMeta] = useState<{
-    generated_at?: string; fundamentals_cache_status?: string; quote_cache_status?: string;
+    generated_at?: string; fundamentals_cache_status?: string; quote_cache_status?: string; message?: string; error_code?: string;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -419,6 +428,8 @@ export default function ScreenerHub() {
           generated_at: data?.generated_at,
           fundamentals_cache_status: data?.fundamentals_cache_status,
           quote_cache_status: data?.quote_cache_status,
+          message: data?.message ?? undefined,
+          error_code: data?.error_code ?? undefined,
         });
       } catch (e: any) {
         if (cancelled) return;
@@ -982,8 +993,11 @@ export default function ScreenerHub() {
                     ) : sortedRows.length === 0 ? (
                       <tbody data-testid="screener-hub-tbody">
                         <tr>
-                          <td colSpan={visibleColumns.length} className="px-3 py-10 text-center text-white/50" data-testid="screener-hub-empty">
-                            No results.
+                          <td colSpan={visibleColumns.length} className="px-3 py-10 text-center" data-testid="screener-hub-empty">
+                            <p className="text-white/50">No results.</p>
+                            {meta.message && (
+                              <p className="mt-1 text-xs text-white/30">{meta.message}</p>
+                            )}
                           </td>
                         </tr>
                       </tbody>

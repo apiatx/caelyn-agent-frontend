@@ -1,0 +1,68 @@
+Do not touch unrelated pages.
+Do not change TradingView widgets.
+Do not redesign the Screener Hub.
+
+The backend is returning valid Screener Hub rows, but the Screener page UI is showing no results after the Thematic UI cleanup.
+
+Backend validation already confirmed:
+- /api/screener-hub?tab=thematic&theme=semiconductors returns status=ok and 25 rows
+- Semiconductors rows have beta/volume/dollar_volume/volume_to_market_cap populated 25/25
+- /api/screener-hub?tab=thematic&theme=clean_energy returns 44 rows
+- /api/screener-hub?tab=thematic&theme=drones returns rows
+- Backend is not the issue
+
+Task:
+Find and fix why the frontend Thematic tab displays no rows.
+
+Likely causes to inspect:
+1. Thematic rows are being filtered out by old category/signal filter logic.
+2. Category filter logic may still run even though category buttons were removed.
+3. Score Mode or signal checkbox filters may be excluding rows with null fields.
+4. Score parsing may expect 0–100 while backend hidden_gem_score is around 0–10.
+5. Row parser may not be reading response.rows correctly.
+6. Table may require a category field that Thematic rows no longer have.
+7. Sorting/filtering may drop rows when score/hidden_gem_score is null or small.
+8. Thematic-specific columns may reference fields in a way that throws or returns invalid rows.
+
+Requirements:
+- On Thematic tab, never filter out all rows just because optional fields are null.
+- Thematic default should show all backend rows.
+- Signal checkboxes should only visually emphasize/filter if explicitly intended, but default state must not hide all rows.
+- Score Mode must not hide rows.
+- Removed category buttons must not leave active category filtering behind.
+- If backend returns rows, table must display rows.
+- Missing/null fields should render as —, not cause row exclusion.
+- hidden_gem_score values like 6.25 should be valid and sortable.
+- Do not require score to be 0–100.
+- Do not require category field for Thematic rows.
+
+Debug/validation:
+1. In ScreenerHub.tsx, add temporary console/debug or inspect code to confirm:
+   - raw API response status
+   - raw rows.length
+   - parsed rows.length
+   - filtered rows.length
+   - sorted rows.length
+   - active tab
+   - active filters/toggles
+2. Fix the step where rows become zero.
+3. Remove temporary noisy console logs after fixing unless minimal debug is already standard.
+
+Validate:
+- Thematic / Semiconductors displays rows.
+- Thematic / Clean Energy displays rows.
+- Thematic / Drones displays rows.
+- Social tab still displays rows.
+- Bottlenecks tab still displays rows.
+- Watchlist + Portfolio tab still displays rows.
+- Missing/null fields display as —.
+- No old RS/7D/30D/YTD/1Y columns appear on Thematic.
+- No Watchlist/Portfolio labels appear on Thematic.
+- Frontend still only calls backend /api/screener-hub endpoints.
+
+Return:
+- root cause
+- files changed
+- exact fix made
+- rows count displayed for Semiconductors, Clean Energy, and Drones
+- validation results
