@@ -1,0 +1,201 @@
+Pull latest main.
+
+Do not create branches.
+Do not open PRs.
+Do not worry about git commits.
+Do not modify unrelated pages.
+
+Frontend only.
+Keep this scoped to the Screener page / Screener Hub component.
+Do not change backend.
+Do not change TradingView widgets.
+Do not change Social, Watchlist, Portfolio, Chain Reaction, Options Flow, or Fundamentals pages.
+
+IMPORTANT COST GUARDRAIL:
+Do not call FMP directly.
+Do not call Tradier directly.
+Do not call options providers directly.
+Do not trigger admin rebuilds.
+Do not trigger any refresh/rebuild endpoint.
+Only call normal backend Screener Hub GET endpoints if needed.
+
+Goal:
+Make all four Screener Hub tabs use the exact same clean table columns.
+
+Current problem:
+The Thematic tab displays the correct new columns.
+The Social, Bottlenecks, and Watchlist+Portfolio tabs still display old legacy columns like RS, 52W High, 7D, 30D, YTD, 1Y, etc.
+
+Desired behavior:
+All four tabs should display the same columns:
+
+1. Symbol
+2. Company
+3. Market Cap
+4. Sector
+5. Industry
+6. Beta
+7. Price
+8. 1D %
+9. Div/Yr
+10. Volume
+11. $ Volume
+12. Vol/MCap
+13. Exchange
+14. Vol Surge
+15. Accum
+16. Options OI
+17. OI Chg
+18. Opt Activity
+19. Role
+20. Score
+
+Apply this same column set to:
+- Thematic
+- Social
+- Bottlenecks
+- Watchlist + Portfolio
+
+Remove/hide these legacy columns from all four Screener Hub tabs:
+- History
+- Category
+- RS 0-2W
+- RS 0-4W
+- RS 0-10W
+- RS Accel
+- 52W High
+- CoC
+- 7D %
+- 30D %
+- YTD %
+- 1Y %
+- Market Cap Bucket
+- Country
+- Exchange Short Name
+- Is ETF
+- Is Fund
+- Is Actively Trading
+
+Controls:
+Use the simplified controls for all four tabs:
+- Theme dropdown only on Thematic
+- Score Mode toggle if still wired
+- Signal checkboxes:
+  - Vol Surge
+  - Accumulation
+  - Options Activity
+- Copy button
+
+Remove/hide from all tabs:
+- Category buttons: Show all / Leading / Improving / Weakening / Lagging
+- CoC Filter
+- RS signal checkboxes
+- 52W High signal checkbox
+- Legend tied to old Leading/Improving/Weakening/Lagging logic
+
+Formatting:
+- Market Cap: compact currency, e.g. $4.2B, $850M
+- Price: currency
+- 1D %: percent with +/-
+- Beta: 2 decimals
+- Div/Yr: currency or —
+- Volume: compact number
+- $ Volume: compact currency
+- Vol/MCap: percent
+- Vol Surge: multiplier, e.g. 2.1x or —
+- Accum: checkmark/badge for true, — for false/null
+- Options OI: compact number
+- OI Chg: signed number or percent depending backend value
+- Opt Activity: score/pill or —
+- Role: readable badge
+- Score: numeric pill
+
+Defensive parsing:
+Support these aliases:
+- symbol
+- company_name OR companyName
+- market_cap OR marketCap
+- sector
+- industry
+- beta
+- price
+- change_percent_1d OR changePercent1d OR oneDayChange
+- last_annual_dividend OR lastAnnualDividend
+- volume
+- dollar_volume OR dollarVolume
+- volume_to_market_cap OR volumeToMarketCap
+- exchange
+- volume_surge OR vol_surge
+- accumulation
+- options_oi OR optionsOi
+- options_oi_change OR optionsOiChange
+- options_activity_score OR optionsActivityScore
+- role
+- hidden_gem_score OR score
+
+If a field is null/missing, show —
+Never blank the whole table because optional fields are missing.
+Do not filter rows out just because optional fields are null.
+
+Sorting:
+Default sort for every tab:
+- Score / hidden_gem_score descending
+
+Allow sortable columns:
+- Symbol
+- Market Cap
+- Sector
+- Industry
+- Beta
+- Price
+- 1D %
+- Volume
+- $ Volume
+- Vol/MCap
+- Vol Surge
+- Options OI
+- Opt Activity
+- Role
+- Score
+
+Tab behavior:
+- Thematic: use theme dropdown.
+- Social: no theme dropdown required.
+- Bottlenecks: no theme dropdown required.
+- Watchlist+Portfolio: no theme dropdown required.
+- Switching tabs should not reset app state in a broken way.
+- Rows should remain visible while refreshing if possible.
+
+API usage:
+Frontend must only call:
+- /api/screener-hub/themes
+- /api/screener-hub?tab=...
+
+No direct FMP.
+No direct Tradier.
+No direct options provider.
+No admin rebuild.
+
+Validation:
+Run frontend dev/build checks available without calling external APIs directly.
+
+Validate UI:
+1. Thematic tab shows the clean 20 columns.
+2. Social tab shows the same clean 20 columns.
+3. Bottlenecks tab shows the same clean 20 columns.
+4. Watchlist+Portfolio tab shows the same clean 20 columns.
+5. No old RS/52W/7D/30D/YTD/1Y columns appear on any tab.
+6. No category buttons appear on any tab.
+7. No CoC filter appears on any tab.
+8. Missing/null fields render as —.
+9. Existing TradingView widgets still render.
+10. Theme dropdown still works on Thematic.
+11. Frontend only calls backend Screener Hub GET endpoints.
+
+Return:
+- files changed
+- build/check result
+- columns confirmed for each tab
+- removed legacy controls confirmed
+- tabs validated
+- any remaining issues
