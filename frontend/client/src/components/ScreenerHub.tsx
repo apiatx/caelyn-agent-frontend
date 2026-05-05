@@ -43,9 +43,9 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "exchange",               label: "Exchange" },
   { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge"] },
   { key: "accumulation",           label: "Accum",                        aliases: ["accum"] },
-  { key: "options_oi",             label: "Options OI",   numeric: true,  aliases: ["optionsOi", "options_open_interest"] },
-  { key: "options_oi_change",      label: "OI Chg",       numeric: true,  aliases: ["optionsOiChange", "oi_change"] },
-  { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity"] },
+  { key: "options_oi",             label: "Options OI",   numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"] },
+  { key: "options_oi_change",      label: "OI Chg",       numeric: true,  aliases: ["optionsOiChange", "oi_change", "options_oi_change_pct", "optionsOiChangePct"] },
+  { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity", "options_activity"] },
   { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"] },
   { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"] },
 ];
@@ -535,15 +535,59 @@ export default function ScreenerHub() {
     }
 
     if (c.key === "options_oi") {
-      return <span>{formatCompactNumber(v)}</span>;
+      if (v === null || v === undefined) return <span className="text-white/40">—</span>;
+      const formatted = formatCompactNumber(v);
+      if (formatted === "—") return <span className="text-white/40">—</span>;
+      // Subtle freshness indicator using options_updated_at / options_source
+      const updatedAt = getField(row, "options_updated_at", ["optionsUpdatedAt"]);
+      const source    = getField(row, "options_source",     ["optionsSource"]);
+      const freshLabel = updatedAt
+        ? (() => {
+            try {
+              const d = new Date(updatedAt);
+              const diffMin = Math.round((Date.now() - d.getTime()) / 60_000);
+              if (diffMin < 1)   return "just now";
+              if (diffMin < 60)  return `${diffMin}m ago`;
+              const diffH = Math.round(diffMin / 60);
+              if (diffH  < 24)   return `${diffH}h ago`;
+              return `${Math.round(diffH / 24)}d ago`;
+            } catch { return null; }
+          })()
+        : source || null;
+      return (
+        <span className="inline-flex items-center gap-1">
+          {formatted}
+          {freshLabel && (
+            <span
+              title={`Options data: ${freshLabel}${source ? ` · ${source}` : ""}`}
+              className="text-[9px] text-white/25 leading-none cursor-help"
+            >
+              {freshLabel}
+            </span>
+          )}
+        </span>
+      );
     }
 
     if (c.key === "options_oi_change") {
-      const { text, positive, negative } = formatChangePercent(v);
-      if (text === "—") return <span className="text-white/40">—</span>;
+      // Prefer the percent field if the backend provides it
+      const pctRaw = getField(row, "options_oi_change_pct", ["optionsOiChangePct"]);
+      if (pctRaw !== undefined && pctRaw !== null) {
+        const { text, positive, negative } = formatChangePercent(pctRaw);
+        if (text === "—") return <span className="text-white/40">—</span>;
+        return (
+          <span className={classNames(positive && "text-emerald-300", negative && "text-rose-300")}>
+            {text}
+          </span>
+        );
+      }
+      // Fall back to absolute signed change
+      const n = toNum(v);
+      if (n === null) return <span className="text-white/40">—</span>;
+      const sign = n > 0 ? "+" : "";
       return (
-        <span className={classNames(positive && "text-emerald-300", negative && "text-rose-300")}>
-          {text}
+        <span className={classNames(n > 0 && "text-emerald-300", n < 0 && "text-rose-300", n === 0 && "text-white/50")}>
+          {sign}{formatCompactNumber(n)}
         </span>
       );
     }
