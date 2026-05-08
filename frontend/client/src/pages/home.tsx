@@ -25,7 +25,6 @@ import {
   X,
   Signal,
 } from "lucide-react";
-import TickerTapeWidget from "@/components/TickerTapeWidget";
 import { GlassCard } from "@/components/glass-card";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1181,18 +1180,8 @@ export default function HomePage() {
         }}
       />
 
-      {/* A. Top live ticker strip */}
-      <div
-        className="relative z-10 w-full border-b border-white/5 backdrop-blur-lg"
-        style={{ height: 90, overflow: "hidden", background: "rgba(5,6,8,0.92)" }}
-      >
-        <div style={{ height: 90 }}>
-          <TickerTapeWidget />
-        </div>
-      </div>
-
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
-        {/* C. Greeting & market status */}
+        {/* Greeting & market status */}
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-1">
