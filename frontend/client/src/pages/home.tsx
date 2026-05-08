@@ -25,7 +25,6 @@ import {
   X,
   Signal,
 } from "lucide-react";
-import TickerTapeWidget from "@/components/TickerTapeWidget";
 import { GlassCard } from "@/components/glass-card";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1181,29 +1180,21 @@ export default function HomePage() {
         }}
       />
 
-      {/* A. Top live ticker strip */}
-      <div
-        className="relative z-10 w-full border-b border-white/5 backdrop-blur-lg"
-        style={{ height: 90, overflow: "hidden", background: "rgba(5,6,8,0.92)" }}
-      >
-        <div style={{ height: 90 }}>
-          <TickerTapeWidget />
-        </div>
-      </div>
+      <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-4 pb-4">
+        {/* Header bar: [Greeting] [←scrollable macro cards→] [Should I Trade?] */}
+        <div className="flex items-center gap-4 mb-5">
 
-      <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
-        {/* C. Greeting & market status */}
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-1">
+          {/* Left — greeting (locked) */}
+          <div className="shrink-0">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35 mb-0.5">
               Caelyn Home
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-white leading-tight">
               {greeting}.
             </h1>
-            <div className="text-sm text-white/55 mt-1 flex items-center gap-2">
+            <div className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5">
               <span
-                className={`inline-block w-1.5 h-1.5 rounded-full ${
+                className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
                   data?.greeting?.market?.status === "open"
                     ? "bg-emerald-400"
                     : data?.greeting?.market?.status === "pre_market" ||
@@ -1213,12 +1204,36 @@ export default function HomePage() {
                 }`}
               />
               {marketLabel}{nowET ? ` · ${nowET}` : ""}
-              {data?.from_cache && (
-                <span className="ml-1 text-[10px] text-white/30">cached</span>
-              )}
             </div>
           </div>
-          {/* Should I Be Trading? — compact corner widget */}
+
+          {/* Middle — horizontally scrollable macro cards */}
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 pb-0.5">
+              {isLoading &&
+                Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="w-[130px] shrink-0">
+                    <Skeleton className="h-[80px] rounded-xl bg-white/[0.04]" />
+                  </div>
+                ))}
+              {!isLoading &&
+                allMacroCards.map((c, i) => {
+                  const key = cardSparklineKey(c);
+                  const hist = key && sparklines ? sparklines[key] : undefined;
+                  return (
+                    <div key={`${c.symbol}-${i}`} className="w-[130px] shrink-0">
+                      <MacroCard
+                        card={c}
+                        history={hist}
+                        onClick={() => setMacroChartCard(c)}
+                      />
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Right — Should I Trade? (locked) */}
           {(() => {
             const td = tradingData;
             const decision: string | undefined = td?.decision;
@@ -1229,14 +1244,14 @@ export default function HomePage() {
             return (
               <button
                 onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-5 py-3 min-w-[120px] text-center ${borderColor}`}
+                className={`shrink-0 flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-4 py-2.5 min-w-[108px] text-center ${borderColor}`}
               >
                 <div className="text-[9px] uppercase tracking-widest text-white/30 mb-1">Should I Trade?</div>
                 {!td ? (
-                  <div className="text-lg font-bold text-white/20">—</div>
+                  <div className="text-base font-bold text-white/20">—</div>
                 ) : (
                   <>
-                    <div className={`text-2xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
+                    <div className={`text-xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
                     {score != null && (
                       <div className={`text-[10px] font-semibold mt-1 tabular-nums ${scoreColor}`}>{score}/100</div>
                     )}
@@ -1246,33 +1261,6 @@ export default function HomePage() {
               </button>
             );
           })()}
-        </div>
-
-        {/* D. Top macro cards */}
-        <SectionHeader icon={Activity} title="Market Snapshot" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
-          {isLoading &&
-            Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="h-[92px] rounded-xl bg-white/[0.04]" />
-            ))}
-          {!isLoading &&
-            allMacroCards.map((c, i) => {
-              const key = cardSparklineKey(c);
-              const hist = key && sparklines ? sparklines[key] : undefined;
-              return (
-                <MacroCard
-                  key={`${c.symbol}-${i}`}
-                  card={c}
-                  history={hist}
-                  onClick={() => setMacroChartCard(c)}
-                />
-              );
-            })}
-          {!isLoading && allMacroCards.length === 0 && (
-            <div className="col-span-full text-sm text-white/40">
-              Macro data temporarily unavailable.
-            </div>
-          )}
         </div>
 
         {/* TradingView chart popup modal */}
