@@ -150,6 +150,21 @@ function isNewFormat(analysis: any): boolean {
   return analysis && Array.isArray(analysis.sections);
 }
 
+/* ── resolve theme label from string or canonical object ────────────── */
+// Backend may return market_themes entries as plain strings (old) or as
+// { canonical_theme_name, canonical_theme_id } objects (new). Always prefer
+// canonical_theme_name; fall back gracefully to the raw string.
+function resolveThemeLabel(entry: string | { canonical_theme_name?: string; canonical_theme_id?: string; [k: string]: any }): string {
+  if (typeof entry === 'string') return entry;
+  return entry?.canonical_theme_name || entry?.canonical_theme_id || String(entry);
+}
+
+/* ── resolve section display title ─────────────────────────────────── */
+// Prefers canonical_theme_name (new backend field) over legacy title string.
+function resolveSectionTitle(section: any): string {
+  return section?.canonical_theme_name || section?.title || 'Untitled';
+}
+
 /* ── risk level color ──────────────────────────────────────────────── */
 function riskColor(level?: string): string {
   if (!level) return C.dim;
@@ -309,7 +324,7 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { anal
   const sections: any[] = analysis?.sections || [];
   if (!sections.length) return null;
 
-  // Compute pending tickers
+  // Build set of all symbols that appear in any section
   const analyzedSymbols = new Set<string>();
   for (const section of sections) {
     for (const t of (section.tickers || [])) {
@@ -317,110 +332,128 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { anal
       if (sym) analyzedSymbols.add(sym.toUpperCase());
     }
   }
+
+  // Tickers in the watchlist but not yet analyzed by the backend
   const pendingSymbols = (allTickerSymbols || []).filter(s => !analyzedSymbols.has(s.toUpperCase()));
+
+  // Helper: render a single stock row inside a section card
+  function renderStockRow(stock: any, i: number, total: number, accent: string) {
+    const sym = stock.symbol || stock.ticker;
+    const chg = stock.change_pct;
+    const chgCol = chg != null ? (chg >= 0 ? C.green : C.red) : C.dim;
+    return (
+      <div
+        key={sym || i}
+        onClick={() => sym && onTickerClick?.(sym)}
+        style={{
+          padding: '9px 14px',
+          borderBottom: i < total - 1 ? `1px solid ${C.border}` : 'none',
+          cursor: sym ? 'pointer' : 'default',
+          transition: 'background 0.1s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
+            {sym || '—'}
+          </span>
+          <span style={{ fontSize: 9, color: C.dim, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+            {stock.name || stock.company}
+          </span>
+          {stock.price != null && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, flexShrink: 0 }}>
+              ${Number(stock.price).toFixed(2)}
+            </span>
+          )}
+          {chg != null && (
+            <span style={{
+              fontSize: 8, fontWeight: 800, fontFamily: C.font,
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              color: chgCol, background: chgCol + '18',
+            }}>
+              {chg > 0 ? '+' : ''}{Number(chg).toFixed(1)}%
+            </span>
+          )}
+          {stock.risk_level && (
+            <span style={{
+              fontSize: 7, fontWeight: 800, fontFamily: C.font,
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              color: riskColor(stock.risk_level),
+              background: riskColor(stock.risk_level) + '18',
+              textTransform: 'uppercase' as const,
+            }}>
+              {stock.risk_level}
+            </span>
+          )}
+        </div>
+        {stock.catalyst && (
+          <div style={{ fontSize: 9, color: C.dim, lineHeight: 1.4, marginBottom: stock.action_note ? 3 : 0,
+            overflow: 'hidden', display: '-webkit-box' as any,
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+            ⚡ {stock.catalyst}
+          </div>
+        )}
+        {stock.action_note && (
+          <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3 }}>
+            → {stock.action_note}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Helper: render a section card
+  function renderSectionCard(section: any, accent: string, key: string | number) {
+    const tickers: any[] = section.tickers || [];
+    // Use canonical_theme_name if backend provides it; fall back to title
+    const displayTitle = resolveSectionTitle(section);
+    return (
+      <div key={key} style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderLeft: `3px solid ${accent}`,
+        borderRadius: 6,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em' }}>
+            {displayTitle}
+          </div>
+          {/* Show legacy title dimmed if canonical name overrides it */}
+          {section.canonical_theme_name && section.title && section.canonical_theme_name !== section.title && (
+            <div style={{ fontSize: 8, color: C.dim, marginTop: 2, fontFamily: C.font, letterSpacing: '0.02em' }}>
+              id: {section.canonical_theme_id || section.id}
+            </div>
+          )}
+          {section.subtitle && (
+            <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+              {section.subtitle}
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', maxHeight: 340 }} className="wl-scrollbar">
+          {tickers.map((stock: any, i: number) => renderStockRow(stock, i, tickers.length, accent))}
+          {tickers.length === 0 && (
+            <div style={{ padding: 14, fontSize: 10, color: C.dim, textAlign: 'center' }}>No tickers</div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
-      {sections.map((section: any) => {
-        const accent = SECTION_ACCENTS[section.id] || C.teal;
-        const tickers: any[] = section.tickers || [];
-        return (
-          <div key={section.id} style={{
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderLeft: `3px solid ${accent}`,
-            borderRadius: 6,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em' }}>
-                {section.title}
-              </div>
-              {section.subtitle && (
-                <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: C.sansFont, lineHeight: 1.4 }}>
-                  {section.subtitle}
-                </div>
-              )}
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 340 }} className="wl-scrollbar">
-              {tickers.map((stock: any, i: number) => {
-                const sym = stock.symbol || stock.ticker;
-                const chg = stock.change_pct;
-                const chgCol = chg != null ? (chg >= 0 ? C.green : C.red) : C.dim;
-                return (
-                  <div
-                    key={sym || i}
-                    onClick={() => sym && onTickerClick?.(sym)}
-                    style={{
-                      padding: '9px 14px',
-                      borderBottom: i < tickers.length - 1 ? `1px solid ${C.border}` : 'none',
-                      cursor: 'pointer',
-                      transition: 'background 0.1s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
-                        {sym || '—'}
-                      </span>
-                      <span style={{ fontSize: 9, color: C.dim, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                        {stock.name || stock.company}
-                      </span>
-                      {stock.price != null && (
-                        <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, flexShrink: 0 }}>
-                          ${Number(stock.price).toFixed(2)}
-                        </span>
-                      )}
-                      {chg != null && (
-                        <span style={{
-                          fontSize: 8, fontWeight: 800, fontFamily: C.font,
-                          padding: '1px 5px', borderRadius: 3, flexShrink: 0,
-                          color: chgCol, background: chgCol + '18',
-                        }}>
-                          {chg > 0 ? '+' : ''}{Number(chg).toFixed(1)}%
-                        </span>
-                      )}
-                      {stock.risk_level && (
-                        <span style={{
-                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
-                          padding: '1px 5px', borderRadius: 3, flexShrink: 0,
-                          color: riskColor(stock.risk_level),
-                          background: riskColor(stock.risk_level) + '18',
-                          textTransform: 'uppercase' as const,
-                        }}>
-                          {stock.risk_level}
-                        </span>
-                      )}
-                    </div>
-                    {stock.catalyst && (
-                      <div style={{ fontSize: 9, color: C.dim, lineHeight: 1.4, marginBottom: stock.action_note ? 3 : 0,
-                        overflow: 'hidden', display: '-webkit-box' as any,
-                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                        ⚡ {stock.catalyst}
-                      </div>
-                    )}
-                    {stock.action_note && (
-                      <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3 }}>
-                        → {stock.action_note}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {tickers.length === 0 && (
-                <div style={{ padding: 14, fontSize: 10, color: C.dim, textAlign: 'center' }}>No tickers</div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+        {sections.map((section: any) => {
+          const accent = SECTION_ACCENTS[section.id] || C.teal;
+          return renderSectionCard(section, accent, section.id);
+        })}
       </div>
 
-      {/* Pending analysis card — shown when some tickers haven't been analyzed yet */}
+      {/* Pending analysis card — tickers in watchlist not yet analyzed */}
       {pendingSymbols.length > 0 && (
         <div style={{
           background: C.card, border: `1px solid ${C.amber}30`,
@@ -996,6 +1029,9 @@ export default function WatchlistPage() {
   ) : null;
 
   /* ── market themes banner ────────────────────────────────────────── */
+  // marketThemes entries may be plain strings (old backend) or
+  // { canonical_theme_name, canonical_theme_id } objects (new backend).
+  // resolveThemeLabel handles both transparently.
   const renderMarketThemes = () => {
     if (!marketThemes.length) return null;
     return (
@@ -1015,23 +1051,26 @@ export default function WatchlistPage() {
         }}>
           THEMES
         </span>
-        {marketThemes.map((theme, i) => (
-          <span
-            key={i}
-            style={{
-              flexShrink: 0,
-              padding: '3px 10px', borderRadius: 4,
-              fontSize: 10, fontWeight: 600,
-              fontFamily: C.sansFont,
-              color: C.teal,
-              background: `${C.teal}10`,
-              border: `1px solid ${C.teal}20`,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {theme}
-          </span>
-        ))}
+        {marketThemes.map((entry, i) => {
+          const label = resolveThemeLabel(entry as any);
+          return (
+            <span
+              key={i}
+              style={{
+                flexShrink: 0,
+                padding: '3px 10px', borderRadius: 4,
+                fontSize: 10, fontWeight: 600,
+                fontFamily: C.sansFont,
+                color: C.teal,
+                background: `${C.teal}10`,
+                border: `1px solid ${C.teal}20`,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {label}
+            </span>
+          );
+        })}
       </div>
     );
   };

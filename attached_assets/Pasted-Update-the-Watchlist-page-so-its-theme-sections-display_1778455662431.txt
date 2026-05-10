@@ -1,0 +1,58 @@
+Update the Watchlist page so its theme sections display canonical Themes page categories, not Watchlist-only strategy groups.
+
+Context:
+- Backend is being updated to return canonical theme names from the same taxonomy used by the Themes page.
+- Frontend should not hardcode separate Watchlist theme labels.
+- Current UI shows inaccurate groups like:
+  - “Semiconductor & Advanced Tech Growth Plays”
+  - “High-Growth Tech & Energy Infrastructure”
+  - “Semiconductor & Energy Technology”
+  - “Semiconductor & Photonics Technology”
+  - “Semiconductor & Space Technology Growth Plays”
+- These should disappear unless they are exact canonical Themes page names.
+
+Tasks:
+1. Find the Watchlist page component and any helper/config that renders:
+   - Theme chips across the top
+   - Theme cards/sections
+   - Ticker grouping by theme/strategy
+
+2. Remove frontend-only theme grouping logic if it exists.
+   - Do not classify tickers client-side.
+   - Do not maintain a separate local theme list.
+   - Trust the backend canonical theme grouping.
+
+3. Update labels:
+   - Rename the Watchlist “THEMES” row to show canonical theme names from backend response.
+   - If backend provides canonical_theme_id and canonical_theme_name, use those.
+   - If backend provides old strategy/group labels, do not transform them into new fake names. The backend should be fixed.
+
+4. Preserve the current UI layout:
+   - Top theme chips
+   - Scrollable ticker chips
+   - Theme cards
+   - Existing styling/glass/dark theme
+   - Existing price, thesis, confidence, action text
+
+5. Improve empty/fallback states:
+   - If a ticker does not map to a theme, show it under “Other / Uncategorized.”
+   - Do not hide tickers just because theme mapping is missing.
+   - Add a subtle debug-safe indicator only if useful, not noisy.
+
+6. Avoid duplicate calls:
+   - The Watchlist page should not separately call the Themes page endpoint just to label sections if the Watchlist endpoint already returns canonical theme groups.
+   - If the page currently calls both Watchlist and Themes endpoints for categorization, remove the redundant call unless needed only for display metadata.
+
+7. Validation:
+   - Run frontend build.
+   - Open Watchlist page.
+   - Confirm old inaccurate labels are gone.
+   - Confirm theme chips/cards match the exact theme names from the Themes page.
+   - Confirm ticker counts still match the watchlist.
+   - Confirm no blank state/regression.
+   - Confirm no new console errors.
+
+Deliver:
+- Files changed.
+- Screenshot/result summary.
+- Any backend fields the frontend now relies on.

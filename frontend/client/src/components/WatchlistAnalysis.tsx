@@ -29,11 +29,13 @@ export interface AnalysisSection {
   title: string;
   subtitle?: string;
   tickers: TickerCard[];
+  canonical_theme_id?: string;
+  canonical_theme_name?: string;
 }
 
 export interface NewWatchlistData {
   sections: AnalysisSection[];
-  market_themes?: string[];
+  market_themes?: Array<string | { canonical_theme_id?: string; canonical_theme_name: string }>;
   last_updated?: string;
 }
 
