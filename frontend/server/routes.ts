@@ -2348,16 +2348,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Market Matrix (tabbed) ──────────────────────────────────────────────
+  // The backend exposes /screener/snapshot with per-asset `category` and `tags`.
+  // We bucket those into the five canonical UI tabs (stocks_etfs, crypto,
+  // commodities, indices, pre_ipo) and shape each row into MatrixAsset fields
+  // the frontend already consumes. If the backend ever adds a native
+  // /screener/market-matrix endpoint, we'll prefer that and pass it through.
+  const MATRIX_TAB_LABELS: Record<string, string> = {
+    stocks_etfs:  'Stocks & ETFs',
+    crypto:       'Crypto',
+    commodities:  'Commodities',
+    indices:      'Indices',
+    pre_ipo:      'Pre-IPO Stocks',
+  };
+
+  // Hard-coded overrides for symbols the backend mis-tags (e.g. tagging
+  // commodity perps like NATGAS/CL/BRENTOIL as `equity`). Keep this list
+  // narrow and only for clear, well-known instruments.
+  const MATRIX_SYMBOL_OVERRIDES: Record<string, string> = {
+    // Commodities
+    NATGAS: 'commodities', CL: 'commodities', BRENTOIL: 'commodities',
+    WTI: 'commodities', OIL: 'commodities', GAS: 'commodities',
+    COPPER: 'commodities', GOLD: 'commodities', SILVER: 'commodities',
+    USOIL: 'commodities', USENERGY: 'commodities', WHEAT: 'commodities',
+    SOY: 'commodities', CORN: 'commodities', PLATINUM: 'commodities',
+    PALLADIUM: 'commodities',
+    // Indices / index ETFs
+    US500: 'indices', USA500: 'indices', SP500: 'indices', SPX: 'indices',
+    USTECH: 'indices', USBOND: 'indices', SMALL2000: 'indices',
+    NASDAQ: 'indices', NDX: 'indices', RUSSELL: 'indices',
+    DAX: 'indices', NIKKEI: 'indices',
+    // Crypto majors that sometimes get unusual tags
+    BTC: 'crypto', ETH: 'crypto', SOL: 'crypto', HYPE: 'crypto',
+    BNB: 'crypto', XRP: 'crypto', DOGE: 'crypto',
+    // Known stock perps the backend categorises as `macro`
+    TENCENT: 'stocks_etfs', XIAOMI: 'stocks_etfs', SMSN: 'stocks_etfs',
+    GLDMINE: 'stocks_etfs', HYUNDAI: 'stocks_etfs',
+  };
+
+  function _classifyMatrixTab(row: any): string {
+    const sym = String(row?.coin ?? row?.displayName ?? '').toUpperCase();
+    if (MATRIX_SYMBOL_OVERRIDES[sym]) return MATRIX_SYMBOL_OVERRIDES[sym];
+
+    const cat = String(row?.category ?? '').toLowerCase();
+    const tags: string[] = Array.isArray(row?.tags) ? row.tags.map((t: any) => String(t).toLowerCase()) : [];
+    const has = (s: string) => cat === s || tags.includes(s);
+    // Priority order matters — many equities double-tag as commodity/index.
+    if (has('pre-ipo') || has('preipo'))               return 'pre_ipo';
+    if (has('commodity'))                              return 'commodities';
+    if (has('index'))                                  return 'indices';
+    if (has('equity'))                                 return 'stocks_etfs';
+    if (cat === 'l1' || cat === 'defi' || cat === 'ai' || cat === 'meme' ||
+        cat === 'gaming' || cat === 'rwa' || has('crypto')) return 'crypto';
+    // Default: uncategorized perps on Hyperliquid are overwhelmingly crypto.
+    return 'crypto';
+  }
+
+  function _shapeMatrixAsset(row: any): any {
+    const oi    = Number(row?.openInterest ?? 0);
+    const mark  = Number(row?.markPrice ?? 0);
+    const oiUsd = Number.isFinite(oi) && Number.isFinite(mark) ? oi * mark : null;
+    return {
+      coin:                row?.coin ?? row?.displayName ?? null,
+      display_name:        row?.displayName ?? row?.coin ?? null,
+      asset_type:          row?.marketType ?? null,
+      category_source:     row?.category ?? null,
+      mark:                row?.markPrice ?? null,
+      oracle:              row?.oraclePrice ?? null,
+      mid:                 row?.midPrice ?? null,
+      prev_day_px:         null,
+      change_24h_pct:      row?.change24hPct ?? null,
+      funding:             row?.funding ?? null,
+      funding_annualized_pct: row?.funding8hPct != null ? Number(row.funding8hPct) * 3 * 365 : null,
+      open_interest_usd:   oiUsd,
+      volume_24h_usd:      row?.volume24h ?? null,
+      premium_pct:         row?.premium ?? null,
+      mark_oracle_pct:     row?.distMarkOracle ?? null,
+      book_imbalance:      row?.bidAskImbalance ?? null,
+      trade_imbalance:     row?.tradeImbalance ?? null,
+      vol_score:           row?.volatility ?? null,
+      signal:              row?.compositeSignal ?? null,
+      agent_score:         row?.agentScore ?? null,
+      agent_rank:          row?.agentRank ?? null,
+      max_leverage:        row?.maxLeverage ?? null,
+      is_active:           row?.isListedOnHyperliquid ?? true,
+    };
+  }
+
+  function _buildMatrixFromSnapshot(snapshot: any) {
+    const rows: any[] = Array.isArray(snapshot?.rows) ? snapshot.rows : [];
+    const tabs: Record<string, { label: string; count: number; assets: any[] }> = {
+      stocks_etfs: { label: MATRIX_TAB_LABELS.stocks_etfs, count: 0, assets: [] },
+      crypto:      { label: MATRIX_TAB_LABELS.crypto,      count: 0, assets: [] },
+      commodities: { label: MATRIX_TAB_LABELS.commodities, count: 0, assets: [] },
+      indices:     { label: MATRIX_TAB_LABELS.indices,     count: 0, assets: [] },
+      pre_ipo:     { label: MATRIX_TAB_LABELS.pre_ipo,     count: 0, assets: [] },
+    };
+    // De-dup by coin within the snapshot: the backend occasionally emits the
+    // same coin twice with different category tags. Keep the row with the
+    // highest 24h volume so the table picks the canonical/most-liquid quote.
+    const bestByCoin = new Map<string, any>();
+    for (const row of rows) {
+      const sym = String(row?.coin ?? row?.displayName ?? '').toUpperCase();
+      if (!sym) continue;
+      const prev = bestByCoin.get(sym);
+      if (!prev) { bestByCoin.set(sym, row); continue; }
+      const va = Number(row?.volume24h ?? 0);
+      const vb = Number(prev?.volume24h ?? 0);
+      if (va > vb) bestByCoin.set(sym, row);
+    }
+    for (const row of bestByCoin.values()) {
+      const key = _classifyMatrixTab(row);
+      const tab = tabs[key] ?? tabs.crypto;
+      tab.assets.push(_shapeMatrixAsset(row));
+    }
+    for (const k of Object.keys(tabs)) tabs[k].count = tabs[k].assets.length;
+    return {
+      updated_at: snapshot?.meta?.updatedAt ?? new Date().toISOString(),
+      source: 'derived-from-snapshot',
+      tabs,
+      all_assets_count: bestByCoin.size,
+    };
+  }
+
   app.get('/api/hyperliquid/screener/market-matrix', async (_req, res) => {
+    // 1) Prefer backend's native tabbed endpoint if it ever exists.
     try {
       const r = await fetch(
         `${HL_URL}/api/hyperliquid/screener/market-matrix`,
-        { headers: hlHdr(), signal: AbortSignal.timeout(15_000) }
+        { headers: hlHdr(), signal: AbortSignal.timeout(8_000) }
       );
-      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
-      res.json(await r.json());
+      if (r.ok) {
+        const json = await r.json();
+        if (json && json.tabs && Object.keys(json.tabs).length > 0) {
+          return res.json(json);
+        }
+      }
+    } catch { /* fall through to snapshot derivation */ }
+
+    // 2) Derive from the snapshot (already warmed in _hlCache['all:200']).
+    try {
+      let snapshot: any = _hlCache['all:200']?.data;
+      if (!snapshot) snapshot = await _fetchScreener('all', '200');
+      const payload = _buildMatrixFromSnapshot(snapshot);
+      res.json(payload);
     } catch (e: any) {
-      res.status(500).json({ error: 'Failed to fetch market matrix' });
+      res.status(500).json({ error: 'Failed to build market matrix' });
     }
   });
 

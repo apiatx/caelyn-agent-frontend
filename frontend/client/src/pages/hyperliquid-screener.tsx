@@ -1922,48 +1922,52 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 
   return (
     <div style={{ margin:'0 14px 14px', border:`1px solid ${C.border}`, borderRadius:6, overflow:'hidden' }}>
-      <button onClick={() => setShowMatrix(m => !m)}
-        style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:C.card2, border:'none', cursor:'pointer', color:C.text, borderBottom:showMatrix?`1px solid ${C.border}`:'none' }}>
-        <BarChart2 style={{ width:11, height:11, color:C.teal }} />
-        <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
-        <span style={{ fontSize:8.5, color:C.dim, marginLeft:4 }}>{totalCount} assets</span>
-        <span style={{ marginLeft:'auto', color:C.dim }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:C.card2, color:C.text, borderBottom:showMatrix?`1px solid ${C.border}`:'none' }}>
+        <button onClick={() => setShowMatrix(m => !m)}
+          style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', border:'none', cursor:'pointer', color:C.text, padding:0 }}>
+          <BarChart2 style={{ width:11, height:11, color:C.teal }} />
+          <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
+          <span style={{ fontSize:8.5, color:C.dim, marginLeft:4 }}>{totalCount} assets</span>
+        </button>
+        {useTabbed && (
+          <div style={{ marginLeft:'auto', display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end' }}>
+            {orderedKeys.map(key => {
+              const t = tabs[key];
+              const label = t?.label ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
+              const count = t?.count ?? 0;
+              const isActive = key === currentKey;
+              return (
+                <button key={key} onClick={() => { setActiveTab(key); setShowMatrix(true); }}
+                  style={{
+                    display:'inline-flex', alignItems:'center', gap:5,
+                    padding:'3px 8px', borderRadius:4, cursor:'pointer',
+                    fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
+                    textTransform:'uppercase',
+                    background: isActive ? `${C.teal}22` : 'transparent',
+                    color: isActive ? C.teal : C.dim,
+                    border: `1px solid ${isActive ? C.teal : C.border}`,
+                  }}>
+                  <span>{label}</span>
+                  <span style={{
+                    fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
+                    background: isActive ? `${C.teal}33` : C.dimLow,
+                    color: isActive ? C.teal : C.dim,
+                  }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button onClick={() => setShowMatrix(m => !m)}
+          aria-label={showMatrix ? 'Collapse' : 'Expand'}
+          style={{ marginLeft: useTabbed ? 4 : 'auto', background:'transparent', border:'none', cursor:'pointer', color:C.dim, padding:0, display:'flex', alignItems:'center' }}>
           {showMatrix ? <ChevronUp style={{ width:11, height:11 }} /> : <ChevronDown style={{ width:11, height:11 }} />}
-        </span>
-      </button>
+        </button>
+      </div>
       {showMatrix && (
         <>
           {useTabbed ? (
             <>
-              {/* ── Tabs ── */}
-              <div style={{ display:'flex', flexWrap:'wrap', gap:4, padding:'7px 10px', background:C.card2, borderBottom:`1px solid ${C.border}` }}>
-                {orderedKeys.map(key => {
-                  const t = tabs[key];
-                  const label = t?.label ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
-                  const count = t?.count ?? 0;
-                  const isActive = key === currentKey;
-                  return (
-                    <button key={key} onClick={() => setActiveTab(key)}
-                      style={{
-                        display:'inline-flex', alignItems:'center', gap:5,
-                        padding:'4px 9px', borderRadius:4, cursor:'pointer',
-                        fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
-                        textTransform:'uppercase',
-                        background: isActive ? `${C.teal}22` : 'transparent',
-                        color: isActive ? C.teal : C.dim,
-                        border: `1px solid ${isActive ? C.teal : C.border}`,
-                      }}>
-                      <span>{label}</span>
-                      <span style={{
-                        fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
-                        background: isActive ? `${C.teal}33` : C.dimLow,
-                        color: isActive ? C.teal : C.dim,
-                      }}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
               {/* ── Tabbed Table ── */}
               <div style={{ overflow:'auto', maxHeight:400 }}>
                 {sortedTabbed.length === 0 ? (
