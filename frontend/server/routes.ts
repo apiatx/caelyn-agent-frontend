@@ -2348,6 +2348,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/hyperliquid/screener/market-matrix', async (_req, res) => {
+    try {
+      const r = await fetch(
+        `${HL_URL}/api/hyperliquid/screener/market-matrix`,
+        { headers: hlHdr(), signal: AbortSignal.timeout(15_000) }
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: 'Failed to fetch market matrix' });
+    }
+  });
+
   app.get('/api/hyperliquid/asset/:coin', async (req, res) => {
     try {
       const r = await fetch(
