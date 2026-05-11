@@ -1813,10 +1813,12 @@ const MATRIX_TAB_FALLBACK_LABELS: Record<string,string> = {
   pre_ipo:      'Pre-IPO Stocks',
 };
 
-function MarketMatrixSection({ search }: { search: string }) {
+function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbackRows: ScreenerRow[] }) {
   const [activeTab, setActiveTab] = useState<string>('stocks_etfs');
   const [sortKey, setSortKey]     = useState<MatrixKey>('agent_score');
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc');
+  const [fbSortKey, setFbSortKey] = useState<CK>('agentScore');
+  const [fbSortDir, setFbSortDir] = useState<'asc'|'desc'>('desc');
   const [showMatrix, setShowMatrix] = useState(false);
 
   const { data, isLoading, isError } = useQuery<MatrixResponse>({
@@ -1835,19 +1837,25 @@ function MarketMatrixSection({ search }: { search: string }) {
   });
 
   const tabs = data?.tabs ?? {};
-  // Order known keys first, then any extra keys returned by backend
   const orderedKeys = useMemo(() => {
     const known = MATRIX_TAB_ORDER.filter(k => k in tabs);
     const extras = Object.keys(tabs).filter(k => !MATRIX_TAB_ORDER.includes(k));
     return [...known, ...extras];
   }, [tabs]);
 
+  const totalTabbedRows = useMemo(
+    () => Object.values(tabs).reduce((sum, t) => sum + ((t?.assets?.length) ?? 0), 0),
+    [tabs]
+  );
+
+  // Use the new tabbed endpoint when it has any usable rows; otherwise fall back.
+  const useTabbed = !!data && orderedKeys.length > 0 && totalTabbedRows > 0;
+
   const currentKey = (activeTab in tabs) ? activeTab : (orderedKeys[0] ?? 'stocks_etfs');
   const currentTab = tabs[currentKey];
-
   const assets: MatrixAsset[] = currentTab?.assets ?? [];
 
-  const filtered = useMemo(() => {
+  const filteredTabbed = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return assets;
     return assets.filter(a =>
@@ -1856,7 +1864,7 @@ function MarketMatrixSection({ search }: { search: string }) {
     );
   }, [assets, search]);
 
-  const sorted = useMemo(() => {
+  const sortedTabbed = useMemo(() => {
     const cmp = (a: MatrixAsset, b: MatrixAsset) => {
       const av: any = (a as any)[sortKey];
       const bv: any = (b as any)[sortKey];
@@ -1866,8 +1874,8 @@ function MarketMatrixSection({ search }: { search: string }) {
       const d = av < bv ? -1 : av > bv ? 1 : 0;
       return sortDir === 'asc' ? d : -d;
     };
-    return [...filtered].sort(cmp);
-  }, [filtered, sortKey, sortDir]);
+    return [...filteredTabbed].sort(cmp);
+  }, [filteredTabbed, sortKey, sortDir]);
 
   const handleSort = useCallback((key: MatrixKey) => {
     setSortKey(prev => {
@@ -1875,24 +1883,42 @@ function MarketMatrixSection({ search }: { search: string }) {
         setSortDir(d => d === 'asc' ? 'desc' : 'asc');
         return key;
       }
-      // Coin sorts ascending by default; numeric columns descending
       setSortDir(key === 'coin' ? 'asc' : 'desc');
       return key;
     });
   }, []);
 
-  // Hide the section until matrix payload is available — keeps page quiet on first paint
-  if (isLoading && !data) {
-    return (
-      <div style={{ margin:'0 14px 14px', border:`1px solid ${C.border}`, borderRadius:6, padding:'10px 12px', color:C.dim, fontSize:9 }}>
-        Loading Market Matrix…
-      </div>
-    );
-  }
-  if (isError && !data) return null;
-  if (!data) return null;
+  // ── Fallback rendering data (uses parent's already-sorted ScreenerRow rows) ──
+  const sortedFallback = useMemo(() => {
+    const cmp = (a: ScreenerRow, b: ScreenerRow) => {
+      const av: any = (a as any)[fbSortKey];
+      const bv: any = (b as any)[fbSortKey];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      const d = av < bv ? -1 : av > bv ? 1 : 0;
+      return fbSortDir === 'asc' ? d : -d;
+    };
+    return [...fallbackRows].sort(cmp);
+  }, [fallbackRows, fbSortKey, fbSortDir]);
 
-  const totalCount = data.all_assets_count ?? Object.values(tabs).reduce((sum, t) => sum + (t?.count ?? 0), 0);
+  const handleFbSort = useCallback((key: CK) => {
+    setFbSortKey(prev => {
+      if (prev === key) {
+        setFbSortDir(d => d === 'asc' ? 'desc' : 'asc');
+        return key;
+      }
+      setFbSortDir(key === 'coin' ? 'asc' : 'desc');
+      return key;
+    });
+  }, []);
+
+  const totalCount = useTabbed
+    ? (data?.all_assets_count ?? Object.values(tabs).reduce((sum, t) => sum + (t?.count ?? 0), 0))
+    : sortedFallback.length;
+
+  // Don't render anything only when the entire page has no data at all.
+  if (!useTabbed && fallbackRows.length === 0 && !isLoading) return null;
 
   return (
     <div style={{ margin:'0 14px 14px', border:`1px solid ${C.border}`, borderRadius:6, overflow:'hidden' }}>
@@ -1907,81 +1933,141 @@ function MarketMatrixSection({ search }: { search: string }) {
       </button>
       {showMatrix && (
         <>
-          {/* ── Tabs ── */}
-          <div style={{ display:'flex', flexWrap:'wrap', gap:4, padding:'7px 10px', background:C.card2, borderBottom:`1px solid ${C.border}` }}>
-            {orderedKeys.map(key => {
-              const t = tabs[key];
-              const label = t?.label ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
-              const count = t?.count ?? 0;
-              const isActive = key === currentKey;
-              return (
-                <button key={key} onClick={() => setActiveTab(key)}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:5,
-                    padding:'4px 9px', borderRadius:4, cursor:'pointer',
-                    fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
-                    textTransform:'uppercase',
-                    background: isActive ? `${C.teal}22` : 'transparent',
-                    color: isActive ? C.teal : C.dim,
-                    border: `1px solid ${isActive ? C.teal : C.border}`,
-                  }}>
-                  <span>{label}</span>
-                  <span style={{
-                    fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
-                    background: isActive ? `${C.teal}33` : C.dimLow,
-                    color: isActive ? C.teal : C.dim,
-                  }}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Table ── */}
-          <div style={{ overflow:'auto', maxHeight:400 }}>
-            {sorted.length === 0 ? (
-              <div style={{ padding:'24px 14px', textAlign:'center', color:C.dim, fontSize:10 }}>
-                No Hyperliquid markets found in this category yet.
+          {useTabbed ? (
+            <>
+              {/* ── Tabs ── */}
+              <div style={{ display:'flex', flexWrap:'wrap', gap:4, padding:'7px 10px', background:C.card2, borderBottom:`1px solid ${C.border}` }}>
+                {orderedKeys.map(key => {
+                  const t = tabs[key];
+                  const label = t?.label ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
+                  const count = t?.count ?? 0;
+                  const isActive = key === currentKey;
+                  return (
+                    <button key={key} onClick={() => setActiveTab(key)}
+                      style={{
+                        display:'inline-flex', alignItems:'center', gap:5,
+                        padding:'4px 9px', borderRadius:4, cursor:'pointer',
+                        fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
+                        textTransform:'uppercase',
+                        background: isActive ? `${C.teal}22` : 'transparent',
+                        color: isActive ? C.teal : C.dim,
+                        border: `1px solid ${isActive ? C.teal : C.border}`,
+                      }}>
+                      <span>{label}</span>
+                      <span style={{
+                        fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
+                        background: isActive ? `${C.teal}33` : C.dimLow,
+                        color: isActive ? C.teal : C.dim,
+                      }}>{count}</span>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
-                <thead>
-                  <tr style={{ background:'#060b14', position:'sticky', top:0, zIndex:10 }}>
-                    {MATRIX_COLS.map(col => {
-                      const isSorted = sortKey === col.key;
-                      return (
-                        <th key={col.key} onClick={() => handleSort(col.key)}
-                          style={{ width:col.w, minWidth:col.w, padding:'4px 7px', borderBottom:`1px solid ${C.border}`, borderRight:`1px solid ${C.dimLow}`, textAlign:col.align??'right', cursor:'pointer', userSelect:'none', background:isSorted?`${C.teal}12`:'transparent', whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', zIndex:col.key==='coin'?5:'auto' }}>
-                          <div style={{ display:'flex', alignItems:'center', justifyContent:col.align==='left'?'flex-start':'flex-end', gap:2 }}>
-                            <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:isSorted?C.teal:C.dim }}>{col.label}</span>
-                            {isSorted ? (sortDir==='asc'?<ChevronUp style={{ width:8,height:8,color:C.teal }} />:<ChevronDown style={{ width:8,height:8,color:C.teal }} />) : <ChevronsUpDown style={{ width:8,height:8,color:C.dimLow }} />}
-                          </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((row, idx) => {
-                    const rowBg = idx % 2 === 0 ? C.bg : C.card2;
-                    return (
-                      <tr key={`${row.coin ?? idx}_${idx}`} style={{ background:rowBg, height:26, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}` }}>
+
+              {/* ── Tabbed Table ── */}
+              <div style={{ overflow:'auto', maxHeight:400 }}>
+                {sortedTabbed.length === 0 ? (
+                  <div style={{ padding:'24px 14px', textAlign:'center', color:C.dim, fontSize:10 }}>
+                    No Hyperliquid markets found in this category yet.
+                  </div>
+                ) : (
+                  <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
+                    <thead>
+                      <tr style={{ background:'#060b14', position:'sticky', top:0, zIndex:10 }}>
                         {MATRIX_COLS.map(col => {
-                          const v = (row as any)[col.key];
-                          const txt = col.fmt(v);
-                          const clr = col.vc ? col.vc(v) : C.text;
+                          const isSorted = sortKey === col.key;
                           return (
-                            <td key={col.key} style={{ padding:'0 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, color:col.key==='coin'?C.text:clr, fontWeight:col.key==='coin'?700:400, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}` }}>
-                              {col.key === 'coin' ? (row.coin ?? row.display_name ?? '—') : txt}
-                            </td>
+                            <th key={col.key} onClick={() => handleSort(col.key)}
+                              style={{ width:col.w, minWidth:col.w, padding:'4px 7px', borderBottom:`1px solid ${C.border}`, borderRight:`1px solid ${C.dimLow}`, textAlign:col.align??'right', cursor:'pointer', userSelect:'none', background:isSorted?`${C.teal}12`:'transparent', whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', zIndex:col.key==='coin'?5:'auto' }}>
+                              <div style={{ display:'flex', alignItems:'center', justifyContent:col.align==='left'?'flex-start':'flex-end', gap:2 }}>
+                                <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:isSorted?C.teal:C.dim }}>{col.label}</span>
+                                {isSorted ? (sortDir==='asc'?<ChevronUp style={{ width:8,height:8,color:C.teal }} />:<ChevronDown style={{ width:8,height:8,color:C.teal }} />) : <ChevronsUpDown style={{ width:8,height:8,color:C.dimLow }} />}
+                              </div>
+                            </th>
                           );
                         })}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
+                    </thead>
+                    <tbody>
+                      {sortedTabbed.map((row, idx) => {
+                        const rowBg = idx % 2 === 0 ? C.bg : C.card2;
+                        return (
+                          <tr key={`${row.coin ?? idx}_${idx}`} style={{ background:rowBg, height:26, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}` }}>
+                            {MATRIX_COLS.map(col => {
+                              const v = (row as any)[col.key];
+                              const txt = col.fmt(v);
+                              const clr = col.vc ? col.vc(v) : C.text;
+                              return (
+                                <td key={col.key} style={{ padding:'0 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, color:col.key==='coin'?C.text:clr, fontWeight:col.key==='coin'?700:400, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}` }}>
+                                  {col.key === 'coin' ? (row.coin ?? row.display_name ?? '—') : txt}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* ── Fallback inline notice (only when new endpoint is unavailable) ── */}
+              {(isError || (data && totalTabbedRows === 0)) && (
+                <div style={{ padding:'6px 12px', background:C.card2, borderBottom:`1px solid ${C.border}`, fontSize:9, color:C.dim }}>
+                  Tabbed matrix unavailable — showing full market matrix.
+                </div>
+              )}
+
+              {/* ── Fallback Table (original untabbed Market Matrix using ScreenerRow data) ── */}
+              <div style={{ overflow:'auto', maxHeight:400 }}>
+                {sortedFallback.length === 0 ? (
+                  <div style={{ padding:'24px 14px', textAlign:'center', color:C.dim, fontSize:10 }}>
+                    {isLoading ? 'Loading Market Matrix…' : 'No Hyperliquid markets available.'}
+                  </div>
+                ) : (
+                  <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
+                    <thead>
+                      <tr style={{ background:'#060b14', position:'sticky', top:0, zIndex:10 }}>
+                        {MAT_COLS.map(col => {
+                          const isSorted = fbSortKey === col.key;
+                          return (
+                            <th key={String(col.key)} onClick={() => handleFbSort(col.key)}
+                              style={{ width:col.w, minWidth:col.w, padding:'4px 7px', borderBottom:`1px solid ${C.border}`, borderRight:`1px solid ${C.dimLow}`, textAlign:col.align??'right', cursor:'pointer', userSelect:'none', background:isSorted?`${C.teal}12`:'transparent', whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', zIndex:col.key==='coin'?5:'auto' }}>
+                              <div style={{ display:'flex', alignItems:'center', justifyContent:col.align==='left'?'flex-start':'flex-end', gap:2 }}>
+                                <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:isSorted?C.teal:C.dim }}>{col.label}</span>
+                                {isSorted ? (fbSortDir==='asc'?<ChevronUp style={{ width:8,height:8,color:C.teal }} />:<ChevronDown style={{ width:8,height:8,color:C.teal }} />) : <ChevronsUpDown style={{ width:8,height:8,color:C.dimLow }} />}
+                              </div>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedFallback.map((row, idx) => {
+                        const rowBg = idx % 2 === 0 ? C.bg : C.card2;
+                        return (
+                          <tr key={`${row.coin}_${idx}`} style={{ background:rowBg, height:26, borderBottom:`1px solid ${C.dimLow}` }}>
+                            {MAT_COLS.map(col => {
+                              const v = (row as any)[col.key];
+                              const txt = col.fmt(v);
+                              const clr = col.vc ? col.vc(v) : C.text;
+                              return (
+                                <td key={String(col.key)} style={{ padding:'0 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, color:col.key==='coin'?C.text:clr, fontWeight:col.key==='coin'?700:400, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}` }}>
+                                  {txt}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
@@ -2284,8 +2370,8 @@ export default function HyperliquidScreenerPage() {
               </SectionErrorBoundary>
             )}
 
-            {/* ── MARKET MATRIX (tabbed, backend-driven) ────────────────── */}
-            <MarketMatrixSection search={search} />
+            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
+            <MarketMatrixSection search={search} fallbackRows={sorted} />
           </>
         )}
       </div>
