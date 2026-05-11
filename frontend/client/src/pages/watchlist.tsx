@@ -100,6 +100,7 @@ function extractAllStocks(analysis: any): any[] {
             change_pct: t.change_pct ?? t.change_pct_1d,
             volume: t.volume,
             average_volume: t.average_volume ?? t.avg_volume,
+            relative_volume: t.relative_volume ?? t.rel_vol ?? t.volx,
             high: t.high ?? t.day_high,
             low: t.low ?? t.day_low,
             sector: t.sector ?? t.category ?? t.industry,
@@ -215,7 +216,12 @@ function formatVolume(v: any): string {
   return String(Math.round(n));
 }
 
-function formatRelVol(volume: any, averageVolume: any): string {
+function formatRelVol(volume: any, averageVolume: any, preComputed?: any): string {
+  // Prefer pre-computed relative_volume from backend (shared cache); fall back
+  // to volume / average_volume when only the raw fields are present.
+  if (preComputed != null && Number.isFinite(Number(preComputed))) {
+    return `${Number(preComputed).toFixed(1)}x`;
+  }
   const v = Number(volume);
   const av = Number(averageVolume);
   if (!Number.isFinite(v) || !Number.isFinite(av) || av === 0) return DASH;
@@ -941,6 +947,8 @@ export default function WatchlistPage() {
         return { v: n, missing: !Number.isFinite(n) };
       }
       case 'relVol': {
+        const pre = Number(stock.relative_volume);
+        if (Number.isFinite(pre) && pre > 0) return { v: pre, missing: false };
         const v = Number(stock.volume);
         const av = Number(stock.average_volume);
         if (!Number.isFinite(v) || !Number.isFinite(av) || av === 0) return { v: 0, missing: true };
@@ -1574,7 +1582,7 @@ export default function WatchlistPage() {
                     {formatVolume(stock.volume)}
                   </span>
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
-                    {formatRelVol(stock.volume, stock.average_volume)}
+                    {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
                   </span>
                 </div>
               );
