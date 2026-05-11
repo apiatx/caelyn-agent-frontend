@@ -50,6 +50,14 @@ export function mergeRealtimeQuote<T extends Record<string, any>>(
     base.volume = rt.volume;
   }
 
+  if (isFiniteNumber(rt.high)) {
+    base.high = rt.high;
+  }
+
+  if (isFiniteNumber(rt.low)) {
+    base.low = rt.low;
+  }
+
   // Always attach metadata so callers can render freshness badges.
   base.price_source = rt.source ?? base.price_source ?? "unknown";
   base.price_is_realtime = rt.is_realtime === true;

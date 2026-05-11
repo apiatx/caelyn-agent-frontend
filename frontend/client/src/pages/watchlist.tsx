@@ -98,8 +98,12 @@ function extractAllStocks(analysis: any): any[] {
             company: t.name || t.company,
             price: t.price,
             change_pct: t.change_pct ?? t.change_pct_1d,
+            volume: t.volume,
+            high: t.high ?? t.day_high,
+            low: t.low ?? t.day_low,
+            sector: t.sector ?? t.category ?? t.industry,
             quote_source: t.quote_source,
-            quote_updated_at: t.quote_updated_at,
+            quote_updated_at: t.quote_updated_at ?? t.updated_at ?? t.price_updated_at,
             signal: (t.change_pct ?? t.change_pct_1d) != null ? ((t.change_pct ?? t.change_pct_1d) >= 0 ? 'BUY' : 'HOLD') : undefined,
             risk_level: t.risk_level,
             catalyst: t.catalyst,
@@ -108,6 +112,8 @@ function extractAllStocks(analysis: any): any[] {
             key_insight: t.key_insight,
             section_id: section.id,
             section_title: section.title,
+            canonical_theme_name: section.canonical_theme_name || section.title,
+            canonical_theme_id: section.canonical_theme_id || section.id,
           });
         }
       }
@@ -185,6 +191,60 @@ function changeColor(pct?: number): string {
   return C.dim;
 }
 
+/* ── compact number formatters ─────────────────────────────────────── */
+const DASH = '—';
+
+function formatPrice(p: any): string {
+  if (p == null || !Number.isFinite(Number(p))) return DASH;
+  return `$${Number(p).toFixed(2)}`;
+}
+
+function formatChgPct(c: any): string {
+  if (c == null || !Number.isFinite(Number(c))) return DASH;
+  const n = Number(c);
+  return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
+}
+
+function formatVolume(v: any): string {
+  if (v == null || !Number.isFinite(Number(v))) return DASH;
+  const n = Number(v);
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return String(Math.round(n));
+}
+
+function formatDayRange(low: any, high: any): string {
+  const lo = Number(low);
+  const hi = Number(high);
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return DASH;
+  return `$${lo.toFixed(2)} - $${hi.toFixed(2)}`;
+}
+
+function parseTimestamp(t: any): number | null {
+  if (t == null) return null;
+  if (typeof t === 'number') return Number.isFinite(t) ? (t < 1e12 ? t * 1000 : t) : null;
+  const n = new Date(t).getTime();
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatUpdated(t: any): string {
+  const ms = parseTimestamp(t);
+  if (ms == null) return DASH;
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return 'just now';
+  if (diff < 60 * 60_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 24 * 60 * 60_000) {
+    const d = new Date(ms);
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+  }
+  return `${Math.floor(diff / (24 * 60 * 60_000))}d ago`;
+}
+
 /* ── section accent color ──────────────────────────────────────────── */
 const SECTION_ACCENTS: Record<string, string> = {
   best_entries: '#22c55e',
@@ -231,6 +291,15 @@ function ensureBlinkStyle() {
     .wl-scrollbar::-webkit-scrollbar-track { background:transparent; }
     .wl-scrollbar::-webkit-scrollbar-thumb { background:${C.border}; border-radius:2px; }
     .wl-chip-strip::-webkit-scrollbar { height:0; }
+    @media (max-width: 900px) {
+      .wl-top-split {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+      }
+      .wl-top-split > * {
+        height: clamp(320px, 50vh, 520px) !important;
+      }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -554,6 +623,8 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'sector' | 'theme' | 'price' | 'chg' | 'volume' | 'dayRange' | 'updated'>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -864,6 +935,76 @@ export default function WatchlistPage() {
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
+
+  /* ── ticker table sorting ────────────────────────────────────────── */
+  function getSortValue(stock: any, key: NonNullable<typeof sortKey>): { v: any; missing: boolean } {
+    switch (key) {
+      case 'ticker': {
+        const v = (stock.ticker || '').toString().toUpperCase();
+        return { v, missing: !v };
+      }
+      case 'company': {
+        const v = (stock.company || stock.name || '').toString().toLowerCase();
+        return { v, missing: !v };
+      }
+      case 'sector': {
+        const v = (stock.sector || '').toString().toLowerCase();
+        return { v, missing: !v };
+      }
+      case 'theme': {
+        const v = (stock.canonical_theme_name || stock.section_title || '').toString().toLowerCase();
+        return { v, missing: !v };
+      }
+      case 'price': {
+        const n = Number(stock.price);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'chg': {
+        const n = Number(stock.change_pct ?? stock.change_pct_1d);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'volume': {
+        const n = Number(stock.volume);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'dayRange': {
+        const lo = Number(stock.low);
+        const hi = Number(stock.high);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { v: 0, missing: true };
+        return { v: (lo + hi) / 2, missing: false };
+      }
+      case 'updated': {
+        const n = parseTimestamp(stock.quote_updated_at ?? stock.price_updated_at ?? stock.quote_timestamp);
+        return { v: n ?? 0, missing: n == null };
+      }
+    }
+  }
+
+  const sortedTickers = useMemo(() => {
+    if (!sortKey) return mergedTickers;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...mergedTickers]
+      .map((s, i) => ({ s, i, sv: getSortValue(s, sortKey) }))
+      .sort((a, b) => {
+        if (a.sv.missing && b.sv.missing) return a.i - b.i;
+        if (a.sv.missing) return 1;
+        if (b.sv.missing) return -1;
+        if (typeof a.sv.v === 'number' && typeof b.sv.v === 'number') {
+          return (a.sv.v - b.sv.v) * dir;
+        }
+        return String(a.sv.v).localeCompare(String(b.sv.v)) * dir;
+      })
+      .map(r => r.s);
+  }, [mergedTickers, sortKey, sortDir]);
+
+  function handleSortClick(key: NonNullable<typeof sortKey>) {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -1325,128 +1466,174 @@ export default function WatchlistPage() {
     );
   };
 
-  /* ── ticker table for new format ─────────────────────────────────── */
-  const renderNewFormatTickerTable = () => (
-    <div style={{
-      background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-    }}>
+  /* ── ticker table for new format ─────────────────────── */
+  const renderNewFormatTickerTable = () => {
+    const TICKER_GRID = '64px minmax(140px, 1.4fr) minmax(96px, 0.8fr) minmax(120px, 1fr) 76px 60px 64px 124px 70px';
+    const tickerColumns: { key: NonNullable<typeof sortKey>; label: string }[] = [
+      { key: 'ticker', label: 'Ticker' },
+      { key: 'company', label: 'Company' },
+      { key: 'sector', label: 'Sector' },
+      { key: 'theme', label: 'Theme' },
+      { key: 'price', label: 'Price' },
+      { key: 'chg', label: 'Chg %' },
+      { key: 'volume', label: 'Volume' },
+      { key: 'dayRange', label: 'Day Range' },
+      { key: 'updated', label: 'Updated' },
+    ];
+    return (
       <div style={{
-        padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
-        display: 'flex', alignItems: 'center', gap: 8,
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        height: '100%', minHeight: 0,
       }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-          TICKERS
-        </span>
-        <span style={{ fontSize: 9, color: C.dim }}>
-          {pendingCount > 0
-            ? `${analyzedCount} analyzed · ${pendingCount} pending`
-            : `${mergedTickers.length} total`}
-        </span>
-        {pendingCount > 0 && (
-          <span style={{
-            fontSize: 7, fontWeight: 800, fontFamily: C.font,
-            padding: '2px 6px', borderRadius: 3,
-            color: C.amber, background: C.amber + '18',
-            border: `1px solid ${C.amber}30`,
-            textTransform: 'uppercase' as const, letterSpacing: '0.04em',
-          }}>
-            {pendingCount} PENDING ANALYSIS
+        <div style={{
+          padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+          display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+            TICKERS
           </span>
-        )}
-      </div>
+          <span style={{ fontSize: 9, color: C.dim }}>
+            {pendingCount > 0
+              ? `${analyzedCount} analyzed · ${pendingCount} pending`
+              : `${mergedTickers.length} total`}
+          </span>
+          {pendingCount > 0 && (
+            <span style={{
+              fontSize: 7, fontWeight: 800, fontFamily: C.font,
+              padding: '2px 6px', borderRadius: 3,
+              color: C.amber, background: C.amber + '18',
+              border: `1px solid ${C.amber}30`,
+              textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+            }}>
+              {pendingCount} PENDING ANALYSIS
+            </span>
+          )}
+        </div>
 
-      {/* table header */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '62px 1fr 72px 52px 70px',
-        padding: '6px 14px',
-        borderBottom: `1px solid ${C.border}`,
-        fontSize: 8, fontWeight: 700, color: C.dim,
-        textTransform: 'uppercase' as const, letterSpacing: '0.08em',
-      }}>
-        <span>Ticker</span><span>Company</span><span>Price</span><span>Chg%</span><span>Status</span>
-      </div>
-
-      {/* table rows */}
-      <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
-        {mergedTickers.map((stock, i) => {
-          const isPending = stock._pending;
-          const chg1d = stock.change_pct ?? stock.change_pct_1d;
-          const cCol = changeColor(chg1d);
-          const rCol = riskColor(stock.risk_level);
-          return (
-            <div
-              key={`row-${stock.ticker}-${i}`}
-              onClick={() => !isPending && stock.ticker && handleTickerClick(stock.ticker)}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '62px 1fr 72px 52px 70px',
-                padding: '7px 14px',
-                borderBottom: `1px solid ${C.border}`,
-                background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
-                cursor: isPending ? 'default' : 'pointer',
-                transition: 'background 0.1s',
-                alignItems: 'center',
-                opacity: isPending ? 0.55 : 1,
-              }}
-              onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = `${C.teal}0c`; }}
-              onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff' }}>
-                {stock.ticker || '\u2014'}
-              </span>
-              <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                {isPending ? '' : (stock.company || '\u2014')}
-              </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                {!isPending && stock.price != null ? `$${stock.price.toFixed(2)}` : '\u2014'}
-                {!isPending && stock.price_source && (
-                  <PriceFreshnessBadge
-                    compact
-                    meta={{
-                      source: stock.price_source,
-                      is_realtime: stock.price_is_realtime,
-                      is_live_backup: stock.price_is_live_backup,
-                      is_stale: stock.price_is_stale,
-                      staleness_seconds: stock.staleness_seconds,
-                      quote_timestamp: stock.quote_timestamp,
-                      updated_at: stock.price_updated_at,
+        {/* scrollable area with horizontal overflow for narrow viewports */}
+        <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
+          <div style={{ minWidth: 900 }}>
+            {/* table header */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: TICKER_GRID,
+              padding: '6px 14px',
+              borderBottom: `1px solid ${C.border}`,
+              position: 'sticky' as const, top: 0, zIndex: 1,
+              background: C.card,
+              fontSize: 8, fontWeight: 700, color: C.dim,
+              textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+              gap: 6,
+            }}>
+              {tickerColumns.map(col => {
+                const active = sortKey === col.key;
+                return (
+                  <span
+                    key={col.key}
+                    onClick={() => handleSortClick(col.key)}
+                    style={{
+                      cursor: 'pointer',
+                      color: active ? C.teal : C.dim,
+                      userSelect: 'none' as const,
+                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                      overflow: 'hidden', whiteSpace: 'nowrap' as const,
                     }}
-                  />
-                )}
-              </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font }}>
-                {!isPending && chg1d != null
-                  ? `${chg1d > 0 ? '+' : ''}${chg1d.toFixed(1)}%`
-                  : '\u2014'}
-              </span>
-              <span style={{
-                fontSize: 7, fontWeight: 800, fontFamily: C.font,
-                padding: '2px 5px', borderRadius: 3,
-                color: isPending ? C.amber : rCol,
-                background: (isPending ? C.amber : rCol) + '15',
-                textTransform: 'uppercase' as const, letterSpacing: '0.04em',
-                textAlign: 'center' as const, whiteSpace: 'nowrap' as const,
-                justifySelf: 'start',
-              }}>
-                {isPending ? 'PENDING' : (stock.risk_level ? stock.risk_level.toUpperCase() : '\u2014')}
-              </span>
+                    title={`Sort by ${col.label}`}
+                  >
+                    {col.label}
+                    <span style={{ fontSize: 8, opacity: active ? 1 : 0.3 }}>
+                      {active ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                    </span>
+                  </span>
+                );
+              })}
             </div>
-          );
-        })}
-        {mergedTickers.length === 0 && (
-          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No tickers</div>
-        )}
+
+            {/* table rows */}
+            {sortedTickers.map((stock, i) => {
+              const isPending = stock._pending;
+              const chg1d = stock.change_pct ?? stock.change_pct_1d;
+              const cCol = changeColor(chg1d);
+              const updatedTs = stock.quote_updated_at ?? stock.price_updated_at ?? stock.quote_timestamp;
+              return (
+                <div
+                  key={`row-${stock.ticker}-${i}`}
+                  onClick={() => !isPending && stock.ticker && handleTickerClick(stock.ticker)}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: TICKER_GRID,
+                    padding: '7px 14px',
+                    borderBottom: `1px solid ${C.border}`,
+                    background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
+                    cursor: isPending ? 'default' : 'pointer',
+                    transition: 'background 0.1s',
+                    alignItems: 'center',
+                    opacity: isPending ? 0.55 : 1,
+                    gap: 6,
+                  }}
+                  onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = `${C.teal}0c`; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    {stock.ticker || DASH}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
+                    {stock.company || stock.name || DASH}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.sector || ''}>
+                    {stock.sector || DASH}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || ''}>
+                    {stock.canonical_theme_name || stock.section_title || DASH}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
+                    {formatPrice(stock.price)}
+                    {!isPending && stock.price_source && (
+                      <PriceFreshnessBadge
+                        compact
+                        meta={{
+                          source: stock.price_source,
+                          is_realtime: stock.price_is_realtime,
+                          is_live_backup: stock.price_is_live_backup,
+                          is_stale: stock.price_is_stale,
+                          staleness_seconds: stock.staleness_seconds,
+                          quote_timestamp: stock.quote_timestamp,
+                          updated_at: stock.price_updated_at,
+                        }}
+                      />
+                    )}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                    {formatChgPct(chg1d)}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                    {formatVolume(stock.volume)}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {formatDayRange(stock.low, stock.high)}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {formatUpdated(updatedTs)}
+                  </span>
+                </div>
+              );
+            })}
+            {sortedTickers.length === 0 && (
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No tickers</div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   /* ── legacy ticker table ─────────────────────────────────────────── */
   const renderLegacyTickerTable = () => (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      height: '100%', minHeight: 0,
     }}>
       <div style={{
         padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
@@ -1739,62 +1926,31 @@ export default function WatchlistPage() {
           {/* ═══ MAIN BODY (scrollable) ═══ */}
           <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
 
-            {/* ── Market Themes Banner ── */}
-            {renderMarketThemes()}
-
             {/* ── Upgrade Banner (legacy → new format) ── */}
             {renderUpgradeBanner()}
 
-            {/* ── Row 1: Signal Summary Strip ── */}
-            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
-
-            {/* ── Strategy Score Panel ── */}
-            {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
-              <div style={{ padding: '0 20px' }}>
-                {strategyScoreLoading && !strategyScoreData ? (
-                  <div style={{ padding: 16, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
-                    Scoring {allTickerSymbols.length} tickers against {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy}…
-                  </div>
-                ) : strategyScoreData ? (
-                  <WatchlistScorePanel
-                    data={strategyScoreData}
-                    playbookName={strategyPlaybooks.find(p => p.id === selectedStrategy)?.name || selectedStrategy}
-                    playbookColor={strategyPlaybooks.find(p => p.id === selectedStrategy)?.ui_color}
-                    loading={strategyScoreLoading}
-                    onRescore={() => runStrategyScore(selectedStrategy, allTickerSymbols)}
-                  />
-                ) : null}
-              </div>
-            )}
-
-            {/* ── Row 2: Section panels (new format) / Category panels (legacy) ── */}
-            <div style={{ padding: '16px 20px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
-              {refreshMut.isPending && <AnalysisLoadingOverlay />}
-              {newFmt
-                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} />
-                : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
-              }
-            </div>
-
-            {/* ── Row 3: Bottom Split (Ticker Table + News Feed) ── */}
+            {/* ── Top Split: Ticker Table + Live News (fixed viewport-aware height) ── */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '2fr 3fr',
+              gridTemplateColumns: 'minmax(0, 2fr) minmax(320px, 1fr)',
               gap: 12,
-              padding: '0 20px 24px',
-              minHeight: 300,
-            }}>
-              {/* ── Ticker Table ── */}
+              padding: '14px 20px 16px',
+              height: 'clamp(360px, 50vh, 620px)',
+            }}
+              className="wl-top-split"
+            >
+              {/* ── Ticker Table (wider) ── */}
               {newFmt ? renderNewFormatTickerTable() : renderLegacyTickerTable()}
 
-              {/* ── News Feed ── */}
+              {/* ── Live News (narrower) ── */}
               <div style={{
                 background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                height: '100%', minHeight: 0,
               }}>
                 <div style={{
                   padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
-                  display: 'flex', alignItems: 'center', gap: 8,
+                  display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
                 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
                     LIVE NEWS
@@ -1802,7 +1958,7 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
                 </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0' }} className="wl-scrollbar">
+                <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
                   {allNews.map((item, i) => {
                     const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === (item.ticker || '').toUpperCase());
                     const col = newFmt
@@ -1859,6 +2015,40 @@ export default function WatchlistPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* ── Market Themes Banner (chips) ── */}
+            {renderMarketThemes()}
+
+            {/* ── Signal Summary Strip (ticker chips) ── */}
+            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
+            {/* ── Strategy Score Panel ── */}
+            {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
+              <div style={{ padding: '0 20px' }}>
+                {strategyScoreLoading && !strategyScoreData ? (
+                  <div style={{ padding: 16, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                    Scoring {allTickerSymbols.length} tickers against {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy}…
+                  </div>
+                ) : strategyScoreData ? (
+                  <WatchlistScorePanel
+                    data={strategyScoreData}
+                    playbookName={strategyPlaybooks.find(p => p.id === selectedStrategy)?.name || selectedStrategy}
+                    playbookColor={strategyPlaybooks.find(p => p.id === selectedStrategy)?.ui_color}
+                    loading={strategyScoreLoading}
+                    onRescore={() => runStrategyScore(selectedStrategy, allTickerSymbols)}
+                  />
+                ) : null}
+              </div>
+            )}
+
+            {/* ── Canonical theme section cards ── */}
+            <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
+              {refreshMut.isPending && <AnalysisLoadingOverlay />}
+              {newFmt
+                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} />
+                : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
+              }
             </div>
           </div>
         </>
