@@ -99,6 +99,7 @@ function extractAllStocks(analysis: any): any[] {
             price: t.price,
             change_pct: t.change_pct ?? t.change_pct_1d,
             volume: t.volume,
+            average_volume: t.average_volume ?? t.avg_volume,
             high: t.high ?? t.day_high,
             low: t.low ?? t.day_low,
             sector: t.sector ?? t.category ?? t.industry,
@@ -214,35 +215,11 @@ function formatVolume(v: any): string {
   return String(Math.round(n));
 }
 
-function formatDayRange(low: any, high: any): string {
-  const lo = Number(low);
-  const hi = Number(high);
-  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return DASH;
-  return `$${lo.toFixed(2)} - $${hi.toFixed(2)}`;
-}
-
-function parseTimestamp(t: any): number | null {
-  if (t == null) return null;
-  if (typeof t === 'number') return Number.isFinite(t) ? (t < 1e12 ? t * 1000 : t) : null;
-  const n = new Date(t).getTime();
-  return Number.isFinite(n) ? n : null;
-}
-
-function formatUpdated(t: any): string {
-  const ms = parseTimestamp(t);
-  if (ms == null) return DASH;
-  const diff = Date.now() - ms;
-  if (diff < 60_000) return 'just now';
-  if (diff < 60 * 60_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 24 * 60 * 60_000) {
-    const d = new Date(ms);
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
-  }
-  return `${Math.floor(diff / (24 * 60 * 60_000))}d ago`;
+function formatRelVol(volume: any, averageVolume: any): string {
+  const v = Number(volume);
+  const av = Number(averageVolume);
+  if (!Number.isFinite(v) || !Number.isFinite(av) || av === 0) return DASH;
+  return `${(v / av).toFixed(1)}x`;
 }
 
 /* ── section accent color ──────────────────────────────────────────── */
@@ -623,7 +600,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'sector' | 'theme' | 'price' | 'chg' | 'volume' | 'dayRange' | 'updated'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => { ensureBlinkStyle(); }, []);
@@ -947,10 +924,6 @@ export default function WatchlistPage() {
         const v = (stock.company || stock.name || '').toString().toLowerCase();
         return { v, missing: !v };
       }
-      case 'sector': {
-        const v = (stock.sector || '').toString().toLowerCase();
-        return { v, missing: !v };
-      }
       case 'theme': {
         const v = (stock.canonical_theme_name || stock.section_title || '').toString().toLowerCase();
         return { v, missing: !v };
@@ -967,15 +940,11 @@ export default function WatchlistPage() {
         const n = Number(stock.volume);
         return { v: n, missing: !Number.isFinite(n) };
       }
-      case 'dayRange': {
-        const lo = Number(stock.low);
-        const hi = Number(stock.high);
-        if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { v: 0, missing: true };
-        return { v: (lo + hi) / 2, missing: false };
-      }
-      case 'updated': {
-        const n = parseTimestamp(stock.quote_updated_at ?? stock.price_updated_at ?? stock.quote_timestamp);
-        return { v: n ?? 0, missing: n == null };
+      case 'relVol': {
+        const v = Number(stock.volume);
+        const av = Number(stock.average_volume);
+        if (!Number.isFinite(v) || !Number.isFinite(av) || av === 0) return { v: 0, missing: true };
+        return { v: v / av, missing: false };
       }
     }
   }
@@ -1468,17 +1437,15 @@ export default function WatchlistPage() {
 
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = () => {
-    const TICKER_GRID = '64px minmax(140px, 1.4fr) minmax(96px, 0.8fr) minmax(120px, 1fr) 76px 60px 64px 124px 70px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px';
     const tickerColumns: { key: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
-      { key: 'sector', label: 'Sector' },
       { key: 'theme', label: 'Theme' },
       { key: 'price', label: 'Price' },
       { key: 'chg', label: 'Chg %' },
       { key: 'volume', label: 'Volume' },
-      { key: 'dayRange', label: 'Day Range' },
-      { key: 'updated', label: 'Updated' },
+      { key: 'relVol', label: 'Rel Vol' },
     ];
     return (
       <div style={{
@@ -1513,7 +1480,7 @@ export default function WatchlistPage() {
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
-          <div style={{ minWidth: 900 }}>
+          <div style={{ minWidth: 720 }}>
             {/* table header */}
             <div style={{
               display: 'grid',
@@ -1555,7 +1522,6 @@ export default function WatchlistPage() {
               const isPending = stock._pending;
               const chg1d = stock.change_pct ?? stock.change_pct_1d;
               const cCol = changeColor(chg1d);
-              const updatedTs = stock.quote_updated_at ?? stock.price_updated_at ?? stock.quote_timestamp;
               return (
                 <div
                   key={`row-${stock.ticker}-${i}`}
@@ -1580,9 +1546,6 @@ export default function WatchlistPage() {
                   </span>
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
-                  </span>
-                  <span style={{ fontSize: 10, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.sector || ''}>
-                    {stock.sector || DASH}
                   </span>
                   <span style={{ fontSize: 10, color: C.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || ''}>
                     {stock.canonical_theme_name || stock.section_title || DASH}
@@ -1610,11 +1573,8 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatVolume(stock.volume)}
                   </span>
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {formatDayRange(stock.low, stock.high)}
-                  </span>
-                  <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {formatUpdated(updatedTs)}
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                    {formatRelVol(stock.volume, stock.average_volume)}
                   </span>
                 </div>
               );
