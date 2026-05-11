@@ -1804,13 +1804,14 @@ const MATRIX_COLS: MatCol2[] = [
   { key:'agent_rank',        label:'AGENT RANK',     w:84,  fmt: v=>v??'—' },
 ];
 
-const MATRIX_TAB_ORDER: string[] = ['stocks_etfs', 'crypto', 'commodities', 'indices', 'pre_ipo'];
+const MATRIX_TAB_ORDER: string[] = ['stocks_etfs', 'crypto', 'commodities', 'indices', 'pre_ipo', 'themes'];
 const MATRIX_TAB_FALLBACK_LABELS: Record<string,string> = {
   stocks_etfs:  'Stocks & ETFs',
   crypto:       'Crypto',
   commodities:  'Commodities',
   indices:      'Indices',
   pre_ipo:      'Pre-IPO Stocks',
+  themes:       'Themes',
 };
 
 // Frontend classifier: mirrors backend _classifyMatrixTab so the toggles still
@@ -1832,6 +1833,7 @@ const MATRIX_SYMBOL_OVERRIDES_FE: Record<string, string> = {
   TENCENT: 'stocks_etfs', XIAOMI: 'stocks_etfs', SMSN: 'stocks_etfs',
   GLDMINE: 'stocks_etfs', HYUNDAI: 'stocks_etfs',
   ANTHROPIC: 'pre_ipo', SPACEX: 'pre_ipo', OPENAI: 'pre_ipo', CEREBRAS: 'pre_ipo',
+  ROBOT: 'themes', SEMI: 'themes',
 };
 function classifyScreenerRow(row: ScreenerRow): string {
   const sym = String(row?.coin ?? row?.displayName ?? '').toUpperCase();
@@ -1839,6 +1841,7 @@ function classifyScreenerRow(row: ScreenerRow): string {
   const cat = String(row?.category ?? '').toLowerCase();
   const tags: string[] = Array.isArray(row?.tags) ? row.tags.map(t => String(t).toLowerCase()) : [];
   const has = (s: string) => cat === s || tags.includes(s);
+  if (has('theme') || has('themes'))                 return 'themes';
   if (has('pre-ipo') || has('preipo'))               return 'pre_ipo';
   if (has('commodity') || has('commodities'))        return 'commodities';
   if (has('index') || has('indices'))                return 'indices';
@@ -1928,7 +1931,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   // when the /market-matrix endpoint is unreachable.
   const fallbackByTab = useMemo(() => {
     const buckets: Record<string, ScreenerRow[]> = {
-      stocks_etfs: [], crypto: [], commodities: [], indices: [], pre_ipo: [],
+      stocks_etfs: [], crypto: [], commodities: [], indices: [], pre_ipo: [], themes: [],
     };
     for (const r of fallbackRows) {
       const k = classifyScreenerRow(r);
