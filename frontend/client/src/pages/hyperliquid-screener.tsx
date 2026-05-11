@@ -1813,6 +1813,41 @@ const MATRIX_TAB_FALLBACK_LABELS: Record<string,string> = {
   pre_ipo:      'Pre-IPO Stocks',
 };
 
+// Frontend classifier: mirrors backend _classifyMatrixTab so the toggles still
+// filter rows when the /market-matrix endpoint is unreachable. Keep in sync with
+// frontend/server/routes.ts (MATRIX_SYMBOL_OVERRIDES / _classifyMatrixTab).
+const MATRIX_SYMBOL_OVERRIDES_FE: Record<string, string> = {
+  NATGAS: 'commodities', CL: 'commodities', BRENTOIL: 'commodities',
+  WTI: 'commodities', OIL: 'commodities', GAS: 'commodities',
+  COPPER: 'commodities', GOLD: 'commodities', SILVER: 'commodities',
+  USOIL: 'commodities', USENERGY: 'commodities', WHEAT: 'commodities',
+  SOY: 'commodities', CORN: 'commodities', PLATINUM: 'commodities',
+  PALLADIUM: 'commodities',
+  US500: 'indices', USA500: 'indices', SP500: 'indices', SPX: 'indices',
+  USTECH: 'indices', USBOND: 'indices', SMALL2000: 'indices',
+  NASDAQ: 'indices', NDX: 'indices', RUSSELL: 'indices',
+  DAX: 'indices', NIKKEI: 'indices', EWY: 'indices', XYZ100: 'indices',
+  BTC: 'crypto', ETH: 'crypto', SOL: 'crypto', HYPE: 'crypto',
+  BNB: 'crypto', XRP: 'crypto', DOGE: 'crypto',
+  TENCENT: 'stocks_etfs', XIAOMI: 'stocks_etfs', SMSN: 'stocks_etfs',
+  GLDMINE: 'stocks_etfs', HYUNDAI: 'stocks_etfs',
+  ANTHROPIC: 'pre_ipo', SPACEX: 'pre_ipo', OPENAI: 'pre_ipo', CEREBRAS: 'pre_ipo',
+};
+function classifyScreenerRow(row: ScreenerRow): string {
+  const sym = String(row?.coin ?? row?.displayName ?? '').toUpperCase();
+  if (MATRIX_SYMBOL_OVERRIDES_FE[sym]) return MATRIX_SYMBOL_OVERRIDES_FE[sym];
+  const cat = String(row?.category ?? '').toLowerCase();
+  const tags: string[] = Array.isArray(row?.tags) ? row.tags.map(t => String(t).toLowerCase()) : [];
+  const has = (s: string) => cat === s || tags.includes(s);
+  if (has('pre-ipo') || has('preipo'))               return 'pre_ipo';
+  if (has('commodity') || has('commodities'))        return 'commodities';
+  if (has('index') || has('indices'))                return 'indices';
+  if (has('equity') || has('stock') || has('etf'))   return 'stocks_etfs';
+  if (cat === 'l1' || cat === 'defi' || cat === 'ai' || cat === 'meme' ||
+      cat === 'gaming' || cat === 'rwa' || has('crypto')) return 'crypto';
+  return 'crypto';
+}
+
 function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbackRows: ScreenerRow[] }) {
   const [activeTab, setActiveTab] = useState<string>('stocks_etfs');
   const [sortKey, setSortKey]     = useState<MatrixKey>('agent_score');
@@ -1889,6 +1924,35 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   }, []);
 
   // ── Fallback rendering data (uses parent's already-sorted ScreenerRow rows) ──
+  // Classify each row into one of the 5 asset-class tabs so toggles still work
+  // when the /market-matrix endpoint is unreachable.
+  const fallbackByTab = useMemo(() => {
+    const buckets: Record<string, ScreenerRow[]> = {
+      stocks_etfs: [], crypto: [], commodities: [], indices: [], pre_ipo: [],
+    };
+    for (const r of fallbackRows) {
+      const k = classifyScreenerRow(r);
+      (buckets[k] ?? (buckets[k] = [])).push(r);
+    }
+    return buckets;
+  }, [fallbackRows]);
+
+  const fallbackTabCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const k of MATRIX_TAB_ORDER) out[k] = (fallbackByTab[k] ?? []).length;
+    return out;
+  }, [fallbackByTab]);
+
+  const fallbackFiltered = useMemo(() => {
+    const rows = fallbackByTab[activeTab] ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r =>
+      (r.coin ?? '').toLowerCase().includes(q) ||
+      (r.displayName ?? '').toLowerCase().includes(q)
+    );
+  }, [fallbackByTab, activeTab, search]);
+
   const sortedFallback = useMemo(() => {
     const cmp = (a: ScreenerRow, b: ScreenerRow) => {
       const av: any = (a as any)[fbSortKey];
@@ -1899,8 +1963,8 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
       const d = av < bv ? -1 : av > bv ? 1 : 0;
       return fbSortDir === 'asc' ? d : -d;
     };
-    return [...fallbackRows].sort(cmp);
-  }, [fallbackRows, fbSortKey, fbSortDir]);
+    return [...fallbackFiltered].sort(cmp);
+  }, [fallbackFiltered, fbSortKey, fbSortDir]);
 
   const handleFbSort = useCallback((key: CK) => {
     setFbSortKey(prev => {
@@ -1915,7 +1979,17 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 
   const totalCount = useTabbed
     ? (data?.all_assets_count ?? Object.values(tabs).reduce((sum, t) => sum + (t?.count ?? 0), 0))
-    : sortedFallback.length;
+    : fallbackRows.length;
+
+  // Toggles render regardless of whether the tabbed endpoint succeeded — when
+  // it hasn't, we classify rows on the frontend so the user still gets a usable
+  // filter on the visible Market Matrix.
+  const toggleKeys = MATRIX_TAB_ORDER;
+  const toggleLabel = (key: string) =>
+    (useTabbed ? tabs[key]?.label : undefined) ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
+  const toggleCount = (key: string) =>
+    useTabbed ? (tabs[key]?.count ?? 0) : (fallbackTabCounts[key] ?? 0);
+  const activeToggleKey = useTabbed ? currentKey : activeTab;
 
   // Don't render anything only when the entire page has no data at all.
   if (!useTabbed && fallbackRows.length === 0 && !isLoading) return null;
@@ -1929,38 +2003,35 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
           <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
           <span style={{ fontSize:8.5, color:C.dim, marginLeft:4 }}>{totalCount} assets</span>
         </button>
-        {useTabbed && (
-          <div style={{ marginLeft:'auto', display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end' }}>
-            {orderedKeys.map(key => {
-              const t = tabs[key];
-              const label = t?.label ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
-              const count = t?.count ?? 0;
-              const isActive = key === currentKey;
-              return (
-                <button key={key} onClick={() => { setActiveTab(key); setShowMatrix(true); }}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:5,
-                    padding:'3px 8px', borderRadius:4, cursor:'pointer',
-                    fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
-                    textTransform:'uppercase',
-                    background: isActive ? `${C.teal}22` : 'transparent',
-                    color: isActive ? C.teal : C.dim,
-                    border: `1px solid ${isActive ? C.teal : C.border}`,
-                  }}>
-                  <span>{label}</span>
-                  <span style={{
-                    fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
-                    background: isActive ? `${C.teal}33` : C.dimLow,
-                    color: isActive ? C.teal : C.dim,
-                  }}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div data-testid="market-matrix-toggles" style={{ marginLeft:'auto', display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end' }}>
+          {toggleKeys.map(key => {
+            const label = toggleLabel(key);
+            const count = toggleCount(key);
+            const isActive = key === activeToggleKey;
+            return (
+              <button key={key} onClick={() => { setActiveTab(key); setShowMatrix(true); }}
+                style={{
+                  display:'inline-flex', alignItems:'center', gap:5,
+                  padding:'3px 8px', borderRadius:4, cursor:'pointer',
+                  fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
+                  textTransform:'uppercase',
+                  background: isActive ? `${C.teal}22` : 'transparent',
+                  color: isActive ? C.teal : C.dim,
+                  border: `1px solid ${isActive ? C.teal : C.border}`,
+                }}>
+                <span>{label}</span>
+                <span style={{
+                  fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:8,
+                  background: isActive ? `${C.teal}33` : C.dimLow,
+                  color: isActive ? C.teal : C.dim,
+                }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
         <button onClick={() => setShowMatrix(m => !m)}
           aria-label={showMatrix ? 'Collapse' : 'Expand'}
-          style={{ marginLeft: useTabbed ? 4 : 'auto', background:'transparent', border:'none', cursor:'pointer', color:C.dim, padding:0, display:'flex', alignItems:'center' }}>
+          style={{ marginLeft: 4, background:'transparent', border:'none', cursor:'pointer', color:C.dim, padding:0, display:'flex', alignItems:'center' }}>
           {showMatrix ? <ChevronUp style={{ width:11, height:11 }} /> : <ChevronDown style={{ width:11, height:11 }} />}
         </button>
       </div>
@@ -2017,18 +2088,13 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
             </>
           ) : (
             <>
-              {/* ── Fallback inline notice (only when new endpoint is unavailable) ── */}
-              {(isError || (data && totalTabbedRows === 0)) && (
-                <div style={{ padding:'6px 12px', background:C.card2, borderBottom:`1px solid ${C.border}`, fontSize:9, color:C.dim }}>
-                  Tabbed matrix unavailable — showing full market matrix.
-                </div>
-              )}
-
-              {/* ── Fallback Table (original untabbed Market Matrix using ScreenerRow data) ── */}
+              {/* ── Fallback Table (untabbed ScreenerRow data, filtered by active tab) ── */}
               <div style={{ overflow:'auto', maxHeight:400 }}>
                 {sortedFallback.length === 0 ? (
                   <div style={{ padding:'24px 14px', textAlign:'center', color:C.dim, fontSize:10 }}>
-                    {isLoading ? 'Loading Market Matrix…' : 'No Hyperliquid markets available.'}
+                    {isLoading
+                      ? 'Loading Market Matrix…'
+                      : `No ${toggleLabel(activeTab)} markets available.`}
                   </div>
                 ) : (
                   <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
