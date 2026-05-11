@@ -1,0 +1,206 @@
+Scope:
+Frontend only.
+
+Do not change backend.
+Do not change Hyperliquid classification.
+Do not redesign the Hyperliquid page.
+Do not touch Agent Market Brief, top cards, rankings, or unrelated sections.
+
+Goal:
+When I click any asset row in the Hyperliquid Market Matrix screener, open a popup/modal with the best available chart for that asset.
+
+Current context:
+The Hyperliquid Market Matrix now has six tabs:
+- Stocks/ETFs
+- Crypto
+- Commodities
+- Indices
+- Pre-IPO Stocks
+- Themes
+
+The row data comes from:
+
+GET /api/hyperliquid/screener/market-matrix
+
+Each row has fields like:
+- coin
+- display_name
+- canonical_coin_id
+- asset_type
+- market_type
+- dex
+- annotation
+- tags
+- mark
+- oracle
+- etc.
+
+Required behavior:
+Clicking a row should open a chart modal/popup.
+
+The popup should:
+- Show the asset symbol/title at the top
+- Include a close button
+- Use the existing dark/terminal UI style
+- Not navigate away from the page
+- Not break row sorting/search/tabs
+- Work inside the existing Market Matrix table
+
+Chart source / mapping rules:
+
+1. Stocks/ETFs tab
+Use the existing TradingView stock chart mapping already used elsewhere on the site for public equities.
+Examples:
+- NVDA -> NASDAQ:NVDA or existing site mapping
+- TSLA -> NASDAQ:TSLA or existing site mapping
+- GOOGL -> NASDAQ:GOOGL
+- BABA -> NYSE:BABA
+- TSM -> NYSE:TSM
+- etc.
+
+Do not invent a whole new stock mapping system if one already exists. Search the frontend for existing TradingView widget/chart symbol mapping utilities/components and reuse them.
+
+2. Commodities tab
+Use the existing Hyperliquid/Home page commodities mapping already used on the Home page gainers section.
+The Home page already maps Hyperliquid commodity symbols to correct TradingView charts. Reuse that logic.
+
+Examples:
+- GOLD -> TV commodity/gold chart mapping already used
+- SILVER -> TV silver mapping
+- NATGAS -> TV natural gas mapping
+- WTI / CL -> TV crude oil mapping
+- BRENTOIL -> TV Brent mapping
+- COPPER -> TV copper mapping
+- WHEAT / SOY -> best available TV futures/commodity mapping
+
+3. Crypto tab
+Use the existing mappings from the Crypto Charts pages:
+“Crypto: Charts: Majors & Altcoins”
+
+Only crypto perps are shown in this tab now, but the TradingView chart should map to the normal crypto market chart.
+
+Examples:
+- BTC -> BINANCE:BTCUSDT or existing site mapping
+- ETH -> BINANCE:ETHUSDT or existing site mapping
+- SOL -> BINANCE:SOLUSDT
+- XRP -> BINANCE:XRPUSDT
+- DOGE -> BINANCE:DOGEUSDT
+- HYPE -> use existing site crypto mapping if present, otherwise best available TradingView symbol
+- XAI -> crypto mapping, not theme
+
+Search existing frontend code for crypto chart mapping first and reuse it.
+
+4. Indices tab
+Use best-fit TradingView index / ETF / futures mapping.
+
+Examples:
+- SP500 / US500 / USA500 -> SPX or ES / existing index mapping
+- USA100 / USTECH / NASDAQ / XYZ100 -> NDX or NQ / existing index mapping
+- JP225 -> Nikkei mapping
+- KR200 -> Korea 200 mapping if available
+- EWY -> AMEX:EWY
+- EWJ -> AMEX:EWJ
+- EWZ -> AMEX:EWZ
+
+Reuse any existing index/ETF mapping utilities if present.
+
+5. Themes tab
+Map theme/basket markets to the best-fit ETF chart from the existing Themes page ticker universe.
+
+Examples:
+- SEMI / SEMIS -> semiconductor ETF, likely SMH or SOXX depending on what the Themes page uses
+- ROBOT -> robotics ETF, likely BOTZ/ROBO depending on Themes page mapping
+- MAG7 -> best-fit mega-cap / MAG7 ETF or basket proxy used on Themes page
+- ENERGY -> XLE or equivalent existing Themes page mapping
+- DEFENSE -> ITA/XAR/PPA or equivalent existing Themes page mapping
+- NUCLEAR / URANIUM -> URA / NLR / URNM depending on existing Themes page mapping
+- INFOTECH -> XLK / QQQ / existing Themes page mapping
+- BIOTECH -> XBI / IBB
+- DRAM / MEMORY -> best-fit semiconductor/memory ETF if available
+
+Important:
+Do not hardcode random ETFs if the Themes page already has better mappings. Search the Themes page config/data first and reuse the same theme-to-ETF mapping where possible.
+
+6. Pre-IPO Stocks tab
+There is usually no TradingView public chart for these.
+
+For Pre-IPO assets:
+- First try to render a Hyperliquid-native chart if existing frontend code already supports Hyperliquid charting/candles for non-TV assets.
+- If no Hyperliquid chart component exists, show a clean fallback modal:
+  “TradingView chart unavailable for this pre-IPO market.”
+  Include basic row info:
+  - mark
+  - oracle
+  - 24h %
+  - funding
+  - OI
+  - volume
+  - premium / mark-oracle if available
+
+Do not fake a TradingView chart for pre-IPO assets.
+
+Implementation guidance:
+1. Search existing frontend for:
+- TradingView widget components
+- TradingView iframe usage
+- symbol mapping helpers
+- Home page commodity chart mapping
+- stock chart modal/popup usage
+- Crypto Charts page chart mappings
+- Themes page ETF/ticker mappings
+
+2. Create or reuse a helper like:
+resolveTradingViewSymbolForHyperliquidAsset(asset)
+
+It should use:
+- asset.asset_type
+- asset.coin
+- asset.display_name
+- asset.canonical_coin_id
+- asset.tags
+- existing mapping utilities/configs
+
+Return something like:
+{
+  type: "tradingview" | "hyperliquid" | "fallback",
+  symbol: string | null,
+  title: string,
+  reason?: string
+}
+
+3. Add row click behavior to the Market Matrix table:
+- cursor pointer on rows
+- click opens modal
+- avoid interfering with sort header clicks
+- avoid triggering chart open when clicking table header/sort controls
+
+4. Modal:
+Use existing modal/dialog component if available.
+If none exists, implement a small local modal consistent with existing UI.
+Embed TradingView widget/iframe when mapping is available.
+Use autosize/responsive dimensions.
+
+5. Do not create duplicate heavy TradingView widgets for every row.
+Only instantiate the widget when the modal is open.
+
+Validation:
+Run frontend build.
+
+Manually verify:
+- Clicking NVDA/TSLA stock opens correct stock TradingView chart.
+- Clicking GOLD/SILVER/NATGAS/WTI/BRENTOIL commodity opens correct commodity chart using existing Home page mapping.
+- Clicking BTC/ETH/SOL crypto opens correct crypto chart using existing Crypto Charts mapping.
+- Clicking SP500/USA100/EWY index opens correct index/ETF chart.
+- Clicking SEMI/ROBOT/MAG7/ENERGY/DEFENSE/NUCLEAR theme opens the best-fit ETF chart from the Themes page mapping.
+- Clicking ANTHROPIC/SPACEX/OPENAI/CBRS pre-IPO either opens a Hyperliquid chart if supported or shows the clean fallback modal.
+- Search/sort/tabs still work.
+- Existing Hyperliquid page sections are unchanged.
+
+Commit/push only if build passes.
+
+Return:
+- files changed
+- existing chart/mapping code reused
+- how each asset_type maps to chart source
+- validation result
+- commit hash

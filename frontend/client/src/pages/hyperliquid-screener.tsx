@@ -1851,6 +1851,175 @@ function classifyScreenerRow(row: ScreenerRow): string {
   return 'crypto';
 }
 
+// ─── Matrix Chart Resolution ──────────────────────────────────────────────────
+
+const MATRIX_COMMODITY_TV: Record<string, string> = {
+  BRENTOIL:'TVC:UKOIL',  BRENT:'TVC:UKOIL',    UKOIL:'TVC:UKOIL',
+  WTIOIL:'TVC:USOIL',    CL:'TVC:USOIL',        OIL:'TVC:USOIL',
+  USOIL:'TVC:USOIL',     CRUDEOIL:'TVC:USOIL',
+  NATGAS:'FXOPEN:XNGUSD', GAS:'FXOPEN:XNGUSD',  NATURALGAS:'FXOPEN:XNGUSD',
+  GOLD:'OANDA:XAUUSD',   XAUUSD:'OANDA:XAUUSD',
+  SILVER:'TVC:SILVER',   XAGUSD:'TVC:SILVER',
+  COPPER:'CAPITALCOM:COPPER',
+  PLATINUM:'CAPITALCOM:PLATINUM', XPTUSD:'CAPITALCOM:PLATINUM',
+  PALLADIUM:'OANDA:XPDUSD', XPDUSD:'OANDA:XPDUSD',
+  WHEAT:'OANDA:WHEATUSD', CORN:'OANDA:CORNUSD',
+  SOY:'OANDA:SOYBNUSD',  SOYBEAN:'OANDA:SOYBNUSD', SOYBEANS:'OANDA:SOYBNUSD',
+  COFFEE:'ICEEUR:KC1!',  SUGAR:'ICEEUR:SB1!',   LUMBER:'CME:LB1!',
+  URANIUM:'COMEX:UX1!',
+};
+
+const MATRIX_INDEX_TV: Record<string, string> = {
+  US500:'SP:SPX',    USA500:'SP:SPX',   SP500:'SP:SPX',    SPX:'SP:SPX',
+  USTECH:'NASDAQ:NDX', USA100:'NASDAQ:NDX', NASDAQ:'NASDAQ:NDX', NDX:'NASDAQ:NDX', XYZ100:'NASDAQ:NDX',
+  SMALL2000:'TVC:RUT', RUSSELL:'TVC:RUT',
+  USBOND:'TVC:US10Y',
+  DAX:'XETR:DAX',
+  NIKKEI:'INDEX:NKY', JP225:'INDEX:NKY',
+  EWY:'AMEX:EWY',    EWJ:'NYSE:EWJ',    EWZ:'NYSE:EWZ',
+  KR200:'KRXINDEX:200',
+};
+
+// Hyperliquid theme symbol → best-fit TradingView ETF symbol
+// (ETF tickers sourced from THEME_ETF_TV in stocks-sectors.tsx)
+const MATRIX_THEME_TV: Record<string, string> = {
+  SEMI:'NASDAQ:SMH',     SEMIS:'NASDAQ:SMH',     SEMICONDUCTOR:'NASDAQ:SMH',
+  DRAM:'NASDAQ:SMH',     MEMORY:'NASDAQ:SMH',
+  ROBOT:'NASDAQ:BOTZ',   ROBOTICS:'NASDAQ:BOTZ',
+  MAG7:'NASDAQ:MAGS',    MAGS:'NASDAQ:MAGS',
+  ENERGY:'NYSE:XLE',
+  DEFENSE:'AMEX:ITA',    AEROSPACE:'AMEX:XAR',
+  NUCLEAR:'NYSE:URA',    URANIUM_ETF:'NYSE:URA',
+  INFOTECH:'NYSE:XLK',   TECH:'NASDAQ:QQQ',
+  BIOTECH:'AMEX:XBI',
+  CLOUD:'NASDAQ:SKYY',
+  CYBER:'NASDAQ:CIBR',   CYBERSECURITY:'NASDAQ:CIBR',
+  CLEANENERGY:'NASDAQ:ICLN', SOLAR:'NYSE:TAN',
+  MINERS:'NYSE:GDX',
+  FINTECH:'NASDAQ:FINX',
+  AI:'NASDAQ:BOTZ',
+};
+
+// Known non-US / exchange-specific stock overrides
+const MATRIX_STOCK_TV: Record<string, string> = {
+  TENCENT:'OTC:TCEHY', XIAOMI:'HKEX:1810', SMSN:'LSE:SMSN',
+  GLDMINE:'NYSE:GDX',  HYUNDAI:'OTC:HYMTF',
+  BABA:'NYSE:BABA',    TSM:'NYSE:TSM',     MSTR:'NASDAQ:MSTR',
+};
+
+type MatrixChartResult =
+  | { type: 'tradingview'; symbol: string; title: string }
+  | { type: 'hyperliquid'; coin: string;   title: string };
+
+function resolveMatrixChart(asset: MatrixAsset, activeTab: string): MatrixChartResult {
+  const sym   = (asset.coin ?? '').toUpperCase();
+  const title = asset.display_name ?? asset.coin ?? sym;
+
+  if (activeTab === 'commodities') {
+    return { type:'tradingview', symbol: MATRIX_COMMODITY_TV[sym] ?? sym, title };
+  }
+  if (activeTab === 'indices') {
+    return { type:'tradingview', symbol: MATRIX_INDEX_TV[sym] ?? sym, title };
+  }
+  if (activeTab === 'themes') {
+    return { type:'tradingview', symbol: MATRIX_THEME_TV[sym] ?? sym, title };
+  }
+  if (activeTab === 'stocks_etfs') {
+    return { type:'tradingview', symbol: MATRIX_STOCK_TV[sym] ?? sym, title };
+  }
+  // crypto + pre_ipo → Hyperliquid native candles
+  return { type:'hyperliquid', coin: asset.coin ?? sym, title };
+}
+
+function buildTvEmbedUrl(symbol: string): string {
+  return (
+    'https://s.tradingview.com/embed-widget/advanced-chart/?locale=en' +
+    '&width=100%25&height=480&interval=D&range=3M&style=1&toolbar_bg=0d1623' +
+    '&enable_publishing=false&withdateranges=true&hide_side_toolbar=false' +
+    '&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark' +
+    '&timezone=exchange&hide_top_toolbar=false' +
+    '&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D' +
+    '&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D' +
+    `&symbol=${encodeURIComponent(symbol)}`
+  );
+}
+
+function MatrixChartModal({ asset, activeTab, onClose }: {
+  asset: MatrixAsset; activeTab: string; onClose: () => void;
+}) {
+  const resolved = resolveMatrixChart(asset, activeTab);
+  const [iv, setIv] = useState<ChartInterval>('1d');
+
+  return (
+    <div
+      style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.78)', display:'flex', alignItems:'center', justifyContent:'center' }}
+      onClick={onClose}>
+      <div
+        style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, width:640, maxWidth:'96vw', maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 80px rgba(0,0,0,0.9)' }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', borderBottom:`1px solid ${C.border}`, flexShrink:0, background:C.card2 }}>
+          <BarChart2 style={{ width:11, height:11, color:C.teal }} />
+          <span style={{ fontSize:10, fontWeight:700, letterSpacing:1, color:C.teal, textTransform:'uppercase' }}>{resolved.title}</span>
+          {resolved.type === 'hyperliquid' && (
+            <div style={{ marginLeft:8, display:'flex', gap:4 }}>
+              {(['15m','1h','4h','1d'] as ChartInterval[]).map(t => (
+                <button key={t} onClick={() => setIv(t)}
+                  style={{ fontSize:8, fontWeight:700, padding:'2px 7px', borderRadius:3, cursor:'pointer', fontFamily:C.font,
+                    background: iv===t ? `${C.teal}22` : 'none',
+                    border: `1px solid ${iv===t ? C.teal : C.border}`,
+                    color: iv===t ? C.teal : C.dim }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {resolved.type === 'tradingview' && (
+            <span style={{ fontSize:8, color:C.dim, fontFamily:C.font, marginLeft:4 }}>{resolved.symbol}</span>
+          )}
+          <button onClick={onClose}
+            style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:C.dim, padding:2, display:'flex' }}>
+            <X style={{ width:14, height:14 }} />
+          </button>
+        </div>
+        {/* Body */}
+        <div style={{ flex:1, overflow:'hidden', minHeight:0 }}>
+          {resolved.type === 'tradingview' && (
+            <iframe
+              key={resolved.symbol}
+              src={buildTvEmbedUrl(resolved.symbol)}
+              style={{ width:'100%', height:480, border:'none', display:'block' }}
+              title={`${resolved.title} chart`}
+            />
+          )}
+          {resolved.type === 'hyperliquid' && (
+            <div style={{ overflowY:'auto', maxHeight:'80vh' }}>
+              <div style={{ paddingTop:6 }}>
+                <CoinChartPanel coin={resolved.coin} interval={iv} />
+              </div>
+              <div style={{ padding:'10px 16px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px 16px' }}>
+                {([
+                  ['Mark',    asset.mark                != null ? px(asset.mark)                  : '—'],
+                  ['Oracle',  asset.oracle              != null ? px(asset.oracle)                : '—'],
+                  ['24H %',   asset.change_24h_pct      != null ? pct(asset.change_24h_pct, 2)    : '—'],
+                  ['Funding', asset.funding             != null ? fmtF(asset.funding)             : '—'],
+                  ['OI',      asset.open_interest_usd   != null ? $$(asset.open_interest_usd)     : '—'],
+                  ['Volume',  asset.volume_24h_usd      != null ? $$(asset.volume_24h_usd)        : '—'],
+                ] as [string, string][]).map(([label, val]) => (
+                  <div key={label} style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                    <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:C.dim, textTransform:'uppercase' }}>{label}</span>
+                    <span style={{ fontSize:10, fontWeight:600, color:C.text, fontFamily:C.font }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbackRows: ScreenerRow[] }) {
   const [activeTab, setActiveTab] = useState<string>('stocks_etfs');
   const [sortKey, setSortKey]     = useState<MatrixKey>('agent_score');
@@ -1858,6 +2027,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   const [fbSortKey, setFbSortKey] = useState<CK>('agentScore');
   const [fbSortDir, setFbSortDir] = useState<'asc'|'desc'>('desc');
   const [showMatrix, setShowMatrix] = useState(false);
+  const [matrixChart, setMatrixChart] = useState<{ asset: MatrixAsset; tab: string } | null>(null);
 
   const { data, isLoading, isError } = useQuery<MatrixResponse>({
     queryKey: ['hl-market-matrix'],
@@ -2070,7 +2240,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedTabbed.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin ?? idx}_${idx}`} style={{ background:rowBg, height:26, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}` }}>
+                          <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: currentKey })} style={{ background:rowBg, height:26, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => {
                               const v = (row as any)[col.key];
                               const txt = col.fmt(v);
@@ -2121,7 +2291,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedFallback.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin}_${idx}`} style={{ background:rowBg, height:26, borderBottom:`1px solid ${C.dimLow}` }}>
+                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h }, tab: activeTab })} style={{ background:rowBg, height:26, borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MAT_COLS.map(col => {
                               const v = (row as any)[col.key];
                               const txt = col.fmt(v);
@@ -2142,6 +2312,14 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
             </>
           )}
         </>
+      )}
+
+      {matrixChart && (
+        <MatrixChartModal
+          asset={matrixChart.asset}
+          activeTab={matrixChart.tab}
+          onClose={() => setMatrixChart(null)}
+        />
       )}
     </div>
   );
