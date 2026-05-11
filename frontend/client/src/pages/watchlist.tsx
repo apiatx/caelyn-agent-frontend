@@ -97,8 +97,10 @@ function extractAllStocks(analysis: any): any[] {
             ticker: t.symbol || t.ticker,
             company: t.name || t.company,
             price: t.price,
-            change_pct: t.change_pct,
-            signal: t.change_pct != null ? (t.change_pct >= 0 ? 'BUY' : 'HOLD') : undefined,
+            change_pct: t.change_pct ?? t.change_pct_1d,
+            quote_source: t.quote_source,
+            quote_updated_at: t.quote_updated_at,
+            signal: (t.change_pct ?? t.change_pct_1d) != null ? ((t.change_pct ?? t.change_pct_1d) >= 0 ? 'BUY' : 'HOLD') : undefined,
             risk_level: t.risk_level,
             catalyst: t.catalyst,
             sentiment: t.sentiment,
@@ -339,8 +341,11 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { anal
   // Helper: render a single stock row inside a section card
   function renderStockRow(stock: any, i: number, total: number, accent: string) {
     const sym = stock.symbol || stock.ticker;
-    const chg = stock.change_pct;
+    // Support both change_pct (old) and change_pct_1d (new backend field name)
+    const chg = stock.change_pct ?? stock.change_pct_1d;
     const chgCol = chg != null ? (chg >= 0 ? C.green : C.red) : C.dim;
+    // Primary insight: prefer key_insight, fall back to catalyst
+    const insightLine = stock.key_insight || stock.catalyst;
     return (
       <div
         key={sym || i}
@@ -354,12 +359,13 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { anal
         onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+        {/* Row 1: symbol | name | price | 1D chg% | risk badge | sentiment badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: insightLine || stock.action_note || stock.technical_setup ? 5 : 0 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
             {sym || '—'}
           </span>
           <span style={{ fontSize: 9, color: C.dim, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-            {stock.name || stock.company}
+            {stock.name || stock.company || sym}
           </span>
           {stock.price != null && (
             <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, flexShrink: 0 }}>
@@ -386,17 +392,50 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { anal
               {stock.risk_level}
             </span>
           )}
+          {stock.sentiment && (
+            <span style={{
+              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+              padding: '1px 5px', borderRadius: 3, flexShrink: 0,
+              color: stock.sentiment.toLowerCase().includes('bull') || stock.sentiment.toLowerCase().includes('positive') ? C.green
+                : stock.sentiment.toLowerCase().includes('bear') || stock.sentiment.toLowerCase().includes('negative') ? C.red
+                : C.amber,
+              background: (stock.sentiment.toLowerCase().includes('bull') || stock.sentiment.toLowerCase().includes('positive') ? C.green
+                : stock.sentiment.toLowerCase().includes('bear') || stock.sentiment.toLowerCase().includes('negative') ? C.red
+                : C.amber) + '18',
+              textTransform: 'uppercase' as const,
+              maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
+            }}>
+              {stock.sentiment}
+            </span>
+          )}
         </div>
-        {stock.catalyst && (
-          <div style={{ fontSize: 9, color: C.dim, lineHeight: 1.4, marginBottom: stock.action_note ? 3 : 0,
+        {/* Row 2: key_insight or catalyst (primary intelligence line) */}
+        {insightLine && (
+          <div style={{
+            fontSize: 9, color: stock.key_insight ? C.text : C.dim,
+            lineHeight: 1.4,
+            marginBottom: stock.action_note || stock.technical_setup ? 3 : 0,
             overflow: 'hidden', display: '-webkit-box' as any,
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-            ⚡ {stock.catalyst}
+            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
+          }}>
+            {stock.key_insight ? '💡 ' : '⚡ '}{insightLine}
           </div>
         )}
+        {/* Row 3: action note / recommendation */}
         {stock.action_note && (
-          <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3, marginBottom: stock.technical_setup ? 3 : 0 }}>
             → {stock.action_note}
+          </div>
+        )}
+        {/* Row 4: technical setup (dim, smaller) */}
+        {stock.technical_setup && (
+          <div style={{
+            fontSize: 8, color: C.dim, fontFamily: C.font,
+            lineHeight: 1.4, letterSpacing: '0.01em',
+            overflow: 'hidden', display: '-webkit-box' as any,
+            WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as any,
+          }}>
+            📊 {stock.technical_setup}
           </div>
         )}
       </div>
@@ -505,6 +544,7 @@ export default function WatchlistPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [refreshStatus, setRefreshStatus] = useState<'idle' | 'running'>('idle');
   const [addTickerInput, setAddTickerInput] = useState('');
   const [addTickerStatus, setAddTickerStatus] = useState<null | 'success' | 'duplicate' | 'error'>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
@@ -560,6 +600,8 @@ export default function WatchlistPage() {
     },
     enabled: !!activeId,
     staleTime: 60_000,
+    // Poll while agent analysis is running in background on the server
+    refetchInterval: refreshStatus === 'running' ? 20_000 : false,
   });
 
   // ── Page context for chatbot ──────────────────────────────────────────────
@@ -618,6 +660,17 @@ export default function WatchlistPage() {
     },
     onSuccess: (data) => {
       setRefreshError(null);
+
+      // Backend returned 200 but analysis is still running in background
+      if (data?.refresh_status === 'running') {
+        setRefreshStatus('running');
+        // Keep existing data, start polling watchlist endpoint
+        qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
+        return;
+      }
+
+      // Completed synchronously — update cache directly if payload included data
+      setRefreshStatus('idle');
       if (data && (data.analysis || data.sections)) {
         qc.setQueryData(['/api/watchlist', activeId], (old: any) => {
           if (!old) return old;
@@ -630,9 +683,22 @@ export default function WatchlistPage() {
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
     },
     onError: (err: any) => {
+      setRefreshStatus('idle');
       setRefreshError(err?.message || 'Analysis failed');
     },
   });
+
+  /* ── auto-clear running status when analysis sections arrive ───────── */
+  useEffect(() => {
+    if (refreshStatus === 'running') {
+      const sections = (watchlist?.analysis as any)?.sections;
+      if (Array.isArray(sections) && sections.length > 0) {
+        setRefreshStatus('idle');
+        qc.invalidateQueries({ queryKey: ['/api/watchlist/news', activeId] });
+        qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      }
+    }
+  }, [watchlist?.analysis, refreshStatus, activeId]);
 
   const renameMut = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
@@ -1146,7 +1212,8 @@ export default function WatchlistPage() {
       }}>
         {allStocks.map((stock, i) => {
           const col = stock.section_id ? sectionAccent(stock.section_id) : C.teal;
-          const cCol = changeColor(stock.change_pct);
+          const chg1d = stock.change_pct ?? stock.change_pct_1d;
+          const cCol = changeColor(chg1d);
           return (
             <button
               key={`chip-${stock.ticker || i}`}
@@ -1171,14 +1238,14 @@ export default function WatchlistPage() {
                   ${stock.price.toFixed(2)}
                 </span>
               )}
-              {stock.change_pct != null && (
+              {chg1d != null && (
                 <span style={{
                   fontSize: 8, fontWeight: 800, fontFamily: C.font,
                   padding: '1px 5px', borderRadius: 3,
                   color: cCol,
                   background: cCol + '15',
                 }}>
-                  {stock.change_pct > 0 ? '+' : ''}{stock.change_pct.toFixed(1)}%
+                  {chg1d > 0 ? '+' : ''}{chg1d.toFixed(1)}%
                 </span>
               )}
               {stock.risk_level && (
@@ -1305,7 +1372,8 @@ export default function WatchlistPage() {
       <div style={{ flex: 1, overflowY: 'auto' }} className="wl-scrollbar">
         {mergedTickers.map((stock, i) => {
           const isPending = stock._pending;
-          const cCol = changeColor(stock.change_pct);
+          const chg1d = stock.change_pct ?? stock.change_pct_1d;
+          const cCol = changeColor(chg1d);
           const rCol = riskColor(stock.risk_level);
           return (
             <div
@@ -1349,8 +1417,8 @@ export default function WatchlistPage() {
                 )}
               </span>
               <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font }}>
-                {!isPending && stock.change_pct != null
-                  ? `${stock.change_pct > 0 ? '+' : ''}${stock.change_pct.toFixed(1)}%`
+                {!isPending && chg1d != null
+                  ? `${chg1d > 0 ? '+' : ''}${chg1d.toFixed(1)}%`
                   : '\u2014'}
               </span>
               <span style={{
@@ -1607,7 +1675,20 @@ export default function WatchlistPage() {
 
             {/* Right: error + last analyzed + refresh */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              {refreshError && !refreshMut.isPending && (
+              {/* Agent analysis running in background — non-error state */}
+              {refreshStatus === 'running' && !refreshMut.isPending && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', borderRadius: 4,
+                  background: `${C.teal}10`, border: `1px solid ${C.teal}30`,
+                }}>
+                  <div className="wl-spin" style={{ width: 10, height: 10, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%', flexShrink: 0 }} />
+                  <span style={{ fontSize: 9, color: C.teal, fontFamily: C.sansFont }}>
+                    Agent analysis running…
+                  </span>
+                </div>
+              )}
+              {refreshError && !refreshMut.isPending && refreshStatus !== 'running' && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '4px 10px', borderRadius: 4,

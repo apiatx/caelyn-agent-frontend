@@ -1,0 +1,75 @@
+Backend Watchlist fix is complete. Now update the Watchlist frontend to correctly render the restored rich backend payload.
+
+Do not change grouping logic client-side.
+Do not classify tickers client-side.
+Do not call Tradier from frontend.
+Do not touch unrelated pages/routes.
+
+Backend now returns canonical theme sections with enriched ticker rows.
+
+Each ticker row can include:
+- symbol
+- name
+- price
+- change_pct_1d
+- quote_source
+- quote_updated_at
+- catalyst
+- sentiment
+- risk_level
+- action_note
+- key_insight
+- technical_setup
+- canonical_theme_id
+- canonical_theme_name
+
+Backend refresh behavior changed:
+- POST refresh now returns quickly with HTTP 200
+- It may return refresh_status: "running"
+- Claude/agent analysis continues in the background
+- Frontend should NOT show “ANALYSIS FAILED” when refresh_status is "running"
+- Instead show a subtle “Analysis updating…” / “Agent analysis running…” state and keep rendering current enriched data
+
+Tasks:
+1. Inspect the Watchlist page component and API client.
+2. Confirm it is reading ticker rows from the backend section payload.
+3. Restore rich row rendering inside each theme card:
+   - symbol
+   - name/company
+   - price
+   - 1D % change
+   - confidence/risk/sentiment badge if available
+   - catalyst/key insight line
+   - action_note/recommendation line
+   - technical_setup if the old layout had it
+4. If the current UI only renders symbol, update it to render the available backend fields.
+5. Add graceful fallbacks:
+   - name fallback: symbol
+   - price fallback: "—"
+   - change_pct_1d fallback: "—"
+   - insight/action fallback: omit that line, but do not collapse the row to symbol-only if other fields exist
+6. Fix refresh UI behavior:
+   - If POST refresh returns HTTP 200 and refresh_status: "running", do not show failure.
+   - Show a non-error status like “Agent analysis running…”
+   - Keep displaying current data.
+   - Optional: poll/reload the Watchlist GET endpoint every 15–30 seconds while refresh_status is running, then stop after success or a reasonable timeout.
+7. Preserve canonical section names from backend exactly.
+8. Preserve existing dark/glass layout and card styling.
+9. Do not change Screener Hub or Themes page.
+
+Validation:
+- Watchlist page loads without “Backend returned 500.”
+- Clicking Retry/Refresh does not show failure when backend returns refresh_status: "running".
+- Theme cards are no longer ticker-only.
+- Rows show name, price, 1D % change, catalyst/insight/action details when available.
+- 137/137 tickers still render.
+- Canonical theme sections remain unchanged.
+- No old fake labels return.
+- No console errors.
+- Frontend build passes.
+
+Deliver:
+- Files changed
+- Screenshot/result summary
+- Confirmation that refresh_status: "running" is treated as non-error
+- Confirmation that rich ticker rows render from backend fields
