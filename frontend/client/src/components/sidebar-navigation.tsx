@@ -458,7 +458,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg group ${
               hasActiveChild
                 ? "bg-white/[0.06] border-l-2 border-[hsl(200,90%,58%)] text-white"
-                : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                : "text-white hover:bg-white/[0.04]"
             }`}
             data-testid={`nav-${item.id}`}
           >
@@ -484,7 +484,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg group ${
               itemIsActive
                 ? "bg-white/[0.06] border-l-2 border-[hsl(200,90%,58%)] text-white shadow-md"
-                : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                : "text-white hover:bg-white/[0.04]"
             }`}
             data-testid={`nav-${item.id}`}
           >
@@ -587,7 +587,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         <button
           onClick={() => setSettingsOpen(true)}
           title={isCollapsed ? "Settings" : undefined}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-white/45 hover:bg-white/[0.04] hover:text-white/80`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-white hover:bg-white/[0.04]`}
           data-testid="nav-settings"
         >
           <Settings className="w-4 h-4" />
@@ -596,7 +596,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         <button
           onClick={() => setHistoryOpen(true)}
           title={isCollapsed ? "History" : undefined}
-          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-white/45 hover:bg-white/[0.04] hover:text-white/80`}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg text-white hover:bg-white/[0.04]`}
           data-testid="nav-history"
         >
           <ScrollText className="w-4 h-4" />
@@ -608,7 +608,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'} px-2 ${isMobile ? 'py-3' : 'py-1.5'} text-left text-xs font-medium transition-all duration-200 rounded-lg ${
             isActive('/app/about')
               ? "bg-white/[0.06] border-l-2 border-[hsl(200,90%,58%)] text-white shadow-md"
-              : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+              : "text-white hover:bg-white/[0.04]"
           }`}
           data-testid="nav-about"
         >
