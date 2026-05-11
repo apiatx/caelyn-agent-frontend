@@ -56,29 +56,27 @@ function saveViews(views: MultiChartsView[]): void {
   } catch {}
 }
 
-function buildTvUrl(symbol: string, chartId: string): string {
+function buildTvUrl(symbol: string, _chartId: string): string {
   const enc = encodeURIComponent(symbol.trim().toUpperCase());
   return (
-    `https://s.tradingview.com/widgetembed/` +
-    `?frameElementId=tv_${chartId}` +
+    `https://s.tradingview.com/embed-widget/advanced-chart/` +
+    `?locale=en` +
     `&symbol=${enc}` +
     `&interval=D` +
-    `&hidesidetoolbar=0` +
-    `&symboledit=1` +
-    `&saveimage=0` +
-    `&toolbarbg=1e222d` +
-    `&theme=dark` +
+    `&range=3M` +
     `&style=1` +
-    `&timezone=Etc%2FUTC` +
-    `&withdateranges=1` +
-    `&hideideas=1` +
-    `&studies=[]` +
-    `&studies_overrides={}` +
-    `&overrides={}` +
-    `&enabled_features=[]` +
-    `&disabled_features=[]` +
-    `&locale=en` +
-    `&utm_source=caelyn.ai&utm_medium=widget&utm_campaign=chart`
+    `&toolbar_bg=0d1623` +
+    `&theme=dark` +
+    `&timezone=exchange` +
+    `&withdateranges=true` +
+    `&hide_side_toolbar=false` +
+    `&hide_top_toolbar=false` +
+    `&allow_symbol_change=true` +
+    `&enable_publishing=false` +
+    `&calendar=false` +
+    `&studies=%5B%5D` +
+    `&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D` +
+    `&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%5D`
   );
 }
 
