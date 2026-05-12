@@ -1,4 +1,6 @@
 import { Card } from "@/components/ui/card";
+import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ExternalLink } from "lucide-react";
 import stonksIcon from "@assets/download (2)_1757104529784.jpeg";
@@ -13,6 +15,18 @@ export default function StocksChartsPage() {
   const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
+  useSetPageContext('[Page: Charts — TradingView & Market Charts]\nShows embedded TradingView SPX chart and TrendSpider markets overview. Use for broad market technical analysis, S&P 500 trend, and market structure.', []);
+  useSetScreenContext({
+    route: '/app/stocks/charts',
+    page: 'charts',
+    tradingview_context: {
+      widgets: [
+        { raw_symbol: 'SPX', tradingview_symbol: 'CAPITALCOM:US500', timeframe: '1D', layout: 'advanced_chart', source: 'tradingview' },
+        { raw_symbol: 'MARKETS', tradingview_symbol: null, timeframe: null, layout: 'trendspider_markets', source: 'trendspider' },
+      ],
+    },
+    rendered_sections: ['spx_chart', 'trendspider_markets'],
+  }, []);
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>

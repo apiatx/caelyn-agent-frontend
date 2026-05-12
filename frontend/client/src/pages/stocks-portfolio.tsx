@@ -1,4 +1,6 @@
 import { Fragment, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase, Pencil, Check, X } from 'lucide-react';
@@ -395,6 +397,20 @@ export default function StocksPortfolioPage() {
   const totalOverallPL = useMemo(() => enrichedHoldings.reduce((sum, h) => sum + h.totalPL, 0), [enrichedHoldings]);
   const totalCostBasis = useMemo(() => enrichedHoldings.reduce((sum, h) => sum + (h.avgCost * h.shares), 0), [enrichedHoldings]);
 
+  useSetPageContext((() => {
+    const parts = ['[Page: Stocks Portfolio — Personal Holdings Tracker]'];
+    if (enrichedHoldings.length) {
+      const tickers = enrichedHoldings.slice(0, 20).map(h => h.ticker).join(', ');
+      parts.push(`Holdings: ${tickers}`);
+      parts.push(`Total value: $${totalPortfolioValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
+      parts.push(`Daily P&L: ${totalDailyPL >= 0 ? '+' : ''}$${totalDailyPL.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
+    } else {
+      parts.push('No holdings loaded yet.');
+    }
+    parts.push('Use for portfolio review, position sizing, P&L analysis, risk exposure, and holding-level insights.');
+    return parts.join('\n');
+  })(), [enrichedHoldings, totalPortfolioValue, totalDailyPL]);
+
   const sortedHoldings = useMemo(() => {
     const sorted = [...enrichedHoldings];
     sorted.sort((a, b) => {
@@ -413,6 +429,34 @@ export default function StocksPortfolioPage() {
     });
     return sorted;
   }, [enrichedHoldings, sortKey, sortAsc]);
+
+  useSetScreenContext((() => ({
+    route: '/app/stocks/portfolio',
+    page: 'stocks_portfolio',
+    sort: { key: sortKey, dir: sortAsc ? 'asc' : 'desc' },
+    row_count: sortedHoldings.length,
+    visible_rows: sortedHoldings.slice(0, 30).map(h => ({
+      ticker: h.ticker,
+      asset_type: h.assetType ?? null,
+      shares: h.shares,
+      avg_cost: h.avgCost,
+      current_price: h.currentPrice,
+      total_value: parseFloat(h.totalValue.toFixed(2)),
+      weight_pct: totalPortfolioValue > 0 ? parseFloat(((h.totalValue / totalPortfolioValue) * 100).toFixed(1)) : null,
+      daily_pl: parseFloat(h.dailyPL.toFixed(2)),
+      total_pl: parseFloat(h.totalPL.toFixed(2)),
+      total_pl_pct: h.avgCost > 0 ? parseFloat(((h.totalPL / (h.avgCost * h.shares)) * 100).toFixed(1)) : null,
+      change_1d_pct: (h as any).quote?.change_pct ?? (h as any).quote?.regularMarketChangePercent ?? null,
+    })),
+    extra: {
+      total_value: totalPortfolioValue,
+      total_daily_pl: totalDailyPL,
+      total_overall_pl: totalOverallPL,
+      total_cost_basis: totalCostBasis,
+      asset_breakdown: sectorData,
+    },
+    freshness: new Date().toISOString(),
+  }))(), [sortedHoldings, sortKey, sortAsc, totalPortfolioValue, totalDailyPL, totalOverallPL, totalCostBasis, sectorData]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);

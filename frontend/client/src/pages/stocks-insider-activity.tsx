@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -1023,6 +1024,72 @@ export default function InsiderActivityPage() {
     parts.push('Use for insider sentiment signals, cluster buys, high-conviction executive purchases, and congressional disclosure analysis.');
     return parts.join('\n');
   })(), [activeTab, iApiData, cApiData]);
+
+  useSetScreenContext((() => {
+    if (activeTab === 'insider') {
+      const rows: any[] = (iApiData as any)?.transactions ?? [];
+      return {
+        route: '/app/stocks/insider-activity',
+        page: 'insider_activity',
+        tab: 'insider',
+        filters: {
+          search: iFilters.search || null,
+          type: iFilters.type || null,
+          sector: iFilters.sector || null,
+          timeframe: iFilters.timeframe,
+          min_score: iFilters.min_score || null,
+          quick_filter: iQuickFilter,
+          cluster_sub: iClusterSub !== 'all' ? iClusterSub : null,
+        },
+        sort: { key: iSortKey, dir: iSortDir },
+        row_count: iApiData?.summary?.total_transactions ?? rows.length,
+        visible_rows: rows.slice(0, 25).map((t: any) => ({
+          ticker: t.ticker ?? t.symbol,
+          company: t.company_name ?? t.company ?? null,
+          insider: t.insider_name ?? t.name ?? null,
+          title: t.insider_title ?? t.title ?? null,
+          type: t.transaction_type ?? t.type ?? null,
+          value: t.transaction_value ?? t.value ?? null,
+          shares: t.shares ?? null,
+          price: t.price ?? null,
+          date: t.transaction_date ?? t.date ?? null,
+          score: t.score ?? null,
+          clustered: t.clustered ?? null,
+        })),
+        freshness: new Date(iLastUpdated).toISOString(),
+      };
+    } else {
+      const rows: any[] = (cApiData as any)?.trades ?? [];
+      return {
+        route: '/app/stocks/insider-activity',
+        page: 'insider_activity',
+        tab: 'congress',
+        filters: {
+          search: cFilters.search || null,
+          type: cFilters.type || null,
+          chamber: cFilters.chamber || null,
+          party: cFilters.party || null,
+          timeframe: cFilters.timeframe,
+          min_amount: cFilters.min_amount || null,
+          quick_filter: cQuickFilter,
+        },
+        sort: { key: cSortKey, dir: cSortDir },
+        row_count: cApiData?.summary?.total_trades ?? rows.length,
+        visible_rows: rows.slice(0, 25).map((t: any) => ({
+          ticker: t.ticker ?? t.symbol,
+          company: t.company ?? null,
+          politician: t.politician ?? t.name ?? null,
+          chamber: t.chamber ?? null,
+          party: t.party ?? null,
+          type: t.transaction_type ?? t.type ?? null,
+          amount_range: t.amount ?? t.amount_range ?? null,
+          disclosure_date: t.disclosure_date ?? null,
+          trade_date: t.transaction_date ?? t.trade_date ?? null,
+        })),
+        freshness: new Date(cLastUpdated).toISOString(),
+      };
+    }
+  })(), [activeTab, iApiData, cApiData, iFilters, iQuickFilter, iClusterSub, iSortKey, iSortDir, iLastUpdated, cFilters, cQuickFilter, cSortKey, cSortDir, cLastUpdated]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const { mutate: iRefresh, isPending: iRefreshing } = useMutation({

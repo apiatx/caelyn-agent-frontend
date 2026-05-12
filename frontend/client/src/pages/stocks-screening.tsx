@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import CryptoStocksSection from "@/components/crypto-stocks-section";
 import ScreenerHub from "@/components/ScreenerHub";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 
 function MarketSummaryWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,6 +31,11 @@ function MarketSummaryWidget() {
 
 export default function StocksScreeningPage() {
   useSetPageContext('[Page: Stock & Crypto Screener]\nDisplays equity and crypto screener with thematic sector analysis, rotation scoring, regime tagging, and relative strength rankings. Covers stocks, ETFs, and crypto across themes like semiconductors, AI, energy, and more.', []);
+  useSetScreenContext({
+    route: '/app/stocks/screener',
+    page: 'screener',
+    rendered_sections: ['market_summary_widget', 'screener_hub', 'crypto_stocks_section'],
+  }, []);
   return (
     <div className="min-h-screen text-white" style={{ background: '#050608' }}>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">

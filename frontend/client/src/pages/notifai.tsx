@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { usePageContext } from '@/contexts/PageContextContext';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Send, Loader2, MessageSquare, ExternalLink, Clock, RefreshCw, Sparkles, CalendarDays, TrendingUp } from 'lucide-react';
@@ -831,6 +832,12 @@ function NewsAgent() {
 // ─── Main Page ────────────────────────────────────────────────────
 
 export default function NotifAIPage() {
+  useSetPageContext('[Page: NotifAI — Market News Intelligence]\nDisplays curated weekly market summary, "The Brief" daily intelligence digest, and categorized live news feed (finance, crypto, macro, earnings). Use for news-driven context, sentiment shifts, narrative tracking, and recent catalysts.', []);
+  useSetScreenContext({
+    route: '/app/notifai',
+    page: 'notifai',
+    rendered_sections: ['weekly_summary', 'the_brief', 'news_feed'],
+  }, []);
   return (
     <div
       className="text-white"

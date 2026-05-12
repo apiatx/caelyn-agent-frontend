@@ -6582,13 +6582,6 @@ export default function StocksEarningsCalendarPage() {
     setAskCaelynOpen(true);
   }, []);
 
-  useSetScreenContext({
-    route: '/app/stocks/earnings-calendar',
-    page: 'calendar',
-    tab: activeTab,
-    sub_tab: activeTab === 'earnings_dates' ? earningsMode : undefined,
-    extra: { ipoView: activeTab === 'ipo' ? ipoView : undefined },
-  }, [activeTab, earningsMode, ipoView]);
 
   // ── Shared filter state ──────────────────────────────────────────
   const [scope,  setScope]  = useState<string>("all");
@@ -6800,6 +6793,40 @@ export default function StocksEarningsCalendarPage() {
   const isEarningsTab   = activeTab === "earnings_dates";
   const isIpoTab        = activeTab === "ipos";
   const showFilterBar   = isEarningsTab;
+
+  // ── Screen context — placed here so all data variables are in scope ──
+  useSetScreenContext((() => {
+    const weekEntries: any[] = earningsMode === 'thisweek'
+      ? (weekCleanData?.days ?? []).flatMap((d: any) => (d.entries ?? []).map((e: any) => ({
+          ticker: e.symbol ?? e.ticker,
+          company: e.company ?? identityMap[e.symbol]?.name ?? null,
+          report_date: e.report_date ?? d.date ?? null,
+          time: e.time ?? null,
+          eps_estimate: e.eps_estimate ?? null,
+          eps_actual: e.eps_actual ?? null,
+          eps_surprise_pct: e.eps_surprise_pct ?? null,
+          revenue_estimate: e.revenue_estimate ?? null,
+          revenue_actual: e.revenue_actual ?? null,
+          beat: e.beat ?? null,
+        })))
+      : [];
+    return {
+      route: '/app/stocks/earnings-calendar',
+      page: 'calendar',
+      tab: activeTab,
+      sub_tab: activeTab === 'earnings_dates' ? earningsMode : undefined,
+      filters: { scope, search: search || null },
+      row_count: weekEntries.length || undefined,
+      visible_rows: weekEntries.slice(0, 30),
+      extra: {
+        ipoView: activeTab === 'ipo' ? ipoView : undefined,
+        week_start: earningsMode === 'thisweek' ? dateKey(weekCleanStart) : undefined,
+        week_end: earningsMode === 'thisweek' ? dateKey(addDays(weekCleanStart, 4)) : undefined,
+        signal_mode: earningsSignalMode,
+        freshness: weekCleanData?.meta?.updated_at ?? weekAllData?.meta?.updated_at ?? undefined,
+      },
+    };
+  })(), [activeTab, earningsMode, ipoView, scope, search, weekCleanData, weekAllData, weekCleanStart, earningsSignalMode, identityMap]);
 
   return (
     <>

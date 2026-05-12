@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, CSSProperties } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { openSecureLink } from '@/utils/security';
 import { resolveTVSymbol } from '@/utils/tvSymbol';
@@ -2077,6 +2078,34 @@ export default function OnchainSocialPage() {
     return parts.join('\n');
   })();
   useSetPageContext(_socialCtx, [tx]);
+
+  useSetScreenContext((() => {
+    const topTickers: any[] = tx?.top_tickers ?? tx?.tickers_discussed ?? [];
+    const screenerRows: any[] = tx?.social_screener?.rows ?? [];
+    return {
+      route: '/app/social',
+      page: 'x_consensus',
+      row_count: screenerRows.length,
+      visible_rows: screenerRows.slice(0, 25).map((r: any) => ({
+        ticker: r.symbol ?? r.ticker,
+        name: r.company ?? r.name ?? null,
+        theme: r.theme ?? null,
+        social_score: r.social_acceleration_score ?? null,
+        consensus_score: r.consensus_score ?? null,
+        freshness_score: r.freshness_score ?? null,
+        price: r.price ?? null,
+        change_pct: r.price_change_24h ?? r.change_pct ?? null,
+        market_cap: r.market_cap ?? null,
+      })),
+      extra: {
+        trending_tickers: topTickers.slice(0, 15).map((t: any) => t.ticker ?? t.symbol ?? t),
+        overall_sentiment: tx?.overall_sentiment ?? tx?.market_sentiment ?? null,
+        refresh_in_progress: tx?.refresh_in_progress ?? false,
+        snapshot_ts: tx?.snapshot_ts ?? tx?.updated_at ?? null,
+      },
+      freshness: tx?.snapshot_ts ?? tx?.updated_at ?? undefined,
+    };
+  })(), [tx]);
   const windowOpen       = tx?.refresh_window_open !== false;
   const autoResumeRaw    = tx?.next_allowed_refresh_at ?? null;
   const autoResumeDate   = autoResumeRaw ? new Date(autoResumeRaw) : null;

@@ -1,0 +1,102 @@
+Good start, but this is not complete yet.
+
+Do not change any page UI, page behavior, filters, sorting, tables, or data fetching. Only continue wiring screen_context.
+
+The current implementation only confirms context for:
+- options
+- watchlist
+- hyperliquid
+- stocks earnings calendar
+- notifai
+- predict
+
+But the required coverage is all major signal pages:
+1. Options Flow
+2. Screener
+3. Themes
+4. Macro
+5. Social / X Consensus
+6. Hyperliquid
+7. Calendar / Earnings
+8. Watchlist
+9. Portfolio
+10. Whale Watch
+11. Insider Activity
+12. TradingView widgets/iframes
+
+Please add or verify useSetScreenContext coverage for the missing pages:
+- Screener
+- Themes
+- Macro
+- Social / X Consensus page specifically, not just NotifAI
+- Portfolio
+- Whale Watch
+- Insider Activity
+- TradingView chart/widget pages
+
+For Watchlist:
+Do not send only active watchlist name + up to 30 tickers.
+Keep visible_symbols capped if needed, but also send visible_rows with the actual displayed row data:
+- ticker/symbol
+- company/name
+- theme
+- price
+- change/change_pct
+- volume
+- rel_volume/relative_volume
+- signal
+- rating/score if visible
+- sort
+- filters
+- freshness/cache metadata if available
+
+For Portfolio:
+Send visible_rows with whatever is already visible on the page:
+- ticker/symbol
+- company/name
+- shares/quantity if visible
+- market_value/value if visible
+- weight if visible
+- pnl if visible
+- avg_cost/cost_basis if visible
+- price/change
+- sector/theme/exposure if visible
+
+For Calendar/Earnings:
+The summary says “static object at both embedded agent call sites.” That sounds too thin.
+Make sure screen_context includes actual visible earnings rows when available:
+- ticker
+- company
+- report date/time
+- EPS estimate/actual/surprise
+- revenue estimate/actual/surprise
+- beat/miss
+- active tab/subtab
+- all/watchlist/portfolio toggle if present
+- date range
+- freshness/cache metadata
+
+For TradingView:
+Backend cannot see iframes. Add screen_context.tradingview_context wherever TradingView widgets/charts are present:
+- raw_symbol
+- tradingview_symbol, e.g. NASDAQ:MU
+- timeframe/interval
+- active_widget_symbol
+- layout
+- source
+- widgets array if multi-chart
+
+For each page, return a validation matrix:
+Page | route | screen_context.page | visible_symbols | visible_rows | filters | sort | freshness | rendered_sections | tradingview_context | status
+
+Also include example outgoing /api/query payloads for:
+- Watchlist
+- Portfolio
+- Screener
+- Themes
+- Macro
+- Whale Watch
+- Insider Activity
+- TradingView chart widget
+
+Do not mark complete until all 12 required page/context areas are covered or explicitly listed as unavailable with the reason.

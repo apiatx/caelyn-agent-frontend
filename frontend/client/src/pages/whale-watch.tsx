@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   RefreshCw, X, ChevronUp, ChevronDown, ChevronsUpDown,
@@ -587,6 +588,34 @@ export default function WhaleWatchPage() {
     whales.map(w => w.last_updated ?? w.updated_at).filter(Boolean).sort().pop() ?? null,
     [whales]
   );
+
+  useSetScreenContext({
+    route: '/app/whale-watch',
+    page: 'whale_watch',
+    sort: { key: sortKey, dir: sortDir },
+    row_count: sorted.length,
+    visible_rows: sorted.slice(0, 20).map(w => ({
+      name: w.name,
+      category: w.category ?? null,
+      ai_theme: w.ai_theme ?? null,
+      return_1m: (w as any).return_1m ?? null,
+      return_3m: (w as any).return_3m ?? null,
+      return_6m: (w as any).return_6m ?? null,
+      return_1y: w.return_1y ?? null,
+      top_holdings: Array.isArray((w as any).top_holdings)
+        ? (w as any).top_holdings.slice(0, 5).map((h: any) => h.ticker ?? h.symbol ?? h)
+        : null,
+    })),
+    selected: selected?.name ?? null,
+    freshness: lastUpdated ?? undefined,
+    extra: {
+      famous_investors: famousInvestors.slice(0, 10).map(f => ({
+        name: f.name,
+        strategy: (f as any).strategy ?? null,
+        top_picks: Array.isArray((f as any).top_picks) ? (f as any).top_picks.slice(0, 5) : null,
+      })),
+    },
+  }, [sorted, sortKey, sortDir, selected, lastUpdated, famousInvestors]);
 
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ background: "#050608" }}>

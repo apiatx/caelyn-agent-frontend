@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -1765,6 +1766,34 @@ export default function StocksSectorsPage() {
     return parts.join('\n');
   })();
   useSetPageContext(_sectorsCtx, [dash, sectors, leaders, laggards]);
+
+  useSetScreenContext((() => {
+    const regime = (dash as any)?.regime;
+    return {
+      route: '/app/stocks/sectors',
+      page: 'sectors',
+      row_count: sectors.length,
+      visible_rows: sectors.slice(0, 20).map((s: any) => ({
+        ticker: s.ticker,
+        name: s.name ?? null,
+        regime_tag: s.regime_tag ?? null,
+        change_1d: s.change_1d ?? null,
+        change_1w: s.change_1w ?? null,
+        change_1m: s.change_1m ?? null,
+        rotation_score: s.rotation_score ?? null,
+        rs_rank: s.rs_rank ?? null,
+      })),
+      extra: {
+        leaders,
+        laggards,
+        market_posture: regime?.market_posture ?? null,
+        leadership_style: regime?.leadership_style ?? null,
+        analysis_updated_at: dash?.analysis_updated_at ?? null,
+        selected_tickers: Array.from(selectedTickers),
+      },
+      freshness: (dash as any)?.updated_at ?? undefined,
+    };
+  })(), [sectors, leaders, laggards, dash, selectedTickers]);
 
   return (
     <div className="min-h-screen text-white" style={{ background: "#050608" }}>

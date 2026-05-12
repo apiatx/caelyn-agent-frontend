@@ -675,21 +675,50 @@ export default function WatchlistPage() {
   })(), [watchlist, activeId, wlMetas]);
 
   useSetScreenContext((() => {
-    const tickers: string[] = [];
-    if (Array.isArray((watchlist as any)?.tickers)) tickers.push(...(watchlist as any).tickers);
-    if (!tickers.length && Array.isArray((watchlist as any)?.sections)) {
-      for (const sec of (watchlist as any).sections) if (Array.isArray(sec.tickers)) tickers.push(...sec.tickers.map((t: any) => t.ticker || t.symbol || t).filter(Boolean));
-    }
     const meta = wlMetas?.find((m: any) => m.id === activeId);
+    // Collect rich stock objects from sections (new format) or plain tickers (legacy)
+    const richStocks: any[] = [];
+    if (Array.isArray((watchlist as any)?.sections)) {
+      for (const sec of (watchlist as any).sections) {
+        if (Array.isArray(sec.tickers)) {
+          for (const t of sec.tickers) {
+            richStocks.push({
+              ticker: t.ticker ?? t.symbol ?? t,
+              company: t.company ?? t.name ?? null,
+              theme: sec.canonical_theme_name ?? sec.title ?? null,
+              price: t.price ?? null,
+              change_pct: t.change_pct ?? t.change_pct_1d ?? null,
+              volume: t.volume ?? null,
+              relative_volume: t.relative_volume ?? t.rel_vol ?? t.volx ?? null,
+              signal: t.signal ?? null,
+              rating: t.rating ?? t.score ?? null,
+            });
+          }
+        }
+      }
+    }
+    // Fallback: plain ticker strings
+    const plainTickers: string[] = [];
+    if (!richStocks.length && Array.isArray((watchlist as any)?.tickers)) {
+      plainTickers.push(...(watchlist as any).tickers);
+    }
+    const rows = richStocks.length
+      ? richStocks.slice(0, 40)
+      : plainTickers.slice(0, 40).map(tk => ({ ticker: tk }));
     return {
       route: '/app/watchlist',
       page: 'watchlist',
       selected: activeId,
-      row_count: tickers.length,
-      visible_rows: tickers.slice(0, 30).map(tk => ({ ticker: tk })),
-      extra: { watchlist_name: meta?.name ?? null },
+      sort: sortKey ? { key: sortKey, dir: sortDir } : null,
+      row_count: richStocks.length || plainTickers.length,
+      visible_symbols: rows.map((r: any) => r.ticker).filter(Boolean),
+      visible_rows: rows,
+      extra: {
+        watchlist_name: meta?.name ?? null,
+        freshness: (watchlist as any)?.cache_ts ?? (watchlist as any)?.updated_at ?? null,
+      },
     };
-  })(), [watchlist, activeId, wlMetas]);
+  })(), [watchlist, activeId, wlMetas, sortKey, sortDir]);
 
   /* ── news for active watchlist ───────────────────────────────────── */
   const { data: newsData } = useQuery<NewsResponse>({

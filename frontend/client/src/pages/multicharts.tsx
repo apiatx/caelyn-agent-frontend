@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { Plus, Trash2, LayoutGrid, Pencil, Check, X, GripVertical } from "lucide-react";
 import {
   DndContext,
@@ -304,6 +305,31 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
     lines.push('When the user asks about "my charts", "these tickers", or comparisons, use the tickers above as the subject of analysis.');
     return lines.join('\n');
   })() : null, [views, isActive]);
+
+  useSetScreenContext(isActive ? (() => {
+    const activeSymbols = (activeView?.charts ?? []).map((c: any) => c.symbol).filter(Boolean) as string[];
+    return {
+      route: '/app/multicharts',
+      page: 'multicharts',
+      tab: activeView?.name ?? null,
+      tradingview_context: {
+        active_tab: activeView?.name ?? null,
+        active_widget_symbols: activeSymbols,
+        widgets: (activeView?.charts ?? []).filter((c: any) => c.symbol).map((c: any) => ({
+          raw_symbol: c.symbol,
+          tradingview_symbol: c.symbol,
+          timeframe: '1D',
+          layout: 'advanced_chart',
+          source: 'tradingview',
+        })),
+        all_tabs: views.map(v => ({
+          name: v.name,
+          symbols: v.charts.map((c: any) => c.symbol).filter(Boolean),
+        })),
+      },
+      visible_symbols: activeSymbols,
+    };
+  })() : null, [views, activeView, isActive]);
 
   // ── Tab operations ──────────────────────────────────────────────────────────
 
