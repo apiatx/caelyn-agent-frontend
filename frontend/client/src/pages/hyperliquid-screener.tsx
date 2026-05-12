@@ -1804,14 +1804,15 @@ const MATRIX_COLS: MatCol2[] = [
   { key:'agent_rank',        label:'AGENT RANK',     w:84,  fmt: v=>v??'—' },
 ];
 
-const MATRIX_TAB_ORDER: string[] = ['stocks_etfs', 'crypto', 'commodities', 'indices', 'pre_ipo', 'themes'];
+const MATRIX_TAB_ORDER: string[] = ['all', 'stocks_etfs', 'crypto', 'commodities', 'indices', 'pre_ipo', 'themes'];
 const MATRIX_TAB_FALLBACK_LABELS: Record<string,string> = {
-  stocks_etfs:  'Stocks & ETFs',
+  all:          'All',
+  stocks_etfs:  'Stocks',
   crypto:       'Crypto',
   commodities:  'Commodities',
   indices:      'Indices',
   pre_ipo:      'Pre-IPO Stocks',
-  themes:       'Themes',
+  themes:       'Themes + ETFs',
 };
 
 // Frontend classifier: mirrors backend _classifyMatrixTab so the toggles still
@@ -2021,7 +2022,7 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
 }
 
 function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbackRows: ScreenerRow[] }) {
-  const [activeTab, setActiveTab] = useState<string>('stocks_etfs');
+  const [activeTab, setActiveTab] = useState<string>('all');
   const [sortKey, setSortKey]     = useState<MatrixKey>('agent_score');
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc');
   const [fbSortKey, setFbSortKey] = useState<CK>('agentScore');
@@ -2059,9 +2060,10 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   // Use the new tabbed endpoint when it has any usable rows; otherwise fall back.
   const useTabbed = !!data && orderedKeys.length > 0 && totalTabbedRows > 0;
 
-  const currentKey = (activeTab in tabs) ? activeTab : (orderedKeys[0] ?? 'stocks_etfs');
-  const currentTab = tabs[currentKey];
-  const assets: MatrixAsset[] = currentTab?.assets ?? [];
+  const currentKey = activeTab === 'all' ? (orderedKeys[0] ?? 'stocks_etfs') : ((activeTab in tabs) ? activeTab : (orderedKeys[0] ?? 'stocks_etfs'));
+  const assets: MatrixAsset[] = activeTab === 'all'
+    ? Object.values(tabs).flatMap(t => t?.assets ?? [])
+    : (tabs[currentKey]?.assets ?? []);
 
   const filteredTabbed = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -2101,7 +2103,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   // when the /market-matrix endpoint is unreachable.
   const fallbackByTab = useMemo(() => {
     const buckets: Record<string, ScreenerRow[]> = {
-      stocks_etfs: [], crypto: [], commodities: [], indices: [], pre_ipo: [], themes: [],
+      stocks_etfs: [], crypto: [], commodities: [], indices: [], pre_ipo: [], themes: [], all: [],
     };
     for (const r of fallbackRows) {
       const k = classifyScreenerRow(r);
@@ -2117,14 +2119,14 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   }, [fallbackByTab]);
 
   const fallbackFiltered = useMemo(() => {
-    const rows = fallbackByTab[activeTab] ?? [];
+    const rows = activeTab === 'all' ? fallbackRows : (fallbackByTab[activeTab] ?? []);
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(r =>
       (r.coin ?? '').toLowerCase().includes(q) ||
       (r.displayName ?? '').toLowerCase().includes(q)
     );
-  }, [fallbackByTab, activeTab, search]);
+  }, [fallbackByTab, fallbackRows, activeTab, search]);
 
   const sortedFallback = useMemo(() => {
     const cmp = (a: ScreenerRow, b: ScreenerRow) => {
@@ -2159,10 +2161,10 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   // filter on the visible Market Matrix.
   const toggleKeys = MATRIX_TAB_ORDER;
   const toggleLabel = (key: string) =>
-    (useTabbed ? tabs[key]?.label : undefined) ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key;
+    key === 'all' ? 'All' : ((useTabbed ? tabs[key]?.label : undefined) ?? MATRIX_TAB_FALLBACK_LABELS[key] ?? key);
   const toggleCount = (key: string) =>
-    useTabbed ? (tabs[key]?.count ?? 0) : (fallbackTabCounts[key] ?? 0);
-  const activeToggleKey = useTabbed ? currentKey : activeTab;
+    key === 'all' ? totalCount : (useTabbed ? (tabs[key]?.count ?? 0) : (fallbackTabCounts[key] ?? 0));
+  const activeToggleKey = activeTab === 'all' ? 'all' : (useTabbed ? currentKey : activeTab);
 
   // Don't render anything only when the entire page has no data at all.
   if (!useTabbed && fallbackRows.length === 0 && !isLoading) return null;
