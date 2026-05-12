@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import caelynLogo from "@assets/image_1771528728963.png";
 import { useAuth } from '@/contexts/AuthContext';
+import { usePageContext } from '@/contexts/PageContextContext';
 import { normalizeHistory, normalizeNewHistoryFlat, normalizeSidebarResponse, type NormalizedHistoryEntry } from '@/lib/history';
 import {
   applyPresetState,
@@ -342,6 +343,7 @@ export default function TradingAgent() {
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
   const loadingRef = useRef(false);
+  const { screenContextRef } = usePageContext();
   const abortControllerRef = useRef<AbortController | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyPlaybooks, setStrategyPlaybooks] = useState<Array<{id:string;name:string;short_label:string;ui_color?:string}>>([]);
@@ -644,6 +646,7 @@ export default function TradingAgent() {
       preset_intent: null,
       conversation_id: convId || null,
       history,
+      screen_context: screenContextRef.current ?? undefined,
       ...buildCollabPayload(collabConfig, selectedModel),
     };
 
@@ -904,6 +907,7 @@ export default function TradingAgent() {
       preset_intent: typeof presetIntent === 'string' ? presetIntent : null,
       conversation_id: freshChat ? null : (typeof conversationId === 'string' ? conversationId : null),
       ...(csvData ? { csv_data: csvData } : {}),
+      screen_context: screenContextRef.current ?? undefined,
     };
     if (presetIntent) {
       // Per-preset reasoning family overrides — family alias, backend picks exact model/tier

@@ -50,7 +50,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
   const [hasUnread, setHasUnread] = useState(false);
 
   // Ref-based so sendMessage always reads the latest value without stale closures
-  const { pageContextRef } = usePageContext();
+  const { pageContextRef, screenContextRef } = usePageContext();
 
   const sendMessage = useCallback(async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
@@ -74,7 +74,7 @@ export function ChatbotProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ prompt: promptForApi, history: chatHistory.slice(-20), chatbox_mode: true }),
+        body: JSON.stringify({ prompt: promptForApi, history: chatHistory.slice(-20), chatbox_mode: true, screen_context: screenContextRef.current ?? undefined }),
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const raw = (await res.text()).trim();

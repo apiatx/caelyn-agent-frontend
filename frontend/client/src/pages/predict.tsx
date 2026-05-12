@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { usePageContext } from "@/contexts/PageContextContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2015,6 +2017,7 @@ function PredictionAgent({ signals }: { signals: SignalsData | null }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { screenContextRef } = usePageContext();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -2035,6 +2038,7 @@ function PredictionAgent({ signals }: { signals: SignalsData | null }) {
         preset_intent: "prediction_markets",
         history: history.length > 0 ? history : undefined,
         conversation_id: conversationId,
+        screen_context: screenContextRef.current ?? undefined,
         context: signalsContext || undefined,
         market_context: signalsContext ? {
           summary: signals?.summary,
@@ -2464,6 +2468,12 @@ const openInNewTab = (url: string) => {
 
 export default function PredictPage() {
   const [activeTab, setActiveTab] = useState<"gambler" | "investor">("investor");
+
+  useSetScreenContext({
+    route: '/app/predict',
+    page: 'predict',
+    tab: activeTab,
+  }, [activeTab]);
 
   const { data: pageSignals = null } = useQuery<SignalsData | null>({
     queryKey: ['predict-signals'],

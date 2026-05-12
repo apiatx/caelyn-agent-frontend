@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { usePageContext } from '@/contexts/PageContextContext';
 import { useQuery } from '@tanstack/react-query';
 import { Newspaper, Send, Loader2, MessageSquare, ExternalLink, Clock, RefreshCw, Sparkles, CalendarDays, TrendingUp } from 'lucide-react';
 import { openSecureLink } from '@/utils/security';
@@ -664,6 +665,7 @@ function NewsAgent() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { screenContextRef } = usePageContext();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -683,6 +685,7 @@ function NewsAgent() {
         preset_intent: 'news_intelligence',
         history: history.length > 0 ? history : undefined,
         conversation_id: conversationId,
+        screen_context: screenContextRef.current ?? undefined,
       };
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {

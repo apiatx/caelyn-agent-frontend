@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
+import { usePageContext } from "@/contexts/PageContextContext";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -636,6 +638,7 @@ function EarningsModal({ entry, onClose, prefetchedDetail }: { entry: EarningsEn
         body: JSON.stringify({
           query: parts.join(" "),
           preset_intent: "earnings_catalyst",
+          screen_context: { route: '/app/stocks/earnings-calendar', page: 'calendar', tab: 'earnings_dates' },
         }),
       });
       if (res.ok) {
@@ -2478,6 +2481,7 @@ function EarningsAgent({
         preset_intent: systemContext ? "catalyst_calendar" : "earnings_catalyst",
         history: history.length > 0 ? history : undefined,
         conversation_id: conversationId,
+        screen_context: { route: '/app/stocks/earnings-calendar', page: 'calendar', tab: 'earnings_dates' },
       };
 
       const res = await fetch(`${AGENT_BACKEND_URL}/api/query`, {
@@ -6577,6 +6581,14 @@ export default function StocksEarningsCalendarPage() {
     } catch { /* fallback: no extra context */ }
     setAskCaelynOpen(true);
   }, []);
+
+  useSetScreenContext({
+    route: '/app/stocks/earnings-calendar',
+    page: 'calendar',
+    tab: activeTab,
+    sub_tab: activeTab === 'earnings_dates' ? earningsMode : undefined,
+    extra: { ipoView: activeTab === 'ipo' ? ipoView : undefined },
+  }, [activeTab, earningsMode, ipoView]);
 
   // ── Shared filter state ──────────────────────────────────────────
   const [scope,  setScope]  = useState<string>("all");

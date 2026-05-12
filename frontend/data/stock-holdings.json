@@ -1,42 +1,98 @@
 [
   {
-    "id": "mltv97dtmiczq",
-    "ticker": "NVDA",
-    "shares": 10,
-    "avgCost": 300,
-    "addedAt": "2026-02-19T19:40:55.841Z",
+    "id": "mp26vp9gra4mf",
+    "ticker": "AEHR",
+    "shares": 232,
+    "avgCost": 45,
+    "addedAt": "2026-05-12T05:27:37.636Z",
     "assetType": "stock"
   },
   {
-    "id": "mltvy0agfzc68",
-    "ticker": "OSS",
-    "shares": 60,
-    "avgCost": 9.6,
-    "addedAt": "2026-02-19T20:00:13.048Z",
+    "id": "mp26x0obfmlqg",
+    "ticker": "SIVEF",
+    "shares": 3996,
+    "avgCost": 1.41,
+    "addedAt": "2026-05-12T05:28:39.083Z",
     "assetType": "stock"
   },
   {
-    "id": "mlty9ole8lwu8",
-    "ticker": "BUZZ",
-    "shares": 100,
-    "avgCost": 30,
-    "addedAt": "2026-02-19T21:05:16.994Z",
-    "assetType": "etf"
+    "id": "mp27095kted9k",
+    "ticker": "MRVL",
+    "shares": 111,
+    "avgCost": 110,
+    "addedAt": "2026-05-12T05:31:10.040Z",
+    "assetType": "stock"
   },
   {
-    "id": "mlu1mli63y1us",
-    "ticker": "GOLD",
-    "shares": 1,
-    "avgCost": 4000,
-    "addedAt": "2026-02-19T22:39:18.366Z",
-    "assetType": "commodity"
+    "id": "mp2711etad68u",
+    "ticker": "PENG",
+    "shares": 422,
+    "avgCost": 35,
+    "addedAt": "2026-05-12T05:31:46.661Z",
+    "assetType": "stock"
   },
   {
-    "id": "mlu1n0u479wg1",
-    "ticker": "BTC",
-    "shares": 0.1,
-    "avgCost": 60000,
-    "addedAt": "2026-02-19T22:39:38.236Z",
-    "assetType": "crypto"
+    "id": "mp271oyfhpwun",
+    "ticker": "AMKR",
+    "shares": 216,
+    "avgCost": 48,
+    "addedAt": "2026-05-12T05:32:17.175Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp274mqy9pi2r",
+    "ticker": "IQEPF",
+    "shares": 19875,
+    "avgCost": 0.35,
+    "addedAt": "2026-05-12T05:34:34.282Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp276ojp7t22p",
+    "ticker": "SLOIF",
+    "shares": 79,
+    "avgCost": 61,
+    "addedAt": "2026-05-12T05:36:09.925Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp277v9z5ky7w",
+    "ticker": "TRT",
+    "shares": 1160,
+    "avgCost": 6.2,
+    "addedAt": "2026-05-12T05:37:05.303Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp27a94i54wna",
+    "ticker": "NBIS",
+    "shares": 76,
+    "avgCost": 87,
+    "addedAt": "2026-05-12T05:38:56.562Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp27c2e8jttll",
+    "ticker": "VECO",
+    "shares": 234,
+    "avgCost": 42,
+    "addedAt": "2026-05-12T05:40:21.152Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp27dpemtqcez",
+    "ticker": "AMPX",
+    "shares": 625,
+    "avgCost": 15,
+    "addedAt": "2026-05-12T05:41:37.630Z",
+    "assetType": "stock"
+  },
+  {
+    "id": "mp27f2oz3sa6g",
+    "ticker": "LWLG",
+    "shares": 473,
+    "avgCost": 8.33,
+    "addedAt": "2026-05-12T05:42:41.507Z",
+    "assetType": "stock"
   }
 ]

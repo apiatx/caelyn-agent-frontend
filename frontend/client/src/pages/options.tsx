@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import type { ReactNode } from "react";
 import {
   RefreshCw,
@@ -2322,6 +2323,25 @@ export default function OptionsPage() {
     parts.push('Use for unusual options activity analysis, smart money positioning, gamma exposure, and options-driven price targets.');
     return parts.join('\n');
   })(), [screenerData]);
+  useSetScreenContext((() => {
+    const resp = screenerData?.response ?? screenerData;
+    const tickers: any[] = Array.isArray(resp?.tickers) ? resp.tickers : [];
+    return {
+      route: '/app/options',
+      page: 'options_flow',
+      row_count: tickers.length,
+      visible_rows: tickers.slice(0, 20).map((t: any) => ({
+        ticker: t.ticker,
+        score: t.composite_score != null ? Math.round(t.composite_score) : null,
+        signal: t.primary_signal ?? null,
+        price: t.underlying_price ?? null,
+        pc_ratio: t.pc_ratio ?? null,
+        heat: t.heat_score ?? null,
+      })),
+      freshness: new Date().toISOString(),
+    };
+  })(), [screenerData]);
+
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);

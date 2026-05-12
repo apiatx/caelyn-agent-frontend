@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, Component } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -2672,6 +2673,32 @@ export default function HyperliquidScreenerPage() {
     };
     return [...pinned, ...rest.sort(cmp)];
   }, [filtered, sortKey, sortDir, pinnedCoins]);
+
+  useSetScreenContext({
+    route: '/app/hyperliquid-screener',
+    page: 'hyperliquid',
+    tab: marketType,
+    filters: {
+      search: search || null,
+      signal: signalFilter,
+      minVolume: minVolume || null,
+      minOI: minOI || null,
+    },
+    sort: { key: sortKey, dir: sortDir },
+    row_count: sorted.length,
+    visible_rows: sorted.slice(0, 25).map(r => ({
+      coin: r.coin,
+      price: r.markPrice ?? null,
+      change24h: r.change24hPct ?? null,
+      funding: r.funding ?? null,
+      signal: r.signalDirection ?? null,
+      composite: r.compositeSignal ?? null,
+      oi: r.openInterest ?? null,
+      vol24h: r.volume24h ?? null,
+    })),
+    selected: selectedCoin,
+    freshness: displayData?.meta?.lastUpdated ?? undefined,
+  }, [sorted, marketType, search, signalFilter, sortKey, sortDir, selectedCoin]);
 
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
 

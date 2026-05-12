@@ -1,0 +1,522 @@
+Frontend-only task: send screen_context with every /api/query chat request so the agent can see the current page contents.
+
+Scope:
+Frontend only.
+Do not touch backend files.
+Do not change page UI.
+Do not change page layouts.
+Do not change page data fetching.
+Do not change filters, sorting, tables, widgets, or TradingView behavior.
+Do not refactor unrelated components.
+Do not create branches or PRs.
+Only serialize the current page’s already-rendered / already-loaded data into `screen_context` when sending chat requests.
+
+Goal:
+When the user asks the chat questions like:
+- “What looks good here?”
+- “Which of these is strongest?”
+- “What should I focus on from this page?”
+- “What do you think of this chart?”
+the backend agent receives enough context to understand the current route, page, tab, filters, visible rows, visible symbols, freshness, and TradingView widget state.
+
+Backend is already ready:
+- /api/query accepts `screen_context`
+- backend preserves route/page/tab/selected_symbol/visible_symbols/visible_rows/filters/sort/rendered_sections/freshness/tradingview_context
+- backend routes ambiguous “what looks good here?” queries based on screen_context.page
+- no backend changes needed
+
+Your job:
+Attach `screen_context` to every /api/query request.
+
+Required top-level payload field:
+```ts
+screen_context: {
+  route?: string;
+  page?: string;
+  tab?: string;
+  selected_symbol?: string;
+  visible_symbols?: string[];
+  visible_rows?: any[];
+  filters?: Record<string, any>;
+  sort?: Record<string, any>;
+  rendered_sections?: Record<string, any>;
+  freshness?: Record<string, any>;
+  cache_metadata?: Record<string, any>;
+  tradingview_context?: {
+    symbols?: string[];
+    raw_symbols?: string[];
+    tradingview_symbol?: string;
+    tradingview_symbols?: string[];
+    timeframe?: string;
+    interval?: string;
+    active_widget?: string;
+    active_widget_symbol?: string;
+    layout?: string;
+    source?: string;
+    widgets?: Array<{
+      raw_symbol?: string;
+      symbol?: string;
+      tradingview_symbol?: string;
+      timeframe?: string;
+      interval?: string;
+      source?: string;
+    }>;
+  };
+}
+
+Important:
+Use the exact field name screen_context.
+
+Do not send unlimited full datasets. Send the current visible rows/top rows only.
+
+Recommended frontend limits:
+
+visible_rows: max 25 rows
+visible_symbols: max 100 symbols
+rendered_sections: concise summaries/section-level objects only
+no huge raw blobs
+no secrets/tokens
+no hidden user credentials
+no unnecessary full API payload dumps
+
+Implementation approach:
+
+Locate the central chat request builder / API call to /api/query.
+Add a reusable helper such as buildScreenContext() or equivalent.
+The helper should inspect the current route/page state and include the currently loaded/visible data that already exists in the frontend.
+Pass the generated screen_context into every chat request.
+Do not trigger new page data fetches solely to build screen_context.
+Do not change what pages render.
+Do not change existing page endpoint calls.
+
+Page naming:
+Use stable page values so backend routing works.
+
+Map routes/pages like this where applicable:
+
+Options Flow page → page: options_flow
+Screener page → page: screener
+Themes page → page: themes
+Macro page → page: macro
+Social / X page → page: social_x
+Hyperliquid page → page: hyperliquid
+Calendar earnings page/tab → page: calendar, tab: earnings
+Watchlist page → page: watchlist
+Portfolio page → page: portfolio
+Whale Watch page → page: whale_watch
+Insider Activity page → page: insider_activity
+
+If the actual route names differ, keep the route accurate but normalize page to the names above.
+
+Required context by page:
+
+Options Flow
+Send:
+route
+page: options_flow
+active tab/category if any
+visible option rows
+visible symbols
+filters
+sort
+freshness/cache metadata if available
+
+Preserve row fields if present:
+
+symbol
+ticker
+option_type
+call_put
+strike
+expiration / expiry
+premium
+net_premium
+volume
+open_interest
+sweep
+otm
+unusual_score
+heat_score
+signal
+timestamp/source/cache status
+Screener
+Send:
+route
+page: screener
+active preset/tab
+visible rows
+visible symbols
+active filters
+sort
+freshness/cache metadata if available
+
+Preserve row fields if present:
+
+ticker
+symbol
+company / company_name
+price
+change / change_pct / pct_change
+volume
+rel_volume / relative_volume
+market_cap
+theme
+sector
+rating
+signal
+score
+pattern
+Themes
+Send:
+route
+page: themes
+selected timeframe
+selected tab/classification if any
+visible theme rows
+visible symbols / ETF mappings if available
+sort
+freshness/cache metadata
+
+Preserve row fields if present:
+
+theme
+name
+ticker / symbol / ETF
+sector / parent sector
+score
+rating
+signal
+performance fields
+relative strength fields
+leaders / laggards if already visible
+Macro
+Send:
+route
+page: macro
+active tab if any
+rendered section summaries
+visible rows/cards if any
+freshness/cache metadata
+
+Preserve visible macro fields if already loaded:
+
+macro regime
+rates/treasury data
+economic releases
+CPI/PCE/GDP/unemployment/jobs fields
+DXY/oil/gold/VIX/indices
+risk/fear-greed/liquidity fields
+Social / X
+Send:
+route
+page: social_x
+active tab/section
+visible rows/cards
+visible symbols
+rendered_sections
+freshness/cache metadata
+
+Preserve row/section fields if present:
+
+ticker / symbol
+trend_leaders
+momentum_alerts
+portfolio_risk
+contrarian_signals
+x_consensus
+freshest_alpha
+sentiment_acceleration
+mentions
+consensus_score
+freshness_score
+social_acceleration_score
+key_themes
+market_pulse
+Hyperliquid
+Send:
+route
+page: hyperliquid
+active tab/category
+visible asset rows
+visible symbols/assets
+filters
+sort
+freshness/cache metadata
+TradingView or Hyperliquid chart context if available
+
+Preserve row fields if present:
+
+coin
+symbol
+market_type
+price / mark_px
+pct_change_24h
+volume
+day_ntl_vlm
+overall_score
+composite_signal
+composite_signal_score
+momentum_score
+breakout_score
+liquidity_score
+structural_quality_score
+funding
+open_interest_usd
+spread_bps
+signal
+Calendar / Earnings
+Send:
+route
+page: calendar
+tab: earnings
+selected date range
+active toggle: all/watchlist/portfolio if applicable
+visible earnings rows
+visible symbols
+filters
+sort
+freshness/cache metadata
+
+Preserve row fields if present:
+
+ticker / symbol
+company / company_name
+report_date
+report_time
+next_earnings_date
+last_earnings
+eps_estimate
+eps_actual
+eps_surprise
+revenue_estimate
+revenue_actual
+revenue_surprise
+beat/miss fields
+signal/rating if visible
+Watchlist
+Send:
+route
+page: watchlist
+visible rows
+visible symbols
+selected symbol if any
+filters
+sort
+freshness/cache metadata
+
+Preserve row fields if present:
+
+ticker / symbol
+company / company_name
+theme
+sector
+price
+change / change_pct / pct_change
+volume
+rel_volume / relative_volume
+signal
+rating
+score
+Portfolio
+Send:
+route
+page: portfolio
+visible holdings rows
+visible symbols
+selected symbol if any
+filters
+sort
+rendered section summaries
+freshness/cache metadata
+
+Preserve row fields if already visible:
+
+ticker / symbol
+company / company_name
+quantity / shares
+value / market_value
+weight
+pnl
+exposure
+avg_cost
+cost_basis
+price
+change / change_pct
+theme / sector
+signal if visible
+
+Do not expose anything that is not already visible to the user on the page.
+
+Whale Watch
+Send:
+route
+page: whale_watch
+visible rows
+visible symbols
+filters
+sort
+freshness/cache metadata
+
+Preserve row fields if present:
+
+ticker / symbol
+institution
+fund
+entity
+transaction_type
+filing_type
+shares
+value / value_usd
+position_change
+filing_date
+transaction_date
+category
+description
+score/signal if visible
+Insider Activity
+Send:
+route
+page: insider_activity
+visible rows
+visible symbols
+filters
+sort
+freshness/cache metadata
+
+Preserve row fields if present:
+
+ticker / symbol
+company / company_name
+insider_name
+insider_title
+role
+transaction_type
+transaction_code
+buy/sell
+shares
+price_per_share
+total_value / value
+filing_date
+transaction_date
+conviction_score
+score_breakdown
+signal/rationale if visible
+TradingView widgets / iframes
+Backend cannot read TradingView iframes.
+
+Where the frontend knows chart/widget state, send:
+
+tradingview_context: {
+  symbols: ["MU", "NVDA"],
+  raw_symbols: ["MU", "NVDA"],
+  tradingview_symbols: ["NASDAQ:MU", "NASDAQ:NVDA"],
+  tradingview_symbol: "NASDAQ:MU",
+  timeframe: "1D",
+  interval: "1D",
+  active_widget_symbol: "NASDAQ:MU",
+  active_widget: "chart-1",
+  layout: "multi_chart",
+  source: "tradingview_widget",
+  widgets: [
+    {
+      raw_symbol: "MU",
+      symbol: "MU",
+      tradingview_symbol: "NASDAQ:MU",
+      timeframe: "1D",
+      interval: "1D",
+      source: "tradingview_widget"
+    }
+  ]
+}
+
+Do not scrape iframe internals.
+Only send frontend-known state.
+
+Rendered sections:
+If a page has summary cards/sections that are visible but not table rows, send concise rendered_sections.
+
+Example:
+
+rendered_sections: {
+  top_signals: {
+    summary: "Top 5 unusual options flow names by heat score",
+    symbols: ["NVDA", "MU", "AMD"]
+  },
+  market_pulse: {
+    summary: "X consensus leaning bullish on AI infra and memory"
+  }
+}
+
+Freshness:
+Send if already available from page response/cache metadata.
+
+Example:
+
+freshness: {
+  source: "options_flow_lkg",
+  last_updated: "2026-05-12T15:30:00Z",
+  cache_status: "fresh",
+  is_stale: false,
+  cache_age_s: 42
+}
+
+Validation:
+After implementation, test the actual outgoing /api/query payload from each page.
+
+For each page below, ask: “what looks good here?”
+
+Required validation pages:
+
+options_flow
+screener
+themes
+macro
+social_x
+hyperliquid
+calendar earnings
+watchlist
+portfolio
+whale_watch
+insider_activity
+
+For each page, confirm the outgoing request includes:
+
+screen_context.page
+screen_context.route
+screen_context.tab if applicable
+screen_context.visible_symbols when symbols are visible
+screen_context.visible_rows when rows/cards are visible
+screen_context.filters when filters are active
+screen_context.sort when sort is active
+screen_context.freshness/cache_metadata when available
+screen_context.rendered_sections when summary sections are visible
+screen_context.tradingview_context when charts/widgets are present
+
+Validation for TradingView:
+On a page with TradingView widgets/charts, ask:
+“What do you think of this chart?”
+
+Confirm outgoing request includes:
+
+tradingview_symbol
+raw_symbol
+timeframe or interval
+active_widget_symbol
+layout
+source
+
+Return:
+
+Files changed
+Where screen_context is built
+Where it is attached to /api/query
+Page-by-page coverage matrix
+Example outgoing payload for:
+Hyperliquid
+Calendar earnings
+Watchlist or Portfolio
+TradingView chart page/widget
+Confirmation that no page UI, page endpoints, filters, sort behavior, or TradingView widgets were changed
+Any pages where required visible data was not available to serialize
+
+One important note: tell the frontend agent **not to “improve” pages while doing this**. This is plumbing, not interior design.

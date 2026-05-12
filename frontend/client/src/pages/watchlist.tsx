@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
+import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
@@ -671,6 +672,23 @@ export default function WatchlistPage() {
     if (tickers.length) parts.push(`Watchlist tickers (${tickers.length}): ${tickers.slice(0,30).join(', ')}`);
     parts.push('Analyze these tickers for technical setup, fundamentals, momentum, or relative strength on request.');
     return parts.join('\n');
+  })(), [watchlist, activeId, wlMetas]);
+
+  useSetScreenContext((() => {
+    const tickers: string[] = [];
+    if (Array.isArray((watchlist as any)?.tickers)) tickers.push(...(watchlist as any).tickers);
+    if (!tickers.length && Array.isArray((watchlist as any)?.sections)) {
+      for (const sec of (watchlist as any).sections) if (Array.isArray(sec.tickers)) tickers.push(...sec.tickers.map((t: any) => t.ticker || t.symbol || t).filter(Boolean));
+    }
+    const meta = wlMetas?.find((m: any) => m.id === activeId);
+    return {
+      route: '/app/watchlist',
+      page: 'watchlist',
+      selected: activeId,
+      row_count: tickers.length,
+      visible_rows: tickers.slice(0, 30).map(tk => ({ ticker: tk })),
+      extra: { watchlist_name: meta?.name ?? null },
+    };
   })(), [watchlist, activeId, wlMetas]);
 
   /* ── news for active watchlist ───────────────────────────────────── */
