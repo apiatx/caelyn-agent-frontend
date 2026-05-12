@@ -1,0 +1,101 @@
+You are working in the CaelynAI frontend repo.
+
+Work directly on main. Do not create a branch or PR.
+
+Goal:
+Wire the Bottlenecks / Chain Reaction page to the newly fixed backend bottlenecks refresh + snapshot data. Do not redesign the page. Make minimal, surgical frontend changes.
+
+Backend context:
+The backend now has:
+- POST /api/admin/bottlenecks/refresh
+- GET /api/debug/bottlenecks-snapshot
+- Current snapshot rows now include:
+  - marketCap
+  - marketCapBucket
+  - bottleneckReason
+  - theme
+  - generated_at / lastUpdated if available
+- Backend validation showed 106 symbols in the fresh snapshot, 21 hidden-gem names added, and snapshot_genuinely_changed: true.
+
+Tasks:
+
+1. Audit the Bottlenecks / Chain Reaction page header text.
+Current UI says:
+“Chain Reaction
+Find anchor stocks that control major themes — and map the suppliers, beneficiaries, catalysts, fundamentals, and technical setups moving around them.
+
+Serenity Strategy Screener — AI Packaging & Tooling Bottlenecks. Regime confidence: high. Top themes: semicap supply chain, advanced packaging test, ai power energy. This issue surfaces 20 supply chain bottleneck candidates. Lead names: Axcelis Technologies, Teradyne, Kulicke & Soffa.”
+
+Determine which parts are hardcoded vs backend-driven.
+
+2. Fix stale/hardcoded snapshot summary.
+The header/subheader should reflect the current backend snapshot, not old AI Packaging & Tooling text unless that is actually the current backend metadata.
+
+If backend returns dynamic metadata like:
+- issue title
+- regime confidence
+- top themes
+- candidate count
+- lead names
+- generated_at / week_start
+then render those fields.
+
+If backend does NOT return a clean summary field, derive a frontend-safe summary from current rows:
+- candidate count = number of returned rows
+- top themes = top 3 themes by frequency or score
+- lead names = top 3 ranked rows
+- hidden gem count = rows where marketCapBucket is micro_small / lower_mid / upper_mid
+- last updated = generated_at / lastUpdated / snapshot timestamp
+
+3. Refresh button.
+Wire the Refresh button to POST /api/admin/bottlenecks/refresh, not the old endpoint that caused “snapshot unchanged.”
+After refresh:
+- invalidate/refetch the bottlenecks query
+- update last updated timestamp
+- show success when snapshot_genuinely_changed is true
+- if snapshot_genuinely_changed is false, show the backend reason/diagnostics instead of a generic failure
+- never leave the UI saying “Refresh failed — snapshot unchanged” if backend refresh succeeded
+
+4. Diagnostics display.
+Optionally use GET /api/debug/bottlenecks-snapshot for a compact debug/status tooltip or dev-only expandable panel:
+- snapshot age
+- item count
+- market cap bucket distribution
+- CR weekly freshness
+- last error
+- next scheduled refresh
+
+Do not make this visually heavy.
+
+5. Show hidden-gem context.
+If marketCapBucket exists, add a small badge/chip per row:
+- Micro/Small
+- Lower Mid
+- Upper Mid
+- Large/Mega
+
+Do not let frontend sorting/filtering bury or hide small/mid caps. The backend already does the diversity pass; frontend should preserve backend rank order by default.
+
+6. Preserve existing page structure.
+Do not redesign the Chain Reaction / Bottlenecks page.
+Do not change backend contracts.
+Do not add expensive extra API calls.
+Do not filter the returned symbols down to only top 20 if backend is returning the full 106 unless the UI has pagination/limit controls. If there is a visible limit, make it explicit and allow the user to expand.
+
+Validation:
+1. Page loads the current backend snapshot.
+2. Header no longer shows stale “AI Packaging & Tooling Bottlenecks” unless backend currently returns that exact issue title.
+3. Header top themes match current returned rows.
+4. Lead names match current top-ranked rows.
+5. Refresh button calls POST /api/admin/bottlenecks/refresh.
+6. After refresh, UI refetches and timestamp updates.
+7. Smaller market cap names are visible.
+8. marketCapBucket badges render correctly.
+9. No console errors.
+10. Existing page layout is preserved.
+
+Report back:
+- Which header text was hardcoded vs dynamic
+- Files changed
+- Endpoint used by Refresh button
+- Validation screenshots or console/API results

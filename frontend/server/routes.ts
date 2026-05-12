@@ -4135,5 +4135,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Bottlenecks refresh + debug snapshot ────────────────────────────────────
+  app.post('/api/admin/bottlenecks/refresh', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60_000);
+    try {
+      const r = await fetch(`${SH_URL}/api/admin/bottlenecks/refresh`, {
+        method: 'POST', headers: shHdr(), signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
+  app.get('/api/debug/bottlenecks-snapshot', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15_000);
+    try {
+      const r = await fetch(`${SH_URL}/api/debug/bottlenecks-snapshot`, {
+        headers: shHdr(), signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
   return httpServer;
 }

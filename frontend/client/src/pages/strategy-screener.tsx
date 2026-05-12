@@ -147,6 +147,28 @@ function GradeBadge({ grade }: { grade?: string }) {
   );
 }
 
+const CAP_BUCKET_STYLES: Record<string, { label: string; color: string; bg: string }> = {
+  micro_small: { label: 'Micro/Small', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  lower_mid:   { label: 'Lower Mid',   color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
+  upper_mid:   { label: 'Upper Mid',   color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
+  large_mega:  { label: 'Large/Mega',  color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  large:       { label: 'Large',       color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  mega:        { label: 'Mega',        color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  micro:       { label: 'Micro',       color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  small:       { label: 'Small',       color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+};
+
+function CapBucketBadge({ bucket }: { bucket: string }) {
+  const key = bucket.toLowerCase().replace(/[\s-]/g, '_');
+  const cfg = CAP_BUCKET_STYLES[key];
+  if (!cfg) return null;
+  return (
+    <span style={{ display: 'block', marginTop: 2, padding: '1px 5px', background: cfg.bg, border: `1px solid ${cfg.color}30`, borderRadius: 3, fontFamily: C.font, fontSize: 8, color: cfg.color, whiteSpace: 'nowrap' }}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function AccessBadge({ entry }: { entry: ScreenerEntry }) {
   const proxy = entry.adr_ticker || entry.adr_proxy || entry.us_access_proxy || entry.etf_proxy;
   if (entry.direct_tradable !== false && !proxy) return null;
@@ -518,18 +540,65 @@ export default function StrategyScreenerPage() {
   const refreshMut = useMutation({
     mutationFn: refreshSnapshot,
     onSuccess: (data) => {
-      setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
-      setTimeout(() => setRefreshMsg(''), 4000);
+      if ((data as any).snapshot_genuinely_changed === false) {
+        const reason = (data as any).reason || (data as any).diagnostics || data.message || 'Snapshot already current — no new data detected';
+        setRefreshMsg(reason);
+      } else {
+        setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
+      }
+      setTimeout(() => setRefreshMsg(''), 6000);
       qc.invalidateQueries({ queryKey: ['strategy-screener-latest'] });
     },
-    onError: () => {
-      setRefreshMsg('Refresh failed — snapshot unchanged');
-      setTimeout(() => setRefreshMsg(''), 3000);
+    onError: (err: any) => {
+      setRefreshMsg(`Refresh error: ${err?.message || 'Unknown error'}`);
+      setTimeout(() => setRefreshMsg(''), 5000);
     },
   });
 
-  const entries: ScreenerEntry[] = snapshot ? normaliseEntries(snapshot) : [];
-  const sid = snapshot ? snapshotId(snapshot) : 'latest';
+  const entries: ScreenerEntry[] = useMemo(
+    () => snapshot ? normaliseEntries(snapshot) : [],
+    [snapshot]
+  );
+  const sid = useMemo(() => snapshot ? snapshotId(snapshot) : 'latest', [snapshot]);
+
+  const derivedTopThemes = useMemo(() => {
+    if (!entries.length) return [] as string[];
+    const counts = new Map<string, number>();
+    for (const e of entries) {
+      const t = e.theme || e.themes?.[0] || '';
+      if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t]) => t);
+  }, [entries]);
+
+  const derivedLeadNames = useMemo(() => {
+    return entries
+      .slice()
+      .sort((a, b) => (scoreOf(b) ?? 0) - (scoreOf(a) ?? 0))
+      .slice(0, 3)
+      .map(e => e.company_name || e.name || tickerOf(e))
+      .filter(Boolean) as string[];
+  }, [entries]);
+
+  const hiddenGemCount = useMemo(() => {
+    const gemBuckets = new Set(['micro_small', 'lower_mid', 'upper_mid', 'micro', 'small']);
+    return entries.filter(e => {
+      const b = String((e as any).market_cap_bucket ?? '').toLowerCase().replace(/[\s-]/g, '_');
+      return gemBuckets.has(b);
+    }).length;
+  }, [entries]);
+
+  const snapshotAgeLabel = useMemo(() => {
+    const ts = snapshot?.generated_at || (snapshot as any)?.lastUpdated || (snapshot as any)?.last_updated;
+    if (!ts) return null;
+    try {
+      const diffMs = Date.now() - new Date(ts).getTime();
+      const diffDays = Math.floor(diffMs / 86_400_000);
+      if (diffDays === 0) return 'today';
+      if (diffDays === 1) return '1 day ago';
+      return `${diffDays} days ago`;
+    } catch { return null; }
+  }, [snapshot]);
 
   const handleRowClick = useCallback((e: ScreenerEntry) => {
     setSelectedEntry(e);
@@ -603,15 +672,34 @@ export default function StrategyScreenerPage() {
                     {snapshot.regime_label}
                   </span>
                 )}
-                {snapshot?.top_themes?.length ? (
+                {(snapshot?.top_themes?.length ? snapshot.top_themes : derivedTopThemes).length > 0 ? (
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                    {snapshot.top_themes.slice(0,4).map(t => (
+                    {(snapshot?.top_themes?.length ? snapshot.top_themes : derivedTopThemes).slice(0,4).map(t => (
                       <span key={t} style={{ padding:'2px 8px', background:`rgba(56,189,248,0.08)`, border:`1px solid rgba(56,189,248,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:9, color:C.blue }}>
                         {t}
                       </span>
                     ))}
                   </div>
                 ) : null}
+                {entries.length > 0 && (
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:6, flexWrap:'wrap' }}>
+                    {snapshotAgeLabel && (
+                      <span style={{ fontFamily:C.font, fontSize:9, color: snapshotAgeLabel !== 'today' ? C.amber : C.muted }}>
+                        Snapshot: {snapshotAgeLabel}
+                      </span>
+                    )}
+                    {hiddenGemCount > 0 && (
+                      <span style={{ padding:'2px 8px', background:`rgba(245,158,11,0.08)`, border:`1px solid rgba(245,158,11,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:9, color:C.amber }}>
+                        {hiddenGemCount} hidden gem{hiddenGemCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {!snapshot?.top_themes?.length && derivedLeadNames.length > 0 && (
+                      <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>
+                        Lead: {derivedLeadNames.join(' · ')}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -633,7 +721,7 @@ export default function StrategyScreenerPage() {
                 {refreshMut.isPending ? 'Refreshing…' : 'Refresh Snapshot'}
               </button>
               {refreshMsg && (
-                <span style={{ fontFamily:C.font, fontSize:9, color: refreshMsg.includes('fail') ? C.amber : C.green }}>
+                <span style={{ fontFamily:C.font, fontSize:9, color: (refreshMsg.toLowerCase().includes('fail') || refreshMsg.toLowerCase().includes('error')) ? C.amber : C.green }}>
                   {refreshMsg}
                 </span>
               )}
@@ -762,6 +850,9 @@ export default function StrategyScreenerPage() {
                           </td>
                           <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.dim, whiteSpace:'nowrap' }}>
                             {fmtCap(e.market_cap_usd)}
+                            {(e as any).market_cap_bucket && (
+                              <CapBucketBadge bucket={String((e as any).market_cap_bucket)} />
+                            )}
                           </td>
                           <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.dim, whiteSpace:'nowrap' }}>
                             {layerOf(e)}

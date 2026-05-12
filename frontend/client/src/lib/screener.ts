@@ -65,11 +65,11 @@ export async function fetchReport(snapshotId: string, ticker: string): Promise<S
 }
 
 export async function refreshSnapshot(): Promise<ScreenerRefreshResponse> {
-  const path = '/api/strategy-screener/refresh';
+  const path = '/api/admin/bottlenecks/refresh';
   const res = await fetch(path, { method: 'POST', headers: screenerHeaders() });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+    throw new Error(`Refresh failed: ${res.status} — ${body.slice(0, 120)}`);
   }
   return parseJsonSafely<ScreenerRefreshResponse>(res, path);
 }
