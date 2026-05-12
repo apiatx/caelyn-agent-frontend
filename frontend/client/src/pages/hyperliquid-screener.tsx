@@ -2026,7 +2026,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc');
   const [fbSortKey, setFbSortKey] = useState<CK>('agentScore');
   const [fbSortDir, setFbSortDir] = useState<'asc'|'desc'>('desc');
-  const [showMatrix, setShowMatrix] = useState(false);
+  const [showMatrix] = useState(true);
   const [matrixChart, setMatrixChart] = useState<{ asset: MatrixAsset; tab: string } | null>(null);
 
   const { data, isLoading, isError } = useQuery<MatrixResponse>({
@@ -2169,20 +2169,17 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 
   return (
     <div style={{ margin:'0 14px 14px', border:`1px solid ${C.border}`, borderRadius:6, overflow:'hidden' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:C.card2, color:C.text, borderBottom:showMatrix?`1px solid ${C.border}`:'none' }}>
-        <button onClick={() => setShowMatrix(m => !m)}
-          style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', border:'none', cursor:'pointer', color:C.text, padding:0 }}>
-          <BarChart2 style={{ width:11, height:11, color:C.teal }} />
-          <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
-          <span style={{ fontSize:8.5, color:C.dim, marginLeft:4 }}>{totalCount} assets</span>
-        </button>
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:C.card2, color:C.text, borderBottom:`1px solid ${C.border}` }}>
+        <BarChart2 style={{ width:11, height:11, color:C.teal, flexShrink:0 }} />
+        <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
+        <span style={{ fontSize:8.5, color:C.dim, marginLeft:4 }}>{totalCount} assets</span>
         <div data-testid="market-matrix-toggles" style={{ marginLeft:'auto', display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end' }}>
           {toggleKeys.map(key => {
             const label = toggleLabel(key);
             const count = toggleCount(key);
             const isActive = key === activeToggleKey;
             return (
-              <button key={key} onClick={() => { setActiveTab(key); setShowMatrix(true); }}
+              <button key={key} onClick={() => setActiveTab(key)}
                 style={{
                   display:'inline-flex', alignItems:'center', gap:5,
                   padding:'3px 8px', borderRadius:4, cursor:'pointer',
@@ -2202,11 +2199,6 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
             );
           })}
         </div>
-        <button onClick={() => setShowMatrix(m => !m)}
-          aria-label={showMatrix ? 'Collapse' : 'Expand'}
-          style={{ marginLeft: 4, background:'transparent', border:'none', cursor:'pointer', color:C.dim, padding:0, display:'flex', alignItems:'center' }}>
-          {showMatrix ? <ChevronUp style={{ width:11, height:11 }} /> : <ChevronDown style={{ width:11, height:11 }} />}
-        </button>
       </div>
       {showMatrix && (
         <>
