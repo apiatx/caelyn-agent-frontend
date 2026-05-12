@@ -1,0 +1,449 @@
+You are working in the CaelynAI frontend Replit project.
+
+Goal:
+Fix the Hyperliquid Market Matrix presentation.
+
+The backend signal upgrade is good and should NOT be rolled back. The current frontend table is the problem: it became too badge-heavy, removed too much useful raw data, and is harder to scan than the original dense Market Matrix.
+
+This is a frontend-only cleanup.
+
+Do NOT change backend.
+Do NOT remove the new backend fields.
+Do NOT remove existing modules/cards.
+Do NOT rebuild the whole page.
+Preserve the current dark terminal/glass style.
+
+Main goal:
+Restore the dense, data-rich Market Matrix feel from before while keeping the new signal fields as compact additions.
+
+Current bad table:
+Coin | Mark | 24h % | OI Δ | Vol Vel | Funding | Flow | Signal | Risk | Score | Rank
+
+New desired table:
+
+Preferred full layout:
+Coin | Mark | 24h % | OI | OI Δ | Vol | Vol Vel | Funding | Premium | Mark/Oracle | Book | Flow | Signal | Risk | Score | Rank
+
+If width is too tight:
+Coin | Mark | 24h % | OI | OI Δ | Vol | Funding | Premium | Book | Flow | Signal | Risk | Score | Rank
+
+Important:
+- Restore raw OI.
+- Restore raw Volume.
+- Restore Premium.
+- Restore Mark/Oracle.
+- Restore Book imbalance / book pressure.
+- Keep OI Δ.
+- Keep Vol Vel if space allows.
+- Keep Flow compact.
+- Keep Signal compact.
+- Keep Risk compact.
+- Keep Score compact.
+- Remove all row subtext from the main table.
+- Do not show signal reason under every row.
+- Do not show risk reason under every row.
+- Put explanations in tooltip/detail panel only.
+
+Backend field naming:
+Support both camelCase and snake_case because endpoints differ.
+
+New backend fields include:
+
+camelCase:
+- volOiRatio
+- fundingLabel
+- fundingReason
+- flowLabel
+- flowReason
+- longLiq15m
+- shortLiq15m
+- liquidationBias15m
+- liquidationContext
+- matrixSignal
+- matrixReason
+- matrixDetail
+- opportunityScore
+- riskScore
+- riskLabel
+- riskReason
+
+snake_case:
+- vol_oi_ratio
+- funding_label
+- funding_reason
+- flow_label
+- flow_reason
+- long_liq_15m
+- short_liq_15m
+- liquidation_bias_15m
+- liquidation_context
+- matrix_signal
+- matrix_reason
+- matrix_detail
+- opportunity_score
+- risk_score
+- risk_label
+- risk_reason
+
+Also preserve and reuse old fields:
+- coin
+- mark
+- 24h change
+- funding
+- openInterest / open_interest / oi
+- volume / volume24h / volume_24h
+- premium
+- markOracleDelta / mark_oracle_delta / markOracleDeltaPct / mark_oracle_delta_pct
+- bookImbalance / book_imbalance
+- tradeImbalance / trade_imbalance
+- volumeScore / volume_score
+- signalDirection
+- compositeSignal
+- overallScore
+- agentScore
+- agentRank
+- rank
+
+Tasks:
+
+1. Find the Hyperliquid Market Matrix component
+Audit only enough to find:
+- Market Matrix table
+- selected asset detail panel
+- Agent Market Brief if it uses table rows
+- helper formatters/accessors
+
+Do not audit the entire app.
+
+2. Add safe accessor helpers
+
+Implement or update helper functions like:
+
+getOpportunityScore(row):
+  row.opportunityScore ?? row.opportunity_score ?? row.agentScore ?? row.agent_score ?? row.overallScore ?? row.overall_score ?? 0
+
+getMatrixSignal(row):
+  row.matrixSignal ?? row.matrix_signal ?? row.signalDirection ?? row.signal_direction ?? "NEUTRAL"
+
+getMatrixReason(row):
+  row.matrixReason ?? row.matrix_reason ?? ""
+
+getMatrixDetail(row):
+  row.matrixDetail ?? row.matrix_detail ?? ""
+
+getRiskLabel(row):
+  row.riskLabel ?? row.risk_label ?? "—"
+
+getRiskScore(row):
+  row.riskScore ?? row.risk_score ?? null
+
+getRiskReason(row):
+  row.riskReason ?? row.risk_reason ?? ""
+
+getFundingLabel(row):
+  row.fundingLabel ?? row.funding_label ?? ""
+
+getFundingReason(row):
+  row.fundingReason ?? row.funding_reason ?? ""
+
+getFlowLabel(row):
+  row.flowLabel ?? row.flow_label ?? row.liquidationContext ?? row.liquidation_context ?? "—"
+
+getFlowReason(row):
+  row.flowReason ?? row.flow_reason ?? ""
+
+getOiDelta(row):
+  row.oiDelta15mPct ?? row.oi_delta_15m_pct ?? row.oiDelta1hPct ?? row.oi_delta_1h_pct ?? null
+
+getVolVelocity(row):
+  row.volumeVelocity15m ?? row.volume_velocity_15m ?? row.volumeVelocity1h ?? row.volume_velocity_1h ?? null
+
+getOpenInterest(row):
+  row.openInterest ?? row.open_interest ?? row.oi ?? row.openInterestUsd ?? row.open_interest_usd ?? null
+
+getVolume(row):
+  row.volume24h ?? row.volume_24h ?? row.volume ?? row.vol ?? null
+
+getPremium(row):
+  row.premiumPct ?? row.premium_pct ?? row.premium ?? null
+
+getMarkOracle(row):
+  row.markOracleDeltaPct ?? row.mark_oracle_delta_pct ?? row.markOracleDelta ?? row.mark_oracle_delta ?? null
+
+getBook(row):
+  row.bookImbalance ?? row.book_imbalance ?? row.bookPressure ?? row.book_pressure ?? null
+
+3. Main table display rules
+
+Coin:
+- Same as old styling.
+
+Mark:
+- Same as old formatting.
+
+24h %:
+- Same green/red formatting.
+
+OI:
+- Restore raw OI column.
+- Format compact:
+  $2.32B
+  $449.22M
+  $6.83M
+  $381.2K
+
+OI Δ:
+- Header: OI Δ
+- Show signed percent:
+  +3.8%
+  -1.4%
+- If null, show “warming” or “—”
+- Do not display 0.00 unless actual zero.
+- Positive green, negative red, muted if null.
+
+Vol:
+- Restore raw 24h volume.
+- Format compact:
+  $2.09B
+  $576.20M
+  $13.07M
+  $381.2K
+
+Vol Vel:
+- If included, show compact multiplier:
+  2.1x
+  0.8x
+- If null, show “warming” or “—”.
+- No large pill.
+
+Funding:
+- Show actual funding value first.
+- Use label only as tiny secondary text or tooltip.
+- Example display:
+  0.0412%
+  Hot
+
+Do not show only the fundingLabel badge. The numeric funding value matters.
+
+Premium:
+- Restore premium column.
+- Show signed percent.
+
+Mark/Oracle:
+- Restore mark/oracle delta column.
+- Show signed percent.
+
+Book:
+- Restore compact book imbalance/pressure.
+- Show numeric value or compact direction.
+- Do not use a giant pill.
+
+Flow:
+- Show compact text only:
+  Building
+  Buying
+  Selling
+  Squeeze
+  Flush
+  Absorbing
+  Mixed
+  Thin
+- No huge pill.
+- Tooltip can show flowReason.
+
+Signal:
+- Show compact signal tag only:
+  LONG
+  SHORT
+  WATCH
+  CROWDED
+  AVOID
+  NEUTRAL
+- No reason subtext in the row.
+- Tooltip should show matrixReason and matrixDetail.
+- Colors:
+  LONG green
+  SHORT red
+  WATCH cyan/blue
+  CROWDED orange
+  AVOID red
+  NEUTRAL gray
+
+Risk:
+- Show compact risk label and optional score:
+  LOW
+  MED
+  HIGH
+  CROWDED
+  CAP RISK
+  THIN
+
+If showing score, keep it tiny:
+  MED 0.41
+
+No risk reason under the row.
+Tooltip should show riskReason.
+
+Score:
+- Use opportunityScore.
+- Display compact numeric:
+  0.73
+  0.48
+- Optional small bar is okay only if it does not dominate.
+- Rename column to “Score” or “Setup”.
+- Do not call it “Agent Score” in the main table.
+
+Rank:
+- Use existing rank / agentRank / agent_rank.
+
+4. Remove multi-line row clutter
+
+The current table has row subtext like:
+- “Thin liquidity / cap …”
+- “Funding too hot”
+- “No clear signal”
+- “Breakout forming”
+
+Remove those from the main table.
+
+Those belong in:
+- tooltip
+- selected asset detail panel
+
+Rows should be dense again like the old table.
+
+5. Selected asset detail panel
+
+Keep chart area.
+
+Expand detail panel to show the “why” behind the compact signal.
+
+Include:
+- Mark
+- 24h change
+- Funding/hr numeric
+- Funding label + funding reason
+- Open interest
+- OI Δ 5m / 15m / 1h
+- Volume
+- Volume velocity 15m / 1h
+- Vol/OI
+- Oracle
+- Premium
+- Mark/Oracle Δ
+- Book imbalance
+- Trade imbalance
+- Flow label + flow reason
+- Matrix signal
+- Matrix reason
+- Matrix detail
+- Risk label
+- Risk score
+- Risk reason
+- Long liquidations 15m if available
+- Short liquidations 15m if available
+- Liquidation bias/context if available
+- Existing old raw metrics
+
+This panel is where explanatory text belongs.
+
+6. Keep supporting modules unchanged
+
+Do not remove or materially change:
+- Top Gainers
+- Top Losers
+- High Funding
+- Negative Funding
+- OI Leaders
+- Volume Leaders
+- Breakout Watch
+- Mark/Oracle Gap
+- Vol Impulse
+- Short Squeeze
+- Funding Extremes
+- Relative Strength Leaders
+- Order Book Pressure
+- OI Regime Shift
+- OI Cap Risk
+- Time-Series Momentum
+- category tabs
+- search
+- chart panel
+- API endpoint selection
+- page routing
+
+7. Agent Market Brief
+
+Only lightly adjust if needed.
+It can use the new fields, but do not redesign it.
+
+Preferred language:
+- Best Long
+- Best Short
+- Best Watch
+- Crowded Risk
+- Market Regime
+
+Do not add new API calls.
+
+8. Sorting
+
+Default sort:
+- opportunityScore descending
+- riskScore ascending as tie-breaker only
+
+Allow user sorting by:
+- 24h %
+- OI
+- OI Δ
+- Vol
+- Vol Vel
+- Funding
+- Premium
+- Signal
+- Risk
+- Score
+- Rank
+
+Do not break category tab filtering.
+
+9. Visual standard
+
+The final table should look closer to the old dense Market Matrix, not the current badge-heavy version.
+
+Priority:
+- dense rows
+- numeric market data visible
+- compact signal tags
+- compact risk tags
+- no row explanations
+- no oversized badges
+- readable at a glance
+
+The table should feel like a serious market terminal again, with the new signal engine layered in.
+
+10. Validation
+
+After changes:
+- Hyperliquid page loads.
+- Main table shows raw OI and Vol again.
+- Premium and Mark/Oracle are visible again.
+- OI Δ and Vol Vel are visible if available.
+- Signal is compact.
+- Risk is compact.
+- Score is compact.
+- No row subtext clutter.
+- Detail panel contains the reasons/explanations.
+- Existing cards still render.
+- Search works.
+- Category tabs work.
+- Sorting works.
+- Warming/null fields do not crash the UI.
+- Page looks cleaner and more data-rich than the current screenshot.
+
+Report back:
+- Files changed
+- Components touched
+- Final column list
+- Any fallbacks used
+- Any fields missing from backend response

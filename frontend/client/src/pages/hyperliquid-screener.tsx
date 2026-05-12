@@ -317,6 +317,17 @@ const getOiDelta = (row: any): number | null =>
   row.oiDelta15mPct ?? row.oi_delta_15m_pct ?? row.oiDelta1hPct ?? row.oi_delta_1h_pct ?? null;
 const getVolVelocity = (row: any): number | null =>
   row.volumeVelocity15m ?? row.volume_velocity_15m ?? row.volumeVelocity1h ?? row.volume_velocity_1h ?? null;
+const getOpenInterest = (row: any): number | null =>
+  row.openInterest ?? row.open_interest ?? row.oi ?? row.openInterestUsd ?? row.open_interest_usd ?? null;
+const getVolume = (row: any): number | null =>
+  row.volume24h ?? row.volume_24h ?? row.volume ?? row.vol ?? row.volume_24h_usd ?? row.volumeUsd ?? null;
+const getPremium = (row: any): number | null =>
+  row.premiumPct ?? row.premium_pct ?? row.premium ?? null;
+const getMarkOracle = (row: any): number | null =>
+  row.markOracleDeltaPct ?? row.mark_oracle_delta_pct ?? row.markOracleDelta ?? row.mark_oracle_delta ??
+  row.mark_oracle_pct ?? row.distMarkOracle ?? null;
+const getBook = (row: any): number | null =>
+  row.bookImbalance ?? row.book_imbalance ?? row.bookPressure ?? row.book_pressure ?? row.bidAskImbalance ?? null;
 
 const SIGNAL_COLOR: Record<string, string> = {
   LONG: '#22c55e', SHORT: '#ef4444', WATCH: '#06b6d4',
@@ -1873,8 +1884,8 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'open_interest_usd', label:'OI', w:72,
     tooltip: 'Open interest in USD.',
-    sortVal: r => r.open_interest_usd ?? r.openInterest ?? null,
-    render:  r => <span style={{ color:C.text }}>{$$(r.open_interest_usd ?? r.openInterest ?? null)}</span>,
+    sortVal: r => getOpenInterest(r),
+    render:  r => <span style={{ color:C.text }}>{$$(getOpenInterest(r))}</span>,
   },
   {
     key:'oi_delta', label:'OI Δ', w:54,
@@ -1889,8 +1900,8 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'volume_24h_usd', label:'VOL', w:72,
     tooltip: '24h notional volume.',
-    sortVal: r => r.volume_24h_usd ?? r.volume24h ?? null,
-    render:  r => <span style={{ color:C.text }}>{$$(r.volume_24h_usd ?? r.volume24h ?? null)}</span>,
+    sortVal: r => getVolume(r),
+    render:  r => <span style={{ color:C.text }}>{$$(getVolume(r))}</span>,
   },
   {
     key:'vol_velocity', label:'V.VEL', w:50,
@@ -1922,7 +1933,7 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'premium_pct', label:'PREM', w:58,
     tooltip: 'Mark vs spot/index premium %.',
-    sortVal: r => r.premium_pct ?? (r.premium != null ? r.premium * 100 : null),
+    sortVal: r => { const raw = getPremium(r); return r.premium_pct != null ? r.premium_pct : raw != null && r.premium != null ? raw * 100 : raw; },
     render:  r => {
       const v = r.premium_pct != null ? r.premium_pct : r.premium != null ? r.premium * 100 : null;
       if (v == null) return <span style={{ color:C.dim }}>—</span>;
@@ -1932,7 +1943,7 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'mark_oracle_pct', label:'MK/ORC', w:62,
     tooltip: 'Mark vs oracle price gap %.',
-    sortVal: r => r.mark_oracle_pct ?? (r.distMarkOracle != null ? r.distMarkOracle * 100 : null),
+    sortVal: r => { const raw = getMarkOracle(r); return (r.mark_oracle_pct != null || r.markOracleDeltaPct != null || r.mark_oracle_delta_pct != null) ? raw : raw != null ? raw * 100 : null; },
     render:  r => {
       const v = r.mark_oracle_pct != null ? r.mark_oracle_pct : r.distMarkOracle != null ? r.distMarkOracle * 100 : null;
       if (v == null) return <span style={{ color:C.dim }}>—</span>;
@@ -1942,9 +1953,9 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'book_imbalance', label:'BOOK', w:54,
     tooltip: 'Bid/ask depth imbalance. Positive = bid-heavy (buy pressure).',
-    sortVal: r => r.book_imbalance ?? r.bidAskImbalance ?? null,
+    sortVal: r => getBook(r),
     render:  r => {
-      const v = r.book_imbalance ?? r.bidAskImbalance ?? null;
+      const v = getBook(r);
       if (v == null) return <span style={{ color:C.dim }}>—</span>;
       return <span style={{ color: v > 0.1 ? C.green : v < -0.1 ? C.red : C.dim }}>{v.toFixed(2)}</span>;
     },
@@ -1976,6 +1987,24 @@ const MATRIX_COLS: MatCol2[] = [
       if (sig === 'NEUTRAL') return <span style={{ color:C.dim }}>—</span>;
       return (
         <span title={tip} style={{ fontSize:8, fontWeight:800, color:col, background:`${col}18`, border:`1px solid ${col}44`, borderRadius:3, padding:'1px 5px', letterSpacing:0.3, whiteSpace:'nowrap' }}>{sig}</span>
+      );
+    },
+  },
+  {
+    key:'risk_label', label:'RISK', w:62,
+    tooltip: 'Risk classification. Hover for reason.',
+    sortVal: r => getRiskScore(r) ?? 0,
+    render:  r => {
+      const label  = getRiskLabel(r);
+      const score  = getRiskScore(r);
+      const reason = getRiskReason(r);
+      if (label === '—' && score == null) return <span style={{ color:C.dim }}>—</span>;
+      const col = riskLabelColor(label);
+      return (
+        <span title={reason||undefined} style={{ color:col, whiteSpace:'nowrap' }}>
+          {label !== '—' ? label : '—'}
+          {score != null && <span style={{ fontSize:7, opacity:0.75, marginLeft:3 }}>{score.toFixed(2)}</span>}
+        </span>
       );
     },
   },
@@ -2189,21 +2218,49 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
               <div style={{ paddingTop:6 }}>
                 <CoinChartPanel coin={resolved.coin} interval={iv} />
               </div>
-              <div style={{ padding:'10px 16px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px 16px' }}>
-                {([
-                  ['Mark',    asset.mark                != null ? px(asset.mark)                  : '—'],
-                  ['Oracle',  asset.oracle              != null ? px(asset.oracle)                : '—'],
-                  ['24H %',   asset.change_24h_pct      != null ? pct(asset.change_24h_pct, 2)    : '—'],
-                  ['Funding', asset.funding             != null ? fmtF(asset.funding)             : '—'],
-                  ['OI',      asset.open_interest_usd   != null ? $$(asset.open_interest_usd)     : '—'],
-                  ['Volume',  asset.volume_24h_usd      != null ? $$(asset.volume_24h_usd)        : '—'],
-                ] as [string, string][]).map(([label, val]) => (
-                  <div key={label} style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                    <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:C.dim, textTransform:'uppercase' }}>{label}</span>
-                    <span style={{ fontSize:10, fontWeight:600, color:C.text, fontFamily:C.font }}>{val}</span>
-                  </div>
-                ))}
+              {/* ── Market data grid ── */}
+              <div style={{ padding:'10px 16px 6px' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'6px 14px' }}>
+                  {([
+                    ['Mark',      asset.mark           != null ? px(asset.mark)              : '—',  undefined],
+                    ['Oracle',    asset.oracle         != null ? px(asset.oracle)            : '—',  undefined],
+                    ['24H %',     asset.change_24h_pct != null ? pct(asset.change_24h_pct,2) : '—',  pctC(asset.change_24h_pct??null)],
+                    ['Funding/hr',asset.funding        != null ? fmtF(asset.funding)         : '—',  fC(asset.funding??null)],
+                    ['OI',        $$(getOpenInterest(asset)),                                         undefined],
+                    ['Volume',    $$(getVolume(asset)),                                               undefined],
+                    ['OI Δ',      getOiDelta(asset) != null ? `${getOiDelta(asset)!>=0?'+':''}${getOiDelta(asset)!.toFixed(1)}%` : '—', pctC(getOiDelta(asset))],
+                    ['Vol Vel',   getVolVelocity(asset) != null ? `${getVolVelocity(asset)!.toFixed(1)}x` : '—', getVolVelocity(asset)!=null&&getVolVelocity(asset)!>=1.5?C.green:C.dim],
+                    ['Premium',   asset.premium_pct != null ? pct(asset.premium_pct,3) : '—',        pctC(asset.premium_pct??null)],
+                    ['Mk/Oracle', asset.mark_oracle_pct != null ? pct(asset.mark_oracle_pct,3) : '—',pctC(asset.mark_oracle_pct??null)],
+                    ['Book',      getBook(asset) != null ? getBook(asset)!.toFixed(2) : '—',         getBook(asset)!=null?(getBook(asset)!>0.1?C.green:getBook(asset)!<-0.1?C.red:C.dim):C.dim],
+                  ] as [string, string, string|undefined][]).map(([label, val, vc]) => (
+                    <div key={label} style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                      <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:C.dim, textTransform:'uppercase' }}>{label}</span>
+                      <span style={{ fontSize:10, fontWeight:600, color:vc??C.text, fontFamily:C.font }}>{val}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+              {/* ── Signal context block ── */}
+              {(getMatrixSignal(asset) !== 'NEUTRAL' || !!getMatrixReason(asset) || getFundingLabel(asset) !== '—' || getFlowLabel(asset) !== '—') && (
+                <div style={{ margin:'0 16px 10px', borderTop:`1px solid ${C.dimLow}`, paddingTop:8 }}>
+                  <div style={{ fontSize:7, color:C.dim, letterSpacing:1.5, textTransform:'uppercase', fontWeight:700, marginBottom:5 }}>Signal Context</div>
+                  <div style={{ display:'flex', gap:5, flexWrap:'wrap', alignItems:'center', marginBottom:5 }}>
+                    {(() => { const s = getMatrixSignal(asset); const col = sigColor(s); return s !== 'NEUTRAL' ? <span style={{ fontSize:8.5, fontWeight:800, color:col, background:`${col}18`, border:`1px solid ${col}44`, borderRadius:3, padding:'1px 6px' }}>{s}</span> : null; })()}
+                    {getFundingLabel(asset) !== '—' && <span style={{ fontSize:8, color:C.dim, background:`${C.dimLow}22`, borderRadius:3, padding:'1px 5px' }}>Funding: {getFundingLabel(asset)}</span>}
+                    {getFlowLabel(asset) !== '—' && <span style={{ fontSize:8, color:C.dim, background:`${C.dimLow}22`, borderRadius:3, padding:'1px 5px' }}>Flow: {getFlowLabel(asset)}</span>}
+                    {getRiskLabel(asset) !== '—' && <span style={{ fontSize:8, color:riskLabelColor(getRiskLabel(asset)), background:`${riskLabelColor(getRiskLabel(asset))}18`, borderRadius:3, padding:'1px 5px' }}>Risk: {getRiskLabel(asset)}{getRiskScore(asset) != null ? ` ${getRiskScore(asset)!.toFixed(2)}` : ''}</span>}
+                  </div>
+                  {getMatrixReason(asset) && <div style={{ fontSize:8, color:C.text, lineHeight:1.55, marginBottom:2 }}>{getMatrixReason(asset)}</div>}
+                  {getMatrixDetail(asset) && <div style={{ fontSize:7.5, color:C.dim, lineHeight:1.55, marginBottom:2 }}>{getMatrixDetail(asset)}</div>}
+                  {getFundingReason(asset) && <div style={{ fontSize:7.5, color:C.dimLow, lineHeight:1.5, marginBottom:1 }}>Funding: {getFundingReason(asset)}</div>}
+                  {getFlowReason(asset) && <div style={{ fontSize:7.5, color:C.dimLow, lineHeight:1.5, marginBottom:1 }}>Flow: {getFlowReason(asset)}</div>}
+                  {getRiskReason(asset) && <div style={{ fontSize:7.5, color:C.dimLow, lineHeight:1.5, marginBottom:1 }}>Risk: {getRiskReason(asset)}</div>}
+                  {(asset as any).long_liq_15m  != null && <div style={{ fontSize:7.5, color:C.red,   lineHeight:1.5 }}>Long liq 15m: {$$((asset as any).long_liq_15m)}</div>}
+                  {(asset as any).short_liq_15m != null && <div style={{ fontSize:7.5, color:C.green, lineHeight:1.5 }}>Short liq 15m: {$$((asset as any).short_liq_15m)}</div>}
+                  {(asset as any).liquidation_context && <div style={{ fontSize:7.5, color:C.dim, lineHeight:1.5 }}>{(asset as any).liquidation_context}</div>}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2481,7 +2538,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedFallback.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h } as MatrixAsset, tab: activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
+                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h, premium_pct: row.premium != null ? row.premium * 100 : null, mark_oracle_pct: row.distMarkOracle != null ? row.distMarkOracle * 100 : null, book_imbalance: row.bidAskImbalance, trade_imbalance: row.tradeImbalance } as MatrixAsset, tab: activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => (
                               <td key={String(col.key)} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:C.font, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
                                 {col.render(row)}
