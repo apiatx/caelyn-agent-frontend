@@ -187,8 +187,8 @@ function Router() {
       <Route path="/portfolio" component={PortfolioPage} />
       <Route path="/app/watchlist" component={WatchlistPage} />
       <Route path="/watchlist" component={WatchlistPage} />
-      <Route path="/app/multicharts" component={MultiChartsPage} />
-      <Route path="/multicharts" component={MultiChartsPage} />
+      <Route path="/app/multicharts">{() => null}</Route>
+      <Route path="/multicharts">{() => null}</Route>
       <Route path="/app/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/app/about" component={AboutPage} />
@@ -201,6 +201,8 @@ function Router() {
 function AppInner() {
   const { isAuthenticated, isLoading } = useAuth();
   const [location] = useLocation();
+
+  const isMultichartsRoute = location === '/app/multicharts' || location === '/multicharts';
 
   if (location === '/login') {
     return (
@@ -219,7 +221,16 @@ function AppInner() {
           <TooltipProvider>
             <Toaster />
             <MainLayout>
-              <Router />
+              {/* Normal router — hidden on multicharts route so the always-on instance shows instead */}
+              <div style={isMultichartsRoute ? { display: 'none' } : undefined}>
+                <Router />
+              </div>
+              {/* Always-mounted MultiChartsPage — iframes are never destroyed on navigation */}
+              {!isLoading && isAuthenticated && (
+                <div style={isMultichartsRoute ? undefined : { display: 'none' }}>
+                  <MultiChartsPage isActive={isMultichartsRoute} />
+                </div>
+              )}
             </MainLayout>
             <ChatbotWidget />
           </TooltipProvider>

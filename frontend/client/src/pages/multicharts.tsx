@@ -201,7 +201,7 @@ function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-export default function MultiChartsPage() {
+export default function MultiChartsPage({ isActive = true }: { isActive?: boolean }) {
   const [views, setViews] = useState<MultiChartsView[]>(() => loadViews());
   const [activeId, setActiveId] = useState<string>(() => loadViews()[0]?.id ?? "");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -223,8 +223,8 @@ export default function MultiChartsPage() {
 
   const activeView = views.find((v) => v.id === activeId) ?? views[0];
 
-  // ── Page context for chatbot ──────────────────────────────────────────────
-  useSetPageContext((() => {
+  // ── Page context for chatbot (only active when on the MultiCharts route) ──
+  useSetPageContext(isActive ? (() => {
     const lines: string[] = ['[Page: MultiCharts — TradingView Chart Workspace]'];
     let anyTickers = false;
     for (const view of views) {
@@ -236,7 +236,7 @@ export default function MultiChartsPage() {
     if (!anyTickers) lines.push('No charts loaded yet.');
     lines.push('When the user asks about "my charts", "these tickers", or comparisons, use the tickers above as the subject of analysis.');
     return lines.join('\n');
-  })(), [views]);
+  })() : null, [views, isActive]);
 
   // ── Tab operations ──────────────────────────────────────────────────────────
 
@@ -434,30 +434,38 @@ export default function MultiChartsPage() {
           </span>
         </div>
 
-        {/* ── Grid ── */}
-        <div className={`grid gap-3 ${GRID_COLS[activeView.columns]}`}>
-          {activeView.charts.map((slot) => (
-            <ChartCard
-              key={slot.id}
-              slot={slot}
-              autoFocus={slot.id === focusChartId}
-              onSymbolChange={setSymbol}
-              onDelete={deleteChart}
-            />
-          ))}
+        {/* ── Grids — all tabs always rendered so iframes survive tab/page navigation ── */}
+        {views.map((view) => {
+          const isThisActive = view.id === activeId;
+          const viewAtMax = view.charts.length >= MAX_CHARTS;
+          return (
+            <div key={view.id} style={isThisActive ? undefined : { display: "none" }}>
+              <div className={`grid gap-3 ${GRID_COLS[view.columns]}`}>
+                {view.charts.map((slot) => (
+                  <ChartCard
+                    key={slot.id}
+                    slot={slot}
+                    autoFocus={slot.id === focusChartId}
+                    onSymbolChange={setSymbol}
+                    onDelete={deleteChart}
+                  />
+                ))}
 
-          {/* Add-another ghost cell if under max */}
-          {!atMax && (
-            <button
-              onClick={addChart}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 hover:border-purple-500/40 transition-colors text-white/20 hover:text-purple-400/60"
-              style={{ minHeight: 380, background: "transparent" }}
-            >
-              <Plus className="w-6 h-6" />
-              <span className="text-xs">Add Chart</span>
-            </button>
-          )}
-        </div>
+                {/* Ghost "add" cell — only in active tab */}
+                {isThisActive && !viewAtMax && (
+                  <button
+                    onClick={addChart}
+                    className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 hover:border-purple-500/40 transition-colors text-white/20 hover:text-purple-400/60"
+                    style={{ minHeight: 380, background: "transparent" }}
+                  >
+                    <Plus className="w-6 h-6" />
+                    <span className="text-xs">Add Chart</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
