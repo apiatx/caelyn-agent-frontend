@@ -2330,14 +2330,32 @@ export default function OptionsPage() {
       route: '/app/options',
       page: 'options_flow',
       row_count: tickers.length,
-      visible_rows: tickers.slice(0, 20).map((t: any) => ({
-        ticker: t.ticker,
-        score: t.composite_score != null ? Math.round(t.composite_score) : null,
-        signal: t.primary_signal ?? null,
-        price: t.underlying_price ?? null,
-        pc_ratio: t.pc_ratio ?? null,
-        heat: t.heat_score ?? null,
-      })),
+      visible_rows: tickers.slice(0, 20).map((t: any) => {
+        const contracts: any[] = (t.top_contracts?.length
+          ? t.top_contracts
+          : [...(t.top_calls ?? []), ...(t.top_puts ?? [])]
+        ).slice(0, 4);
+        return {
+          ticker: t.ticker,
+          score: t.composite_score != null ? Math.round(t.composite_score) : null,
+          signal: t.primary_signal ?? null,
+          price: t.underlying_price ?? null,
+          pc_ratio: t.pc_ratio ?? null,
+          heat: t.heat_score ?? null,
+          top_contracts: contracts.map((c: any) => ({
+            symbol: c.contract_symbol ?? c.symbol ?? null,
+            side: (c.type ?? c.side ?? '').toLowerCase() || null,
+            strike: c.strike ?? null,
+            dte: c.dte ?? null,
+            iv: c.iv ?? c.implied_volatility ?? null,
+            delta: c.delta ?? c.greeks?.delta ?? null,
+            oi: c.open_interest ?? c.openInterest ?? null,
+            vol_oi: c.option_volume_to_oi_ratio ?? c.vol_oi_ratio ?? null,
+            premium: c.premium ?? null,
+            score: c.contract_score ?? null,
+          })),
+        };
+      }),
       freshness: new Date().toISOString(),
     };
   })(), [screenerData]);

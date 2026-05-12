@@ -1,0 +1,56 @@
+Before making changes, verify the backend-supported screen_context.page aliases.
+
+Do not change UI, page behavior, filters, sorting, tables, data fetching, or endpoints.
+Only inspect/adjust screen_context serialization if needed.
+
+Concern:
+The latest validation shows frontend sends these page values:
+- sectors
+- x_consensus
+- stocks_portfolio
+
+But the backend routing cleanup previously reported support for:
+- themes, theme, thematic
+- social_x, social-x, x_dashboard
+- portfolio, holdings
+
+Task:
+1. Inspect the current backend _PAGE_TO_CAT mappings if accessible from this Replit workspace, or inspect the frontend/backend contract notes if backend files are not available.
+2. Confirm whether these frontend page values are valid backend aliases:
+   - sectors
+   - x_consensus
+   - stocks_portfolio
+
+3. If they are valid backend aliases, leave them unchanged and report that they are supported.
+
+4. If they are not valid backend aliases, normalize only the serialized screen_context.page values:
+   - sectors → themes
+   - x_consensus → social_x
+   - stocks_portfolio → portfolio
+
+Keep route unchanged.
+Example:
+{
+  route: "/app/stocks/portfolio",
+  page: "portfolio"
+}
+
+5. Also verify whether the backend preserves freshness only at top-level screen_context.freshness/cache_metadata, or whether extra.freshness is preserved. If uncertain, move/copy freshness to top-level screen_context.freshness while leaving extra unchanged.
+
+6. Verify Screener:
+If ticker rows are visible on the Screener page and the parent has access to the data, add visible_rows to screen_context. If the rows are truly encapsulated in a child component and not available without refactoring, do not refactor; report it as unavailable.
+
+7. Verify Options:
+If contract-level option rows are visible and already available in component state, include contract-level fields in visible_rows. If not available without changing page data flow, leave as-is and report it.
+
+8. Verify TradingView:
+If namespaced tradingview_symbol values are already known, send them. If only raw symbols are known, leave raw symbols and do not invent exchange prefixes.
+
+Return:
+- Backend alias verification result
+- Any screen_context.page values changed
+- Updated payload samples for sectors/themes, social_x, portfolio
+- Whether freshness is top-level
+- Whether Screener visible_rows are available
+- Whether Options contract rows are available
+- Confirmation that no UI/page behavior/data fetching changed

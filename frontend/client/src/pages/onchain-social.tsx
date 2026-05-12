@@ -2084,7 +2084,7 @@ export default function OnchainSocialPage() {
     const screenerRows: any[] = tx?.social_screener?.rows ?? [];
     return {
       route: '/app/social',
-      page: 'x_consensus',
+      page: 'social_x',
       row_count: screenerRows.length,
       visible_rows: screenerRows.slice(0, 25).map((r: any) => ({
         ticker: r.symbol ?? r.ticker,

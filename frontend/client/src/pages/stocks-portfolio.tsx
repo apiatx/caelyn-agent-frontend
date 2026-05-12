@@ -432,7 +432,7 @@ export default function StocksPortfolioPage() {
 
   useSetScreenContext((() => ({
     route: '/app/stocks/portfolio',
-    page: 'stocks_portfolio',
+    page: 'portfolio',
     sort: { key: sortKey, dir: sortAsc ? 'asc' : 'desc' },
     row_count: sortedHoldings.length,
     visible_rows: sortedHoldings.slice(0, 30).map(h => ({

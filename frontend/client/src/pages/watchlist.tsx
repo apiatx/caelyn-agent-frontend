@@ -713,6 +713,7 @@ export default function WatchlistPage() {
       row_count: richStocks.length || plainTickers.length,
       visible_symbols: rows.map((r: any) => r.ticker).filter(Boolean),
       visible_rows: rows,
+      freshness: (watchlist as any)?.cache_ts ?? (watchlist as any)?.updated_at ?? undefined,
       extra: {
         watchlist_name: meta?.name ?? null,
         freshness: (watchlist as any)?.cache_ts ?? (watchlist as any)?.updated_at ?? null,

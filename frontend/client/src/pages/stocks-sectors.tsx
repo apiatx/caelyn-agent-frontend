@@ -1771,7 +1771,7 @@ export default function StocksSectorsPage() {
     const regime = (dash as any)?.regime;
     return {
       route: '/app/stocks/sectors',
-      page: 'sectors',
+      page: 'themes',
       row_count: sectors.length,
       visible_rows: sectors.slice(0, 20).map((s: any) => ({
         ticker: s.ticker,
