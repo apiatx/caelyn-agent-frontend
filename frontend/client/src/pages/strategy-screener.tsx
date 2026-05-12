@@ -148,6 +148,13 @@ function GradeBadge({ grade }: { grade?: string }) {
 }
 
 const CAP_BUCKET_STYLES: Record<string, { label: string; color: string; bg: string }> = {
+  // ── Backend canonical bucket names ────────────────────────────────
+  large_cap:   { label: 'Large Cap',   color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  mid_cap:     { label: 'Mid Cap',     color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
+  small_cap:   { label: 'Small Cap',   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  micro_cap:   { label: 'Micro Cap',   color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  mega_cap:    { label: 'Mega Cap',    color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+  // ── Legacy / alternative names ────────────────────────────────────
   micro_small: { label: 'Micro/Small', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
   lower_mid:   { label: 'Lower Mid',   color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
   upper_mid:   { label: 'Upper Mid',   color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
@@ -156,6 +163,7 @@ const CAP_BUCKET_STYLES: Record<string, { label: string; color: string; bg: stri
   mega:        { label: 'Mega',        color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
   micro:       { label: 'Micro',       color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
   small:       { label: 'Small',       color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  mid:         { label: 'Mid',         color: '#38bdf8', bg: 'rgba(56,189,248,0.08)' },
 };
 
 function CapBucketBadge({ bucket }: { bucket: string }) {
@@ -540,8 +548,13 @@ export default function StrategyScreenerPage() {
   const refreshMut = useMutation({
     mutationFn: refreshSnapshot,
     onSuccess: (data) => {
-      if ((data as any).snapshot_genuinely_changed === false) {
-        const reason = (data as any).reason || (data as any).diagnostics || data.message || 'Snapshot already current — no new data detected';
+      const genuinelyChanged =
+        (data as any).snapshot_changed ??
+        (data as any).diagnostics?.snapshot_genuinely_changed ??
+        true;
+      if (genuinelyChanged === false) {
+        const reason = (data as any).diagnostics?.snapshot_genuinely_changed_reason ||
+          (data as any).reason || data.message || 'Snapshot already current — no new data detected';
         setRefreshMsg(reason);
       } else {
         setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
@@ -581,7 +594,10 @@ export default function StrategyScreenerPage() {
   }, [entries]);
 
   const hiddenGemCount = useMemo(() => {
-    const gemBuckets = new Set(['micro_small', 'lower_mid', 'upper_mid', 'micro', 'small']);
+    const gemBuckets = new Set([
+      'small_cap', 'micro_cap', 'mid_cap',
+      'micro_small', 'lower_mid', 'upper_mid', 'micro', 'small', 'mid',
+    ]);
     return entries.filter(e => {
       const b = String((e as any).market_cap_bucket ?? '').toLowerCase().replace(/[\s-]/g, '_');
       return gemBuckets.has(b);
