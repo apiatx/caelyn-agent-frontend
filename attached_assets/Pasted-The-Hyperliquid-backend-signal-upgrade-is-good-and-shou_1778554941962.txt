@@ -1,0 +1,145 @@
+The Hyperliquid backend signal upgrade is good and should NOT be rolled back.
+
+The issue is frontend presentation. The new Market Matrix became harder to read than before because it over-compressed the table into too many badges and removed too much useful raw market data.
+
+Do NOT change backend.
+Do NOT remove the new backend fields.
+Do NOT remove existing modules/cards.
+This is a frontend-only adjustment.
+
+Goal:
+Restore the dense, data-rich Market Matrix feel from before, while keeping the new signal-layer fields as additive columns/context.
+
+Current problem:
+The table now shows:
+Coin | Mark | 24h % | OI Δ | Vol Vel | Funding | Flow | Signal | Risk | Score | Rank
+
+This is too badge-heavy and less useful than the previous version. The old version showed more actual data and was easier to scan.
+
+New desired Market Matrix columns:
+
+Preferred full version:
+Coin | Mark | 24h % | OI | OI Δ | Vol | Vol Vel | Funding | Premium | Mark/Oracle | Book | Flow | Signal | Score | Rank
+
+If width is too tight:
+Coin | Mark | 24h % | OI | OI Δ | Vol | Funding | Premium | Book | Flow | Signal | Score | Rank
+
+Important:
+- Restore raw OI and raw Volume columns.
+- Restore Premium and Mark/Oracle columns.
+- Restore Book imbalance or book pressure.
+- Keep OI Δ and Vol Vel as new useful additive fields.
+- Keep Flow and Signal, but make them compact.
+- Remove Risk from the main table, or make it optional/hidden in detail panel only.
+- Keep Risk data visible in the selected asset detail panel.
+
+Display rules:
+
+1. Funding column
+Show the actual funding value first, not only the label.
+
+Example:
+0.0412%
+Hot
+
+Or:
+0.0020%
+Neutral
+
+Use the fundingLabel only as small muted text, tooltip, or tiny secondary badge.
+Do not let the badge dominate the cell.
+
+2. Flow column
+Show compact text only:
+Buying
+Selling
+Building
+Mixed
+Thin
+Squeeze
+Flush
+Absorbing
+
+No huge pill spanning the cell.
+Tooltip can show flowReason.
+
+3. Signal column
+Show compact signal tag only:
+LONG
+SHORT
+WATCH
+CROWDED
+AVOID
+NEUTRAL
+
+Do NOT show the signal reason as row subtext. It makes the row too tall and cluttered.
+Put matrixReason/matrixDetail in tooltip or selected asset detail panel.
+
+4. Risk
+Remove Risk from the main Market Matrix for now.
+Keep riskScore, riskLabel, and riskReason in selected asset detail panel.
+If risk is severe, it should already be reflected by Signal = CROWDED or AVOID.
+
+5. Score
+Keep Score as a compact numeric field, preferably opportunityScore.
+Display 0.48, 0.62, etc.
+Use existing bar style only if subtle.
+Do not make it visually louder than the market data.
+
+6. Row height
+Reduce row height back closer to the old table.
+No multi-line reason text in main table cells except maybe tiny funding label if it does not increase row height.
+The matrix should feel dense and terminal-like.
+
+7. Selected asset detail panel
+This is where the explanatory text belongs.
+Show:
+- fundingLabel + fundingReason
+- flowLabel + flowReason
+- matrixSignal + matrixReason + matrixDetail
+- riskLabel + riskScore + riskReason
+- OI delta 5m/15m/1h
+- volume velocity 15m/1h
+- vol/OI
+- liquidations if available
+- all old raw fields
+
+8. Preserve fallback logic
+Keep support for both camelCase and snake_case backend fields:
+- opportunityScore / opportunity_score
+- matrixSignal / matrix_signal
+- matrixReason / matrix_reason
+- matrixDetail / matrix_detail
+- riskScore / risk_score
+- riskLabel / risk_label
+- fundingLabel / funding_label
+- fundingReason / funding_reason
+- flowLabel / flow_label
+- flowReason / flow_reason
+- volOiRatio / vol_oi_ratio
+
+9. Default sorting
+Default sort should still use opportunityScore descending if available, but preserve user sorting by any visible column.
+
+10. Do not touch
+Do not materially change:
+- category tabs
+- search
+- chart panel
+- supporting cards
+- Agent Market Brief
+- Time-Series Momentum
+- API endpoint selection
+- page routing
+
+11. Validation
+After changes:
+- The table should look closer to the original dense Market Matrix.
+- Raw OI and Volume are visible again.
+- Premium / Mark-Oracle are visible again.
+- New OI Δ and Vol Vel are visible.
+- Signal is compact.
+- Flow is compact.
+- Risk is moved to detail panel.
+- Rows are shorter and easier to scan.
+- Existing supporting cards still render.
