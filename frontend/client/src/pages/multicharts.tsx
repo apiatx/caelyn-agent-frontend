@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
-import { Plus, Trash2, LayoutGrid, Pencil, Check, X, ChevronDown } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, Pencil, Check, X, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -92,22 +108,22 @@ const GRID_COLS: Record<number, string> = {
 interface ChartCardProps {
   slot: ChartSlot;
   autoFocus?: boolean;
+  isDraggingAny: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   onSymbolChange: (id: string, symbol: string) => void;
   onDelete: (id: string) => void;
 }
 
-function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps) {
+function ChartCard({ slot, autoFocus, isDraggingAny, dragHandleProps, onSymbolChange, onDelete }: ChartCardProps) {
   const [inputValue, setInputValue] = useState(slot.symbol);
   const [loaded, setLoaded] = useState(!!slot.symbol);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync if parent slot changes (e.g. tab switch)
   useEffect(() => {
     setInputValue(slot.symbol);
     setLoaded(!!slot.symbol);
   }, [slot.id, slot.symbol]);
 
-  // Focus input when this card was just added
   useEffect(() => {
     if (autoFocus) {
       const t = setTimeout(() => inputRef.current?.focus(), 60);
@@ -139,7 +155,16 @@ function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps
       style={{ background: "#0d1623", minHeight: 380 }}
     >
       {/* Card header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/8" style={{ background: "#0a1020" }}>
+      <div className="flex items-center gap-2 px-2 py-2 border-b border-white/8" style={{ background: "#0a1020" }}>
+        {/* Drag handle */}
+        <div
+          {...dragHandleProps}
+          className="flex-shrink-0 p-1 rounded text-white/20 hover:text-white/50 transition-colors cursor-grab active:cursor-grabbing touch-none select-none"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </div>
+
         <input
           ref={inputRef}
           value={inputValue}
@@ -178,14 +203,20 @@ function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps
       {/* Chart body */}
       <div className="flex-1 relative" style={{ minHeight: 340 }}>
         {loaded && slot.symbol ? (
-          <iframe
-            key={`${slot.id}-${slot.symbol}`}
-            src={buildTvUrl(slot.symbol, slot.id)}
-            title={slot.symbol}
-            allowFullScreen
-            className="absolute inset-0 w-full h-full border-0"
-            style={{ background: "#0d1623" }}
-          />
+          <>
+            <iframe
+              key={`${slot.id}-${slot.symbol}`}
+              src={buildTvUrl(slot.symbol, slot.id)}
+              title={slot.symbol}
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+              style={{ background: "#0d1623" }}
+            />
+            {/* Transparent overlay while dragging — prevents iframe from stealing pointer events */}
+            {isDraggingAny && (
+              <div className="absolute inset-0 z-20" style={{ cursor: "grabbing" }} />
+            )}
+          </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
             <LayoutGrid className="w-8 h-8 text-white/10" />
@@ -199,6 +230,38 @@ function ChartCard({ slot, autoFocus, onSymbolChange, onDelete }: ChartCardProps
   );
 }
 
+// ── SortableChartCard — wraps ChartCard with dnd-kit sortable behaviour ─────────
+
+interface SortableChartCardProps extends ChartCardProps {}
+
+function SortableChartCard(props: SortableChartCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.slot.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+    opacity: isDragging ? 0.45 : 1,
+    zIndex: isDragging ? 50 : undefined,
+    position: "relative",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ChartCard
+        {...props}
+        dragHandleProps={{ ...attributes, ...listeners } as React.HTMLAttributes<HTMLDivElement>}
+      />
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function MultiChartsPage({ isActive = true }: { isActive?: boolean }) {
@@ -207,28 +270,32 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [focusChartId, setFocusChartId] = useState<string | null>(null);
+  const [draggingChartId, setDraggingChartId] = useState<string | null>(null);
   const renameRef = useRef<HTMLInputElement>(null);
 
-  // Keep activeId pointing at a real view
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
+
   useEffect(() => {
     if (!views.find((v) => v.id === activeId) && views.length > 0) {
       setActiveId(views[0].id);
     }
   }, [views, activeId]);
 
-  // Persist on every change
   useEffect(() => {
     saveViews(views);
   }, [views]);
 
   const activeView = views.find((v) => v.id === activeId) ?? views[0];
 
-  // ── Page context for chatbot (only active when on the MultiCharts route) ──
   useSetPageContext(isActive ? (() => {
     const lines: string[] = ['[Page: MultiCharts — TradingView Chart Workspace]'];
     let anyTickers = false;
     for (const view of views) {
-      const tickers = view.charts.map((c:any)=>c.symbol).filter(Boolean);
+      const tickers = view.charts.map((c: any) => c.symbol).filter(Boolean);
       if (!tickers.length) continue;
       anyTickers = true;
       lines.push(`Tab "${view.name}": ${tickers.join(', ')}`);
@@ -303,170 +370,204 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
     }));
   }, [updateView]);
 
+  // ── Drag-and-drop handlers ──────────────────────────────────────────────────
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingChartId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingChartId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    updateView((v) => {
+      const oldIndex = v.charts.findIndex((c) => c.id === active.id);
+      const newIndex = v.charts.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return v;
+      return { ...v, charts: arrayMove(v.charts, oldIndex, newIndex) };
+    });
+  };
+
+  const handleDragCancel = () => {
+    setDraggingChartId(null);
+  };
+
   if (!activeView) return null;
 
   const atMax = activeView.charts.length >= MAX_CHARTS;
+  const isDraggingAny = draggingChartId !== null;
 
   return (
-    <div className="min-h-screen text-white" style={{ background: "#050608" }}>
-      <div className="max-w-[98vw] mx-auto px-2 sm:px-4 py-4 space-y-4">
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="min-h-screen text-white" style={{ background: "#050608" }}>
+        <div className="max-w-[98vw] mx-auto px-2 sm:px-4 py-4 space-y-4">
 
-        {/* ── Control Bar ── */}
-        <div className="flex flex-wrap items-center gap-2">
+          {/* ── Control Bar ── */}
+          <div className="flex flex-wrap items-center gap-2">
 
-          {/* Tab pills */}
-          <div className="flex items-center gap-1 flex-wrap">
-            {views.map((v) => (
-              <div key={v.id} className="flex items-center">
-                {renamingId === v.id ? (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-purple-500/60" style={{ background: "#1a0f3a" }}>
-                    <input
-                      ref={renameRef}
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") cancelRename(); }}
-                      className="bg-transparent text-xs text-white outline-none w-24"
-                    />
-                    <button onClick={commitRename} className="text-emerald-400 hover:text-emerald-300"><Check className="w-3 h-3" /></button>
-                    <button onClick={cancelRename} className="text-white/30 hover:text-white/60"><X className="w-3 h-3" /></button>
-                  </div>
-                ) : (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setActiveId(v.id)}
-                    onDoubleClick={() => startRename(v.id, v.name)}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveId(v.id); }}
-                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer select-none ${
-                      activeId === v.id
-                        ? "border-purple-500/50 text-purple-200"
-                        : "border-white/10 text-white/50 hover:text-white/80 hover:border-white/20"
-                    }`}
-                    style={activeId === v.id ? { background: "#1a0f3a" } : { background: "transparent" }}
-                    title="Double-click to rename"
-                  >
-                    {v.name}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); startRename(v.id, v.name); }}
-                      className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
-                      title="Rename tab"
+            {/* Tab pills */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {views.map((v) => (
+                <div key={v.id} className="flex items-center">
+                  {renamingId === v.id ? (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg border border-purple-500/60" style={{ background: "#1a0f3a" }}>
+                      <input
+                        ref={renameRef}
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") cancelRename(); }}
+                        className="bg-transparent text-xs text-white outline-none w-24"
+                      />
+                      <button onClick={commitRename} className="text-emerald-400 hover:text-emerald-300"><Check className="w-3 h-3" /></button>
+                      <button onClick={cancelRename} className="text-white/30 hover:text-white/60"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setActiveId(v.id)}
+                      onDoubleClick={() => startRename(v.id, v.name)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveId(v.id); }}
+                      className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer select-none ${
+                        activeId === v.id
+                          ? "border-purple-500/50 text-purple-200"
+                          : "border-white/10 text-white/50 hover:text-white/80 hover:border-white/20"
+                      }`}
+                      style={activeId === v.id ? { background: "#1a0f3a" } : { background: "transparent" }}
+                      title="Double-click to rename"
                     >
-                      <Pencil className="w-2.5 h-2.5" />
-                    </button>
-                    {views.length > 1 && (
+                      {v.name}
                       <button
-                        onClick={(e) => { e.stopPropagation(); deleteTab(v.id); }}
-                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-rose-400 transition-opacity"
-                        title="Delete tab"
+                        onClick={(e) => { e.stopPropagation(); startRename(v.id, v.name); }}
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                        title="Rename tab"
                       >
-                        <X className="w-2.5 h-2.5" />
+                        <Pencil className="w-2.5 h-2.5" />
                       </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                      {views.length > 1 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteTab(v.id); }}
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-rose-400 transition-opacity"
+                          title="Delete tab"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
 
-            {/* Add tab */}
+              {/* Add tab */}
+              <button
+                onClick={addTab}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-white/40 hover:text-white/80 border border-white/10 hover:border-white/25 transition-all"
+                title="Add tab"
+              >
+                <Plus className="w-3 h-3" />
+                Tab
+              </button>
+            </div>
+
+            <div className="flex-1" />
+
+            {/* Columns selector */}
+            <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5" style={{ background: "#0a1020" }}>
+              {COLS_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setColumns(n)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
+                    activeView.columns === n
+                      ? "text-white"
+                      : "text-white/35 hover:text-white/65"
+                  }`}
+                  style={activeView.columns === n ? { background: "#4c1d95" } : {}}
+                  title={`${n} column${n > 1 ? "s" : ""}`}
+                >
+                  {n}
+                </button>
+              ))}
+              <span className="text-white/20 text-xs ml-1 mr-1">col</span>
+            </div>
+
+            {/* Add chart */}
             <button
-              onClick={addTab}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-white/40 hover:text-white/80 border border-white/10 hover:border-white/25 transition-all"
-              title="Add tab"
+              onClick={addChart}
+              disabled={atMax}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                atMax
+                  ? "opacity-40 cursor-not-allowed border-white/5 text-white/30"
+                  : "border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
+              }`}
+              title={atMax ? `Maximum ${MAX_CHARTS} charts per tab` : "Add chart"}
             >
-              <Plus className="w-3 h-3" />
-              Tab
+              <Plus className="w-3.5 h-3.5" />
+              Add Chart
+              {atMax && <span className="text-white/30">(max)</span>}
+            </button>
+
+            {/* Clear tab */}
+            <button
+              onClick={clearTab}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 text-white/40 hover:text-rose-400 hover:border-rose-500/30 transition-all"
+              title="Remove all charts from this tab"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear
             </button>
           </div>
 
-          <div className="flex-1" />
-
-          {/* Columns selector */}
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5" style={{ background: "#0a1020" }}>
-            {COLS_OPTIONS.map((n) => (
-              <button
-                key={n}
-                onClick={() => setColumns(n)}
-                className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
-                  activeView.columns === n
-                    ? "text-white"
-                    : "text-white/35 hover:text-white/65"
-                }`}
-                style={activeView.columns === n ? { background: "#4c1d95" } : {}}
-                title={`${n} column${n > 1 ? "s" : ""}`}
-              >
-                {n}
-              </button>
-            ))}
-            <span className="text-white/20 text-xs ml-1 mr-1">col</span>
+          {/* ── Chart count badge ── */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/25">
+              {activeView.charts.length} / {MAX_CHARTS} charts · <span className="text-white/20">double-click tab to rename · drag <GripVertical className="inline w-3 h-3 -mt-0.5" /> to reorder</span>
+            </span>
           </div>
 
-          {/* Add chart */}
-          <button
-            onClick={addChart}
-            disabled={atMax}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-              atMax
-                ? "opacity-40 cursor-not-allowed border-white/5 text-white/30"
-                : "border-purple-500/50 text-purple-300 hover:bg-purple-900/30"
-            }`}
-            title={atMax ? `Maximum ${MAX_CHARTS} charts per tab` : "Add chart"}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Chart
-            {atMax && <span className="text-white/30">(max)</span>}
-          </button>
+          {/* ── Grids — all tabs always rendered so iframes survive tab/page navigation ── */}
+          {views.map((view) => {
+            const isThisActive = view.id === activeId;
+            const viewAtMax = view.charts.length >= MAX_CHARTS;
+            return (
+              <div key={view.id} style={isThisActive ? undefined : { display: "none" }}>
+                <SortableContext items={view.charts.map((c) => c.id)} strategy={rectSortingStrategy}>
+                  <div className={`grid gap-3 ${GRID_COLS[view.columns]}`}>
+                    {view.charts.map((slot) => (
+                      <SortableChartCard
+                        key={slot.id}
+                        slot={slot}
+                        autoFocus={slot.id === focusChartId}
+                        isDraggingAny={isDraggingAny}
+                        onSymbolChange={setSymbol}
+                        onDelete={deleteChart}
+                      />
+                    ))}
 
-          {/* Clear tab */}
-          <button
-            onClick={clearTab}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 text-white/40 hover:text-rose-400 hover:border-rose-500/30 transition-all"
-            title="Remove all charts from this tab"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Clear
-          </button>
-        </div>
-
-        {/* ── Chart count badge ── */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/25">
-            {activeView.charts.length} / {MAX_CHARTS} charts · <span className="text-white/20">double-click tab to rename</span>
-          </span>
-        </div>
-
-        {/* ── Grids — all tabs always rendered so iframes survive tab/page navigation ── */}
-        {views.map((view) => {
-          const isThisActive = view.id === activeId;
-          const viewAtMax = view.charts.length >= MAX_CHARTS;
-          return (
-            <div key={view.id} style={isThisActive ? undefined : { display: "none" }}>
-              <div className={`grid gap-3 ${GRID_COLS[view.columns]}`}>
-                {view.charts.map((slot) => (
-                  <ChartCard
-                    key={slot.id}
-                    slot={slot}
-                    autoFocus={slot.id === focusChartId}
-                    onSymbolChange={setSymbol}
-                    onDelete={deleteChart}
-                  />
-                ))}
-
-                {/* Ghost "add" cell — only in active tab */}
-                {isThisActive && !viewAtMax && (
-                  <button
-                    onClick={addChart}
-                    className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 hover:border-purple-500/40 transition-colors text-white/20 hover:text-purple-400/60"
-                    style={{ minHeight: 380, background: "transparent" }}
-                  >
-                    <Plus className="w-6 h-6" />
-                    <span className="text-xs">Add Chart</span>
-                  </button>
-                )}
+                    {/* Ghost "add" cell — only in active tab */}
+                    {isThisActive && !viewAtMax && (
+                      <button
+                        onClick={addChart}
+                        className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 hover:border-purple-500/40 transition-colors text-white/20 hover:text-purple-400/60"
+                        style={{ minHeight: 380, background: "transparent" }}
+                      >
+                        <Plus className="w-6 h-6" />
+                        <span className="text-xs">Add Chart</span>
+                      </button>
+                    )}
+                  </div>
+                </SortableContext>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </DndContext>
   );
 }
