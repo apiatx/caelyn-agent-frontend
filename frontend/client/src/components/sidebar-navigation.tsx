@@ -117,13 +117,13 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'strategy-screener',
-          label: 'Chain Reaction',
+          label: 'Bottlenecks',
           icon: <ScrollText className="w-4 h-4" />,
           path: '/app/strategy-screener'
         },
         {
           id: 'stocks-fundamentals',
-          label: 'Fundamentals',
+          label: 'Compare',
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/stocks/fundamentals'
         },
@@ -186,7 +186,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'predict',
-          label: 'Prophetik',
+          label: 'Prediction Markets',
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/predict'
         },
