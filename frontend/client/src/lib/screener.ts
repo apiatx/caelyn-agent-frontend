@@ -3,6 +3,7 @@ import type {
   ScreenerSnapshot,
   ScreenerReport,
   ScreenerRefreshResponse,
+  BottlenecksCurrentResponse,
 } from '@/types/screener';
 
 const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -72,6 +73,24 @@ export async function refreshSnapshot(): Promise<ScreenerRefreshResponse> {
     throw new Error(`Refresh failed: ${res.status} — ${body.slice(0, 120)}`);
   }
   return parseJsonSafely<ScreenerRefreshResponse>(res, path);
+}
+
+export async function fetchBottlenecksCurrent(params?: { limit?: number; full?: boolean; diagnostics?: boolean }): Promise<BottlenecksCurrentResponse> {
+  const p = new URLSearchParams();
+  if (params?.limit) p.set('limit', String(params.limit));
+  if (params?.full) p.set('full', 'true');
+  if (params?.diagnostics) p.set('diagnostics', 'true');
+  const qs = p.toString();
+  const path = `/api/bottlenecks/current${qs ? `?${qs}` : ''}`;
+  console.log('[screener] fetchBottlenecksCurrent → url:', path);
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  const data = await parseJsonSafely<BottlenecksCurrentResponse>(res, path);
+  console.log('[screener] bottlenecks/current → rows:', data.rows?.length, '| visible_count:', data.visible_count, '| themes:', data.themes_in_visible?.length);
+  return data;
 }
 
 export async function fetchScreenerConfig(): Promise<ScreenerConfig> {

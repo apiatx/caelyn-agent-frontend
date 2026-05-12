@@ -122,3 +122,47 @@ export interface ScreenerRefreshResponse {
   error?: string;
   [key: string]: unknown;
 }
+
+// ── /api/bottlenecks/current response types ───────────────────────────────────
+
+export interface BottleneckRow {
+  bottleneck_ticker?: string;
+  company_name?: string;
+  theme?: string;
+  themes?: string[];
+  marketCap?: number;
+  market_cap?: number;
+  marketCapBucket?: string;
+  final_score?: number;
+  layer?: number;
+  exchange?: string;
+  country?: string;
+  evidence?: string[];
+  supply_chain_role?: string;
+  bottleneck_type?: string;
+  bottleneckReason?: string;
+  anchor_theme?: string;
+  anchor_ticker?: string;
+  [key: string]: unknown;
+}
+
+export interface BottlenecksCurrentResponse {
+  status?: string;
+  visible_snapshot_id?: string;
+  visible_generated_at?: string;
+  visible_count?: number;
+  visible_tickers?: string[];
+  universe_count?: number;
+  week_start?: string;
+  source_version?: string;
+  themes_in_visible?: string[];
+  market_cap_buckets_in_visible?: Record<string, number>;
+  diversity_gate_result?: Record<string, unknown>;
+  rows?: BottleneckRow[];
+  full_universe?: BottleneckRow[];
+  limit_applied?: number;
+  data_source?: string;
+  note?: string;
+  error?: string;
+  [key: string]: unknown;
+}

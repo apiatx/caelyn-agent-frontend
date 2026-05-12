@@ -1,9 +1,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ChevronRight, ArrowLeft, AlertCircle, Loader2, SlidersHorizontal } from 'lucide-react';
-import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
-import type { ScreenerFilters } from '@/lib/screener';
-import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
+import { fetchBottlenecksCurrent, fetchReport, refreshSnapshot } from '@/lib/screener';
+import type { BottlenecksCurrentResponse, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TickerThematicBadge, ThematicSection, RegimeContextStrip } from '@/components/ui/ticker-thematic';
 
@@ -31,11 +30,12 @@ const C = {
 
 /* ── Filter option definitions ───────────────────────────────────── */
 const MARKET_CAP_OPTIONS = [
-  { value: '',       label: 'All Caps' },
-  { value: 'large',  label: 'Large Cap  ($100B+)' },
-  { value: 'mid',    label: 'Mid Cap  ($20B–$99B)' },
-  { value: 'small',  label: 'Small Cap  ($2.5B–$19B)' },
-  { value: 'micro',  label: 'Micro Cap  (<$2.5B)' },
+  { value: '',            label: 'All Caps' },
+  { value: 'large_mega',  label: 'Large/Mega Cap  ($100B+)' },
+  { value: 'upper_mid',   label: 'Upper Mid Cap  ($20B–$99B)' },
+  { value: 'lower_mid',   label: 'Lower Mid Cap  ($5B–$19B)' },
+  { value: 'micro_small', label: 'Micro/Small Cap  (<$5B)' },
+  { value: 'unknown',     label: 'Unknown / Foreign' },
 ];
 
 const LAYER_OPTIONS = [
@@ -76,17 +76,25 @@ function fmtDate(d?: string): string {
   } catch { return d; }
 }
 
-function normaliseEntries(snap: ScreenerSnapshot): ScreenerEntry[] {
-  return (snap.entries || snap.ranked_list || snap.candidates || snap.results || [])
-    .map((e, i) => ({ ...e, rank: e.rank ?? i + 1 }));
+function normaliseEntries(snap: BottlenecksCurrentResponse): ScreenerEntry[] {
+  const rawRows = snap.rows || (snap as any).entries || (snap as any).ranked_list || (snap as any).candidates || (snap as any).results || [];
+  return rawRows.map((r: any, i: number) => ({
+    ...r,
+    ticker: r.ticker || r.bottleneck_ticker || r.symbol || '',
+    symbol: r.symbol || r.bottleneck_ticker || r.ticker || '',
+    market_cap_usd: r.market_cap_usd ?? r.marketCap ?? r.market_cap,
+    market_cap_bucket: r.market_cap_bucket || r.marketCapBucket || '',
+    layer_depth: r.layer_depth ?? (typeof r.layer === 'number' ? r.layer : undefined),
+    rank: r.rank ?? i + 1,
+  }));
 }
 
-function snapshotId(snap: ScreenerSnapshot): string {
-  return snap.snapshot_id || snap.id || 'latest';
+function snapshotId(snap: BottlenecksCurrentResponse): string {
+  return (snap as any).visible_snapshot_id || (snap as any).snapshot_id || (snap as any).id || 'latest';
 }
 
 function tickerOf(e: ScreenerEntry): string {
-  return e.ticker || e.symbol || '';
+  return e.ticker || (e as any).bottleneck_ticker || e.symbol || '';
 }
 
 function nameOf(e: ScreenerEntry): string {
@@ -526,21 +534,14 @@ export default function StrategyScreenerPage() {
   const [sortBy, setSortBy] = useState('best_fit');
   const qc = useQueryClient();
 
-  const filters = useMemo<ScreenerFilters>(() => ({
-    market_cap_bucket: marketCap || undefined,
-    layer: layer || undefined,
-    sort_by: sortBy !== 'best_fit' ? sortBy : undefined,
-    limit: marketCap ? 20 : 30,
-  }), [marketCap, layer, sortBy]);
-
   const {
-    data: snapshot,
+    data: snap,
     isLoading,
     error,
     refetch,
-  } = useQuery<ScreenerSnapshot>({
-    queryKey: ['strategy-screener-latest', marketCap, layer, sortBy],
-    queryFn: () => fetchLatestSnapshot(filters),
+  } = useQuery<BottlenecksCurrentResponse>({
+    queryKey: ['bottlenecks-current'],
+    queryFn: () => fetchBottlenecksCurrent({ limit: 20 }),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -560,7 +561,7 @@ export default function StrategyScreenerPage() {
         setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
       }
       setTimeout(() => setRefreshMsg(''), 6000);
-      qc.invalidateQueries({ queryKey: ['strategy-screener-latest'] });
+      qc.invalidateQueries({ queryKey: ['bottlenecks-current'] });
     },
     onError: (err: any) => {
       setRefreshMsg(`Refresh error: ${err?.message || 'Unknown error'}`);
@@ -568,44 +569,68 @@ export default function StrategyScreenerPage() {
     },
   });
 
-  const entries: ScreenerEntry[] = useMemo(
-    () => snapshot ? normaliseEntries(snapshot) : [],
-    [snapshot]
+  // All rows normalised — ticker/market_cap/layer fields mapped
+  const allEntries: ScreenerEntry[] = useMemo(
+    () => snap ? normaliseEntries(snap) : [],
+    [snap]
   );
-  const sid = useMemo(() => snapshot ? snapshotId(snapshot) : 'latest', [snapshot]);
+
+  // Client-side filter + sort (new endpoint doesn't accept filter params)
+  const entries: ScreenerEntry[] = useMemo(() => {
+    let filtered = allEntries;
+    if (marketCap) {
+      filtered = filtered.filter(e => {
+        const b = String(e.market_cap_bucket || '').toLowerCase().replace(/[\s-]/g, '_');
+        return b === marketCap;
+      });
+    }
+    if (layer) {
+      filtered = filtered.filter(e => String(e.layer_depth) === layer);
+    }
+    if (sortBy === 'market_cap') {
+      filtered = [...filtered].sort((a, b) => (b.market_cap_usd ?? 0) - (a.market_cap_usd ?? 0));
+    } else if (sortBy === 'layer') {
+      filtered = [...filtered].sort((a, b) => (a.layer_depth ?? 99) - (b.layer_depth ?? 99));
+    }
+    return filtered;
+  }, [allEntries, marketCap, layer, sortBy]);
+
+  const sid = useMemo(() => snap ? snapshotId(snap) : 'latest', [snap]);
 
   const derivedTopThemes = useMemo(() => {
-    if (!entries.length) return [] as string[];
+    if (snap?.themes_in_visible?.length) return snap.themes_in_visible.slice(0, 4);
+    if (!allEntries.length) return [] as string[];
     const counts = new Map<string, number>();
-    for (const e of entries) {
+    for (const e of allEntries) {
       const t = e.theme || e.themes?.[0] || '';
       if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t]) => t);
-  }, [entries]);
+  }, [snap, allEntries]);
 
   const derivedLeadNames = useMemo(() => {
-    return entries
+    return allEntries
       .slice()
       .sort((a, b) => (scoreOf(b) ?? 0) - (scoreOf(a) ?? 0))
       .slice(0, 3)
       .map(e => e.company_name || e.name || tickerOf(e))
       .filter(Boolean) as string[];
-  }, [entries]);
+  }, [allEntries]);
 
   const hiddenGemCount = useMemo(() => {
     const gemBuckets = new Set([
+      'micro_small', 'lower_mid', 'upper_mid',
       'small_cap', 'micro_cap', 'mid_cap',
-      'micro_small', 'lower_mid', 'upper_mid', 'micro', 'small', 'mid',
+      'micro', 'small', 'mid',
     ]);
-    return entries.filter(e => {
-      const b = String((e as any).market_cap_bucket ?? '').toLowerCase().replace(/[\s-]/g, '_');
-      return gemBuckets.has(b);
+    return allEntries.filter(e => {
+      const b = String(e.market_cap_bucket ?? '').toLowerCase().replace(/[\s-]/g, '_');
+      return gemBuckets.has(b) || (e.market_cap_usd != null && e.market_cap_usd > 0 && e.market_cap_usd < 20e9);
     }).length;
-  }, [entries]);
+  }, [allEntries]);
 
   const snapshotAgeLabel = useMemo(() => {
-    const ts = snapshot?.generated_at || (snapshot as any)?.lastUpdated || (snapshot as any)?.last_updated;
+    const ts = snap?.visible_generated_at || (snap as any)?.generated_at || (snap as any)?.lastUpdated;
     if (!ts) return null;
     try {
       const diffMs = Date.now() - new Date(ts).getTime();
@@ -614,14 +639,14 @@ export default function StrategyScreenerPage() {
       if (diffDays === 1) return '1 day ago';
       return `${diffDays} days ago`;
     } catch { return null; }
-  }, [snapshot]);
+  }, [snap]);
 
   const handleRowClick = useCallback((e: ScreenerEntry) => {
     setSelectedEntry(e);
   }, []);
 
-  // Build filter summary — prefer backend metadata when available
-  const resultCount = (snapshot as any)?.filtered_result_count ?? (snapshot as any)?.available_result_count ?? entries.length;
+  // Build filter summary
+  const resultCount = entries.length;
   const mcLabel = MARKET_CAP_OPTIONS.find(o => o.value === marketCap)?.label?.split('  ')[0] ?? 'All Caps';
   const layerLabel = LAYER_OPTIONS.find(o => o.value === layer)?.label ?? 'All Layers';
   const sortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label ?? 'Best Fit';
@@ -629,15 +654,16 @@ export default function StrategyScreenerPage() {
 
   // ── Page context for chatbot ──────────────────────────────────────────────
   useSetPageContext((() => {
-    const parts = ['[Page: Chain Reaction Screener — Crypto Intelligence]'];
+    const parts = ['[Page: Chain Reaction Bottlenecks — Cross-Theme Supply Chain Intelligence]'];
     parts.push(`Filters: ${mcLabel} · ${layerLabel} · Sort: ${sortLabel}`);
-    if (entries.length) {
-      const topEntries = entries.slice(0,15).map(e=>`${e.ticker||e.symbol||''}${e.grade?`(${e.grade})`:''}`.trim()).filter(Boolean);
-      parts.push(`Screener results (${entries.length} entries): ${topEntries.join(', ')}`);
+    if (allEntries.length) {
+      const topEntries = allEntries.slice(0,15).map(e=>`${tickerOf(e)}${e.grade?`(${e.grade})`:''}`.trim()).filter(Boolean);
+      parts.push(`Bottleneck rows (${allEntries.length} entries): ${topEntries.join(', ')}`);
+      if (derivedTopThemes.length) parts.push(`Themes: ${derivedTopThemes.join(', ')}`);
     }
-    parts.push('Use for crypto project quality scoring, layer analysis, and relative crypto strength ranking.');
+    parts.push('Diversity-gated bottleneck names across nuclear, rare earth, defense, semicap, energy and semiconductor supply chains.');
     return parts.join('\n');
-  })(), [entries, mcLabel, layerLabel, sortLabel]);
+  })(), [allEntries, derivedTopThemes, mcLabel, layerLabel, sortLabel]);
 
   return (
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text }}>
@@ -657,12 +683,12 @@ export default function StrategyScreenerPage() {
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
                 <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:C.indigo }} />
                 <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.1em' }}>
-                  Powered by Serenity Playbook
+                  Chain Reaction Bottlenecks
                 </span>
-                {snapshot?.cadence_label && (
+                {snap?.week_start && (
                   <>
                     <span style={{ color:C.muted, fontSize:9, fontFamily:C.font }}>·</span>
-                    <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>{snapshot.cadence_label}</span>
+                    <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>Week of {snap.week_start}</span>
                   </>
                 )}
               </div>
@@ -672,32 +698,32 @@ export default function StrategyScreenerPage() {
               <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 10px', maxWidth:620, lineHeight:1.65 }}>
                 Find anchor stocks that control major themes — and map the suppliers, beneficiaries, catalysts, fundamentals, and technical setups moving around them.
               </p>
-              {snapshot?.summary && (
-                <p style={{ fontFamily:C.sans, fontSize:14, color:C.dim, margin:'0 0 10px', maxWidth:600, lineHeight:1.7 }}>
-                  {snapshot.summary}
+              {snap?.note && (
+                <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 10px', maxWidth:600, lineHeight:1.7, fontStyle:'italic' }}>
+                  {snap.note}
                 </p>
               )}
               <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                {snapshot?.generated_at && (
+                {snap?.visible_generated_at && (
                   <span style={{ fontFamily:C.font, fontSize:10, color:C.muted }}>
-                    Generated {fmtDate(snapshot.generated_at)}
+                    Generated {fmtDate(snap.visible_generated_at)}
                   </span>
                 )}
-                {snapshot?.regime_label && (
+                {snap?.diversity_gate_result && (
                   <span style={{ padding:'2px 10px', background:C.indigoSub, border:`1px solid rgba(99,102,241,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:10, color:C.indigoFg }}>
-                    {snapshot.regime_label}
+                    {(snap.diversity_gate_result as any).themes_achieved ?? ''} themes · diversity gate passed
                   </span>
                 )}
-                {(snapshot?.top_themes?.length ? snapshot.top_themes : derivedTopThemes).length > 0 ? (
+                {derivedTopThemes.length > 0 ? (
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                    {(snapshot?.top_themes?.length ? snapshot.top_themes : derivedTopThemes).slice(0,4).map(t => (
+                    {derivedTopThemes.slice(0,4).map(t => (
                       <span key={t} style={{ padding:'2px 8px', background:`rgba(56,189,248,0.08)`, border:`1px solid rgba(56,189,248,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:9, color:C.blue }}>
                         {t}
                       </span>
                     ))}
                   </div>
                 ) : null}
-                {entries.length > 0 && (
+                {allEntries.length > 0 && (
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:6, flexWrap:'wrap' }}>
                     {snapshotAgeLabel && (
                       <span style={{ fontFamily:C.font, fontSize:9, color: snapshotAgeLabel !== 'today' ? C.amber : C.muted }}>
@@ -706,10 +732,10 @@ export default function StrategyScreenerPage() {
                     )}
                     {hiddenGemCount > 0 && (
                       <span style={{ padding:'2px 8px', background:`rgba(245,158,11,0.08)`, border:`1px solid rgba(245,158,11,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:9, color:C.amber }}>
-                        {hiddenGemCount} hidden gem{hiddenGemCount !== 1 ? 's' : ''}
+                        {hiddenGemCount} sub-$20B name{hiddenGemCount !== 1 ? 's' : ''}
                       </span>
                     )}
-                    {!snapshot?.top_themes?.length && derivedLeadNames.length > 0 && (
+                    {derivedLeadNames.length > 0 && (
                       <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>
                         Lead: {derivedLeadNames.join(' · ')}
                       </span>
@@ -764,21 +790,21 @@ export default function StrategyScreenerPage() {
         </div>
 
         {/* ── Content area ─────────────────────────────────────── */}
-        {isLoading && !snapshot && <LoadingState />}
-        {error && !snapshot && (
+        {isLoading && !snap && <LoadingState />}
+        {error && !snap && (
           <ErrorState
-            message={`Could not load snapshot: ${(error as Error).message || 'Unknown error'}`}
+            message={`Could not load bottlenecks: ${(error as Error).message || 'Unknown error'}`}
             onRetry={() => refetch()}
           />
         )}
-        {snapshot?.error && (
+        {snap?.error && (
           <ErrorState
-            message={snapshot.error}
+            message={String(snap.error)}
             onRetry={() => refetch()}
           />
         )}
 
-        {snapshot && !snapshot.error && (
+        {snap && !snap.error && (
           <>
             {/* Active filter summary */}
             <div style={{ padding:'10px 0 0', fontFamily:C.font, fontSize:9, color:C.muted }}>
@@ -791,21 +817,19 @@ export default function StrategyScreenerPage() {
                 <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.bright }}>{entries.length}</div>
                 <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Ranked Entries</div>
               </div>
-              {snapshot.total_candidates != null && snapshot.total_candidates !== entries.length && (
+              {snap.universe_count != null && snap.universe_count !== allEntries.length && (
                 <div>
-                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.dim }}>{snapshot.total_candidates}</div>
-                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Total Scanned</div>
+                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.dim }}>{snap.universe_count}</div>
+                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Universe</div>
                 </div>
               )}
-              {snapshot.regime_summary && (
-                <p style={{ fontFamily:C.sans, fontSize:12, color:C.dim, fontStyle:'italic', margin:0, flex:1, maxWidth:500 }}>
-                  {snapshot.regime_summary}
-                </p>
+              {snap.visible_count != null && (
+                <div>
+                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.indigoFg }}>{snap.visible_count}</div>
+                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Diversity-Gated</div>
+                </div>
               )}
             </div>
-
-            {/* ── Regime context strip ──────────────────────────── */}
-            <RegimeContextStrip context={snapshot?.regime_context} />
 
             {/* ── Ranked list table ─────────────────────────────── */}
             {entries.length === 0 ? (
@@ -893,15 +917,15 @@ export default function StrategyScreenerPage() {
         )}
 
         {/* ── Empty fallback when no snapshot yet but no error ─── */}
-        {!isLoading && !error && !snapshot && (
+        {!isLoading && !error && !snap && (
           <div style={{ padding:'64px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
-            No snapshot available yet. Use the Refresh Snapshot button to generate one.
+            No data available yet. Use the Refresh Snapshot button to generate one.
           </div>
         )}
       </div>
 
       {/* ── Report panel overlay ──────────────────────────────── */}
-      {selectedEntry && snapshot && (
+      {selectedEntry && snap && (
         <>
           {/* Backdrop */}
           <div

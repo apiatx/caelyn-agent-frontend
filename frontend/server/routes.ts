@@ -4135,6 +4135,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Bottlenecks current snapshot ────────────────────────────────────────────
+  app.get('/api/bottlenecks/current', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const url = `${SH_URL}/api/bottlenecks/current${qs ? `?${qs}` : ''}`;
+      const r = await fetch(url, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
   // ── Bottlenecks refresh + debug snapshot ────────────────────────────────────
   app.post('/api/admin/bottlenecks/refresh', async (req, res) => {
     const ctrl = new AbortController();

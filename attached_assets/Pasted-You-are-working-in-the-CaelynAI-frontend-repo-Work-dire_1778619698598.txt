@@ -1,0 +1,118 @@
+You are working in the CaelynAI frontend repo.
+
+Work directly on main. Do not create a branch or PR.
+
+Goal:
+Switch the Chain Reaction / Bottlenecks page from the old strategy screener snapshot endpoint to the new backend bottlenecks endpoint.
+
+Backend root cause:
+The page was using:
+GET /api/strategy-screener/latest
+
+That endpoint returns the old Serenity strategy screener cohort locked to AI hardware / semicap names.
+
+Backend has now added:
+GET /api/bottlenecks/current
+
+This endpoint reads directly from chain_reaction_weekly_outputs, applies the cross-theme diversity gate, and returns the actual current bottlenecks snapshot.
+
+Tasks:
+
+1. Update the Chain Reaction / Bottlenecks page data fetch.
+Replace the old page-visible endpoint:
+GET /api/strategy-screener/latest
+
+With:
+GET /api/bottlenecks/current
+
+Use:
+GET /api/bottlenecks/current?limit=20
+
+If the UI has an “expand/full” view, use:
+GET /api/bottlenecks/current?full=true
+
+If diagnostics/debug mode is needed:
+GET /api/bottlenecks/current?diagnostics=true
+
+2. Preserve the existing page layout.
+Do not redesign the page.
+Keep the current cards/table/header/filter structure unless a tiny mapping change is needed.
+
+3. Map the new response shape.
+Backend response includes:
+- rows
+- visible_tickers
+- visible_count
+- themes_in_visible
+- market_cap_buckets_in_visible
+- diversity_gate_result
+- generated_at / week_start / snapshot metadata if present
+- fields per row such as ticker, company/name, theme, marketCap, marketCapBucket, bottleneckReason, score/rank if present
+
+Use rows as the table source.
+
+4. Header text.
+Stop relying on the old strategy screener summary from /api/strategy-screener/latest.
+Build the header summary from /api/bottlenecks/current:
+- candidate count = visible_count or rows.length
+- top themes = themes_in_visible or derive from rows
+- lead names = first 3 ranked rows
+- hidden gem count = count where marketCapBucket is small_cap/mid_cap/micro_small/lower_mid/upper_mid or marketCap < 20B
+- generated date = generated_at if present
+
+Header should no longer say the old AI hardware / semicap-only issue unless that is truly what /api/bottlenecks/current returns.
+
+5. Refresh button remains:
+POST /api/admin/bottlenecks/refresh
+
+After successful refresh:
+- invalidate/refetch /api/bottlenecks/current
+- show visible_count and visible_tickers if useful
+- use visible_snapshot.tickers_changed or tickers_changed if returned
+- do not show “snapshot unchanged” unless backend explicitly says tickers_changed=false
+
+6. Preserve backend rank order by default.
+Do not sort by market cap.
+Do not sort alphabetically.
+Default table order should be the order returned by /api/bottlenecks/current.
+
+7. Market cap buckets.
+The backend currently may return buckets like:
+- small_cap
+- mid_cap
+- large_cap
+- unknown
+
+Also keep compatibility for:
+- micro_small
+- lower_mid
+- upper_mid
+- large_mega
+
+Render badges for all known values.
+
+8. Filters.
+If current filters assume old strategy screener fields, adapt them to the new rows without dropping data.
+Make sure the “All Caps” filter includes all marketCapBucket values.
+Make sure theme/layer filters do not accidentally hide BWXT, MP, CEVA, LEU, FLNC, STEM, POWL, VICR, ACMR, VIAV, AZTA, etc.
+
+9. Validation:
+Run authenticated UI validation:
+- Open Chain Reaction / Bottlenecks page.
+- Confirm network request uses GET /api/bottlenecks/current, not GET /api/strategy-screener/latest.
+- Confirm visible rows include cross-theme names from the new backend output, especially examples like BWXT, MP, CEVA if still returned.
+- Confirm visible themes are broader than only semicap/advanced packaging/photonics.
+- Confirm at least 4 distinct themes show when backend returns them.
+- Confirm at least 5 names under $20B show when backend returns them.
+- Confirm refresh calls POST /api/admin/bottlenecks/refresh and then refetches /api/bottlenecks/current.
+- Confirm no console errors.
+- Confirm the old stale 20-row cohort is gone.
+
+Report back:
+- Files changed
+- Old endpoint removed/replaced
+- New endpoint used
+- Visible ticker list after change
+- Theme distribution
+- Market cap bucket distribution
+- Console/network validation
