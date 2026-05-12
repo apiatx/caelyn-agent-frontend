@@ -1,0 +1,93 @@
+You are working in the CaelynAI frontend Replit.
+
+Do not redesign the Chain Reaction / Bottlenecks page.
+
+Backend has now merged the new cross-theme/hidden-gem bottlenecks candidate source into the existing Strategy Screener path.
+
+Important backend update:
+GET /api/strategy-screener/latest is once again the canonical page endpoint.
+
+It now returns the new diverse bottlenecks rows while preserving the original Strategy Screener / ReportPanel contract.
+
+GET /api/bottlenecks/current still exists, but it should be treated as raw/debug/internal data, not the primary page source.
+
+Goal:
+Restore the frontend to use the canonical old Strategy Screener page/report flow, while keeping safe UI improvements.
+
+Tasks:
+
+1. Main table endpoint
+Switch the Chain Reaction / Bottlenecks page main data fetch back to:
+
+GET /api/strategy-screener/latest
+
+Do not use GET /api/bottlenecks/current as the main table source anymore.
+
+2. ReportPanel compatibility
+Make sure the slide-out report/detail panel uses the original existing report flow tied to strategy screener snapshots/reports.
+
+Expected behavior:
+- Clicking BWXT opens a useful report.
+- Clicking MP opens a useful report.
+- Clicking CEVA opens a useful report.
+- Do not show “Report unavailable — showing snapshot data” for valid rows that have reports.
+
+3. Refresh button
+Keep the refresh button calling:
+
+POST /api/admin/bottlenecks/refresh
+
+After refresh succeeds, invalidate/refetch:
+
+GET /api/strategy-screener/latest
+
+Do not refetch /api/bottlenecks/current for the page.
+
+4. Preserve safe UI improvements if compatible with the strategy-screener/latest response:
+- market cap bucket badges
+- refresh success/error messaging
+- snapshot age / generated timestamp
+- hidden gem count
+- theme pills
+- diversity/cross-theme stats if returned
+- cleaner user-facing copy
+
+5. Remove implementation copy
+Do not display endpoint names or internal comments like:
+- “This endpoint supersedes...”
+- “/api/bottlenecks/current”
+- “/api/strategy-screener/latest”
+
+Use plain product copy instead.
+
+Suggested copy:
+“Chain Reaction maps the market anchors driving today’s biggest themes, then surfaces the suppliers, scarce enablers, and bottleneck companies positioned around them.”
+
+6. Do not add an Anchors section yet
+Do not add new page concepts in this pass.
+
+The priority is restoring one seamless page:
+- old screener/report logic
+- new diverse bottleneck candidates
+- working refresh
+- working reports
+
+7. Validate live while authenticated:
+- Network tab shows main page data comes from GET /api/strategy-screener/latest.
+- Main visible rows include the new backend-validated names if returned: BWXT, MP, CEVA, WOLF, SOITF, IBDNY.
+- Page still shows cross-theme diversity, not just the old semicap-only cohort.
+- Clicking BWXT opens a report.
+- Clicking MP opens a report.
+- Clicking CEVA opens a report.
+- Refresh calls POST /api/admin/bottlenecks/refresh, then refetches strategy-screener/latest.
+- No “Report unavailable — showing snapshot data” for rows with reports.
+- No console errors.
+
+Report back:
+- files changed
+- final main table endpoint
+- final report/detail endpoint or data source
+- refresh endpoint
+- visible ticker list
+- report validation for BWXT, MP, and CEVA
+- confirmation /api/bottlenecks/current is no longer the primary page source

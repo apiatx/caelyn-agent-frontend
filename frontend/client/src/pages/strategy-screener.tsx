@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ChevronRight, ArrowLeft, AlertCircle, Loader2, SlidersHorizontal } from 'lucide-react';
-import { fetchBottlenecksCurrent, fetchReport, refreshSnapshot } from '@/lib/screener';
-import type { BottlenecksCurrentResponse, ScreenerEntry, ScreenerReport } from '@/types/screener';
+import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
+import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { TickerThematicBadge, ThematicSection, RegimeContextStrip } from '@/components/ui/ticker-thematic';
+import { TickerThematicBadge, ThematicSection } from '@/components/ui/ticker-thematic';
 
 /* ── Design tokens — premium dark publication ─────────────────────── */
 const C = {
@@ -30,12 +30,12 @@ const C = {
 
 /* ── Filter option definitions ───────────────────────────────────── */
 const MARKET_CAP_OPTIONS = [
-  { value: '',            label: 'All Caps' },
-  { value: 'large_mega',  label: 'Large/Mega Cap  ($100B+)' },
-  { value: 'upper_mid',   label: 'Upper Mid Cap  ($20B–$99B)' },
-  { value: 'lower_mid',   label: 'Lower Mid Cap  ($5B–$19B)' },
-  { value: 'micro_small', label: 'Micro/Small Cap  (<$5B)' },
-  { value: 'unknown',     label: 'Unknown / Foreign' },
+  { value: '',          label: 'All Caps' },
+  { value: 'mega_cap',  label: 'Mega Cap  ($200B+)' },
+  { value: 'large_cap', label: 'Large Cap  ($10B–$200B)' },
+  { value: 'mid_cap',   label: 'Mid Cap  ($2B–$10B)' },
+  { value: 'small_cap', label: 'Small Cap  ($300M–$2B)' },
+  { value: 'micro_cap', label: 'Micro Cap  (<$300M)' },
 ];
 
 const LAYER_OPTIONS = [
@@ -76,12 +76,12 @@ function fmtDate(d?: string): string {
   } catch { return d; }
 }
 
-function normaliseEntries(snap: BottlenecksCurrentResponse): ScreenerEntry[] {
-  const rawRows = snap.rows || (snap as any).entries || (snap as any).ranked_list || (snap as any).candidates || (snap as any).results || [];
+function normaliseEntries(snap: ScreenerSnapshot): ScreenerEntry[] {
+  const rawRows = snap.results || snap.entries || snap.ranked_list || snap.candidates || (snap as any).rows || [];
   return rawRows.map((r: any, i: number) => ({
     ...r,
-    ticker: r.ticker || r.bottleneck_ticker || r.symbol || '',
-    symbol: r.symbol || r.bottleneck_ticker || r.ticker || '',
+    ticker: r.ticker || r.symbol || '',
+    symbol: r.symbol || r.ticker || '',
     market_cap_usd: r.market_cap_usd ?? r.marketCap ?? r.market_cap,
     market_cap_bucket: r.market_cap_bucket || r.marketCapBucket || '',
     layer_depth: r.layer_depth ?? (typeof r.layer === 'number' ? r.layer : undefined),
@@ -89,12 +89,12 @@ function normaliseEntries(snap: BottlenecksCurrentResponse): ScreenerEntry[] {
   }));
 }
 
-function snapshotId(snap: BottlenecksCurrentResponse): string {
-  return (snap as any).visible_snapshot_id || (snap as any).snapshot_id || (snap as any).id || 'latest';
+function snapshotId(snap: ScreenerSnapshot): string {
+  return snap.snapshot_id || snap.id || 'latest';
 }
 
 function tickerOf(e: ScreenerEntry): string {
-  return e.ticker || (e as any).bottleneck_ticker || e.symbol || '';
+  return e.ticker || e.symbol || '';
 }
 
 function nameOf(e: ScreenerEntry): string {
@@ -539,9 +539,9 @@ export default function StrategyScreenerPage() {
     isLoading,
     error,
     refetch,
-  } = useQuery<BottlenecksCurrentResponse>({
-    queryKey: ['bottlenecks-current'],
-    queryFn: () => fetchBottlenecksCurrent({ limit: 20 }),
+  } = useQuery<ScreenerSnapshot>({
+    queryKey: ['strategy-screener-latest'],
+    queryFn: () => fetchLatestSnapshot({ limit: 20 }),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -555,13 +555,13 @@ export default function StrategyScreenerPage() {
         true;
       if (genuinelyChanged === false) {
         const reason = (data as any).diagnostics?.snapshot_genuinely_changed_reason ||
-          (data as any).reason || data.message || 'Snapshot already current — no new data detected';
+          (data as any).reason || data.message || 'Already up to date — no new data detected';
         setRefreshMsg(reason);
       } else {
         setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
       }
       setTimeout(() => setRefreshMsg(''), 6000);
-      qc.invalidateQueries({ queryKey: ['bottlenecks-current'] });
+      qc.invalidateQueries({ queryKey: ['strategy-screener-latest'] });
     },
     onError: (err: any) => {
       setRefreshMsg(`Refresh error: ${err?.message || 'Unknown error'}`);
@@ -598,7 +598,9 @@ export default function StrategyScreenerPage() {
   const sid = useMemo(() => snap ? snapshotId(snap) : 'latest', [snap]);
 
   const derivedTopThemes = useMemo(() => {
-    if (snap?.themes_in_visible?.length) return snap.themes_in_visible.slice(0, 4);
+    if (snap?.top_themes?.length) return snap.top_themes.slice(0, 4);
+    const activeThemes = snap?.regime_context?.active_themes;
+    if (activeThemes?.length) return activeThemes.slice(0, 4);
     if (!allEntries.length) return [] as string[];
     const counts = new Map<string, number>();
     for (const e of allEntries) {
@@ -630,7 +632,7 @@ export default function StrategyScreenerPage() {
   }, [allEntries]);
 
   const snapshotAgeLabel = useMemo(() => {
-    const ts = snap?.visible_generated_at || (snap as any)?.generated_at || (snap as any)?.lastUpdated;
+    const ts = snap?.generated_at || snap?.created_at || (snap as any)?.lastUpdated;
     if (!ts) return null;
     try {
       const diffMs = Date.now() - new Date(ts).getTime();
@@ -685,10 +687,10 @@ export default function StrategyScreenerPage() {
                 <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.1em' }}>
                   Chain Reaction Bottlenecks
                 </span>
-                {snap?.week_start && (
+                {snap?.cadence_label && (
                   <>
                     <span style={{ color:C.muted, fontSize:9, fontFamily:C.font }}>·</span>
-                    <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>Week of {snap.week_start}</span>
+                    <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>{snap.cadence_label}</span>
                   </>
                 )}
               </div>
@@ -696,22 +698,17 @@ export default function StrategyScreenerPage() {
                 Chain Reaction
               </h1>
               <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 10px', maxWidth:620, lineHeight:1.65 }}>
-                Find anchor stocks that control major themes — and map the suppliers, beneficiaries, catalysts, fundamentals, and technical setups moving around them.
+                Chain Reaction maps the market anchors driving today's biggest themes, then surfaces the suppliers, scarce enablers, and bottleneck companies positioned around them.
               </p>
-              {snap?.note && (
-                <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 10px', maxWidth:600, lineHeight:1.7, fontStyle:'italic' }}>
-                  {snap.note}
-                </p>
-              )}
               <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                {snap?.visible_generated_at && (
+                {snap?.generated_at && (
                   <span style={{ fontFamily:C.font, fontSize:10, color:C.muted }}>
-                    Generated {fmtDate(snap.visible_generated_at)}
+                    Generated {fmtDate(snap.generated_at)}
                   </span>
                 )}
-                {snap?.diversity_gate_result && (
+                {snap?.filtered_result_count != null && snap?.available_result_count != null && snap.filtered_result_count !== snap.available_result_count && (
                   <span style={{ padding:'2px 10px', background:C.indigoSub, border:`1px solid rgba(99,102,241,0.2)`, borderRadius:4, fontFamily:C.font, fontSize:10, color:C.indigoFg }}>
-                    {(snap.diversity_gate_result as any).themes_achieved ?? ''} themes · diversity gate passed
+                    {snap.filtered_result_count} of {snap.available_result_count} candidates
                   </span>
                 )}
                 {derivedTopThemes.length > 0 ? (
@@ -817,16 +814,16 @@ export default function StrategyScreenerPage() {
                 <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.bright }}>{entries.length}</div>
                 <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Ranked Entries</div>
               </div>
-              {snap.universe_count != null && snap.universe_count !== allEntries.length && (
+              {snap.available_result_count != null && (snap.available_result_count as number) > allEntries.length && (
                 <div>
-                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.dim }}>{snap.universe_count}</div>
-                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Universe</div>
+                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.dim }}>{snap.available_result_count}</div>
+                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Candidates</div>
                 </div>
               )}
-              {snap.visible_count != null && (
+              {hiddenGemCount > 0 && (
                 <div>
-                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.indigoFg }}>{snap.visible_count}</div>
-                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Diversity-Gated</div>
+                  <div style={{ fontFamily:C.font, fontSize:18, fontWeight:700, color:C.amber }}>{hiddenGemCount}</div>
+                  <div style={{ fontFamily:C.font, fontSize:9, color:C.dim, textTransform:'uppercase', letterSpacing:'0.06em', marginTop:2 }}>Sub-$20B Names</div>
                 </div>
               )}
             </div>
