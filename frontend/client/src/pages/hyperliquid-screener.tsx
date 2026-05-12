@@ -1580,7 +1580,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
   ];
 
   return (
-    <div style={{ margin: '0 0 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+    <div style={{ margin: '0 14px 14px', border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
       {/* Section header — div so ChartBtn can sit alongside the collapse toggle without invalid nesting */}
       <div style={{ display: 'flex', alignItems: 'center', background: C.card2,
         borderBottom: open ? `1px solid ${C.border}` : 'none' }}>
@@ -2585,6 +2585,25 @@ export default function HyperliquidScreenerPage() {
               agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
               rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
 
+            {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
+            {sorted.length > 0 && (
+              <SectionErrorBoundary label="Advanced Signals">
+                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+              </SectionErrorBoundary>
+            )}
+
+            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
+            <MarketMatrixSection search={search} fallbackRows={sorted} />
+
+            {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
+            {sorted.length > 0 && (
+              <SectionErrorBoundary label="Time-Series Momentum">
+                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+              </SectionErrorBoundary>
+            )}
+
             {/* ── SIGNAL BOARDS ──────────────────────────────────────── */}
             {sorted.length > 0 && (
               <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
@@ -2595,26 +2614,6 @@ export default function HyperliquidScreenerPage() {
                 ))}
               </div>
             )}
-
-
-            {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
-            {sorted.length > 0 && (
-              <SectionErrorBoundary label="Advanced Signals">
-                <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
-              </SectionErrorBoundary>
-            )}
-
-            {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
-            {sorted.length > 0 && (
-              <SectionErrorBoundary label="Time-Series Momentum">
-                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
-              </SectionErrorBoundary>
-            )}
-
-            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
-            <MarketMatrixSection search={search} fallbackRows={sorted} />
           </>
         )}
       </div>
