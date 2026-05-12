@@ -290,6 +290,46 @@ const pctC = (v: number | null) => v == null ? C.dim : v > 0 ? C.green : v < 0 ?
 const scC  = (v: number | null) => v == null ? C.dim : v >= 0.6 ? C.green : v <= 0.35 ? C.red : C.amber;
 const fC   = (v: number | null) => v == null ? C.dim : v > 0.001 ? C.green : v < -0.001 ? C.red : C.dim;
 
+// ─── Signal-layer accessors (support both camelCase and snake_case) ───────────
+const getOpportunityScore = (row: any): number =>
+  row.opportunityScore ?? row.opportunity_score ?? row.matrixScore ?? row.matrix_score ?? row.agentScore ?? row.agent_score ?? row.overallScore ?? 0;
+const getMatrixSignal = (row: any): string =>
+  String(row.matrixSignal ?? row.matrix_signal ?? row.signalDirection ?? row.signal_direction ?? row.setupLabel ?? row.setup_label ?? 'NEUTRAL').toUpperCase();
+const getMatrixReason = (row: any): string =>
+  row.matrixReason ?? row.matrix_reason ?? row.signalReason ?? row.signal_reason ?? '';
+const getMatrixDetail = (row: any): string =>
+  row.matrixDetail ?? row.matrix_detail ?? row.signalDetail ?? row.signal_detail ?? '';
+const getRiskScore = (row: any): number | null =>
+  row.riskScore ?? row.risk_score ?? null;
+const getRiskLabel = (row: any): string =>
+  row.riskLabel ?? row.risk_label ?? '—';
+const getRiskReason = (row: any): string =>
+  row.riskReason ?? row.risk_reason ?? '';
+const getFundingLabel = (row: any): string =>
+  row.fundingLabel ?? row.funding_label ?? row.fundingBasisContext ?? row.funding_basis_context ?? '—';
+const getFundingReason = (row: any): string =>
+  row.fundingReason ?? row.funding_reason ?? '';
+const getFlowLabel = (row: any): string =>
+  row.flowLabel ?? row.flow_label ?? row.tapeBookContext ?? row.tape_book_context ?? row.liquidationContext ?? row.liquidation_context ?? '—';
+const getFlowReason = (row: any): string =>
+  row.flowReason ?? row.flow_reason ?? '';
+const getOiDelta = (row: any): number | null =>
+  row.oiDelta15mPct ?? row.oi_delta_15m_pct ?? row.oiDelta1hPct ?? row.oi_delta_1h_pct ?? null;
+const getVolVelocity = (row: any): number | null =>
+  row.volumeVelocity15m ?? row.volume_velocity_15m ?? row.volumeVelocity1h ?? row.volume_velocity_1h ?? null;
+
+const SIGNAL_COLOR: Record<string, string> = {
+  LONG: '#22c55e', SHORT: '#ef4444', WATCH: '#06b6d4',
+  CROWDED: '#f59e0b', AVOID: '#ef4444', NEUTRAL: '#64748b',
+};
+const sigColor        = (sig: string) => SIGNAL_COLOR[sig.toUpperCase()] ?? C.dim;
+const riskLabelColor  = (label: string) => {
+  const l = (label ?? '').toUpperCase();
+  if (l === 'LOW') return C.green;
+  if (l === 'MED' || l === 'MEDIUM' || l === 'MODERATE') return C.amber;
+  return l === '—' ? C.dim : C.red;
+};
+
 // ─── Setup / direction maps ───────────────────────────────────────────────────
 const SETUP_MAP: Record<string, { label: string; color: string }> = {
   breakout:           { label: 'Breakout',     color: C.green  },
@@ -569,6 +609,12 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
                 <Metric label="Book Imbal"  value={row.bidAskImbalance==null?'—':row.bidAskImbalance.toFixed(3)} vc={pctC(row.bidAskImbalance)} />
                 <Metric label="Vol Regime"  value={sc(row.volatility)}        vc={scC(row.volatility)} />
                 <Metric label="Composite"   value={sc(row.compositeSignal)}   vc={scC(row.compositeSignal)} />
+                {getOiDelta(row) != null && <Metric label="OI Δ"          value={`${getOiDelta(row)! >= 0 ? '+' : ''}${getOiDelta(row)!.toFixed(1)}%`} vc={pctC(getOiDelta(row))} />}
+                {getVolVelocity(row) != null && <Metric label="Vol Velocity"  value={`${getVolVelocity(row)!.toFixed(1)}x`} vc={(getVolVelocity(row)! >= 1.5) ? C.green : C.dim} />}
+                {(row as any).longLiq15m != null && <Metric label="Long Liq 15m"  value={$$((row as any).longLiq15m)} vc={C.red} />}
+                {(row as any).shortLiq15m != null && <Metric label="Short Liq 15m" value={$$((row as any).shortLiq15m)} vc={C.green} />}
+                {getOpportunityScore(row) > 0 && <Metric label="Opportunity"    value={getOpportunityScore(row).toFixed(2)} vc={C.purple} />}
+                {getRiskScore(row) != null && <Metric label="Risk"           value={`${getRiskLabel(row)} ${getRiskScore(row)!.toFixed(2)}`} vc={riskLabelColor(getRiskLabel(row))} />}
               </>
             ) : briefMetrics ? (
               Object.entries(briefMetrics).slice(0,10).map(([k,v]) => (
@@ -576,6 +622,20 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
               ))
             ) : null}
           </div>
+          {row && (getMatrixSignal(row) !== 'NEUTRAL' || !!getMatrixReason(row) || getFundingLabel(row) !== '—') && (
+            <div style={{ padding:'4px 12px 6px', borderTop:`1px solid ${C.dimLow}`, marginTop:2 }}>
+              <div style={{ fontSize:7, color:C.dim, textTransform:'uppercase', letterSpacing:1.5, fontWeight:700, marginBottom:3 }}>Signal Context</div>
+              <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:3 }}>
+                {(() => { const sig = getMatrixSignal(row); const col = sigColor(sig); return <span style={{ fontSize:8.5, fontWeight:800, color:col, background:`${col}18`, border:`1px solid ${col}44`, borderRadius:3, padding:'1px 6px' }}>{sig}</span>; })()}
+                {getFundingLabel(row) !== '—' && <span style={{ fontSize:8, color:C.text, background:C.dimLow, borderRadius:3, padding:'1px 5px' }}>{getFundingLabel(row)}</span>}
+                {getFlowLabel(row) !== '—' && <span style={{ fontSize:8, color:C.text, background:C.dimLow, borderRadius:3, padding:'1px 5px' }}>{getFlowLabel(row)}</span>}
+              </div>
+              {getMatrixReason(row) && <div style={{ fontSize:8, color:C.dim, lineHeight:1.5, marginBottom:2 }}>{getMatrixReason(row)}</div>}
+              {getMatrixDetail(row) && <div style={{ fontSize:7.5, color:C.dimLow, lineHeight:1.5, marginBottom:2 }}>{getMatrixDetail(row)}</div>}
+              {getFundingReason(row) && <div style={{ fontSize:7.5, color:C.dim, lineHeight:1.5 }}>Funding: {getFundingReason(row)}</div>}
+              {getFlowReason(row) && <div style={{ fontSize:7.5, color:C.dim, lineHeight:1.5 }}>Flow: {getFlowReason(row)}</div>}
+            </div>
+          )}
         </div>
 
         {/* Rest of thesis content */}
@@ -678,18 +738,22 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
       bestExhaust: briefing.bestExhaustionWatch,
       regime:      briefing.marketRegime,
     };
-    // Fallback: derive from rows
-    const bullish = rows.filter(r => r.signalDirection==='bullish').sort((a,b) => (b.compositeSignal??0)-(a.compositeSignal??0));
-    const bearish = rows.filter(r => r.signalDirection==='bearish').sort((a,b) => (a.compositeSignal??1)-(b.compositeSignal??1));
-    const brk     = [...rows].filter(r=>r.breakoutScore!=null).sort((a,b)=>(b.breakoutScore??0)-(a.breakoutScore??0));
-    const exh     = rows.filter(r => (r.funding??0)>0.015).sort((a,b)=>(b.funding??0)-(a.funding??0));
-    const pctBull = rows.length ? ((bullish.length/rows.length)*100).toFixed(0) : '—';
+    // Fallback: prefer new matrix signal fields, fall back to screener signals
+    const matLongs   = [...rows].filter(r => getMatrixSignal(r) === 'LONG').sort((a,b) => getOpportunityScore(b) - getOpportunityScore(a));
+    const matShorts  = [...rows].filter(r => getMatrixSignal(r) === 'SHORT').sort((a,b) => getOpportunityScore(b) - getOpportunityScore(a));
+    const matWatch   = [...rows].filter(r => getMatrixSignal(r) === 'WATCH').sort((a,b) => getOpportunityScore(b) - getOpportunityScore(a));
+    const matCrowded = [...rows].filter(r => ['CROWDED','AVOID'].includes(getMatrixSignal(r))).sort((a,b) => getOpportunityScore(b) - getOpportunityScore(a));
+    const bullish = matLongs.length  > 0 ? matLongs  : rows.filter(r => r.signalDirection==='bullish').sort((a,b) => (b.compositeSignal??0)-(a.compositeSignal??0));
+    const bearish = matShorts.length > 0 ? matShorts : rows.filter(r => r.signalDirection==='bearish').sort((a,b) => (a.compositeSignal??1)-(b.compositeSignal??1));
+    const brk     = matWatch.length  > 0 ? matWatch  : [...rows].filter(r=>r.breakoutScore!=null).sort((a,b)=>(b.breakoutScore??0)-(a.breakoutScore??0));
+    const exh     = matCrowded.length > 0 ? matCrowded : rows.filter(r => (r.funding??0)>0.015).sort((a,b)=>(b.funding??0)-(a.funding??0));
+    const pctBull = rows.length ? (((matLongs.length || bullish.length) / rows.length) * 100).toFixed(0) : '—';
     return {
-      bestLong:    bullish[0]  ? { coin:bullish[0].coin,  side:'long'  as const, score:bullish[0].compositeSignal??0,  thesisSummary:`Composite ${sc(bullish[0].compositeSignal)}` } : null,
-      bestShort:   bearish[0]  ? { coin:bearish[0].coin,  side:'short' as const, score:bearish[0].compositeSignal??0,  thesisSummary:`Composite ${sc(bearish[0].compositeSignal)}` } : null,
-      bestBreakout:brk[0]      ? { coin:brk[0].coin,      side:'watch' as const, score:brk[0].breakoutScore??0,        thesisSummary:`Breakout score ${sc(brk[0].breakoutScore)}` } : null,
-      bestExhaust: exh[0]      ? { coin:exh[0].coin,      side:'watch' as const, score:exh[0].funding??0,              thesisSummary:`High funding ${fmtF(exh[0].funding)}` } : null,
-      regime: rows.length ? `${pctBull}% bullish · ${rows.length} perps scanned` : null,
+      bestLong:    bullish[0]  ? { coin:bullish[0].coin,  side:'long'  as const, score:getOpportunityScore(bullish[0]) || bullish[0].compositeSignal||0,  thesisSummary: getMatrixReason(bullish[0])  || `Score ${(getOpportunityScore(bullish[0])||bullish[0].compositeSignal||0).toFixed(2)}` } : null,
+      bestShort:   bearish[0]  ? { coin:bearish[0].coin,  side:'short' as const, score:getOpportunityScore(bearish[0]) || bearish[0].compositeSignal||0,  thesisSummary: getMatrixReason(bearish[0])  || `Score ${(getOpportunityScore(bearish[0])||bearish[0].compositeSignal||0).toFixed(2)}` } : null,
+      bestBreakout:brk[0]      ? { coin:brk[0].coin,      side:'watch' as const, score:getOpportunityScore(brk[0])     || brk[0].breakoutScore||0,         thesisSummary: getMatrixReason(brk[0])      || `Watch score ${(getOpportunityScore(brk[0])||brk[0].breakoutScore||0).toFixed(2)}` } : null,
+      bestExhaust: exh[0]      ? { coin:exh[0].coin,      side:'watch' as const, score:getOpportunityScore(exh[0])     || exh[0].funding||0,               thesisSummary: getMatrixReason(exh[0])      || `Crowded · ${getMatrixSignal(exh[0])}` } : null,
+      regime: rows.length ? `${pctBull}% long · ${rows.length} perps scanned` : null,
     };
   }, [briefing, rows]);
 
@@ -786,8 +850,8 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
       <div style={{ display:'flex', borderBottom:`1px solid ${C.dimLow}`, background:'#070d19' }}>
         <QuickLookTile label="Best Long"         coin={ql.bestLong?.coin??null}    sub={ql.bestLong?.thesisSummary??'No signal yet'} color={C.green}  preview={isPreview} />
         <QuickLookTile label="Best Short"        coin={ql.bestShort?.coin??null}   sub={ql.bestShort?.thesisSummary??'No signal yet'} color={C.red}   preview={isPreview} />
-        <QuickLookTile label="Breakout Watch"    coin={ql.bestBreakout?.coin??null}sub={ql.bestBreakout?.thesisSummary??'No signal yet'} color={C.teal} preview={isPreview} />
-        <QuickLookTile label="Exhaustion Watch"  coin={ql.bestExhaust?.coin??null} sub={ql.bestExhaust?.thesisSummary??'No signal yet'} color={C.amber} preview={isPreview} />
+        <QuickLookTile label="Best Watch"        coin={ql.bestBreakout?.coin??null}sub={ql.bestBreakout?.thesisSummary??'No signal yet'} color={C.teal} preview={isPreview} />
+        <QuickLookTile label="Crowded / Avoid"   coin={ql.bestExhaust?.coin??null} sub={ql.bestExhaust?.thesisSummary??'No signal yet'} color={C.amber} preview={isPreview} />
         <div style={{ flex:1, padding:'8px 12px', display:'flex', flexDirection:'column', gap:3 }}>
           <span style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>Market Regime</span>
           <span style={{ fontSize:11, fontWeight:700, color:ql.regime?C.text:C.dimLow, lineHeight:1.2 }}>{ql.regime ?? '—'}</span>
@@ -878,23 +942,6 @@ function SignalBoard({ section, selectedCoin, onSelect, onChartOpen }: {
 
 // ─── Market Matrix ────────────────────────────────────────────────────────────
 type CK = keyof ScreenerRow;
-interface Col { key: CK; label: string; w: number; fmt: (v:any)=>string; vc?: (v:any)=>string; align?: 'left'|'right' }
-const MAT_COLS: Col[] = [
-  { key:'coin',            label:'COIN',    w:90,  fmt: v=>v??'—',                            align:'left' },
-  { key:'markPrice',       label:'MARK',    w:100, fmt: px },
-  { key:'change24hPct',    label:'24H%',    w:72,  fmt: pctD,  vc: pctC },
-  { key:'funding',         label:'FUND%',   w:80,  fmt: fmtF,  vc: fC },
-  { key:'openInterest',    label:'OI',      w:90,  fmt: $$ },
-  { key:'volume24h',       label:'VOL',     w:90,  fmt: $$ },
-  { key:'premium',         label:'PREMIUM %',      w:88,  fmt: fmtD,  vc: pctC },
-  { key:'distMarkOracle',  label:'MARK-ORACLE %',  w:104, fmt: fmtD,  vc: pctC },
-  { key:'bidAskImbalance', label:'BOOK IMBAL',     w:84,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
-  { key:'tradeImbalance',  label:'TRADE IMBAL',    w:88,  fmt: v=>v==null?'—':v.toFixed(3), vc: pctC },
-  { key:'volatility',      label:'VOL SCORE',      w:78,  fmt: sc,    vc: scC },
-  { key:'compositeSignal', label:'SIGNAL',          w:72,  fmt: sc,    vc: scC },
-  { key:'agentScore',      label:'AGENT SCORE',    w:88,  fmt: sc,    vc: scC },
-  { key:'agentRank',       label:'AGENT RANK',     w:84,  fmt: v=>v??'—' },
-];
 
 
 // ─── TSMOM Types ──────────────────────────────────────────────────────────────
@@ -1766,6 +1813,27 @@ interface MatrixAsset {
   agent_rank?: number | null;
   max_leverage?: number | null;
   is_active?: boolean;
+  // Signal-layer fields (snake_case from /market-matrix endpoint)
+  matrix_signal?: string | null;
+  matrix_reason?: string | null;
+  matrix_detail?: string | null;
+  opportunity_score?: number | null;
+  risk_score?: number | null;
+  risk_label?: string | null;
+  risk_reason?: string | null;
+  funding_label?: string | null;
+  funding_reason?: string | null;
+  flow_label?: string | null;
+  flow_reason?: string | null;
+  oi_delta_15m_pct?: number | null;
+  oi_delta_1h_pct?: number | null;
+  volume_velocity_15m?: number | null;
+  volume_velocity_1h?: number | null;
+  long_liq_15m?: number | null;
+  short_liq_15m?: number | null;
+  liquidation_bias_15m?: string | null;
+  liquidation_context?: string | null;
+  vol_oi_ratio?: number | null;
 }
 interface MatrixTab { label: string; count: number; assets: MatrixAsset[] }
 interface MatrixResponse {
@@ -1776,32 +1844,124 @@ interface MatrixResponse {
   warnings?: string[];
 }
 
-type MatrixKey = 'coin'|'mark'|'change_24h_pct'|'funding'|'open_interest_usd'|'volume_24h_usd'
-  |'premium_pct'|'mark_oracle_pct'|'book_imbalance'|'trade_imbalance'|'vol_score'|'signal'
-  |'agent_score'|'agent_rank';
 interface MatCol2 {
-  key: MatrixKey;
+  key: string;
   label: string;
   w: number;
-  fmt: (v: any) => string;
-  vc?: (v: any) => string;
+  sortVal: (row: any) => any;
+  render: (row: any) => ReactNode;
   align?: 'left' | 'right';
+  tooltip?: string;
 }
+
 const MATRIX_COLS: MatCol2[] = [
-  { key:'coin',              label:'COIN',           w:90,  fmt: v=>v??'—', align:'left' },
-  { key:'mark',              label:'MARK',           w:100, fmt: px },
-  { key:'change_24h_pct',    label:'24H %',          w:74,  fmt: v=>pct(v,2),                     vc: pctC },
-  { key:'funding',           label:'FUND %',         w:80,  fmt: fmtF,                             vc: fC },
-  { key:'open_interest_usd', label:'OI',             w:90,  fmt: $$ },
-  { key:'volume_24h_usd',    label:'VOL',            w:90,  fmt: $$ },
-  { key:'premium_pct',       label:'PREMIUM %',      w:88,  fmt: v=>pct(v,4),                     vc: pctC },
-  { key:'mark_oracle_pct',   label:'MARK-ORACLE %',  w:104, fmt: v=>pct(v,4),                     vc: pctC },
-  { key:'book_imbalance',    label:'BOOK IMBAL',     w:84,  fmt: v=>v==null?'—':Number(v).toFixed(3), vc: pctC },
-  { key:'trade_imbalance',   label:'TRADE IMBAL',    w:88,  fmt: v=>v==null?'—':Number(v).toFixed(3), vc: pctC },
-  { key:'vol_score',         label:'VOL SCORE',      w:78,  fmt: sc,                              vc: scC },
-  { key:'signal',            label:'SIGNAL',         w:72,  fmt: sc,                              vc: scC },
-  { key:'agent_score',       label:'AGENT SCORE',    w:88,  fmt: sc,                              vc: scC },
-  { key:'agent_rank',        label:'AGENT RANK',     w:84,  fmt: v=>v??'—' },
+  {
+    key:'coin', label:'COIN', w:90, align:'left',
+    sortVal: r => (r.coin ?? r.display_name ?? r.displayName ?? '').toLowerCase(),
+    render:  r => <span style={{ fontWeight:700, color:C.text, fontFamily:C.font }}>{r.coin ?? r.display_name ?? r.displayName ?? '—'}</span>,
+  },
+  {
+    key:'mark', label:'MARK', w:96,
+    sortVal: r => r.mark ?? r.markPrice ?? null,
+    render:  r => <span style={{ color:C.text }}>{px(r.mark ?? r.markPrice ?? null)}</span>,
+  },
+  {
+    key:'change_24h_pct', label:'24H %', w:72,
+    sortVal: r => r.change_24h_pct ?? r.change24hPct ?? null,
+    render:  r => { const v = r.change_24h_pct ?? r.change24hPct ?? null; return <span style={{ color:pctC(v) }}>{pct(v,2)}</span>; },
+  },
+  {
+    key:'oi_delta', label:'OI Δ', w:72,
+    tooltip: 'Open interest change over recent rolling snapshot window.',
+    sortVal: r => getOiDelta(r) ?? -Infinity,
+    render:  r => {
+      const v = getOiDelta(r);
+      if (v == null) return <span style={{ color:C.dimLow, fontSize:8 }}>warming</span>;
+      return <span style={{ color: v > 0 ? C.green : v < 0 ? C.red : C.dim }}>{v >= 0 ? '+' : ''}{v.toFixed(1)}%</span>;
+    },
+  },
+  {
+    key:'vol_velocity', label:'Vol Vel', w:66,
+    tooltip: 'Recent volume vs expected baseline.',
+    sortVal: r => getVolVelocity(r) ?? -Infinity,
+    render:  r => {
+      const v = getVolVelocity(r);
+      if (v == null) return <span style={{ color:C.dimLow, fontSize:8 }}>warming</span>;
+      const col = v >= 2.0 ? C.green : v >= 1.2 ? C.teal : v < 0.8 ? C.dim : C.text;
+      return <span style={{ color:col }}>{v.toFixed(1)}x</span>;
+    },
+  },
+  {
+    key:'funding_label', label:'Funding', w:84,
+    sortVal: r => getFundingLabel(r),
+    render:  r => {
+      const label = getFundingLabel(r);
+      const reason = getFundingReason(r);
+      if (label === '—') return <span style={{ color:C.dim }}>—</span>;
+      const col = label === 'Cheap' ? C.green : (label === 'Hot' || label === 'Extreme' || label === 'Dislocated') ? C.red : label === 'Shorts Paying' ? C.amber : C.text;
+      return <span title={reason||undefined} style={{ fontSize:8, color:col, background:`${col}14`, border:`1px solid ${col}30`, borderRadius:3, padding:'1px 5px', whiteSpace:'nowrap' }}>{label}</span>;
+    },
+  },
+  {
+    key:'flow_label', label:'Flow', w:76,
+    sortVal: r => getFlowLabel(r),
+    render:  r => {
+      const label = getFlowLabel(r);
+      const reason = getFlowReason(r);
+      if (label === '—') return <span style={{ color:C.dim }}>—</span>;
+      const col = (label === 'Buying' || label === 'Building') ? C.green : (label === 'Selling' || label === 'Flush') ? C.red : label === 'Squeeze' ? C.amber : C.text;
+      return <span title={reason||undefined} style={{ fontSize:8, color:col, background:`${col}14`, border:`1px solid ${col}30`, borderRadius:3, padding:'1px 5px', whiteSpace:'nowrap' }}>{label}</span>;
+    },
+  },
+  {
+    key:'matrix_signal', label:'SIGNAL', w:104,
+    sortVal: r => getMatrixSignal(r),
+    render:  r => {
+      const sig    = getMatrixSignal(r);
+      const reason = getMatrixReason(r);
+      const detail = getMatrixDetail(r);
+      const col    = sigColor(sig);
+      const tip    = [reason, detail].filter(Boolean).join(' · ') || undefined;
+      return (
+        <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+          <span title={tip} style={{ fontSize:8.5, fontWeight:800, color:col, background:`${col}18`, border:`1px solid ${col}44`, borderRadius:3, padding:'1px 6px', display:'inline-block', letterSpacing:0.5, textTransform:'uppercase', whiteSpace:'nowrap' }}>{sig}</span>
+          {reason && <span style={{ fontSize:7, color:C.dim, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:96 }}>{reason}</span>}
+        </div>
+      );
+    },
+  },
+  {
+    key:'risk', label:'Risk', w:84,
+    sortVal: r => getRiskScore(r) ?? 0,
+    render:  r => {
+      const label  = getRiskLabel(r);
+      const score  = getRiskScore(r);
+      const reason = getRiskReason(r);
+      if (label === '—' && score == null) return <span style={{ color:C.dim }}>—</span>;
+      const col = riskLabelColor(label);
+      return <span title={reason||undefined} style={{ fontSize:8, color:col, background:`${col}14`, border:`1px solid ${col}30`, borderRadius:3, padding:'1px 5px', whiteSpace:'nowrap' }}>{label}{score != null ? ` ${score.toFixed(2)}` : ''}</span>;
+    },
+  },
+  {
+    key:'opportunity_score', label:'SCORE', w:90,
+    sortVal: r => getOpportunityScore(r),
+    render:  r => {
+      const v = getOpportunityScore(r);
+      return (
+        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+          <div style={{ width:32, height:3, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+            <div style={{ height:'100%', width:`${Math.min(100,(v??0)*100)}%`, background:`linear-gradient(90deg,${C.teal},${C.purple})`, borderRadius:2 }} />
+          </div>
+          <span style={{ fontSize:8.5, fontFamily:C.font, color:C.purple }}>{v != null ? v.toFixed(2) : '—'}</span>
+        </div>
+      );
+    },
+  },
+  {
+    key:'agent_rank', label:'RANK', w:52,
+    sortVal: r => r.agent_rank ?? r.agentRank ?? 9999,
+    render:  r => <span style={{ color:C.dim }}>{r.agent_rank ?? r.agentRank ?? '—'}</span>,
+  },
 ];
 
 const MATRIX_TAB_ORDER: string[] = ['all', 'stocks_etfs', 'crypto', 'commodities', 'indices', 'pre_ipo', 'themes'];
@@ -2023,10 +2183,9 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
 
 function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbackRows: ScreenerRow[] }) {
   const [activeTab, setActiveTab] = useState<string>('all');
-  const [sortKey, setSortKey]     = useState<MatrixKey>('agent_score');
+  const [sortKey, setSortKey]     = useState<string>('opportunity_score');
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc');
-  const [fbSortKey, setFbSortKey] = useState<CK>('agentScore');
-  const [fbSortDir, setFbSortDir] = useState<'asc'|'desc'>('desc');
+  const [sigFilter, setSigFilter] = useState<string>('all');
   const [showMatrix] = useState(true);
   const [matrixChart, setMatrixChart] = useState<{ asset: MatrixAsset; tab: string } | null>(null);
 
@@ -2067,17 +2226,20 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 
   const filteredTabbed = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return assets;
-    return assets.filter(a =>
+    let result = assets;
+    if (q) result = result.filter(a =>
       (a.coin ?? '').toLowerCase().includes(q) ||
       (a.display_name ?? '').toLowerCase().includes(q)
     );
-  }, [assets, search]);
+    if (sigFilter !== 'all') result = result.filter(a => getMatrixSignal(a) === sigFilter);
+    return result;
+  }, [assets, search, sigFilter]);
 
   const sortedTabbed = useMemo(() => {
+    const col = MATRIX_COLS.find(c => c.key === sortKey);
+    const getSV = col?.sortVal ?? ((row: any) => (row as any)[sortKey]);
     const cmp = (a: MatrixAsset, b: MatrixAsset) => {
-      const av: any = (a as any)[sortKey];
-      const bv: any = (b as any)[sortKey];
+      const av = getSV(a), bv = getSV(b);
       if (av == null && bv == null) return 0;
       if (av == null) return 1;
       if (bv == null) return -1;
@@ -2087,12 +2249,9 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
     return [...filteredTabbed].sort(cmp);
   }, [filteredTabbed, sortKey, sortDir]);
 
-  const handleSort = useCallback((key: MatrixKey) => {
+  const handleSort = useCallback((key: string) => {
     setSortKey(prev => {
-      if (prev === key) {
-        setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-        return key;
-      }
+      if (prev === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return key; }
       setSortDir(key === 'coin' ? 'asc' : 'desc');
       return key;
     });
@@ -2121,36 +2280,28 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   const fallbackFiltered = useMemo(() => {
     const rows = activeTab === 'all' ? fallbackRows : (fallbackByTab[activeTab] ?? []);
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(r =>
+    let result = rows;
+    if (q) result = result.filter(r =>
       (r.coin ?? '').toLowerCase().includes(q) ||
       (r.displayName ?? '').toLowerCase().includes(q)
     );
-  }, [fallbackByTab, fallbackRows, activeTab, search]);
+    if (sigFilter !== 'all') result = result.filter(r => getMatrixSignal(r) === sigFilter);
+    return result;
+  }, [fallbackByTab, fallbackRows, activeTab, search, sigFilter]);
 
   const sortedFallback = useMemo(() => {
+    const col = MATRIX_COLS.find(c => c.key === sortKey);
+    const getSV = col?.sortVal ?? ((row: any) => (row as any)[sortKey]);
     const cmp = (a: ScreenerRow, b: ScreenerRow) => {
-      const av: any = (a as any)[fbSortKey];
-      const bv: any = (b as any)[fbSortKey];
+      const av = getSV(a), bv = getSV(b);
       if (av == null && bv == null) return 0;
       if (av == null) return 1;
       if (bv == null) return -1;
       const d = av < bv ? -1 : av > bv ? 1 : 0;
-      return fbSortDir === 'asc' ? d : -d;
+      return sortDir === 'asc' ? d : -d;
     };
     return [...fallbackFiltered].sort(cmp);
-  }, [fallbackFiltered, fbSortKey, fbSortDir]);
-
-  const handleFbSort = useCallback((key: CK) => {
-    setFbSortKey(prev => {
-      if (prev === key) {
-        setFbSortDir(d => d === 'asc' ? 'desc' : 'asc');
-        return key;
-      }
-      setFbSortDir(key === 'coin' ? 'asc' : 'desc');
-      return key;
-    });
-  }, []);
+  }, [fallbackFiltered, sortKey, sortDir]);
 
   const totalCount = useTabbed
     ? (data?.all_assets_count ?? Object.values(tabs).reduce((sum, t) => sum + (t?.count ?? 0), 0))
@@ -2204,6 +2355,25 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
       </div>
       {showMatrix && (
         <>
+          {/* ── Signal filter chips ── */}
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 10px', background:C.card2, borderBottom:`1px solid ${C.dimLow}`, flexWrap:'wrap' }}>
+            <span style={{ fontSize:7.5, color:C.dim, letterSpacing:1, textTransform:'uppercase', flexShrink:0 }}>Signal</span>
+            {(['all','LONG','SHORT','WATCH','CROWDED','AVOID'] as const).map(sig => {
+              const isActive = sigFilter === sig;
+              const chipCol  = sig === 'all' ? C.teal : sigColor(sig);
+              return (
+                <button key={sig} onClick={() => setSigFilter(sig)}
+                  style={{ fontSize:8, fontWeight:700, padding:'2px 9px', borderRadius:3, cursor:'pointer',
+                    fontFamily:C.font, letterSpacing:0.5, textTransform:'uppercase',
+                    background: isActive ? `${chipCol}22` : 'transparent',
+                    color: isActive ? chipCol : C.dim,
+                    border: `1px solid ${isActive ? chipCol : C.dimLow}`,
+                  }}>
+                  {sig === 'all' ? 'All Signals' : sig}
+                </button>
+              );
+            })}
+          </div>
           {useTabbed ? (
             <>
               {/* ── Tabbed Table ── */}
@@ -2234,17 +2404,12 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedTabbed.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: currentKey })} style={{ background:rowBg, height:26, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
-                            {MATRIX_COLS.map(col => {
-                              const v = (row as any)[col.key];
-                              const txt = col.fmt(v);
-                              const clr = col.vc ? col.vc(v) : C.text;
-                              return (
-                                <td key={col.key} style={{ padding:'0 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, color:col.key==='coin'?C.text:clr, fontWeight:col.key==='coin'?700:400, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}` }}>
-                                  {col.key === 'coin' ? (row.coin ?? row.display_name ?? '—') : txt}
-                                </td>
-                              );
-                            })}
+                          <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: currentKey })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
+                            {MATRIX_COLS.map(col => (
+                              <td key={col.key} style={{ padding:'3px 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'top' }}>
+                                {col.render(row)}
+                              </td>
+                            ))}
                           </tr>
                         );
                       })}
@@ -2267,14 +2432,14 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                   <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
                     <thead>
                       <tr style={{ background:'#060b14', position:'sticky', top:0, zIndex:10 }}>
-                        {MAT_COLS.map(col => {
-                          const isSorted = fbSortKey === col.key;
+                        {MATRIX_COLS.map(col => {
+                          const isSorted = sortKey === col.key;
                           return (
-                            <th key={String(col.key)} onClick={() => handleFbSort(col.key)}
+                            <th key={String(col.key)} onClick={() => handleSort(col.key)}
                               style={{ width:col.w, minWidth:col.w, padding:'4px 7px', borderBottom:`1px solid ${C.border}`, borderRight:`1px solid ${C.dimLow}`, textAlign:col.align??'right', cursor:'pointer', userSelect:'none', background:isSorted?`${C.teal}12`:'transparent', whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', zIndex:col.key==='coin'?5:'auto' }}>
                               <div style={{ display:'flex', alignItems:'center', justifyContent:col.align==='left'?'flex-start':'flex-end', gap:2 }}>
                                 <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:isSorted?C.teal:C.dim }}>{col.label}</span>
-                                {isSorted ? (fbSortDir==='asc'?<ChevronUp style={{ width:8,height:8,color:C.teal }} />:<ChevronDown style={{ width:8,height:8,color:C.teal }} />) : <ChevronsUpDown style={{ width:8,height:8,color:C.dimLow }} />}
+                                {isSorted ? (sortDir==='asc'?<ChevronUp style={{ width:8,height:8,color:C.teal }} />:<ChevronDown style={{ width:8,height:8,color:C.teal }} />) : <ChevronsUpDown style={{ width:8,height:8,color:C.dimLow }} />}
                               </div>
                             </th>
                           );
@@ -2285,17 +2450,12 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedFallback.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h }, tab: activeTab })} style={{ background:rowBg, height:26, borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
-                            {MAT_COLS.map(col => {
-                              const v = (row as any)[col.key];
-                              const txt = col.fmt(v);
-                              const clr = col.vc ? col.vc(v) : C.text;
-                              return (
-                                <td key={String(col.key)} style={{ padding:'0 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, color:col.key==='coin'?C.text:clr, fontWeight:col.key==='coin'?700:400, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}` }}>
-                                  {txt}
-                                </td>
-                              );
-                            })}
+                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h } as MatrixAsset, tab: activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
+                            {MATRIX_COLS.map(col => (
+                              <td key={String(col.key)} style={{ padding:'3px 7px', textAlign:col.align??'right', fontFamily:C.font, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'top' }}>
+                                {col.render(row)}
+                              </td>
+                            ))}
                           </tr>
                         );
                       })}
