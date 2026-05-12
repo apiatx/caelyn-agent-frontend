@@ -1,0 +1,136 @@
+Fix the Calendar Earnings toggle on the frontend.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Important clarification:
+We are NOT adding previous earnings results, EPS beats/misses, revenue beats/misses, or historical earnings display right now.
+
+Goal:
+Make the Earnings Calendar scope toggle actually work for forward-looking upcoming earnings only.
+
+Backend status:
+The backend now supports symbol-driven earnings for:
+- scope=all
+- scope=watchlist
+- scope=portfolio
+
+Expected frontend behavior:
+- All tab: show broad upcoming earnings calendar.
+- Watchlist tab: show upcoming earnings only for symbols saved in the user’s Watchlist.
+- Portfolio tab: show upcoming earnings only for symbols saved in the user’s Portfolio.
+
+Do not client-filter the All earnings payload.
+The backend owns the watchlist/portfolio symbol mapping.
+
+Required changes:
+
+1. Find the Calendar / Catalyst Calendar Earnings component.
+
+2. Find the All / Watchlist / Portfolio toggle state.
+
+3. Map toggle values to backend scope values:
+- All → scope=all
+- Watchlist → scope=watchlist
+- Portfolio → scope=portfolio
+
+4. Add scope to the earnings API request.
+
+Example:
+Current/broken:
+  /api/catalysts/events?tab=earnings_dates&mode=upcoming
+
+Fixed:
+  /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=all
+  /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=watchlist
+  /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=portfolio
+
+Preserve any existing params for date range, mode, search, etc. Just add scope.
+
+5. Update React Query queryKey so each scope has its own cache.
+
+Bad:
+  queryKey: ["calendar-events", tab, mode, dateRange]
+
+Good:
+  queryKey: ["calendar-events", tab, mode, dateRange, selectedScope]
+
+This is critical. If selectedScope is not in the queryKey, React Query may keep serving the cached All data for Watchlist/Portfolio.
+
+6. Switching tabs should refetch or load the correct scoped query.
+When clicking Watchlist:
+- selectedScope becomes "watchlist"
+- request includes scope=watchlist
+- visible events come only from backend watchlist response
+
+When clicking Portfolio:
+- selectedScope becomes "portfolio"
+- request includes scope=portfolio
+- visible events come only from backend portfolio response
+
+7. Do not fall back to All results.
+If Watchlist or Portfolio returns empty, show an empty state.
+
+Empty state copy:
+- Watchlist: "No upcoming earnings found for your watchlist."
+- Portfolio: "No upcoming earnings found for your portfolio."
+
+8. Preserve existing date controls:
+- Recent
+- Day
+- Week
+- Month
+
+Changing date range should keep the selected scope.
+
+Example:
+Watchlist + Week should request:
+  scope=watchlist
+
+Portfolio + Month should request:
+  scope=portfolio
+
+9. Preserve search behavior.
+Search should filter only within the currently selected scope.
+Searching should not reset scope to All.
+
+10. Loading behavior:
+When switching All / Watchlist / Portfolio, do not leave All data displayed as if it is Watchlist/Portfolio data.
+
+Either:
+- show a loading/skeleton state while the scoped query loads, or
+- clearly mark the data as refreshing.
+
+Prefer not to use stale All data as placeholder for Watchlist/Portfolio.
+
+11. Display only forward-looking earnings fields currently returned by backend, such as:
+- symbol
+- companyName
+- earningsDate / nextEarningsDate
+- reportTime
+- epsEstimate if already included
+- revenueEstimate if already included
+
+Use "—" for missing values.
+Do not add UI for:
+- previous earnings
+- EPS actual
+- EPS beat/miss
+- revenue actual
+- revenue beat/miss
+
+12. Network validation:
+Open browser devtools and click each toggle.
+
+Expected:
+- All sends scope=all
+- Watchlist sends scope=watchlist
+- Portfolio sends scope=portfolio
+
+Visible ticker validation:
+- All can show broad market earnings.
+- Watchlist only shows saved Watchlist symbols.
+- Portfolio only shows saved Portfolio symbols.
+
+Hard rule:
+The frontend should never build Watchlist/Portfolio earnings by filtering the broad All response. It should pass scope to the backend and render the returned scoped upcoming earnings.

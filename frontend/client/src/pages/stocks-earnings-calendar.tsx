@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { usePageContext } from "@/contexts/PageContextContext";
-import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -1064,6 +1064,7 @@ function WeeklyEarningsBoard({
   identityMap,
   onNavigate,
   hideNav,
+  scope,
 }: {
   weekStart: Date;
   weekData: WeekCleanResponse | null;
@@ -1072,6 +1073,7 @@ function WeeklyEarningsBoard({
   identityMap: Record<string, IdentityData>;
   onNavigate: (delta: -1 | 0 | 1) => void;
   hideNav?: boolean;
+  scope?: string;
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
   const todayKey = dateKey(new Date());
@@ -1238,6 +1240,26 @@ function WeeklyEarningsBoard({
         <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.05] mb-4">
           <AlertCircle className="w-4 h-4 text-rose-400/60 flex-shrink-0" />
           <p className="text-[11px] text-rose-400/70">{weekError}</p>
+        </div>
+      )}
+
+      {/* ── Loading state ────────────────────────────────────── */}
+      {weekLoading && !weekError && (
+        <div className="text-center py-12">
+          <Loader2 className="w-5 h-5 text-blue-400/40 mx-auto mb-2 animate-spin" />
+          <p className="text-[11px] text-white/25">Loading earnings...</p>
+        </div>
+      )}
+
+      {/* ── Scope empty state ─────────────────────────────────── */}
+      {!weekLoading && !weekError && totalCalls === 0 && scope && scope !== "all" && (
+        <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+          <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+          <p className="text-sm text-white/25">
+            {scope === "watchlist"
+              ? "No upcoming earnings found for your watchlist."
+              : "No upcoming earnings found for your portfolio."}
+          </p>
         </div>
       )}
 
@@ -4563,10 +4585,12 @@ function WeekAllList({
   weekData,
   weekLoading,
   identityMap,
+  scope,
 }: {
   weekData: WeekAllResponse | null;
   weekLoading: boolean;
   identityMap: Record<string, IdentityData>;
+  scope?: string;
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
 
@@ -4586,7 +4610,13 @@ function WeekAllList({
     return (
       <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
         <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
-        <p className="text-sm text-white/25">No earnings data for this week</p>
+        <p className="text-sm text-white/25">
+          {scope === "watchlist"
+            ? "No upcoming earnings found for your watchlist."
+            : scope === "portfolio"
+            ? "No upcoming earnings found for your portfolio."
+            : "No earnings data for this week"}
+        </p>
       </div>
     );
   }
@@ -4679,6 +4709,7 @@ function MonthAllGrid({
   identityMap,
   onNavigateMonth,
   onSelectDate,
+  scope,
 }: {
   data: MonthAllResponse | null;
   loading: boolean;
@@ -4687,6 +4718,7 @@ function MonthAllGrid({
   identityMap: Record<string, IdentityData>;
   onNavigateMonth: (delta: number) => void;
   onSelectDate: (dateStr: string) => void;
+  scope?: string;
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
 
@@ -4720,6 +4752,20 @@ function MonthAllGrid({
       <div className="text-center py-12">
         <Loader2 className="w-5 h-5 text-indigo-400/40 mx-auto mb-2 animate-spin" />
         <p className="text-[11px] text-white/25">Loading all earnings for month...</p>
+      </div>
+    );
+  }
+
+  const totalMonthAllCount = (data?.days || []).reduce((s: number, d: any) => s + (d.count ?? 0), 0);
+  if (data && totalMonthAllCount === 0 && scope && scope !== "all") {
+    return (
+      <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+        <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+        <p className="text-sm text-white/25">
+          {scope === "watchlist"
+            ? "No upcoming earnings found for your watchlist."
+            : "No upcoming earnings found for your portfolio."}
+        </p>
       </div>
     );
   }
@@ -4815,6 +4861,7 @@ function MonthCuratedGrid({
   identityMap,
   onNavigateMonth,
   onSelectDate,
+  scope,
 }: {
   data: MonthCuratedResponse | null;
   loading: boolean;
@@ -4823,6 +4870,7 @@ function MonthCuratedGrid({
   identityMap: Record<string, IdentityData>;
   onNavigateMonth: (delta: number) => void;
   onSelectDate: (dateStr: string) => void;
+  scope?: string;
 }) {
   const [modalEntry, setModalEntry] = useState<EarningsEntry | null>(null);
 
@@ -4862,6 +4910,20 @@ function MonthCuratedGrid({
       <div className="text-center py-12">
         <Loader2 className="w-5 h-5 text-purple-400/40 mx-auto mb-2 animate-spin" />
         <p className="text-[11px] text-white/25">Loading curated month...</p>
+      </div>
+    );
+  }
+
+  const totalMonthCuratedCount = (data?.days || []).reduce((s: number, d: any) => s + (d.count ?? 0), 0);
+  if (data && totalMonthCuratedCount === 0 && scope && scope !== "all") {
+    return (
+      <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+        <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+        <p className="text-sm text-white/25">
+          {scope === "watchlist"
+            ? "No upcoming earnings found for your watchlist."
+            : "No upcoming earnings found for your portfolio."}
+        </p>
       </div>
     );
   }
@@ -6652,7 +6714,8 @@ export default function StocksEarningsCalendarPage() {
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    placeholderData: (prev: any, prevQuery: any) =>
+      prevQuery?.queryKey?.[3] === scope ? prev : undefined,
   });
   const weekCleanError = _weekCleanErr ? "Could not load curated earnings for this week." : null;
   // Enrich tickers when week-clean data arrives
@@ -6681,7 +6744,8 @@ export default function StocksEarningsCalendarPage() {
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    placeholderData: (prev: any, prevQuery: any) =>
+      prevQuery?.queryKey?.[3] === scope ? prev : undefined,
   });
 
   // ── Month Curated state ───────────────────────────────────────────
@@ -6706,7 +6770,8 @@ export default function StocksEarningsCalendarPage() {
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    placeholderData: (prev: any, prevQuery: any) =>
+      prevQuery?.queryKey?.[3] === scope ? prev : undefined,
   });
 
   const navigateMonthCurated = useCallback((delta: number) => {
@@ -6741,7 +6806,8 @@ export default function StocksEarningsCalendarPage() {
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
-    placeholderData: keepPreviousData,
+    placeholderData: (prev: any, prevQuery: any) =>
+      prevQuery?.queryKey?.[3] === scope ? prev : undefined,
   });
 
   // ── Earnings tab state ───────────────────────────────────────────
@@ -7079,6 +7145,7 @@ export default function StocksEarningsCalendarPage() {
               identityMap={identityMap}
               onNavigate={navigateWeekClean}
               hideNav
+              scope={scope}
             />
           ) : isEarningsTab && earningsMode === "thisweek" && earningsSignalMode === "all" ? (
             /* ── Week · All — full grouped list ────────────────── */
@@ -7086,6 +7153,7 @@ export default function StocksEarningsCalendarPage() {
               weekData={weekAllData}
               weekLoading={weekAllLoading}
               identityMap={identityMap}
+              scope={scope}
             />
           ) : isEarningsTab && earningsMode === "upcoming" ? (
             /* ── Day — calendar widget (Curated or All via prop) ── */
@@ -7144,6 +7212,7 @@ export default function StocksEarningsCalendarPage() {
                 setEarningsSignalMode("curated");
                 setEarningsJumpDate(dateStr);
               }}
+              scope={scope}
             />
           ) : isEarningsTab && earningsMode === "month" && earningsSignalMode === "all" ? (
             /* ── Month · All — month-all endpoint ───────────────── */
@@ -7160,6 +7229,7 @@ export default function StocksEarningsCalendarPage() {
                 setEarningsSignalMode("curated");
                 setEarningsJumpDate(dateStr);
               }}
+              scope={scope}
             />
           ) : (
             /* ── All other tabs — snapshot calendar (Day/Week/Month +

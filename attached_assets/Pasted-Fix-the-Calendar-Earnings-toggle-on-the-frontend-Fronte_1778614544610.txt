@@ -1,0 +1,137 @@
+Fix the Calendar Earnings toggle on the frontend.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Backend is already updated:
+- scope=all uses the broad earnings calendar
+- scope=watchlist uses the user’s saved Watchlist symbols from Neon
+- scope=portfolio uses the user’s saved Portfolio symbols from Neon
+- Watchlist/Portfolio are now symbol-driven and cached in user_earnings_cache
+- Backend validation showed:
+  - scope=all returns broad calendar
+  - scope=watchlist returns only watchlist symbols
+  - scope=portfolio returns only portfolio symbols
+  - second request cache hits use 0 FMP calls
+
+Current frontend issue:
+The All / Watchlist / Portfolio toggle visually changes, but the data still behaves like All.
+
+Required frontend fix:
+
+1. Find the Calendar / Catalyst Calendar Earnings component.
+
+2. Find the state for the top earnings universe toggle:
+   - All
+   - Watchlist
+   - Portfolio
+
+3. Map the toggle values to backend scope values exactly:
+   - All → scope=all
+   - Watchlist → scope=watchlist
+   - Portfolio → scope=portfolio
+
+4. Update the earnings API request.
+
+Current broken pattern is likely something like:
+   /api/catalysts/events?tab=earnings_dates&mode=upcoming
+
+Fix it to include scope:
+   /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=all
+   /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=watchlist
+   /api/catalysts/events?tab=earnings_dates&mode=upcoming&scope=portfolio
+
+If the existing endpoint uses different params for date range/view, preserve them. Just add scope.
+
+5. Update the React Query queryKey.
+
+Bad:
+   queryKey: ["calendar-events", tab, mode, dateRange]
+
+Good:
+   queryKey: ["calendar-events", tab, mode, dateRange, selectedScope]
+
+The selected scope MUST be in the query key, otherwise React Query will keep serving cached All data for Watchlist/Portfolio.
+
+6. When the user clicks Watchlist or Portfolio:
+   - update selectedScope
+   - trigger/refetch the query for that scope
+   - do not client-filter the All response
+   - do not fall back to All results if Watchlist/Portfolio is empty
+
+7. Preserve existing date controls:
+   - Recent
+   - Day
+   - Week
+   - Month
+
+Changing Recent/Day/Week/Month should keep the current selected scope.
+
+Example:
+If user is on Watchlist + Week, the request should still include:
+   scope=watchlist
+
+8. Preserve search behavior:
+Search should filter within the currently selected scope only.
+Searching should not reset scope to All.
+
+9. Loading behavior:
+When switching between All / Watchlist / Portfolio, show loading/skeleton or keep previous data only if it is clearly loading.
+Do not leave All tickers on screen as if they are Watchlist results.
+
+Prefer:
+   placeholderData: undefined
+or make sure the UI indicates loading while the new scoped query runs.
+
+10. Empty states:
+If Watchlist returns no events:
+   "No upcoming earnings found for your watchlist."
+
+If Portfolio returns no events:
+   "No upcoming earnings found for your portfolio."
+
+Do not show All events as a fallback.
+
+11. Render fields safely.
+The backend may return enriched earnings fields. Display them if available:
+   - symbol
+   - companyName
+   - nextEarningsDate
+   - nextReportTime / reportTime
+   - lastEarningsDate
+   - epsEstimate
+   - epsActual
+   - epsBeatMiss / beatMissLabel
+   - revenueEstimate
+   - revenueActual
+   - revenueBeatMiss
+
+Use "—" for null, missing, or undefined values.
+
+12. Keep the UI simple.
+For each earnings card/row, prioritize:
+   - ticker/company
+   - next earnings date/report time
+   - last earnings result
+   - EPS actual vs estimate
+   - revenue actual vs estimate
+   - beat/miss labels
+
+Do not redesign the whole Calendar page.
+
+13. Devtools validation:
+Open Network tab and click each toggle.
+
+Expected:
+- All sends scope=all
+- Watchlist sends scope=watchlist
+- Portfolio sends scope=portfolio
+
+Then verify visible tickers:
+- All can show broad market earnings
+- Watchlist shows only saved Watchlist symbols
+- Portfolio shows only saved Portfolio symbols
+
+Hard rule:
+The frontend should never build Watchlist/Portfolio earnings by filtering the broad All payload.
+The backend now owns the symbol-driven logic. Frontend only passes scope and renders the returned data.
