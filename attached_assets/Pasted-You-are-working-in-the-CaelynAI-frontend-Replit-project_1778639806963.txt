@@ -1,0 +1,166 @@
+You are working in the CaelynAI frontend Replit project.
+
+Goal:
+Clean up the Hyperliquid page layout and remove wasted space/duplicates in the Agent Market Brief area.
+
+Do NOT rebuild the page.
+Do NOT change backend logic.
+Do NOT remove existing cards/modules.
+Do NOT change API endpoint selection unless required to use an already-existing deduped payload.
+Do NOT worry about Git.
+
+Current visible issues:
+1. The text block:
+   “Agent Market Brief”
+   “Live interpretation of the strongest Hyperliquid setups — press Agent above to refresh”
+   wastes vertical space and should be removed.
+
+2. The “agent analysis” / ranked top setup list has duplicate assets, e.g. SILVER appears multiple times. Backend should dedupe too, but frontend should defensively dedupe by canonical coin before rendering.
+
+3. The Market Matrix screener should move higher on the page. It should appear directly below the Agent Market Brief summary section and above the row containing:
+   - Relative Strength Leaders
+   - Order Book Pressure
+   - OI Regime Shift
+   - OI Cap Risk
+
+This is a layout/presentation cleanup, not a signal-engine rewrite.
+
+Tasks:
+
+1. Remove wasted Agent Market Brief title/subtitle copy
+Find the Hyperliquid page component rendering:
+
+“Agent Market Brief”
+“Live interpretation of the strongest Hyperliquid setups — press Agent above to refresh”
+
+Remove that text block entirely.
+
+Important:
+- Do not remove the actual brief content/cards.
+- Keep the summary cards such as Best Long, Best Short, Best Watch, Crowded/Avoid, Market Regime.
+- Keep the ranked analysis/list itself.
+- Just remove the title/subtitle row that is wasting space.
+
+2. Rename/clarify if needed
+If any visible label says “agent” for a section that is not actually an LLM agent, avoid adding more “agent” language.
+
+Do not do a full rename unless easy and safe.
+Acceptable labels:
+- Market Brief
+- Signal Brief
+- Setup Brief
+- Ranked Setups
+
+But the main requirement is removing the wasted header/subtitle text.
+
+3. Frontend defensive dedupe for ranked analysis
+Before rendering the ranked “agent analysis” / top setup list, dedupe rows by canonical coin.
+
+Canonical key:
+- row.coin || row.symbol || row.asset || row.name
+- uppercase
+- trim whitespace
+
+Keep the strongest row per canonical coin using:
+1. highest opportunityScore / opportunity_score
+2. fallback highest agentScore / agent_score / compositeScore / overallScore / score
+3. fallback highest volume or OI if available
+4. fallback first row
+
+Apply this dedupe before rendering:
+- preview/top 10 ranked list
+- trade now
+- watch breakout
+- watch collapse
+- avoid
+- any top long/top short/top watch mini-list if derived in frontend
+
+This is defensive only. Backend should also dedupe, but frontend should not display duplicates even if backend misses one.
+
+4. Move Market Matrix higher
+Reorder the Hyperliquid page layout so the Market Matrix screener appears directly below the Agent Market Brief summary area.
+
+Desired top-to-bottom layout:
+
+A. Header/top ticker strip/search/chips
+B. Agent/Signal Brief summary cards:
+   - Best Long
+   - Best Short
+   - Best Watch
+   - Crowded/Avoid
+   - Market Regime
+   - ranked setup preview/list if currently part of this section
+C. Market Matrix screener
+D. Row of supporting cards:
+   - Relative Strength Leaders
+   - Order Book Pressure
+   - OI Regime Shift
+   - OI Cap Risk
+E. Time-Series Momentum
+F. Lower cards:
+   - Top Gainers
+   - Top Losers
+   - High Funding
+   - Negative Funding
+   - OI Leaders
+   - Volume Leaders
+   - Breakout Watch
+   - Mark/Oracle Gap
+   - Vol Impulse
+   - Short Squeeze
+   - etc.
+
+Important:
+- Market Matrix should no longer sit below Relative Strength / Order Book / OI Regime / OI Cap Risk.
+- Market Matrix should be one of the first actionable things visible after the brief.
+
+5. Preserve current Market Matrix columns and behavior
+Do not undo the recent Market Matrix frontend cleanup.
+
+Keep:
+- dense rows
+- raw OI
+- raw Vol
+- OI Δ
+- Vol Vel
+- Funding
+- Premium
+- Mark/Oracle
+- Book
+- Flow
+- Signal
+- Risk
+- Score
+- Rank
+- category tabs
+- signal filters
+- sorting
+- search
+- selected asset detail panel
+
+6. Reduce vertical waste
+After removing the title/subtitle, tighten spacing around the brief section.
+
+Do not make it cramped, but reduce unnecessary empty header height.
+
+7. Validation
+After changes:
+- The “Agent Market Brief” title/subtitle copy is gone.
+- Brief cards still render.
+- Ranked setup list still renders.
+- SILVER or any other asset does not appear multiple times in the ranked analysis list.
+- Market Matrix appears directly below the brief section.
+- Relative Strength Leaders / Order Book Pressure / OI Regime Shift / OI Cap Risk appear below Market Matrix.
+- Market Matrix columns and sorting still work.
+- Category tabs still work.
+- Signal filters still work.
+- Search still works.
+- Selected asset detail panel still updates on row click.
+- No layout overflow/regression on desktop.
+
+Report back:
+- files changed
+- components touched
+- final page order
+- dedupe helper added/used
+- validation result showing ranked list has unique coins

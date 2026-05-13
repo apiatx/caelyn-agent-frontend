@@ -769,23 +769,37 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
     };
   }, [briefing, rows]);
 
+  // Dedupe ranked ideas by canonical coin — keeps highest-scoring row per coin
+  const dedupeIdeas = (arr: BriefingIdea[]): BriefingIdea[] => {
+    const seen = new Map<string, BriefingIdea>();
+    for (const idea of arr) {
+      const key = ((idea as any).coin || (idea as any).symbol || (idea as any).asset || (idea as any).name || '').toUpperCase().trim();
+      if (!key) continue;
+      const existing = seen.get(key);
+      if (!existing || idea.score > existing.score) seen.set(key, idea);
+    }
+    return [...seen.values()];
+  };
+
   // Derive ranked ideas
   const ideas: BriefingIdea[] = useMemo(() => {
-    if (briefing?.actionableIdeas.length) return briefing.actionableIdeas.slice(0,10);
+    if (briefing?.actionableIdeas.length) return dedupeIdeas(briefing.actionableIdeas).slice(0,10);
     if (agentResult) {
-      return agentResult.rankedCoins.slice(0,10).map(a => ({
+      const raw = agentResult.rankedCoins.slice(0,20).map(a => ({
         coin:a.coin, side:a.direction as any, setupType:a.setupType, score:a.agentScore,
         confidence:a.confidence, thesisTitle:null, thesisSummary:a.thesis??a.rationale,
         reasons:null, whatToWatch:null, invalidationNotes:a.riskNote?[a.riskNote]:null,
         rankMovement:a.rankMovement, metrics:null,
       }));
+      return dedupeIdeas(raw).slice(0,10);
     }
-    return rows.filter(r=>r.compositeSignal!=null).sort((a,b)=>(b.compositeSignal!-a.compositeSignal!)).slice(0,10).map((r,i)=>({
+    const raw = rows.filter(r=>r.compositeSignal!=null).sort((a,b)=>(b.compositeSignal!-a.compositeSignal!)).slice(0,20).map((r,i)=>({
       coin:r.coin, side:(r.signalDirection==='bullish'?'long':r.signalDirection==='bearish'?'short':'watch') as any,
       setupType:null, score:r.compositeSignal!, confidence:r.signalConfidence??0.5,
       thesisTitle:null, thesisSummary:r.agentRationale??null, reasons:null, whatToWatch:null,
       invalidationNotes:null, rankMovement:null, metrics:null,
     }));
+    return dedupeIdeas(raw).slice(0,10);
   }, [briefing, agentResult, rows]);
 
   // Derive guidance buckets
@@ -817,37 +831,6 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
 
   return (
     <div style={{ background:C.hero, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-
-      {/* ── Title bar ── */}
-      <div style={{ padding:'9px 16px 7px', display:'flex', alignItems:'center', gap:10, borderBottom:`1px solid ${C.dimLow}` }}>
-        <div style={{ width:8, height:8, borderRadius:'50%', background:agentLoading?C.amber:agentResult?C.purple:C.dimLow, boxShadow:agentResult?`0 0 8px ${C.purple}`:'none', transition:'all 0.3s', flexShrink:0 }} />
-        <div>
-          <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, color:agentResult?C.purple:C.dim, textTransform:'uppercase' }}>Agent Market Brief</div>
-          <div style={{ fontSize:8.5, color:C.dim }}>
-            {agentLoading
-              ? agentStage
-              : agentResult
-              ? `Live interpretation · ${new Date(agentResult.generatedAt).toLocaleTimeString()}`
-              : 'Live interpretation of the strongest Hyperliquid setups — press Agent above to refresh'}
-          </div>
-        </div>
-        {agentLoading && (
-          <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:7 }}>
-            <div style={{ width:13, height:13, border:`2px solid ${C.border}`, borderTopColor:C.purple, borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-            <span style={{ fontSize:9, color:C.purple }}>{agentStage}</span>
-          </div>
-        )}
-        {agentResult && !agentLoading && (
-          <div style={{ marginLeft:'auto', display:'flex', gap:7, alignItems:'center' }}>
-            {agentResult.longs.slice(0,2).map(a => (
-              <span key={a.coin} style={{ fontSize:8.5, fontWeight:700, color:C.green, background:`${C.green}11`, border:`1px solid ${C.green}33`, borderRadius:3, padding:'2px 7px', fontFamily:C.font }}>▲ {a.coin}</span>
-            ))}
-            {agentResult.shorts.slice(0,2).map(a => (
-              <span key={a.coin} style={{ fontSize:8.5, fontWeight:700, color:C.red, background:`${C.red}11`, border:`1px solid ${C.red}33`, borderRadius:3, padding:'2px 7px', fontFamily:C.font }}>▼ {a.coin}</span>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* ── LLM Analysis strip (shown only after Agent button is clicked) ── */}
       {agentResult?.llmAnalysis && (
@@ -2857,10 +2840,13 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && (
           <>
-            {/* ── HERO: AGENT MARKET BRIEF ─────────────────────────── */}
+            {/* ── HERO: SIGNAL BRIEF ───────────────────────────────── */}
             <AgentMarketBrief
               agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
               rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
+
+            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
+            <MarketMatrixSection search={search} fallbackRows={sorted} />
 
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
@@ -2869,9 +2855,6 @@ export default function HyperliquidScreenerPage() {
                   onChartOpen={(title, coins) => setChartModal({ title, coins })} />
               </SectionErrorBoundary>
             )}
-
-            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
-            <MarketMatrixSection search={search} fallbackRows={sorted} />
 
             {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
             {sorted.length > 0 && (
