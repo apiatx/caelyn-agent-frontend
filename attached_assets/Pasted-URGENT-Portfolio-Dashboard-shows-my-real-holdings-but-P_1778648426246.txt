@@ -1,0 +1,88 @@
+URGENT: Portfolio Dashboard shows my real holdings, but Portfolio Terminal shows no holdings.
+
+Do NOT ask me to re-add holdings. The Dashboard already has my current tickers and entries. Make Terminal pick up what already exists.
+
+Context:
+Backend recently fixed Terminal to read from the canonical per-user portfolio holdings file and invalidates terminal cache on save. But now Terminal is empty while Dashboard still shows the real holdings.
+
+This likely means the Dashboard is reading from a different frontend/local source than the backend canonical source Terminal uses.
+
+Task:
+Find exactly where the Dashboard holdings are coming from and sync/migrate those existing holdings into the same backend source that Terminal uses.
+
+Do NOT:
+- redesign Portfolio page
+- change portfolio calculations
+- change risk/terminal logic
+- wipe holdings
+- require manual re-entry
+- hardcode tickers
+- create a second source of truth
+- change unrelated pages
+
+Audit:
+1. Find Portfolio page Dashboard component.
+2. Identify the exact source of Dashboard holdings:
+   - API endpoint?
+   - React Query cache?
+   - localStorage?
+   - Zustand/store?
+   - in-memory state?
+   - old JSON endpoint?
+   - browser-persisted draft?
+3. Find Terminal component/source:
+   - endpoint
+   - query key
+   - props/state
+4. Add temporary console diagnostics:
+
+[portfolio-sync-ui] dashboardSymbols = [...]
+[portfolio-sync-ui] dashboardSource = ...
+[portfolio-sync-ui] terminalSymbols = [...]
+[portfolio-sync-ui] terminalSource = ...
+[portfolio-sync-ui] canonicalBackendSymbols = [...]
+
+Important:
+If Dashboard holdings are coming from localStorage/client state/old endpoint and canonical backend holdings are empty, automatically migrate the Dashboard holdings into the canonical backend endpoint using the existing save holdings API.
+
+Expected behavior:
+- On Portfolio page load, if Dashboard has holdings and canonical backend holdings are empty/missing, POST the existing Dashboard holdings to /api/portfolio/holdings or whatever the canonical backend save endpoint is.
+- After successful POST, invalidate/refetch Dashboard and Terminal portfolio queries.
+- Terminal should then show the same holdings.
+- Preserve shares, avg entry, cost basis, notes, tags, and every existing field the Dashboard already has.
+- Do not recalculate or overwrite entries.
+- Do not drop fields unless the backend schema truly does not support them.
+
+Preferred implementation:
+Create a one-time reconciliation/migration path:
+- Load Dashboard holdings.
+- Load canonical backend holdings.
+- If dashboardHoldings.length > 0 and backendHoldings.length === 0:
+    save dashboardHoldings to canonical backend holdings endpoint.
+    invalidate all portfolio/terminal query keys.
+- If both have holdings but symbols differ:
+    do NOT blindly overwrite.
+    log the mismatch and prefer the richer/current Dashboard version only if it clearly contains the user’s existing portfolio.
+- Avoid infinite save loops with a ref/useEffect guard.
+
+Validation:
+1. Open Portfolio Dashboard.
+2. Confirm Dashboard shows existing real tickers.
+3. Confirm console logs dashboardSymbols.
+4. Switch to Terminal.
+5. Terminal must show the same tickers without re-adding anything.
+6. Hard refresh.
+7. Dashboard and Terminal must still match.
+8. Add a new holding in Dashboard.
+9. Terminal shows it.
+10. Delete a holding in Dashboard.
+11. Terminal removes it.
+12. Confirm no demo holdings appear.
+
+Return:
+- Exact Dashboard source before fix.
+- Exact Terminal source before fix.
+- Whether Dashboard was using localStorage, old endpoint, React state, or another store.
+- Exact files changed.
+- The reconciliation/migration logic added.
+- Console validation proving Dashboard symbols === Terminal symbols after refresh.

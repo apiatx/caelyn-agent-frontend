@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
 import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
@@ -54,6 +54,7 @@ interface CaelynTerminalData {
   earnings_calendar: CTEarningsItem[];
   news_ticker: CTNewsItem[];
   ticker_tape: CTTickerItem[];
+  _synced_from_local?: boolean;
   as_of: string;
 }
 
@@ -196,6 +197,25 @@ export default function CaelynTerminalPage() {
     staleTime: Infinity,
     retry: 1,
   });
+
+  const { data: dashboardHoldings } = useQuery<{ id: string; ticker: string; shares: number; avgCost: number }[]>({
+    queryKey: ['stock-holdings'],
+    queryFn: async () => {
+      const res = await fetch('/api/stock-holdings');
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    const dashboardSymbols = (dashboardHoldings ?? []).map(h => h.ticker).sort();
+    const terminalSymbols  = (data?.holdings ?? []).map((h: CTHolding) => h.ticker).sort();
+    const isSynced         = data ? !data.is_placeholder && !data._synced_from_local : false;
+    console.log('[portfolio-sync-ui] dashboardSymbols:', dashboardSymbols);
+    console.log('[portfolio-sync-ui] terminalSymbols:', terminalSymbols);
+    console.log('[portfolio-sync-ui] terminal.is_placeholder:', data?.is_placeholder, '| _synced_from_local:', data?._synced_from_local, '| isSynced:', isSynced);
+  }, [data, dashboardHoldings]);
 
   // Always render the full layout — use placeholder when backend not yet connected
   const d   = data ?? PLACEHOLDER;

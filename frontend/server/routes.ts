@@ -1985,6 +1985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       holdings.push(newHolding);
       writeHoldings(holdings);
+      caelynTerminalCache = null;
       res.json(newHolding);
     } catch (error) {
       console.error('Error adding holding:', error);
@@ -2002,6 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (shares !== undefined) holdings[idx].shares = Number(shares);
       if (avgCost !== undefined) holdings[idx].avgCost = Number(avgCost);
       writeHoldings(holdings);
+      caelynTerminalCache = null;
       res.json(holdings[idx]);
     } catch (error) {
       console.error('Error updating holding:', error);
@@ -2015,6 +2017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let holdings = readHoldings();
       holdings = holdings.filter(h => h.id !== id);
       writeHoldings(holdings);
+      caelynTerminalCache = null;
       res.json({ success: true });
     } catch (error) {
       console.error('Error deleting holding:', error);
@@ -2231,9 +2234,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(caelynTerminalCache.data);
     }
     try {
+      // Load local stock holdings to inject when FastAPI has none
+      const localHoldings = readHoldings();
+      const tickersParam = localHoldings.map(h => h.ticker).join(',');
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
-      const response = await fetch(`${AGENT_URL}/api/caelyn-terminal`, {
+
+      // Forward local tickers to FastAPI so it can use them if it supports the param
+      const fastapiUrl = tickersParam
+        ? `${AGENT_URL}/api/caelyn-terminal?tickers=${encodeURIComponent(tickersParam)}`
+        : `${AGENT_URL}/api/caelyn-terminal`;
+
+      const response = await fetch(fastapiUrl, {
         headers: { 'X-API-Key': AGENT_KEY },
         signal: controller.signal,
       });
@@ -2243,6 +2256,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(response.status).json({ error: `Backend returned ${response.status}`, detail: text.slice(0, 200) });
       }
       const data = await response.json();
+
+      // If FastAPI returned placeholder and we have local holdings, inject them with live prices
+      if ((data.is_placeholder === true || !data.holdings?.length) && localHoldings.length > 0) {
+        console.log(`[portfolio-sync] FastAPI placeholder detected — injecting ${localHoldings.length} holdings from stock-holdings.json`);
+        try {
+          const symbols = localHoldings.map(h => h.ticker);
+          const assetTypeMap: Record<string, string> = {};
+          localHoldings.forEach(h => { assetTypeMap[h.ticker] = h.assetType || 'stock'; });
+          const quotes = await fmpService.getStockDetails(symbols, assetTypeMap);
+          const quoteMap = new Map(quotes.map((q: any) => [q.symbol, q]));
+          const totalValue = localHoldings.reduce((sum, h) => {
+            const q: any = quoteMap.get(h.ticker);
+            return sum + h.shares * (q?.price ?? h.avgCost);
+          }, 0);
+          data.holdings = localHoldings.map(h => {
+            const q: any = quoteMap.get(h.ticker);
+            const price = q?.price ?? h.avgCost;
+            const mv    = h.shares * price;
+            return {
+              ticker:         h.ticker,
+              price,
+              change:         q?.change ?? null,
+              change_pct:     q?.changesPercentage ?? null,
+              allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : null,
+            };
+          });
+          data.positions_count = data.holdings.length;
+          if (totalValue > 0 && data.portfolio) data.portfolio.value = totalValue;
+          data.is_placeholder = false;
+          data._synced_from_local = true;
+          console.log(`[portfolio-sync] Injected holdings: ${symbols.join(', ')} — total value $${totalValue.toFixed(2)}`);
+        } catch (fmpErr) {
+          console.warn('[portfolio-sync] FMP price fetch failed — injecting tickers with avg cost:', fmpErr);
+          const totalCost = localHoldings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+          data.holdings = localHoldings.map(h => ({
+            ticker:         h.ticker,
+            price:          h.avgCost,
+            change:         null,
+            change_pct:     null,
+            allocation_pct: totalCost > 0 ? (h.shares * h.avgCost / totalCost) * 100 : null,
+          }));
+          data.positions_count = localHoldings.length;
+          data.is_placeholder = false;
+          data._synced_from_local = true;
+        }
+      }
+
       caelynTerminalCache = { data, ts: Date.now() };
       res.json(data);
     } catch (error: any) {
