@@ -1,0 +1,132 @@
+FRONTEND REPLIT AGENT — Fix Portfolio Dashboard → FastAPI/Neon sync permanently
+
+The Portfolio Dashboard shows the user's real current holdings, but FastAPI/Neon still has a stale 5-holding test portfolio:
+AEHR, MRVL, PLAB, AMKR, VECO.
+
+PLAB is not in the user’s real portfolio, so any Terminal analytics using PLAB are wrong.
+
+The backend confirmed:
+- Deployed FastAPI/Neon currently has the 5-holding test portfolio.
+- The real 19 holdings have never reached deployed FastAPI/Neon.
+- No POST /api/portfolio/sync has hit the deployed backend since publish.
+- Backend/Neon persistence works once it receives the correct holdings.
+- The frontend must push the actual Dashboard holdings dynamically.
+
+Your job:
+Make the Portfolio Dashboard the source of truth for what gets synced into FastAPI/Neon.
+
+Do not hardcode tickers.
+Do not ask the user for holdings.
+Do not rely on old migration flags.
+Do not fake sync success.
+Do not let stale backend holdings override the Dashboard.
+Do not let PLAB remain in backend unless it is actually in the current Dashboard holdings.
+
+Required behavior:
+1. On Portfolio Dashboard load:
+   - read the exact holdings currently displayed in the Dashboard.
+   - call FastAPI /ping and prove server=fastapi.
+   - call FastAPI /api/portfolio/holdings and compare backend symbols to Dashboard symbols.
+   - if symbols differ, POST the full Dashboard holdings list to FastAPI /api/portfolio/sync.
+   - refetch FastAPI /api/portfolio/holdings and verify it now matches Dashboard.
+
+2. On add holding:
+   - update Dashboard/local source.
+   - immediately POST the full updated holdings list to FastAPI /api/portfolio/sync.
+   - verify backend canonical count/symbols match.
+   - invalidate/refetch Terminal.
+
+3. On edit holding:
+   - same behavior: POST full updated holdings list to FastAPI /api/portfolio/sync.
+   - verify backend matches.
+   - invalidate/refetch Terminal.
+
+4. On delete holding:
+   - same behavior: POST full updated holdings list to FastAPI /api/portfolio/sync.
+   - verify deleted symbol is gone from backend.
+   - invalidate/refetch Terminal.
+
+5. Terminal must never render analytics for backend symbols that do not match Dashboard symbols.
+   - If Dashboard symbols != Terminal symbols, show syncing/loading.
+   - Do not show stale PLAB/AEHR/MRVL/AMKR/VECO analytics unless those exact symbols are in Dashboard.
+
+FastAPI target:
+Use the actual deployed FastAPI URL already configured:
+https://fast-api-server-trading-agent-aidanpilon.replit.app
+
+Verify target:
+GET https://fast-api-server-trading-agent-aidanpilon.replit.app/ping
+Expected includes:
+{ "server": "fastapi" }
+
+Sync endpoint:
+POST https://fast-api-server-trading-agent-aidanpilon.replit.app/api/portfolio/sync
+Payload:
+{ "holdings": dashboardHoldings }
+
+Diagnostics required:
+Add loud logs:
+
+[portfolio-dashboard-source]
+{
+  dashboardCount,
+  dashboardSymbols,
+  source
+}
+
+[portfolio-fastapi-ping]
+{
+  url,
+  status,
+  response,
+  isFastAPI
+}
+
+[portfolio-sync-write]
+{
+  beforeBackendCount,
+  beforeBackendSymbols,
+  dashboardCount,
+  dashboardSymbols,
+  postStatus,
+  postResponse,
+  afterBackendCount,
+  afterBackendSymbols,
+  success
+}
+
+[portfolio-terminal-gate]
+{
+  dashboardSymbols,
+  terminalSymbols,
+  backendSymbols,
+  symbolsMatch,
+  renderedState
+}
+
+Validation before done:
+1. Hard refresh Portfolio Dashboard.
+2. Confirm Dashboard shows current real holdings.
+3. Confirm backend initially may show stale 5.
+4. Confirm frontend POSTs current Dashboard holdings to FastAPI /api/portfolio/sync.
+5. Confirm FastAPI /api/portfolio/holdings returns the exact Dashboard symbols.
+6. Confirm PLAB is removed from FastAPI/Neon if PLAB is not in Dashboard.
+7. Switch to Terminal.
+8. Confirm Terminal symbols exactly match Dashboard symbols.
+9. Confirm Terminal analytics are using the Dashboard symbols, not stale 5.
+10. Add TESTXX.
+11. Confirm FastAPI/Neon count increases by 1.
+12. Delete TESTXX.
+13. Confirm FastAPI/Neon count returns to original count.
+14. Hard refresh.
+15. Confirm backend still has the correct holdings from Neon.
+16. Republish frontend.
+
+Return:
+- exact Dashboard holdings source
+- why prior sync did not fire
+- exact files changed
+- final Dashboard symbols
+- final FastAPI/Neon symbols
+- final Terminal symbols
+- proof all three match

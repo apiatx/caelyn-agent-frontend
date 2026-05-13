@@ -204,6 +204,32 @@ export default function StocksPortfolioPage() {
     }
   }, []);
 
+  // Fire-and-forget: push full updated holdings list to FastAPI/Neon after every CRUD op
+  const syncToFastAPI = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stock-holdings');
+      if (!res.ok) return;
+      const allHoldings = await res.json();
+      if (!Array.isArray(allHoldings) || allHoldings.length === 0) return;
+      const syncRes = await fetch('/api/portfolio/sync', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ holdings: allHoldings }),
+      });
+      const syncData = syncRes.ok ? await syncRes.json().catch(() => ({})) : {};
+      console.log('[portfolio-sync-write]', JSON.stringify({
+        dashboardCount:     allHoldings.length,
+        dashboardSymbols:   allHoldings.map((h: any) => h.ticker).sort(),
+        postStatus:         syncRes.status,
+        afterBackendCount:  syncData.canonical_count ?? null,
+        afterBackendSymbols: (syncData.canonical_symbols ?? []).sort(),
+        success:            syncData.success === true || syncData.synced === true,
+      }));
+    } catch (err: any) {
+      console.warn('[portfolio-sync-write] CRUD sync error:', err?.message);
+    }
+  }, []);
+
   const fetchQuotes = useCallback(async (holdingsList: Holding[]) => {
     if (holdingsList.length === 0) return;
     setLoadingQuotes(true);
@@ -299,6 +325,7 @@ export default function StocksPortfolioPage() {
         setNewDateAdded(new Date().toISOString().split('T')[0]);
         setSelectedAssetType('stock');
         await fetchHoldings();
+        syncToFastAPI();
         queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       }
     } catch (err) {
@@ -312,6 +339,7 @@ export default function StocksPortfolioPage() {
     try {
       await fetch(`/api/stock-holdings/${id}`, { method: 'DELETE' });
       await fetchHoldings();
+      syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch (err) {
       console.error('Failed to delete holding:', err);
@@ -347,6 +375,7 @@ export default function StocksPortfolioPage() {
       setEditShares('');
       setEditAvgCost('');
       await fetchHoldings();
+      syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch (err) {
       console.error('Failed to update holding:', err);

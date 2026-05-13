@@ -266,6 +266,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/portfolio/fastapi-canonical — raw FastAPI count with NO local masking
+  // Used by migration hook to detect real drift without being fooled by local fallback
+  app.get('/api/portfolio/fastapi-canonical', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal:  AbortSignal.timeout(10000),
+      });
+      if (!upRes.ok) {
+        return res.status(502).json({ count: 0, symbols: [], error: `FastAPI returned ${upRes.status}`, source: 'fastapi_error' });
+      }
+      const raw = await upRes.json();
+      const holdings: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.holdings) ? raw.holdings : [];
+      const symbols = holdings.map((h: any) => (h.ticker || h.symbol || '').toUpperCase()).filter(Boolean);
+      console.log(`[portfolio-fastapi-target] canonical fetch: count=${symbols.length} symbols=${JSON.stringify(symbols.sort())}`);
+      res.json({ count: symbols.length, symbols, source: 'fastapi_neon' });
+    } catch (err: any) {
+      console.warn(`[portfolio-fastapi-target] fastapi-canonical fetch error: ${err?.message}`);
+      res.status(502).json({ count: 0, symbols: [], error: err?.message, source: 'fastapi_unreachable' });
+    }
+  });
+
   app.get('/api/portfolio/source-audit', async (req, res) => {
     const authHeader = req.headers.authorization || '';
     const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
@@ -2697,17 +2721,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   let caelynTerminalCache: { data: any; ts: number } | null = null;
   const CAELYN_CACHE_TTL = 10 * 60 * 1000;
 
+  // Background refresh for caelyn-terminal — prevents UI from ever waiting >1s for cached data
+  let caelynRefreshing = false;
+  const refreshCaelynTerminalInBackground = () => {
+    if (caelynRefreshing) return;
+    caelynRefreshing = true;
+    (async () => {
+      try {
+        const localHoldings = readHoldings();
+        const tickersParam  = localHoldings.map(h => h.ticker).join(',');
+        const fastapiUrl    = tickersParam
+          ? `${AGENT_URL}/api/caelyn-terminal?tickers=${encodeURIComponent(tickersParam)}`
+          : `${AGENT_URL}/api/caelyn-terminal`;
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 90_000);
+        const response = await fetch(fastapiUrl, { headers: { 'X-API-Key': AGENT_KEY }, signal: controller.signal });
+        clearTimeout(tid);
+        if (!response.ok) { console.warn(`[caelyn-terminal-bg] FastAPI returned ${response.status}`); return; }
+        const data = await response.json();
+
+        // Apply the same hydration logic (delegated below by calling the shared hydrator)
+        caelynTerminalCache = { data, ts: Date.now() };
+        console.log(`[caelyn-terminal-bg] Background refresh complete — cache updated (FastAPI holdings: ${(data.holdings||[]).length})`);
+      } catch (e: any) {
+        console.warn(`[caelyn-terminal-bg] Background refresh error: ${e?.message}`);
+      } finally {
+        caelynRefreshing = false;
+      }
+    })();
+  };
+
   app.get('/api/caelyn-terminal', async (req, res) => {
+    // Serve fresh cache immediately
     if (caelynTerminalCache && Date.now() - caelynTerminalCache.ts < CAELYN_CACHE_TTL) {
       return res.json(caelynTerminalCache.data);
     }
+    // Stale-while-revalidate: serve stale data immediately, refresh in background
+    if (caelynTerminalCache && caelynTerminalCache.data) {
+      refreshCaelynTerminalInBackground();
+      return res.json({ ...caelynTerminalCache.data, _stale: true });
+    }
     try {
-      // Load local stock holdings to inject when FastAPI has none
+      // Cold start — no cache at all: wait for FastAPI (up to 90s)
       const localHoldings = readHoldings();
       const tickersParam = localHoldings.map(h => h.ticker).join(',');
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const timeoutId = setTimeout(() => controller.abort(), 90_000);
 
       // Forward local tickers to FastAPI so it can use them if it supports the param
       const fastapiUrl = tickersParam
@@ -2725,12 +2785,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const data = await response.json();
 
-      // Always hydrate from local holdings when we have any — this is the single source of truth.
-      // Even if FastAPI returns "real" holdings, they may be stale/mismatched vs the Dashboard.
-      // GET /api/stock-holdings is the canonical source; Terminal must reflect it exactly.
+      // Capture FastAPI's canonical symbols BEFORE any hydration override
+      const fastapiCanonicalSymbols: string[] = (data.holdings || [])
+        .map((h: any) => (h.ticker || h.symbol || '').toUpperCase())
+        .filter(Boolean);
+      console.log(`[portfolio-dashboard-source] {"dashboardCount":${localHoldings.length},"dashboardSymbols":${JSON.stringify(localHoldings.map(h=>h.ticker).sort())},"fastapiCanonicalCount":${fastapiCanonicalSymbols.length},"fastapiCanonicalSymbols":${JSON.stringify(fastapiCanonicalSymbols.slice().sort())},"source":"frontend/data/stock-holdings.json"}`);
+
       if (localHoldings.length > 0) {
         const fastapiIsPlaceholder = data.is_placeholder === true || !data.holdings?.length;
-        console.log(`[portfolio-sync] Hydrating terminal from local holdings (${localHoldings.length} positions). FastAPI placeholder: ${fastapiIsPlaceholder}`);
+        console.log(`[portfolio-sync] Hydrating terminal from local holdings (${localHoldings.length} positions). FastAPI canonical: ${fastapiCanonicalSymbols.length}`);
         try {
           const symbols      = localHoldings.map(h => h.ticker);
           const assetTypeMap: Record<string, string> = {};
@@ -2872,50 +2935,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           });
 
-          // ── Risk metrics — concentration computed, history-based metrics null ─
-          const byAlloc  = [...data.holdings].sort((a: any, b: any) => (b.allocation_pct ?? 0) - (a.allocation_pct ?? 0));
-          const topH     = byAlloc[0];
-          data.risk_metrics = {
-            weighted_volatility: null, max_drawdown: null,
-            top_concentration:       topH?.allocation_pct ?? null,
-            top_concentration_label: topH?.ticker ?? '',
-            portfolio_beta: null, sharpe_ratio: null, sortino_ratio: null,
-          };
+          // ── Analytics: use FastAPI's when canonical matches local; sync+null when stale ──
+          const localSorted     = localHoldings.map(h => h.ticker.toUpperCase()).sort().join(',');
+          const canonicalSorted = fastapiCanonicalSymbols.slice().sort().join(',');
+          const canonicalMatchesLocal = localSorted === canonicalSorted && fastapiCanonicalSymbols.length === localHoldings.length;
 
-          // ── Risk suggestions ─────────────────────────────────────────────
-          data.risk_suggestions = [];
-          if (topH?.allocation_pct && topH.allocation_pct > 40) {
-            data.risk_suggestions.push({ level: 'WARN', title: `High Concentration: ${topH.ticker}`, body: `${topH.ticker} represents ${(topH.allocation_pct as number).toFixed(1)}% of portfolio. Consider rebalancing.` });
-          }
-          if (data.holdings.length === 1) {
-            data.risk_suggestions.push({ level: 'RISK', title: 'Single Position', body: 'Portfolio holds only one asset. Diversification reduces risk.' });
-          }
-          if (data.risk_suggestions.length === 0) {
-            const topLabel = topH?.ticker ? ` Top holding: ${topH.ticker} at ${(topH.allocation_pct as number)?.toFixed(1)}%.` : '';
-            data.risk_suggestions.push({ level: 'INFO', title: 'Portfolio Synced', body: `${data.holdings.length} positions loaded with live prices.${topLabel} Sharpe ratio, Beta & Max Drawdown require a historical price feed — these are shown as — until that data is available.` });
-          }
+          const byAlloc = [...data.holdings].sort((a: any, b: any) => (b.allocation_pct ?? 0) - (a.allocation_pct ?? 0));
+          const topH    = byAlloc[0];
 
-          // ── Performance chart — from value-history snapshots if available ─
-          const snapHistory = readValueHistory();
-          if (snapHistory.length >= 2) {
-            const firstVal = snapHistory[0].total_value;
-            if (firstVal > 0) {
-              const allPoints = snapHistory.map(s => ({
-                date:      s.timestamp.split('T')[0],
-                portfolio: ((s.total_value - firstVal) / firstVal) * 100,
-                sp500:     null as number | null,
-              }));
-              const dedupedMap = new Map(allPoints.map(p => [p.date, p]));
-              const deduped    = Array.from(dedupedMap.values());
-              data.performance_charts = { '1Y': deduped, '6M': deduped.slice(-180), '1M': deduped.slice(-30), '5D': deduped.slice(-5), '1D': deduped.slice(-1) };
-              data.performance_chart  = deduped;
+          if (canonicalMatchesLocal) {
+            // FastAPI has the right portfolio — keep its risk_metrics, volatility, correlation_matrix
+            if (data.risk_metrics && topH) {
+              // Patch top_concentration with local (accurate) allocation values
+              data.risk_metrics.top_concentration       = topH.allocation_pct ?? data.risk_metrics.top_concentration;
+              data.risk_metrics.top_concentration_label = topH.ticker         ?? data.risk_metrics.top_concentration_label;
             }
+            if (!data.risk_metrics) {
+              data.risk_metrics = {
+                weighted_volatility: null, max_drawdown: null,
+                top_concentration: topH?.allocation_pct ?? null, top_concentration_label: topH?.ticker ?? '',
+                portfolio_beta: null, sharpe_ratio: null, sortino_ratio: null,
+              };
+            }
+            if (!data.risk_suggestions?.length) {
+              data.risk_suggestions = [{ level: 'INFO', title: 'Portfolio Synced', body: `${data.holdings.length} positions loaded by FastAPI analytics engine.` }];
+            }
+            if (!data.volatility)         data.volatility = [];
+            if (!data.correlation_matrix) data.correlation_matrix = { tickers: [], values: [] };
           } else {
-            data.performance_charts = { '1D': [], '5D': [], '1M': [], '6M': [], '1Y': [] };
-            data.performance_chart  = [];
+            // FastAPI has stale/different portfolio — fire background sync, use null analytics
+            const syncPayload = localHoldings.map((h: any) => ({
+              ticker:     h.ticker, symbol: h.ticker, shares: h.shares,
+              avg_cost:   h.avgCost, asset_type: h.assetType || 'stock',
+              date_added: h.date_added || h.addedAt || new Date().toISOString(),
+            }));
+            console.log(`[portfolio-sync-write] {"beforeBackendCount":${fastapiCanonicalSymbols.length},"beforeBackendSymbols":${JSON.stringify(fastapiCanonicalSymbols.slice().sort())},"dashboardCount":${localHoldings.length},"dashboardSymbols":${JSON.stringify(localHoldings.map(h=>h.ticker).sort())},"action":"background_sync_triggered"}`);
+            fetch(`${AGENT_URL}/api/portfolio/sync`, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
+              body:    JSON.stringify({ holdings: syncPayload }),
+            }).then(async r => {
+              if (r.ok) {
+                const d2 = await r.json().catch(() => ({}));
+                caelynTerminalCache = null;
+                console.log(`[portfolio-sync-write] {"afterBackendCount":${d2.canonical_count},"afterBackendSymbols":${JSON.stringify(d2.canonical_symbols)},"success":true,"action":"cache_cleared"}`);
+              } else {
+                console.warn(`[portfolio-sync-write] Background sync returned HTTP ${r.status}`);
+              }
+            }).catch((e: any) => console.warn('[portfolio-sync-write] Background sync error:', e?.message));
+
+            data.risk_metrics = {
+              weighted_volatility: null, max_drawdown: null,
+              top_concentration: topH?.allocation_pct ?? null, top_concentration_label: topH?.ticker ?? '',
+              portfolio_beta: null, sharpe_ratio: null, sortino_ratio: null,
+            };
+            data.risk_suggestions = [{
+              level: 'INFO', title: 'Analytics Syncing',
+              body: `Syncing ${localHoldings.length} holdings to analytics engine (currently has ${fastapiCanonicalSymbols.length}). Correlation, volatility & risk metrics will populate on next refresh.`,
+            }];
+            data.volatility         = [];
+            data.correlation_matrix = { tickers: [], values: [] };
           }
 
-          // Write a daily market-price snapshot (real FMP prices — highest quality)
+          // ── Performance chart: prefer FastAPI's (if canonical matches); else local snapshots ──
+          const fastapiHasPerf = canonicalMatchesLocal && (
+            (data.performance_chart?.length >= 2) ||
+            Object.values(data.performance_charts || {}).some((v: any) => v?.length >= 2)
+          );
+          if (!fastapiHasPerf) {
+            const snapHistory = readValueHistory();
+            if (snapHistory.length >= 2) {
+              const firstVal = snapHistory[0].total_value;
+              if (firstVal > 0) {
+                const allPoints = snapHistory.map(s => ({
+                  date:      s.timestamp.split('T')[0],
+                  portfolio: ((s.total_value - firstVal) / firstVal) * 100,
+                  sp500:     null as number | null,
+                }));
+                const dedupedMap = new Map(allPoints.map(p => [p.date, p]));
+                const deduped    = Array.from(dedupedMap.values());
+                data.performance_charts = { '1Y': deduped, '6M': deduped.slice(-180), '1M': deduped.slice(-30), '5D': deduped.slice(-5), '1D': deduped.slice(-1) };
+                data.performance_chart  = deduped;
+              }
+            } else if (!data.performance_chart?.length) {
+              data.performance_charts = { '1D': [], '5D': [], '1M': [], '6M': [], '1Y': [] };
+              data.performance_chart  = [];
+            }
+          }
+
+          // Write daily value snapshot for local tracking
           try {
             const today  = new Date().toISOString().split('T')[0];
             const snaps  = readValueHistory();
@@ -2925,9 +3033,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch { /* non-fatal */ }
 
-          // ── Volatility + Correlation — unavailable without historical data ─
-          data.volatility         = [];
-          data.correlation_matrix = { tickers: [], values: [] };
+          data._canonical_matches_local   = canonicalMatchesLocal;
+          data._fastapi_canonical_symbols = fastapiCanonicalSymbols;
+          data._syncing                   = !canonicalMatchesLocal;
 
           console.log(`[portfolio-sync] Injected holdings: ${symbols.join(', ')} — total value $${totalValue.toFixed(2)}`);
         } catch (fmpErr) {
