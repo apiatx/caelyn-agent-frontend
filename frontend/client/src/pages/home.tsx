@@ -290,7 +290,7 @@ function TVChartWidget({ symbol }: { symbol: string }) {
   );
 }
 
-function MacroCard({ card, history, onClick }: { card: HomeMacroCard; history?: number[]; onClick?: () => void }) {
+function MacroCard({ card, history, onClick, compact }: { card: HomeMacroCard; history?: number[]; onClick?: () => void; compact?: boolean }) {
   const up = (card.change_pct ?? 0) >= 0;
   const neutral = card.change_pct === null || card.change_pct === 0;
   const chartData = (history && history.length > 1)
@@ -314,6 +314,46 @@ function MacroCard({ card, history, onClick }: { card: HomeMacroCard; history?: 
     changeStr = `${bps >= 0 ? "+" : ""}${bps} bps`;
   } else {
     changeStr = `${card.change_pct >= 0 ? "+" : ""}${card.change_pct.toFixed(2)}%`;
+  }
+
+  if (compact) {
+    return (
+      <GlassCard
+        className="flex flex-col overflow-hidden cursor-pointer hover:border-white/20 transition-colors shrink-0"
+        style={{ minWidth: 88 }}
+        onClick={onClick}
+      >
+        <div className="px-2.5 pt-2 pb-0.5">
+          <div className="text-[10px] font-medium text-white/70 leading-tight truncate">{card.label}</div>
+          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+            <span className="text-[11px] font-semibold text-white/90 tabular-nums">{priceStr}</span>
+            <span className={`text-[10px] font-medium tabular-nums ${neutral ? "text-white/40" : up ? "text-emerald-400" : "text-rose-400"}`}>
+              {changeStr}
+            </span>
+          </div>
+        </div>
+        <div className="h-[28px] w-full mt-auto">
+          {chartData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 1, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={lineColor} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="v" stroke={lineColor} strokeWidth={1.2}
+                  fill={`url(#${fillId})`} dot={false} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center px-2.5">
+              <div className="w-full h-px bg-white/10" />
+            </div>
+          )}
+        </div>
+      </GlassCard>
+    );
   }
 
   return (
@@ -1181,18 +1221,20 @@ export default function HomePage() {
       />
 
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
-        {/* Greeting & market status */}
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-white/40 mb-1">
+        {/* ── Header row: Greeting · Market Snapshot strip · Should I Trade ── */}
+        <div className="flex items-center gap-4 mb-6 min-h-[64px]">
+
+          {/* Left: greeting */}
+          <div className="shrink-0">
+            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35 mb-0.5">
               Caelyn Home
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold text-white">
+            <h1 className="text-xl font-semibold text-white leading-tight">
               {greeting}.
             </h1>
-            <div className="text-sm text-white/55 mt-1 flex items-center gap-2">
+            <div className="text-[11px] text-white/50 mt-0.5 flex items-center gap-1.5">
               <span
-                className={`inline-block w-1.5 h-1.5 rounded-full ${
+                className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
                   data?.greeting?.market?.status === "open"
                     ? "bg-emerald-400"
                     : data?.greeting?.market?.status === "pre_market" ||
@@ -1203,11 +1245,46 @@ export default function HomePage() {
               />
               {marketLabel}{nowET ? ` · ${nowET}` : ""}
               {data?.from_cache && (
-                <span className="ml-1 text-[10px] text-white/30">cached</span>
+                <span className="text-[9px] text-white/25">cached</span>
               )}
             </div>
           </div>
-          {/* Should I Be Trading? — compact corner widget */}
+
+          {/* Thin divider */}
+          <div className="self-stretch w-px bg-white/[0.07] shrink-0" />
+
+          {/* Center: compact Market Snapshot strip */}
+          <div className="flex-1 min-w-0">
+            <div className="text-[8.5px] uppercase tracking-[0.18em] text-white/30 mb-1.5 px-0.5">Market Snapshot</div>
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {isLoading &&
+                Array.from({ length: 7 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[60px] rounded-xl bg-white/[0.04] shrink-0" style={{ minWidth: 88 }} />
+                ))}
+              {!isLoading &&
+                allMacroCards.map((c, i) => {
+                  const key = cardSparklineKey(c);
+                  const hist = key && sparklines ? sparklines[key] : undefined;
+                  return (
+                    <MacroCard
+                      key={`${c.symbol}-${i}`}
+                      card={c}
+                      history={hist}
+                      compact
+                      onClick={() => setMacroChartCard(c)}
+                    />
+                  );
+                })}
+              {!isLoading && allMacroCards.length === 0 && (
+                <div className="text-xs text-white/40 py-2">Macro data temporarily unavailable.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Thin divider */}
+          <div className="self-stretch w-px bg-white/[0.07] shrink-0" />
+
+          {/* Right: Should I Trade? */}
           {(() => {
             const td = tradingData;
             const decision: string | undefined = td?.decision;
@@ -1218,50 +1295,23 @@ export default function HomePage() {
             return (
               <button
                 onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-5 py-3 min-w-[120px] text-center ${borderColor}`}
+                className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-4 py-2.5 shrink-0 text-center ${borderColor}`}
               >
-                <div className="text-[9px] uppercase tracking-widest text-white/30 mb-1">Should I Trade?</div>
+                <div className="text-[8.5px] uppercase tracking-widest text-white/30 mb-0.5">Should I Trade?</div>
                 {!td ? (
-                  <div className="text-lg font-bold text-white/20">—</div>
+                  <div className="text-base font-bold text-white/20">—</div>
                 ) : (
                   <>
-                    <div className={`text-2xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
+                    <div className={`text-xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
                     {score != null && (
-                      <div className={`text-[10px] font-semibold mt-1 tabular-nums ${scoreColor}`}>{score}/100</div>
+                      <div className={`text-[10px] font-semibold mt-0.5 tabular-nums ${scoreColor}`}>{score}/100</div>
                     )}
                   </>
                 )}
-                <div className="text-[9px] text-white/20 mt-1 flex items-center gap-0.5">swing <ChevronRight className="w-2.5 h-2.5" /></div>
+                <div className="text-[8.5px] text-white/20 mt-0.5 flex items-center gap-0.5">swing <ChevronRight className="w-2.5 h-2.5" /></div>
               </button>
             );
           })()}
-        </div>
-
-        {/* D. Top macro cards */}
-        <SectionHeader icon={Activity} title="Market Snapshot" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-6">
-          {isLoading &&
-            Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="h-[92px] rounded-xl bg-white/[0.04]" />
-            ))}
-          {!isLoading &&
-            allMacroCards.map((c, i) => {
-              const key = cardSparklineKey(c);
-              const hist = key && sparklines ? sparklines[key] : undefined;
-              return (
-                <MacroCard
-                  key={`${c.symbol}-${i}`}
-                  card={c}
-                  history={hist}
-                  onClick={() => setMacroChartCard(c)}
-                />
-              );
-            })}
-          {!isLoading && allMacroCards.length === 0 && (
-            <div className="col-span-full text-sm text-white/40">
-              Macro data temporarily unavailable.
-            </div>
-          )}
         </div>
 
         {/* TradingView chart popup modal */}
