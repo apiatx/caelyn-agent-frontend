@@ -1,0 +1,175 @@
+Fix the Calendar Earnings Watchlist toggle end-to-end on the frontend/Express side.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Context:
+The FastAPI backend watchlist earnings routes have already been validated directly:
+- day-clean?scope=watchlist
+- day-curated?scope=watchlist
+- week-clean?scope=watchlist
+- week-clean next week?scope=watchlist
+- month-all?scope=watchlist
+- month-curated?scope=watchlist
+- month-curated next month?scope=watchlist
+
+Backend validations showed zero symbol leakage:
+returned_symbols - saved_watchlist_symbols == empty set
+
+The remaining bug was found in the frontend/Express proxy:
+- month-curated proxy extracted year/month but did not forward scope to the internal week-clean calls.
+- month-all proxy did the same with internal week-all calls.
+- Result: UI selected Watchlist, but Express called backend without scope=watchlist, so backend defaulted to All.
+
+Goal:
+Make the live browser UI show actual Watchlist earnings, not All/curated earnings, across:
+- Day
+- Week/current week
+- Week/next week
+- Month/current month
+- Month/next month
+
+Do not redesign the page.
+Do not touch backend.
+Do not implement Portfolio yet.
+Do not add previous earnings, EPS actuals, revenue beats/misses, transcripts, etc.
+
+Required fixes:
+
+1. In Express routes.ts, verify and fix every Calendar Earnings proxy route used by the frontend.
+
+Specifically check:
+- month-curated proxy
+- month-all proxy
+- day-clean proxy
+- day-curated proxy
+- week-clean proxy
+- week-all proxy if used
+- upcoming-clean if used by the page
+
+Every proxy route must extract scope from req.query and forward it to the backend/FastAPI request.
+
+Example:
+If browser calls:
+  /api/earnings/month-curated?year=2026&month=5&scope=watchlist
+
+Then every internal backend call must include:
+  scope=watchlist
+
+Bad:
+  /api/earnings/week-clean?weekStart=...
+
+Good:
+  /api/earnings/week-clean?weekStart=...&scope=watchlist
+
+2. Month proxy fan-out must preserve scope.
+If month-curated/month-all builds the month by calling week-clean/week-all multiple times, every sub-call must include the selected scope.
+
+This is the core bug. Do not mark complete unless this is proven in logs.
+
+3. React Query keys must include scope.
+Find all earnings useQuery/prefetchQuery keys.
+
+They must include:
+- view/mode: day/week/month
+- selectedScope: all/watchlist/portfolio
+- date/window: day, weekStart, month/year
+- signal mode if used: curated/all
+
+Bad:
+  ["earnings", "month", "curated", monthKey]
+
+Good:
+  ["earnings", "month", "curated", selectedScope, monthKey]
+
+4. Prefetch queries must not omit scope.
+If prefetching All data on mount, explicitly key it as scope="all".
+
+Good:
+  ["earnings", "week", "curated", "all", dateKey]
+
+Do not let prefetch data be reused for Watchlist.
+
+5. Remove or prevent fallback-to-All behavior.
+Search for patterns like:
+- scopedData || allData
+- watchlistData || allData
+- events = data?.events ?? allEvents
+- if empty watchlist, show all
+- filter All events by watchlist on frontend
+
+For Watchlist:
+- render the Watchlist response
+- if empty, show empty state
+- never show All as fallback
+
+6. Add temporary diagnostics in dev only.
+Add or keep a dev-only console log:
+
+console.log("[earnings-ui]", {
+  selectedScope,
+  view,
+  signalMode,
+  requestUrl,
+  queryKey,
+  responseScope: data?.scope,
+  count: extractSymbols(data).length,
+  symbols: extractSymbols(data).slice(0, 20),
+});
+
+This log must prove:
+- selectedScope = "watchlist"
+- requestUrl includes scope=watchlist
+- queryKey includes watchlist
+- responseScope = "watchlist"
+- rendered symbols are from the Watchlist response, not All
+
+7. Browser validation required.
+Hard refresh the app, then validate in live UI and Network tab:
+
+A. All + Month
+Expected:
+- request/proxy uses scope=all or default All intentionally
+- UI shows curated All earnings
+
+B. Watchlist + Month
+Expected:
+- browser request includes scope=watchlist
+- Express internal week calls include scope=watchlist
+- responseScope is watchlist
+- UI shows only Watchlist symbols
+- no curated All leakage
+
+C. Watchlist + next month
+Expected:
+- scope=watchlist on browser request and all internal proxy fan-out calls
+- UI shows only Watchlist symbols
+
+D. Watchlist + Week current
+Expected:
+- still works
+- only Watchlist symbols
+
+E. Watchlist + Week next
+Expected:
+- scope=watchlist
+- shows Watchlist events if backend has them
+
+F. Watchlist + Day
+Expected:
+- scope=watchlist
+- only Watchlist symbols
+
+8. Symbol leakage assertion from frontend-rendered symbols.
+Use the saved Watchlist symbol list or compare with backend diagnostics.
+
+For each Watchlist UI state:
+rendered_symbols - saved_watchlist_symbols must be empty.
+
+If any rendered Watchlist symbol is not on the saved Watchlist, the frontend is still leaking All data.
+
+9. Do not mark complete with only backend curl tests.
+This must be validated through the live browser path because the bug was in the frontend/Express proxy.
+
+Success definition:
+The live Calendar Earnings Watchlist UI renders the backend Watchlist response across Day, Week, next Week, Month, and next Month. The Express proxy forwards scope=watchlist into every internal backend call. React Query does not reuse All data for Watchlist.
