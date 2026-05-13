@@ -7,6 +7,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis
 import { Plus, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Bot, Calendar, TrendingUp, TrendingDown, ExternalLink, RefreshCw, Briefcase, Pencil, Check, X } from 'lucide-react';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
+import { usePortfolioMigration } from '@/hooks/usePortfolioMigration';
 
 
 interface Holding {
@@ -163,6 +164,7 @@ type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 't
 
 export default function StocksPortfolioPage() {
   const queryClient = useQueryClient();
+  usePortfolioMigration();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
   const [priceTargets, setPriceTargets] = useState<Record<string, PriceTarget>>({});

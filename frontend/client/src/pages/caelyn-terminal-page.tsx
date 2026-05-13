@@ -209,13 +209,19 @@ export default function CaelynTerminalPage() {
   });
 
   useEffect(() => {
-    const dashboardSymbols = (dashboardHoldings ?? []).map(h => h.ticker).sort();
+    const canonicalSymbols = (dashboardHoldings ?? []).map(h => h.ticker).sort();
     const terminalSymbols  = (data?.holdings ?? []).map((h: CTHolding) => h.ticker).sort();
-    const isSynced         = data ? !data.is_placeholder && !data._synced_from_local : false;
-    console.log('[portfolio-sync-ui] dashboardSymbols:', dashboardSymbols);
-    console.log('[portfolio-sync-ui] terminalSymbols:', terminalSymbols);
-    console.log('[portfolio-sync-ui] terminal.is_placeholder:', data?.is_placeholder, '| _synced_from_local:', data?._synced_from_local, '| isSynced:', isSynced);
-  }, [data, dashboardHoldings]);
+    const symbolsMatch     = JSON.stringify(canonicalSymbols) === JSON.stringify(terminalSymbols);
+    const renderedState    = data ? (data.is_placeholder ? 'placeholder' : data._synced_from_local ? 'synced_local' : 'live') : 'no_data';
+    console.log('[portfolio-terminal-ui]', JSON.stringify({
+      canonicalSymbols,
+      terminalSymbols,
+      symbolsMatch,
+      isFetching,
+      isStale: !symbolsMatch && !isLoading,
+      renderedState,
+    }));
+  }, [data, dashboardHoldings, isFetching, isLoading]);
 
   // Always render the full layout — use placeholder when backend not yet connected
   const d   = data ?? PLACEHOLDER;

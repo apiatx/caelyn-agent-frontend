@@ -163,6 +163,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // === Canonical Portfolio Holdings — must be before /api/portfolio/:userId catch-all ===
+  app.get('/api/portfolio/source-audit', async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/source-audit`, {
+        headers: { 'X-API-Key': FA_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
+      });
+      const localHoldings = readHoldings();
+      const fapiData = upRes.ok ? await upRes.json() : null;
+      res.json({ local: { count: localHoldings.length, symbols: localHoldings.map(h => h.ticker) }, canonical: fapiData, in_sync: fapiData?.count === localHoldings.length });
+    } catch {
+      const localHoldings = readHoldings();
+      res.json({ local: { count: localHoldings.length, symbols: localHoldings.map(h => h.ticker) }, canonical: null, error: 'FastAPI unavailable' });
+    }
+  });
+
+  app.get('/api/portfolio/holdings', async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+        headers: { 'X-API-Key': FA_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
+      });
+      if (upRes.ok) return res.json(await upRes.json());
+    } catch { /* fall through */ }
+    res.json(readHoldings());
+  });
+
   // Portfolio endpoints with security validation
   app.get("/api/portfolio/:userId", 
     optionalAuth,
@@ -945,6 +976,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === FastAPI backend config ===
   const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+  // Fire-and-forget: keeps FastAPI canonical holdings in sync after every local CRUD op.
+  const _syncHoldingsToFastAPI = (holdings: StockHolding[]) => {
+    const payload = holdings.map(h => ({
+      id: h.id, ticker: h.ticker, symbol: h.ticker,
+      shares: h.shares, avg_cost: h.avgCost, avg_price: h.avgCost,
+      asset_type: h.assetType || 'stock', assetType: h.assetType || 'stock',
+      date_added: h.date_added || h.addedAt || new Date().toISOString(),
+      added_at: h.addedAt || h.date_added || new Date().toISOString(),
+    }));
+    fetch(`${AGENT_URL}/api/portfolio/holdings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
+      body: JSON.stringify({ holdings: payload }),
+    }).catch(() => { /* non-fatal — local JSON is the fallback */ });
+  };
 
   // === Auth proxy (avoids CORS on direct browser→FastAPI calls) ===
   const LOCAL_JWT_SECRET = process.env.SESSION_SECRET || 'caelyn-local-secret';
@@ -2052,6 +2099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       holdings.push(newHolding);
       writeHoldings(holdings);
       caelynTerminalCache = null;
+      _syncHoldingsToFastAPI(holdings);
       try {
         const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
         appendValueSnapshot(totalCost, holdings.length, holdings.map(h => h.ticker));
@@ -2075,6 +2123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (date_added !== undefined) holdings[idx].date_added = new Date(date_added).toISOString();
       writeHoldings(holdings);
       caelynTerminalCache = null;
+      _syncHoldingsToFastAPI(holdings);
       try {
         const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
         appendValueSnapshot(totalCost, holdings.length, holdings.map(h => h.ticker));
@@ -2133,6 +2182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       holdings = holdings.filter(h => h.id !== id);
       writeHoldings(holdings);
       caelynTerminalCache = null;
+      _syncHoldingsToFastAPI(holdings);
 
       try {
         const remCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
@@ -2184,6 +2234,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/stock-holdings/value-history', (req, res) => {
     try { res.json(readValueHistory()); }
     catch (error) { res.status(500).json({ error: 'Failed to read value history' }); }
+  });
+
+  // === Canonical Portfolio Holdings Proxy (FastAPI backend) ===
+  // GET  /api/portfolio/holdings        — read canonical holdings (FastAPI, fallback: local JSON)
+  // POST /api/portfolio/holdings        — write full holdings list to FastAPI (also updates local)
+  // POST /api/portfolio/holdings/migrate-from-client — one-time migration
+  // GET  /api/portfolio/source-audit    — audit canonical vs local
+
+  app.post('/api/portfolio/holdings', async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    try {
+      const upRes = await fetch(`${AGENT_URL}/api/portfolio/holdings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
+        body: JSON.stringify(req.body),
+      });
+      if (upRes.ok) {
+        const data = await upRes.json();
+        // Also write to local JSON so Terminal hydration and offline mode stay in sync
+        try {
+          const incomingHoldings = Array.isArray(req.body?.holdings) ? req.body.holdings : [];
+          if (incomingHoldings.length > 0) {
+            const normalized: StockHolding[] = incomingHoldings.map((h: any) => ({
+              id: h.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
+              ticker: (h.ticker || h.symbol || '').toUpperCase(),
+              shares: Number(h.shares ?? 0),
+              avgCost: Number(h.avg_cost || h.avg_price || h.avgCost || 0),
+              assetType: h.asset_type || h.assetType || 'stock',
+              addedAt: h.added_at || h.addedAt || new Date().toISOString(),
+              date_added: h.date_added || h.addedAt || new Date().toISOString(),
+            }));
+            writeHoldings(normalized);
+            caelynTerminalCache = null;
+          }
+        } catch { /* non-fatal */ }
+        return res.json(data);
+      }
+      return res.status(upRes.status).json({ error: 'FastAPI write failed' });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to write holdings to canonical backend' });
+    }
+  });
+
+  app.post('/api/portfolio/holdings/migrate-from-client', async (req, res) => {
+    const authHeader = req.headers.authorization || '';
+    const { holdings: clientHoldings, source } = req.body || {};
+    if (!Array.isArray(clientHoldings) || clientHoldings.length === 0) {
+      return res.status(400).json({ error: 'No holdings to migrate' });
+    }
+    // Map local format → canonical format
+    const payload = clientHoldings.map((h: any) => ({
+      id: h.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
+      ticker: (h.ticker || h.symbol || '').toUpperCase(),
+      symbol: (h.ticker || h.symbol || '').toUpperCase(),
+      shares: Number(h.shares ?? 0),
+      avg_cost: Number(h.avgCost || h.avg_cost || h.avg_price || 0),
+      avg_price: Number(h.avgCost || h.avg_cost || h.avg_price || 0),
+      avgCost: Number(h.avgCost || h.avg_cost || h.avg_price || 0),
+      asset_type: h.assetType || h.asset_type || 'stock',
+      assetType: h.assetType || h.asset_type || 'stock',
+      date_added: h.date_added || h.addedAt || new Date().toISOString(),
+      added_at: h.addedAt || h.date_added || new Date().toISOString(),
+    }));
+    try {
+      const upRes = await fetch(`${AGENT_URL}/api/portfolio/holdings/migrate-from-client`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
+        body: JSON.stringify({ holdings: payload, source: source || 'frontend_dashboard_existing_state' }),
+      });
+      if (upRes.ok) {
+        const data = await upRes.json();
+        console.log(`[portfolio-migration] Migrated ${payload.length} holdings to canonical backend from source: ${source}`);
+        caelynTerminalCache = null;
+        return res.json({ success: true, migrated: payload.length, response: data });
+      }
+      console.warn('[portfolio-migration] FastAPI migrate endpoint returned', upRes.status);
+      // Even if FastAPI fails, treat local as migrated so we don't retry forever
+      return res.json({ success: true, migrated: payload.length, note: 'FastAPI unavailable; local JSON is canonical fallback' });
+    } catch (err) {
+      console.warn('[portfolio-migration] Error calling FastAPI migrate:', err);
+      return res.json({ success: true, migrated: payload.length, note: 'FastAPI unavailable; local JSON is canonical fallback' });
+    }
   });
 
   // === FMP Stock Data Proxy Endpoints ===
