@@ -430,6 +430,23 @@ export default function StocksPortfolioPage() {
     return sorted;
   }, [enrichedHoldings, sortKey, sortAsc]);
 
+  const ASSET_COLORS: Record<string, string> = { Stocks: '#10b981', ETFs: '#3b82f6', Crypto: '#f59e0b', Commodities: '#ef4444' };
+  const sectorData = useMemo(() => {
+    const cats: Record<string, number> = {};
+    enrichedHoldings.forEach(h => {
+      const t = (h.assetType || 'stock').toLowerCase();
+      let cat = 'Stocks';
+      if (t === 'etf' || t === 'index' || t === 'indices') cat = 'ETFs';
+      else if (t === 'crypto' || t === 'cryptocurrency') cat = 'Crypto';
+      else if (t === 'commodity' || t === 'commodities') cat = 'Commodities';
+      cats[cat] = (cats[cat] || 0) + h.totalValue;
+    });
+    return Object.entries(cats)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value, pct: totalPortfolioValue > 0 ? ((value / totalPortfolioValue) * 100).toFixed(1) : '0', color: ASSET_COLORS[name] || '#64748b' }))
+      .sort((a, b) => b.value - a.value);
+  }, [enrichedHoldings, totalPortfolioValue]);
+
   useSetScreenContext((() => ({
     route: '/app/stocks/portfolio',
     page: 'portfolio',
@@ -462,23 +479,6 @@ export default function StocksPortfolioPage() {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
   };
-
-  const ASSET_COLORS: Record<string, string> = { Stocks: '#10b981', ETFs: '#3b82f6', Crypto: '#f59e0b', Commodities: '#ef4444' };
-  const sectorData = useMemo(() => {
-    const cats: Record<string, number> = {};
-    enrichedHoldings.forEach(h => {
-      const t = (h.assetType || 'stock').toLowerCase();
-      let cat = 'Stocks';
-      if (t === 'etf' || t === 'index' || t === 'indices') cat = 'ETFs';
-      else if (t === 'crypto' || t === 'cryptocurrency') cat = 'Crypto';
-      else if (t === 'commodity' || t === 'commodities') cat = 'Commodities';
-      cats[cat] = (cats[cat] || 0) + h.totalValue;
-    });
-    return Object.entries(cats)
-      .filter(([, v]) => v > 0)
-      .map(([name, value]) => ({ name, value, pct: totalPortfolioValue > 0 ? ((value / totalPortfolioValue) * 100).toFixed(1) : '0', color: ASSET_COLORS[name] || '#64748b' }))
-      .sort((a, b) => b.value - a.value);
-  }, [enrichedHoldings, totalPortfolioValue]);
 
   const plBarData = useMemo(() => {
     return [...enrichedHoldings]
