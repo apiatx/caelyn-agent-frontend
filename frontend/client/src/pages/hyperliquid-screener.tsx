@@ -2846,7 +2846,9 @@ export default function HyperliquidScreenerPage() {
               rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
 
             {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
-            <MarketMatrixSection search={search} fallbackRows={sorted} />
+            <div style={{ marginTop: 8 }}>
+              <MarketMatrixSection search={search} fallbackRows={sorted} />
+            </div>
 
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
