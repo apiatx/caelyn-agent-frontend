@@ -1,0 +1,87 @@
+Let me audit all relevant code in parallel before touching anything:
+
+
+12 actions
+Need the response assembly block and the _asset_class / ASSET_CLASS_COLORS constants before I can write anything:
+
+
+3 actions
+Need to see _asset_class helper, ASSET_CLASS_COLORS, and the Dashboard allocation route. Reading those sections in parallel:
+
+
+3 actions
+
+Published your app
+5 minutes ago
+
+Planning data structure adjustments (19 seconds)
+Need to see the _asset_class function definition before writing:
+
+
+3 actions
+I now have everything I need. Precise plan:
+
+period_returns — _build_periods already computes pct; extend it to also compute dollar value and return structured period_returns dict. Add as top-level response key.
+asset_class_allocation — add _build_asset_class_allocation using Dashboard-compatible labels (Stocks/ETFs/Crypto/Commodities/Indices) from _atype. Add as top-level response key alongside existing asset_allocation.
+Making all four edits now:
+
+
+2 actions
+Now add _build_asset_class_allocation, wire it into the main method, and add both new keys to the response — all in parallel:
+
+
+2 actions
+Now wire up the call and add both keys to the response — both edits in one shot:
+
+
+3 actions
+Dev server is running. Let me restart it to pick up the changes, then validate immediately:
+
+
+4 actions
+All green. Let me write the commit message and publish:
+
+
+3 actions
+Here's the full validation report for the two changes just deployed.
+
+Files changed
+File	Change
+backend/data/caelyn_terminal.py	_build_periods — extended to compute dollar value per period via _perf_and_val; returns new period_returns dict
+backend/data/caelyn_terminal.py	New _build_asset_class_allocation method — Dashboard-compatible buckets
+backend/data/caelyn_terminal.py	Response: added period_returns and asset_class_allocation as top-level keys
+Validation — dev server, 19 real holdings
+Holdings: canonical_count=19 · test_portfolio=False
+
+period_returns (Issue #1 — Terminal header now has values)
+Period	pct	value ($)	reason
+1D	+8.65%	+$20,896.63	null
+5D	+8.7%	+$20,917.93	null
+1M	+56.7%	+$94,881.06	null
+6M	+96.7%	+$128,988.96	null
+1Y	+194.9%	+$173,390.15	null
+All five periods populated from existing price history. portfolio.perf_* flat fields preserved unchanged for backward compat.
+
+Allocation modes (Issue #2 — all three modes present)
+asset_class_allocation (new — Dashboard-compatible)
+
+Label	Pct	Color
+Stocks	100.0%	#a78bfa
+All 19 current holdings are asset_type=stock. If the portfolio later has crypto/ETF/commodity, they will appear as separate buckets automatically.
+
+sector_allocation (unchanged)
+
+Technology 70.9% · Communication Services 6.0% · Basic Materials 5.5% · Utilities 4.5% · Industrials 4.2%
+
+theme_allocation (unchanged)
+
+Unclassified 49.7% · Semiconductor Equipment 13.9% · Substrates/Packaging 11.5% · AI Networking 7.5% · Data Center Infrastructure 6.0% · Power/Cooling 4.2% · Robotics/Automation 3.9% · Photonics/Lasers 3.3%
+
+asset_allocation (existing — preserved for backward compat)
+
+Individual Stocks 100.0%
+
+Stale ticker audit
+NVDA, BTC, GOLD, OSS, BUZZ, PLAB — all CLEAN across period_returns, asset_class_allocation, canonical holdings, correlation, volatility, and suggestions.
+
+Publishing is ready when you click the button above.

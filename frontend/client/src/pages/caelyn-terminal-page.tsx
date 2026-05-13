@@ -46,6 +46,10 @@ interface CaelynTerminalData {
   performance_chart?: CTChartPoint[];
   performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
   asset_allocation: CTAllocationItem[];
+  asset_class_allocation?: CTAllocationItem[];
+  sector_allocation?: Array<{ label: string; pct: N; color?: string }>;
+  theme_allocation?: Array<{ name: string; weight_pct: N; symbols?: string[]; market_value?: N; color?: string }>;
+  period_returns?: Record<string, { pct: N; value: N; reason?: string | null }>;
   correlation_matrix: CTCorrelationMatrix;
   risk_metrics: CTRiskMetrics;
   volatility: CTVolatilityItem[];
@@ -57,6 +61,21 @@ interface CaelynTerminalData {
   _synced_from_local?: boolean;
   as_of: string;
 }
+
+// ─── Allocation color maps ─────────────────────────────────────────────────────
+const ASSET_CLASS_COLORS: Record<string, string> = {
+  'Stocks': '#a78bfa', 'ETFs': '#38bdf8', 'Crypto': '#f59e0b',
+  'Commodities': '#ef4444', 'Indices': '#10b981',
+};
+const SECTOR_COLORS: Record<string, string> = {
+  'Technology': '#6366f1', 'Communication Services': '#38bdf8',
+  'Healthcare': '#22c55e', 'Financial Services': '#f59e0b',
+  'Consumer Cyclical': '#ec4899', 'Consumer Defensive': '#8b5cf6',
+  'Industrials': '#f97316', 'Basic Materials': '#06b6d4',
+  'Utilities': '#0ea5e9', 'Real Estate': '#a78bfa', 'Energy': '#d97706',
+  'Other': '#6b7280',
+};
+const THEME_PIE_C = ['#6366f1','#38bdf8','#f59e0b','#22c55e','#ec4899','#8b5cf6','#f97316','#06b6d4','#0ea5e9','#a78bfa','#d97706','#ef4444'];
 
 // ─── Placeholder Data (mirrors actual portfolio: NVDA, OSS, BUZZ, GOLD, BTC) ──
 const PH_CHART_DATES: Record<string, string[]> = {
@@ -186,6 +205,7 @@ export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [compareOpen, setCompareOpen] = useState(false);
+  const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'>('sectors');
 
   const { data, isLoading, isFetching } = useQuery<CaelynTerminalData>({
     queryKey: ['caelyn-terminal'],
@@ -296,7 +316,14 @@ export default function CaelynTerminalPage() {
 
   const sentColor = p.sentiment === 'BULLISH' ? C.green : p.sentiment === 'BEARISH' ? C.red : C.amber;
   const mktColor  = p.market_status === 'OPEN' ? C.green : p.market_status === 'PRE-MARKET' ? C.amber : C.red;
-  const perfMap: Record<string, N> = { '1D':p.perf_1d,'5D':p.perf_5d,'1M':p.perf_1m,'6M':p.perf_6m,'1Y':p.perf_1y };
+  const pr = d.period_returns;
+  const perfMap: Record<string, N> = {
+    '1D': pr?.['1D']?.pct ?? p.perf_1d,
+    '5D': pr?.['5D']?.pct ?? p.perf_5d,
+    '1M': pr?.['1M']?.pct ?? p.perf_1m,
+    '6M': pr?.['6M']?.pct ?? p.perf_6m,
+    '1Y': pr?.['1Y']?.pct ?? p.perf_1y,
+  };
   const chartPoints = d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? (ph ? PH_CHART : []);
   const hasChartData = (chartPoints as any[]).length >= 2;
 
@@ -550,31 +577,85 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
 
-          {/* Asset Allocation */}
+          {/* Asset Allocation — three-tab: Asset Class | Sectors | Themes */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
-            <CardHdr label="Asset Allocation" badge="Breakdown" />
-            <div style={{ display:'flex', alignItems:'center', padding:'8px 10px', gap:10 }}>
-              <div style={{ width:108, height:108, flexShrink:0, opacity: ph ? 0.4 : 1 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={d.asset_allocation} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="pct" strokeWidth={0}>
-                      {d.asset_allocation.map((a, i) => <Cell key={i} fill={a.color} />)}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-                {d.asset_allocation.map((a, i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                      <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1 }} />
-                      <span style={{ fontSize:9, color:C.dim }}>{a.label}</span>
-                    </div>
-                    <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : C.text }}>{ph ? '—' : `${fmtN(a.pct,1)}%`}</span>
-                  </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
+              <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Asset Allocation</span>
+              <div style={{ display:'flex', gap:1, background:'#080c13', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
+                {(['asset','sectors','themes'] as const).map(tab => (
+                  <button key={tab} onClick={() => setAllocTab(tab)} style={{
+                    fontSize:8, fontWeight:700, padding:'2px 8px', borderRadius:3, border:'none', cursor:'pointer', letterSpacing:0.5,
+                    background: allocTab === tab ? C.teal : 'transparent',
+                    color: allocTab === tab ? '#fff' : C.dim, transition:'all 0.1s',
+                  }}>
+                    {tab === 'asset' ? 'Asset Class' : tab === 'sectors' ? 'Sectors' : 'Themes'}
+                  </button>
                 ))}
               </div>
             </div>
+            {(() => {
+              type AllocRow = { label: string; pct: N; color: string; sublabel?: string };
+              let allocData: AllocRow[] = [];
+              if (ph) {
+                allocData = d.asset_allocation.map((a, i) => ({ label: a.label, pct: a.pct, color: a.color }));
+              } else if (allocTab === 'asset') {
+                allocData = (d.asset_class_allocation ?? []).map((a, i) => ({
+                  label: a.label, pct: a.pct,
+                  color: ASSET_CLASS_COLORS[a.label] ?? a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                }));
+                if (!allocData.length) allocData = d.asset_allocation.map((a, i) => ({
+                  label: a.label, pct: a.pct,
+                  color: ASSET_CLASS_COLORS[a.label] ?? a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                }));
+              } else if (allocTab === 'sectors') {
+                allocData = (d.sector_allocation ?? []).map((a, i) => ({
+                  label: a.label, pct: a.pct,
+                  color: a.color ?? SECTOR_COLORS[a.label] ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                }));
+                if (!allocData.length) allocData = d.asset_allocation.map((a, i) => ({
+                  label: a.label, pct: a.pct, color: a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                }));
+              } else {
+                allocData = (d.theme_allocation ?? []).map((t, i) => {
+                  const syms = t.symbols ?? [];
+                  return {
+                    label: t.name, pct: t.weight_pct,
+                    color: t.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                    sublabel: syms.length ? syms.slice(0,4).join(', ') + (syms.length > 4 ? ` +${syms.length - 4}` : '') : undefined,
+                  };
+                });
+              }
+              return (
+                <div style={{ display:'flex', alignItems:'flex-start', padding:'8px 10px', gap:10 }}>
+                  <div style={{ width:108, height:108, flexShrink:0, opacity: ph ? 0.4 : 1 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={allocData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="pct" strokeWidth={0}>
+                          {allocData.map((a, i) => <Cell key={i} fill={a.color} />)}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4, overflowY:'auto', maxHeight:108 }}>
+                    {allocData.map((a, i) => (
+                      <div key={i} style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6, minWidth:0 }}>
+                        <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
+                          <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
+                          <div style={{ minWidth:0, flex:1 }}>
+                            <span style={{ fontSize:9, color:C.dim, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
+                            {a.sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.sublabel}</span>}
+                          </div>
+                        </div>
+                        <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, flexShrink:0 }}>{ph ? '—' : `${fmtN(a.pct as number, 1)}%`}</span>
+                      </div>
+                    ))}
+                    {!ph && allocData.length === 0 && (
+                      <span style={{ fontSize:9, color:C.dimLow, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Correlation Matrix */}

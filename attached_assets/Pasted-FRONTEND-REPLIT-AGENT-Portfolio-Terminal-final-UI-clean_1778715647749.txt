@@ -1,0 +1,86 @@
+FRONTEND REPLIT AGENT — Portfolio Terminal final UI cleanup: header period returns + allocation toggles
+
+The Portfolio Terminal is now mostly working. Do not rebuild the page.
+
+We need two focused UI fixes.
+
+Issue #1:
+At the top of Portfolio Terminal, the Change section shows:
+
+1D —
+5D —
+1M —
+6M —
+1Y —
+
+These should render the period return values from /api/caelyn-terminal once backend provides them.
+
+Task:
+- Inspect the /api/caelyn-terminal response.
+- Find the period return values or new period_returns field.
+- Render 1D, 5D, 1M, 6M, 1Y in the header.
+- Use existing green/red formatting.
+- If backend returns a reason/unavailable for a period, show “—” but do not break layout.
+- Do not hardcode values.
+
+Issue #2:
+Asset Allocation section on Terminal needs three toggles:
+
+1. Asset Class
+- Must reuse/match the Portfolio Dashboard asset allocation donut style and classification.
+- Categories: Stocks, Crypto, Commodities, ETFs, Indices.
+- This already exists and works on Dashboard. Reuse the same component/helper/style if possible. Do not rebuild from scratch.
+
+2. Sectors
+- This is the current Terminal allocation view.
+- Keep it unchanged.
+
+3. Themes
+- Use backend theme_allocation from /api/caelyn-terminal.
+- Render it in the same donut/list style as Asset Class and Sectors.
+- Show theme names, weights, and ideally symbols on hover/details if already supported.
+
+Default behavior:
+- Default allocation toggle can stay on Sectors if that is current behavior, or use Asset Class if easier.
+- But all three toggles must be available:
+  Asset Class | Sectors | Themes
+
+Do not break:
+- holdings list
+- Portfolio vs S&P chart
+- correlation matrix
+- risk metrics
+- volatility
+- risk suggestions
+- top movers/losers
+- Dashboard add/edit/delete
+
+Audit first:
+1. Locate the Dashboard Asset Allocation chart/component.
+2. Locate the Terminal Asset Allocation section.
+3. Reuse shared logic/component where practical.
+4. Inspect actual /api/caelyn-terminal allocation fields:
+   - asset_class_allocation / asset_allocation
+   - sector_allocation
+   - theme_allocation
+5. Wire the toggle to switch among those datasets.
+
+Validation:
+Use the current 19-holding portfolio.
+
+Confirm:
+1. Header 1D/5D/1M/6M/1Y values render when backend provides them.
+2. Asset Allocation toggle exists with:
+   - Asset Class
+   - Sectors
+   - Themes
+3. Asset Class matches Dashboard’s existing allocation style/categories.
+4. Sectors view remains unchanged.
+5. Themes view shows thematic universe mappings.
+6. No stale/deleted tickers appear.
+7. Hard refresh keeps everything working.
+
+Return:
+- exact files changed
+- backend fields consumed
+- screenshot/console validation showing the three allocation modes and header period returns
