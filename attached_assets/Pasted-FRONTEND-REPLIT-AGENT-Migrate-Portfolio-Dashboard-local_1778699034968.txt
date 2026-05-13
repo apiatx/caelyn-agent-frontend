@@ -1,0 +1,143 @@
+FRONTEND REPLIT AGENT — Migrate Portfolio Dashboard local holdings to canonical backend
+
+Backend is now consolidated. There is ONE canonical backend portfolio source:
+
+data/portfolio/active_holdings.json
+
+Backend added:
+- GET /api/portfolio/source-audit
+- POST /api/portfolio/holdings/migrate-from-client
+- GET /api/portfolio/holdings
+- POST /api/portfolio/holdings
+
+Important finding:
+The user’s real ~19 Portfolio Dashboard holdings were never in backend files. They are currently in frontend/browser state/localStorage or another frontend-side store. Do NOT make the user re-enter them.
+
+Goal:
+On frontend load, detect the existing Dashboard-visible holdings and migrate them into the canonical backend source exactly once.
+
+Do NOT:
+- wipe local holdings
+- require re-entry
+- hardcode tickers
+- replace current Dashboard UI
+- create another portfolio source
+- let localStorage remain the permanent source of truth after migration
+- show stale old holdings in Terminal
+- overwrite a richer backend portfolio with empty/stale local data
+
+Audit first:
+1. Locate Portfolio Dashboard component.
+2. Find exactly where its visible holdings come from:
+   - localStorage
+   - React state
+   - React Query cache
+   - Zustand/store
+   - IndexedDB
+   - old frontend-server `/api/stock-holdings`
+   - any other local persistence
+3. Locate add/edit/delete save logic.
+4. Locate Terminal query logic.
+
+Add temporary diagnostics:
+
+[portfolio-frontend-source]
+{
+  dashboardVisibleSymbols,
+  dashboardVisibleCount,
+  localStorageSymbols,
+  backendCanonicalSymbols,
+  backendCanonicalCount,
+  source,
+  migrationNeeded
+}
+
+Migration logic:
+1. Fetch canonical backend holdings from GET /api/portfolio/holdings.
+2. Read Dashboard-visible holdings from the existing Dashboard source.
+3. If Dashboard/local holdings count > backend count, call:
+
+POST /api/portfolio/holdings/migrate-from-client
+
+Payload:
+{
+  "holdings": dashboardVisibleHoldings,
+  "source": "frontend_dashboard_existing_state"
+}
+
+4. Preserve all fields:
+- ticker/symbol
+- shares
+- avg_price / avg_cost
+- company name
+- theme
+- notes
+- date_added if exists
+- any id used by Dashboard editing
+
+5. If backend already has equal or more holdings:
+- do not overwrite automatically.
+- log the mismatch.
+- prefer backend as canonical after migration.
+
+6. If local holdings are empty:
+- do not POST empty holdings.
+- do not wipe backend.
+
+7. Use a guard to prevent infinite migration loops.
+
+After migration:
+- invalidate/refetch:
+  - portfolio holdings query
+  - Dashboard holdings query
+  - Terminal query
+  - any portfolio analytics query
+- Dashboard should render from canonical backend holdings going forward.
+- Terminal should render from canonical backend holdings.
+- localStorage may remain as backup/draft only, not active source of truth.
+
+Update add/edit/delete:
+All Dashboard add/edit/delete actions must write to canonical backend endpoints:
+- add/update full holdings list via POST /api/portfolio/holdings or existing canonical save route
+- delete/close must update backend
+- then invalidate Terminal query
+
+Terminal stale flash fix:
+1. Do not render stale terminal payload if symbols do not match canonical backend holdings.
+2. Remove keepPreviousData/placeholderData if it causes old holdings to flash.
+3. On Dashboard → Terminal switch, refetch /api/caelyn-terminal.
+4. Show loading/syncing instead of old symbols.
+
+Add diagnostics:
+
+[portfolio-terminal-ui]
+{
+  canonicalSymbols,
+  terminalSymbols,
+  symbolsMatch,
+  isFetching,
+  isStale,
+  renderedState
+}
+
+Validation:
+1. Open Portfolio Dashboard.
+2. Confirm Dashboard-visible holdings count is the real current portfolio count.
+3. Confirm migration endpoint is called once if backend has fewer holdings.
+4. Confirm GET /api/portfolio/holdings returns the real current holdings after migration.
+5. Hard refresh.
+6. Dashboard still shows the same holdings from backend.
+7. Switch to Terminal.
+8. Terminal immediately shows the same holdings, no old holdings flash.
+9. Add a test holding.
+10. Confirm Dashboard and Terminal both update.
+11. Delete/close the test holding.
+12. Confirm Dashboard and Terminal both update.
+13. Confirm localStorage no longer overrides backend canonical holdings.
+
+Return:
+- exact frontend source of the old 19 holdings
+- files changed
+- migration logic added
+- query keys invalidated
+- validation logs proving backend canonical symbols = Dashboard symbols = Terminal symbols
