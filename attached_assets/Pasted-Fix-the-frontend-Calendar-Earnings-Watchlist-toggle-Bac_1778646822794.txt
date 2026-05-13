@@ -1,0 +1,204 @@
+Fix the frontend Calendar Earnings Watchlist toggle. Backend validation now passes, but the UI still shows All/curated data under Watchlist.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Context:
+Backend has now validated all Watchlist earnings routes with strict symbol-leakage assertions:
+- day-clean?scope=watchlist
+- day-curated?scope=watchlist
+- week-clean?scope=watchlist current week
+- week-clean?scope=watchlist next week
+- month-all?scope=watchlist
+- month-curated?scope=watchlist current month
+- month-curated?scope=watchlist next month
+
+Backend claims:
+returned_symbols - saved_watchlist_symbols == empty set
+for every Watchlist route.
+
+So the frontend bug is likely:
+- not sending scope=watchlist on all requests
+- React Query cache key missing scope/date/view
+- keepPreviousData/placeholderData showing stale All data
+- response parser reading wrong shape and falling back to All
+- toggle state says Watchlist but request builder still uses all/default scope
+
+Goal:
+When the user clicks Watchlist on Calendar → Earnings:
+- every request must include scope=watchlist
+- UI must render the Watchlist response, not cached All data
+- Day, Week, next Week, Month, and next Month must all show saved Watchlist earnings only
+- All toggle behavior must remain unchanged
+
+Do not change backend.
+Do not redesign the page.
+Do not implement Portfolio yet.
+Do not add previous earnings/EPS beats/revenue beats.
+
+Step 1 — Trace actual browser network requests
+Open Calendar → Earnings and use the frontend code/logs to identify the exact request built for:
+
+- All + Day
+- Watchlist + Day
+- All + Week
+- Watchlist + Week current
+- Watchlist + Week next
+- All + Month
+- Watchlist + Month
+- Watchlist + next month if supported
+
+For every Watchlist request, confirm the URL includes:
+scope=watchlist
+
+If any Watchlist request omits scope=watchlist, fix the request builder.
+
+Step 2 — Fix request param mapping
+Find the Earnings scope/toggle state:
+- All
+- Watchlist
+- Portfolio
+
+Map values exactly:
+- All → scope=all
+- Watchlist → scope=watchlist
+- Portfolio → scope=portfolio, but do not implement Portfolio behavior now unless already wired
+
+Every earnings endpoint used by the Calendar page must receive scope:
+- day-clean
+- day-curated
+- week-clean
+- month-all
+- month-curated
+- upcoming-clean if used
+
+Do not only add scope to one endpoint.
+
+Step 3 — Fix React Query query keys
+Find all React Query/useQuery hooks for Earnings calendar data.
+
+The query key must include:
+- tab / earnings tab id
+- view/mode: day/week/month/recent
+- selected scope: all/watchlist/portfolio
+- selected date/window: day, weekStart/weekEnd, month, year
+- search/filter if it changes visible data
+
+Bad:
+queryKey: ["earnings-calendar", view]
+
+Good:
+queryKey: ["earnings-calendar", view, selectedScope, selectedDateOrRange]
+
+If selectedScope is not in the query key, React Query will reuse All data under Watchlist.
+
+Step 4 — Stop displaying stale All data as Watchlist
+Inspect useQuery options:
+- keepPreviousData
+- placeholderData
+- initialData
+- staleTime
+- select
+
+If switching from All to Watchlist, do not keep showing All results as if they are Watchlist.
+
+Acceptable:
+- show skeleton/loading while Watchlist fetches
+- show previous data only if clearly marked loading and replaced immediately
+
+Preferred:
+- placeholderData: undefined for scope changes
+- or conditionally avoid keepPreviousData when selectedScope changes
+
+Step 5 — Remove fallback-to-All behavior
+Search for logic like:
+- if watchlist data empty, use allData
+- events = scopedEvents || allEvents
+- data?.events ?? allData.events
+- scope === "watchlist" ? filteredAllEvents : allEvents
+- applyScope(allEvents, watchlist)
+
+Delete/disable this for Watchlist.
+
+If Watchlist response is empty:
+- show empty state
+- do not show All data
+
+Empty state:
+"No upcoming earnings found for your watchlist."
+
+Step 6 — Render route-specific response correctly
+Backend returns different clean endpoint shapes depending on route:
+- day-clean/day-curated
+- week-clean
+- month-all
+- month-curated
+
+Make sure the frontend reads the correct response field for each route.
+
+If Watchlist response has:
+- days[]
+- topEvents[]
+- topSymbols[]
+- events[]
+use the same renderer path as All for that endpoint.
+
+Do not fail parsing and then fall back to All.
+
+Step 7 — Add temporary frontend diagnostics
+Add a temporary console log gated to development:
+
+console.log("[earnings-ui]", {
+  selectedScope,
+  view,
+  requestUrl,
+  queryKey,
+  responseScope: data?.scope,
+  symbols: extractSymbols(data).slice(0, 20),
+  count: extractSymbols(data).length,
+});
+
+This should prove:
+- selectedScope is watchlist
+- requestUrl has scope=watchlist
+- queryKey includes watchlist
+- responseScope is watchlist
+- rendered symbols are the Watchlist response symbols
+
+Step 8 — Manual validation in browser
+Do not mark complete until this is verified in the browser UI and Network tab.
+
+A. Click All + Week:
+- URL includes scope=all or no scope only if backend default all is intentional
+- UI shows curated All
+
+B. Click Watchlist + Week:
+- URL includes scope=watchlist
+- query key includes watchlist
+- UI symbols match Watchlist response, not All
+
+C. Click Watchlist + next week:
+- URL includes scope=watchlist and next-week date window
+- UI shows next-week Watchlist events if backend returns them
+- no All fallback
+
+D. Click Watchlist + Month:
+- URL includes scope=watchlist
+- query key includes watchlist + month/year
+- UI shows Watchlist month response
+- no curated All symbols
+
+E. Toggle All → Watchlist → All:
+- data changes correctly each time
+- no stale cache bleed
+
+Step 9 — Confirm with backend response directly
+For the exact URL the browser sends under Watchlist Month:
+- copy as cURL
+- confirm response has only Watchlist symbols
+- confirm frontend renders those exact symbols
+
+If cURL is correct and UI is wrong, the bug is 100% frontend parsing/cache/state.
+
+Success definition:
+The Calendar Earnings Watchlist toggle renders the actual backend Watchlist response across Day, Week, next Week, Month, and next Month. React Query cache cannot reuse All data for Watchlist. No frontend fallback displays All data under Watchlist.

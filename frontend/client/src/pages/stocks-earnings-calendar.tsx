@@ -6830,6 +6830,9 @@ export default function StocksEarningsCalendarPage() {
   }, [fetchEarnings]);
 
   // ── Prefetch on mount: Day Curated (today), Week Curated, Month Curated ──
+  // Keys MUST match the live query keys (which include scope as element [3]).
+  // Default scope on mount is "all" — prefetch with scope="all" so the cache
+  // hit lands correctly when the user first views the page.
   useEffect(() => {
     const now = new Date();
     const today = dateKey(now);
@@ -6837,9 +6840,10 @@ export default function StocksEarningsCalendarPage() {
     const thisWeekEnd = addDays(thisMonday, 4);
     const thisYear = now.getFullYear();
     const thisMonth = now.getMonth() + 1;
+    const defaultScope = "all";
 
     queryClient.prefetchQuery({
-      queryKey: ["earnings", "day", "curated", today],
+      queryKey: ["earnings", "day", "curated", defaultScope, today],
       queryFn: async () => {
         const r = await fetch(`/api/catalysts/earnings/day-curated?date=${today}`);
         if (!r.ok) throw new Error(`${r.status}`);
@@ -6850,7 +6854,7 @@ export default function StocksEarningsCalendarPage() {
     });
 
     queryClient.prefetchQuery({
-      queryKey: ["earnings", "week", "curated", dateKey(thisMonday)],
+      queryKey: ["earnings", "week", "curated", defaultScope, dateKey(thisMonday)],
       queryFn: async () => {
         const params = new URLSearchParams({
           weekStart: dateKey(thisMonday),
@@ -6866,7 +6870,7 @@ export default function StocksEarningsCalendarPage() {
     });
 
     queryClient.prefetchQuery({
-      queryKey: ["earnings", "month", "curated", thisYear, thisMonth],
+      queryKey: ["earnings", "month", "curated", defaultScope, thisYear, thisMonth],
       queryFn: async () => {
         const r = await fetch(`/api/catalysts/earnings/month-curated?year=${thisYear}&month=${thisMonth}`);
         if (!r.ok) throw new Error(`${r.status}`);
@@ -6879,6 +6883,31 @@ export default function StocksEarningsCalendarPage() {
   const isEarningsTab   = activeTab === "earnings_dates";
   const isIpoTab        = activeTab === "ipos";
   const showFilterBar   = isEarningsTab;
+
+  // ── Diagnostic: confirm scope/queryKey/response/symbols alignment ──
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const activeData: any =
+      earningsMode === "thisweek" ? weekCleanData :
+      earningsMode === "month"    ? monthCuratedData : null;
+    const activeKey =
+      earningsMode === "thisweek" ? weekCleanQueryKey :
+      earningsMode === "month"    ? monthCuratedQueryKey : null;
+    const symbols: string[] =
+      earningsMode === "thisweek"
+        ? (weekCleanData?.days ?? []).flatMap(d => (d.entries ?? []).map((e: any) => e.symbol)).filter(Boolean)
+        : earningsMode === "month"
+        ? (monthCuratedData?.days ?? []).flatMap(d => (d.topEvents ?? []).map((e: any) => e.symbol)).filter(Boolean)
+        : [];
+    console.log("[earnings-ui]", {
+      selectedScope: scope,
+      view: earningsMode,
+      queryKey: activeKey,
+      responseScope: activeData?.scope ?? "(not in response)",
+      symbols: symbols.slice(0, 20),
+      count: symbols.length,
+    });
+  }, [scope, earningsMode, weekCleanData, monthCuratedData, weekCleanQueryKey, monthCuratedQueryKey]);
 
   // ── Screen context — placed here so all data variables are in scope ──
   useSetScreenContext((() => {

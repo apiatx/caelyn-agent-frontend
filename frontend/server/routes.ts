@@ -3911,7 +3911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // We fix this by calling week-clean for every Mon–Fri week in the month,
     // in parallel, then merging the results into a full-month response.
     try {
-      const { year, month } = req.query as Record<string, string>;
+      const { year, month, scope } = req.query as Record<string, string>;
       const y = parseInt(year) || new Date().getFullYear();
       const m = parseInt(month) || (new Date().getMonth() + 1);
 
@@ -3939,6 +3939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const timer = setTimeout(() => ctrl.abort(), 20000);
         try {
           const params = new URLSearchParams({ weekStart, weekEnd, limit_per_session: '8', max_total: '60' });
+          if (scope && scope !== 'all') params.set('scope', scope);
           const r = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${params}`, {
             headers: fcHdr(),
             signal: ctrl.signal,
@@ -3992,7 +3993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // grid of earnings counts + entries (analogous to month-curated but using
     // the week-all endpoint which returns ALL tickers, not just curated ones).
     try {
-      const { year, month } = req.query as Record<string, string>;
+      const { year, month, scope } = req.query as Record<string, string>;
       const y = parseInt(year) || new Date().getFullYear();
       const m = parseInt(month) || (new Date().getMonth() + 1);
 
@@ -4018,6 +4019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const timer = setTimeout(() => ctrl.abort(), 20000);
         try {
           const params = new URLSearchParams({ weekStart, weekEnd });
+          if (scope && scope !== 'all') params.set('scope', scope);
           const r = await fetch(`${FC_URL}/api/catalysts/earnings/week-all?${params}`, {
             headers: fcHdr(),
             signal: ctrl.signal,
