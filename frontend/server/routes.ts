@@ -20,7 +20,9 @@ import { insertPremiumAccessSchema } from "@shared/schema";
 import fs from 'fs';
 import path from 'path';
 
-const HOLDINGS_FILE = path.join(process.cwd(), 'data', 'stock-holdings.json');
+const HOLDINGS_FILE      = path.join(process.cwd(), 'data', 'stock-holdings.json');
+const TRADE_HISTORY_FILE = path.join(process.cwd(), 'data', 'stock-holdings-history.json');
+const VALUE_HISTORY_FILE = path.join(process.cwd(), 'data', 'portfolio-value-history.json');
 
 interface StockHolding {
   id: string;
@@ -28,7 +30,29 @@ interface StockHolding {
   shares: number;
   avgCost: number;
   addedAt: string;
+  date_added?: string;
   assetType?: string;
+}
+
+interface ClosedTrade {
+  id: string;
+  symbol: string;
+  shares: number;
+  avg_entry_price: number;
+  exit_price: number;
+  entry_date: string;
+  exit_date: string;
+  realized_pnl: number;
+  realized_pnl_pct: number;
+  holding_period_days: number;
+  source: string;
+}
+
+interface ValueSnapshot {
+  timestamp: string;
+  total_value: number;
+  holdings_count: number;
+  symbols: string[];
 }
 
 function ensureDataDir() {
@@ -46,6 +70,37 @@ function readHoldings(): StockHolding[] {
 function writeHoldings(holdings: StockHolding[]) {
   ensureDataDir();
   fs.writeFileSync(HOLDINGS_FILE, JSON.stringify(holdings, null, 2));
+}
+
+function readTradeHistory(): ClosedTrade[] {
+  ensureDataDir();
+  if (!fs.existsSync(TRADE_HISTORY_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(TRADE_HISTORY_FILE, 'utf-8')); }
+  catch { return []; }
+}
+
+function writeTradeHistory(trades: ClosedTrade[]) {
+  ensureDataDir();
+  fs.writeFileSync(TRADE_HISTORY_FILE, JSON.stringify(trades, null, 2));
+}
+
+function readValueHistory(): ValueSnapshot[] {
+  ensureDataDir();
+  if (!fs.existsSync(VALUE_HISTORY_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(VALUE_HISTORY_FILE, 'utf-8')); }
+  catch { return []; }
+}
+
+function writeValueHistory(snapshots: ValueSnapshot[]) {
+  ensureDataDir();
+  fs.writeFileSync(VALUE_HISTORY_FILE, JSON.stringify(snapshots, null, 2));
+}
+
+function appendValueSnapshot(totalValue: number, holdingsCount: number, symbols: string[]) {
+  if (totalValue <= 0) return;
+  const history = readValueHistory();
+  history.push({ timestamp: new Date().toISOString(), total_value: totalValue, holdings_count: holdingsCount, symbols });
+  writeValueHistory(history.slice(-2000));
 }
 
 // Security imports
@@ -1962,6 +2017,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const holdings = readHoldings();
       res.json(holdings);
+      // Write a daily cost-basis snapshot if not yet done today (non-blocking)
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const last  = readValueHistory().slice(-1)[0];
+        if (!last || !last.timestamp.startsWith(today)) {
+          const approxValue = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+          appendValueSnapshot(approxValue, holdings.length, holdings.map(h => h.ticker));
+        }
+      } catch { /* non-fatal */ }
     } catch (error) {
       console.error('Error reading holdings:', error);
       res.status(500).json({ error: 'Failed to read holdings' });
@@ -1970,22 +2034,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/stock-holdings', (req, res) => {
     try {
-      const { ticker, shares, avgCost, assetType } = req.body;
+      const { ticker, shares, avgCost, assetType, date_added } = req.body;
       if (!ticker || !shares || !avgCost) {
         return res.status(400).json({ error: 'ticker, shares, and avgCost are required' });
       }
       const holdings = readHoldings();
+      const now = new Date().toISOString();
       const newHolding: StockHolding = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         ticker: ticker.toUpperCase().trim(),
         shares: Number(shares),
         avgCost: Number(avgCost),
-        addedAt: new Date().toISOString(),
+        addedAt: now,
+        date_added: date_added ? new Date(date_added).toISOString() : now,
         assetType: assetType || 'stock',
       };
       holdings.push(newHolding);
       writeHoldings(holdings);
       caelynTerminalCache = null;
+      try {
+        const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+        appendValueSnapshot(totalCost, holdings.length, holdings.map(h => h.ticker));
+      } catch { /* non-fatal */ }
       res.json(newHolding);
     } catch (error) {
       console.error('Error adding holding:', error);
@@ -1996,14 +2066,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/stock-holdings/:id', (req, res) => {
     try {
       const { id } = req.params;
-      const { shares, avgCost } = req.body;
+      const { shares, avgCost, date_added } = req.body;
       const holdings = readHoldings();
       const idx = holdings.findIndex(h => h.id === id);
       if (idx === -1) return res.status(404).json({ error: 'Holding not found' });
       if (shares !== undefined) holdings[idx].shares = Number(shares);
       if (avgCost !== undefined) holdings[idx].avgCost = Number(avgCost);
+      if (date_added !== undefined) holdings[idx].date_added = new Date(date_added).toISOString();
       writeHoldings(holdings);
       caelynTerminalCache = null;
+      try {
+        const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+        appendValueSnapshot(totalCost, holdings.length, holdings.map(h => h.ticker));
+      } catch { /* non-fatal */ }
       res.json(holdings[idx]);
     } catch (error) {
       console.error('Error updating holding:', error);
@@ -2011,14 +2086,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/stock-holdings/:id', (req, res) => {
+  app.delete('/api/stock-holdings/:id', async (req, res) => {
     try {
       const { id } = req.params;
       let holdings = readHoldings();
+      const closing = holdings.find(h => h.id === id);
+      if (!closing) return res.status(404).json({ error: 'Holding not found' });
+
+      // Fetch live exit price — fall back to avgCost if unavailable
+      let exitPrice = closing.avgCost;
+      try {
+        const atMap: Record<string, string> = { [closing.ticker]: closing.assetType || 'stock' };
+        const qr = await fmpService.getStockDetails([closing.ticker], atMap);
+        if (qr?.[0]?.price && qr[0].price > 0) exitPrice = qr[0].price;
+      } catch { /* use avgCost fallback */ }
+
+      // Build closed trade record
+      const entryDate   = closing.date_added || closing.addedAt || new Date().toISOString();
+      const exitDate    = new Date().toISOString();
+      const holdingDays = Math.max(0, Math.round(
+        (new Date(exitDate).getTime() - new Date(entryDate).getTime()) / 86400000
+      ));
+      const costBasis   = closing.shares * closing.avgCost;
+      const proceeds    = closing.shares * exitPrice;
+      const realizedPnl = proceeds - costBasis;
+      const realizedPct = costBasis > 0 ? (realizedPnl / costBasis) * 100 : 0;
+
+      const tradeRecord: ClosedTrade = {
+        id:                  `${id}-closed-${Date.now()}`,
+        symbol:              closing.ticker,
+        shares:              closing.shares,
+        avg_entry_price:     closing.avgCost,
+        exit_price:          exitPrice,
+        entry_date:          entryDate,
+        exit_date:           exitDate,
+        realized_pnl:        realizedPnl,
+        realized_pnl_pct:    realizedPct,
+        holding_period_days: holdingDays,
+        source:              'deleted_from_dashboard',
+      };
+
+      const tradeHist = readTradeHistory();
+      tradeHist.push(tradeRecord);
+      writeTradeHistory(tradeHist);
+
       holdings = holdings.filter(h => h.id !== id);
       writeHoldings(holdings);
       caelynTerminalCache = null;
-      res.json({ success: true });
+
+      try {
+        const remCost = holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+        appendValueSnapshot(remCost, holdings.length, holdings.map(h => h.ticker));
+      } catch { /* non-fatal */ }
+
+      res.json({ success: true, closed_trade: tradeRecord });
     } catch (error) {
       console.error('Error deleting holding:', error);
       res.status(500).json({ error: 'Failed to delete holding' });

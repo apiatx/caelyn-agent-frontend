@@ -1,0 +1,249 @@
+We fixed Portfolio Dashboard ↔ Terminal holdings sync, but the Terminal is now only partially hydrated.
+
+Current state:
+- Dashboard shows the real 12 holdings.
+- Terminal left rail now shows the same 12 holdings.
+- But the main Terminal sections are blank or zero:
+  - Portfolio vs S&P 500 chart blank
+  - Asset allocation blank
+  - Correlation matrix blank
+  - Risk metrics blank / "--"
+  - Volatility blank
+  - Top movers says 0 up / 0 down
+  - total return and time-period returns are not meaningful
+
+Recent fix context:
+GET /api/caelyn-terminal now detects FastAPI placeholder response and injects holdings from stock-holdings.json. That solved the left-side holdings list, but the injected response does not fully rebuild the derived Terminal data needed by the rest of the page.
+
+Goal:
+Make every Terminal section work from the same current Dashboard holdings, not just the holdings sidebar.
+
+Do NOT:
+- redesign the Terminal
+- change visual layout
+- break Dashboard
+- hardcode symbols
+- reintroduce demo holdings
+- create a second source of truth
+- remove the FastAPI route
+- wipe user holdings
+- require the user to re-add holdings
+
+Audit first:
+1. Open frontend/server/routes.ts GET /api/caelyn-terminal.
+2. Identify every response field consumed by frontend/client/src/pages/caelyn-terminal-page.tsx.
+3. Compare the normal FastAPI response shape versus the injected local fallback response.
+4. Identify which fields are missing/zero when _synced_from_local=true.
+5. Add a dev-only diagnostic log:
+
+[portfolio-terminal-hydration]
+{
+  holdings_count,
+  symbols,
+  has_performance_series,
+  performance_points,
+  has_asset_allocation,
+  allocation_count,
+  has_risk_metrics,
+  has_volatility,
+  volatility_count,
+  has_top_movers,
+  top_movers_count,
+  has_correlation_matrix,
+  correlation_rows,
+  is_placeholder,
+  _synced_from_local
+}
+
+Required fix:
+When FastAPI returns placeholder/empty data and the proxy injects local holdings, also build the derived Terminal fields from those holdings.
+
+At minimum, populate:
+
+1. Header / account totals
+- total portfolio value
+- daily P&L
+- 1D / 5D / 1M / 6M / 1Y returns if available
+- total return if cost basis exists
+
+2. Holdings sidebar
+Already working, but preserve:
+- ticker
+- current price
+- daily change
+- daily change %
+- allocation %
+
+3. Top movers
+Calculate from holdings using daily change %:
+- gainers = holdings with positive change %
+- losers = holdings with negative change %
+- sort by absolute move or positive/negative rank
+- show top 2-4 as current UI expects
+
+4. Asset allocation
+Build from current holdings:
+- If asset_type/category exists, group by it.
+- Otherwise classify:
+  - crypto if symbol is BTC/ETH/etc.
+  - ETF if type says ETF
+  - otherwise Individual Stocks
+- Use market value weights.
+- Must render even if all holdings are stocks.
+
+5. Risk metrics
+If historical data is unavailable, do not show fake precision.
+But do compute what can be computed:
+- top concentration = max holding allocation %
+- top concentration symbol
+- portfolio beta if beta values exist, weighted by allocation
+- weighted volatility if historical/volatility data exists
+- otherwise show unavailable state clearly without breaking panel
+
+6. Volatility section
+If per-symbol volatility exists from API or quote/historical helper, populate it.
+If not available, show a clean unavailable state, not an empty broken panel.
+
+7. Portfolio performance chart
+This needs historical account value.
+Current limitation:
+The app only has current holdings + avg price, so it cannot accurately reconstruct portfolio value over time unless we add date_added / trade history / account snapshots.
+
+For now:
+- Do not fake a historical chart.
+- If there is no historical portfolio series, show a clean empty state:
+  "Performance history starts after portfolio tracking is enabled."
+- But keep current total value visible.
+
+8. Correlation matrix
+If historical price series are available for the holdings, compute correlation.
+If not, show a clean unavailable state:
+  "Correlation requires historical price data."
+Do not show old demo correlation.
+
+Important:
+No panel should silently display blank because the injected local fallback response lacks fields. Either populate it from current holdings or show a deliberate unavailable state.
+
+Next feature addition:
+Add portfolio lifecycle tracking so Terminal charts and trade history can become accurate.
+
+Add to Portfolio Dashboard holdings:
+1. date_added / entry_date
+- Add field to Add Holding form.
+- Default to today.
+- Allow editing on existing holdings.
+- Preserve existing holdings by backfilling date_added if missing:
+  - do not force re-entry
+  - default missing date_added to today or file created date
+  - ideally allow user to edit later
+
+2. On delete/sell
+Currently delete removes a holding.
+Change this carefully:
+- Keep existing delete UX, but treat delete as "close position" behind the scenes.
+- Before removing active holding, write a closed trade record to portfolio trade history.
+- Capture:
+  - symbol
+  - shares
+  - avg_price / cost basis
+  - date_added / entry_date
+  - exit_date = current date/time
+  - exit_price = latest current price if available
+  - realized_pnl
+  - realized_pnl_pct
+  - holding_period_days
+  - source = deleted_from_dashboard
+- Then remove from active holdings.
+
+Do not make deletion destructive without history.
+
+3. Add persistent trade history storage
+Use the existing portfolio storage pattern first.
+If holdings are in stock-holdings.json, add a companion file or existing backend endpoint:
+- stock-holdings-history.json
+or if there is already a portfolio history/trades store, use it.
+
+Do not invent a new storage architecture if one already exists.
+
+4. Add account value snapshots
+To track overall account value over time, add a lightweight snapshot system:
+- On every portfolio save/edit/delete, record:
+  - timestamp
+  - total_account_value
+  - holdings_count
+  - symbols
+  - per_holding market_value if available
+- Also record once per page load or daily if not already recorded today.
+- Store this in portfolio-value-history.json or the existing backend storage pattern.
+- This series should feed the Terminal performance chart.
+
+Avoid spam:
+- Do not write a new snapshot on every render.
+- Write on portfolio mutation.
+- Optionally write once per day when portfolio is viewed.
+
+5. Add endpoints if needed:
+- GET /api/stock-holdings/history
+- GET /api/stock-holdings/value-history
+- Existing POST/PUT/DELETE should update these stores.
+
+6. Frontend Dashboard UI changes:
+- Add "Date Added" field to Add Holding form.
+- Add "Date Added" to edit modal/form if one exists.
+- Do not clutter main table unless there is room.
+- If adding a column is too much, show it in expanded row/details.
+
+7. Terminal integration:
+Use value-history to power:
+- Portfolio vs S&P 500 chart
+- 1D / 5D / 1M / 6M / 1Y portfolio returns when enough history exists
+- total return over tracked period
+
+Use trade history to power future:
+- biggest winners
+- biggest losers
+- average holding period
+- realized P&L
+- closed trades
+
+Validation:
+A. Terminal hydration
+1. Load Dashboard with current 12 holdings.
+2. Switch to Terminal.
+3. Confirm:
+   - holdings sidebar shows 12 positions
+   - account value matches Dashboard
+   - top movers populated from current holdings
+   - asset allocation populated
+   - concentration metric populated
+   - blank sections either have real data or intentional unavailable states
+   - no demo data appears
+
+B. Add holding
+1. Add a test holding with date_added.
+2. Confirm Dashboard saves it.
+3. Confirm Terminal updates holdings, allocation, top movers, concentration.
+4. Confirm value-history snapshot written.
+
+C. Edit holding
+1. Edit shares/avg price/date_added.
+2. Confirm Terminal recalculates.
+3. Confirm no duplicate history record is created unless intended.
+
+D. Delete holding
+1. Delete/close the test holding.
+2. Confirm it disappears from active holdings.
+3. Confirm a closed trade record is written with exit_date, exit_price, realized P&L, holding_period_days.
+4. Confirm Terminal active holdings update.
+5. Confirm value-history snapshot written.
+
+Return:
+- Exact root cause of blank Terminal panels.
+- Exact response fields missing before.
+- Exact files changed.
+- What is now computed from current holdings.
+- What is intentionally unavailable until history exists.
+- Where date_added is stored.
+- Where closed trade history is stored.
+- Where account value history is stored.
+- Validation output proving the current 12 holdings drive the full Terminal response.

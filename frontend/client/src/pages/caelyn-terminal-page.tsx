@@ -247,6 +247,8 @@ export default function CaelynTerminalPage() {
   const sentColor = p.sentiment === 'BULLISH' ? C.green : p.sentiment === 'BEARISH' ? C.red : C.amber;
   const mktColor  = p.market_status === 'OPEN' ? C.green : p.market_status === 'PRE-MARKET' ? C.amber : C.red;
   const perfMap: Record<string, N> = { '1D':p.perf_1d,'5D':p.perf_5d,'1M':p.perf_1m,'6M':p.perf_6m,'1Y':p.perf_1y };
+  const chartPoints = d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? (ph ? PH_CHART : []);
+  const hasChartData = (chartPoints as any[]).length > 0;
 
   const posLabel  = (ph || isNull(d.positions_count)) ? '— Positions' : `${d.positions_count} Positions`;
   const liveColor = (isLoading || isFetching) ? C.amber : ph ? C.red : C.green;
@@ -474,8 +476,14 @@ export default function CaelynTerminalPage() {
                   <span style={{ fontSize:9, color:C.dim, letterSpacing:2 }}>AWAITING DATA</span>
                 </div>
               )}
+              {!ph && !hasChartData && (
+                <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:2, gap:4, background:C.card, borderRadius:4 }}>
+                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>NO HISTORY YET</span>
+                  <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Performance chart builds as portfolio<br/>saves &amp; value snapshots accumulate</span>
+                </div>
+              )}
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? PH_CHART} margin={{ top:4, right:8, bottom:0, left:-10 }}>
+                <ComposedChart data={chartPoints as any[]} margin={{ top:4, right:8, bottom:0, left:-10 }}>
                   <defs>
                     <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={C.teal} stopOpacity={ph ? 0.08 : 0.28} />

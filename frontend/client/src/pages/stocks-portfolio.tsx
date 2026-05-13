@@ -169,6 +169,9 @@ export default function StocksPortfolioPage() {
   const [newTicker, setNewTicker] = useState('');
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
+  const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
+  const [tradeHistory, setTradeHistory] = useState<any[]>([]);
+  const [tradeSummary, setTradeSummary] = useState<any>(null);
   const [sortKey, setSortKey] = useState<SortKey>('weight');
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
@@ -269,6 +272,13 @@ export default function StocksPortfolioPage() {
     }
   }, [holdings, fetchQuotes, fetchPriceTargets, fetchEvents]);
 
+  useEffect(() => {
+    fetch('/api/stock-holdings/history')
+      .then(r => r.ok ? r.json() : { trades: [], summary: null })
+      .then(d => { setTradeHistory(d.trades || []); setTradeSummary(d.summary || null); })
+      .catch(() => {});
+  }, [holdings]);
+
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
     setAddingHolding(true);
@@ -276,12 +286,13 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/stock-holdings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: newTicker.trim(), shares: parseFloat(newShares), avgCost: parseFloat(newAvgCost), assetType: selectedAssetType || 'stock' }),
+        body: JSON.stringify({ ticker: newTicker.trim(), shares: parseFloat(newShares), avgCost: parseFloat(newAvgCost), assetType: selectedAssetType || 'stock', date_added: newDateAdded || new Date().toISOString() }),
       });
       if (res.ok) {
         setNewTicker('');
         setNewShares('');
         setNewAvgCost('');
+        setNewDateAdded(new Date().toISOString().split('T')[0]);
         setSelectedAssetType('stock');
         await fetchHoldings();
       }
