@@ -209,19 +209,46 @@ export default function CaelynTerminalPage() {
   });
 
   useEffect(() => {
-    const canonicalSymbols = (dashboardHoldings ?? []).map(h => h.ticker).sort();
-    const terminalSymbols  = (data?.holdings ?? []).map((h: CTHolding) => h.ticker).sort();
-    const symbolsMatch     = JSON.stringify(canonicalSymbols) === JSON.stringify(terminalSymbols);
-    const renderedState    = data ? (data.is_placeholder ? 'placeholder' : data._synced_from_local ? 'synced_local' : 'live') : 'no_data';
-    console.log('[portfolio-terminal-ui]', JSON.stringify({
+    const canonicalSymbols  = (dashboardHoldings ?? []).map(h => h.ticker).sort();
+    const terminalSymbols   = (data?.holdings ?? []).map((h: CTHolding) => h.ticker).sort();
+    const symbolsMatch      = JSON.stringify(canonicalSymbols) === JSON.stringify(terminalSymbols);
+    const renderedState     = data ? (data.is_placeholder ? 'placeholder' : data._synced_from_local ? 'synced_local' : 'live') : 'no_data';
+    const chartPts          = data?.performance_charts?.[perfPeriod] ?? data?.performance_chart ?? [];
+    const cm_               = data?.correlation_matrix;
+    const missingUiFields: string[] = [];
+    if (!chartPts || chartPts.length < 2)         missingUiFields.push(`performance_chart(${chartPts.length ?? 0}pts<2)`);
+    if (!cm_ || cm_.tickers.length === 0)          missingUiFields.push('correlation_matrix(empty—needs_history)');
+    if (!data?.volatility?.length)                 missingUiFields.push('volatility(empty—needs_history)');
+    if (data?.risk_metrics) {
+      const nullMetrics = Object.entries(data.risk_metrics)
+        .filter(([k, v]) => k !== 'top_concentration_label' && v == null)
+        .map(([k]) => k);
+      if (nullMetrics.length) missingUiFields.push(`risk_metrics.null:[${nullMetrics.join(',')}]`);
+    }
+    console.log('[portfolio-terminal-debug]', JSON.stringify({
+      dashboardSymbols:       canonicalSymbols,
       canonicalSymbols,
       terminalSymbols,
       symbolsMatch,
-      isFetching,
-      isStale: !symbolsMatch && !isLoading,
+      backendKeys:            data ? Object.keys(data) : [],
+      hasPerformanceChart:    (chartPts?.length ?? 0) > 0,
+      performancePointCount:  chartPts?.length ?? 0,
+      hasCorrelationMatrix:   (cm_?.tickers?.length ?? 0) > 0,
+      correlationSize:        cm_?.tickers?.length ?? 0,
+      hasVolatility:          (data?.volatility?.length ?? 0) > 0,
+      volatilityCount:        data?.volatility?.length ?? 0,
+      hasRiskMetrics:         !!data?.risk_metrics,
+      riskMetricKeys:         data?.risk_metrics
+        ? Object.entries(data.risk_metrics).map(([k, v]) => `${k}:${v}`).join(',')
+        : '',
+      hasRiskSuggestions:     (data?.risk_suggestions?.length ?? 0) > 0,
+      riskSuggestionCount:    data?.risk_suggestions?.length ?? 0,
+      hasThemeMapping:        Array.isArray((data as any)?.theme_mapping) && (data as any).theme_mapping.length > 0,
+      themeMappingCount:      Array.isArray((data as any)?.theme_mapping) ? (data as any).theme_mapping.length : 0,
       renderedState,
+      missingUiFields,
     }));
-  }, [data, dashboardHoldings, isFetching, isLoading]);
+  }, [data, dashboardHoldings, isFetching, isLoading, perfPeriod]);
 
   // Always render the full layout — use placeholder when backend not yet connected
   const d   = data ?? PLACEHOLDER;
@@ -248,13 +275,14 @@ export default function CaelynTerminalPage() {
   const D$   = (n: N) => (ph || isNull(n)) ? '—' : fmt$(n);
   const DN   = (n: N, dec = 2) => (ph || isNull(n)) ? '—' : fmtN(n, dec);
   const DPct = (n: N, dec = 2) => (ph || isNull(n)) ? '—' : `${sign(n)}${fmtN(n, dec)}%`;
+  const DM   = (n: N, dec: number, unit: string) => (ph || isNull(n)) ? '—' : `${fmtN(n, dec)}${unit}`;
   const DS   = (s: string) => s === '—' ? '—' : s;
 
   const sentColor = p.sentiment === 'BULLISH' ? C.green : p.sentiment === 'BEARISH' ? C.red : C.amber;
   const mktColor  = p.market_status === 'OPEN' ? C.green : p.market_status === 'PRE-MARKET' ? C.amber : C.red;
   const perfMap: Record<string, N> = { '1D':p.perf_1d,'5D':p.perf_5d,'1M':p.perf_1m,'6M':p.perf_6m,'1Y':p.perf_1y };
   const chartPoints = d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? (ph ? PH_CHART : []);
-  const hasChartData = (chartPoints as any[]).length > 0;
+  const hasChartData = (chartPoints as any[]).length >= 2;
 
   const posLabel  = (ph || isNull(d.positions_count)) ? '— Positions' : `${d.positions_count} Positions`;
   const liveColor = (isLoading || isFetching) ? C.amber : ph ? C.red : C.green;
@@ -581,12 +609,12 @@ export default function CaelynTerminalPage() {
             <CardHdr label="Risk Analysis" badge="Metrics" />
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
               {[
-                { label:'Weighted Volatility', value: DN(d.risk_metrics.weighted_volatility,1)+(ph?'':'%'), sub:'Annualized' },
-                { label:'Max Drawdown (1Y)',   value: DN(d.risk_metrics.max_drawdown,1)+(ph?'':'%'),        sub:'Peak to trough' },
-                { label:'Top Concentration',   value: DN(d.risk_metrics.top_concentration,0)+(ph?'':'%'),   sub:d.risk_metrics.top_concentration_label },
-                { label:'Portfolio Beta',       value: DN(d.risk_metrics.portfolio_beta,2),                  sub:'vs S&P 500' },
-                { label:'Sharpe Ratio',         value: DN(d.risk_metrics.sharpe_ratio,2),                    sub:'Risk-adj. return' },
-                { label:'Sortino Ratio',        value: DN(d.risk_metrics.sortino_ratio,2),                   sub:'Downside risk-adj.' },
+                { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
+                { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
+                { label:'Top Concentration',   value: DM(d.risk_metrics.top_concentration,1,'%'),   sub: d.risk_metrics.top_concentration_label || '—' },
+                { label:'Portfolio Beta',       value: DM(d.risk_metrics.portfolio_beta,2,''),       sub:'vs S&P 500' },
+                { label:'Sharpe Ratio',         value: DM(d.risk_metrics.sharpe_ratio,2,''),         sub:'Risk-adj. return' },
+                { label:'Sortino Ratio',        value: DM(d.risk_metrics.sortino_ratio,2,''),        sub:'Downside risk-adj.' },
               ].map((m, i) => (
                 <div key={i} style={{ padding:'10px 12px', background:C.card }}>
                   <div style={{ fontSize:18, fontWeight:900, color: ph ? C.dim : C.text, lineHeight:1 }}>{m.value}</div>

@@ -2643,23 +2643,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           });
 
-          // ── Asset allocation by type ──────────────────────────────────────
-          const ALLOC_COLORS: Record<string, string> = {
-            'Individual Stocks': '#3b82f6', 'ETFs': '#22c55e',
-            'Crypto': '#f97316', 'Commodities': '#f59e0b', 'Other': '#6b7280',
+          // ── Asset allocation by sector (from Yahoo quotes) ───────────────
+          const SECTOR_COLORS: Record<string, string> = {
+            'Technology': '#3b82f6', 'Healthcare': '#22c55e',
+            'Financial Services': '#f59e0b', 'Consumer Cyclical': '#f97316',
+            'Industrials': '#6366f1', 'Energy': '#ef4444', 'Materials': '#84cc16',
+            'Basic Materials': '#84cc16', 'Communication Services': '#0ea5e9',
+            'Consumer Defensive': '#a78bfa', 'Real Estate': '#ec4899',
+            'Utilities': '#14b8a6', 'Other': '#6b7280',
           };
-          const typeGroups: Record<string, number> = {};
+          const sectorGroups: Record<string, number> = {};
           data.holdings.forEach((h: any) => {
-            const lh    = localHoldings.find(l => l.ticker === h.ticker);
-            const type  = (lh?.assetType || 'stock').toLowerCase();
-            const label = type === 'stock' ? 'Individual Stocks' : type === 'etf' ? 'ETFs'
-                        : type === 'crypto' ? 'Crypto'
-                        : type === 'commodity' || type === 'commodities' ? 'Commodities' : 'Other';
-            typeGroups[label] = (typeGroups[label] ?? 0) + (h.allocation_pct ?? 0);
+            const q: any    = quoteMap.get(h.ticker);
+            const sector    = (q?.sector && q.sector !== 'Unknown') ? q.sector : 'Other';
+            sectorGroups[sector] = (sectorGroups[sector] ?? 0) + (h.allocation_pct ?? 0);
           });
-          data.asset_allocation = Object.entries(typeGroups).map(([label, pct]) => ({
-            label, pct, color: ALLOC_COLORS[label] || '#6b7280',
-          }));
+          const hasSectorData = Object.keys(sectorGroups).some(k => k !== 'Other');
+          if (hasSectorData) {
+            data.asset_allocation = Object.entries(sectorGroups)
+              .sort((a, b) => b[1] - a[1])
+              .map(([label, pct]) => ({ label, pct, color: SECTOR_COLORS[label] || '#6b7280' }));
+          } else {
+            const ALLOC_COLORS: Record<string, string> = {
+              'Individual Stocks': '#3b82f6', 'ETFs': '#22c55e',
+              'Crypto': '#f97316', 'Commodities': '#f59e0b', 'Other': '#6b7280',
+            };
+            const typeGroups: Record<string, number> = {};
+            data.holdings.forEach((h: any) => {
+              const lh    = localHoldings.find(l => l.ticker === h.ticker);
+              const type  = (lh?.assetType || 'stock').toLowerCase();
+              const label = type === 'stock' ? 'Individual Stocks' : type === 'etf' ? 'ETFs'
+                          : type === 'crypto' ? 'Crypto'
+                          : type === 'commodity' || type === 'commodities' ? 'Commodities' : 'Other';
+              typeGroups[label] = (typeGroups[label] ?? 0) + (h.allocation_pct ?? 0);
+            });
+            data.asset_allocation = Object.entries(typeGroups).map(([label, pct]) => ({
+              label, pct, color: ALLOC_COLORS[label] || '#6b7280',
+            }));
+          }
+
+          // ── Theme mapping — sector/industry per holding ───────────────────
+          data.theme_mapping = data.holdings.map((h: any) => {
+            const q: any = quoteMap.get(h.ticker);
+            const industry = (q?.industry && q.industry !== 'Unknown') ? q.industry : null;
+            const sector   = (q?.sector   && q.sector   !== 'Unknown') ? q.sector   : null;
+            return {
+              ticker:         h.ticker,
+              theme:          industry || sector || 'Uncategorized',
+              theme_raw:      q?.industry || q?.sector || 'Uncategorized',
+              asset_class:    'Individual Stocks',
+              sector:         q?.sector || 'Unknown',
+              allocation_pct: Number((h.allocation_pct ?? 0).toFixed(1)),
+            };
+          });
 
           // ── Risk metrics — concentration computed, history-based metrics null ─
           const byAlloc  = [...data.holdings].sort((a: any, b: any) => (b.allocation_pct ?? 0) - (a.allocation_pct ?? 0));
@@ -2680,7 +2716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data.risk_suggestions.push({ level: 'RISK', title: 'Single Position', body: 'Portfolio holds only one asset. Diversification reduces risk.' });
           }
           if (data.risk_suggestions.length === 0) {
-            data.risk_suggestions.push({ level: 'INFO', title: 'Portfolio Synced', body: `Showing ${data.holdings.length} positions from Portfolio Dashboard. Historical analytics (Sharpe, Beta, Max Drawdown) require a connected broker or price-history feed.` });
+            const topLabel = topH?.ticker ? ` Top holding: ${topH.ticker} at ${(topH.allocation_pct as number)?.toFixed(1)}%.` : '';
+            data.risk_suggestions.push({ level: 'INFO', title: 'Portfolio Synced', body: `${data.holdings.length} positions loaded with live prices.${topLabel} Sharpe ratio, Beta & Max Drawdown require a historical price feed — these are shown as — until that data is available.` });
           }
 
           // ── Performance chart — from value-history snapshots if available ─

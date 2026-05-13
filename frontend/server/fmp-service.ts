@@ -261,6 +261,119 @@ async function fetchYahooChartFallback(symbols: string[]): Promise<StockQuote[]>
 const PROFILE_CACHE_TTL = 3600_000;
 const profileCache = new Map<string, { data: any; timestamp: number }>();
 
+// ── Yahoo crumb state (session-scoped, refreshed on expiry) ─────────────────
+let yahooCrumb: string | null = null;
+let yahooCookie: string | null = null;
+let yahooCrumbFetchedAt = 0;
+const YAHOO_CRUMB_TTL = 3600_000; // 1 hour
+
+async function getYahooCrumb(): Promise<{ crumb: string; cookie: string } | null> {
+  if (yahooCrumb && yahooCookie && Date.now() - yahooCrumbFetchedAt < YAHOO_CRUMB_TTL) {
+    return { crumb: yahooCrumb, cookie: yahooCookie };
+  }
+  try {
+    const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+    // Step 1: lightweight Yahoo endpoint to get session cookies
+    const pageRes = await fetch('https://fc.yahoo.com/', {
+      headers: { 'User-Agent': UA, 'Accept': 'text/html' },
+      redirect: 'follow',
+    });
+
+    // Node.js 18+: getSetCookie() returns all Set-Cookie headers as an array
+    let setCookies: string[] = [];
+    if (typeof (pageRes.headers as any).getSetCookie === 'function') {
+      setCookies = (pageRes.headers as any).getSetCookie();
+    } else {
+      // Fallback: split combined set-cookie header on common delimiter
+      const raw = pageRes.headers.get('set-cookie') || '';
+      setCookies = raw.split(/,(?=[^ ].*?=)/).map(s => s.trim()).filter(Boolean);
+    }
+
+    // Build Cookie header: take name=value from each Set-Cookie entry (before first ';')
+    const cookieStr = setCookies
+      .map(c => c.split(';')[0].trim())
+      .filter(c => c.includes('='))
+      .join('; ');
+
+    if (!cookieStr) { console.warn('[Yahoo] No session cookies obtained from fc.yahoo.com'); return null; }
+
+    // Step 2: fetch crumb using the session cookies
+    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+      headers: { 'User-Agent': UA, 'Accept': 'text/plain', 'Cookie': cookieStr },
+    });
+    if (!crumbRes.ok) {
+      console.warn('[Yahoo] Crumb endpoint returned', crumbRes.status);
+      return null;
+    }
+    const crumb = (await crumbRes.text()).trim();
+    if (!crumb || crumb.includes('{') || crumb.length < 3) {
+      console.warn('[Yahoo] Invalid crumb response:', crumb.slice(0, 50));
+      return null;
+    }
+
+    yahooCrumb = crumb;
+    yahooCookie = cookieStr;
+    yahooCrumbFetchedAt = Date.now();
+    console.log(`[Yahoo] Crumb obtained: ${crumb.slice(0, 8)}... (${setCookies.length} cookies)`);
+    return { crumb, cookie: cookieStr };
+  } catch (err) {
+    console.warn('[Yahoo] Could not obtain crumb:', err);
+    return null;
+  }
+}
+
+async function enrichWithYahooSectorProfile(quotes: StockQuote[]): Promise<StockQuote[]> {
+  const needsSector = quotes.filter(q => {
+    const k = q.symbol.toUpperCase();
+    const cached = profileCache.get(k);
+    if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_TTL) return false;
+    return !q.sector || q.sector === 'Unknown';
+  });
+  if (needsSector.length === 0) return quotes;
+
+  const session = await getYahooCrumb();
+  if (!session) return quotes;
+
+  const { crumb, cookie } = session;
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  const results = await Promise.allSettled(needsSector.map(async q => {
+    try {
+      const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(q.symbol)}?modules=assetProfile&crumb=${encodeURIComponent(crumb)}`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': UA, 'Accept': 'application/json', 'Cookie': cookie },
+      });
+      if (!res.ok) {
+        profileCache.set(q.symbol.toUpperCase(), { data: null, timestamp: Date.now() });
+        return null;
+      }
+      const data = await res.json();
+      const p = data?.quoteSummary?.result?.[0]?.assetProfile;
+      if (!p) { profileCache.set(q.symbol.toUpperCase(), { data: null, timestamp: Date.now() }); return null; }
+      const enriched = { sector: p.sector || 'Unknown', industry: p.industry || 'Unknown', companyName: p.longName || q.companyName };
+      profileCache.set(q.symbol.toUpperCase(), { data: { ...enriched, mktCap: 0 }, timestamp: Date.now() });
+      console.log(`[Yahoo] ${q.symbol} sector enriched: ${p.sector} / ${p.industry}`);
+      return { symbol: q.symbol, ...enriched };
+    } catch { return null; }
+  }));
+
+  const enrichMap = new Map<string, any>();
+  results.forEach(r => { if (r.status === 'fulfilled' && r.value) enrichMap.set(r.value.symbol.toUpperCase(), r.value); });
+
+  return quotes.map(q => {
+    const cached = profileCache.get(q.symbol.toUpperCase());
+    const enriched = enrichMap.get(q.symbol.toUpperCase()) ?? (cached?.data ?? null);
+    if (!enriched) return q;
+    return {
+      ...q,
+      sector:      enriched.sector      && enriched.sector      !== 'Unknown' ? enriched.sector      : q.sector,
+      industry:    enriched.industry    && enriched.industry    !== 'Unknown' ? enriched.industry    : q.industry,
+      companyName: enriched.companyName || q.companyName,
+    };
+  });
+}
+
 async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]> {
   const needsEnrichment = quotes.filter(q => {
     const cached = profileCache.get(q.symbol.toUpperCase());
@@ -279,7 +392,9 @@ async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]>
     return q;
   });
 
-  if (needsEnrichment.length === 0 || !FMP_API_KEY) return enrichedFromCache;
+  // If no FMP key, fall back to Yahoo crumb-based sector enrichment
+  if (!FMP_API_KEY) return enrichWithYahooSectorProfile(enrichedFromCache);
+  if (needsEnrichment.length === 0) return enrichedFromCache;
 
   const symbols = needsEnrichment.map(q => q.symbol);
   console.log(`[PORTFOLIO] Fetching FMP profile for: ${symbols.join(',')}`);
@@ -290,10 +405,10 @@ async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]>
     if (!res.ok) {
       console.error(`[PORTFOLIO] FMP profile returned ${res.status}`);
       symbols.forEach(s => profileCache.set(s.toUpperCase(), { data: null, timestamp: Date.now() }));
-      return enrichedFromCache;
+      return enrichWithYahooSectorProfile(enrichedFromCache);
     }
     const profiles: any[] = await res.json();
-    if (!Array.isArray(profiles)) return enrichedFromCache;
+    if (!Array.isArray(profiles)) return enrichWithYahooSectorProfile(enrichedFromCache);
 
     const profileMap = new Map<string, any>();
     profiles.forEach(p => {
@@ -303,15 +418,17 @@ async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]>
       }
     });
 
-    return enrichedFromCache.map(q => {
+    const fmpEnriched = enrichedFromCache.map(q => {
       const p = profileMap.get(q.symbol.toUpperCase());
       if (!p) return q;
-      console.log(`[PORTFOLIO] ${q.symbol} enriched: sector=${p.sector}, mktCap=${p.mktCap}`);
+      console.log(`[PORTFOLIO] ${q.symbol} enriched via FMP: sector=${p.sector}`);
       return { ...q, sector: p.sector || q.sector, industry: p.industry || q.industry, marketCap: p.mktCap || p.marketCap || q.marketCap, companyName: p.companyName || q.companyName };
     });
+    // Always follow up with Yahoo crumb enrichment for any stocks still missing sector
+    return enrichWithYahooSectorProfile(fmpEnriched);
   } catch (err) {
     console.error('[PORTFOLIO] FMP profile fetch failed:', err);
-    return enrichedFromCache;
+    return enrichWithYahooSectorProfile(enrichedFromCache);
   }
 }
 
