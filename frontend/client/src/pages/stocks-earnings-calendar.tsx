@@ -1129,7 +1129,10 @@ function WeeklyEarningsBoard({
   }
 
   function SessionSection({ label, entries, colorClass, topSymbols }: { label: string; entries: WeekCleanEntry[]; colorClass: string; topSymbols?: Set<string> }) {
-    const clean = entries.filter(e => !isJunkEntry(e));
+    // For watchlist (or any non-all scope) every entry is intentional — skip the curated junk filter
+    const clean = scope === "watchlist"
+      ? entries.filter(e => !!(e.symbol))
+      : entries.filter(e => !isJunkEntry(e));
     if (clean.length === 0) return null;
     return (
       <div className="mb-2">
@@ -1264,11 +1267,20 @@ function WeeklyEarningsBoard({
       )}
 
       {/* ── Top watches this week ───────────────────────────── */}
-      {!weekLoading && !weekError && (weekData?.topEvents || []).length > 0 && (
+      {!weekLoading && !weekError && (() => {
+        // For watchlist scope: skip the curated junk filter; fall back to day entries if topEvents is empty
+        const topWatches: WeekCleanEntry[] = scope === "watchlist"
+          ? ((weekData?.topEvents || []).filter(e => !!(e.symbol)).length > 0
+              ? (weekData!.topEvents!).filter(e => !!(e.symbol))
+              : (weekData?.days ?? []).flatMap(d => d.entries || []).filter(e => !!(e.symbol)))
+          : (weekData?.topEvents || []).filter(e => !isJunkEntry(e));
+        if (topWatches.length === 0) return null;
+        const stripLabel = scope === "watchlist" ? "Your watchlist this week" : "Top watches this week";
+        return (
         <div className="mb-4">
-          <p className="text-[9px] font-bold uppercase tracking-wider text-white/25 mb-2">Top watches this week</p>
+          <p className="text-[9px] font-bold uppercase tracking-wider text-white/25 mb-2">{stripLabel}</p>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {(weekData!.topEvents || []).filter(e => !isJunkEntry(e)).slice(0, 8).map((e, idx) => {
+            {topWatches.slice(0, 12).map((e, idx) => {
               const ticker = (e.symbol || "").toUpperCase();
               const logo = e.logo || e.image || null;
               return (
@@ -1296,7 +1308,8 @@ function WeeklyEarningsBoard({
             })}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Loading skeletons ────────────────────────────────── */}
       {weekLoading && (
@@ -1325,7 +1338,7 @@ function WeeklyEarningsBoard({
               && day.afterHours.length === 0
               && day.duringMarket.length === 0;
             const hasAny = !!day && (
-              day.preMarket.length + day.afterHours.length + day.duringMarket.length + day.unknown.length > 0
+              day.preMarket.length + day.afterHours.length + day.duringMarket.length + day.unknown.length + (day.entries?.length ?? 0) > 0
             );
 
             return (
@@ -1350,12 +1363,16 @@ function WeeklyEarningsBoard({
 
                 {/* Content */}
                 {!hasAny ? (
-                  <p className="text-[9px] text-white/15 italic">No major calls</p>
+                  <p className="text-[9px] text-white/15 italic">{scope === "watchlist" ? "No watchlist earnings" : "No major calls"}</p>
                 ) : (() => {
-                  const allEntries = [
+                  const sessionEntries = [
                     ...(day!.preMarket), ...(day!.duringMarket),
                     ...(day!.afterHours), ...(day!.unknown),
                   ];
+                  // entries[] is the flat fallback array — dedupe against session-classified ones
+                  const sessionSymbols = new Set(sessionEntries.map(e => e.symbol));
+                  const entriesFallback = (day!.entries || []).filter(e => !sessionSymbols.has(e.symbol));
+                  const allEntries = [...sessionEntries, ...entriesFallback];
                   const top3 = new Set(
                     [...allEntries]
                       .sort((a, b) => (b.importanceScore ?? 0) - (a.importanceScore ?? 0))
@@ -1373,6 +1390,14 @@ function WeeklyEarningsBoard({
                         colorClass="text-white/30"
                         topSymbols={top3}
                       />
+                      {entriesFallback.length > 0 && (
+                        <SessionSection
+                          label="Earnings"
+                          entries={entriesFallback}
+                          colorClass="text-amber-400/60"
+                          topSymbols={top3}
+                        />
+                      )}
                     </>
                   );
                 })()}
@@ -1788,7 +1813,9 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
           ) : (
             <span className="text-[10px] text-white/30">
               {signalMode === "curated"
-                ? `${dayCuratedEntries.length} curated pick${dayCuratedEntries.length !== 1 ? "s" : ""}`
+                ? scope === "watchlist"
+                  ? `${dayCuratedEntries.length} watchlist earning${dayCuratedEntries.length !== 1 ? "s" : ""}`
+                  : `${dayCuratedEntries.length} curated pick${dayCuratedEntries.length !== 1 ? "s" : ""}`
                 : `${dayCleanEntries.length} earning${dayCleanEntries.length !== 1 ? "s" : ""} call${dayCleanEntries.length !== 1 ? "s" : ""}`}
             </span>
           )}
@@ -1800,12 +1827,12 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
         dayCuratedLoading ? (
           <div className="text-center py-10">
             <Loader2 className="w-5 h-5 text-amber-400/40 mx-auto mb-2 animate-spin" />
-            <p className="text-[11px] text-white/25">Loading curated picks...</p>
+            <p className="text-[11px] text-white/25">{scope === "watchlist" ? "Loading watchlist earnings..." : "Loading curated picks..."}</p>
           </div>
         ) : dayCuratedEntries.length === 0 ? (
           <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
             <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
-            <p className="text-sm text-white/25">No curated earnings for this day</p>
+            <p className="text-sm text-white/25">{scope === "watchlist" ? "No watchlist earnings today." : "No curated earnings for this day"}</p>
           </div>
         ) : (
           <div className="space-y-1.5">

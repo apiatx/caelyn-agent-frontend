@@ -1,0 +1,177 @@
+Fix the Calendar Earnings Watchlist Week/Day rendering.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Context:
+The backend/proxy scope issue appears mostly fixed:
+- Watchlist Month now shows actual Watchlist earnings symbols.
+- May/June Month views are now populated with Watchlist stocks.
+- However, Watchlist Week and Day views are still not visually showing the earnings events.
+
+Important screenshot observation:
+In Watchlist + Week view:
+- The page shows “14 calls this week”
+- Individual days show counts like “8 calls”, “5 calls”, “1 call”
+- But the day cards do not display the ticker icons/events.
+- Some cards still say “No major calls.”
+
+That means the data is reaching the Week view, but the Week/Day renderer is hiding or ignoring the event array.
+
+Likely bug:
+The Week/Day components are still using curated-All assumptions:
+- only render “major calls”
+- only render topEvents/topCalls after importance scoring
+- ignore plain watchlist events
+- use fields that exist in All curated responses but not in Watchlist responses
+- show counts from one field but render cards from another empty field
+
+Goal:
+For scope=watchlist, Week and Day views should display ALL Watchlist earnings events in the selected date window, not only “major” or curated events.
+
+Do not touch backend.
+Do not touch All behavior.
+Do not implement Portfolio yet.
+Do not add previous earnings, EPS actuals, revenue actuals, beat/miss, transcripts, etc.
+This is forward-looking earnings display only.
+
+Required fixes:
+
+1. Find the components rendering Earnings Week and Day views.
+Likely candidates:
+- WeeklyEarningsBoard
+- WeekAllList
+- day-clean/day-curated render path
+- EarningsCalendarWidget
+- any component that renders “No major calls”
+
+2. Compare Month renderer vs Week/Day renderer.
+Month is now displaying Watchlist symbols correctly.
+Reuse the same event extraction logic conceptually:
+- extract symbols/events from the scoped response
+- group by date
+- render ticker/logo chips/cards
+
+Week/Day should not require “major” scoring when scope=watchlist.
+
+3. Add a shared event extractor if needed.
+
+Create or update a helper like:
+
+extractEarningsEvents(data, scope, view)
+
+It should support the response shapes returned by:
+- day-clean
+- day-curated
+- week-clean
+- month-all
+- month-curated
+
+For Watchlist scope, it should extract events from any of these fields if present:
+- data.events
+- data.topEvents
+- data.topSymbols
+- data.days[].events
+- data.days[].topEvents
+- data.days[].topSymbols
+- data.days[].calls
+- whatever the actual response contains
+
+Do not rely on only one All-specific field.
+
+4. Fix Week view rendering.
+For Watchlist + Week:
+- use the events already counted by the response
+- render ticker chips/icons inside each day card
+- if a day has 8 calls, show the first few tickers and “+N more”
+- do not say “No major calls” when the day has events
+
+For scope=watchlist, label should be more generic:
+- “No earnings”
+or
+- “No watchlist earnings”
+
+Do not use “No major calls” for Watchlist if the day has non-curated earnings.
+
+5. Fix Day view rendering.
+For Watchlist + Day:
+- render all Watchlist earnings events for the selected day
+- do not run them through curated/major-call filters
+- do not hide them because they lack importance score
+- if selected day has no events, show empty state:
+  “No watchlist earnings today.”
+
+6. Preserve All behavior.
+For scope=all:
+- keep the existing curated/thematic “major calls” behavior.
+- Do not make All show every raw FMP event.
+- Do not redesign All.
+
+Only scope=watchlist should render all scoped events.
+
+7. Confirm request/response first.
+Add/keep dev-only diagnostics:
+
+console.log("[earnings-ui]", {
+  selectedScope,
+  view,
+  signalMode,
+  queryKey,
+  responseScope: data?.scope,
+  responseKeys: Object.keys(data || {}),
+  rawCount: countAllEvents(data),
+  renderedCount,
+  first20ExtractedSymbols,
+  first20RenderedSymbols,
+});
+
+This should prove:
+- Watchlist + Week has rawCount = 14 or whatever backend says
+- renderedCount should match the number rendered/grouped in the week cards
+- if rawCount > 0 and renderedCount = 0, the renderer is still wrong
+
+8. Validate current screenshots’ scenario.
+With Watchlist + Week selected:
+Expected:
+- Header may say “14 calls this week”
+- Wed card with “8 calls” should visibly show Watchlist tickers/icons
+- Thu card with “5 calls” should visibly show Watchlist tickers/icons
+- Fri card with “1 call” should visibly show that ticker/icon
+- Mon/Tue can say empty only if they truly have no events
+
+9. Validate Day view.
+Click a day that Week says has events, for example the Wednesday with 8 calls.
+Expected:
+- Day view shows those Watchlist earnings events
+- not blank
+- not “No major calls”
+
+10. Validate Month still works.
+Do not regress Month.
+Month Watchlist should continue to show May/June Watchlist symbols.
+
+11. Validation matrix:
+Run in browser after hard refresh:
+
+A. Watchlist + Month
+Expected:
+- Watchlist symbols render, as currently working.
+
+B. Watchlist + Week current
+Expected:
+- day cards render ticker icons/events, not just counts.
+
+C. Watchlist + Day on a day with events
+Expected:
+- events render.
+
+D. Watchlist + Week next
+Expected:
+- if next week has event count, events render.
+
+E. All + Week/Day
+Expected:
+- existing curated All behavior unchanged.
+
+Success definition:
+For Watchlist scope, Week and Day views render the same underlying Watchlist earnings events that are already being counted. The UI no longer shows counts while hiding the actual event tickers/icons.
