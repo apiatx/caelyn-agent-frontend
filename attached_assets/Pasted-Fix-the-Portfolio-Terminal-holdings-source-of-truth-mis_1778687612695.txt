@@ -1,0 +1,223 @@
+Fix the Portfolio Terminal holdings source-of-truth mismatch.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Current bug:
+The Portfolio Dashboard and Portfolio Terminal are not showing the same portfolio holdings.
+
+Screenshots:
+- Portfolio Dashboard shows the active portfolio holdings entered by the user.
+- Portfolio Terminal shows a different/stale set of holdings.
+- Some holdings visible in Dashboard are missing from Terminal.
+- At least one stale symbol has appeared in Terminal that is not currently in the Dashboard.
+- These two views must act as one seamless Portfolio page.
+
+Important:
+Do not add new portfolio features right now.
+Do not touch Earnings Calendar.
+Do not touch FastAPI backend unless absolutely necessary.
+This is likely frontend repo / Express routes.ts / Portfolio page hydration.
+
+Goal:
+Portfolio Dashboard and Portfolio Terminal must use the exact same active holdings source.
+
+Single source of truth:
+GET /api/stock-holdings
+
+The Portfolio Terminal must hydrate from the same holdings data returned by GET /api/stock-holdings, or from the exact same shared readHoldings helper used by GET /api/stock-holdings.
+
+Hard rule:
+There should be no separate Terminal-only holdings source.
+There should be no legacy/demo holdings file.
+There should be no union of multiple holdings files.
+There should be no stale cached terminal holdings overriding the active Dashboard portfolio.
+
+Step 1 — Trace both views before editing
+Find the exact data path for:
+
+A. Portfolio Dashboard holdings table
+- component: likely stocks-portfolio.tsx
+- endpoint used
+- query key used
+- response shape consumed
+
+B. Portfolio Terminal holdings panel
+- component: likely caelyn-terminal-page.tsx
+- endpoint used, likely /api/caelyn-terminal
+- query key used
+- response shape consumed
+
+C. Express route:
+- GET /api/stock-holdings
+- GET /api/caelyn-terminal
+
+Print/log:
+{
+  route,
+  sourceFileOrHelper,
+  symbols,
+  count
+}
+
+Step 2 — Compare live responses
+Run these directly:
+
+GET /api/stock-holdings
+GET /api/caelyn-terminal
+
+Extract active holding symbols from both.
+
+Assert:
+
+terminal_symbols - dashboard_symbols == empty set
+dashboard_symbols - terminal_symbols == empty set
+
+If either assertion fails, fix the source mismatch.
+
+Step 3 — Fix /api/caelyn-terminal hydration
+In routes.ts, make GET /api/caelyn-terminal use the exact same active holdings source as GET /api/stock-holdings.
+
+Preferred:
+- create/reuse one shared helper:
+  readActiveStockHoldings()
+
+Then both routes call it:
+
+GET /api/stock-holdings:
+  const holdings = readActiveStockHoldings()
+
+GET /api/caelyn-terminal:
+  const holdings = readActiveStockHoldings()
+  hydrate terminal from holdings
+
+Do not copy/paste two separate readers.
+
+Step 4 — Remove stale/legacy holdings from Terminal
+Search for any Terminal-specific usage of:
+- stock-holdings.json
+- portfolio_holdings.json
+- portfolio_holdings_default.json
+- portfolio_holdings_aidan.json
+- demo holdings
+- fallback holdings
+- mock holdings
+- cachedTerminal holdings
+- terminalHydration cache
+- localStorage holdings
+- default holdings array
+
+If Terminal uses a fallback list, remove it or make it only apply when active holdings are truly empty.
+
+If Terminal has cached data, the cache key must be invalidated when holdings change.
+
+Step 5 — Fix React Query cache invalidation
+When Dashboard adds/edits/deletes a holding:
+- invalidate/refetch the Dashboard holdings query
+- invalidate/refetch the Terminal data query, likely /api/caelyn-terminal
+- do not let Terminal keep stale holdings after Dashboard changes
+
+Example:
+on successful POST/PUT/DELETE /api/stock-holdings:
+  queryClient.invalidateQueries(["stock-holdings"])
+  queryClient.invalidateQueries(["caelyn-terminal"])
+  queryClient.invalidateQueries(["portfolio-terminal"])
+
+Use the actual query keys in the repo.
+
+Step 6 — Terminal rendering should use active holdings only
+In caelyn-terminal-page.tsx:
+- holdings list should render the holdings from /api/caelyn-terminal response, which must be based on /api/stock-holdings.
+- Do not independently fetch/merge a second source unless it is the same endpoint.
+- Do not filter out valid holdings just because price/quote enrichment is missing.
+- If quote enrichment fails for a holding, still show the ticker with blank/— fields.
+
+Missing price data should not remove the holding.
+
+Step 7 — Preserve Dashboard behavior
+Do not break:
+- Add Holding
+- Edit holding
+- Delete holding
+- date_added
+- Closed Positions section
+- trade history
+- value history snapshots
+
+But these extra history/snapshot writes must not block core active holdings.
+
+Step 8 — Validation matrix
+Do not mark complete until every check passes.
+
+A. Source equality
+Run:
+GET /api/stock-holdings
+GET /api/caelyn-terminal
+
+Assert:
+terminal_symbols == dashboard_symbols
+
+Report both symbol lists.
+
+B. Browser equality
+Open Portfolio Dashboard:
+- record all visible active holding symbols.
+
+Switch to Portfolio Terminal:
+- holdings panel must show the exact same symbols.
+- same count.
+- no extras.
+- no missing symbols.
+
+C. Add holding
+Use Dashboard + Add to add a test symbol.
+Expected:
+- Dashboard shows it immediately.
+- Terminal shows it after refresh/refetch.
+- GET /api/stock-holdings includes it.
+- GET /api/caelyn-terminal includes it.
+- Hard refresh preserves it.
+
+D. Delete holding
+Delete the test symbol.
+Expected:
+- Dashboard removes it.
+- Terminal removes it.
+- GET /api/stock-holdings removes it.
+- GET /api/caelyn-terminal removes it.
+- No stale terminal cache.
+
+E. Edit holding/date_added
+Edit an existing holding/date_added if supported.
+Expected:
+- Dashboard updates.
+- Terminal still shows same symbol set.
+- No duplicate/stale row appears.
+
+F. No stale symbol assertion
+If PLAB or any other symbol appears in Terminal but not in Dashboard:
+- find its source
+- remove that stale source from Terminal hydration
+- do not mark complete until it is gone.
+
+Step 9 — Add temporary diagnostic log
+Add a dev-only diagnostic:
+
+console.log("[portfolio-source]", {
+  dashboardSymbols,
+  terminalSymbols,
+  missingFromTerminal,
+  extraInTerminal,
+  terminalSource,
+});
+
+Also add server log inside /api/caelyn-terminal:
+
+console.log("[portfolio-terminal-hydration]", {
+  holdingsSource: "readActiveStockHoldings",
+  symbols: holdings.map(h => h.symbol),
+  count: holdings.length,
+});
+
+Success definition:
+Portfolio Dashboard and Portfolio Terminal show the exact same active holdings from the same source. No stale symbols, no missing Dashboard holdings, no legacy/demo file merging, and no quote-enrichment failure can hide a holding.

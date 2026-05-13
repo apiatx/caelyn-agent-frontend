@@ -194,7 +194,7 @@ export default function CaelynTerminalPage() {
       if (!res.ok) throw new Error('Failed');
       return res.json();
     },
-    staleTime: Infinity,
+    staleTime: 0,
     retry: 1,
   });
 

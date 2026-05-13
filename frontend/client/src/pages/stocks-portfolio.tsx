@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { Card } from "@/components/ui/card";
@@ -161,6 +162,7 @@ const INDEX_TO_ETF: Record<string, { etf: string; name: string; index: string }>
 type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 'totalPL' | 'weight';
 
 export default function StocksPortfolioPage() {
+  const queryClient = useQueryClient();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
   const [priceTargets, setPriceTargets] = useState<Record<string, PriceTarget>>({});
@@ -295,6 +297,7 @@ export default function StocksPortfolioPage() {
         setNewDateAdded(new Date().toISOString().split('T')[0]);
         setSelectedAssetType('stock');
         await fetchHoldings();
+        queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       }
     } catch (err) {
       console.error('Failed to add holding:', err);
@@ -307,6 +310,7 @@ export default function StocksPortfolioPage() {
     try {
       await fetch(`/api/stock-holdings/${id}`, { method: 'DELETE' });
       await fetchHoldings();
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch (err) {
       console.error('Failed to delete holding:', err);
     }
@@ -341,6 +345,7 @@ export default function StocksPortfolioPage() {
       setEditShares('');
       setEditAvgCost('');
       await fetchHoldings();
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch (err) {
       console.error('Failed to update holding:', err);
     } finally {

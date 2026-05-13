@@ -2418,9 +2418,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const data = await response.json();
 
-      // If FastAPI returned placeholder and we have local holdings, inject + fully hydrate
-      if ((data.is_placeholder === true || !data.holdings?.length) && localHoldings.length > 0) {
-        console.log(`[portfolio-sync] FastAPI placeholder detected — injecting ${localHoldings.length} holdings from stock-holdings.json`);
+      // Always hydrate from local holdings when we have any — this is the single source of truth.
+      // Even if FastAPI returns "real" holdings, they may be stale/mismatched vs the Dashboard.
+      // GET /api/stock-holdings is the canonical source; Terminal must reflect it exactly.
+      if (localHoldings.length > 0) {
+        const fastapiIsPlaceholder = data.is_placeholder === true || !data.holdings?.length;
+        console.log(`[portfolio-sync] Hydrating terminal from local holdings (${localHoldings.length} positions). FastAPI placeholder: ${fastapiIsPlaceholder}`);
         try {
           const symbols      = localHoldings.map(h => h.ticker);
           const assetTypeMap: Record<string, string> = {};

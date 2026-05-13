@@ -1,0 +1,54 @@
+[
+  {
+    "timestamp": "2026-05-13T15:15:25.712Z",
+    "total_value": 155149.11,
+    "holdings_count": 19,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "FPLSF",
+      "SILC"
+    ]
+  },
+  {
+    "timestamp": "2026-05-13T15:15:41.087Z",
+    "total_value": 155149.11,
+    "holdings_count": 19,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "FPLSF",
+      "SILC"
+    ]
+  }
+]
