@@ -1853,7 +1853,6 @@ export default function StocksSectorsPage() {
                 <ExternalLink className="w-3 h-3 text-white" />
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-white">External Resources</h3>
-              <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">ETF HEATMAP · SCREENER · TOOLS</Badge>
             </div>
             <div className="flex items-center gap-2 text-white/40 group-hover:text-white/70 transition-colors">
               <span className="text-xs">{externalResourcesOpen ? "Collapse" : "Expand"}</span>
@@ -1902,29 +1901,6 @@ export default function StocksSectorsPage() {
                   allow="fullscreen; clipboard-write; autoplay; camera; microphone; geolocation" frameBorder="0" />
               </div>
 
-              {/* External Link Buttons */}
-              <div className="space-y-3">
-                <button onClick={() => openInNewTab("https://www.vaneck.com/us/en/investments/social-sentiment-etf-buzz/overview/")}
-                  className="w-full bg-gradient-to-br from-amber-500/10 to-yellow-600/10 hover:from-amber-500/20 hover:to-yellow-600/20 border border-amber-500/20 hover:border-amber-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                  <div className="text-sm font-medium text-white group-hover:text-amber-300 mb-1">BUZZ Social Sentiment ETF</div>
-                  <div className="text-xs text-crypto-silver">VanEck social sentiment ETF overview and performance</div>
-                </button>
-                <button onClick={() => openInNewTab("https://www.ssga.com/us/en/institutional/resources/sector-tracker#currentTab=dayOne&fundTicker=xle")}
-                  className="w-full bg-gradient-to-br from-yellow-500/10 to-amber-600/10 hover:from-yellow-500/20 hover:to-amber-600/20 border border-yellow-500/20 hover:border-yellow-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                  <div className="text-sm font-medium text-white group-hover:text-yellow-300 mb-1">SPDR Sector Tracker</div>
-                  <div className="text-xs text-crypto-silver">State Street sector performance and ETF analysis</div>
-                </button>
-                <button onClick={() => openInNewTab("https://www.slickcharts.com/")}
-                  className="w-full bg-gradient-to-br from-blue-500/10 to-cyan-600/10 hover:from-blue-500/20 hover:to-cyan-600/20 border border-blue-500/20 hover:border-blue-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                  <div className="text-sm font-medium text-white group-hover:text-blue-300 mb-1">SlickCharts Indices</div>
-                  <div className="text-xs text-crypto-silver">Stock market indices and data</div>
-                </button>
-                <button onClick={() => openInNewTab("https://www.etf.com/")}
-                  className="w-full bg-gradient-to-br from-green-500/10 to-emerald-600/10 hover:from-green-500/20 hover:to-emerald-600/20 border border-green-500/20 hover:border-green-400/40 rounded-lg p-4 transition-all duration-300 text-left group">
-                  <div className="text-sm font-medium text-white group-hover:text-green-300 mb-1">ETF.com</div>
-                  <div className="text-xs text-crypto-silver">ETF research, news and analysis</div>
-                </button>
-              </div>
             </div>
           )}
         </GlassCard>
