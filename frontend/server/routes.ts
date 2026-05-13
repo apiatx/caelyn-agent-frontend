@@ -2146,6 +2146,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Stock Holdings History (closed trades + value snapshots) ===
+  app.get('/api/stock-holdings/history', (req, res) => {
+    try {
+      const trades  = readTradeHistory();
+      const sorted  = [...trades].sort((a, b) => new Date(b.exit_date).getTime() - new Date(a.exit_date).getTime());
+      let biggestWinner: ClosedTrade | null = null;
+      let biggestLoser:  ClosedTrade | null = null;
+      let bestPct:       ClosedTrade | null = null;
+      let worstPct:      ClosedTrade | null = null;
+      let totalDays = 0;
+      for (const t of trades) {
+        if (!biggestWinner || t.realized_pnl     > biggestWinner.realized_pnl)     biggestWinner = t;
+        if (!biggestLoser  || t.realized_pnl     < biggestLoser.realized_pnl)      biggestLoser  = t;
+        if (!bestPct       || t.realized_pnl_pct > bestPct.realized_pnl_pct)       bestPct       = t;
+        if (!worstPct      || t.realized_pnl_pct < worstPct.realized_pnl_pct)      worstPct      = t;
+        totalDays += t.holding_period_days;
+      }
+      res.json({
+        trades: sorted,
+        summary: {
+          total_trades:            trades.length,
+          total_realized_pnl:      trades.reduce((s, t) => s + t.realized_pnl, 0),
+          biggest_winner: biggestWinner ? { symbol: biggestWinner.symbol, realized_pnl: biggestWinner.realized_pnl, realized_pnl_pct: biggestWinner.realized_pnl_pct } : null,
+          biggest_loser:  biggestLoser  ? { symbol: biggestLoser.symbol,  realized_pnl: biggestLoser.realized_pnl,  realized_pnl_pct: biggestLoser.realized_pnl_pct  } : null,
+          best_pnl_pct:   bestPct       ? { symbol: bestPct.symbol,  realized_pnl_pct: bestPct.realized_pnl_pct  } : null,
+          worst_pnl_pct:  worstPct      ? { symbol: worstPct.symbol, realized_pnl_pct: worstPct.realized_pnl_pct } : null,
+          avg_holding_period_days: trades.length > 0 ? Math.round(totalDays / trades.length) : 0,
+        },
+      });
+    } catch (error) {
+      console.error('Error reading trade history:', error);
+      res.status(500).json({ error: 'Failed to read trade history' });
+    }
+  });
+
+  app.get('/api/stock-holdings/value-history', (req, res) => {
+    try { res.json(readValueHistory()); }
+    catch (error) { res.status(500).json({ error: 'Failed to read value history' }); }
+  });
+
   // === FMP Stock Data Proxy Endpoints ===
   app.get('/api/fmp/quotes', async (req, res) => {
     try {
@@ -2378,23 +2418,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const data = await response.json();
 
-      // If FastAPI returned placeholder and we have local holdings, inject them with live prices
+      // If FastAPI returned placeholder and we have local holdings, inject + fully hydrate
       if ((data.is_placeholder === true || !data.holdings?.length) && localHoldings.length > 0) {
         console.log(`[portfolio-sync] FastAPI placeholder detected — injecting ${localHoldings.length} holdings from stock-holdings.json`);
         try {
-          const symbols = localHoldings.map(h => h.ticker);
+          const symbols      = localHoldings.map(h => h.ticker);
           const assetTypeMap: Record<string, string> = {};
           localHoldings.forEach(h => { assetTypeMap[h.ticker] = h.assetType || 'stock'; });
-          const quotes = await fmpService.getStockDetails(symbols, assetTypeMap);
+          const quotes   = await fmpService.getStockDetails(symbols, assetTypeMap);
           const quoteMap = new Map(quotes.map((q: any) => [q.symbol, q]));
+
           const totalValue = localHoldings.reduce((sum, h) => {
             const q: any = quoteMap.get(h.ticker);
             return sum + h.shares * (q?.price ?? h.avgCost);
           }, 0);
+
+          // ── Holdings sidebar ─────────────────────────────────────────────
           data.holdings = localHoldings.map(h => {
             const q: any = quoteMap.get(h.ticker);
-            const price = q?.price ?? h.avgCost;
-            const mv    = h.shares * price;
+            const price  = q?.price ?? h.avgCost;
+            const mv     = h.shares * price;
             return {
               ticker:         h.ticker,
               price,
@@ -2403,25 +2446,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
               allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : null,
             };
           });
-          data.positions_count = data.holdings.length;
-          if (totalValue > 0 && data.portfolio) data.portfolio.value = totalValue;
-          data.is_placeholder = false;
+          data.positions_count    = data.holdings.length;
+          data.is_placeholder     = false;
           data._synced_from_local = true;
+
+          // ── Portfolio header totals ───────────────────────────────────────
+          const totalDailyPL   = localHoldings.reduce((s, h) => s + h.shares * ((quoteMap.get(h.ticker) as any)?.change ?? 0), 0);
+          const prevTotal      = totalValue - totalDailyPL;
+          const changePctToday = prevTotal > 0 ? (totalDailyPL / prevTotal) * 100 : 0;
+          const costBasis      = localHoldings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+          const totalReturn    = totalValue - costBasis;
+          const totalReturnPct = costBasis > 0 ? (totalReturn / costBasis) * 100 : 0;
+          data.portfolio = {
+            ...(data.portfolio || {}),
+            value:              totalValue,
+            change_today:       totalDailyPL,
+            change_pct_today:   changePctToday,
+            perf_1d: null, perf_5d: null, perf_1m: null, perf_6m: null, perf_1y: null,
+            total_return_pct:   totalReturnPct,
+            total_return_value: totalReturn,
+            sentiment:     totalReturnPct > 5 ? 'BULLISH' : totalReturnPct < -5 ? 'BEARISH' : 'NEUTRAL',
+            market_status: data.portfolio?.market_status || 'CLOSED',
+          };
+
+          // ── Top movers ───────────────────────────────────────────────────
+          const byChange = [...data.holdings].sort((a: any, b: any) => (b.change_pct ?? -999) - (a.change_pct ?? -999));
+          const gainers  = byChange.filter((h: any) => (h.change_pct ?? 0) > 0).slice(0, 2).map((h: any) => {
+            const q: any = quoteMap.get(h.ticker);
+            return { ticker: h.ticker, change_pct: h.change_pct, price: h.price, w52_low: q?.yearLow ?? h.price * 0.7, w52_high: q?.yearHigh ?? h.price * 1.3 };
+          });
+          const losers   = byChange.filter((h: any) => (h.change_pct ?? 0) < 0).reverse().slice(0, 2).map((h: any) => {
+            const q: any = quoteMap.get(h.ticker);
+            return { ticker: h.ticker, change_pct: h.change_pct, price: h.price, w52_low: q?.yearLow ?? h.price * 0.7, w52_high: q?.yearHigh ?? h.price * 1.3 };
+          });
+          data.top_movers = { gainers, losers };
+
+          // ── Asset allocation by type ──────────────────────────────────────
+          const ALLOC_COLORS: Record<string, string> = {
+            'Individual Stocks': '#3b82f6', 'ETFs': '#22c55e',
+            'Crypto': '#f97316', 'Commodities': '#f59e0b', 'Other': '#6b7280',
+          };
+          const typeGroups: Record<string, number> = {};
+          data.holdings.forEach((h: any) => {
+            const lh    = localHoldings.find(l => l.ticker === h.ticker);
+            const type  = (lh?.assetType || 'stock').toLowerCase();
+            const label = type === 'stock' ? 'Individual Stocks' : type === 'etf' ? 'ETFs'
+                        : type === 'crypto' ? 'Crypto'
+                        : type === 'commodity' || type === 'commodities' ? 'Commodities' : 'Other';
+            typeGroups[label] = (typeGroups[label] ?? 0) + (h.allocation_pct ?? 0);
+          });
+          data.asset_allocation = Object.entries(typeGroups).map(([label, pct]) => ({
+            label, pct, color: ALLOC_COLORS[label] || '#6b7280',
+          }));
+
+          // ── Risk metrics — concentration computed, history-based metrics null ─
+          const byAlloc  = [...data.holdings].sort((a: any, b: any) => (b.allocation_pct ?? 0) - (a.allocation_pct ?? 0));
+          const topH     = byAlloc[0];
+          data.risk_metrics = {
+            weighted_volatility: null, max_drawdown: null,
+            top_concentration:       topH?.allocation_pct ?? null,
+            top_concentration_label: topH?.ticker ?? '',
+            portfolio_beta: null, sharpe_ratio: null, sortino_ratio: null,
+          };
+
+          // ── Risk suggestions ─────────────────────────────────────────────
+          data.risk_suggestions = [];
+          if (topH?.allocation_pct && topH.allocation_pct > 40) {
+            data.risk_suggestions.push({ level: 'WARN', title: `High Concentration: ${topH.ticker}`, body: `${topH.ticker} represents ${(topH.allocation_pct as number).toFixed(1)}% of portfolio. Consider rebalancing.` });
+          }
+          if (data.holdings.length === 1) {
+            data.risk_suggestions.push({ level: 'RISK', title: 'Single Position', body: 'Portfolio holds only one asset. Diversification reduces risk.' });
+          }
+          if (data.risk_suggestions.length === 0) {
+            data.risk_suggestions.push({ level: 'INFO', title: 'Portfolio Synced', body: `Showing ${data.holdings.length} positions from Portfolio Dashboard. Historical analytics (Sharpe, Beta, Max Drawdown) require a connected broker or price-history feed.` });
+          }
+
+          // ── Performance chart — from value-history snapshots if available ─
+          const snapHistory = readValueHistory();
+          if (snapHistory.length >= 2) {
+            const firstVal = snapHistory[0].total_value;
+            if (firstVal > 0) {
+              const allPoints = snapHistory.map(s => ({
+                date:      s.timestamp.split('T')[0],
+                portfolio: ((s.total_value - firstVal) / firstVal) * 100,
+                sp500:     null as number | null,
+              }));
+              const dedupedMap = new Map(allPoints.map(p => [p.date, p]));
+              const deduped    = Array.from(dedupedMap.values());
+              data.performance_charts = { '1Y': deduped, '6M': deduped.slice(-180), '1M': deduped.slice(-30), '5D': deduped.slice(-5), '1D': deduped.slice(-1) };
+              data.performance_chart  = deduped;
+            }
+          } else {
+            data.performance_charts = { '1D': [], '5D': [], '1M': [], '6M': [], '1Y': [] };
+            data.performance_chart  = [];
+          }
+
+          // Write a daily market-price snapshot (real FMP prices — highest quality)
+          try {
+            const today  = new Date().toISOString().split('T')[0];
+            const snaps  = readValueHistory();
+            const lastSn = snaps[snaps.length - 1];
+            if (!lastSn || !lastSn.timestamp.startsWith(today)) {
+              appendValueSnapshot(totalValue, localHoldings.length, localHoldings.map(h => h.ticker));
+            }
+          } catch { /* non-fatal */ }
+
+          // ── Volatility + Correlation — unavailable without historical data ─
+          data.volatility         = [];
+          data.correlation_matrix = { tickers: [], values: [] };
+
           console.log(`[portfolio-sync] Injected holdings: ${symbols.join(', ')} — total value $${totalValue.toFixed(2)}`);
         } catch (fmpErr) {
-          console.warn('[portfolio-sync] FMP price fetch failed — injecting tickers with avg cost:', fmpErr);
-          const totalCost = localHoldings.reduce((s, h) => s + h.shares * h.avgCost, 0);
-          data.holdings = localHoldings.map(h => ({
-            ticker:         h.ticker,
-            price:          h.avgCost,
-            change:         null,
-            change_pct:     null,
+          console.warn('[portfolio-sync] FMP price fetch failed — injecting with avg cost:', fmpErr);
+          const totalCost  = localHoldings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+          data.holdings    = localHoldings.map(h => ({
+            ticker: h.ticker, price: h.avgCost, change: null, change_pct: null,
             allocation_pct: totalCost > 0 ? (h.shares * h.avgCost / totalCost) * 100 : null,
           }));
-          data.positions_count = localHoldings.length;
-          data.is_placeholder = false;
+          data.positions_count    = localHoldings.length;
+          data.is_placeholder     = false;
           data._synced_from_local = true;
+          data.performance_charts = { '1D': [], '5D': [], '1M': [], '6M': [], '1Y': [] };
+          data.performance_chart  = [];
+          data.volatility         = [];
+          data.correlation_matrix = { tickers: [], values: [] };
+          const byAlloc2 = localHoldings.map(h => ({ ticker: h.ticker, pct: totalCost > 0 ? (h.shares * h.avgCost / totalCost) * 100 : 0 })).sort((a, b) => b.pct - a.pct);
+          data.risk_metrics = { weighted_volatility: null, max_drawdown: null, top_concentration: byAlloc2[0]?.pct ?? null, top_concentration_label: byAlloc2[0]?.ticker ?? '', portfolio_beta: null, sharpe_ratio: null, sortino_ratio: null };
+          const ALLOC_C2: Record<string,string> = { 'Individual Stocks':'#3b82f6','ETFs':'#22c55e','Crypto':'#f97316','Commodities':'#f59e0b','Other':'#6b7280' };
+          const tg: Record<string,number> = {};
+          localHoldings.forEach(h => { const t=(h.assetType||'stock').toLowerCase(); const l=t==='stock'?'Individual Stocks':t==='etf'?'ETFs':t==='crypto'?'Crypto':t==='commodity'||t==='commodities'?'Commodities':'Other'; tg[l]=(tg[l]??0)+(totalCost>0?(h.shares*h.avgCost/totalCost)*100:0); });
+          data.asset_allocation   = Object.entries(tg).map(([label,pct])=>({label,pct,color:ALLOC_C2[label]||'#6b7280'}));
+          data.top_movers         = { gainers: [], losers: [] };
+          data.risk_suggestions   = [{ level: 'INFO', title: 'Live Prices Unavailable', body: 'Could not fetch market prices. Showing cost basis. Refresh to retry.' }];
         }
+
+        // ── Diagnostic log ────────────────────────────────────────────────
+        console.log('[portfolio-terminal-hydration]', JSON.stringify({
+          holdings_count:         data.holdings?.length ?? 0,
+          symbols:                (data.holdings ?? []).map((h: any) => h.ticker),
+          has_performance_series: !!(data.performance_chart?.length || data.performance_charts?.['1Y']?.length),
+          performance_points:     data.performance_chart?.length ?? 0,
+          has_asset_allocation:   !!(data.asset_allocation?.length),
+          allocation_count:       data.asset_allocation?.length ?? 0,
+          has_risk_metrics:       !!(data.risk_metrics),
+          has_volatility:         !!(data.volatility?.length),
+          has_top_movers:         !!((data.top_movers?.gainers?.length || data.top_movers?.losers?.length)),
+          top_movers_count:       (data.top_movers?.gainers?.length ?? 0) + (data.top_movers?.losers?.length ?? 0),
+          has_correlation_matrix: !!(data.correlation_matrix?.tickers?.length),
+          is_placeholder:         data.is_placeholder,
+          _synced_from_local:     data._synced_from_local,
+        }));
       }
 
       caelynTerminalCache = { data, ts: Date.now() };

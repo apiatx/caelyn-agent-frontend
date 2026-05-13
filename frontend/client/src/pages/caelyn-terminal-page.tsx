@@ -531,6 +531,12 @@ export default function CaelynTerminalPage() {
           <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
             <CardHdr label="Correlation Matrix" badge="Heat Map" />
             <div style={{ padding:'8px 10px', overflowY:'auto', flex:1 }}>
+              {cm.tickers.length === 0 && !ph && (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:80, gap:4 }}>
+                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>UNAVAILABLE</span>
+                  <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Correlation requires historical<br/>price series per holding</span>
+                </div>
+              )}
               {cm.tickers.length > 0 && (
                 <table style={{ borderCollapse:'separate', borderSpacing:2, fontSize:8, tableLayout:'fixed', width:'100%' }}>
                   <colgroup>
@@ -589,6 +595,12 @@ export default function CaelynTerminalPage() {
           <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
             <CardHdr label="Volatility" badge="Annualized" />
             <div style={{ padding:'6px 10px', display:'flex', flexDirection:'column', gap:4, overflowY:'auto', flex:1 }}>
+              {d.volatility.length === 0 && !ph && (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:60, gap:4 }}>
+                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>UNAVAILABLE</span>
+                  <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Volatility requires historical<br/>price returns per holding</span>
+                </div>
+              )}
               {d.volatility.map((v, i) => {
                 const maxVol = Math.max(...d.volatility.map(x => x.vol), 1);
                 const barPct = ph ? 0 : (v.vol / maxVol) * 100;

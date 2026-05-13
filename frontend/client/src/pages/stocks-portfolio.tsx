@@ -841,6 +841,7 @@ export default function StocksPortfolioPage() {
               </select>
               <input type="number" placeholder={SHARES_LABEL[selectedAssetType] || 'Shares'} value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-28" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
               <input type="number" placeholder="Avg Price ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-32" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <input type="date" value={newDateAdded} onChange={e => setNewDateAdded(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-36" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', colorScheme: 'dark' as any }} title="Date Added (entry date)" />
               <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-40" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 12px rgba(32, 144, 208, 0.3)' }}>
                 <Plus className="w-4 h-4" />
                 Add
@@ -1192,6 +1193,61 @@ export default function StocksPortfolioPage() {
               <Briefcase className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-white mb-2">No Holdings Yet</h3>
               <p className="text-sm text-crypto-silver mb-4">Add your first stock holding above to start tracking your portfolio with real-time data, charts, and AI analysis.</p>
+            </GlassCard>
+          )}
+
+          {/* Closed Positions / Trade History */}
+          {tradeHistory.length > 0 && (
+            <GlassCard className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingDown className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-semibold text-white">Closed Positions</h3>
+                <span className="ml-1 text-xs text-slate-500">{tradeHistory.length} trade{tradeHistory.length !== 1 ? 's' : ''}</span>
+              </div>
+              {tradeSummary && tradeSummary.total_trades > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  {[
+                    { label: 'Total Realized', value: tradeSummary.total_realized_pnl != null ? (tradeSummary.total_realized_pnl >= 0 ? `+$${tradeSummary.total_realized_pnl.toFixed(2)}` : `-$${Math.abs(tradeSummary.total_realized_pnl).toFixed(2)}`) : '—', color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' },
+                    { label: 'Best Trade', value: tradeSummary.best_pnl_pct ? `${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(1)}%` : '—', color: '#4ade80' },
+                    { label: 'Worst Trade', value: tradeSummary.worst_pnl_pct ? `${tradeSummary.worst_pnl_pct.symbol} ${tradeSummary.worst_pnl_pct.realized_pnl_pct.toFixed(1)}%` : '—', color: '#f87171' },
+                    { label: 'Avg Hold', value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d', color: '#94a3b8' },
+                  ].map(s => (
+                    <div key={s.label} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      {['Symbol','Shares','Entry $','Exit $','P&L','P&L %','Days'].map(h => (
+                        <th key={h} className={`pb-2 text-slate-400 font-medium text-[11px] ${h === 'Symbol' ? 'text-left pr-3' : 'text-right px-2'}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tradeHistory.map((t: any, i: number) => {
+                      const pl = t.realized_pnl ?? 0;
+                      const plPct = t.realized_pnl_pct ?? 0;
+                      const clr = pl >= 0 ? '#4ade80' : '#f87171';
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td className="py-2 pr-3 font-bold text-white">{t.symbol}</td>
+                          <td className="text-right py-2 px-2 text-slate-400">{t.shares}</td>
+                          <td className="text-right py-2 px-2 text-slate-400">${(t.avg_entry_price ?? 0).toFixed(2)}</td>
+                          <td className="text-right py-2 px-2 text-slate-400">${(t.exit_price ?? 0).toFixed(2)}</td>
+                          <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{pl >= 0 ? '+' : ''}${Math.abs(pl).toFixed(2)}</td>
+                          <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{plPct >= 0 ? '+' : ''}{plPct.toFixed(1)}%</td>
+                          <td className="text-right py-2 pl-2 text-slate-400">{t.holding_period_days ?? 0}d</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </GlassCard>
           )}
 
