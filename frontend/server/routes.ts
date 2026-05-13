@@ -2473,16 +2473,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           // ── Top movers ───────────────────────────────────────────────────
-          const byChange = [...data.holdings].sort((a: any, b: any) => (b.change_pct ?? -999) - (a.change_pct ?? -999));
-          const gainers  = byChange.filter((h: any) => (h.change_pct ?? 0) > 0).slice(0, 2).map((h: any) => {
+          // Sort by change_pct descending; OTC stocks often have null change_pct
+          const byChange = [...data.holdings].sort((a: any, b: any) => (b.change_pct ?? -Infinity) - (a.change_pct ?? -Infinity));
+          const mkMover  = (h: any) => {
             const q: any = quoteMap.get(h.ticker);
-            return { ticker: h.ticker, change_pct: h.change_pct, price: h.price, w52_low: q?.yearLow ?? h.price * 0.7, w52_high: q?.yearHigh ?? h.price * 1.3 };
-          });
-          const losers   = byChange.filter((h: any) => (h.change_pct ?? 0) < 0).reverse().slice(0, 2).map((h: any) => {
-            const q: any = quoteMap.get(h.ticker);
-            return { ticker: h.ticker, change_pct: h.change_pct, price: h.price, w52_low: q?.yearLow ?? h.price * 0.7, w52_high: q?.yearHigh ?? h.price * 1.3 };
-          });
+            return { ticker: h.ticker, change_pct: h.change_pct, price: h.price ?? 0,
+              w52_low: q?.yearLow ?? (h.price ?? 0) * 0.7, w52_high: q?.yearHigh ?? (h.price ?? 0) * 1.3 };
+          };
+          let gainers = byChange.filter((h: any) => (h.change_pct ?? 0) > 0).slice(0, 2).map(mkMover);
+          let losers  = byChange.filter((h: any) => (h.change_pct ?? 0) < 0).slice(-2).reverse().map(mkMover);
+          // Fallback: if FMP has no change data for these tickers, show top/bottom by allocation
+          if (gainers.length === 0 && losers.length === 0 && data.holdings.length >= 2) {
+            const byAlloc3 = [...data.holdings].sort((a: any, b: any) => (b.allocation_pct ?? 0) - (a.allocation_pct ?? 0));
+            gainers = byAlloc3.slice(0, 2).map(mkMover);
+            losers  = byAlloc3.slice(-2).reverse().map(mkMover);
+          }
           data.top_movers = { gainers, losers };
+
+          // ── Earnings Calendar — built from quoteMap (earningsAnnouncement + eps) ─
+          // This replaces whatever FastAPI returned, keeping only local holdings.
+          data.earnings_calendar = localHoldings.map(h => {
+            const q: any = quoteMap.get(h.ticker);
+            const pct = q?.changesPercentage ?? null;
+            const wtd = pct != null ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—';
+            let nextDate = '—';
+            try {
+              const raw = q?.earningsAnnouncement;
+              if (raw) { const d = new Date(raw); if (!isNaN(d.getTime())) nextDate = d.toISOString().split('T')[0]; }
+            } catch { /* keep '—' */ }
+            return {
+              ticker:    h.ticker,
+              company:   q?.companyName || q?.name || h.ticker,
+              wtd,
+              last_eps:  q?.eps ?? null,
+              next_date: nextDate,
+              est_eps:   null,
+            };
+          });
 
           // ── Asset allocation by type ──────────────────────────────────────
           const ALLOC_COLORS: Record<string, string> = {
@@ -2581,6 +2608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data.asset_allocation   = Object.entries(tg).map(([label,pct])=>({label,pct,color:ALLOC_C2[label]||'#6b7280'}));
           data.top_movers         = { gainers: [], losers: [] };
           data.risk_suggestions   = [{ level: 'INFO', title: 'Live Prices Unavailable', body: 'Could not fetch market prices. Showing cost basis. Refresh to retry.' }];
+          data.earnings_calendar  = localHoldings.map(h => ({ ticker: h.ticker, company: h.ticker, wtd: '—', last_eps: null, next_date: '—', est_eps: null }));
         }
 
         // ── Diagnostic log ────────────────────────────────────────────────
