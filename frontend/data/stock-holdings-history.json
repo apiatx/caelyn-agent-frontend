@@ -11,5 +11,18 @@
     "realized_pnl_pct": 0,
     "holding_period_days": 0,
     "source": "deleted_from_dashboard"
+  },
+  {
+    "id": "mp4ip6tkmsltc-closed-1778704448193",
+    "symbol": "TESTXX",
+    "shares": 1,
+    "avg_entry_price": 10,
+    "exit_price": 10,
+    "entry_date": "2026-05-13T20:34:01.544Z",
+    "exit_date": "2026-05-13T20:34:08.193Z",
+    "realized_pnl": 0,
+    "realized_pnl_pct": 0,
+    "holding_period_days": 0,
+    "source": "deleted_from_dashboard"
   }
 ]

@@ -164,6 +164,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Canonical Portfolio Holdings — must be before /api/portfolio/:userId catch-all ===
+
+  // Ping FastAPI — proof of live backend
+  app.get('/api/portfolio/ping', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/ping`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10000),
+      });
+      const data = upRes.ok ? await upRes.json() : null;
+      const isFastAPI = data?.server === 'fastapi';
+      console.log(`[portfolio-fastapi-target] {"pingUrl":"${FA_URL}/ping","pingStatus":${upRes.status},"isFastAPI":${isFastAPI},"pingResponse":${JSON.stringify(data)}}`);
+      res.json({ pingUrl: `${FA_URL}/ping`, pingStatus: upRes.status, pingResponse: data, isFastAPI });
+    } catch (err: any) {
+      console.warn(`[portfolio-fastapi-target] ping failed: ${err?.message}`);
+      res.status(502).json({ pingUrl: `${FA_URL}/ping`, pingStatus: 0, pingResponse: null, isFastAPI: false, error: err?.message });
+    }
+  });
+
+  // POST /api/portfolio/sync — push full holdings list to FastAPI canonical store
+  app.post('/api/portfolio/sync', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const authHeader = req.headers.authorization || '';
+    const body = req.body || {};
+
+    // Accept holdings from body.holdings, body.positions, or bare array
+    const incoming: any[] = Array.isArray(body) ? body
+      : Array.isArray(body.holdings)  ? body.holdings
+      : Array.isArray(body.positions) ? body.positions
+      : [];
+
+    if (incoming.length === 0) {
+      return res.status(400).json({ error: 'No holdings provided (expected body.holdings, body.positions, or bare array)' });
+    }
+
+    // Normalize to FastAPI canonical format
+    const payload = incoming.map((h: any) => ({
+      ticker:     (h.ticker || h.symbol || '').toUpperCase(),
+      symbol:     (h.ticker || h.symbol || '').toUpperCase(),
+      shares:     Number(h.shares ?? 0),
+      avg_cost:   Number(h.avgCost || h.avg_cost || h.avg_price || 0),
+      asset_type: h.assetType || h.asset_type || 'stock',
+      date_added: h.date_added || h.addedAt || new Date().toISOString(),
+    }));
+
+    const syncLog: Record<string, any> = {
+      localCount:       payload.length,
+      localSymbols:     payload.map((h: any) => h.ticker).sort(),
+      syncUrl:          `${FA_URL}/api/portfolio/sync`,
+      postStatus:       null,
+      postResponse:     null,
+      canonicalCount:   null,
+      canonicalSymbols: null,
+      success:          false,
+    };
+
+    // Also write to local file as canonical fallback
+    try {
+      const normalized: StockHolding[] = payload.map((h: any) => ({
+        id: h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        ticker:    h.ticker,
+        shares:    h.shares,
+        avgCost:   h.avg_cost,
+        assetType: h.asset_type,
+        addedAt:   h.date_added,
+        date_added: h.date_added,
+      }));
+      writeHoldings(normalized);
+      caelynTerminalCache = null;
+    } catch { /* non-fatal */ }
+
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/sync`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
+        body:    JSON.stringify({ holdings: payload }),
+        signal:  AbortSignal.timeout(15000),
+      });
+      syncLog.postStatus = upRes.status;
+      if (upRes.ok) {
+        const data = await upRes.json();
+        syncLog.postResponse     = data;
+        syncLog.canonicalCount   = data.canonical_count ?? null;
+        syncLog.canonicalSymbols = data.canonical_symbols ?? null;
+        syncLog.success          = data.synced === true;
+        console.log('[portfolio-sync-to-fastapi]', JSON.stringify(syncLog));
+        caelynTerminalCache = null;
+        return res.json({ success: true, ...data });
+      }
+      const errText = await upRes.text().catch(() => '');
+      syncLog.postResponse = errText.slice(0, 300);
+      console.error('[portfolio-sync-to-fastapi]', JSON.stringify(syncLog));
+      return res.status(502).json({ success: false, error: `FastAPI /sync returned ${upRes.status}`, detail: errText.slice(0, 200), local_written: true });
+    } catch (err: any) {
+      syncLog.postResponse = err?.message;
+      console.error('[portfolio-sync-to-fastapi]', JSON.stringify(syncLog));
+      return res.status(502).json({ success: false, error: 'FastAPI /sync unreachable', detail: err?.message, local_written: true });
+    }
+  });
+
   app.get('/api/portfolio/source-audit', async (req, res) => {
     const authHeader = req.headers.authorization || '';
     const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
@@ -996,20 +1098,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       date_added: h.date_added || h.addedAt || new Date().toISOString(),
       added_at: h.addedAt || h.date_added || new Date().toISOString(),
     }));
-    // Use migrate-from-client with force=true (direct POST to /holdings fails on FastAPI)
-    fetch(`${AGENT_URL}/api/portfolio/holdings/migrate-from-client`, {
+    // Use new /api/portfolio/sync endpoint (faster, force-replaces canonical)
+    fetch(`${AGENT_URL}/api/portfolio/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
-      body: JSON.stringify({ holdings: payload, source: 'express_crud_sync', force: true }),
+      body: JSON.stringify({ holdings: payload }),
     }).then(async r => {
+      const txt = await r.text().catch(() => '');
+      let parsed: any = null;
+      try { parsed = JSON.parse(txt); } catch { /* raw text */ }
       if (!r.ok) {
-        const txt = await r.text().catch(() => '');
-        console.error(`[portfolio-sync-express] FastAPI sync failed: HTTP ${r.status} — ${txt.slice(0, 200)}`);
+        console.error(`[portfolio-sync-to-fastapi] CRUD sync failed HTTP ${r.status}: ${txt.slice(0, 200)}`);
       } else {
-        console.log(`[portfolio-sync-express] Synced ${payload.length} holdings to FastAPI canonical`);
+        console.log(`[portfolio-sync-to-fastapi] {"localCount":${payload.length},"syncUrl":"${AGENT_URL}/api/portfolio/sync","postStatus":${r.status},"canonicalCount":${parsed?.canonical_count ?? null},"success":${parsed?.synced ?? false}}`);
       }
     }).catch(err => {
-      console.error('[portfolio-sync-express] FastAPI sync error:', err?.message || err);
+      console.error('[portfolio-sync-to-fastapi] CRUD sync error:', err?.message || err);
     });
   };
 

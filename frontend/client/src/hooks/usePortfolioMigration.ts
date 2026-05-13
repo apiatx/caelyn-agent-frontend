@@ -13,123 +13,112 @@ export function usePortfolioMigration() {
     if (!token) return;
 
     (async () => {
-      const log: Record<string, any> = {
-        stockHoldingsCount: 0,
-        stockHoldingsSymbols: [],
-        backendCanonicalCount: 0,
-        backendCanonicalSymbols: [],
-        shouldMigrate: false,
-        migrationAttempted: false,
-        migrationStatus: 'not_attempted',
-        postStatus: null,
-        postResponse: null,
-        afterMigrationBackendCount: null,
-        afterMigrationBackendSymbols: null,
+      // ── Step 1: load local holdings (source of truth) ──────────────────────
+      const localRes = await fetch('/api/stock-holdings');
+      const localHoldings: any[] = localRes.ok ? await localRes.json() : [];
+      const localSymbols = localHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
+
+      console.log('[portfolio-source-truth]', JSON.stringify({
+        source:          '/api/stock-holdings (frontend/data/stock-holdings.json)',
+        dashboardCount:  localHoldings.length,
+        dashboardSymbols: localSymbols,
+      }));
+
+      if (localHoldings.length === 0) return;
+
+      // ── Step 2: prove FastAPI target ───────────────────────────────────────
+      let isFastAPI = false;
+      try {
+        const pingRes  = await fetch('/api/portfolio/ping');
+        const pingData = pingRes.ok ? await pingRes.json() : null;
+        isFastAPI = pingData?.isFastAPI === true;
+        console.log('[portfolio-fastapi-target]', JSON.stringify({
+          pingUrl:      pingData?.pingUrl ?? '/api/portfolio/ping',
+          pingStatus:   pingRes.status,
+          pingResponse: pingData?.pingResponse ?? null,
+          isFastAPI,
+        }));
+      } catch (err: any) {
+        console.warn('[portfolio-fastapi-target] ping error:', err?.message);
+      }
+
+      // ── Step 3: check canonical backend count ─────────────────────────────
+      let canonicalHoldings: any[] = [];
+      try {
+        const canonRes = await fetch('/api/portfolio/holdings', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const canonRaw = canonRes.ok ? await canonRes.json() : null;
+        canonicalHoldings = Array.isArray(canonRaw)
+          ? canonRaw
+          : Array.isArray(canonRaw?.holdings) ? canonRaw.holdings : [];
+      } catch { /* non-fatal */ }
+
+      const canonicalSymbols = canonicalHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
+      const shouldSync = localHoldings.length > canonicalHoldings.length
+        || JSON.stringify(localSymbols) !== JSON.stringify(canonicalSymbols);
+
+      if (!shouldSync) {
+        console.log('[portfolio-sync-to-fastapi]', JSON.stringify({
+          localCount:       localHoldings.length,
+          localSymbols,
+          syncUrl:          '/api/portfolio/sync',
+          postStatus:       null,
+          postResponse:     'skipped — already in sync',
+          canonicalCount:   canonicalHoldings.length,
+          canonicalSymbols,
+          success:          true,
+        }));
+        return;
+      }
+
+      // ── Step 4: sync local → FastAPI via POST /api/portfolio/sync ─────────
+      const syncLog: Record<string, any> = {
+        localCount:       localHoldings.length,
+        localSymbols,
+        syncUrl:          '/api/portfolio/sync',
+        postStatus:       null,
+        postResponse:     null,
+        canonicalCount:   null,
+        canonicalSymbols: null,
+        success:          false,
       };
 
       try {
-        const [localRes, canonicalRes] = await Promise.all([
-          fetch('/api/stock-holdings'),
-          fetch('/api/portfolio/holdings', {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }),
-        ]);
-
-        const localHoldings: any[] = localRes.ok ? await localRes.json() : [];
-        const canonicalRaw = canonicalRes.ok ? await canonicalRes.json() : null;
-        const canonicalHoldings: any[] = Array.isArray(canonicalRaw)
-          ? canonicalRaw
-          : Array.isArray(canonicalRaw?.holdings)
-            ? canonicalRaw.holdings
-            : [];
-
-        const localSymbols     = localHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
-        const canonicalSymbols = canonicalHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
-
-        log.stockHoldingsCount      = localHoldings.length;
-        log.stockHoldingsSymbols    = localSymbols;
-        log.backendCanonicalCount   = canonicalHoldings.length;
-        log.backendCanonicalSymbols = canonicalSymbols;
-
-        // Safety: never overwrite backend with empty local
-        if (localHoldings.length === 0) {
-          log.migrationStatus = 'skipped_local_empty';
-          console.log('[portfolio-sync-truth]', JSON.stringify(log));
-          return;
-        }
-
-        // Migrate whenever local has more holdings than backend canonical
-        // No localStorage guard — guard is the actual count comparison
-        const shouldMigrate = localHoldings.length > canonicalHoldings.length;
-        log.shouldMigrate = shouldMigrate;
-
-        if (!shouldMigrate) {
-          log.migrationStatus = 'in_sync';
-          console.log('[portfolio-sync-truth]', JSON.stringify(log));
-          return;
-        }
-
-        // Run migration — pass force=true so FastAPI doesn't block on its own count guard
-        log.migrationAttempted = true;
-        console.log(`[portfolio-sync] local=${localHoldings.length} > canonical=${canonicalHoldings.length} — migrating now`);
-
-        const migrateRes = await fetch('/api/portfolio/holdings/migrate-from-client', {
-          method: 'POST',
+        const syncRes = await fetch('/api/portfolio/sync', {
+          method:  'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type':  'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            holdings: localHoldings,
-            source: 'frontend_dashboard_auto_sync',
-            force: true,
-          }),
+          body: JSON.stringify({ holdings: localHoldings }),
         });
 
-        log.postStatus = migrateRes.status;
+        syncLog.postStatus = syncRes.status;
 
-        if (migrateRes.ok) {
-          const migrateResult = await migrateRes.json();
-          log.postResponse = migrateResult;
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          syncLog.postResponse     = syncData;
+          syncLog.canonicalCount   = syncData.canonical_count ?? localHoldings.length;
+          syncLog.canonicalSymbols = syncData.canonical_symbols ?? localSymbols;
+          syncLog.success          = syncData.success === true || syncData.synced === true;
 
-          if (migrateResult?.success) {
-            log.migrationStatus = 'success';
-
-            // Verify backend canonical now matches
-            try {
-              const verifyRes = await fetch('/api/portfolio/holdings', {
-                headers: { 'Authorization': `Bearer ${token}` },
-              });
-              if (verifyRes.ok) {
-                const verifyRaw = await verifyRes.json();
-                const verifyHoldings: any[] = Array.isArray(verifyRaw)
-                  ? verifyRaw
-                  : Array.isArray(verifyRaw?.holdings) ? verifyRaw.holdings : [];
-                log.afterMigrationBackendCount   = verifyHoldings.length;
-                log.afterMigrationBackendSymbols = verifyHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
-              }
-            } catch { /* non-fatal verification step */ }
-
-            queryClient.invalidateQueries({ queryKey: ['portfolio-holdings'] });
-            queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
-            queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
-          } else {
-            log.migrationStatus = 'failed_fastapi_rejected';
-            console.warn('[portfolio-sync] FastAPI rejected migration:', migrateResult);
-          }
+          // Invalidate so Terminal and Holdings refetch with new canonical
+          queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+          queryClient.invalidateQueries({ queryKey: ['portfolio-holdings'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
         } else {
-          const errText = await migrateRes.text();
-          log.postResponse = errText;
-          log.migrationStatus = 'failed_http_' + migrateRes.status;
-          console.warn('[portfolio-sync] Migration endpoint returned', migrateRes.status, errText);
+          const errTxt = await syncRes.text().catch(() => '');
+          syncLog.postResponse = errTxt.slice(0, 200);
+          syncLog.success      = false;
         }
-      } catch (err) {
-        log.migrationStatus = 'error';
-        log.postResponse = String(err);
-        console.warn('[portfolio-sync] Error during migration check:', err);
+      } catch (err: any) {
+        syncLog.postResponse = err?.message;
+        syncLog.success      = false;
+        console.warn('[portfolio-sync-to-fastapi] sync error:', err?.message);
       }
 
-      console.log('[portfolio-sync-truth]', JSON.stringify(log));
+      console.log('[portfolio-sync-to-fastapi]', JSON.stringify(syncLog));
     })();
   }, [queryClient]);
 }

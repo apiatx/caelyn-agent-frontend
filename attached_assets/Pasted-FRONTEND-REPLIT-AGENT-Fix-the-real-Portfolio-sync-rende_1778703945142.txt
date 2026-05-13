@@ -1,0 +1,160 @@
+FRONTEND REPLIT AGENT — Fix the real Portfolio sync/render chain, then republish
+
+The Portfolio Terminal is still broken. Do not follow old assumptions. Do not hardcode tickers. Do not ask the user for the 19 holdings. Do not fake success. Use the actual frontend repo, browser network, Express logs, and live backend responses to find the real fix.
+
+Current visible state:
+- Portfolio Dashboard / Terminal UI shows 19 current positions.
+- Holdings list and Asset Allocation now show those 19 positions.
+- But Portfolio vs S&P 500, Correlation Matrix, Risk Analysis, Volatility, and Risk Suggestions are still not working.
+- Backend says FastAPI has not received the 19-holding POST from frontend. Backend says only GET /api/caelyn-terminal reached it.
+- Backend added:
+  - GET /ping
+  - POST /api/portfolio/sync
+- Backend says /api/portfolio/sync works when called directly and accepts { holdings: [...] }, { positions: [...] }, or bare array.
+
+Your job:
+Trace the actual live frontend data chain and fix it end-to-end:
+
+Dashboard active holdings source
+→ Express/local frontend API
+→ real FastAPI backend canonical portfolio
+→ /api/caelyn-terminal response
+→ Terminal UI render
+
+Do not optimize for “changed code.” Optimize for proving the live chain works.
+
+Required investigation:
+1. Find the exact source of the 19 holdings currently shown in the Dashboard/Terminal UI:
+   - /api/stock-holdings
+   - frontend/data/stock-holdings.json
+   - localStorage
+   - React Query
+   - any other store
+2. Find every place holdings are read/written:
+   - Dashboard load
+   - add holding
+   - edit holding
+   - delete holding
+   - Terminal load
+3. Find where Express is proxying or not proxying FastAPI calls.
+4. Find why the previous frontend sync did not reach FastAPI.
+5. Check if relative /api calls are only hitting Express and never forwarding to FastAPI.
+6. Check if migration guards, fake success responses, swallowed errors, wrong base URL, route ordering, or stale query cache are causing the failure.
+
+Required backend target verification:
+From the frontend/Express runtime, call the real FastAPI backend:
+
+GET <FASTAPI_BASE_URL>/ping
+
+Do not proceed until the response proves this is FastAPI:
+{ "server": "fastapi" }
+
+If this does not return FastAPI, fix the backend base URL/proxy first.
+
+Required sync behavior:
+Once the real FastAPI target is proven, POST the exact live 19 holdings to:
+
+POST <FASTAPI_BASE_URL>/api/portfolio/sync
+
+Payload:
+{ "holdings": currentDashboardHoldings }
+
+Rules:
+- Do not use hardcoded holdings.
+- Do not manually seed data.
+- Do not overwrite backend with empty holdings.
+- Do not trust localStorage migration flags unless they compare live backend count/signature first.
+- Do not return fake success if FastAPI fails.
+- Express must forward to FastAPI and expose the real upstream response.
+- Add/edit/delete must push the full updated holdings list to FastAPI immediately.
+- Terminal must refetch after sync.
+
+Required UI behavior:
+After the canonical backend has the same holdings as Dashboard:
+1. Refetch /api/caelyn-terminal.
+2. Inspect the actual network response.
+3. Render whatever backend returns for:
+   - performance charts
+   - correlation matrix
+   - risk metrics
+   - volatility
+   - risk suggestions
+   - sector/theme allocation
+4. If backend returns data and UI still shows blank/unavailable, fix the UI field mapping.
+5. If backend returns unavailable reasons, show the exact backend reason, not generic “connected broker required” text.
+6. If backend does not return data, report exact missing keys to backend. Do not fake UI values.
+
+Required logs:
+Add or keep clear logs with these exact labels:
+
+[portfolio-source-truth]
+{
+  source,
+  dashboardCount,
+  dashboardSymbols
+}
+
+[portfolio-fastapi-target]
+{
+  pingUrl,
+  pingStatus,
+  pingResponse,
+  isFastAPI
+}
+
+[portfolio-sync-to-fastapi]
+{
+  localCount,
+  localSymbols,
+  syncUrl,
+  postStatus,
+  postResponse,
+  canonicalCount,
+  canonicalSymbols,
+  success
+}
+
+[portfolio-terminal-render-debug]
+{
+  dashboardSymbols,
+  canonicalSymbols,
+  terminalSymbols,
+  allMatch,
+  backendKeys,
+  performancePointCounts,
+  correlationDimensions,
+  volatilityCount,
+  riskMetricKeys,
+  riskSuggestionsCount,
+  renderedSections,
+  missingExpectedFields
+}
+
+Validation before you say done:
+1. Hard refresh Dashboard.
+2. Prove Dashboard source has 19 holdings.
+3. Prove GET FastAPI /ping returns server=fastapi.
+4. Prove POST FastAPI /api/portfolio/sync returns canonical_count=19.
+5. Prove GET FastAPI /api/portfolio/holdings returns the same 19.
+6. Prove GET /api/caelyn-terminal returns the same 19.
+7. Switch to Terminal.
+8. Prove Terminal does not use the AEHR/MRVL/PLAB-only backend test portfolio.
+9. Prove Portfolio vs S&P 500 either renders data or shows the exact backend unavailable reason.
+10. Prove Correlation Matrix either renders data or shows the exact backend unavailable reason.
+11. Prove Risk Analysis renders backend metrics or exact backend reasons.
+12. Prove Volatility renders backend volatility or exact backend reasons.
+13. Prove Risk Suggestions render current-portfolio suggestions or exact backend reasons.
+14. Add a test holding.
+15. Prove FastAPI canonical becomes 20 and Terminal refetches.
+16. Delete the test holding.
+17. Prove FastAPI canonical returns to 19 and Terminal refetches.
+18. Republish the frontend.
+
+Return:
+- the real root cause
+- exact files changed
+- exact FastAPI base URL used
+- proof the 19 holdings reached FastAPI
+- proof Dashboard symbols = FastAPI canonical symbols = Terminal symbols
+- whether remaining broken panels are backend missing-data or frontend render mapping
+- final validation logs

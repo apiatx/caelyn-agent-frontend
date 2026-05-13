@@ -225,28 +225,44 @@ export default function CaelynTerminalPage() {
         .map(([k]) => k);
       if (nullMetrics.length) missingUiFields.push(`risk_metrics.null:[${nullMetrics.join(',')}]`);
     }
-    console.log('[portfolio-terminal-debug]', JSON.stringify({
-      dashboardSymbols:       canonicalSymbols,
+    const volCount   = data?.volatility?.length ?? 0;
+    const corrDim    = cm_?.tickers?.length ?? 0;
+    const perfPeriodCounts: Record<string, number> = {};
+    if (data?.performance_charts) {
+      for (const k of ['1D','5D','1M','6M','1Y'] as const) {
+        perfPeriodCounts[k] = (data.performance_charts as any)[k]?.length ?? 0;
+      }
+    }
+    const renderedSections: string[] = [];
+    if ((chartPts?.length ?? 0) >= 2)             renderedSections.push('performance_chart');
+    if (corrDim > 0)                               renderedSections.push('correlation_matrix');
+    if (data?.risk_metrics)                        renderedSections.push('risk_analysis');
+    if (volCount > 0)                              renderedSections.push('volatility');
+    if ((data?.risk_suggestions?.length ?? 0) > 0) renderedSections.push('risk_suggestions');
+    if ((data?.top_movers as any)?.gainers?.length || (data?.top_movers as any)?.losers?.length) renderedSections.push('top_movers');
+    if (Array.isArray((data as any)?.theme_mapping) && (data as any).theme_mapping.length > 0) renderedSections.push('theme_mapping');
+    const missingExpected: string[] = [];
+    if (!data?.risk_metrics)                             missingExpected.push('risk_metrics');
+    if (!(data?.top_movers as any)?.gainers?.length)     missingExpected.push('top_movers.gainers');
+    if (!(data?.risk_suggestions?.length))               missingExpected.push('risk_suggestions');
+
+    console.log('[portfolio-terminal-render-debug]', JSON.stringify({
+      dashboardSymbols:         canonicalSymbols,
       canonicalSymbols,
       terminalSymbols,
-      symbolsMatch,
-      backendKeys:            data ? Object.keys(data) : [],
-      hasPerformanceChart:    (chartPts?.length ?? 0) > 0,
-      performancePointCount:  chartPts?.length ?? 0,
-      hasCorrelationMatrix:   (cm_?.tickers?.length ?? 0) > 0,
-      correlationSize:        cm_?.tickers?.length ?? 0,
-      hasVolatility:          (data?.volatility?.length ?? 0) > 0,
-      volatilityCount:        data?.volatility?.length ?? 0,
-      hasRiskMetrics:         !!data?.risk_metrics,
-      riskMetricKeys:         data?.risk_metrics
+      allMatch:                 symbolsMatch,
+      backendKeys:              data ? Object.keys(data) : [],
+      performancePointCounts:   Object.keys(perfPeriodCounts).length ? perfPeriodCounts : { current: chartPts?.length ?? 0 },
+      correlationDimensions:    corrDim,
+      volatilityCount:          volCount,
+      riskMetricKeys:           data?.risk_metrics
         ? Object.entries(data.risk_metrics).map(([k, v]) => `${k}:${v}`).join(',')
         : '',
-      hasRiskSuggestions:     (data?.risk_suggestions?.length ?? 0) > 0,
-      riskSuggestionCount:    data?.risk_suggestions?.length ?? 0,
-      hasThemeMapping:        Array.isArray((data as any)?.theme_mapping) && (data as any).theme_mapping.length > 0,
-      themeMappingCount:      Array.isArray((data as any)?.theme_mapping) ? (data as any).theme_mapping.length : 0,
+      riskSuggestionsCount:     data?.risk_suggestions?.length ?? 0,
+      renderedSections,
       renderedState,
-      missingUiFields,
+      missingUiFields:          missingUiFields,
+      missingExpectedFields:    missingExpected,
     }));
   }, [data, dashboardHoldings, isFetching, isLoading, perfPeriod]);
 
