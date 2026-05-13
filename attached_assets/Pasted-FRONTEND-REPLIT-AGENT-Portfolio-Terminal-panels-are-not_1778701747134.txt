@@ -1,0 +1,95 @@
+FRONTEND REPLIT AGENT — Portfolio Terminal panels are not rendering working analytics
+
+The Portfolio Terminal UI still shows broken/unavailable panels.
+
+Current visible state:
+- Holdings list works with current 19 positions.
+- Asset Allocation works.
+- Top Movers/Losers work.
+- But these do not work:
+  - Portfolio vs S&P 500
+  - Correlation Matrix
+  - Risk Analysis, except Top Concentration
+  - Volatility
+  - Risk Suggestions
+
+Important:
+These sections worked before when the Terminal used stale/hardcoded portfolio assets. Now that holdings are synced to the real portfolio, the UI needs to render the same analytics path for the current holdings.
+
+Please take the reins from the actual frontend repo. Do not assume previous prompts or fixes are correct.
+
+Goal:
+Make the Portfolio Terminal render the analytics returned by backend for the current 19-position portfolio.
+
+Do NOT:
+- redesign the page
+- hardcode tickers
+- show old/stale holdings
+- hide broken sections
+- fake data
+- break holdings list, Asset Allocation, or Top Movers
+
+Audit:
+1. Inspect the actual Network response for /api/caelyn-terminal.
+2. Compare the live response keys to what caelyn-terminal-page.tsx expects.
+3. Find whether backend is returning data that the UI is ignoring.
+4. Find whether the UI expects old schema keys from the old/stale portfolio response.
+5. Find whether the proxy is stripping fields.
+6. Find whether stale React Query cache is showing an old/partial payload.
+7. Find exactly why each section shows unavailable:
+   - Portfolio chart
+   - Correlation Matrix
+   - Risk Analysis
+   - Volatility
+   - Risk Suggestions
+
+Required behavior:
+- If backend returns portfolio/performance chart series, render it.
+- If backend returns correlation matrix, render it.
+- If backend returns volatility data, render it.
+- If backend returns risk metrics, render them.
+- If backend returns risk suggestions, render them.
+- If backend returns unavailable reasons, show the specific backend reason, not generic copy.
+- If backend data is missing, log exactly which keys are missing and do not pretend this is a UI issue.
+
+Add a focused frontend diagnostic log:
+
+[portfolio-terminal-render-debug]
+{
+  terminalSymbols,
+  backendKeys,
+  performanceChartKeys,
+  performancePointCounts,
+  correlationKeys,
+  correlationDimensions,
+  volatilityKeys,
+  volatilityCount,
+  riskMetricKeys,
+  riskSuggestionsCount,
+  themeMappingCount,
+  renderedSections: {
+    performance: "data" | "unavailable" | "missing",
+    correlation: "data" | "unavailable" | "missing",
+    riskAnalysis: "data" | "unavailable" | "missing",
+    volatility: "data" | "unavailable" | "missing",
+    riskSuggestions: "data" | "unavailable" | "missing"
+  },
+  missingExpectedFields
+}
+
+Validation:
+Use the real current 19-position portfolio.
+
+Hard refresh Terminal:
+- no old holdings flash
+- current holdings remain
+- Asset Allocation still works
+- Portfolio vs S&P 500 renders data or the exact backend reason
+- Correlation Matrix renders data or the exact backend reason
+- Risk Analysis renders all backend-provided metrics
+- Volatility renders backend-provided volatility
+- Risk Suggestions render actual current-portfolio advice
+- no generic “connected broker required” message unless backend explicitly returns that reason
+
+If backend data is missing, return the exact missing fields and tell backend what to add.
+If backend data is present but UI ignores it, fix the UI mapping.

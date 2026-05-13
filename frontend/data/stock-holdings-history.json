@@ -1,0 +1,15 @@
+[
+  {
+    "id": "mp4hlvnattln3-closed-1778702612700",
+    "symbol": "TESTXX",
+    "shares": 5,
+    "avg_entry_price": 100,
+    "exit_price": 100,
+    "entry_date": "2026-05-13T20:03:27.478Z",
+    "exit_date": "2026-05-13T20:03:32.700Z",
+    "realized_pnl": 0,
+    "realized_pnl_pct": 0,
+    "holding_period_days": 0,
+    "source": "deleted_from_dashboard"
+  }
+]

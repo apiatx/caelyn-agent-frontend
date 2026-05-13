@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-const MIGRATION_FLAG_KEY = 'portfolio_migrated_v2';
-
 export function usePortfolioMigration() {
   const queryClient = useQueryClient();
   const ran = useRef(false);
@@ -15,9 +13,21 @@ export function usePortfolioMigration() {
     if (!token) return;
 
     (async () => {
-      try {
-        const alreadyMigrated = localStorage.getItem(MIGRATION_FLAG_KEY) === 'true';
+      const log: Record<string, any> = {
+        stockHoldingsCount: 0,
+        stockHoldingsSymbols: [],
+        backendCanonicalCount: 0,
+        backendCanonicalSymbols: [],
+        shouldMigrate: false,
+        migrationAttempted: false,
+        migrationStatus: 'not_attempted',
+        postStatus: null,
+        postResponse: null,
+        afterMigrationBackendCount: null,
+        afterMigrationBackendSymbols: null,
+      };
 
+      try {
         const [localRes, canonicalRes] = await Promise.all([
           fetch('/api/stock-holdings'),
           fetch('/api/portfolio/holdings', {
@@ -33,35 +43,35 @@ export function usePortfolioMigration() {
             ? canonicalRaw.holdings
             : [];
 
-        const localSymbols    = localHoldings.map(h => h.ticker).sort();
+        const localSymbols     = localHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
         const canonicalSymbols = canonicalHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
-        const migrationNeeded = localHoldings.length > canonicalHoldings.length && !alreadyMigrated;
 
-        console.log('[portfolio-frontend-source]', JSON.stringify({
-          dashboardVisibleSymbols: localSymbols,
-          dashboardVisibleCount:   localHoldings.length,
-          localStorageSymbols:     [],
-          backendCanonicalSymbols: canonicalSymbols,
-          backendCanonicalCount:   canonicalHoldings.length,
-          source: '/api/stock-holdings → frontend/data/stock-holdings.json',
-          migrationNeeded,
-          alreadyMigrated,
-        }));
+        log.stockHoldingsCount      = localHoldings.length;
+        log.stockHoldingsSymbols    = localSymbols;
+        log.backendCanonicalCount   = canonicalHoldings.length;
+        log.backendCanonicalSymbols = canonicalSymbols;
 
-        if (!migrationNeeded) {
-          if (!alreadyMigrated && canonicalHoldings.length >= localHoldings.length && canonicalHoldings.length > 0) {
-            localStorage.setItem(MIGRATION_FLAG_KEY, 'true');
-            console.log('[portfolio-migration] Backend already canonical — setting guard.');
-          }
-          return;
-        }
-
+        // Safety: never overwrite backend with empty local
         if (localHoldings.length === 0) {
-          console.log('[portfolio-migration] Local holdings empty — skipping migration to avoid wipe.');
+          log.migrationStatus = 'skipped_local_empty';
+          console.log('[portfolio-sync-truth]', JSON.stringify(log));
           return;
         }
 
-        console.log(`[portfolio-migration] Migrating ${localHoldings.length} local holdings → canonical backend…`);
+        // Migrate whenever local has more holdings than backend canonical
+        // No localStorage guard — guard is the actual count comparison
+        const shouldMigrate = localHoldings.length > canonicalHoldings.length;
+        log.shouldMigrate = shouldMigrate;
+
+        if (!shouldMigrate) {
+          log.migrationStatus = 'in_sync';
+          console.log('[portfolio-sync-truth]', JSON.stringify(log));
+          return;
+        }
+
+        // Run migration — pass force=true so FastAPI doesn't block on its own count guard
+        log.migrationAttempted = true;
+        console.log(`[portfolio-sync] local=${localHoldings.length} > canonical=${canonicalHoldings.length} — migrating now`);
 
         const migrateRes = await fetch('/api/portfolio/holdings/migrate-from-client', {
           method: 'POST',
@@ -71,23 +81,55 @@ export function usePortfolioMigration() {
           },
           body: JSON.stringify({
             holdings: localHoldings,
-            source: 'frontend_dashboard_existing_state',
+            source: 'frontend_dashboard_auto_sync',
+            force: true,
           }),
         });
 
+        log.postStatus = migrateRes.status;
+
         if (migrateRes.ok) {
-          const result = await migrateRes.json();
-          console.log('[portfolio-migration] Complete:', result);
-          localStorage.setItem(MIGRATION_FLAG_KEY, 'true');
-          queryClient.invalidateQueries({ queryKey: ['portfolio-holdings'] });
-          queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
-          queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+          const migrateResult = await migrateRes.json();
+          log.postResponse = migrateResult;
+
+          if (migrateResult?.success) {
+            log.migrationStatus = 'success';
+
+            // Verify backend canonical now matches
+            try {
+              const verifyRes = await fetch('/api/portfolio/holdings', {
+                headers: { 'Authorization': `Bearer ${token}` },
+              });
+              if (verifyRes.ok) {
+                const verifyRaw = await verifyRes.json();
+                const verifyHoldings: any[] = Array.isArray(verifyRaw)
+                  ? verifyRaw
+                  : Array.isArray(verifyRaw?.holdings) ? verifyRaw.holdings : [];
+                log.afterMigrationBackendCount   = verifyHoldings.length;
+                log.afterMigrationBackendSymbols = verifyHoldings.map(h => (h.ticker || h.symbol || '').toUpperCase()).sort();
+              }
+            } catch { /* non-fatal verification step */ }
+
+            queryClient.invalidateQueries({ queryKey: ['portfolio-holdings'] });
+            queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
+            queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+          } else {
+            log.migrationStatus = 'failed_fastapi_rejected';
+            console.warn('[portfolio-sync] FastAPI rejected migration:', migrateResult);
+          }
         } else {
-          console.warn('[portfolio-migration] Endpoint returned', migrateRes.status, '— will retry next session.');
+          const errText = await migrateRes.text();
+          log.postResponse = errText;
+          log.migrationStatus = 'failed_http_' + migrateRes.status;
+          console.warn('[portfolio-sync] Migration endpoint returned', migrateRes.status, errText);
         }
       } catch (err) {
-        console.warn('[portfolio-migration] Error during migration check:', err);
+        log.migrationStatus = 'error';
+        log.postResponse = String(err);
+        console.warn('[portfolio-sync] Error during migration check:', err);
       }
+
+      console.log('[portfolio-sync-truth]', JSON.stringify(log));
     })();
   }, [queryClient]);
 }

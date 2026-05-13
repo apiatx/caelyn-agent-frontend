@@ -4,151 +4,170 @@
     "ticker": "AEHR",
     "shares": 232,
     "avgCost": 45,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:27:37.636Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:27:37.636Z"
   },
   {
     "id": "mp26x0obfmlqg",
     "ticker": "SIVEF",
     "shares": 3996,
     "avgCost": 1.41,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:28:39.083Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:28:39.083Z"
   },
   {
     "id": "mp27095kted9k",
     "ticker": "MRVL",
     "shares": 111,
     "avgCost": 110,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:31:10.040Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:31:10.040Z"
   },
   {
     "id": "mp2711etad68u",
     "ticker": "PENG",
     "shares": 422,
     "avgCost": 35,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:31:46.661Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:31:46.661Z"
   },
   {
     "id": "mp271oyfhpwun",
     "ticker": "AMKR",
     "shares": 216,
     "avgCost": 48,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:32:17.175Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:32:17.175Z"
   },
   {
     "id": "mp274mqy9pi2r",
     "ticker": "IQEPF",
     "shares": 19875,
     "avgCost": 0.35,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:34:34.282Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:34:34.282Z"
   },
   {
     "id": "mp276ojp7t22p",
     "ticker": "SLOIF",
     "shares": 79,
     "avgCost": 61,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:36:09.925Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:36:09.925Z"
   },
   {
     "id": "mp277v9z5ky7w",
     "ticker": "TRT",
     "shares": 1160,
     "avgCost": 6.2,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:37:05.303Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:37:05.303Z"
   },
   {
     "id": "mp27a94i54wna",
     "ticker": "NBIS",
     "shares": 76,
     "avgCost": 87,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:38:56.562Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:38:56.562Z"
   },
   {
     "id": "mp27c2e8jttll",
     "ticker": "VECO",
     "shares": 234,
     "avgCost": 42,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:40:21.152Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:40:21.152Z"
   },
   {
     "id": "mp27dpemtqcez",
     "ticker": "AMPX",
     "shares": 625,
     "avgCost": 15,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:41:37.630Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:41:37.630Z"
   },
   {
     "id": "mp27f2oz3sa6g",
     "ticker": "LWLG",
     "shares": 473,
     "avgCost": 8.33,
+    "assetType": "stock",
     "addedAt": "2026-05-12T05:42:41.507Z",
-    "assetType": "stock"
+    "date_added": "2026-05-12T05:42:41.507Z"
   },
   {
     "id": "mp3m3l5yfjof6",
     "ticker": "OUST",
     "shares": 302,
     "avgCost": 26,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:21:25.990Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:21:25.990Z"
   },
   {
     "id": "mp3m4ko0ynb3w",
     "ticker": "SLNH",
     "shares": 5404,
     "avgCost": 1.59,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:22:12.000Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:22:12.000Z"
   },
   {
     "id": "mp3m5kouu0gz7",
     "ticker": "NRGV",
     "shares": 1969,
     "avgCost": 5.17,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:22:58.686Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:22:58.686Z"
   },
   {
     "id": "mp3m5xs5w5od3",
     "ticker": "P",
     "shares": 123,
     "avgCost": 81,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:23:15.653Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:23:15.653Z"
   },
   {
     "id": "mp3m72yj60hlj",
     "ticker": "VPG",
     "shares": 104,
     "avgCost": 63,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:24:09.019Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:24:09.019Z"
   },
   {
     "id": "mp3mb15h2qs8a",
     "ticker": "FPLSF",
     "shares": 197,
     "avgCost": 25,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:27:13.301Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:27:13.301Z"
   },
   {
     "id": "mp3mcj9rnk7xm",
     "ticker": "SILC",
     "shares": 176,
     "avgCost": 28.07,
+    "assetType": "stock",
     "addedAt": "2026-05-13T05:28:23.439Z",
-    "assetType": "stock"
+    "date_added": "2026-05-13T05:28:23.439Z"
   }
 ]

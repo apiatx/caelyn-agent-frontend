@@ -1,0 +1,121 @@
+FRONTEND REPLIT AGENT — Fix dynamic Portfolio Dashboard → backend canonical sync
+
+Do not ask for a manual ticker list. Do not hardcode the current 19 holdings.
+
+The real issue:
+The Portfolio Dashboard shows 19 holdings from the frontend source, but the backend canonical portfolio store still only has 3 test holdings. That means the Dashboard holdings are not being dynamically written/synced to the backend canonical portfolio store.
+
+Backend already has:
+- GET /api/portfolio/holdings
+- POST /api/portfolio/holdings
+- POST /api/portfolio/holdings/migrate-from-client
+- GET /api/portfolio/source-audit
+- canonical store: data/portfolio/active_holdings.json
+
+Frontend previously found the 19 holdings in:
+- frontend/data/stock-holdings.json
+- served by Express at /api/stock-holdings
+
+Goal:
+Make the Portfolio Dashboard’s active holdings dynamically persist to the backend canonical portfolio store every time holdings are loaded, added, edited, or deleted. The user should never need to manually provide tickers or re-enter holdings.
+
+Take the reins and diagnose the actual repo. Do not assume the previous migration code works.
+
+Audit:
+1. Hit /api/stock-holdings from the frontend server and confirm it returns the 19 holdings.
+2. Hit /api/portfolio/holdings through the frontend proxy and confirm whether it returns 3 or 19.
+3. Hit /api/portfolio/source-audit through the frontend proxy and confirm backend canonical count.
+4. Inspect the existing migration hook:
+   - usePortfolioMigration
+   - localStorage guard portfolio_migrated_v2
+   - whether it actually runs on Dashboard load
+   - whether it skips because the guard was set too early
+   - whether it posts to the frontend proxy or wrong backend URL
+   - whether the request fails silently
+5. Inspect the Express proxy routes:
+   - POST /api/portfolio/holdings
+   - POST /api/portfolio/holdings/migrate-from-client
+   - GET /api/portfolio/holdings
+   - GET /api/portfolio/source-audit
+6. Inspect _syncHoldingsToFastAPI:
+   - confirm it is called after POST/PUT/DELETE /api/stock-holdings
+   - confirm it has the right backend base URL
+   - confirm it sends the full normalized holdings payload
+   - confirm failures are logged loudly, not swallowed
+7. Check route ordering. Make sure /api/portfolio/holdings and /api/portfolio/source-audit are not shadowed by /api/portfolio/:userId.
+
+Required fix:
+1. Remove or reset any localStorage guard that falsely marks migration complete while backend canonical still has fewer holdings.
+   - The guard must be based on backend canonical count/signature, not just “migration was attempted once.”
+2. On Portfolio Dashboard load:
+   - read /api/stock-holdings
+   - read /api/portfolio/holdings
+   - if stock-holdings has more current holdings than backend canonical, POST the full current holdings to /api/portfolio/holdings/migrate-from-client
+   - then refetch /api/portfolio/holdings and verify backend canonical now matches
+3. On every Dashboard add/edit/delete:
+   - update local /api/stock-holdings as it does now
+   - immediately POST the full updated holdings array to backend canonical via /api/portfolio/holdings or /api/portfolio/holdings/migrate-from-client
+   - invalidate/refetch /api/portfolio/holdings
+   - invalidate/refetch /api/caelyn-terminal
+4. If the backend sync fails:
+   - show/log a clear error
+   - do not silently claim Portfolio is synced
+5. The migration should be idempotent:
+   - if frontend has 19 and backend has 3, migrate
+   - if frontend has 19 and backend has 19 with same signature, do nothing
+   - if frontend is empty, never overwrite backend with empty
+   - if backend has more than frontend, do not overwrite without explicit reason
+
+Required diagnostics:
+Add one loud console/server log on Dashboard load:
+
+[portfolio-sync-truth]
+{
+  stockHoldingsCount,
+  stockHoldingsSymbols,
+  backendCanonicalCount,
+  backendCanonicalSymbols,
+  shouldMigrate,
+  migrationAttempted,
+  migrationStatus,
+  postStatus,
+  postResponse,
+  afterMigrationBackendCount,
+  afterMigrationBackendSymbols
+}
+
+Add one loud server log inside Express sync:
+
+[portfolio-sync-express]
+{
+  route,
+  localCount,
+  localSymbols,
+  backendUrl,
+  canonicalPostStatus,
+  canonicalPostResponse,
+  success
+}
+
+Validation:
+1. Load Portfolio Dashboard.
+2. Confirm /api/stock-holdings returns the real 19 holdings.
+3. Confirm /api/portfolio/holdings initially returns backend count.
+4. Confirm migration runs automatically without manual ticker entry.
+5. Confirm /api/portfolio/holdings returns 19 after migration.
+6. Confirm backend /api/portfolio/source-audit shows canonical active_holdings count = 19.
+7. Switch to Portfolio Terminal.
+8. Confirm /api/caelyn-terminal uses the same 19 symbols.
+9. Confirm Terminal analytics rebuild from 19, not AEHR/MRVL/PLAB only.
+10. Add a test holding in Dashboard.
+11. Confirm backend canonical becomes 20.
+12. Delete the test holding.
+13. Confirm backend canonical returns to 19.
+14. Hard refresh.
+15. Confirm Dashboard, backend canonical, and Terminal all still show the same 19.
+
+Return:
+- exact reason previous migration did not hit backend
+- exact files changed
+- proof from logs that backend canonical now receives the 19 holdings dynamically
+- validation output showing stock-holdings symbols = backend canonical symbols = terminal symbols

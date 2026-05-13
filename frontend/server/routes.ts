@@ -185,13 +185,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const authHeader = req.headers.authorization || '';
     const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const localHoldings = readHoldings();
     try {
       const upRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
         headers: { 'X-API-Key': FA_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
       });
-      if (upRes.ok) return res.json(await upRes.json());
-    } catch { /* fall through */ }
-    res.json(readHoldings());
+      if (upRes.ok) {
+        const fapiData = await upRes.json();
+        const fapiHoldings: any[] = Array.isArray(fapiData) ? fapiData : Array.isArray(fapiData?.holdings) ? fapiData.holdings : [];
+        // If FastAPI canonical has fewer holdings than local, local is authoritative
+        if (fapiHoldings.length < localHoldings.length) {
+          console.log(`[portfolio-sync-express] FastAPI canonical (${fapiHoldings.length}) < local (${localHoldings.length}) — returning local as authoritative`);
+          return res.json({ holdings: localHoldings.map(h => ({ ticker: h.ticker, symbol: h.ticker, shares: h.shares, avg_cost: h.avgCost, asset_type: h.assetType || 'stock' })) });
+        }
+        return res.json(fapiData);
+      }
+    } catch { /* fall through to local */ }
+    res.json({ holdings: localHoldings.map(h => ({ ticker: h.ticker, symbol: h.ticker, shares: h.shares, avg_cost: h.avgCost, asset_type: h.assetType || 'stock' })) });
   });
 
   // Portfolio endpoints with security validation
@@ -986,11 +996,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       date_added: h.date_added || h.addedAt || new Date().toISOString(),
       added_at: h.addedAt || h.date_added || new Date().toISOString(),
     }));
-    fetch(`${AGENT_URL}/api/portfolio/holdings`, {
+    // Use migrate-from-client with force=true (direct POST to /holdings fails on FastAPI)
+    fetch(`${AGENT_URL}/api/portfolio/holdings/migrate-from-client`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
-      body: JSON.stringify({ holdings: payload }),
-    }).catch(() => { /* non-fatal — local JSON is the fallback */ });
+      body: JSON.stringify({ holdings: payload, source: 'express_crud_sync', force: true }),
+    }).then(async r => {
+      if (!r.ok) {
+        const txt = await r.text().catch(() => '');
+        console.error(`[portfolio-sync-express] FastAPI sync failed: HTTP ${r.status} — ${txt.slice(0, 200)}`);
+      } else {
+        console.log(`[portfolio-sync-express] Synced ${payload.length} holdings to FastAPI canonical`);
+      }
+    }).catch(err => {
+      console.error('[portfolio-sync-express] FastAPI sync error:', err?.message || err);
+    });
   };
 
   // === Auth proxy (avoids CORS on direct browser→FastAPI calls) ===
@@ -2279,10 +2299,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/portfolio/holdings/migrate-from-client', async (req, res) => {
     const authHeader = req.headers.authorization || '';
-    const { holdings: clientHoldings, source } = req.body || {};
+    const { holdings: clientHoldings, source, force } = req.body || {};
     if (!Array.isArray(clientHoldings) || clientHoldings.length === 0) {
       return res.status(400).json({ error: 'No holdings to migrate' });
     }
+
+    const syncLog: Record<string, any> = {
+      route: 'POST /api/portfolio/holdings/migrate-from-client',
+      localCount: clientHoldings.length,
+      localSymbols: clientHoldings.map((h: any) => (h.ticker || h.symbol || '').toUpperCase()).sort(),
+      backendUrl: `${AGENT_URL}/api/portfolio/holdings/migrate-from-client`,
+      canonicalPostStatus: null,
+      canonicalPostResponse: null,
+      success: false,
+    };
+
     // Map local format → canonical format
     const payload = clientHoldings.map((h: any) => ({
       id: h.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7)),
@@ -2297,24 +2328,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       date_added: h.date_added || h.addedAt || new Date().toISOString(),
       added_at: h.addedAt || h.date_added || new Date().toISOString(),
     }));
+
+    // Always write to local file first — local JSON is always up-to-date
+    try {
+      const normalized: StockHolding[] = payload.map((h: any) => ({
+        id: h.id,
+        ticker: h.ticker,
+        shares: h.shares,
+        avgCost: h.avgCost,
+        assetType: h.asset_type,
+        addedAt: h.added_at,
+        date_added: h.date_added,
+      }));
+      writeHoldings(normalized);
+      caelynTerminalCache = null;
+    } catch (localErr) {
+      console.error('[portfolio-sync-express] Failed to write local holdings file:', localErr);
+    }
+
     try {
       const upRes = await fetch(`${AGENT_URL}/api/portfolio/holdings/migrate-from-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY, ...(authHeader ? { 'Authorization': authHeader } : {}) },
-        body: JSON.stringify({ holdings: payload, source: source || 'frontend_dashboard_existing_state' }),
+        body: JSON.stringify({ holdings: payload, source: source || 'frontend_dashboard_auto_sync', force: force ?? true }),
       });
+
+      syncLog.canonicalPostStatus = upRes.status;
+
       if (upRes.ok) {
         const data = await upRes.json();
-        console.log(`[portfolio-migration] Migrated ${payload.length} holdings to canonical backend from source: ${source}`);
+        syncLog.canonicalPostResponse = data;
+        syncLog.success = true;
+        console.log(`[portfolio-sync-express]`, JSON.stringify(syncLog));
         caelynTerminalCache = null;
         return res.json({ success: true, migrated: payload.length, response: data });
       }
-      console.warn('[portfolio-migration] FastAPI migrate endpoint returned', upRes.status);
-      // Even if FastAPI fails, treat local as migrated so we don't retry forever
-      return res.json({ success: true, migrated: payload.length, note: 'FastAPI unavailable; local JSON is canonical fallback' });
+
+      // FastAPI returned a non-OK status
+      const errText = await upRes.text().catch(() => '');
+      syncLog.canonicalPostResponse = errText.slice(0, 300);
+      console.error(`[portfolio-sync-express]`, JSON.stringify(syncLog));
+      // Return failure — do NOT lie with success:true
+      return res.status(502).json({
+        success: false,
+        error: `FastAPI returned ${upRes.status}`,
+        detail: errText.slice(0, 200),
+        local_written: true,
+        migrated: payload.length,
+      });
     } catch (err) {
-      console.warn('[portfolio-migration] Error calling FastAPI migrate:', err);
-      return res.json({ success: true, migrated: payload.length, note: 'FastAPI unavailable; local JSON is canonical fallback' });
+      syncLog.canonicalPostResponse = String(err);
+      console.error('[portfolio-sync-express]', JSON.stringify(syncLog));
+      return res.status(502).json({
+        success: false,
+        error: 'FastAPI unreachable',
+        detail: String(err),
+        local_written: true,
+        migrated: payload.length,
+      });
     }
   });
 
