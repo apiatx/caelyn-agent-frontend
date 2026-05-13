@@ -1,0 +1,203 @@
+You are working in the CaelynAI frontend Replit.
+
+Do not redesign the architecture.
+Do not switch endpoints.
+Do not use /api/bottlenecks/current as the main page source.
+
+Backend is now fixed.
+
+Canonical main endpoint:
+GET /api/strategy-screener/latest
+
+Refresh endpoint:
+POST /api/admin/bottlenecks/refresh
+
+Backend now returns:
+- 30 entries by default
+- 30 matching reports in screener_reports
+- is_anchor: true/false
+- role_type: "anchor" | "bottleneck"
+- market_cap_bucket on all rows
+- grade on all rows
+
+Goal:
+Clean up the Chain Reaction / Bottlenecks page UI and show 30 ranked entries.
+
+Tasks:
+
+1. Use canonical endpoint only.
+Main page data should come from:
+
+GET /api/strategy-screener/latest
+
+Do not use:
+GET /api/bottlenecks/current
+
+The old /api/bottlenecks/current endpoint is raw/debug/internal only.
+
+2. Display 30 rows.
+Remove any frontend cap of 20.
+
+Search for and fix:
+- limit: 20
+- slice(0, 20)
+- “Showing 20”
+- “20 Ranked Entries”
+- any hardcoded display count
+
+The page should show all 30 entries returned by /api/strategy-screener/latest.
+
+3. Remove the filter/stat clutter.
+Remove this entire UI block:
+
+- All Caps dropdown
+- All Layers dropdown
+- sort label/dropdown
+- Best Fit dropdown
+- “Showing 20 · All Caps · All Layers · Best Fit”
+- “20 Ranked Entries”
+- “8 Sub-$20B Names”
+- header text/badge showing “8 sub-$20B names”
+
+The page should be table-first and clean.
+
+4. Make column headers sortable.
+Make these headers clickable:
+
+- #
+- Ticker
+- Company / Role
+- Theme
+- Mkt Cap
+- Layer
+- Market
+- Grade
+
+Sorting rules:
+- Default sort is # ascending, preserving backend rank order.
+- # means Best Fit rank.
+- Ticker sorts alphabetically.
+- Company / Role sorts alphabetically by company/name.
+- Theme sorts alphabetically.
+- Mkt Cap sorts numerically.
+- Layer sorts numerically if possible.
+- Market sorts alphabetically.
+- Grade sorts by grade quality:
+  A+ > A > A- > B+ > B > B- > C+ > C > C-
+
+Add a subtle sort indicator on the active sorted column.
+
+5. Clean row badges.
+Remove noisy badges/bubbles from individual rows:
+
+- Neutral
+- Active
+- Weak Regime Fit
+- Theme Fit
+- Small Cap
+- Micro Cap
+- Megacap
+- Large Cap
+- any market-cap bubble under the market cap value
+
+Keep rows clean.
+
+Allowed row content:
+- rank number
+- ticker
+- optional subtle score under ticker if it does not clutter
+- company/name
+- role text
+- theme
+- market cap text
+- layer
+- market
+- grade
+- detail chevron
+
+6. Anchor labeling.
+Backend now returns:
+- is_anchor
+- role_type
+
+Use those fields.
+
+If row.is_anchor === true or row.role_type === "anchor":
+- label the row clearly as “Anchor”
+- do not use a noisy colored bubble
+- make it subtle and clean
+
+Suggested display:
+
+Ticker cell:
+TSM
+ANCHOR
+
+or Company / Role:
+Taiwan Semiconductor
+Anchor · platform demand engine
+
+Do not hardcode NVDA as anchor unless backend field is missing. Backend currently flagged TSM and SSNLF as anchors, so use backend truth.
+
+7. Header cleanup.
+Keep:
+- “Chain Reaction”
+- clean page description
+- generated date
+- theme pills
+- lead names if useful
+- refresh button
+
+Remove:
+- sub-$20B count
+- endpoint/internal copy
+- implementation language
+
+Use this copy:
+
+“Chain Reaction maps the market anchors driving today’s biggest themes, then surfaces the suppliers, scarce enablers, and bottleneck companies positioned around them.”
+
+8. Refresh behavior.
+Refresh button should call:
+
+POST /api/admin/bottlenecks/refresh
+
+After success:
+- invalidate/refetch GET /api/strategy-screener/latest
+- display 30 rows
+- keep reports working
+- no stale /api/bottlenecks/current refetch for page data
+
+9. ReportPanel.
+Do not break reports.
+
+Validate:
+- clicking BWXT opens a report
+- clicking CEVA opens a report
+- clicking WOLF opens a report
+- if TSM or SSNLF are visible anchors, clicking them opens a report too
+
+No valid row should show:
+“Report unavailable — showing snapshot data”
+
+10. Final validation:
+- Main page network request uses GET /api/strategy-screener/latest
+- 30 rows visible
+- no old filter/stat block remains
+- headers are sortable
+- default sort is # ascending
+- row badges are removed
+- anchors are labeled from backend is_anchor/role_type
+- refresh works and refetches strategy-screener/latest
+- reports work
+- no console errors
+
+Report back:
+- files changed
+- final main endpoint
+- refresh endpoint
+- row count displayed
+- sortable columns implemented
+- anchor labels verified
+- report validation for BWXT, CEVA, WOLF
+- confirmation /api/bottlenecks/current is not used as main page data source
