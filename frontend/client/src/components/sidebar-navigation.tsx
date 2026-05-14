@@ -13,6 +13,9 @@ interface SidebarNavigationProps {
   isMobileMenuOpen?: boolean;
   onToggle: () => void;
   onCloseMobile?: () => void;
+  width?: number;
+  onBeginDrag?: (clientX: number) => void;
+  isDragging?: boolean;
 }
 
 interface NavItem {
@@ -23,7 +26,7 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile }: SidebarNavigationProps) {
+export function SidebarNavigation({ className = "", isCollapsed, isMobile = false, isMobileMenuOpen = false, onToggle, onCloseMobile, width, onBeginDrag, isDragging = false }: SidebarNavigationProps) {
   const [location, setLocation] = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -520,37 +523,48 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         </div>
       )}
       
-      <div 
+      <div
         id="mobile-navigation-menu"
         className={`fixed top-0 h-full ${
-          isMobile 
+          isMobile
             ? `right-0 w-full transform transition-transform duration-300 ease-in-out ${
                 isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-              }` 
-            : `left-0 ${isCollapsed ? 'w-16' : 'w-48'}`
+              }`
+            : `left-0`
         } border-r border-white/[0.06] ${
           isMobile ? 'z-50' : 'z-40'
-        } ${!isMobile ? 'transition-all duration-300 ease-in-out' : ''} flex flex-col ${className}`}
-        style={{ background: '#060709' }}
+        } flex flex-col ${className}`}
+        style={{
+          background: '#060709',
+          ...(isMobile ? {} : {
+            width: width ?? (isCollapsed ? 64 : 192),
+            transition: isDragging ? 'none' : 'width 0.2s ease-in-out',
+          }),
+        }}
         aria-hidden={isMobile && !isMobileMenuOpen}
         inert={isMobile && !isMobileMenuOpen ? true : undefined}
       >
-        
-        {/* Desktop Toggle Button — fixed y position, never moves */}
-      {!isMobile && (
-        <button
-          onClick={onToggle}
-          className="border border-white/[0.08] rounded-full p-1.5 text-white/40 hover:text-white hover:border-white/15 transition-all duration-200 shadow-lg"
-          style={{ background: '#0a0b0f', position: 'fixed', top: 138, left: isCollapsed ? 52 : 180, zIndex: 50, transition: 'left 0.3s ease-in-out, border-color 0.2s, color 0.2s' }}
-          data-testid="toggle-sidebar"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
-      )}
+
+        {/* Desktop drag handle — sits on the right edge of the sidebar */}
+        {!isMobile && (
+          <div
+            onMouseDown={(e) => { e.preventDefault(); onBeginDrag?.(e.clientX); }}
+            title="Drag to resize sidebar"
+            data-testid="sidebar-drag-handle"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: -3,
+              width: 6,
+              height: '100%',
+              cursor: 'ew-resize',
+              zIndex: 60,
+              background: 'transparent',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(92,200,240,0.18)'; }}
+            onMouseLeave={(e) => { if (!isDragging) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+          />
+        )}
 
       {/* Logo — collapses when sidebar is collapsed */}
       {!isMobile && (
