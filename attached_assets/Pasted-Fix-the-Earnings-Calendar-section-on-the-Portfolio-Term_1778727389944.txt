@@ -1,0 +1,226 @@
+Fix the Earnings Calendar section on the Portfolio Terminal page.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Current bug:
+On Portfolio → Terminal tab, the Earnings Calendar section shows portfolio tickers, but the earnings columns are not populated correctly:
+- LAST is showing 0
+- DATE is showing "-"
+- EST is showing blank/incorrect
+- It is not pulling the same earnings data used by Calendar → Earnings → Portfolio.
+
+Goal:
+The Portfolio Terminal Earnings Calendar section should reuse the same Portfolio earnings data source that powers the Portfolio toggle on the Calendar page’s Earnings section.
+
+Source of truth:
+Calendar → Earnings → Portfolio toggle.
+
+The terminal should not invent a separate earnings calendar source.
+The terminal should not use stale local data.
+The terminal should not use All/Watchlist/curated earnings.
+The terminal should not display every portfolio ticker with blank earnings fields if no earnings event exists.
+
+Expected behavior:
+The Portfolio Terminal Earnings Calendar section should show upcoming earnings events for active Portfolio holdings, using the same backend/proxy data as:
+scope=portfolio on the Calendar Earnings page.
+
+Columns shown in the terminal:
+- TICKER
+- WTD
+- LAST
+- DATE
+- EST
+
+Required data mapping:
+- TICKER: portfolio ticker symbol.
+- WTD: weekly price performance, using the same quote/performance data already available in Portfolio Terminal if present.
+- LAST: last price, not zero. Use the same live price field already used in the holdings list.
+- DATE: next earnings date from Calendar Earnings Portfolio data.
+- EST: EPS estimate or revenue estimate if available. If estimate is not available, show "—".
+
+Important:
+Do not add previous earnings/beat/miss work right now.
+This is forward-looking upcoming earnings only.
+
+Implementation steps:
+
+1. Find the Portfolio Terminal data source.
+Likely files:
+- caelyn-terminal-page.tsx
+- routes.ts
+- GET /api/caelyn-terminal
+- any Portfolio Terminal hydration code
+
+Find where the Earnings Calendar panel gets its rows.
+
+2. Stop using placeholder earnings rows.
+If the terminal currently builds earnings rows by mapping over all holdings and setting:
+- last = 0
+- date = "-"
+- est = "-"
+then replace that logic.
+
+The terminal should use real Portfolio earnings event data.
+
+3. Reuse Calendar Earnings Portfolio data.
+Preferred backend/proxy source:
+Use the same endpoint path the Calendar page uses for Portfolio earnings, for example:
+- /api/catalysts/earnings/week-clean?scope=portfolio
+- /api/catalysts/earnings/month-curated?scope=portfolio
+- /api/catalysts/earnings/month-all?scope=portfolio
+or whatever exact endpoint the working Calendar Earnings Portfolio toggle now uses.
+
+For the Terminal panel, use an upcoming window:
+- today through next 60 days minimum
+- if existing Calendar endpoint uses 120-day user_earnings_service cache, use that.
+
+Do not call the All toggle endpoint.
+Do not use scope=all.
+Do not use scope=watchlist.
+
+4. Best architecture:
+In GET /api/caelyn-terminal, add/replace terminal earnings hydration with:
+
+- Load active portfolio holdings from the same source as Portfolio Dashboard.
+- Load Portfolio earnings events from the same scope=portfolio earnings service used by Calendar.
+- Join quote/performance fields from existing Portfolio Terminal holdings/quote hydration.
+- Return terminal.earningsCalendar rows.
+
+The response rows should look like:
+
+{
+  symbol,
+  ticker,
+  wtdChangePercent,
+  lastPrice,
+  nextEarningsDate,
+  epsEstimate,
+  revenueEstimate,
+  reportTime,
+  source: "portfolio_earnings_calendar",
+  scope: "portfolio"
+}
+
+Use existing field names if the terminal component already expects them, but populate real values.
+
+5. Quote/price mapping:
+Use the same live quote/price data already used by the Portfolio Terminal holdings list.
+
+The screenshot shows holdings already have:
+- price
+- chg
+- chg%
+- alloc
+
+The Earnings Calendar panel should reuse that same quote map by symbol.
+
+Do not call a separate quote provider if the terminal already has prices.
+Do not show LAST = 0 when the holdings list has a real price.
+
+If quote missing:
+- show "—", not 0.
+
+6. Earnings event filtering:
+The terminal should show only Portfolio holdings with upcoming earnings events in the selected forward window.
+
+If the design intentionally shows all portfolio holdings, then:
+- holdings with no upcoming earnings should show DATE="—"
+- but real event rows should sort first
+- and date fields must populate when an event exists
+
+Preferred:
+Show only holdings with upcoming earnings events, because this is an Earnings Calendar section.
+
+7. Sorting:
+Sort rows by:
+1. nextEarningsDate ascending
+2. ticker alphabetically
+
+Rows with no date, if included, go last.
+
+8. Field fallbacks:
+DATE:
+- Use nextEarningsDate / earningsDate / date from Portfolio earnings event.
+- Format compactly for terminal display.
+
+EST:
+- Prefer epsEstimate if available.
+- Else revenueEstimate if available.
+- Else "—".
+
+LAST:
+- Use live price from terminal quote map.
+- Never show 0 unless the real price is actually 0, which stocks won’t be.
+- Missing price should be "—".
+
+WTD:
+- Use existing weekly/WTD performance field if available.
+- If unavailable, show "—".
+- Do not fabricate it.
+
+9. Frontend rendering:
+Update the Portfolio Terminal Earnings Calendar section renderer to consume the hydrated rows.
+
+Make sure the columns display:
+- TICKER
+- WTD
+- LAST
+- DATE
+- EST
+
+Do not let missing estimate/date break rendering.
+
+10. React Query/cache invalidation:
+When Portfolio holdings change:
+- invalidate/refetch /api/caelyn-terminal
+- invalidate/refetch Portfolio earnings calendar data if separately queried
+- Terminal should update after add/edit/delete holdings
+
+11. Validation:
+Do not mark complete until all pass.
+
+A. Source equality:
+Compare active Portfolio Dashboard symbols with terminal holdings symbols.
+They should match.
+
+B. Portfolio Calendar source:
+Call the working Calendar Portfolio earnings endpoint.
+Confirm it returns Portfolio earnings events.
+
+C. Terminal API:
+Call GET /api/caelyn-terminal.
+Confirm the response includes an earningsCalendar / earnings rows array populated from scope=portfolio data.
+
+D. No placeholder rows:
+In GET /api/caelyn-terminal response:
+- LAST should not be 0 when holdings quote price exists.
+- DATE should not be "-" for symbols with upcoming Portfolio earnings events.
+- EST should show estimate when available, otherwise "—".
+
+E. Browser validation:
+Open Portfolio → Terminal.
+The Earnings Calendar panel should show real Portfolio earnings rows.
+Ticker rows should match Portfolio holdings with upcoming earnings.
+No stale symbols.
+No All/Watchlist symbols unless also in Portfolio holdings.
+
+F. Regression:
+Portfolio Dashboard still works.
+Calendar → Earnings → Portfolio still works.
+Calendar → Earnings → Watchlist still works.
+Calendar → Earnings → All still works.
+
+12. Diagnostics:
+Add temporary dev/server log:
+
+console.log("[portfolio-terminal-earnings]", {
+  portfolioSymbols,
+  earningsEventSymbols,
+  rows,
+  missingQuoteSymbols,
+  source: "scope=portfolio earnings calendar"
+});
+
+Success definition:
+The Portfolio Terminal Earnings Calendar panel is hydrated from the same scope=portfolio earnings data used by the Calendar page, joined with the same live Portfolio quote data used by the Terminal holdings list. It no longer shows placeholder 0 / "-" rows when real earnings and price data exist.
