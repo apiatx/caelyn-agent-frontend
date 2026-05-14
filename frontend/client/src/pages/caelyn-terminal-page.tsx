@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
 import { PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
@@ -970,8 +970,9 @@ export default function CaelynTerminalPage() {
                   } as any));
               }
               return (
-                <div style={{ flex:1, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'10px 10px', gap:18, minHeight:0, overflow:'hidden' }}>
-                  <div style={{ width:150, height:150, flexShrink:0, opacity: ph ? 0.4 : 1, alignSelf:'center' }}>
+                <div style={{ flex:1, display:'grid', gridTemplateColumns:'1fr auto auto 1fr auto', alignItems:'center', columnGap:18, rowGap:0, padding:'10px 10px', minHeight:0, overflow:'hidden' }}>
+                  {/* Pie chart spans all label rows, sits in column 2 (col 1 is the left spacer) */}
+                  <div style={{ gridColumn:'2', gridRow:`1 / span ${Math.max(allocData.length, 1)}`, width:150, height:150, opacity: ph ? 0.4 : 1, alignSelf:'center' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={allocData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="pct" strokeWidth={0}>
@@ -980,41 +981,43 @@ export default function CaelynTerminalPage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
-                    {allocData.map((a, i) => {
-                      const hasTickers = !ph && (a as any).tickers?.length > 0;
-                      return (
-                        <div key={i}
-                          style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6, minWidth:0, borderRadius:3, padding:'1px 2px', cursor: hasTickers ? 'default' : undefined, background: allocHover?.label === a.label ? `${a.color}14` : 'transparent', transition:'background 0.1s' }}
+                  {allocData.map((a, i) => {
+                    const hasTickers = !ph && (a as any).tickers?.length > 0;
+                    return (
+                      <Fragment key={i}>
+                        {/* Label cell — column 3, naturally sized so pie + labels group is centered between the 1fr spacers */}
+                        <div
+                          style={{ gridColumn:'3', display:'flex', alignItems:'flex-start', gap:5, minWidth:0, borderRadius:3, padding:'2px 4px', cursor: hasTickers ? 'default' : undefined, background: allocHover?.label === a.label ? `${a.color}14` : 'transparent', transition:'background 0.1s' }}
                           onMouseEnter={hasTickers ? (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setAllocHover({ label: a.label, tickers: (a as any).tickers, x: r.right + 6, y: r.top }); } : undefined}
                           onMouseLeave={hasTickers ? () => setAllocHover(null) : undefined}
                         >
-                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
-                            <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
-                            <div style={{ minWidth:0, flex:1 }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                                <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
-                                {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => !tickerThemeMap[s.toUpperCase()]) && (
-                                  <button
-                                    disabled={categorizingThemes}
-                                    onClick={(e) => { e.stopPropagation(); const uncached = ((a as any).symbols ?? []).filter((s: string) => !tickerThemeMap[s.toUpperCase()]); handleCategorizeThemes(uncached.length ? uncached : ((a as any).symbols ?? [])); }}
-                                    style={{ fontSize:7, fontWeight:800, letterSpacing:0.8, padding:'1px 5px', borderRadius:3, border:`1px solid ${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}55`, background:`${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}14`, color: categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber, cursor: categorizingThemes ? 'wait' : 'pointer', flexShrink:0, transition:'all 0.15s', opacity: categorizingThemes ? 0.6 : 1 }}
-                                  >
-                                    {categorizingThemes ? '···' : categorizeResult === 'success' ? '✓ DONE' : categorizeResult === 'error' ? 'RETRY' : 'CATEGORIZE'}
-                                  </button>
-                                )}
-                              </div>
-                              {(a as any).sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
+                          <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                              <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, whiteSpace:'nowrap' }}>{a.label}</span>
+                              {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => !tickerThemeMap[s.toUpperCase()]) && (
+                                <button
+                                  disabled={categorizingThemes}
+                                  onClick={(e) => { e.stopPropagation(); const uncached = ((a as any).symbols ?? []).filter((s: string) => !tickerThemeMap[s.toUpperCase()]); handleCategorizeThemes(uncached.length ? uncached : ((a as any).symbols ?? [])); }}
+                                  style={{ fontSize:7, fontWeight:800, letterSpacing:0.8, padding:'1px 5px', borderRadius:3, border:`1px solid ${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}55`, background:`${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}14`, color: categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber, cursor: categorizingThemes ? 'wait' : 'pointer', flexShrink:0, transition:'all 0.15s', opacity: categorizingThemes ? 0.6 : 1 }}
+                                >
+                                  {categorizingThemes ? '···' : categorizeResult === 'success' ? '✓ DONE' : categorizeResult === 'error' ? 'RETRY' : 'CATEGORIZE'}
+                                </button>
+                              )}
                             </div>
+                            {(a as any).sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
                           </div>
-                          <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, flexShrink:0 }}>{ph ? '—' : `${fmtN(a.pct as number, 1)}%`}</span>
                         </div>
-                      );
-                    })}
-                    {!ph && allocData.length === 0 && (
-                      <span style={{ fontSize:9, color:C.dimLow, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
-                    )}
-                  </div>
+                        {/* Percentage cell — column 5, locked to the section's right edge */}
+                        <span style={{ gridColumn:'5', justifySelf:'end', alignSelf:'center', fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, padding:'2px 0' }}>
+                          {ph ? '—' : `${fmtN(a.pct as number, 1)}%`}
+                        </span>
+                      </Fragment>
+                    );
+                  })}
+                  {!ph && allocData.length === 0 && (
+                    <span style={{ gridColumn:'3', fontSize:9, color:C.dimLow, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
+                  )}
                 </div>
               );
             })()}
