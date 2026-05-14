@@ -961,30 +961,41 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
 
-          {/* Volatility */}
+          {/* Investment Style (swapped here from bottom row) */}
           <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-            <CardHdr label="Volatility" badge="Annualized" />
-            <div style={{ padding:'6px 10px', display:'flex', flexDirection:'column', gap:4, overflowY:'auto', flex:1 }}>
-              {d.volatility.length === 0 && !ph && (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:60, gap:4 }}>
-                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>UNAVAILABLE</span>
-                  <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Volatility requires historical<br/>price returns per holding</span>
+            <CardHdr label="Investment Style" badge="Risk Profile" />
+            <div style={{ flex:1, padding:'12px 12px', display:'flex', flexDirection:'column', justifyContent:'space-between', overflowY:'auto' }}>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:30, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
+                <div style={{ fontSize:9, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:3 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
+                <div style={{ fontSize:8, color:C.dim, marginTop:2 }}>Risk profile score / 100</div>
+              </div>
+              <div style={{ padding:'0 4px', margin:'8px 0' }}>
+                <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:5 }}>
+                  {!ph && styleScore !== null && (
+                    <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
+                  )}
                 </div>
-              )}
-              {d.volatility.map((v, i) => {
-                const maxVol = Math.max(...d.volatility.map(x => x.vol), 1);
-                const barPct = ph ? 0 : (v.vol / maxVol) * 100;
-                const color = v.vol > 35 ? C.red : v.vol > 20 ? C.amber : C.green;
-                return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ width:38, fontSize:9, color:C.teal, fontWeight:700, flexShrink:0 }}>{v.ticker}</span>
-                    <div style={{ flex:1, height:14, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
-                      <div style={{ height:'100%', width:`${barPct}%`, background: ph ? C.dimLow : color, borderRadius:2, transition:'width 0.6s' }} />
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:7, color:C.dim }}>Conservative</span>
+                  <span style={{ fontSize:7, color:C.dim }}>High Risk</span>
+                </div>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                {[
+                  { label:'Beta vs SPX',   val: DM(d.risk_metrics.portfolio_beta, 2, 'x'),  sub: 'Market sensitivity' },
+                  { label:'Volatility',    val: DM(d.risk_metrics.weighted_volatility, 1, '%'), sub: 'Annualized' },
+                  { label:'Concentration', val: DM(d.risk_metrics.top_concentration, 1, '%'), sub: d.risk_metrics.top_concentration_label || 'Top position' },
+                ].map((row, i) => (
+                  <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+                    <div>
+                      <span style={{ fontSize:9, color:C.dim }}>{row.label}</span>
+                      <span style={{ fontSize:7, color:C.dimLow, display:'block' }}>{row.sub}</span>
                     </div>
-                    <span style={{ width:38, fontSize:9, color: ph ? C.dim : color, fontWeight:700, textAlign:'right', flexShrink:0 }}>{DN(v.vol,1)}{ph ? '' : '%'}</span>
+                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : C.text }}>{row.val}</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -993,86 +1004,42 @@ export default function CaelynTerminalPage() {
         <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Suggestions */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'32%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Suggestions" badge="Intel" />
             <div style={{ padding:8, overflowY:'auto', flex:1 }}>
               {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
             </div>
           </div>
 
-          {/* Portfolio Options — sortable table */}
+          {/* Portfolio News (swapped here from bottom row) */}
           <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Portfolio Options" badge="Flow" />
-            {(() => {
-              const rows = portfolioOptions?.tickers ?? [];
-              const dir = optSort.dir === 'asc' ? 1 : -1;
-              const numCmp = (a: any, b: any) => {
-                const av = a == null ? -Infinity : Number(a);
-                const bv = b == null ? -Infinity : Number(b);
-                return dir * (av - bv);
-              };
-              const sorted = [...rows].sort((a, b) => {
-                switch (optSort.col) {
-                  case 'TICKER': return dir * a.ticker.localeCompare(b.ticker);
-                  case 'SCORE':  return numCmp(a.composite_score, b.composite_score);
-                  case 'P/C': {
-                    const av = a.pc_ratio ?? a.call_put_volume_ratio;
-                    const bv = b.pc_ratio ?? b.call_put_volume_ratio;
-                    return numCmp(av, bv);
-                  }
-                  case 'IV':   return numCmp(a.iv_current, b.iv_current);
-                  case 'EM':   return numCmp(a.expected_move, b.expected_move);
-                  case 'VOL':  return numCmp(a.total_volume, b.total_volume);
-                  case 'SIGNAL': return dir * (a.primary_signal || '').localeCompare(b.primary_signal || '');
-                  default: return 0;
-                }
-              });
-              const mkSort = (col: string) => () => setOptSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
-              const thO = (col: string) => ({ padding:'3px 3px', color: optSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'||col==='SIGNAL'?'left':'right') as 'left'|'right', fontSize:7, letterSpacing:0.2, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
-              const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
-              if (ph) return <div style={{ padding:'14px 4px', textAlign:'center', fontSize:10, color:C.dim }}>Awaiting data...</div>;
-              return (
-                <div style={{ overflowY:'auto', flex:1 }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
-                    <colgroup>
-                      <col style={{ width:'18%' }} /><col style={{ width:'12%' }} /><col style={{ width:'14%' }} /><col style={{ width:'12%' }} /><col style={{ width:'14%' }} /><col style={{ width:'14%' }} /><col style={{ width:'16%' }} />
-                    </colgroup>
-                    <thead>
-                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                        {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL'] as const).map(h => (
-                          <th key={h} style={thO(h)} onClick={mkSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrO(h)}</span></th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sorted.map((t, i) => {
-                        const sig = (t.primary_signal || '').toLowerCase();
-                        const sigColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
-                        const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
-                        const cpStr = cp == null ? '—' : fmtN(cp as number, 2);
-                        const cpColor = cp == null ? C.dimLow : ((cp as number) < 0.7 ? C.green : (cp as number) > 1.3 ? C.red : C.dim);
-                        const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
-                        const em = t.expected_move != null ? `${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
-                        const vol = t.total_volume != null ? (t.total_volume >= 1000 ? `${fmtN((t.total_volume as number)/1000, 1)}K` : String(t.total_volume)) : '—';
-                        const score = t.composite_score != null ? fmtN(t.composite_score as number, 0) : '—';
-                        const scoreColor = t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : t.composite_score != null && (t.composite_score as number) >= 50 ? C.amber : C.dim;
-                        return (
-                          <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                            <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.ticker}</td>
-                            <td style={{ padding:'3px 3px', textAlign:'right', color:scoreColor, fontWeight:700 }}>{score}</td>
-                            <td style={{ padding:'3px 3px', textAlign:'right', color:cpColor }}>{cpStr}</td>
-                            <td style={{ padding:'3px 3px', textAlign:'right', color: t.iv_current != null ? C.amber : C.dimLow }}>{iv}</td>
-                            <td style={{ padding:'3px 3px', textAlign:'right', color: t.expected_move != null ? C.purple : C.dimLow }}>{em}</td>
-                            <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim }}>{vol}</td>
-                            <td style={{ padding:'3px 3px', color:sigColor, fontSize:7, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.primary_signal || '—'}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+            <CardHdr label="Portfolio News" badge={`${flatPortfolioNews.length}`} />
+            <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
+              {flatPortfolioNews.length === 0 && (
+                <div style={{ padding:'14px 8px', textAlign:'center', fontSize:10, color:C.dim }}>
+                  {ph ? 'Awaiting data...' : 'Loading news for your holdings...'}
                 </div>
-              );
-            })()}
+              )}
+              {flatPortfolioNews.map((item, i) => (
+                <a key={`pn-${i}`} href={item.url} target="_blank" rel="noopener noreferrer"
+                  style={{ display:'flex', alignItems:'flex-start', gap:6, padding:'6px 8px', borderBottom:`1px solid ${C.dimLow}22`, textDecoration:'none', cursor:'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = `${C.teal}08`)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <span style={{ flexShrink:0, fontSize:7, fontWeight:800, fontFamily:C.font, padding:'2px 5px', borderRadius:3, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, textTransform:'uppercase' }}>
+                    {item.ticker}
+                  </span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:9, color:C.text, lineHeight:1.35, marginBottom:2, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const, overflow:'hidden' }}>
+                      {item.title}
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ fontSize:7, color:C.dim }}>{item.source}</span>
+                      <span style={{ fontSize:7, color:C.dim }}>{timeAgo(item.published_at)}</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>{/* close top row */}
@@ -1114,82 +1081,112 @@ export default function CaelynTerminalPage() {
           </div>
         </div>
 
-        {/* ── PANEL 3: Investment Style Meter ── */}
+        {/* ── PANEL 3: Volatility (swapped here from top row) ── */}
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Style</span>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Volatility</span>
+            <span style={{ fontSize:8, color:C.dimLow }}>Annualized</span>
           </div>
-          <div style={{ flex:1, padding:'14px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
-            {/* Score display */}
-            <div style={{ textAlign:'center' }}>
-              <div style={{ fontSize:34, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
-              <div style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:4 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
-              <div style={{ fontSize:8, color:C.dim, marginTop:3 }}>Risk profile score / 100</div>
-            </div>
-            {/* Spectrum bar */}
-            <div style={{ padding:'0 4px' }}>
-              <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:6 }}>
-                {!ph && styleScore !== null && (
-                  <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
-                )}
+          <div style={{ flex:1, padding:'8px 10px', display:'flex', flexDirection:'column', gap:5, overflowY:'auto' }}>
+            {d.volatility.length === 0 && !ph && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:80, gap:4 }}>
+                <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>UNAVAILABLE</span>
+                <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Volatility requires historical<br/>price returns per holding</span>
               </div>
-              <div style={{ display:'flex', justifyContent:'space-between' }}>
-                <span style={{ fontSize:7, color:C.dim }}>Conservative</span>
-                <span style={{ fontSize:7, color:C.dim }}>High Risk</span>
-              </div>
-            </div>
-            {/* Factor breakdown */}
-            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-              {[
-                { label:'Beta vs SPX',   val: DM(d.risk_metrics.portfolio_beta, 2, 'x'),  sub: 'Market sensitivity' },
-                { label:'Volatility',    val: DM(d.risk_metrics.weighted_volatility, 1, '%'), sub: 'Annualized' },
-                { label:'Concentration',val: DM(d.risk_metrics.top_concentration, 1, '%'),sub: d.risk_metrics.top_concentration_label || 'Top position' },
-              ].map((row, i) => (
-                <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                  <div>
-                    <span style={{ fontSize:9, color:C.dim }}>{row.label}</span>
-                    <span style={{ fontSize:7, color:C.dimLow, display:'block' }}>{row.sub}</span>
+            )}
+            {d.volatility.map((v, i) => {
+              const maxVol = Math.max(...d.volatility.map(x => x.vol), 1);
+              const barPct = ph ? 0 : (v.vol / maxVol) * 100;
+              const color = v.vol > 35 ? C.red : v.vol > 20 ? C.amber : C.green;
+              return (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{ width:42, fontSize:9, color:C.teal, fontWeight:700, flexShrink:0 }}>{v.ticker}</span>
+                  <div style={{ flex:1, height:14, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${barPct}%`, background: ph ? C.dimLow : color, borderRadius:2, transition:'width 0.6s' }} />
                   </div>
-                  <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : C.text }}>{row.val}</span>
+                  <span style={{ width:38, fontSize:9, color: ph ? C.dim : color, fontWeight:700, textAlign:'right', flexShrink:0 }}>{DN(v.vol,1)}{ph ? '' : '%'}</span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* ── PANEL 4: Portfolio News ── */}
+        {/* ── PANEL 4: Portfolio Options (swapped here from top row) ── */}
         <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio News</span>
-            <span style={{ fontSize:9, color:C.dim }}>({flatPortfolioNews.length})</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio Options</span>
+            <span style={{ fontSize:8, color:C.dimLow }}>Flow</span>
           </div>
-          <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
-            {flatPortfolioNews.length === 0 && (
-              <div style={{ padding:'20px', textAlign:'center', fontSize:11, color:C.dim }}>
-                {ph ? 'Awaiting data...' : 'Loading news for your holdings...'}
+          {(() => {
+            const rows = portfolioOptions?.tickers ?? [];
+            const dir = optSort.dir === 'asc' ? 1 : -1;
+            const numCmp = (a: any, b: any) => {
+              const av = a == null ? -Infinity : Number(a);
+              const bv = b == null ? -Infinity : Number(b);
+              return dir * (av - bv);
+            };
+            const sorted = [...rows].sort((a, b) => {
+              switch (optSort.col) {
+                case 'TICKER': return dir * a.ticker.localeCompare(b.ticker);
+                case 'SCORE':  return numCmp(a.composite_score, b.composite_score);
+                case 'P/C': {
+                  const av = a.pc_ratio ?? a.call_put_volume_ratio;
+                  const bv = b.pc_ratio ?? b.call_put_volume_ratio;
+                  return numCmp(av, bv);
+                }
+                case 'IV':   return numCmp(a.iv_current, b.iv_current);
+                case 'EM':   return numCmp(a.expected_move, b.expected_move);
+                case 'VOL':  return numCmp(a.total_volume, b.total_volume);
+                case 'SIGNAL': return dir * (a.primary_signal || '').localeCompare(b.primary_signal || '');
+                default: return 0;
+              }
+            });
+            const mkSort = (col: string) => () => setOptSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
+            const thO = (col: string) => ({ padding:'5px 6px', color: optSort.col === col ? C.teal : C.dim, fontWeight:700, textAlign:(col==='TICKER'||col==='SIGNAL'?'left':'right') as 'left'|'right', fontSize:9, letterSpacing:0.5, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
+            const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
+            if (ph) return <div style={{ padding:'20px', textAlign:'center', fontSize:11, color:C.dim }}>Awaiting data...</div>;
+            return (
+              <div style={{ overflowY:'auto', flex:1 }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:10, tableLayout:'fixed' }}>
+                  <colgroup>
+                    <col style={{ width:'12%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'12%' }} /><col style={{ width:'36%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                      {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL'] as const).map(h => (
+                        <th key={h} style={thO(h)} onClick={mkSort(h)}>{h} <span style={{ fontSize:7, opacity:0.7 }}>{arrO(h)}</span></th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((t, i) => {
+                      const sig = (t.primary_signal || '').toLowerCase();
+                      const sigColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
+                      const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
+                      const cpStr = cp == null ? '—' : fmtN(cp as number, 2);
+                      const cpColor = cp == null ? C.dimLow : ((cp as number) < 0.7 ? C.green : (cp as number) > 1.3 ? C.red : C.dim);
+                      const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
+                      const em = t.expected_move != null ? `${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
+                      const vol = t.total_volume != null ? (t.total_volume >= 1000 ? `${fmtN((t.total_volume as number)/1000, 1)}K` : String(t.total_volume)) : '—';
+                      const score = t.composite_score != null ? fmtN(t.composite_score as number, 0) : '—';
+                      const scoreColor = t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : t.composite_score != null && (t.composite_score as number) >= 50 ? C.amber : C.dim;
+                      return (
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
+                          <td style={{ padding:'5px 6px', color:C.teal, fontWeight:700 }}>{t.ticker}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color:scoreColor, fontWeight:700 }}>{score}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color:cpColor }}>{cpStr}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color: t.iv_current != null ? C.amber : C.dimLow }}>{iv}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color: t.expected_move != null ? C.purple : C.dimLow }}>{em}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color:C.dim }}>{vol}</td>
+                          <td style={{ padding:'5px 6px', color:sigColor, fontSize:9, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.primary_signal || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            )}
-            {flatPortfolioNews.map((item, i) => (
-              <a key={`pn-${i}`} href={item.url} target="_blank" rel="noopener noreferrer"
-                style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'8px 14px', borderBottom:`1px solid ${C.border}`, textDecoration:'none', cursor:'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = `${C.teal}08`)}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <span style={{ flexShrink:0, fontSize:8, fontWeight:800, fontFamily:C.font, padding:'2px 7px', borderRadius:3, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, textTransform:'uppercase' }}>
-                  {item.ticker}
-                </span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:11, color:C.text, lineHeight:1.4, marginBottom:3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const, overflow:'hidden' }}>
-                    {item.title}
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontSize:9, color:C.dim }}>{item.source}</span>
-                    <span style={{ fontSize:9, color:C.dim }}>{timeAgo(item.published_at)}</span>
-                  </div>
-                </div>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="2" style={{ flexShrink:0, marginTop:2 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              </a>
-            ))}
-          </div>
+            );
+          })()}
         </div>
 
         {/* ── PANEL 5: AI Portfolio Review ── */}

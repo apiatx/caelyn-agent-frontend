@@ -221,6 +221,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch { /* keep going */ }
 
+      // Per-ticker on-demand fetch for any portfolio ticker still missing.
+      // FastAPI currently only returns success for symbols already scanned;
+      // once backend adds on-demand scoring, additional tickers will populate here.
+      const missing = portTickersList.filter(sym => !collected.has(sym));
+      if (missing.length > 0) {
+        const perTickerResults = await Promise.allSettled(
+          missing.map(sym =>
+            fetch(`${FA_URL}/api/options/screener/${encodeURIComponent(sym)}`, {
+              headers: { 'X-API-Key': FA_KEY },
+              signal: AbortSignal.timeout(15000),
+            }).then(async r => (r.ok ? { sym, body: await r.json() } : null))
+          )
+        );
+        for (const r of perTickerResults) {
+          if (r.status === 'fulfilled' && r.value) {
+            const { sym, body } = r.value;
+            const t = body?.ticker_data ?? body?.data ?? body;
+            if (t && (t.composite_score != null || t.primary_signal || t.iv_current != null)) {
+              collected.set(sym, normalize({ ticker: sym, ...t }));
+            }
+          }
+        }
+      }
+
       // Pad with empty rows for any portfolio ticker still missing — so coverage is visible.
       for (const sym of portTickersList) {
         if (!collected.has(sym)) {
