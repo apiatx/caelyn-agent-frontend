@@ -1,0 +1,91 @@
+I want to delete EVERYTHING from the custom Theme Performance section on the Home page. Add the 4 NEW themes to the Thematic Universe to display on the Themes page in the frontend. Then, make the Theme Performance section pull the Themes from the Thematic Universe/Themes page
+
+3 minutes ago
+
+Planning Theme Performance section logic (18 seconds)
+Crystal clear now. The THEME_MAP approach is wrong entirely — it's the old hardcoded system. The correct architecture:
+
+Delete THEME_MAP and the hardcoded performance logic completely
+Home page pulls performance data directly from THEME_RS_UNIVERSE (specifically proxy_type: "custom" themes — the 4 you specified)
+Adding a new custom theme to the universe automatically puts it on the Home page too
+
+2 actions
+Now let me read the full _fetch_sub_theme_performance function so I can rewrite it cleanly:
+
+
+6 actions
+Now I have everything. Both edits in one shot — delete the entire old THEME_MAP block and rewrite the function to read directly from THEME_RS_UNIVERSE:
+
+
+3 actions
+Good, the workflow is already running. Let me verify the result:
+
+
+2 actions
+Server still starting up. Let me check logs and retry together:
+
+
+2 actions
+Server is up. Let me verify:
+
+
+2 actions
+Backend is confirmed clean. Exactly 4 rows, sourced entirely from THEME_RS_UNIVERSE. The old hardcoded THEME_MAP is gone — adding/removing themes from the Home page is now done only in theme_rs_universe.py.
+
+Now the frontend instructions:
+
+Send this to your frontend Replit agent:
+
+CaelynAI Frontend — Theme Performance (Home) + Themes Page
+Two things to wire up. No more backend changes needed.
+
+Change 1 — Home Page "Theme Performance" section
+Replace whatever currently populates this section with sub_theme_performance from GET /api/home/dashboard.
+
+The array now returns exactly 4 rows (these are the only themes that will ever appear here — driven by the Theme Universe):
+
+AI Networking          +2.54%   leaders: AVGO, ANET, MRVL
+Substrates / Packaging +2.34%   leaders: IBIDF, TSM, UMICF
+Power / Cooling        +2.32%   leaders: BE, GEV, TT
+Photonics / Lasers     +0.97%   leaders: SIVEF, FN, COHR
+
+Row schema:
+
+{
+  "sub_theme": "AI Networking",
+  "avg_change_1d": 2.54,
+  "avg_change_7d": null,
+  "leader_symbols": ["AVGO", "ANET", "MRVL"],
+  "leader_count": 5,
+  "breadth_score": 80.0,
+  "momentum_score": 4.9,
+  "pattern_summary": "broad strength — most names moving"
+}
+
+Delete every hardcoded theme name from this section. The array is already sorted by avg_change_1d descending — render it directly.
+
+Change 2 — Themes Page: add CUSTOM badge for the 4 new themes
+Endpoint: GET /api/themes/relative-strength (no change to how you call it)
+
+The 4 new themes appear automatically in the response since they're in the Theme Universe. The only UI addition needed is a CUSTOM badge for proxy_type === "custom":
+
+const PROXY_BADGE = {
+  etf:    'ETF',
+  basket: 'BASKET',
+  hybrid: 'HYBRID',
+  custom: 'CUSTOM',   // ← add this
+};
+const badge = PROXY_BADGE[theme.proxy_type] ?? theme.proxy_type.toUpperCase();
+
+Style CUSTOM distinctly from ETF/BASKET (e.g. amber color) — it signals a manually curated ticker basket instead of an ETF proxy.
+
+The 4 new themes and their tickers, for reference:
+
+Theme	Tickers
+AI Networking	ANET, AVGO, MRVL, CRDO, ALAB
+Photonics / Lasers	COHR, LITE, AAOI, FN, SIVEF
+Power / Cooling	VRT, ETN, GEV, TT, BE
+Substrates / Packaging	TSM, AMKR, ASX, IBIDF, UMICF
+Checklist
+ Home page Theme Performance: read dashboard.sub_theme_performance, render 4 rows, remove all hardcoded theme names
+ Themes page: add CUSTOM badge for proxy_type === "custom" — the 4 new themes appear automatically
