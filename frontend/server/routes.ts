@@ -2860,64 +2860,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           data.top_movers = { gainers, losers };
 
-          // ── Earnings Calendar — fan-out week-clean?scope=portfolio for a full year ──
-          // Portfolio scope has no date cap — covers all quarterly earnings for the next 12 months.
-          // All/Watchlist scopes remain date-restricted on their own Calendar page views.
-          try {
-            const _pad = (n: number) => String(n).padStart(2, '0');
-            const _ds  = (d: Date)   => `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
-            const todayD = new Date();
-            const in365D = new Date(todayD.getTime() + 365 * 24 * 60 * 60 * 1000);
-            // Mon-aligned weekly ranges covering a full year (~52 weeks)
-            const wCursor = new Date(todayD);
-            const dow0 = wCursor.getDay();
-            wCursor.setDate(wCursor.getDate() + (dow0 === 0 ? -6 : 1 - dow0));
-            const wRanges: { ws: string; we: string }[] = [];
-            while (wCursor <= in365D) {
-              const fri = new Date(wCursor); fri.setDate(fri.getDate() + 4);
-              wRanges.push({ ws: _ds(wCursor), we: _ds(fri) });
-              wCursor.setDate(wCursor.getDate() + 7);
-            }
-            // Process in quarterly batches of 13 weeks — avoids rate-limiting FastAPI
-            // 4 batches × ~5s each = ~20s cold start, then cached for 10 min
-            const BATCH = 13;
-            const earningsWeeks: any[] = [];
-            for (let i = 0; i < wRanges.length; i += BATCH) {
-              const batch = wRanges.slice(i, i + BATCH);
-              const batchResults = await Promise.all(batch.map(async ({ ws, we }) => {
-                try {
-                  const p = new URLSearchParams({ weekStart: ws, weekEnd: we, scope: 'portfolio', limit_per_session: '10', max_total: '50' });
-                  const c2 = new AbortController(); const t2 = setTimeout(() => c2.abort(), 20000);
-                  const r2 = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${p}`, { headers: fcHdr(), signal: c2.signal });
-                  clearTimeout(t2);
-                  return r2.ok ? (r2.json() as Promise<any>) : null;
-                } catch { return null; }
-              }));
-              earningsWeeks.push(...batchResults);
-            }
-            // Build symbol → earliest upcoming event map across all weeks
-            const eventMap = new Map<string, { date: string; epsEstimate: number|null; revenueEstimate: number|null }>();
-            const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            for (const wd of earningsWeeks) {
-              if (!wd?.days) continue;
-              for (const day of wd.days) {
-                const entries: any[] = day.entries?.length > 0
-                  ? day.entries
-                  : [...(day.preMarket||[]),...(day.duringMarket||[]),...(day.afterHours||[]),...(day.unknown||[])];
-                for (const e of entries) {
-                  if (!e.symbol) continue;
-                  const sym = e.symbol.toUpperCase();
-                  if (!eventMap.has(sym)) {
-                    eventMap.set(sym, { date: day.date || e.date || '', epsEstimate: e.epsEstimated ?? null, revenueEstimate: e.revenueEstimated ?? null });
-                  }
-                }
-              }
-            }
+          // ── Earnings Calendar — single call to FastAPI portfolio-full-year endpoint ──
+          // FastAPI owns all the fan-out logic; Express is a thin proxy here.
+          // Falls back to week-clean fan-out if the FastAPI endpoint isn't deployed yet.
+          const _buildEarningsCalendar = (eventMap: Map<string, { date: string; epsEstimate: number|null; revenueEstimate: number|null }>) => {
             const portfolioSymbolSet = new Set(localHoldings.map(h => h.ticker.toUpperCase()));
-            const earningsEventSymbols = [...eventMap.keys()].filter(s => portfolioSymbolSet.has(s));
-            const missingQuoteSymbols  = earningsEventSymbols.filter(s => !quoteMap.has(s));
-            console.log('[portfolio-terminal-earnings]', JSON.stringify({ portfolioSymbols:[...portfolioSymbolSet], earningsEventSymbols, rows:earningsEventSymbols.length, missingQuoteSymbols, source:'week-clean scope=portfolio full-year' }));
-            data.earnings_calendar = earningsEventSymbols.map(sym => {
+            const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return [...eventMap.keys()].filter(s => portfolioSymbolSet.has(s)).map(sym => {
               const event = eventMap.get(sym)!;
               const q: any = quoteMap.get(sym);
               const pct  = q?.changesPercentage ?? null;
@@ -2941,17 +2890,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (!a._iso) return 1; if (!b._iso) return -1;
               return a._iso < b._iso ? -1 : a._iso > b._iso ? 1 : a.ticker.localeCompare(b.ticker);
             }).map(({ _iso: _, ...rest }: any) => rest);
-          } catch (earningsErr: any) {
-            console.warn('[portfolio-terminal-earnings] Fan-out failed:', earningsErr?.message);
-            data.earnings_calendar = localHoldings.map(h => {
-              const q: any = quoteMap.get(h.ticker);
-              const pct = q?.changesPercentage ?? null;
-              const wtd = pct != null ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—';
-              const price = q?.price ?? null;
-              let nextDate = '—';
-              try { const raw = q?.earningsAnnouncement; if (raw) { const d = new Date(raw); if (!isNaN(d.getTime())) nextDate = d.toISOString().slice(0,10); } } catch {}
-              return { ticker: h.ticker, company: q?.companyName || q?.name || h.ticker, wtd, last_eps: (price != null && price > 0) ? `$${price.toFixed(2)}` : '—', next_date: nextDate, est_eps: '—' };
-            });
+          };
+          try {
+            // ── Primary: single FastAPI endpoint (does fan-out internally) ──
+            const eCtrl = new AbortController(); const eTimer = setTimeout(() => eCtrl.abort(), 60000);
+            const eRes = await fetch(`${FC_URL}/api/catalysts/earnings/portfolio-full-year`, { headers: fcHdr(), signal: eCtrl.signal });
+            clearTimeout(eTimer);
+            if (eRes.ok) {
+              const eJson = await eRes.json() as { earnings?: any[] };
+              const eventMap = new Map<string, { date: string; epsEstimate: number|null; revenueEstimate: number|null }>();
+              for (const e of (eJson.earnings || [])) {
+                const sym = (e.symbol || '').toUpperCase();
+                if (sym && !eventMap.has(sym)) eventMap.set(sym, { date: e.date || '', epsEstimate: e.eps_estimate ?? null, revenueEstimate: e.revenue_estimate ?? null });
+              }
+              data.earnings_calendar = _buildEarningsCalendar(eventMap);
+              console.log('[portfolio-terminal-earnings]', JSON.stringify({ rows: data.earnings_calendar.length, source: 'fastapi portfolio-full-year' }));
+            } else {
+              throw new Error(`FastAPI portfolio-full-year returned ${eRes.status}`);
+            }
+          } catch (primaryErr: any) {
+            // ── Fallback: week-clean fan-out in quarterly batches (until FastAPI endpoint is live) ──
+            console.warn('[portfolio-terminal-earnings] Primary endpoint unavailable, using fan-out fallback:', primaryErr?.message);
+            try {
+              const _pad = (n: number) => String(n).padStart(2, '0');
+              const _ds  = (d: Date)   => `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
+              const todayD = new Date();
+              const in365D = new Date(todayD.getTime() + 365 * 24 * 60 * 60 * 1000);
+              const wCursor = new Date(todayD);
+              wCursor.setDate(wCursor.getDate() + (wCursor.getDay() === 0 ? -6 : 1 - wCursor.getDay()));
+              const wRanges: { ws: string; we: string }[] = [];
+              while (wCursor <= in365D) {
+                const fri = new Date(wCursor); fri.setDate(fri.getDate() + 4);
+                wRanges.push({ ws: _ds(wCursor), we: _ds(fri) });
+                wCursor.setDate(wCursor.getDate() + 7);
+              }
+              const BATCH = 13;
+              const earningsWeeks: any[] = [];
+              for (let i = 0; i < wRanges.length; i += BATCH) {
+                const batch = wRanges.slice(i, i + BATCH);
+                const batchResults = await Promise.all(batch.map(async ({ ws, we }) => {
+                  try {
+                    const p = new URLSearchParams({ weekStart: ws, weekEnd: we, scope: 'portfolio', limit_per_session: '10', max_total: '50' });
+                    const c2 = new AbortController(); const t2 = setTimeout(() => c2.abort(), 20000);
+                    const r2 = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${p}`, { headers: fcHdr(), signal: c2.signal });
+                    clearTimeout(t2);
+                    return r2.ok ? (r2.json() as Promise<any>) : null;
+                  } catch { return null; }
+                }));
+                earningsWeeks.push(...batchResults);
+              }
+              const eventMap = new Map<string, { date: string; epsEstimate: number|null; revenueEstimate: number|null }>();
+              for (const wd of earningsWeeks) {
+                if (!wd?.days) continue;
+                for (const day of wd.days) {
+                  const entries: any[] = day.entries?.length > 0 ? day.entries : [...(day.preMarket||[]),...(day.duringMarket||[]),...(day.afterHours||[]),...(day.unknown||[])];
+                  for (const e of entries) {
+                    if (!e.symbol) continue;
+                    const sym = e.symbol.toUpperCase();
+                    if (!eventMap.has(sym)) eventMap.set(sym, { date: day.date || e.date || '', epsEstimate: e.epsEstimated ?? null, revenueEstimate: e.revenueEstimated ?? null });
+                  }
+                }
+              }
+              data.earnings_calendar = _buildEarningsCalendar(eventMap);
+              console.log('[portfolio-terminal-earnings]', JSON.stringify({ rows: data.earnings_calendar.length, source: 'fallback week-clean fan-out' }));
+            } catch (fallbackErr: any) {
+              console.warn('[portfolio-terminal-earnings] Fallback also failed:', fallbackErr?.message);
+              data.earnings_calendar = [];
+            }
           }
 
           // ── Asset allocation by sector (from Yahoo quotes) ───────────────
