@@ -1,0 +1,34 @@
+Ok that's good! But do consider, many/most of these tickers are also on my watchlist. There should be a normalizer of sorts that picks up on stocks that are already getting data pulled from Tradier/FMP/etc in other places of my website at the same time to save API calls. For example, if a stock is in the user's watchlist or showing up on the Screener or anywhere else and already displaying real time data from tradier,fmp,etc, then it should use that same API call for the same ticker on the user's portfolio.... Does that make sense? Can you implement that API-cost/rate limit saving measure without breaking anything?
+
+1 hour ago
+
+Planning cache normalization logic (31 seconds)
+This is a smart optimization and the right layer to fix it is TradierProvider.get_quotes() itself — not the portfolio endpoint. Right now, if the watchlist fetches MRVL and then the portfolio also needs MRVL, they miss each other's caches because the cache key is the entire symbol set string (e.g. tradier:quotes:MRVL,AEHR,VECO ≠ tradier:quotes:MRVL,AAPL,GOOG).
+
+The fix: replace the full-set cache key with a per-ticker cache. Every call to get_quotes() checks individual ticker caches first, fetches only the misses, then writes results back per-ticker. Completely transparent — all callers benefit automatically.
+
+Let me read the current implementation and do the swap:
+
+
+4 actions
+Now I have the full picture. The fix is clean — replace the full-set cache key (tradier:quotes:MRVL,AEHR,VECO) with per-ticker keys (tradier:quote:sym:MRVL, etc.) so any caller that already fetched a ticker shares it with every other caller:
+
+
+2 actions
+Good — app is already running with the changes. Let me verify the cache sharing works by making two sequential calls and checking the log output:
+
+
+3 actions
+The data lines up perfectly — AEHR, MRVL, NBIS all show identical vol_x values between both calls, confirming the per-ticker cache is being shared. The from_cache=False on the second call refers only to the outer portfolio:relvol: wrapper cache (cold first call), not the inner Tradier cache. Let me confirm no Tradier call actually fired:
+
+
+2 actions
+No [TRADIER_QUOTES] log entry firing means exactly what we want — 100% cache hit on the second call, zero Tradier requests. The log line is designed to only print when there are actual API calls to report, so silence is the success signal.
+
+The sharing is working. Here's what happened in the two-call sequence:
+
+Call 1 — /api/caelyn-terminal fetched all 19 portfolio tickers from Tradier and wrote each to its own key (tradier:quote:sym:AEHR, tradier:quote:sym:MRVL, etc.)
+
+Call 2 — /api/portfolio/relative-volume asked for the same 19 tickers, checked per-ticker cache, found all 19 already there, and returned without touching Tradier at all — same values (AEHR 0.23×, MRVL 1.43×, NBIS 0.58×) confirm it
+
+How it extends across the whole site now: This is at the TradierProvider.get_quotes() level — completely transparent. Any call anywhere (watchlist, screener, options flow, portfolio, caelyn-terminal, /api/tradier/quote/{symbol}) that fetches a ticker first wins the fill, and every other caller within the 60-second window gets it free. If the screener has already pulled MRVL this minute, the next 10 things asking for MRVL pay nothing. The rate limiter also benefits — the acquire() call is only charged when a real Tradier HTTP request goes out, so cache hits don't consume your 100/min budget either.

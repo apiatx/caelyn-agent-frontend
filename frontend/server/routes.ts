@@ -2897,8 +2897,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fetch relative volume for a list of tickers via Tradier (through FastAPI proxy).
   // Returns a map of ticker → { volume, avg_volume, vol_x } using the same Tradier
   // data source the Watchlist page uses.
-  async function fetchTradierRelVolume(tickers: string[]): Promise<Map<string, { volume: number; avg_volume: number; vol_x: number | null }>> {
-    const result = new Map<string, { volume: number; avg_volume: number; vol_x: number | null }>();
+  async function fetchTradierRelVolume(tickers: string[]): Promise<Map<string, {
+    volume: number; avg_volume: number; vol_x: number | null;
+    price: number | null; change_1d_pct: number | null;
+  }>> {
+    const result = new Map<string, {
+      volume: number; avg_volume: number; vol_x: number | null;
+      price: number | null; change_1d_pct: number | null;
+    }>();
     if (!tickers.length) return result;
 
     const settled = await Promise.allSettled(
@@ -2909,12 +2915,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const body = await r.json();
         const q = body?.quote;
         if (!q) return;
-        const volume    = typeof q.volume        === 'number' ? q.volume        : 0;
-        const avg_vol   = typeof q.average_volume === 'number' ? q.average_volume : 0;
-        // Only compute vol_x when there is actual trading activity today.
-        // volume=0 means the market is closed or pre-market — show "—" not "0.0×".
+        const volume    = typeof q.volume          === 'number' ? q.volume          : 0;
+        const avg_vol   = typeof q.average_volume  === 'number' ? q.average_volume  : 0;
         const vol_x     = (avg_vol > 0 && volume > 0) ? volume / avg_vol : null;
-        result.set(ticker.toUpperCase(), { volume, avg_volume: avg_vol, vol_x });
+        // Also capture price + 1d change — same fields used by watchlist/screener for consistency
+        const price:         number | null = typeof q.last              === 'number' && q.last > 0  ? q.last              : null;
+        const change_1d_pct: number | null = typeof q.change_percentage === 'number'                ? q.change_percentage : null;
+        result.set(ticker.toUpperCase(), { volume, avg_volume: avg_vol, vol_x, price, change_1d_pct });
       })
     );
 
@@ -4059,18 +4066,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const [yahooResults, tradierVolMap, signalMap] = await Promise.all([yahooP, tradierP, optionsSignalP]);
 
-        return yahooResults.map(({ ticker, price, change_1d_pct, yahooVolX }) => {
+        return yahooResults.map(({ ticker, price: yahooPrice, change_1d_pct: yahooChangePct, yahooVolX }) => {
           const holding = localHoldings.find(h => h.ticker === ticker);
           const tv = tradierVolMap.get(ticker.toUpperCase());
-          // Tradier vol_x is primary; Yahoo historical fallback if Tradier null/unavailable
+          // Price + 1d% — Tradier is primary (same source as Watchlist/Screener/Portfolio page).
+          // Yahoo fallback for OTC/unlisted tickers that Tradier can't quote (SIVEF, IQEPF, etc.).
+          const current_price = tv?.price        ?? yahooPrice;
+          const change_1d_pct = tv?.change_1d_pct ?? yahooChangePct;
+          // Vol_x — Tradier primary; Yahoo historical fallback
           const volume_vs_avg = tv?.vol_x ?? yahooVolX;
           const signal_label  = signalMap.get(ticker.toUpperCase()) ?? null;
           return {
-            symbol:        ticker,
-            current_price: price,
+            symbol: ticker,
+            current_price,
             change_1d_pct,
             volume_vs_avg,
-            asset_type:    holding?.assetType || 'stock',
+            asset_type:  holding?.assetType || 'stock',
             signal_label,
           };
         });
