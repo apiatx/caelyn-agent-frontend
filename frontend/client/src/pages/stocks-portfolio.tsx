@@ -973,8 +973,21 @@ export default function StocksPortfolioPage() {
                                   {!isEditing && (isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: '#5cc8f0' }} /> : <ChevronRight className="w-3.5 h-3.5 text-crypto-silver hover:text-[#5cc8f0]" />)}
                                 </td>
                                 <td className="py-2.5 pr-3">
-                                  <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
-                                  <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ width: 24, height: 24, borderRadius: 5, background: '#ffffff14', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                                      <img
+                                        src={`https://images.financialmodelingprep.com/symbol/${h.ticker.toUpperCase()}.png`}
+                                        alt=""
+                                        loading="lazy"
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                        onError={(e) => { const el = e.currentTarget as HTMLImageElement; el.style.display = 'none'; (el.parentElement as HTMLElement).style.background = 'transparent'; }}
+                                      />
+                                    </span>
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
+                                      <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
+                                    </div>
+                                  </div>
                                 </td>
                                 {/* Shares — editable */}
                                 <td className="text-right py-2.5 px-3">

@@ -321,10 +321,6 @@ export default function CaelynTerminalPage() {
     refetchInterval: 5 * 60_000,
   });
 
-  // Company logos: FMP serves logos directly from a CDN at a predictable URL pattern,
-  // so no API call is needed. onError on the <img> hides any 404s gracefully. This
-  // matches what the earnings page renders and means zero extra network round-trips.
-  const tickerLogoUrl = (t: string) => `https://images.financialmodelingprep.com/symbol/${t.toUpperCase()}.png`;
 
   const handleAIReview = async () => {
     if (!dashboardHoldings?.length) return;
@@ -655,17 +651,9 @@ export default function CaelynTerminalPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedHoldings.map((h, i) => {
-                        return (
+                      {sortedHoldings.map((h, i) => (
                         <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                          <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, minWidth:0 }}>
-                              <span style={{ width:14, height:14, borderRadius:3, background:'#ffffff10', flexShrink:0, display:'inline-flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-                                <img src={tickerLogoUrl(h.ticker)} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={(e)=>{ const el = e.currentTarget as HTMLImageElement; el.style.display='none'; (el.parentElement as HTMLElement).style.background='transparent'; }} />
-                              </span>
-                              <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</span>
-                            </span>
-                          </td>
+                          <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
                           {(() => {
                             const vx = h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null);
@@ -677,8 +665,7 @@ export default function CaelynTerminalPage() {
                           <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
                         </tr>
-                        );
-                      })}
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -981,7 +968,7 @@ export default function CaelynTerminalPage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ flex:1, maxWidth:360, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
                     {allocData.map((a, i) => {
                       const hasTickers = !ph && (a as any).tickers?.length > 0;
                       return (
@@ -990,7 +977,7 @@ export default function CaelynTerminalPage() {
                           onMouseEnter={hasTickers ? (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setAllocHover({ label: a.label, tickers: (a as any).tickers, x: r.right + 6, y: r.top }); } : undefined}
                           onMouseLeave={hasTickers ? () => setAllocHover(null) : undefined}
                         >
-                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
+                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:'0 1 auto', maxWidth:340 }}>
                             <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
                             <div style={{ minWidth:0, flex:1 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
@@ -1111,16 +1098,15 @@ export default function CaelynTerminalPage() {
                   style={{ display:'flex', alignItems:'flex-start', gap:6, padding:'6px 8px', borderBottom:`1px solid ${C.dimLow}22`, textDecoration:'none', cursor:'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.background = `${C.teal}08`)}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <span style={{ flexShrink:0, fontSize:7, fontWeight:800, fontFamily:C.font, padding:'2px 5px', borderRadius:3, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, textTransform:'uppercase' }}>
-                    {item.ticker}
-                  </span>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, flexShrink:0, minWidth:38 }}>
+                    <span style={{ fontSize:7, fontWeight:800, fontFamily:C.font, padding:'2px 5px', borderRadius:3, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, textTransform:'uppercase' }}>
+                      {item.ticker}
+                    </span>
+                    <span style={{ fontSize:7, color:C.dim, whiteSpace:'nowrap' }}>{timeAgo(item.published_at)}</span>
+                  </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:9, color:C.text, lineHeight:1.35, marginBottom:2, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const, overflow:'hidden' }}>
+                    <div style={{ fontSize:9, color:C.text, lineHeight:1.35, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const, overflow:'hidden' }}>
                       {item.title}
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <span style={{ fontSize:7, color:C.dim }}>{item.source}</span>
-                      <span style={{ fontSize:7, color:C.dim }}>{timeAgo(item.published_at)}</span>
                     </div>
                   </div>
                 </a>
