@@ -477,7 +477,7 @@ function ThemeRow({ theme }: { theme: HomeThemePerformanceItem }) {
 }
 
 // ── Sub-theme leaders row (replaces sector ThemeRow on Home) ─────────────
-function SubThemeRow({ item }: { item: HomeSubThemeItem }) {
+function SubThemeRow({ item, onSymbolClick }: { item: HomeSubThemeItem; onSymbolClick?: (sym: string) => void }) {
   const chg = item.avg_change_1d;
   const breadth = item.breadth_score ?? 0;
   const breadthColor =
@@ -489,7 +489,7 @@ function SubThemeRow({ item }: { item: HomeSubThemeItem }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-white/90">{item.sub_theme}</span>
           {(item.leader_symbols || []).slice(0, 4).map(sym => (
-            <span key={sym} className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/70 font-mono">{sym}</span>
+            <span key={sym} className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/70 font-mono cursor-pointer hover:bg-white/[0.10] hover:text-white/95 transition-colors" onClick={() => onSymbolClick?.(sym)}>{sym}</span>
           ))}
           {item.leader_count > 4 && (
             <span className="text-[10px] text-white/35">+{item.leader_count - 4}</span>
@@ -609,7 +609,7 @@ function FearGreedGauge({
 type SnapSort = "symbol" | "current_price" | "change_1d_pct" | "volume_vs_avg";
 
 function SnapshotTable({
-  items, loading, title, icon: Icon, accent, status, limit = 999, scrollable = false, viewMore,
+  items, loading, title, icon: Icon, accent, status, limit = 999, scrollable = false, viewMore, onRowClick,
 }: {
   items: HomeSnapshotItem[] | undefined;
   loading: boolean;
@@ -620,6 +620,7 @@ function SnapshotTable({
   limit?: number;
   scrollable?: boolean;
   viewMore?: string;
+  onRowClick?: (symbol: string) => void;
 }) {
   const [sortKey, setSortKey]   = useState<SnapSort>("change_1d_pct");
   const [sortDir, setSortDir]   = useState<"asc" | "desc">("desc");
@@ -668,7 +669,7 @@ function SnapshotTable({
           {/* Rows — scrollable when scrollable=true, all items shown */}
           <div className={scrollable ? "overflow-y-auto max-h-[320px] pr-0.5" : ""}>
           {sorted.slice(0, scrollable ? sorted.length : limit).map((row) => (
-            <div key={row.symbol} className="grid grid-cols-12 gap-1 items-center px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors">
+            <div key={row.symbol} className="grid grid-cols-12 gap-1 items-center px-2 py-1.5 rounded hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => onRowClick?.(row.symbol)}>
               <div className="col-span-3 flex items-center gap-1.5 min-w-0">
                 <span className="text-xs font-semibold text-white/90 truncate">{row.symbol}</span>
                 {row.asset_type && (
@@ -823,7 +824,7 @@ const OI_REGIME_CLR: Record<string, string> = {
   "Long Liquidation": "text-orange-400",
 };
 
-function HLTopSignals({ signals, loading, viewMore }: { signals: HLAdvSigs | undefined; loading: boolean; viewMore?: string }) {
+function HLTopSignals({ signals, loading, viewMore, onTickerClick }: { signals: HLAdvSigs | undefined; loading: boolean; viewMore?: string; onTickerClick?: (sym: string) => void }) {
   const rsLeaders = (signals?.relative_strength_leaders || []).slice(0, 5);
   const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 5);
 
@@ -855,7 +856,7 @@ function HLTopSignals({ signals, loading, viewMore }: { signals: HLAdvSigs | und
             <span className={`${colHdr} text-right`}>RS</span>
           </div>
           {rsLeaders.map((r) => (
-            <div key={r.symbol} className="grid grid-cols-[72px_1fr_1fr_1fr_48px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+            <div key={r.symbol} className="grid grid-cols-[72px_1fr_1fr_1fr_48px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0 cursor-pointer" onClick={() => onTickerClick?.(cleanHLSymbol(r.symbol))}>
               <span className="text-xs font-bold text-white/90 truncate">{cleanHLSymbol(r.symbol)}</span>
               <span className={`${numCell} ${pctColor(r.return_1h)}`}>{fmtPct(r.return_1h, 2)}</span>
               <span className={`${numCell} ${pctColor(r.return_4h)}`}>{fmtPct(r.return_4h, 2)}</span>
@@ -878,7 +879,7 @@ function HLTopSignals({ signals, loading, viewMore }: { signals: HLAdvSigs | und
             <span className={`${colHdr} text-right`}>Px 24H</span>
           </div>
           {oiShifts.map((r) => (
-            <div key={r.symbol} className="grid grid-cols-[72px_1fr_60px_60px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0">
+            <div key={r.symbol} className="grid grid-cols-[72px_1fr_60px_60px] gap-x-2 px-2 py-1.5 items-center rounded hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0 cursor-pointer" onClick={() => onTickerClick?.(cleanHLSymbol(r.symbol))}>
               <span className="text-xs font-bold text-white/90 truncate">{cleanHLSymbol(r.symbol)}</span>
               <span className={`text-[10px] font-semibold truncate ${OI_REGIME_CLR[r.regime] ?? "text-white/50"}`}>
                 {r.regime}
@@ -1375,7 +1376,7 @@ export default function HomePage() {
                             <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
                           </div>
                           {subThemes.map((item, i) => (
-                            <SubThemeRow key={item.sub_theme || i} item={item} />
+                            <SubThemeRow key={item.sub_theme || i} item={item} onSymbolClick={openTicker} />
                           ))}
                         </div>
                       )}
@@ -1477,7 +1478,7 @@ export default function HomePage() {
                                   <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
                                   <div className="flex flex-wrap gap-1">
                                     {bullStocks.slice(0, 4).map(t => (
-                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
+                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>
                                     ))}
                                   </div>
                                 </div>
@@ -1487,7 +1488,7 @@ export default function HomePage() {
                                   <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
                                   <div className="flex flex-wrap gap-1">
                                     {bearStocks.slice(0, 4).map(t => (
-                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400">{t}</span>
+                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>
                                     ))}
                                   </div>
                                 </div>
@@ -1698,6 +1699,7 @@ export default function HomePage() {
             status={data?.section_status?.portfolio_snapshot}
             scrollable
             viewMore="/app/caelyn-terminal"
+            onRowClick={openTicker}
           />
           <SnapshotTable
             items={data?.watchlist_snapshot}
@@ -1708,6 +1710,7 @@ export default function HomePage() {
             status={data?.section_status?.watchlist_snapshot}
             scrollable
             viewMore="/app/watchlist"
+            onRowClick={openTicker}
           />
         </div>
 
@@ -1723,7 +1726,7 @@ export default function HomePage() {
             onTickerClick={openTicker}
             viewMore="/app/options"
           />
-          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" />
+          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" onTickerClick={openTicker} />
         </div>
 
         {/* K. Fear & Greed — equities + crypto */}
