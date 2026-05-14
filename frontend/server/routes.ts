@@ -165,6 +165,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Canonical Portfolio Holdings — must be before /api/portfolio/:userId catch-all ===
 
+  // Portfolio options — fetch options screener data filtered to portfolio tickers
+  app.get('/api/portfolio/options', async (_req, res) => {
+    try {
+      const holdings = readHoldings();
+      if (!holdings.length) return res.json({ tickers: [] });
+      const portTickers = new Set(holdings.map((h: any) => String(h.ticker).toUpperCase()));
+      const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+      const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+      // Try the dedicated portfolio-options endpoint first (preferred)
+      try {
+        const tickers = Array.from(portTickers).join(',');
+        const upRes = await fetch(`${FA_URL}/api/portfolio/options?tickers=${tickers}`, {
+          headers: { 'X-API-Key': FA_KEY },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (upRes.ok) {
+          const data = await upRes.json();
+          if (Array.isArray(data?.tickers) && data.tickers.length > 0) return res.json(data);
+        }
+      } catch { /* fall through to screener */ }
+
+      // Fallback: pull broad screener and filter client-side
+      const upRes = await fetch(`${FA_URL}/api/options/screener?limit=400`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(25000),
+      });
+      if (!upRes.ok) return res.json({ tickers: [] });
+      const data = await upRes.json();
+      const all: any[] = data?.tickers ?? data?.results ?? data ?? [];
+      const filtered = (Array.isArray(all) ? all : [])
+        .filter((t: any) => t?.ticker && portTickers.has(String(t.ticker).toUpperCase()))
+        .map((t: any) => ({
+          ticker: t.ticker,
+          underlying_price: t.underlying_price ?? null,
+          price_change_pct: t.price_change_pct ?? null,
+          pc_ratio: t.pc_ratio ?? null,
+          iv_current: t.options_context?.iv_current ?? t.iv_current ?? null,
+          expected_move: t.options_context?.expected_move_from_atm_straddle ?? null,
+          call_put_volume_ratio: t.options_context?.call_put_volume_ratio ?? null,
+          primary_signal: t.primary_signal ?? null,
+          confidence: t.confidence ?? null,
+          composite_score: t.composite_score ?? null,
+          total_volume: t.total_volume ?? null,
+        }));
+      res.json({ tickers: filtered });
+    } catch (e) {
+      console.error('[portfolio/options] error:', e);
+      res.json({ tickers: [] });
+    }
+  });
+
   // Portfolio news — fetch RSS news for all local holdings (must be before /:userId catch-all)
   app.get('/api/portfolio/news', async (_req, res) => {
     try {

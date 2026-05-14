@@ -18,7 +18,7 @@ const C = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type N = number | null | undefined;
-interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; }
+interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; volume?: N; avg_volume?: N; vol_x?: N; }
 interface CTChartPoint { date: string; portfolio: N; sp500: N; }
 interface CTAllocTicker { ticker: string; company: string; }
 interface CTAllocationItem { label: string; pct: N; color: string; tickers?: CTAllocTicker[]; }
@@ -278,6 +278,17 @@ export default function CaelynTerminalPage() {
     queryFn: async () => {
       const r = await fetch('/api/portfolio/news');
       if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+
+  const { data: portfolioOptions } = useQuery<{ tickers: Array<{ ticker: string; underlying_price?: N; price_change_pct?: N; pc_ratio?: N; iv_current?: N; expected_move?: N; primary_signal?: string | null; confidence?: string | null; composite_score?: N; total_volume?: N; call_put_volume_ratio?: N; }> }>({
+    queryKey: ['portfolio-options'],
+    queryFn: async () => {
+      const r = await fetch('/api/portfolio/options');
+      if (!r.ok) return { tickers: [] };
       return r.json();
     },
     staleTime: 5 * 60_000,
@@ -553,7 +564,7 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
       {/* ── TOP ROW: 4-column grid ─────────────────────────────────── */}
-      <div style={{ flex:'0 0 62%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
+      <div style={{ flex:'0 0 68%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
         <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
@@ -566,7 +577,11 @@ export default function CaelynTerminalPage() {
               let av: any, bv: any;
               if (holdSort.col === 'TICKER')  { av = a.ticker; bv = b.ticker; return holdSort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
               if (holdSort.col === 'PRICE')   { av = parseNum(a.price);        bv = parseNum(b.price); }
-              if (holdSort.col === 'CHG')     { av = parseNum(a.change);       bv = parseNum(b.change); }
+              if (holdSort.col === 'VOLX')    {
+                const av0 = (a.vol_x != null ? a.vol_x : (a.volume && a.avg_volume ? (a.volume as number) / (a.avg_volume as number) : 0));
+                const bv0 = (b.vol_x != null ? b.vol_x : (b.volume && b.avg_volume ? (b.volume as number) / (b.avg_volume as number) : 0));
+                av = av0; bv = bv0;
+              }
               if (holdSort.col === 'CHG%')    { av = parseNum(a.change_pct);   bv = parseNum(b.change_pct); }
               if (holdSort.col === 'ALLOC')   { av = parseNum(a.allocation_pct); bv = parseNum(b.allocation_pct); }
               return holdSort.dir === 'asc' ? av - bv : bv - av;
@@ -583,7 +598,7 @@ export default function CaelynTerminalPage() {
                     </colgroup>
                     <thead>
                       <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                        {(['TICKER','PRICE','CHG','CHG%','ALLOC'] as const).map(h => (
+                        {(['TICKER','PRICE','VOLX','CHG%','ALLOC'] as const).map(h => (
                           <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
                         ))}
                       </tr>
@@ -593,7 +608,13 @@ export default function CaelynTerminalPage() {
                         <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
                           <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
-                          <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${sign(h.change)}${fmtN(h.change,2)}`}</td>
+                          {(() => {
+                            const vx = h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null);
+                            const isUnusual = vx != null && vx >= 2.5;
+                            const color = ph || vx == null ? C.dim : isUnusual ? C.amber : C.text;
+                            const txt = ph || vx == null ? '—' : `${fmtN(vx, 1)}×`;
+                            return <td title={isUnusual ? 'Unusual: ≥ 2.5× average volume' : 'Volume vs 30-day average'} style={{ padding:'4px 3px', textAlign:'right', color, fontWeight: isUnusual ? 700 : 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{txt}</td>;
+                          })()}
                           <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
                         </tr>
@@ -889,36 +910,47 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
 
-          {/* Top Movers */}
+          {/* Portfolio Options */}
           <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Top Movers" badge="Daily" />
-            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:6 }}>
-                <span style={{ fontSize:9, color:C.green, fontWeight:700 }}>▲ {ph ? '—' : d.top_movers.gainers.length} up</span>
-                <span style={{ fontSize:9, color:C.dim }}>·</span>
-                <span style={{ fontSize:9, color:C.red, fontWeight:700 }}>▼ {ph ? '—' : d.top_movers.losers.length} down</span>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                {[...d.top_movers.gainers.slice(0,2).map(m => ({...m, isGainer:true})), ...d.top_movers.losers.slice(0,2).map(m => ({...m, isGainer:false}))].map((m, i) => {
-                  const color = m.isGainer ? C.green : C.red;
+            <CardHdr label="Portfolio Options" badge="Flow" />
+            <div style={{ padding:'6px 8px', overflowY:'auto', flex:1 }}>
+              {(() => {
+                const rows = (portfolioOptions?.tickers ?? []).slice().sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
+                if (ph || rows.length === 0) {
+                  return <div style={{ padding:'14px 4px', textAlign:'center', fontSize:10, color:C.dim, lineHeight:1.6 }}>{ph ? 'Awaiting data...' : 'No options activity for portfolio tickers'}</div>;
+                }
+                return rows.slice(0, 8).map((t, i) => {
+                  const sig = (t.primary_signal || '').toLowerCase();
+                  const tagColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : C.teal;
+                  const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
+                  const cpLabel = cp == null ? '—' : (cp > 1 ? `${fmtN(cp,2)} P/C` : `${fmtN(1/Math.max(cp,0.0001),2)} C/P`);
+                  const cpColor = cp == null ? C.dim : (cp < 0.7 ? C.green : cp > 1.3 ? C.red : C.dim);
+                  const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
+                  const em = t.expected_move != null ? `±${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
                   return (
-                    <div key={i} style={{ border:`1px solid ${color}33`, borderRadius:5, padding:'7px 9px', background:`${color}08` }}>
-                      <div style={{ fontSize:7, fontWeight:800, color, letterSpacing:1, marginBottom:3 }}>{m.isGainer ? '↑ GAINER' : '↓ LOSER'}</div>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                        <span style={{ fontSize:11, fontWeight:800, color: ph ? C.dim : C.text }}>{m.ticker}</span>
-                        <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : color }}>{ph ? '—' : `${m.isGainer?'+':''}${fmtN(m.change_pct,2)}%`}</span>
+                    <div key={i} style={{ borderBottom:`1px solid ${C.dimLow}22`, padding:'6px 4px', display:'flex', flexDirection:'column', gap:3 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:0 }}>
+                          <span style={{ fontSize:11, fontWeight:800, color:C.teal }}>{t.ticker}</span>
+                          {t.primary_signal && (
+                            <span style={{ fontSize:7, fontWeight:800, letterSpacing:0.5, padding:'1px 5px', borderRadius:3, color:tagColor, background:`${tagColor}18`, border:`1px solid ${tagColor}33`, textTransform:'uppercase', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:110 }}>{t.primary_signal}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize:9, fontWeight:700, color: t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : C.dim }}>
+                          {t.composite_score != null ? `${fmtN(t.composite_score, 0)}` : '—'}
+                        </span>
                       </div>
-                      <div style={{ fontSize:9, color:C.dim, marginTop:1 }}>{ph ? '—' : fmt$(m.price)}</div>
-                      <RangeBar low={m.w52_low} high={m.w52_high} price={m.price} ph={ph} />
-                      <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
-                        <span style={{ fontSize:8, color:C.dim }}>{ph ? '—' : fmtN(m.w52_low,0)}</span>
-                        <span style={{ fontSize:7, color:C.dim }}>52W RANGE</span>
-                        <span style={{ fontSize:8, color:C.dim }}>{ph ? '—' : fmtN(m.w52_high,0)}</span>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:9 }}>
+                        <span style={{ color:cpColor }}>{cpLabel}</span>
+                        <span style={{ color:C.dim }}>·</span>
+                        <span style={{ color:C.amber }}>IV {iv}</span>
+                        <span style={{ color:C.dim }}>·</span>
+                        <span style={{ color:C.purple }}>EM {em}</span>
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -928,7 +960,7 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
         {/* ── PANEL 1: Investment Goals ── */}
-        <div style={{ flex:'0 0 195px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+        <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Goals</span>
             <button onClick={() => {
@@ -1028,7 +1060,7 @@ export default function CaelynTerminalPage() {
         </div>
 
         {/* ── PANEL 2: Top Performing Assets ── */}
-        <div style={{ flex:'0 0 185px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+        <div style={{ flex:'0 0 145px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Top Performers</span>
           </div>
