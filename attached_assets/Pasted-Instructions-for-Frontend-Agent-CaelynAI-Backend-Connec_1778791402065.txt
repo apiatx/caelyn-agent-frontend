@@ -1,0 +1,98 @@
+Instructions for Frontend Agent — CaelynAI Backend Connection
+Backend URLs
+Environment	URL
+Production (deployed)	Find this in your backend Replit → Deploy tab → the .replit.app URL shown there
+Dev (for testing)	https://9845c08e-fe09-48fb-9083-db02f6a45095-00-3duj30xvuq11c.riker.replit.dev
+Set a single config constant at the top of your app:
+
+const BACKEND = 'https://YOUR-BACKEND.replit.app'; // production URL from Deploy tab
+
+Auth — How It Works
+The backend uses JWT tokens stored in localStorage under the key caelyn_jwt.
+
+Important: Auth is currently disabled server-side — all API endpoints respond to any request, no token needed. However, wire it in correctly so when auth is re-enabled, nothing breaks.
+
+Step 1 — Login (call once, store the token):
+
+const res = await fetch(`${BACKEND}/api/auth/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: 'YOUR_PASSWORD' })
+});
+const { token } = await res.json();
+localStorage.setItem('caelyn_jwt', token);
+
+Step 2 — Every subsequent API call must include the token:
+
+function authHeaders() {
+  const token = localStorage.getItem('caelyn_jwt') || '';
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+}
+// Example call
+const data = await fetch(`${BACKEND}/api/home/dashboard`, {
+  headers: authHeaders()
+}).then(r => r.json());
+
+Step 3 — On 401, re-login (for when auth gets re-enabled):
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(`${BACKEND}${path}`, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers || {}) }
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('caelyn_jwt');
+    // redirect to login page or show login modal
+  }
+  return res;
+}
+
+CORS
+The backend already has allow_origins=["*"] — no CORS changes needed on the backend. Any frontend origin can call it.
+
+Key API Endpoints (by page)
+Page	Method	Path
+Home dashboard	GET	/api/home/dashboard
+Theme performance	GET	/api/themes/relative-strength
+Theme list	GET	/api/themes/list?classification=sub_theme
+Options flow	GET	/api/options/dashboard
+Whale watch	GET	/api/whale/dashboard
+Insider activity	GET	/api/insider/dashboard
+Screener	GET	/api/screener/...
+Prediction markets	GET	/api/predict/...
+Sector rotation	GET	/api/sector-rotation
+Portfolio	GET	/api/portfolio
+AI chat/query	POST	/api/query (streaming SSE)
+Health check	GET	/health
+Streaming endpoint (/api/query)
+This returns Server-Sent Events (SSE), not JSON:
+
+const res = await fetch(`${BACKEND}/api/query`, {
+  method: 'POST',
+  headers: authHeaders(),
+  body: JSON.stringify({ message: 'your question here' })
+});
+const reader = res.body.getReader();
+const decoder = new TextDecoder();
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+  const text = decoder.decode(value);
+  // parse SSE: lines starting with "data: "
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      const payload = line.slice(6);
+      if (payload === '[DONE]') break;
+      // append payload to UI
+    }
+  }
+}
+
+Summary of what to replace
+Any hardcoded old .replit.app URL → replace with the new backend URL from the Deploy tab
+All fetch('/api/...') calls (relative) → prefix with BACKEND constant
+Auth header → always include Authorization: Bearer ${localStorage.getItem('caelyn_jwt')} when the token exists
+Token refresh → if you get a 401, clear localStorage and show the login flow
