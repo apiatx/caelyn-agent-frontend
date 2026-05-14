@@ -209,6 +209,7 @@ export default function CaelynTerminalPage() {
   type SortDir = 'asc'|'desc';
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
+  const [optSort,  setOptSort]  = useState<{ col: string; dir: SortDir }>({ col: 'SCORE', dir: 'desc' });
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
   const [categorizingThemes, setCategorizingThemes] = useState(false);
   const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
@@ -992,55 +993,86 @@ export default function CaelynTerminalPage() {
         <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Risk Suggestions */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'55%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'32%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Suggestions" badge="Intel" />
             <div style={{ padding:8, overflowY:'auto', flex:1 }}>
               {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
             </div>
           </div>
 
-          {/* Portfolio Options */}
-          <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Portfolio Options — sortable table */}
+          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Portfolio Options" badge="Flow" />
-            <div style={{ padding:'6px 8px', overflowY:'auto', flex:1 }}>
-              {(() => {
-                const rows = (portfolioOptions?.tickers ?? []).slice().sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
-                if (ph || rows.length === 0) {
-                  return <div style={{ padding:'14px 4px', textAlign:'center', fontSize:10, color:C.dim, lineHeight:1.6 }}>{ph ? 'Awaiting data...' : 'No options activity for portfolio tickers'}</div>;
+            {(() => {
+              const rows = portfolioOptions?.tickers ?? [];
+              const dir = optSort.dir === 'asc' ? 1 : -1;
+              const numCmp = (a: any, b: any) => {
+                const av = a == null ? -Infinity : Number(a);
+                const bv = b == null ? -Infinity : Number(b);
+                return dir * (av - bv);
+              };
+              const sorted = [...rows].sort((a, b) => {
+                switch (optSort.col) {
+                  case 'TICKER': return dir * a.ticker.localeCompare(b.ticker);
+                  case 'SCORE':  return numCmp(a.composite_score, b.composite_score);
+                  case 'P/C': {
+                    const av = a.pc_ratio ?? a.call_put_volume_ratio;
+                    const bv = b.pc_ratio ?? b.call_put_volume_ratio;
+                    return numCmp(av, bv);
+                  }
+                  case 'IV':   return numCmp(a.iv_current, b.iv_current);
+                  case 'EM':   return numCmp(a.expected_move, b.expected_move);
+                  case 'VOL':  return numCmp(a.total_volume, b.total_volume);
+                  case 'SIGNAL': return dir * (a.primary_signal || '').localeCompare(b.primary_signal || '');
+                  default: return 0;
                 }
-                return rows.slice(0, 8).map((t, i) => {
-                  const sig = (t.primary_signal || '').toLowerCase();
-                  const tagColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : C.teal;
-                  const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
-                  const cpLabel = cp == null ? '—' : (cp > 1 ? `${fmtN(cp,2)} P/C` : `${fmtN(1/Math.max(cp,0.0001),2)} C/P`);
-                  const cpColor = cp == null ? C.dim : (cp < 0.7 ? C.green : cp > 1.3 ? C.red : C.dim);
-                  const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
-                  const em = t.expected_move != null ? `±${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
-                  return (
-                    <div key={i} style={{ borderBottom:`1px solid ${C.dimLow}22`, padding:'6px 4px', display:'flex', flexDirection:'column', gap:3 }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:0 }}>
-                          <span style={{ fontSize:11, fontWeight:800, color:C.teal }}>{t.ticker}</span>
-                          {t.primary_signal && (
-                            <span style={{ fontSize:7, fontWeight:800, letterSpacing:0.5, padding:'1px 5px', borderRadius:3, color:tagColor, background:`${tagColor}18`, border:`1px solid ${tagColor}33`, textTransform:'uppercase', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:110 }}>{t.primary_signal}</span>
-                          )}
-                        </div>
-                        <span style={{ fontSize:9, fontWeight:700, color: t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : C.dim }}>
-                          {t.composite_score != null ? `${fmtN(t.composite_score, 0)}` : '—'}
-                        </span>
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:9 }}>
-                        <span style={{ color:cpColor }}>{cpLabel}</span>
-                        <span style={{ color:C.dim }}>·</span>
-                        <span style={{ color:C.amber }}>IV {iv}</span>
-                        <span style={{ color:C.dim }}>·</span>
-                        <span style={{ color:C.purple }}>EM {em}</span>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
+              });
+              const mkSort = (col: string) => () => setOptSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
+              const thO = (col: string) => ({ padding:'3px 3px', color: optSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'||col==='SIGNAL'?'left':'right') as 'left'|'right', fontSize:7, letterSpacing:0.2, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
+              const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
+              if (ph) return <div style={{ padding:'14px 4px', textAlign:'center', fontSize:10, color:C.dim }}>Awaiting data...</div>;
+              return (
+                <div style={{ overflowY:'auto', flex:1 }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
+                    <colgroup>
+                      <col style={{ width:'18%' }} /><col style={{ width:'12%' }} /><col style={{ width:'14%' }} /><col style={{ width:'12%' }} /><col style={{ width:'14%' }} /><col style={{ width:'14%' }} /><col style={{ width:'16%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                        {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL'] as const).map(h => (
+                          <th key={h} style={thO(h)} onClick={mkSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrO(h)}</span></th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((t, i) => {
+                        const sig = (t.primary_signal || '').toLowerCase();
+                        const sigColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
+                        const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
+                        const cpStr = cp == null ? '—' : fmtN(cp as number, 2);
+                        const cpColor = cp == null ? C.dimLow : ((cp as number) < 0.7 ? C.green : (cp as number) > 1.3 ? C.red : C.dim);
+                        const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
+                        const em = t.expected_move != null ? `${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
+                        const vol = t.total_volume != null ? (t.total_volume >= 1000 ? `${fmtN((t.total_volume as number)/1000, 1)}K` : String(t.total_volume)) : '—';
+                        const score = t.composite_score != null ? fmtN(t.composite_score as number, 0) : '—';
+                        const scoreColor = t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : t.composite_score != null && (t.composite_score as number) >= 50 ? C.amber : C.dim;
+                        return (
+                          <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
+                            <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.ticker}</td>
+                            <td style={{ padding:'3px 3px', textAlign:'right', color:scoreColor, fontWeight:700 }}>{score}</td>
+                            <td style={{ padding:'3px 3px', textAlign:'right', color:cpColor }}>{cpStr}</td>
+                            <td style={{ padding:'3px 3px', textAlign:'right', color: t.iv_current != null ? C.amber : C.dimLow }}>{iv}</td>
+                            <td style={{ padding:'3px 3px', textAlign:'right', color: t.expected_move != null ? C.purple : C.dimLow }}>{em}</td>
+                            <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim }}>{vol}</td>
+                            <td style={{ padding:'3px 3px', color:sigColor, fontSize:7, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.primary_signal || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>{/* close top row */}

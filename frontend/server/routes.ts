@@ -174,43 +174,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
       const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
+      const portTickersList = Array.from(portTickers);
+      const collected = new Map<string, any>();
+      const normalize = (t: any) => ({
+        ticker: String(t.ticker).toUpperCase(),
+        underlying_price: t.underlying_price ?? null,
+        price_change_pct: t.price_change_pct ?? null,
+        pc_ratio: t.pc_ratio ?? t.options_context?.put_call_ratio ?? null,
+        iv_current: t.options_context?.iv_current ?? t.iv_current ?? null,
+        expected_move: t.options_context?.expected_move_from_atm_straddle ?? t.expected_move ?? null,
+        call_put_volume_ratio: t.options_context?.call_put_volume_ratio ?? t.call_put_volume_ratio ?? null,
+        primary_signal: t.primary_signal ?? null,
+        confidence: t.confidence ?? null,
+        composite_score: t.composite_score ?? null,
+        total_volume: t.total_volume ?? null,
+      });
+
       // Try the dedicated portfolio-options endpoint first (preferred)
       try {
-        const tickers = Array.from(portTickers).join(',');
+        const tickers = portTickersList.join(',');
         const upRes = await fetch(`${FA_URL}/api/portfolio/options?tickers=${tickers}`, {
           headers: { 'X-API-Key': FA_KEY },
           signal: AbortSignal.timeout(20000),
         });
         if (upRes.ok) {
           const data = await upRes.json();
-          if (Array.isArray(data?.tickers) && data.tickers.length > 0) return res.json(data);
+          for (const t of (data?.tickers || [])) {
+            if (t?.ticker) collected.set(String(t.ticker).toUpperCase(), normalize(t));
+          }
         }
-      } catch { /* fall through to screener */ }
+      } catch { /* keep going */ }
 
-      // Fallback: pull broad screener and filter client-side
-      const upRes = await fetch(`${FA_URL}/api/options/screener?limit=400`, {
-        headers: { 'X-API-Key': FA_KEY },
-        signal: AbortSignal.timeout(25000),
-      });
-      if (!upRes.ok) return res.json({ tickers: [] });
-      const data = await upRes.json();
-      const all: any[] = data?.tickers ?? data?.results ?? data ?? [];
-      const filtered = (Array.isArray(all) ? all : [])
-        .filter((t: any) => t?.ticker && portTickers.has(String(t.ticker).toUpperCase()))
-        .map((t: any) => ({
-          ticker: t.ticker,
-          underlying_price: t.underlying_price ?? null,
-          price_change_pct: t.price_change_pct ?? null,
-          pc_ratio: t.pc_ratio ?? null,
-          iv_current: t.options_context?.iv_current ?? t.iv_current ?? null,
-          expected_move: t.options_context?.expected_move_from_atm_straddle ?? null,
-          call_put_volume_ratio: t.options_context?.call_put_volume_ratio ?? null,
-          primary_signal: t.primary_signal ?? null,
-          confidence: t.confidence ?? null,
-          composite_score: t.composite_score ?? null,
-          total_volume: t.total_volume ?? null,
-        }));
-      res.json({ tickers: filtered });
+      // Always also pull broad screener and merge any portfolio tickers not yet collected
+      try {
+        const upRes = await fetch(`${FA_URL}/api/options/screener?limit=800`, {
+          headers: { 'X-API-Key': FA_KEY },
+          signal: AbortSignal.timeout(25000),
+        });
+        if (upRes.ok) {
+          const data = await upRes.json();
+          const all: any[] = data?.tickers ?? data?.results ?? data ?? [];
+          for (const t of (Array.isArray(all) ? all : [])) {
+            const sym = String(t?.ticker || '').toUpperCase();
+            if (sym && portTickers.has(sym) && !collected.has(sym)) collected.set(sym, normalize(t));
+          }
+        }
+      } catch { /* keep going */ }
+
+      // Pad with empty rows for any portfolio ticker still missing — so coverage is visible.
+      for (const sym of portTickersList) {
+        if (!collected.has(sym)) {
+          collected.set(sym, {
+            ticker: sym, underlying_price: null, price_change_pct: null, pc_ratio: null,
+            iv_current: null, expected_move: null, call_put_volume_ratio: null,
+            primary_signal: null, confidence: null, composite_score: null, total_volume: null,
+          });
+        }
+      }
+      res.json({ tickers: Array.from(collected.values()) });
     } catch (e) {
       console.error('[portfolio/options] error:', e);
       res.json({ tickers: [] });
