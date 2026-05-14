@@ -205,7 +205,7 @@ export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [compareOpen, setCompareOpen] = useState(false);
-  const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'>('sectors');
+  const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'>('themes');
   type SortDir = 'asc'|'desc';
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
