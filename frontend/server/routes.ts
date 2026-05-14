@@ -2767,9 +2767,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!response.ok) { console.warn(`[caelyn-terminal-bg] FastAPI returned ${response.status}`); return; }
         const data = await response.json();
 
-        // Apply the same hydration logic (delegated below by calling the shared hydrator)
+        // Enrich allocation items and earnings so cached data always has tickers/date_iso
+        if (localHoldings.length > 0) {
+          try {
+            const symbols      = localHoldings.map(h => h.ticker);
+            const assetTypeMap: Record<string, string> = {};
+            localHoldings.forEach(h => { assetTypeMap[h.ticker] = h.assetType || 'stock'; });
+            const quotes   = await fmpService.getStockDetails(symbols, assetTypeMap);
+            const quoteMap = new Map(quotes.map((q: any) => [q.symbol, q]));
+
+            // Enrich theme_allocation (symbols already present in FastAPI data)
+            if (Array.isArray(data.theme_allocation))
+              data.theme_allocation = data.theme_allocation.map((t: any) => ({
+                ...t,
+                tickers: (t.symbols || []).map((sym: string) => ({
+                  ticker: sym,
+                  company: (quoteMap.get(sym) as any)?.companyName || sym,
+                })),
+              }));
+
+            // Enrich sector_allocation
+            if (Array.isArray(data.sector_allocation))
+              data.sector_allocation = data.sector_allocation.map((item: any) => ({
+                ...item,
+                tickers: localHoldings
+                  .filter(h => { const q = quoteMap.get(h.ticker) as any; return ((q?.sector && q.sector !== 'Unknown') ? q.sector : 'Other') === item.label; })
+                  .map(h => { const q = quoteMap.get(h.ticker) as any; return { ticker: h.ticker, company: q?.companyName || h.ticker }; }),
+              }));
+
+            // Enrich asset_class_allocation
+            if (Array.isArray(data.asset_class_allocation))
+              data.asset_class_allocation = data.asset_class_allocation.map((item: any) => ({
+                ...item,
+                tickers: localHoldings
+                  .filter(h => {
+                    const t = (h.assetType || 'stock').toLowerCase();
+                    const lbl = t === 'etf' ? 'ETFs' : t === 'crypto' ? 'Crypto'
+                              : (t === 'commodity' || t === 'commodities') ? 'Commodities'
+                              : t === 'stock' ? 'Individual Stocks' : 'Other';
+                    const norm = (l: string) => l === 'Stocks' ? 'Individual Stocks' : l;
+                    return lbl === norm(item.label);
+                  })
+                  .map(h => { const q = quoteMap.get(h.ticker) as any; return { ticker: h.ticker, company: q?.companyName || h.ticker }; }),
+              }));
+
+            // Enrich asset_allocation (primary tab — sector or asset-type based)
+            if (Array.isArray(data.asset_allocation))
+              data.asset_allocation = data.asset_allocation.map((item: any) => ({
+                ...item,
+                tickers: localHoldings
+                  .filter(h => {
+                    const q = quoteMap.get(h.ticker) as any;
+                    const sec = (q?.sector && q.sector !== 'Unknown') ? q.sector : 'Other';
+                    const t = (h.assetType || 'stock').toLowerCase();
+                    const lbl = t === 'etf' ? 'ETFs' : t === 'crypto' ? 'Crypto'
+                              : (t === 'commodity' || t === 'commodities') ? 'Commodities'
+                              : t === 'stock' ? 'Individual Stocks' : 'Other';
+                    return sec === item.label || lbl === item.label;
+                  })
+                  .map(h => { const q = quoteMap.get(h.ticker) as any; return { ticker: h.ticker, company: q?.companyName || h.ticker }; }),
+              }));
+
+            // Add date_iso to earnings_calendar entries that lack it
+            if (Array.isArray(data.earnings_calendar)) {
+              const MONS: Record<string, string> = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+              const now = new Date();
+              data.earnings_calendar = data.earnings_calendar.map((e: any) => {
+                if (e.date_iso) return e;
+                const nd = (e.next_date || '').trim();
+                const m  = nd.match(/^(\w{3})\s+(\d+)$/);
+                if (!m) return e;
+                const mon = MONS[m[1]]; if (!mon) return e;
+                const day = m[2].padStart(2, '0');
+                // If the month is before current month, assume next year
+                const guessYear = parseInt(mon) < (now.getMonth() + 1) ? now.getFullYear() + 1 : now.getFullYear();
+                return { ...e, date_iso: `${guessYear}-${mon}-${day}` };
+              });
+            }
+          } catch (enrichErr: any) {
+            console.warn('[caelyn-terminal-bg] Enrichment error (non-fatal):', enrichErr?.message);
+          }
+        }
+
         caelynTerminalCache = { data, ts: Date.now() };
-        console.log(`[caelyn-terminal-bg] Background refresh complete — cache updated (FastAPI holdings: ${(data.holdings||[]).length})`);
+        console.log(`[caelyn-terminal-bg] Background refresh complete — cache updated with enrichment (FastAPI holdings: ${(data.holdings||[]).length})`);
       } catch (e: any) {
         console.warn(`[caelyn-terminal-bg] Background refresh error: ${e?.message}`);
       } finally {
@@ -3065,9 +3146,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (Array.isArray(data.sector_allocation) && data.sector_allocation.length)
             data.sector_allocation = _withTickers(data.sector_allocation, (item, m) => m.sector === item.label);
           if (Array.isArray(data.asset_class_allocation) && data.asset_class_allocation.length)
-            data.asset_class_allocation = _withTickers(data.asset_class_allocation, (item, m) => m.assetClass === item.label);
+            data.asset_class_allocation = _withTickers(data.asset_class_allocation, (item, m) => {
+              const norm = (l: string) => l === 'Stocks' ? 'Individual Stocks' : l;
+              return m.assetClass === norm(item.label) || norm(m.assetClass) === item.label;
+            });
           if (Array.isArray(data.asset_allocation))
-            data.asset_allocation = _withTickers(data.asset_allocation, (item, m) => m.sector === item.label || m.assetClass === item.label);
+            data.asset_allocation = _withTickers(data.asset_allocation, (item, m) => {
+              const norm = (l: string) => l === 'Stocks' ? 'Individual Stocks' : l;
+              return m.sector === item.label || m.assetClass === norm(item.label) || norm(m.assetClass) === item.label;
+            });
           if (Array.isArray(data.theme_allocation) && data.theme_allocation.length)
             data.theme_allocation = data.theme_allocation.map((t: any) => ({
               ...t,

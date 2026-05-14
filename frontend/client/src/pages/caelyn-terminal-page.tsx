@@ -547,7 +547,18 @@ export default function CaelynTerminalPage() {
               const dir = earnSort.dir === 'asc' ? 1 : -1;
               if (earnSort.col === 'TICKER') return dir * a.ticker.localeCompare(b.ticker);
               if (earnSort.col === 'DATE') {
-                const ai = a.date_iso || '', bi = b.date_iso || '';
+                const EARN_MONS: Record<string,string> = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+                const toIso = (item: typeof a): string => {
+                  if (item.date_iso) return item.date_iso;
+                  const nd = (item.next_date || '').trim();
+                  const m = nd.match(/^(\w{3})\s+(\d+)$/);
+                  if (!m || !EARN_MONS[m[1]]) return '';
+                  const mon = EARN_MONS[m[1]], day = m[2].padStart(2,'0');
+                  const now = new Date();
+                  const yr = parseInt(mon) < (now.getMonth() + 1) ? now.getFullYear() + 1 : now.getFullYear();
+                  return `${yr}-${mon}-${day}`;
+                };
+                const ai = toIso(a), bi = toIso(b);
                 if (!ai && !bi) return 0; if (!ai) return dir; if (!bi) return -dir;
                 return dir * (ai < bi ? -1 : ai > bi ? 1 : 0);
               }
