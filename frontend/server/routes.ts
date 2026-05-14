@@ -184,6 +184,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/portfolio/categorize-themes — LLM classifies unclassified tickers into themes
+  app.post('/api/portfolio/categorize-themes', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const { tickers } = req.body || {};
+      if (!Array.isArray(tickers) || tickers.length === 0)
+        return res.status(400).json({ error: 'tickers array required' });
+      const r = await fetch(`${FA_URL}/api/portfolio/categorize-themes`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body:    JSON.stringify({ tickers }),
+        signal:  AbortSignal.timeout(90000),
+      });
+      if (!r.ok) {
+        const err = await r.text().catch(() => '');
+        return res.status(r.status).json({ error: `FastAPI returned ${r.status}`, detail: err });
+      }
+      const data = await r.json();
+      caelynTerminalCache = null;
+      return res.json(data);
+    } catch (e: any) {
+      console.error('[categorize-themes]', e?.message);
+      return res.status(500).json({ error: e?.message || 'Categorization failed' });
+    }
+  });
+
   // POST /api/portfolio/sync — push full holdings list to FastAPI canonical store
   app.post('/api/portfolio/sync', async (req, res) => {
     const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';

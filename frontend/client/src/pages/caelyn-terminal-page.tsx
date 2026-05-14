@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
 import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -211,6 +211,30 @@ export default function CaelynTerminalPage() {
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
+  const [categorizingThemes, setCategorizingThemes] = useState(false);
+  const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
+  const queryClient = useQueryClient();
+
+  const handleCategorizeThemes = async (symbols: string[]) => {
+    setCategorizingThemes(true);
+    setCategorizeResult(null);
+    try {
+      const res = await fetch('/api/portfolio/categorize-themes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers: symbols }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setCategorizeResult('success');
+      setTimeout(() => setCategorizeResult(null), 4000);
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+    } catch {
+      setCategorizeResult('error');
+      setTimeout(() => setCategorizeResult(null), 4000);
+    } finally {
+      setCategorizingThemes(false);
+    }
+  };
 
   const { data, isLoading, isFetching } = useQuery<CaelynTerminalData>({
     queryKey: ['caelyn-terminal'],
@@ -662,6 +686,8 @@ export default function CaelynTerminalPage() {
                     label: t.name, pct: t.weight_pct,
                     color: t.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
                     sublabel: syms.length ? syms.slice(0,4).join(', ') + (syms.length > 4 ? ` +${syms.length - 4}` : '') : undefined,
+                    fallback_used: (t as any).fallback_used ?? false,
+                    symbols: syms,
                   };
                 });
               }
@@ -688,7 +714,18 @@ export default function CaelynTerminalPage() {
                           <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
                             <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
                             <div style={{ minWidth:0, flex:1 }}>
-                              <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
+                              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                                <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
+                                {allocTab === 'themes' && !ph && (a as any).fallback_used && (
+                                  <button
+                                    disabled={categorizingThemes}
+                                    onClick={(e) => { e.stopPropagation(); handleCategorizeThemes((a as any).symbols ?? []); }}
+                                    style={{ fontSize:7, fontWeight:800, letterSpacing:0.8, padding:'1px 5px', borderRadius:3, border:`1px solid ${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}55`, background:`${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}14`, color: categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber, cursor: categorizingThemes ? 'wait' : 'pointer', flexShrink:0, transition:'all 0.15s', opacity: categorizingThemes ? 0.6 : 1 }}
+                                  >
+                                    {categorizingThemes ? '···' : categorizeResult === 'success' ? '✓ DONE' : categorizeResult === 'error' ? 'RETRY' : 'CATEGORIZE'}
+                                  </button>
+                                )}
+                              </div>
                               {(a as any).sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
                             </div>
                           </div>
