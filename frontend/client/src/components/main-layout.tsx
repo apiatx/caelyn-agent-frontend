@@ -10,7 +10,7 @@ const COLLAPSED_W = 64;
 const EXPANDED_W = 192;
 const SNAP_THRESHOLD = 128;
 const MIN_DRAG = 48;
-const MAX_DRAG = 320;
+const MAX_DRAG = EXPANDED_W;
 
 export function MainLayout({ children }: MainLayoutProps) {
   const isMobile = useIsMobile();
