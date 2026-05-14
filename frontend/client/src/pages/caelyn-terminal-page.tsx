@@ -321,6 +321,21 @@ export default function CaelynTerminalPage() {
     refetchInterval: 5 * 60_000,
   });
 
+  // Company logos for the holdings list. Uses /api/fmp/company-identity which is
+  // server-cached for 24h and shared with the earnings page (Portfolio toggle calls
+  // the same endpoint via onFetchIdentity), so this is effectively free after first hit.
+  const portfolioTickerKey = (dashboardHoldings ?? []).map(h => h.ticker.toUpperCase()).sort().join(',');
+  const { data: companyIdentity } = useQuery<Record<string, { name: string; logo: string | null }>>({
+    queryKey: ['company-identity', portfolioTickerKey],
+    enabled: portfolioTickerKey.length > 0,
+    queryFn: async () => {
+      const r = await fetch(`/api/fmp/company-identity?symbols=${portfolioTickerKey}`);
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 24 * 60 * 60_000,
+  });
+
   const handleAIReview = async () => {
     if (!dashboardHoldings?.length) return;
     setAiLoading(true);
@@ -650,9 +665,18 @@ export default function CaelynTerminalPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedHoldings.map((h, i) => (
+                      {sortedHoldings.map((h, i) => {
+                        const logo = companyIdentity?.[h.ticker.toUpperCase()]?.logo || null;
+                        return (
                         <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                          <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
+                          <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, minWidth:0 }}>
+                              <span style={{ width:14, height:14, borderRadius:3, background: logo ? '#ffffff10' : 'transparent', flexShrink:0, display:'inline-flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                                {logo && <img src={logo} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }} />}
+                              </span>
+                              <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</span>
+                            </span>
+                          </td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
                           {(() => {
                             const vx = h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null);
@@ -664,7 +688,8 @@ export default function CaelynTerminalPage() {
                           <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

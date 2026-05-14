@@ -64,6 +64,10 @@ Token stored as `caelyn_token` in localStorage/sessionStorage.
 - **Strategy Screener** (`strategy-screener.tsx`): `RegimeContextStrip` added above table (uses `snapshot.regime_context`); `TickerThematicBadge` in ticker cell; `ThematicSection` at end of `ReportPanel`.
 - **Guardrails**: All thematic fields optional — if backend doesn't return them the UI is identical to before. No new columns. Earnings page untouched.
 
+## Portfolio Holdings Logos
+- `caelyn-terminal-page.tsx` Holdings table renders company logo to the left of each ticker.
+- Source: `useQuery(['company-identity', sortedTickerCsv])` → `/api/fmp/company-identity?symbols=…` (server-cached 24h in `routes.ts` `_identityCache`). Same endpoint the earnings page calls via `onFetchIdentity` on Portfolio toggle — shared backend cache, no duplicate FMP fetches.
+
 ## Dev Notes
 - Vite config requires `server.allowedHosts: 'all'` for Replit preview
 - Backend API key in `AGENT_API_KEY` constant across various pages
