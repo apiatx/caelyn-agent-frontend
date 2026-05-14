@@ -1019,6 +1019,13 @@ export default function HomePage() {
     "/app/stocks/screening";
   const [macroChartCard, setMacroChartCard] = useState<HomeMacroCard | null>(null);
 
+  // Live clock — updates every 30s so greeting + time stay accurate to the user's local TZ
+  const [localNow, setLocalNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setLocalNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
@@ -1191,9 +1198,23 @@ export default function HomePage() {
 
   const cryptoFG = data?.fear_greed?.crypto || null;
 
-  const greeting = data?.greeting?.text || "Welcome back";
   const marketLabel = data?.greeting?.market?.label || "Markets";
-  const nowET = data?.greeting?.market?.now_et;
+
+  // Greeting and time derived from the user's local browser clock — never server ET
+  const localHour = localNow.getHours();
+  const localGreeting =
+    localHour >= 5  && localHour < 12 ? "Good morning"   :
+    localHour >= 12 && localHour < 17 ? "Good afternoon" :
+    localHour >= 17 && localHour < 21 ? "Good evening"   :
+    "Working late";
+  const localDayStr  = localNow.toLocaleDateString("en-US", { weekday: "short" });
+  const localTimeStr = localNow.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  const localTzAbbr  = (() => {
+    // Extract short timezone abbreviation, e.g. "CDT", "PST", "EST"
+    const parts = Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(localNow);
+    return parts.find(p => p.type === "timeZoneName")?.value ?? "";
+  })();
+  const localClockStr = `${localDayStr} ${localTimeStr}${localTzAbbr ? ` ${localTzAbbr}` : ""}`;
 
   return (
     <div className="home-wl-theme relative min-h-screen text-white" style={{ background: "#080c13" }}>
@@ -1207,7 +1228,7 @@ export default function HomePage() {
               Caelyn Home
             </div>
             <h1 className="text-xl font-semibold text-white leading-tight">
-              {greeting}.
+              {localGreeting}.
             </h1>
             <div className="text-[11px] text-white/50 mt-0.5 flex items-center gap-1.5">
               <span
@@ -1220,7 +1241,7 @@ export default function HomePage() {
                     : "bg-white/30"
                 }`}
               />
-              {marketLabel}{nowET ? ` · ${nowET}` : ""}
+              {marketLabel} · {localClockStr}
               {data?.from_cache && (
                 <span className="text-[9px] text-white/25">cached</span>
               )}
