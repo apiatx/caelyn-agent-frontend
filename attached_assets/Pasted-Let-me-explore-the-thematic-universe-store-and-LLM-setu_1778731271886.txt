@@ -1,0 +1,66 @@
+Let me explore the thematic universe store and LLM setup in parallel to write the endpoint correctly:
+
+
+4 actions
+Let me keep exploring the key pieces in parallel:
+
+
+8 actions
+Let me read the mapper's lookup functions and persistence mechanism:
+
+
+4 actions
+I have everything I need. Let me check the Claude model constant and fmp_cache_service quickly before writing:
+
+
+10 actions
+I have everything. Now implementing all three parts simultaneously:
+
+
+2 actions
+Now writing all three pieces in parallel:
+
+
+2 actions
+Now creating the route file and registering it in main.py simultaneously:
+
+
+7 actions
+Server is up. Let me verify the route registered cleanly and run the acceptance test:
+
+
+2 actions
+HTTP 200, saved=True, all 4 classified. Let me verify persistence and the terminal cache effect simultaneously:
+
+
+3 actions
+Both checks pass. Let me write the commit message:
+
+
+3 actions
+Done. Here's what was built and validated:
+
+POST /api/portfolio/categorize-themes is live.
+
+What it does:
+
+Receives {"tickers": ["SIVEF", "PENG", ...]} from the frontend's CATEGORIZE button
+Pulls FMP company profiles for all tickers (from cache — no network calls)
+Fetches the full list of known investment themes from the thematic universe
+Makes a single Claude call with all tickers and the theme menu — classifies everything in one shot
+Registers results in the live in-memory theme index (immediate effect) and saves to data/llm_theme_overrides.json (survives restarts)
+Invalidates the terminal cache so the next terminal load picks up new assignments
+Returns {classified, unresolved, saved}
+Persistence mechanism: on every server restart, theme_ticker_mapper.py loads llm_theme_overrides.json as "Source -1" (highest priority) before all other theme sources — classified tickers never fall back to Unclassified again.
+
+Acceptance test results (4-ticker subset):
+
+Ticker	Assigned Theme	Confidence
+SIVEF	Semiconductors	low
+PENG	Data Center Infrastructure	high
+SLOIF	Substrates / Packaging	high
+IQEPF	Semiconductors	medium
+saved=True, unresolved=[] ✅
+data/llm_theme_overrides.json written ✅
+Next GET /api/caelyn-terminal: those 4 tickers appeared in named buckets instead of Unclassified ✅
+The remaining 6 unclassified tickers (NRGV, SLNH, P, VPG, SILC, FPLSF) will be handled when the user clicks CATEGORIZE with the full list — the frontend already passes all unclassified symbols at once.
