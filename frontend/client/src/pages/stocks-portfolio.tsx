@@ -165,7 +165,18 @@ type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 't
 export default function StocksPortfolioPage() {
   const queryClient = useQueryClient();
   usePortfolioMigration();
-  const [holdings, setHoldings] = useState<Holding[]>([]);
+  // Share the same React Query cache key as caelyn-terminal-page's dashboardHoldings
+  // so the two callers collapse to a single /api/stock-holdings request per load.
+  const { data: holdingsData } = useQuery<Holding[]>({
+    queryKey: ['stock-holdings'],
+    queryFn: async () => {
+      const res = await fetch('/api/stock-holdings');
+      if (!res.ok) throw new Error('Failed to fetch holdings');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+  const holdings: Holding[] = holdingsData ?? [];
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
   const [priceTargets, setPriceTargets] = useState<Record<string, PriceTarget>>({});
   const [earnings, setEarnings] = useState<EarningsEvent[]>([]);
@@ -192,24 +203,22 @@ export default function StocksPortfolioPage() {
   const [editAvgCost, setEditAvgCost] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchHoldings = useCallback(async () => {
-    try {
-      const res = await fetch('/api/stock-holdings');
-      if (res.ok) {
-        const data = await res.json();
-        setHoldings(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch holdings:', err);
-    }
-  }, []);
+  // Refetch by invalidating the shared query cache (used by both this page
+  // and the parent caelyn-terminal page's dashboardHoldings query).
+  const refetchHoldings = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
+  }, [queryClient]);
 
-  // Fire-and-forget: push full updated holdings list to FastAPI/Neon after every CRUD op
+  // Fire-and-forget: push full updated holdings list to FastAPI/Neon after every CRUD op.
+  // Reads from the shared React Query cache instead of hitting /api/stock-holdings again.
   const syncToFastAPI = useCallback(async () => {
     try {
-      const res = await fetch('/api/stock-holdings');
-      if (!res.ok) return;
-      const allHoldings = await res.json();
+      let allHoldings = queryClient.getQueryData<Holding[]>(['stock-holdings']);
+      if (!Array.isArray(allHoldings) || allHoldings.length === 0) {
+        const r = await fetch('/api/stock-holdings');
+        if (!r.ok) return;
+        allHoldings = await r.json().catch(() => []);
+      }
       if (!Array.isArray(allHoldings) || allHoldings.length === 0) return;
       const syncRes = await fetch('/api/portfolio/sync', {
         method:  'POST',
@@ -228,7 +237,7 @@ export default function StocksPortfolioPage() {
     } catch (err: any) {
       console.warn('[portfolio-sync-write] CRUD sync error:', err?.message);
     }
-  }, []);
+  }, [queryClient]);
 
   const fetchQuotes = useCallback(async (holdingsList: Holding[]) => {
     if (holdingsList.length === 0) return;
@@ -292,8 +301,6 @@ export default function StocksPortfolioPage() {
     }
   }, []);
 
-  useEffect(() => { fetchHoldings(); }, [fetchHoldings]);
-
   useEffect(() => {
     if (holdings.length > 0) {
       fetchQuotes(holdings);
@@ -324,7 +331,7 @@ export default function StocksPortfolioPage() {
         setNewAvgCost('');
         setNewDateAdded(new Date().toISOString().split('T')[0]);
         setSelectedAssetType('stock');
-        await fetchHoldings();
+        await refetchHoldings();
         syncToFastAPI();
         queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
         // Invalidate Calendar Earnings for portfolio scope so next visit refetches
@@ -341,7 +348,7 @@ export default function StocksPortfolioPage() {
   const deleteHolding = async (id: string) => {
     try {
       await fetch(`/api/stock-holdings/${id}`, { method: 'DELETE' });
-      await fetchHoldings();
+      await refetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       // Invalidate Calendar Earnings for portfolio scope so next visit refetches
@@ -380,7 +387,7 @@ export default function StocksPortfolioPage() {
       setEditingId(null);
       setEditShares('');
       setEditAvgCost('');
-      await fetchHoldings();
+      await refetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       // Invalidate Calendar Earnings for portfolio scope so next visit refetches
