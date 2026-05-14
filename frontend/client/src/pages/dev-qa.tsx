@@ -3,7 +3,7 @@ import { CheckCircle, XCircle, Loader2, Play, RotateCcw, Copy, Check, ChevronDow
 import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const AGENT_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+const AGENT_URL = "https://fast-api-server-aidanpilon.replit.app";
 const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

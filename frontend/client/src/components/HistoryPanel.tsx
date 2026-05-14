@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { normalizeHistoryBuckets, normalizeNewHistoryApiResponse } from '@/lib/history';
-const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 function getToken(): string | null {
-  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+  return localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt');
 }
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': AGENT_API_KEY };

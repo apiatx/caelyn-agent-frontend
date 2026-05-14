@@ -43,7 +43,7 @@ import type { RegimeContextData } from "@/components/ui/ticker-thematic";
 const API_BASE = "/api/options";
 
 function getToken(): string | null {
-  return localStorage.getItem("caelyn_token") || sessionStorage.getItem("caelyn_token");
+  return localStorage.getItem("caelyn_jwt") || sessionStorage.getItem("caelyn_jwt");
 }
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json" };

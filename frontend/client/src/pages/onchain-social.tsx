@@ -6,11 +6,11 @@ import { openSecureLink } from '@/utils/security';
 import { resolveTVSymbol } from '@/utils/tvSymbol';
 
 // ─── Grok Agent Constants ─────────────────────────────────────────
-const AGENT_BACKEND_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+const AGENT_BACKEND_URL = "https://fast-api-server-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
 function getToken(): string | null {
-  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+  return localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt');
 }
 
 function authHeaders(): Record<string, string> {

@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // ---------------------------------------------------------------------------
 
 function getToken(): string | null {
-  return localStorage.getItem("caelyn_token") || sessionStorage.getItem("caelyn_token");
+  return localStorage.getItem("caelyn_jwt") || sessionStorage.getItem("caelyn_jwt");
 }
 
 function authH(): Record<string, string> {

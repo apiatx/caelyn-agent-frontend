@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useLocation } from 'wouter';
 import { toast } from '@/hooks/use-toast';
 
-const AGENT_BACKEND_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 
 interface AuthContextType {
   token: string | null;
@@ -24,22 +24,22 @@ export function useAuth() {
 }
 
 function getStoredToken(): string | null {
-  return localStorage.getItem('caelyn_token') || sessionStorage.getItem('caelyn_token');
+  return localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt');
 }
 
 function storeToken(token: string, rememberMe: boolean) {
   if (rememberMe) {
-    localStorage.setItem('caelyn_token', token);
-    sessionStorage.removeItem('caelyn_token');
+    localStorage.setItem('caelyn_jwt', token);
+    sessionStorage.removeItem('caelyn_jwt');
   } else {
-    sessionStorage.setItem('caelyn_token', token);
-    localStorage.removeItem('caelyn_token');
+    sessionStorage.setItem('caelyn_jwt', token);
+    localStorage.removeItem('caelyn_jwt');
   }
 }
 
 function clearToken() {
-  localStorage.removeItem('caelyn_token');
-  sessionStorage.removeItem('caelyn_token');
+  localStorage.removeItem('caelyn_jwt');
+  sessionStorage.removeItem('caelyn_jwt');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

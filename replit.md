@@ -6,7 +6,7 @@ Full-stack crypto and stock market intelligence platform built with React (Vite)
 ## Architecture
 - **Frontend**: React + Vite + TailwindCSS, served from `frontend/client/`
 - **Backend proxy**: Express server at `frontend/server/` that proxies to FastAPI backend
-- **FastAPI backend**: `https://fast-api-server-trading-agent-aidanpilon.replit.app` (API key: `hippo_ak_7f3x9k2m4p8q1w5t`)
+- **FastAPI backend**: `https://fast-api-server-aidanpilon.replit.app` (API key: `hippo_ak_7f3x9k2m4p8q1w5t`)
 
 ## Key Pages
 1. **AI Terminal** (`/app/caelyn-ai`) — Agent-driven market Q&A
@@ -24,7 +24,7 @@ Full-stack crypto and stock market intelligence platform built with React (Vite)
 
 Mounted inside `AuthGuard` in `App.tsx`. On authentication confirmed, fires `queryClient.prefetchQuery()` for **all 9 pages** simultaneously so every page loads with data already in cache — no loading spinners on first visit.
 
-Token stored as `caelyn_token` in localStorage/sessionStorage.
+Token stored as `caelyn_jwt` in localStorage/sessionStorage.
 
 ## Prophetik Investor Tab
 - `frontend/client/src/pages/predict.tsx` — tab switcher (`"gambler" | "investor"`)

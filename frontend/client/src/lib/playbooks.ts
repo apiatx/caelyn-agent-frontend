@@ -18,7 +18,7 @@ const AGENT_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
 
 function proxyHeaders(): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json", "X-API-Key": AGENT_KEY };
-  const token = localStorage.getItem("caelyn_token") || sessionStorage.getItem("caelyn_token");
+  const token = localStorage.getItem("caelyn_jwt") || sessionStorage.getItem("caelyn_jwt");
   if (token) h["Authorization"] = `Bearer ${token}`;
   return h;
 }

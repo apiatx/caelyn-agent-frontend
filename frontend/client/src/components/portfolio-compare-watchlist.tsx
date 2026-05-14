@@ -30,8 +30,8 @@ function apiHeaders(): Record<string, string> {
     "X-API-Key": API_KEY,
   };
   const token =
-    localStorage.getItem("caelyn_token") ||
-    sessionStorage.getItem("caelyn_token");
+    localStorage.getItem("caelyn_jwt") ||
+    sessionStorage.getItem("caelyn_jwt");
   if (token) h["Authorization"] = `Bearer ${token}`;
   return h;
 }

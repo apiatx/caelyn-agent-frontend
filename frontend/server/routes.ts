@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const holdings = readHoldings();
       if (!holdings.length) return res.json({ tickers: [] });
       const portTickers = new Set(holdings.map((h: any) => String(h.ticker).toUpperCase()));
-      const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+      const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
       const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
       const portTickersList = Array.from(portTickers);
@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Ping FastAPI — proof of live backend
   app.get('/api/portfolio/ping', async (req, res) => {
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     try {
       const upRes = await fetch(`${FA_URL}/ping`, {
@@ -296,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/portfolio/categorize-themes — LLM classifies unclassified tickers into themes
   app.post('/api/portfolio/categorize-themes', async (req, res) => {
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     try {
       const { tickers } = req.body || {};
@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/portfolio/sync — push full holdings list to FastAPI canonical store
   app.post('/api/portfolio/sync', async (req, res) => {
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     const authHeader = req.headers.authorization || '';
     const body = req.body || {};
@@ -406,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/portfolio/fastapi-canonical — raw FastAPI count with NO local masking
   // Used by migration hook to detect real drift without being fooled by local fallback
   app.get('/api/portfolio/fastapi-canonical', async (req, res) => {
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     try {
       const upRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/portfolio/source-audit', async (req, res) => {
     const authHeader = req.headers.authorization || '';
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     try {
       const upRes = await fetch(`${FA_URL}/api/portfolio/source-audit`, {
@@ -446,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/portfolio/holdings', async (req, res) => {
     const authHeader = req.headers.authorization || '';
-    const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
     const localHoldings = readHoldings();
     try {
@@ -1247,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === FastAPI backend config ===
-  const AGENT_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const AGENT_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
   // Fire-and-forget: keeps FastAPI canonical holdings in sync after every local CRUD op.
@@ -2010,7 +2010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!holdings || !Array.isArray(holdings) || holdings.length < 1) {
         return res.status(400).json({ error: 'At least 1 holding is required' });
       }
-      const agentUrl = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+      const agentUrl = 'https://fast-api-server-aidanpilon.replit.app';
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 75000);
@@ -3565,7 +3565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Hyperliquid Screener (proxy to FastAPI backend) ===
-  const HL_URL  = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const HL_URL  = 'https://fast-api-server-aidanpilon.replit.app';
   const HL_KEY  = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const hlHdr   = () => ({ 'X-API-Key': HL_KEY, 'Content-Type': 'application/json' });
 
@@ -3921,7 +3921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Sector Rotation (proxy to FastAPI backend) ===
-  const SR_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const SR_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const SR_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const srHdr  = () => ({ 'X-API-Key': SR_KEY, 'Content-Type': 'application/json' });
 
@@ -4360,7 +4360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Insider Activity proxy ───────────────────────────────────────────────────
-  const IA_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const IA_URL = "https://fast-api-server-aidanpilon.replit.app";
   const iaHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });
 
   app.get('/api/insider-activity/stats', async (req, res) => {
@@ -4410,7 +4410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Predict / Polymarket Intelligence proxy ───────────────────────────────────
-  const PREDICT_URL  = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const PREDICT_URL  = "https://fast-api-server-aidanpilon.replit.app";
   const PREDICT_KEY  = "hippo_ak_7f3x9k2m4p8q1w5t";
   const predictHdr  = () => ({ "Content-Type":"application/json", "X-API-Key": PREDICT_KEY });
 
@@ -4448,7 +4448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/investor/themes",    (q, s) => proxyPredict("/api/predict/investor/themes",    q, s));
 
   // ── Whale Watch proxy ────────────────────────────────────────────────────────
-  const WHALE_URL = "https://fast-api-server-trading-agent-aidanpilon.replit.app";
+  const WHALE_URL = "https://fast-api-server-aidanpilon.replit.app";
   const whaleHdr  = () => ({ "X-API-Key": "hippo_ak_7f3x9k2m4p8q1w5t", "Content-Type": "application/json" });
 
   app.get("/api/whales/stats", async (_req, res) => {
@@ -4566,7 +4566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Watchlist (proxy to FastAPI backend) ===
-  const WL_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const WL_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const WL_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const wlHdr = () => ({ 'X-API-Key': WL_KEY, 'Content-Type': 'application/json' });
 
@@ -4850,7 +4850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Playbook / Strategy routes ──────────────────────────────────────
-  const PB_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const PB_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const PB_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const pbHdr = () => ({ 'X-API-Key': PB_KEY, 'Content-Type': 'application/json' });
 
@@ -5135,7 +5135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Portfolio vs Watchlist Comparison ──────────────────────────────────────
-  const CMP_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const CMP_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const CMP_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const cmpHdr  = () => ({ 'Content-Type': 'application/json', 'X-API-Key': CMP_KEY });
 
@@ -5196,7 +5196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Fundamentals Compare (proxy to FastAPI backend) ===
-  const FC_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const FC_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const FC_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const fcHdr  = () => ({ 'X-API-Key': FC_KEY, 'Content-Type': 'application/json' });
 
@@ -5516,7 +5516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Caelyn Screener Hub ─────────────────────────────────────────────────────
   // Proxies /api/screener-hub/* to the backend. First request after restart can
   // take 30–60 s while the Tradier quote cache warms on-demand; use 90 s timeout.
-  const SH_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
+  const SH_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const SH_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
   const shHdr  = () => ({ 'X-API-Key': SH_KEY, 'Content-Type': 'application/json' });
 
