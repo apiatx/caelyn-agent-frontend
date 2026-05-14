@@ -984,7 +984,7 @@ export default function CaelynTerminalPage() {
                   {allocData.map((a, i) => {
                     const hasTickers = !ph && (a as any).tickers?.length > 0;
                     return (
-                      <Fragment key={i}>
+                      <div key={i} style={{ display:'contents' }}>
                         {/* Label cell — column 3, naturally sized so pie + labels group is centered between the 1fr spacers */}
                         <div
                           style={{ gridColumn:'3', display:'flex', alignItems:'flex-start', gap:5, minWidth:0, borderRadius:3, padding:'2px 4px', cursor: hasTickers ? 'default' : undefined, background: allocHover?.label === a.label ? `${a.color}14` : 'transparent', transition:'background 0.1s' }}
@@ -1012,7 +1012,7 @@ export default function CaelynTerminalPage() {
                         <span style={{ gridColumn:'5', justifySelf:'end', alignSelf:'center', fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, padding:'2px 0' }}>
                           {ph ? '—' : `${fmtN(a.pct as number, 1)}%`}
                         </span>
-                      </Fragment>
+                      </div>
                     );
                   })}
                   {!ph && allocData.length === 0 && (
@@ -1025,82 +1025,11 @@ export default function CaelynTerminalPage() {
 
         </div>
 
-        {/* ── COL 3: Risk Analysis + Volatility ──────────────── */}
+        {/* ── COL 3: Portfolio News (taller) + Investment Style (shorter) ──────────────── */}
         <div style={{ flex:'0 0 210px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* Risk Metrics */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
-            <CardHdr label="Risk Analysis" badge="Metrics" />
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
-              {[
-                { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
-                { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
-                { label:'Top Concentration',   value: DM(d.risk_metrics.top_concentration,1,'%'),   sub: d.risk_metrics.top_concentration_label || '—' },
-                { label:'Portfolio Beta',       value: DM(d.risk_metrics.portfolio_beta,2,''),       sub:'vs S&P 500' },
-                { label:'Sharpe Ratio',         value: DM(d.risk_metrics.sharpe_ratio,2,''),         sub:'Risk-adj. return' },
-                { label:'Sortino Ratio',        value: DM(d.risk_metrics.sortino_ratio,2,''),        sub:'Downside risk-adj.' },
-              ].map((m, i) => (
-                <div key={i} style={{ padding:'10px 12px', background:C.card }}>
-                  <div style={{ fontSize:18, fontWeight:900, color: ph ? C.dim : C.text, lineHeight:1 }}>{m.value}</div>
-                  <div style={{ fontSize:9, color:C.teal, marginTop:3, fontWeight:600 }}>{m.label}</div>
-                  <div style={{ fontSize:8, color:C.dim, marginTop:2 }}>{m.sub}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Investment Style (swapped here from bottom row) */}
-          <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-            <CardHdr label="Investment Style" badge="Risk Profile" />
-            <div style={{ flex:1, padding:'12px 12px', display:'flex', flexDirection:'column', justifyContent:'space-between', overflowY:'auto' }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:30, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
-                <div style={{ fontSize:9, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:3 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
-                <div style={{ fontSize:8, color:C.dim, marginTop:2 }}>Risk profile score / 100</div>
-              </div>
-              <div style={{ padding:'0 4px', margin:'8px 0' }}>
-                <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:5 }}>
-                  {!ph && styleScore !== null && (
-                    <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
-                  )}
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span style={{ fontSize:7, color:C.dim }}>Conservative</span>
-                  <span style={{ fontSize:7, color:C.dim }}>High Risk</span>
-                </div>
-              </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                {[
-                  { label:'Beta vs SPX',   val: DM(d.risk_metrics.portfolio_beta, 2, 'x'),  sub: 'Market sensitivity' },
-                  { label:'Volatility',    val: DM(d.risk_metrics.weighted_volatility, 1, '%'), sub: 'Annualized' },
-                  { label:'Concentration', val: DM(d.risk_metrics.top_concentration, 1, '%'), sub: d.risk_metrics.top_concentration_label || 'Top position' },
-                ].map((row, i) => (
-                  <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                    <div>
-                      <span style={{ fontSize:9, color:C.dim }}>{row.label}</span>
-                      <span style={{ fontSize:7, color:C.dimLow, display:'block' }}>{row.sub}</span>
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : C.text }}>{row.val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── COL 4: Suggestions + Movers ─────────────────────── */}
-        <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
-
-          {/* Risk Suggestions */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Risk Suggestions" badge="Intel" />
-            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
-              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
-            </div>
-          </div>
-
-          {/* Portfolio News (swapped here from bottom row) */}
-          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Portfolio News — moved up, takes remaining space */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Portfolio News" badge={`${flatPortfolioNews.length}`} />
             <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
               {flatPortfolioNews.length === 0 && (
@@ -1125,6 +1054,62 @@ export default function CaelynTerminalPage() {
                     </div>
                   </div>
                 </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Investment Style — shorter, redundant metric rows removed */}
+          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column' }}>
+            <CardHdr label="Investment Style" badge="Risk Profile" />
+            <div style={{ padding:'10px 12px 12px', display:'flex', flexDirection:'column' }}>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:30, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
+                <div style={{ fontSize:9, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:3 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
+                <div style={{ fontSize:8, color:C.dim, marginTop:2 }}>Risk profile score / 100</div>
+              </div>
+              <div style={{ padding:'0 4px', margin:'8px 0 2px' }}>
+                <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:5 }}>
+                  {!ph && styleScore !== null && (
+                    <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
+                  )}
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:7, color:C.dim }}>Conservative</span>
+                  <span style={{ fontSize:7, color:C.dim }}>High Risk</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── COL 4: Risk Suggestions + Risk Analysis ─────────────────────── */}
+        <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
+
+          {/* Risk Suggestions */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <CardHdr label="Risk Suggestions" badge="Intel" />
+            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
+              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
+            </div>
+          </div>
+
+          {/* Risk Analysis — moved down from col 3 */}
+          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <CardHdr label="Risk Analysis" badge="Metrics" />
+            <div style={{ flex:1, overflowY:'auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border, alignContent:'start' }}>
+              {[
+                { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
+                { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
+                { label:'Top Concentration',   value: DM(d.risk_metrics.top_concentration,1,'%'),   sub: d.risk_metrics.top_concentration_label || '—' },
+                { label:'Portfolio Beta',       value: DM(d.risk_metrics.portfolio_beta,2,''),       sub:'vs S&P 500' },
+                { label:'Sharpe Ratio',         value: DM(d.risk_metrics.sharpe_ratio,2,''),         sub:'Risk-adj. return' },
+                { label:'Sortino Ratio',        value: DM(d.risk_metrics.sortino_ratio,2,''),        sub:'Downside risk-adj.' },
+              ].map((m, i) => (
+                <div key={i} style={{ padding:'10px 12px', background:C.card }}>
+                  <div style={{ fontSize:18, fontWeight:900, color: ph ? C.dim : C.text, lineHeight:1 }}>{m.value}</div>
+                  <div style={{ fontSize:9, color:C.teal, marginTop:3, fontWeight:600 }}>{m.label}</div>
+                  <div style={{ fontSize:8, color:C.dim, marginTop:2 }}>{m.sub}</div>
+                </div>
               ))}
             </div>
           </div>
