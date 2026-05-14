@@ -545,7 +545,7 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
       {/* ── TOP ROW: 4-column grid ─────────────────────────────────── */}
-      <div style={{ flex:'0 0 57%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
+      <div style={{ flex:'0 0 62%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
         <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
@@ -716,7 +716,7 @@ export default function CaelynTerminalPage() {
           </div>
 
           {/* Asset Allocation — three-tab: Asset Class | Sectors | Themes */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
+          <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
               <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Asset Allocation</span>
               <div style={{ display:'flex', gap:1, background:'#080c13', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
@@ -766,17 +766,17 @@ export default function CaelynTerminalPage() {
                 });
               }
               return (
-                <div style={{ display:'flex', alignItems:'flex-start', padding:'8px 10px', gap:10 }}>
-                  <div style={{ width:108, height:108, flexShrink:0, opacity: ph ? 0.4 : 1 }}>
+                <div style={{ flex:1, display:'flex', alignItems:'flex-start', padding:'10px 10px', gap:12, minHeight:0, overflow:'hidden' }}>
+                  <div style={{ width:150, height:150, flexShrink:0, opacity: ph ? 0.4 : 1, alignSelf:'center' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={allocData} cx="50%" cy="50%" innerRadius={28} outerRadius={48} dataKey="pct" strokeWidth={0}>
+                        <Pie data={allocData} cx="50%" cy="50%" innerRadius={40} outerRadius={68} dataKey="pct" strokeWidth={0}>
                           {allocData.map((a, i) => <Cell key={i} fill={a.color} />)}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4, overflowY:'auto', maxHeight:108 }}>
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
                     {allocData.map((a, i) => {
                       const hasTickers = !ph && (a as any).tickers?.length > 0;
                       return (
