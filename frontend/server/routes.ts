@@ -2860,33 +2860,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           data.top_movers = { gainers, losers };
 
-          // ── Earnings Calendar — from scope=portfolio (same source as Calendar → Earnings → Portfolio) ──
-          // Fan out week-clean?scope=portfolio for the next ~8 weeks, collect events, join with quoteMap for prices.
+          // ── Earnings Calendar — fan-out week-clean?scope=portfolio for a full year ──
+          // Portfolio scope has no date cap — covers all quarterly earnings for the next 12 months.
+          // All/Watchlist scopes remain date-restricted on their own Calendar page views.
           try {
             const _pad = (n: number) => String(n).padStart(2, '0');
             const _ds  = (d: Date)   => `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
             const todayD = new Date();
-            const in60D  = new Date(todayD.getTime() + 90 * 24 * 60 * 60 * 1000);
-            // Walk Mon-aligned weeks from today through +60 days
+            const in365D = new Date(todayD.getTime() + 365 * 24 * 60 * 60 * 1000);
+            // Mon-aligned weekly ranges covering a full year (~52 weeks)
             const wCursor = new Date(todayD);
             const dow0 = wCursor.getDay();
             wCursor.setDate(wCursor.getDate() + (dow0 === 0 ? -6 : 1 - dow0));
             const wRanges: { ws: string; we: string }[] = [];
-            while (wCursor <= in60D) {
+            while (wCursor <= in365D) {
               const fri = new Date(wCursor); fri.setDate(fri.getDate() + 4);
               wRanges.push({ ws: _ds(wCursor), we: _ds(fri) });
               wCursor.setDate(wCursor.getDate() + 7);
             }
-            const earningsWeeks = await Promise.all(wRanges.map(async ({ ws, we }) => {
-              try {
-                const p = new URLSearchParams({ weekStart: ws, weekEnd: we, scope: 'portfolio', limit_per_session: '10', max_total: '50' });
-                const c2 = new AbortController(); const t2 = setTimeout(() => c2.abort(), 15000);
-                const r2 = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${p}`, { headers: fcHdr(), signal: c2.signal });
-                clearTimeout(t2);
-                return r2.ok ? (r2.json() as Promise<any>) : null;
-              } catch { return null; }
-            }));
-            // Build symbol → earliest upcoming event map
+            // Process in quarterly batches of 13 weeks — avoids rate-limiting FastAPI
+            // 4 batches × ~5s each = ~20s cold start, then cached for 10 min
+            const BATCH = 13;
+            const earningsWeeks: any[] = [];
+            for (let i = 0; i < wRanges.length; i += BATCH) {
+              const batch = wRanges.slice(i, i + BATCH);
+              const batchResults = await Promise.all(batch.map(async ({ ws, we }) => {
+                try {
+                  const p = new URLSearchParams({ weekStart: ws, weekEnd: we, scope: 'portfolio', limit_per_session: '10', max_total: '50' });
+                  const c2 = new AbortController(); const t2 = setTimeout(() => c2.abort(), 20000);
+                  const r2 = await fetch(`${FC_URL}/api/catalysts/earnings/week-clean?${p}`, { headers: fcHdr(), signal: c2.signal });
+                  clearTimeout(t2);
+                  return r2.ok ? (r2.json() as Promise<any>) : null;
+                } catch { return null; }
+              }));
+              earningsWeeks.push(...batchResults);
+            }
+            // Build symbol → earliest upcoming event map across all weeks
             const eventMap = new Map<string, { date: string; epsEstimate: number|null; revenueEstimate: number|null }>();
             const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             for (const wd of earningsWeeks) {
@@ -2907,7 +2916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const portfolioSymbolSet = new Set(localHoldings.map(h => h.ticker.toUpperCase()));
             const earningsEventSymbols = [...eventMap.keys()].filter(s => portfolioSymbolSet.has(s));
             const missingQuoteSymbols  = earningsEventSymbols.filter(s => !quoteMap.has(s));
-            console.log('[portfolio-terminal-earnings]', JSON.stringify({ portfolioSymbols:[...portfolioSymbolSet], earningsEventSymbols, rows:earningsEventSymbols.length, missingQuoteSymbols, source:'scope=portfolio earnings calendar' }));
+            console.log('[portfolio-terminal-earnings]', JSON.stringify({ portfolioSymbols:[...portfolioSymbolSet], earningsEventSymbols, rows:earningsEventSymbols.length, missingQuoteSymbols, source:'week-clean scope=portfolio full-year' }));
             data.earnings_calendar = earningsEventSymbols.map(sym => {
               const event = eventMap.get(sym)!;
               const q: any = quoteMap.get(sym);
@@ -2918,28 +2927,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const epsEst = event.epsEstimate != null ? `$${Number(event.epsEstimate).toFixed(2)}` : null;
               const revEst = event.revenueEstimate != null ? `$${(Number(event.revenueEstimate)/1e6).toFixed(0)}M` : null;
               const estStr = epsEst || revEst || '—';
-              let dateStr = '—';
-              let rawIso  = '';
+              let dateStr = '—'; let rawIso = '';
               try {
                 const raw = event.date;
                 if (raw) {
                   const dobj = new Date(raw + (raw.includes('T') ? '' : 'T12:00:00'));
-                  if (!isNaN(dobj.getTime())) {
-                    rawIso  = dobj.toISOString().slice(0, 10);
-                    dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`;
-                  }
+                  if (!isNaN(dobj.getTime())) { rawIso = dobj.toISOString().slice(0, 10); dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`; }
                 }
               } catch { /* keep '—' */ }
               return { ticker: sym, company: q?.companyName || q?.name || sym, wtd, last_eps: lastStr, next_date: dateStr, est_eps: estStr, _iso: rawIso };
             }).sort((a: any, b: any) => {
               if (!a._iso && !b._iso) return a.ticker.localeCompare(b.ticker);
-              if (!a._iso) return 1;
-              if (!b._iso) return -1;
+              if (!a._iso) return 1; if (!b._iso) return -1;
               return a._iso < b._iso ? -1 : a._iso > b._iso ? 1 : a.ticker.localeCompare(b.ticker);
             }).map(({ _iso: _, ...rest }: any) => rest);
           } catch (earningsErr: any) {
             console.warn('[portfolio-terminal-earnings] Fan-out failed:', earningsErr?.message);
-            // Fallback: all holdings, prices from quoteMap, dates from earningsAnnouncement
             data.earnings_calendar = localHoldings.map(h => {
               const q: any = quoteMap.get(h.ticker);
               const pct = q?.changesPercentage ?? null;
