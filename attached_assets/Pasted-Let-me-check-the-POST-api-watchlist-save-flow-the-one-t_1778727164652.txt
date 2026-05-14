@@ -1,0 +1,47 @@
+Let me check the POST /api/watchlist/save flow — the one the Watchlist page actually uses — to see if it's writing to Neon:
+
+
+3 actions
+The existing save_watchlist() already tries Neon first then falls back to JSON — so the storage path is correct. The gap is that POST /api/watchlist/save (the Watchlist page's save endpoint) never calls invalidate_user_earnings("watchlist") after writing. Adding it directly inside save_watchlist() so every save path (save + refresh) triggers it in one place:
+
+
+2 actions
+The server is already running but hasn't picked up the watchlist_service.py change yet. Let me restart and validate simultaneously:
+
+
+4 actions
+All validations confirm:
+
+POST /api/watchlist/save writes to Neon (count went from 1 → 2 Neon records)
+Earnings cache immediately invalidated (cache_status=miss on next request)
+Cleanup DELETE works cleanly
+Let me write the commit message and complete:
+
+
+3 actions
+Here's a full summary of everything completed across this session:
+
+What was verified and fixed
+Test: All 9 sections PASS
+Section 1 — Source of truth confirmed:
+
+Watchlist page → watchlist_service.load_watchlist(id) → Neon (via watchlist_read)
+Portfolio page → portfolio_store.load_active_holdings() → Neon (portfolio_holdings table)
+Both earnings loaders use the exact same source — zero divergence
+Section 7 — Zero legacy/static data:
+
+No portfolio_holdings.json, active_holdings.json, watchlist_store.json, or hardcoded ticker lists anywhere in the earnings service files
+Section 8 — All regressions clean:
+
+All toggle unchanged, cross-scope isolation intact, Portfolio CRUD intact
+Three fixes shipped
+File	Fix
+watchlist_router.py	DELETE /api/watchlist + DELETE /api/watchlist/{id} — both now call invalidate_user_earnings("watchlist") after clearing
+watchlist_service.py	save_watchlist() — Neon write confirmed first, JSON fallback only when Neon unavailable; invalidate_user_earnings("watchlist") called after every successful save (covers both POST /api/watchlist/save and POST /api/watchlist/refresh)
+Neon persistence smoke test:
+
+Action	Neon record count	Earnings cache
+Before save	1	—
+POST /api/watchlist/save	2 (new record written)	miss (invalidated)
+DELETE /api/watchlist/{id}	1 (removed)	invalidated
+The Watchlist page's save/refresh/delete flows now all land in Neon and immediately reset the earnings cache so the Earnings Calendar resyncs on the next request.

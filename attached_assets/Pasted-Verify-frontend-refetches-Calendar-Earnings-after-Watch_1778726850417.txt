@@ -1,0 +1,154 @@
+Verify frontend refetches Calendar Earnings after Watchlist/Portfolio changes.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Backend status:
+Backend source-of-truth and cache invalidation are now fixed.
+
+Confirmed:
+- Watchlist page saves to Neon through POST /api/watchlist/save.
+- watchlist_service.save_watchlist() now invalidates user_earnings("watchlist") after successful save.
+- DELETE /api/watchlist and DELETE /api/watchlist/{id} now invalidate user_earnings("watchlist").
+- Portfolio page uses Neon via portfolio_store.load_active_holdings().
+- Portfolio earnings loader uses the same Neon source.
+- Watchlist earnings loader uses the same Neon source as Watchlist page.
+- All toggle unchanged.
+- No hardcoded/static earnings symbol lists in backend services.
+
+Goal:
+Make sure the frontend UI refetches Calendar Earnings when the user changes Watchlist or Portfolio assets.
+
+Do not touch backend.
+Do not redesign UI.
+Do not change All behavior.
+Do not break Watchlist or Portfolio toggles.
+
+Required behavior:
+When user changes Watchlist page:
+- Calendar → Earnings → Watchlist should refresh/refetch and use the updated saved Watchlist symbols.
+
+When user changes Portfolio page:
+- Calendar → Earnings → Portfolio should refresh/refetch and use the updated saved Portfolio holdings.
+
+1. Identify React Query keys
+Find query keys for:
+- Watchlist page data
+- Portfolio page holdings
+- Calendar Earnings Watchlist data
+- Calendar Earnings Portfolio data
+- Portfolio Terminal data if it uses portfolio holdings
+
+Calendar Earnings query keys must include:
+- view: day/week/month
+- signalMode: curated/all if used
+- selectedScope: all/watchlist/portfolio
+- date args
+
+Example good key:
+["earnings", view, signalMode, selectedScope, dateArgs...]
+
+2. Watchlist mutation invalidation
+Find all Watchlist save/upload/delete/refresh mutations.
+
+After successful mutation, invalidate:
+- Watchlist page query
+- Calendar Earnings queries with scope=watchlist
+
+Do not invalidate All unless necessary.
+Do not invalidate Portfolio unless necessary.
+
+Use a predicate if needed:
+invalidate queries where key includes "earnings" and "watchlist".
+
+3. Portfolio mutation invalidation
+Find all Portfolio add/edit/delete mutations.
+
+After successful mutation, invalidate:
+- Portfolio holdings query
+- Calendar Earnings queries with scope=portfolio
+- Portfolio Terminal query if Terminal consumes portfolio holdings
+
+Do not invalidate All unless necessary.
+Do not invalidate Watchlist unless necessary.
+
+Use a predicate if needed:
+invalidate queries where key includes "earnings" and "portfolio".
+
+4. Avoid stale cached scoped results
+When navigating to Calendar → Earnings after a Watchlist/Portfolio change:
+- request should refetch, not show stale cached old scoped data indefinitely.
+- React Query staleTime/gcTime should not prevent refresh after mutation invalidation.
+- Do not use stale All data as placeholder under Watchlist/Portfolio.
+
+5. Verify request URLs
+When user selects:
+- Watchlist toggle: every earnings request includes scope=watchlist.
+- Portfolio toggle: every earnings request includes scope=portfolio.
+
+Check:
+- day-clean
+- day-curated
+- week-clean
+- week-all if used
+- month-all
+- month-curated
+- upcoming-clean if used
+
+6. Browser test — Watchlist
+A. Add/save a test ticker on Watchlist page.
+B. Confirm save succeeds.
+C. Go to Calendar → Earnings → Watchlist.
+D. Confirm request includes scope=watchlist.
+E. Confirm fresh request/refetch happens.
+F. Confirm rendered Watchlist symbols reflect current saved Watchlist.
+G. Remove the test ticker.
+H. Confirm Calendar Watchlist refetches and no longer shows stale event data for that ticker.
+
+If the test ticker has no upcoming earnings, it may not appear in events. That is fine. But the request must refetch after mutation.
+
+7. Browser test — Portfolio
+A. Add a test holding on Portfolio page.
+B. Confirm save succeeds.
+C. Go to Calendar → Earnings → Portfolio.
+D. Confirm request includes scope=portfolio.
+E. Confirm fresh request/refetch happens.
+F. Confirm rendered Portfolio symbols reflect current saved Portfolio holdings.
+G. Remove the test holding.
+H. Confirm Calendar Portfolio refetches and no longer shows stale event data for that ticker.
+
+If the test ticker has no upcoming earnings, it may not appear in events. That is fine. But the request must refetch after mutation.
+
+8. Diagnostics
+Add temporary dev-only log:
+
+console.log("[earnings-dynamic-sync]", {
+  mutationType,
+  invalidatedKeys,
+  selectedScope,
+  queryKey,
+  requestUrl,
+  responseScope,
+  renderedSymbols,
+});
+
+Expected:
+- Watchlist mutation invalidates Watchlist earnings queries.
+- Portfolio mutation invalidates Portfolio earnings queries.
+- Calendar requests include correct scope.
+- Rendered symbols do not include stale/hardcoded symbols.
+
+9. Validation matrix
+Report:
+
+Action | Invalidated Query Keys | Calendar Scope | Refetched? | Rendered Symbols Updated? | Result
+
+Required rows:
+- Watchlist save
+- Watchlist delete
+- Portfolio add
+- Portfolio edit
+- Portfolio delete
+
+Success definition:
+After Watchlist or Portfolio assets change, the corresponding Calendar Earnings toggle refetches and renders the current saved assets’ earnings data. No stale React Query cache, no hardcoded symbols, no All fallback.

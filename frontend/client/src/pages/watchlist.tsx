@@ -744,6 +744,9 @@ export default function WatchlistPage() {
     },
     onSuccess: (_, deletedId) => {
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      // Invalidate Calendar Earnings for watchlist scope so next visit refetches
+      qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+      if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-delete', invalidatedKeys: ['earnings+watchlist'] });
       const remaining = (wlMetas || []).filter(w => w.id !== deletedId);
       setActiveId(remaining[0]?.id ?? null);
     },
@@ -783,6 +786,9 @@ export default function WatchlistPage() {
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/news', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      // Invalidate Calendar Earnings for watchlist scope so next visit refetches
+      qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+      if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-refresh', invalidatedKeys: ['earnings+watchlist'] });
     },
     onError: (err: any) => {
       setRefreshStatus('idle');
@@ -836,6 +842,9 @@ export default function WatchlistPage() {
       setTimeout(() => setAddTickerStatus(null), 2000);
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      // Invalidate Calendar Earnings for watchlist scope so next visit refetches
+      qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+      if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-add-tickers', invalidatedKeys: ['earnings+watchlist'] });
     },
     onError: () => {
       setAddTickerStatus('error');
@@ -884,6 +893,9 @@ export default function WatchlistPage() {
       const newId: string = created.id;
       if (newId) {
         qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+        // Invalidate Calendar Earnings for watchlist scope so next visit refetches
+        qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+        if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-upload', invalidatedKeys: ['earnings+watchlist'] });
         setActiveId(newId);
       }
     } catch (err: any) {

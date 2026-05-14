@@ -327,6 +327,9 @@ export default function StocksPortfolioPage() {
         await fetchHoldings();
         syncToFastAPI();
         queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+        // Invalidate Calendar Earnings for portfolio scope so next visit refetches
+        queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
+        if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-add', invalidatedKeys: ['earnings+portfolio'] });
       }
     } catch (err) {
       console.error('Failed to add holding:', err);
@@ -341,6 +344,9 @@ export default function StocksPortfolioPage() {
       await fetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      // Invalidate Calendar Earnings for portfolio scope so next visit refetches
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
+      if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-delete', invalidatedKeys: ['earnings+portfolio'] });
     } catch (err) {
       console.error('Failed to delete holding:', err);
     }
@@ -377,6 +383,9 @@ export default function StocksPortfolioPage() {
       await fetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      // Invalidate Calendar Earnings for portfolio scope so next visit refetches
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
+      if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-edit', invalidatedKeys: ['earnings+portfolio'] });
     } catch (err) {
       console.error('Failed to update holding:', err);
     } finally {
