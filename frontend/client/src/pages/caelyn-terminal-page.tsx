@@ -212,6 +212,10 @@ export default function CaelynTerminalPage() {
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
   const [categorizingThemes, setCategorizingThemes] = useState(false);
   const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
+  const [categorizedSymbols, setCategorizedSymbols] = useState<Set<string>>(() => {
+    try { return new Set<string>(JSON.parse(localStorage.getItem('categorized_symbols') || '[]')); }
+    catch { return new Set<string>(); }
+  });
   const [aiReview, setAiReview] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStage, setAiStage] = useState('');
@@ -235,6 +239,10 @@ export default function CaelynTerminalPage() {
       if (!res.ok) throw new Error('Failed');
       setCategorizeResult('success');
       setTimeout(() => setCategorizeResult(null), 4000);
+      const next = new Set(categorizedSymbols);
+      symbols.forEach(s => next.add(s));
+      setCategorizedSymbols(next);
+      try { localStorage.setItem('categorized_symbols', JSON.stringify(Array.from(next))); } catch {}
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch {
       setCategorizeResult('error');
@@ -776,7 +784,7 @@ export default function CaelynTerminalPage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
+                  <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
                     {allocData.map((a, i) => {
                       const hasTickers = !ph && (a as any).tickers?.length > 0;
                       return (
@@ -790,7 +798,7 @@ export default function CaelynTerminalPage() {
                             <div style={{ minWidth:0, flex:1 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                 <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
-                                {allocTab === 'themes' && !ph && (a as any).fallback_used && (
+                                {allocTab === 'themes' && !ph && (a as any).fallback_used && (((a as any).symbols ?? []) as string[]).some((s: string) => !categorizedSymbols.has(s)) && (
                                   <button
                                     disabled={categorizingThemes}
                                     onClick={(e) => { e.stopPropagation(); handleCategorizeThemes((a as any).symbols ?? []); }}
