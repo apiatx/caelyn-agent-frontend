@@ -1019,6 +1019,7 @@ export default function HomePage() {
     moverCategory === "commodities" ? "/app/commodities"   :
     "/app/stocks/screening";
   const [macroChartCard, setMacroChartCard] = useState<HomeMacroCard | null>(null);
+  const [themeSortKey, setThemeSortKey] = useState<"gain" | "breadth" | "name">("gain");
 
   // Live clock — updates every 30s so greeting + time stay accurate to the user's local TZ
   const [localNow, setLocalNow] = useState<Date>(() => new Date());
@@ -1362,9 +1363,25 @@ export default function HomePage() {
                 <SectionHeader
                   icon={BarChart3}
                   title="Theme Performance"
-                  accent="custom themes · live"
+                  accent="all themes · live"
                   viewMore="/app/stocks/sectors"
                 />
+                {/* Sort pills */}
+                <div className="flex gap-1 mt-2">
+                  {(["gain", "breadth", "name"] as const).map(k => (
+                    <button
+                      key={k}
+                      onClick={() => setThemeSortKey(k)}
+                      className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
+                        themeSortKey === k
+                          ? "bg-white/10 text-white/80"
+                          : "text-white/30 hover:text-white/55"
+                      }`}
+                    >
+                      {k === "gain" ? "Gainers" : k === "breadth" ? "Breadth" : "Name"}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
                 {(() => {
@@ -1373,7 +1390,7 @@ export default function HomePage() {
                   // cache key so data is already warm if the user has visited that page.
                   const allThemes: any[] = themesRS?.themes ?? [];
                   const loading = themesRSLoading;
-                  const items: HomeSubThemeItem[] = allThemes.map((t: any) => ({
+                  const rawItems: HomeSubThemeItem[] = allThemes.map((t: any) => ({
                     sub_theme:       t.display_name,
                     avg_change_1d:   t.performance?.["1D"] ?? t.return_pct ?? null,
                     avg_change_7d:   t.performance?.["7D"] ?? null,
@@ -1390,6 +1407,11 @@ export default function HomePage() {
                     momentum_score:  t.rs_score ?? null,
                     pattern_summary: t.state_reason ?? null,
                   }));
+                  const items = [...rawItems].sort((a, b) => {
+                    if (themeSortKey === "gain")    return (b.avg_change_1d ?? -Infinity) - (a.avg_change_1d ?? -Infinity);
+                    if (themeSortKey === "breadth") return (b.breadth_score ?? -1) - (a.breadth_score ?? -1);
+                    return (a.sub_theme ?? "").localeCompare(b.sub_theme ?? "");
+                  });
                   return (
                     <>
                       {loading && Array.from({ length: 8 }).map((_, i) => (
