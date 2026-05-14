@@ -589,9 +589,9 @@ export default function CaelynTerminalPage() {
             const thStyle = (col: string) => ({ padding:'4px 3px', color: holdSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'?'left':'right') as 'left'|'right', fontSize:8, letterSpacing:0.3, overflow:'hidden', cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
             const arrow = (col: string) => holdSort.col === col ? (holdSort.dir === 'asc' ? '▲' : '▼') : '';
             return (
-              <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'0 0 auto', maxHeight:'55%', overflow:'hidden' }}>
+              <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'3 1 0', minHeight:0, overflow:'hidden' }}>
                 <CardHdr label="Holdings" badge={posLabel} />
-                <div style={{ overflowY:'auto' }}>
+                <div style={{ overflowY:'auto', flex:1 }}>
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9, tableLayout:'fixed' }}>
                     <colgroup>
                       <col style={{ width:'22%' }} /><col style={{ width:'22%' }} /><col style={{ width:'19%' }} /><col style={{ width:'19%' }} /><col style={{ width:'18%' }} />
@@ -662,7 +662,7 @@ export default function CaelynTerminalPage() {
             const thE = (col: string) => ({ padding:'3px 3px', color: earnSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'?'left':'right') as 'left'|'right', fontSize:7, letterSpacing:0.2, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
             const arrE = (col: string) => earnSort.col === col ? (earnSort.dir === 'asc' ? '▲' : '▼') : '';
             return (
-              <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ background:C.card, flex:'1.5 1 0', minHeight:0, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 <CardHdr label="Earnings" />
                 <div style={{ overflowY:'auto', flex:1 }}>
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
@@ -692,6 +692,95 @@ export default function CaelynTerminalPage() {
               </div>
             );
           })()}
+
+          {/* Investment Goals — compact bottom strip */}
+          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'5px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+              <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:1.4, color:C.dim, textTransform:'uppercase' }}>Goals</span>
+              <button onClick={() => {
+                if (!editingGoals) {
+                  setEditGoalVals({ target_value: String(goals.target_value), target_return: String(goals.target_return), horizon: goals.horizon });
+                } else {
+                  const tv = parseFloat(editGoalVals.target_value) || goals.target_value;
+                  const tr = parseFloat(editGoalVals.target_return) || goals.target_return;
+                  const updated = { target_value: tv, target_return: tr, horizon: editGoalVals.horizon || goals.horizon };
+                  setGoals(updated);
+                  localStorage.setItem('portfolio_goals', JSON.stringify(updated));
+                }
+                setEditingGoals(e => !e);
+              }} style={{ fontSize:7, fontWeight:700, letterSpacing:0.6, padding:'1px 6px', borderRadius:3, border:`1px solid ${editingGoals ? C.teal : C.border}`, background: editingGoals ? `${C.teal}22` : 'transparent', color: editingGoals ? C.teal : C.dim, cursor:'pointer' }}>
+                {editingGoals ? 'SAVE' : 'EDIT'}
+              </button>
+            </div>
+            <div style={{ padding:'6px 10px 8px', display:'flex', flexDirection:'column', gap:5 }}>
+              {/* Goal 1: Portfolio Value */}
+              {(() => {
+                const current = ph ? 0 : coerce(p.value);
+                const target = goals.target_value;
+                const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+                return (
+                  <div>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
+                      <span style={{ fontSize:8, color:C.dim, fontWeight:600 }}>Portfolio Target</span>
+                      <span style={{ fontSize:8, color:C.teal, fontWeight:700 }}>{ph ? '—' : `${fmtN(pct, 0)}%`}</span>
+                    </div>
+                    {editingGoals ? (
+                      <input type="number" value={editGoalVals.target_value} onChange={e => setEditGoalVals(v => ({ ...v, target_value: e.target.value }))}
+                        style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                        <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${pct}%`, background: pct >= 100 ? C.green : C.teal, borderRadius:2, transition:'width 0.4s' }} />
+                        </div>
+                        <span style={{ fontSize:7, color:C.dim, whiteSpace:'nowrap' }}>{ph ? '—' : fmt$(current)} / {fmt$(target)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* Goal 2: Return Target */}
+              {(() => {
+                const current = ph ? 0 : coerce(p.total_return_pct);
+                const target = goals.target_return;
+                const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+                return (
+                  <div>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
+                      <span style={{ fontSize:8, color:C.dim, fontWeight:600 }}>Return Target</span>
+                      <span style={{ fontSize:8, color: ph ? C.dim : pctClr(current), fontWeight:700 }}>{ph ? '—' : `${sign(current)}${fmtN(current, 1)}%`}</span>
+                    </div>
+                    {editingGoals ? (
+                      <input type="number" value={editGoalVals.target_return} onChange={e => setEditGoalVals(v => ({ ...v, target_return: e.target.value }))}
+                        style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                        <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${Math.max(pct, 0)}%`, background: current < 0 ? C.red : pct >= 100 ? C.green : C.teal, borderRadius:2, transition:'width 0.4s' }} />
+                        </div>
+                        <span style={{ fontSize:7, color:C.dimLow, whiteSpace:'nowrap' }}>{target}% goal</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              {/* Goal 3: Time Horizon */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+                <span style={{ fontSize:8, color:C.dim, fontWeight:600 }}>Horizon</span>
+                {editingGoals ? (
+                  <div style={{ display:'flex', gap:2, flex:1, justifyContent:'flex-end' }}>
+                    {['1Y','2Y','3Y','5Y','10Y'].map(h => (
+                      <button key={h} onClick={() => setEditGoalVals(v => ({ ...v, horizon: h }))}
+                        style={{ minWidth:22, fontSize:7, fontWeight:700, padding:'2px 0', borderRadius:3, border:`1px solid ${editGoalVals.horizon === h ? C.teal : C.border}`, background: editGoalVals.horizon === h ? `${C.teal}22` : 'transparent', color: editGoalVals.horizon === h ? C.teal : C.dim, cursor:'pointer' }}>
+                        {h}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ fontSize:11, fontWeight:900, color:C.teal }}>{goals.horizon}</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── COL 2: Charts ─────────────────────────────────────── */}
@@ -959,22 +1048,11 @@ export default function CaelynTerminalPage() {
       {/* ── BOTTOM ROW: 5 new panels ──────────────────────────────── */}
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
-        {/* ── PANEL 1: Investment Goals ── */}
-        <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+        {/* ── PANEL 1: Investment Goals (moved into COL 1) — keeping legacy block hidden for safety ── */}
+        <div style={{ display:'none', flex:'0 0 235px', borderRight:`1px solid ${C.border}`, flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Goals</span>
-            <button onClick={() => {
-              if (!editingGoals) {
-                setEditGoalVals({ target_value: String(goals.target_value), target_return: String(goals.target_return), horizon: goals.horizon });
-              } else {
-                const tv = parseFloat(editGoalVals.target_value) || goals.target_value;
-                const tr = parseFloat(editGoalVals.target_return) || goals.target_return;
-                const updated = { target_value: tv, target_return: tr, horizon: editGoalVals.horizon || goals.horizon };
-                setGoals(updated);
-                localStorage.setItem('portfolio_goals', JSON.stringify(updated));
-              }
-              setEditingGoals(e => !e);
-            }} style={{ fontSize:8, fontWeight:700, letterSpacing:0.8, padding:'2px 7px', borderRadius:3, border:`1px solid ${editingGoals ? C.teal : C.border}`, background: editingGoals ? `${C.teal}22` : 'transparent', color: editingGoals ? C.teal : C.dim, cursor:'pointer' }}>
+            <button onClick={() => { setEditingGoals(e => !e); }} style={{ fontSize:8, color:C.dim, cursor:'pointer' }}>
               {editingGoals ? 'SAVE' : 'EDIT'}
             </button>
           </div>
