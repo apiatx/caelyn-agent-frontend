@@ -3974,17 +3974,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })();
 
-    // Compose portfolio snapshot from local stock-holdings.json + live Yahoo prices.
-    // This ensures the home page always reflects the real portfolio regardless of
-    // what the FastAPI backend returns for portfolio_snapshot.
+    // Compose portfolio snapshot from local stock-holdings.json with:
+    //   - Yahoo v8 chart  → current_price, change_1d_pct, Yahoo volume fallback
+    //   - Tradier (via fetchTradierRelVolume) → vol_x (volume_vs_avg); Yahoo fallback when null
+    //   - FastAPI options screener → primary_signal (same Tradier-based source as Portfolio Options panel)
+    // All three sources fire in parallel; each degrades gracefully on failure.
     const portfolioSnapP = (async (): Promise<any[]> => {
       try {
         const localHoldings = readHoldings();
         if (!localHoldings.length) return [];
-        // Cap at 30 tickers to avoid excessive parallel requests
         const tickers = localHoldings.slice(0, 30).map(h => h.ticker);
-        const snapItems = await Promise.all(tickers.map(async (ticker) => {
-          const holding = localHoldings.find(h => h.ticker === ticker);
+
+        // ── 1. Yahoo v8 chart prices + volume history ────────────────────────
+        const yahooP = Promise.all(tickers.map(async (ticker) => {
           try {
             const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
             const r = await fetch(url, {
@@ -3993,22 +3995,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             const d = await r.json() as any;
             const meta = d?.chart?.result?.[0]?.meta;
-            if (!meta) return { symbol: ticker, current_price: null, change_1d_pct: null, volume_vs_avg: null, asset_type: holding?.assetType || 'stock' };
+            const histVols: number[] = d?.chart?.result?.[0]?.indicators?.quote?.[0]?.volume ?? [];
+            if (!meta) return { ticker, price: null, change_1d_pct: null, yahooVolX: null };
             const price: number = meta.regularMarketPrice ?? meta.previousClose ?? 0;
             const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price;
             const change_1d_pct: number | null = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : null;
-            return {
-              symbol: ticker,
-              current_price: price > 0 ? price : null,
-              change_1d_pct,
-              volume_vs_avg: null,
-              asset_type: holding?.assetType || 'stock',
-            };
+            // Yahoo fallback vol_x: today's marketVolume / avg of prior days
+            let yahooVolX: number | null = null;
+            const todayVol: number | null = meta.regularMarketVolume ?? null;
+            if (todayVol && todayVol > 0 && histVols.length >= 2) {
+              const priorVols = histVols.slice(0, -1).filter((v: number) => v > 0);
+              if (priorVols.length > 0) {
+                const avgVol = priorVols.reduce((s: number, v: number) => s + v, 0) / priorVols.length;
+                yahooVolX = avgVol > 0 ? todayVol / avgVol : null;
+              }
+            }
+            return { ticker, price: price > 0 ? price : null, change_1d_pct, yahooVolX };
           } catch {
-            return { symbol: ticker, current_price: null, change_1d_pct: null, volume_vs_avg: null, asset_type: holding?.assetType || 'stock' };
+            return { ticker, price: null, change_1d_pct: null, yahooVolX: null };
           }
         }));
-        return snapItems;
+
+        // ── 2. Tradier relative volume (existing helper) ─────────────────────
+        const tradierP = fetchTradierRelVolume(tickers).catch(() => new Map<string, any>());
+
+        // ── 3. FastAPI options screener → primary_signal (Tradier-based) ─────
+        const optionsSignalP = (async (): Promise<Map<string, string | null>> => {
+          const sigMap = new Map<string, string | null>();
+          try {
+            const tStr = tickers.join(',');
+            const r = await fetch(`${AGENT_URL}/api/portfolio/options?tickers=${encodeURIComponent(tStr)}`, {
+              headers: { 'X-API-Key': AGENT_KEY },
+              signal: AbortSignal.timeout(15000),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              for (const t of (data?.tickers ?? [])) {
+                const sym = String(t?.ticker || '').toUpperCase();
+                if (sym) sigMap.set(sym, t.primary_signal ?? null);
+              }
+            }
+          } catch { /* soft fail — signal stays null */ }
+          // Also check broad screener for any portfolio tickers not yet found
+          if (sigMap.size < tickers.length) {
+            try {
+              const r2 = await fetch(`${AGENT_URL}/api/options/screener?limit=800`, {
+                headers: { 'X-API-Key': AGENT_KEY },
+                signal: AbortSignal.timeout(15000),
+              });
+              if (r2.ok) {
+                const data2 = await r2.json();
+                const all: any[] = data2?.tickers ?? data2?.results ?? data2 ?? [];
+                const portSet = new Set(tickers.map(t => t.toUpperCase()));
+                for (const t of (Array.isArray(all) ? all : [])) {
+                  const sym = String(t?.ticker || '').toUpperCase();
+                  if (sym && portSet.has(sym) && !sigMap.has(sym)) sigMap.set(sym, t.primary_signal ?? null);
+                }
+              }
+            } catch { /* soft fail */ }
+          }
+          return sigMap;
+        })();
+
+        const [yahooResults, tradierVolMap, signalMap] = await Promise.all([yahooP, tradierP, optionsSignalP]);
+
+        return yahooResults.map(({ ticker, price, change_1d_pct, yahooVolX }) => {
+          const holding = localHoldings.find(h => h.ticker === ticker);
+          const tv = tradierVolMap.get(ticker.toUpperCase());
+          // Tradier vol_x is primary; Yahoo historical fallback if Tradier null/unavailable
+          const volume_vs_avg = tv?.vol_x ?? yahooVolX;
+          const signal_label  = signalMap.get(ticker.toUpperCase()) ?? null;
+          return {
+            symbol:        ticker,
+            current_price: price,
+            change_1d_pct,
+            volume_vs_avg,
+            asset_type:    holding?.assetType || 'stock',
+            signal_label,
+          };
+        });
       } catch (e) {
         console.warn('[Home] Portfolio snapshot compose failed:', (e as any)?.message);
         return [];
