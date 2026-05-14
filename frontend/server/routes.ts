@@ -2919,13 +2919,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const revEst = event.revenueEstimate != null ? `$${(Number(event.revenueEstimate)/1e6).toFixed(0)}M` : null;
               const estStr = epsEst || revEst || '—';
               let dateStr = '—';
-              let rawIso  = '';   // kept for sort only
+              let rawIso  = '';
               try {
                 const raw = event.date;
                 if (raw) {
                   const dobj = new Date(raw + (raw.includes('T') ? '' : 'T12:00:00'));
                   if (!isNaN(dobj.getTime())) {
-                    rawIso  = dobj.toISOString().slice(0, 10);   // "2026-05-15" — sort key
+                    rawIso  = dobj.toISOString().slice(0, 10);
                     dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`;
                   }
                 }
