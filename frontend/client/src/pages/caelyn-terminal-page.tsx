@@ -989,7 +989,7 @@ export default function CaelynTerminalPage() {
                           onMouseEnter={hasTickers ? (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setAllocHover({ label: a.label, tickers: (a as any).tickers, x: r.right + 6, y: r.top }); } : undefined}
                           onMouseLeave={hasTickers ? () => setAllocHover(null) : undefined}
                         >
-                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:'0 1 auto', maxWidth:340 }}>
+                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
                             <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
                             <div style={{ minWidth:0, flex:1 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
