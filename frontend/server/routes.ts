@@ -2858,6 +2858,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   let caelynTerminalCache: { data: any; ts: number } | null = null;
   const CAELYN_CACHE_TTL = 10 * 60 * 1000;
 
+  // Fetch relative volume for a list of tickers via Tradier (through FastAPI proxy).
+  // Returns a map of ticker → { volume, avg_volume, vol_x } using the same Tradier
+  // data source the Watchlist page uses.
+  async function fetchTradierRelVolume(tickers: string[]): Promise<Map<string, { volume: number; avg_volume: number; vol_x: number | null }>> {
+    const result = new Map<string, { volume: number; avg_volume: number; vol_x: number | null }>();
+    if (!tickers.length) return result;
+
+    const settled = await Promise.allSettled(
+      tickers.map(async (ticker) => {
+        const url = `${AGENT_URL}/api/tradier/quote/${encodeURIComponent(ticker)}`;
+        const r = await fetch(url, { headers: { 'X-API-Key': AGENT_KEY }, signal: AbortSignal.timeout(15_000) });
+        if (!r.ok) return;
+        const body = await r.json();
+        const q = body?.quote;
+        if (!q) return;
+        const volume    = typeof q.volume        === 'number' ? q.volume        : 0;
+        const avg_vol   = typeof q.average_volume === 'number' ? q.average_volume : 0;
+        const vol_x     = avg_vol > 0 ? volume / avg_vol : null;
+        result.set(ticker.toUpperCase(), { volume, avg_volume: avg_vol, vol_x });
+      })
+    );
+
+    const errors = settled.filter(s => s.status === 'rejected').length;
+    if (errors) console.warn(`[tradier-relvol] ${errors}/${tickers.length} quote fetches failed`);
+    console.log(`[tradier-relvol] Got relative volume for ${result.size}/${tickers.length} tickers`);
+    return result;
+  }
+
   // Background refresh for caelyn-terminal — prevents UI from ever waiting >1s for cached data
   let caelynRefreshing = false;
   const refreshCaelynTerminalInBackground = () => {
@@ -2877,14 +2905,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!response.ok) { console.warn(`[caelyn-terminal-bg] FastAPI returned ${response.status}`); return; }
         const data = await response.json();
 
-        // Enrich allocation items and earnings so cached data always has tickers/date_iso
+        // Enrich allocation items, holdings (with Tradier vol_x), and earnings
         if (localHoldings.length > 0) {
           try {
             const symbols      = localHoldings.map(h => h.ticker);
             const assetTypeMap: Record<string, string> = {};
             localHoldings.forEach(h => { assetTypeMap[h.ticker] = h.assetType || 'stock'; });
-            const quotes   = await fmpService.getStockDetails(symbols, assetTypeMap);
+            // Fetch FMP quotes and Tradier relative-volume in parallel
+            const [quotes, tradierVolMap] = await Promise.all([
+              fmpService.getStockDetails(symbols, assetTypeMap),
+              fetchTradierRelVolume(symbols),
+            ]);
             const quoteMap = new Map(quotes.map((q: any) => [q.symbol, q]));
+
+            // ── Rebuild holdings with Tradier vol_x ────────────────────────
+            const fastapiHoldingMap = new Map<string, any>(
+              (data.holdings || []).map((h: any) => [String(h.ticker || h.symbol || '').toUpperCase(), h])
+            );
+            const totalValue = localHoldings.reduce((sum, h) => {
+              const q: any = quoteMap.get(h.ticker);
+              return sum + h.shares * (q?.price ?? h.avgCost);
+            }, 0);
+            data.holdings = localHoldings.map(h => {
+              const q:  any = quoteMap.get(h.ticker);
+              const fa: any = fastapiHoldingMap.get(h.ticker.toUpperCase()) || {};
+              const tv  = tradierVolMap.get(h.ticker.toUpperCase());
+              const price  = q?.price ?? h.avgCost;
+              const mv     = h.shares * price;
+              const volume    = tv?.volume    ?? q?.volume    ?? fa.volume     ?? null;
+              const avgVolume = tv?.avg_volume ?? q?.avgVolume ?? fa.avg_volume ?? null;
+              const vol_x     = tv?.vol_x     ?? ((volume && avgVolume) ? volume / avgVolume : fa.vol_x ?? null);
+              return {
+                ...fa,
+                ticker:         h.ticker,
+                price,
+                change:         q?.change ?? fa.change ?? null,
+                change_pct:     q?.changesPercentage ?? fa.change_pct ?? null,
+                allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : (fa.allocation_pct ?? null),
+                volume, avg_volume: avgVolume, vol_x,
+              };
+            });
+            data.positions_count    = data.holdings.length;
+            data.is_placeholder     = false;
+            data._synced_from_local = true;
 
             // Enrich theme_allocation (symbols already present in FastAPI data)
             if (Array.isArray(data.theme_allocation))
@@ -3021,7 +3084,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const symbols      = localHoldings.map(h => h.ticker);
           const assetTypeMap: Record<string, string> = {};
           localHoldings.forEach(h => { assetTypeMap[h.ticker] = h.assetType || 'stock'; });
-          const quotes   = await fmpService.getStockDetails(symbols, assetTypeMap);
+          // Fetch FMP quotes and Tradier relative-volume in parallel
+          const [quotes, tradierVolMap] = await Promise.all([
+            fmpService.getStockDetails(symbols, assetTypeMap),
+            fetchTradierRelVolume(symbols),
+          ]);
           const quoteMap = new Map(quotes.map((q: any) => [q.symbol, q]));
 
           const totalValue = localHoldings.reduce((sum, h) => {
@@ -3030,23 +3097,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, 0);
 
           // ── Holdings sidebar ─────────────────────────────────────────────
-          // Preserve FastAPI's per-ticker analytics fields (vol_x, volume, avg_volume,
-          // sector, w52_high/low, etc.) by merging them in before our local overrides.
+          // Tradier vol_x takes priority; FMP volume/avgVolume as fallback; FastAPI fields last.
           const fastapiHoldingMap = new Map<string, any>(
             (data.holdings || []).map((h: any) => [String(h.ticker || h.symbol || '').toUpperCase(), h])
           );
           data.holdings = localHoldings.map(h => {
-            const q: any = quoteMap.get(h.ticker);
+            const q:  any = quoteMap.get(h.ticker);
             const fa: any = fastapiHoldingMap.get(h.ticker.toUpperCase()) || {};
+            const tv  = tradierVolMap.get(h.ticker.toUpperCase());
             const price  = q?.price ?? h.avgCost;
             const mv     = h.shares * price;
+            const volume    = tv?.volume    ?? q?.volume    ?? fa.volume     ?? null;
+            const avgVolume = tv?.avg_volume ?? q?.avgVolume ?? fa.avg_volume ?? null;
+            const vol_x     = tv?.vol_x     ?? ((volume && avgVolume) ? volume / avgVolume : fa.vol_x ?? null);
             return {
-              ...fa, // includes vol_x, volume, avg_volume, sector, w52_high/low, name, etc.
+              ...fa, // includes sector, w52_high/low, name, etc.
               ticker:         h.ticker,
               price,
               change:         q?.change ?? fa.change ?? null,
               change_pct:     q?.changesPercentage ?? fa.change_pct ?? null,
               allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : (fa.allocation_pct ?? null),
+              volume, avg_volume: avgVolume, vol_x,
             };
           });
           data.positions_count    = data.holdings.length;

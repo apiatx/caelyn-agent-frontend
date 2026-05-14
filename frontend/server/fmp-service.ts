@@ -432,6 +432,42 @@ async function enrichWithFMPProfile(quotes: StockQuote[]): Promise<StockQuote[]>
   }
 }
 
+// Fills in avgVolume (and vol_x) for stocks where the Yahoo chart fallback
+// returned avgVolume=0.  Hits FMP /stable/quote which reliably carries avgVolume.
+async function enrichWithFMPQuoteVolume(quotes: StockQuote[]): Promise<StockQuote[]> {
+  if (!FMP_API_KEY) return quotes;
+  const needsVolume = quotes.filter(q => !q.avgVolume);
+  if (needsVolume.length === 0) return quotes;
+
+  const symbols = needsVolume.map(q => q.symbol);
+  console.log(`[PORTFOLIO] Fetching FMP quote volume for: ${symbols.join(',')}`);
+  try {
+    const url = `${FMP_BASE}/quote?symbol=${symbols.join(',')}&apikey=${FMP_API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[PORTFOLIO] FMP quote volume returned ${res.status}`);
+      return quotes;
+    }
+    const fmpQuotes: any[] = await res.json();
+    if (!Array.isArray(fmpQuotes)) return quotes;
+
+    const fmpMap = new Map<string, any>();
+    fmpQuotes.forEach(q => { if (q.symbol) fmpMap.set(q.symbol.toUpperCase(), q); });
+
+    return quotes.map(q => {
+      const fq = fmpMap.get(q.symbol.toUpperCase());
+      if (!fq) return q;
+      const volume    = fq.volume    ?? q.volume    ?? 0;
+      const avgVolume = fq.avgVolume ?? fq.averageVolume ?? q.avgVolume ?? 0;
+      console.log(`[PORTFOLIO] ${q.symbol} volume enriched via FMP: volume=${volume} avgVolume=${avgVolume}`);
+      return { ...q, volume, avgVolume };
+    });
+  } catch (err) {
+    console.warn('[PORTFOLIO] FMP quote volume fetch failed:', err);
+    return quotes;
+  }
+}
+
 async function fetchFMP<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const queryParams = new URLSearchParams({ ...params, apikey: FMP_API_KEY });
   const url = `${FMP_BASE}${endpoint}?${queryParams}`;
@@ -657,7 +693,8 @@ export const fmpService = {
       indexSymbols.length > 0 ? fetchIndexQuotes(indexSymbols) : Promise.resolve([]),
     ]);
 
-    const stockQuotes = await enrichWithFMPProfile(rawStockQuotes);
+    const profileEnriched = await enrichWithFMPProfile(rawStockQuotes);
+    const stockQuotes     = await enrichWithFMPQuoteVolume(profileEnriched);
 
     return [...stockQuotes, ...cryptoQuotes, ...commodityQuotes, ...indexQuotes];
   },
