@@ -92,6 +92,25 @@
     border-color: rgba(255,255,255,0.09);
   }
 
+  /* ─── Home page — Watchlist theme override ─── */
+  .home-wl-theme .glass-card {
+    background: #0d1623 !important;
+    border-color: #1a2540 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .home-wl-theme .glass-card:hover {
+    border-color: #243252 !important;
+  }
+  .home-wl-theme .border-indigo-500\/30,
+  .home-wl-theme .border-indigo-500\/25 {
+    border-color: rgba(14,165,233,0.28) !important;
+  }
+  .home-wl-theme .text-indigo-300 {
+    color: #38bdf8 !important;
+  }
+
   /* ─── Glass Card Dark: sticky headers ─── */
   .glass-card-dark {
     @apply backdrop-blur-xl border-b;

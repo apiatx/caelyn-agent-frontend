@@ -197,8 +197,8 @@ function SectionHeader({
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-md flex items-center justify-center"
-             style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.18), rgba(56,189,248,0.14))" }}>
-          <Icon className="w-3.5 h-3.5 text-white/80" />
+             style={{ background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.18)" }}>
+          <Icon className="w-3.5 h-3.5" style={{ color: "#0ea5e9" }} />
         </div>
         <h2 className="text-sm font-semibold text-white/90 tracking-wide uppercase">
           {title}
@@ -1196,30 +1196,7 @@ export default function HomePage() {
   const nowET = data?.greeting?.market?.now_et;
 
   return (
-    <div className="relative min-h-screen text-white" style={{ background: "#050608" }}>
-      {/* ambient background, matches app aesthetic */}
-      <div
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 20% 20%, rgba(30,120,200,0.10) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 85% 10%, rgba(120,60,220,0.08) 0%, transparent 55%),
-            radial-gradient(ellipse 70% 50% at 60% 90%, rgba(50,160,230,0.05) 0%, transparent 50%),
-            linear-gradient(180deg, #050608 0%, #060810 30%, #070910 60%, #050608 100%)
-          `,
-        }}
-      />
-      <div
-        className="fixed inset-0 z-0 opacity-[0.025] pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(100,180,255,0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(100,180,255,0.3) 1px, transparent 1px)
-          `,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
+    <div className="home-wl-theme relative min-h-screen text-white" style={{ background: "#080c13" }}>
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
         {/* ── Header row: Greeting · Market Snapshot strip · Should I Trade ── */}
         <div className="flex items-center gap-4 mb-6 min-h-[64px]">
