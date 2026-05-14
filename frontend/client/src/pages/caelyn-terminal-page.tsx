@@ -982,7 +982,7 @@ export default function CaelynTerminalPage() {
                   } as any));
               }
               return (
-                <div style={{ flex:1, display:'flex', alignItems:'flex-start', padding:'10px 10px', gap:12, minHeight:0, overflow:'hidden' }}>
+                <div style={{ flex:1, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'10px 10px', gap:18, minHeight:0, overflow:'hidden' }}>
                   <div style={{ width:150, height:150, flexShrink:0, opacity: ph ? 0.4 : 1, alignSelf:'center' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -992,7 +992,7 @@ export default function CaelynTerminalPage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
+                  <div style={{ flex:1, maxWidth:360, display:'flex', flexDirection:'column', justifyContent:'center', gap:4, overflowY:'auto', height:'100%', minWidth:0 }}>
                     {allocData.map((a, i) => {
                       const hasTickers = !ph && (a as any).tickers?.length > 0;
                       return (
@@ -1145,7 +1145,7 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
         {/* ── PANEL 2: Top Performing Assets ── */}
-        <div style={{ flex:'0 0 145px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+        <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Top Performers</span>
           </div>
@@ -1243,10 +1243,10 @@ export default function CaelynTerminalPage() {
             const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
             if (ph) return <div style={{ padding:'20px', textAlign:'center', fontSize:11, color:C.dim }}>Awaiting data...</div>;
             return (
-              <div style={{ overflowY:'auto', flex:1 }}>
-                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:10, tableLayout:'fixed' }}>
+              <div style={{ overflow:'auto', flex:1 }}>
+                <table style={{ width:'100%', minWidth:560, borderCollapse:'collapse', fontSize:10, tableLayout:'fixed' }}>
                   <colgroup>
-                    <col style={{ width:'12%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'10%' }} /><col style={{ width:'12%' }} /><col style={{ width:'36%' }} />
+                    <col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'36%', minWidth:160 }} />
                   </colgroup>
                   <thead>
                     <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
