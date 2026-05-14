@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useChatbot } from '@/contexts/ChatbotContext';
 import cryptoHippoLogo from '@assets/image_1771549651056.png';
@@ -52,7 +52,6 @@ function formatChatMarkdown(text: string) {
 }
 
 function ChatboxMessage({ content, structured }: { content: string, structured?: any }) {
-  // Detect csv_watchlist_analysis from structured data or content JSON
   const watchlistFromStructured = structured?.display_type === 'csv_watchlist_analysis' ? structured : null;
   const watchlistFromContent = !watchlistFromStructured ? tryParseWatchlistAnalysis(content) : null;
   const watchlistData = watchlistFromStructured || watchlistFromContent;
@@ -76,7 +75,6 @@ function ChatboxMessage({ content, structured }: { content: string, structured?:
     </div>;
   }
 
-  // Fallback: legacy structured response (shouldn't happen with chatbox_mode, but safe)
   return <div style={{ color: C.text, fontSize: 11, lineHeight: 1.6, fontFamily: sansFont }} dangerouslySetInnerHTML={{ __html: formatChatMarkdown(content) }} />;
 }
 
@@ -98,6 +96,52 @@ export default function ChatbotWidget() {
   const scrollTimerRef = useRef<any>(null);
   const { messages, isLoading, loadingStage, sendMessage, clearChat, hasUnread, setHasUnread } = useChatbot();
 
+  // ── Drag state ────────────────────────────────────────────────────────────
+  // null = default bottom-right corner (not yet dragged, or after collapse)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isMobile) return;
+    isDragging.current = true;
+    const rect = panelRef.current?.getBoundingClientRect();
+    if (rect) {
+      dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+    e.preventDefault();
+  }, [isMobile]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const panelW = panelRef.current?.offsetWidth ?? 400;
+      const panelH = panelRef.current?.offsetHeight ?? 500;
+      const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+      setPos({
+        x: clamp(e.clientX - dragOffset.current.x, 0, window.innerWidth - panelW),
+        y: clamp(e.clientY - dragOffset.current.y, 0, window.innerHeight - panelH),
+      });
+    };
+    const onMouseUp = () => { isDragging.current = false; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  // Reset position to bottom-right when collapsing
+  const collapse = useCallback(() => {
+    setMode('collapsed');
+    setPos(null);
+  }, []);
+
+  // ── Scroll / unread ───────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
@@ -124,8 +168,7 @@ export default function ChatbotWidget() {
     setInput('');
   };
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
+  // ── Collapsed: fairy button always bottom-right ───────────────────────────
   if (mode === 'collapsed') {
     return (
       <>
@@ -159,46 +202,65 @@ export default function ChatbotWidget() {
     );
   }
 
+  // ── Open panel ────────────────────────────────────────────────────────────
   const isExpanded = mode === 'expanded';
-  const panelW = isMobile ? '100vw' : (isExpanded ? 700 : 400);
-  const panelH = isMobile ? (isExpanded ? '100vh' : '60vh') : (isExpanded ? '80vh' : 500);
+  const panelW = isMobile ? window.innerWidth : (isExpanded ? 700 : 400);
+  const panelH = isMobile ? (isExpanded ? window.innerHeight : window.innerHeight * 0.6) : (isExpanded ? window.innerHeight * 0.8 : 500);
   const showChips = messages.length === 0;
 
+  // If not yet dragged: anchor bottom-right. If dragged: use absolute x/y.
+  const positionStyle: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y }
+    : { bottom: isMobile ? 0 : 24, right: isMobile ? 0 : 24 };
+
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: isMobile ? 0 : 24,
-      right: isMobile ? 0 : 24,
-      zIndex: 9999,
-      width: panelW,
-      height: panelH,
-      display: 'flex', flexDirection: 'column',
-      background: 'rgba(11,12,16,0.92)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      border: `1px solid ${C.border}`,
-      borderRadius: isMobile ? (isExpanded ? 0 : '16px 16px 0 0') : 12,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-      transition: 'all 0.2s ease-out',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 14px',
-        background: C.card,
-        borderBottom: `1px solid ${C.border}`,
-        flexShrink: 0,
-      }}>
+    <div
+      ref={panelRef}
+      style={{
+        position: 'fixed',
+        ...positionStyle,
+        zIndex: 9999,
+        width: panelW,
+        height: panelH,
+        display: 'flex', flexDirection: 'column',
+        background: 'rgba(11,12,16,0.92)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: `1px solid ${C.border}`,
+        borderRadius: isMobile ? (isExpanded ? 0 : '16px 16px 0 0') : 12,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        transition: isDragging.current ? 'none' : 'box-shadow 0.2s ease-out',
+        overflow: 'hidden',
+        userSelect: isDragging.current ? 'none' : 'auto',
+      }}
+    >
+      {/* ── Header (drag handle) ── */}
+      <div
+        onMouseDown={handleHeaderMouseDown}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px',
+          background: C.card,
+          borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0,
+          cursor: isMobile ? 'default' : 'grab',
+          userSelect: 'none',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {!isMobile && (
+            <span style={{ color: C.dim, fontSize: 10, marginRight: 2, letterSpacing: 1 }} title="Drag to reposition">⠿</span>
+          )}
           <span style={{ color: C.bright, fontSize: 13, fontWeight: 700, fontFamily: sansFont }}>Ask Caelyn</span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {isExpanded && <button onClick={clearChat} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.bright} onMouseLeave={e => e.currentTarget.style.color = C.dim}>Clear</button>}
           <button onClick={() => setMode(isExpanded ? 'small' : 'expanded')} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.bright} onMouseLeave={e => e.currentTarget.style.color = C.dim}>{isExpanded ? '↙' : '↗'}</button>
-          <button onClick={() => setMode('collapsed')} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.dim}>✕</button>
+          <button onClick={collapse} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:12, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.dim}>✕</button>
         </div>
       </div>
 
+      {/* ── Messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && !isLoading && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.dim }}>
@@ -242,6 +304,7 @@ export default function ChatbotWidget() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* ── Input bar ── */}
       <div style={{ flexShrink: 0, borderTop: `1px solid ${C.border}`, padding: 10, background: C.card }}>
         {showChips && (
           <div className="chatbot-chips-bar" style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
