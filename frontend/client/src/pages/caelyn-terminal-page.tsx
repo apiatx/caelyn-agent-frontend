@@ -328,6 +328,17 @@ export default function CaelynTerminalPage() {
     refetchInterval: 5 * 60_000,
   });
 
+  const { data: marketTapeData } = useQuery<{ symbol: string; price: N; change_pct: N }[]>({
+    queryKey: ['market-tape'],
+    queryFn: async () => {
+      const r = await fetch('/api/macro/market-tape');
+      if (!r.ok) return [];
+      return r.json();
+    },
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
 
   const handleAIReview = async () => {
     if (!dashboardHoldings?.length) return;
@@ -601,18 +612,40 @@ export default function CaelynTerminalPage() {
       {view === 'terminal' && (<>
 
       {/* ── TICKER TAPE ──────────────────────────────────────────────── */}
-      <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
-        <div style={{ fontSize:9, fontWeight:800, color:C.red, background:`${C.red}22`, padding:'0 10px', height:'100%', display:'flex', alignItems:'center', letterSpacing:1.5, borderRight:`1px solid ${C.border}`, flexShrink:0, minHeight:22 }}>MARKETS</div>
-        <div style={{ display:'flex', gap:20, padding:'0 14px', overflowX:'auto', scrollbarWidth:'none' }}>
-          {d.ticker_tape.map((t, i) => (
-            <div key={i} style={{ display:'flex', gap:6, alignItems:'center', whiteSpace:'nowrap', flexShrink:0 }}>
-              <span style={{ color:C.dim, fontSize:10 }}>{t.symbol}</span>
-              <span style={{ color:C.text, fontSize:10, fontWeight:600 }}>{ph ? '—' : fmtN(t.price, 2)}</span>
-              <span style={{ fontSize:10, color: ph ? C.dim : pctClr(t.change_pct) }}>{ph ? '—' : `${sign(t.change_pct)}${fmtN(t.change_pct)}%`}</span>
+      {(() => {
+        // Build a lookup from holdings for same-ticker override (NVDA etc.)
+        const holdingsPctMap = new Map<string, N>();
+        if (!ph) d.holdings.forEach(h => holdingsPctMap.set(h.ticker.toUpperCase(), h.change_pct));
+        // Merge: marketTapeData is the primary source; fall back to d.ticker_tape for price when tape not loaded yet
+        const tapeItems = (marketTapeData && marketTapeData.length > 0 ? marketTapeData : d.ticker_tape).map(t => {
+          const sym = t.symbol.toUpperCase();
+          const holdingPct = holdingsPctMap.get(sym);
+          return {
+            symbol: t.symbol,
+            price: t.price,
+            change_pct: holdingPct !== undefined ? holdingPct : t.change_pct,
+          };
+        });
+        const tapeReady = !ph && marketTapeData && marketTapeData.length > 0;
+        return (
+          <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
+            <div style={{ fontSize:9, fontWeight:800, color:C.red, background:`${C.red}22`, padding:'0 10px', height:'100%', display:'flex', alignItems:'center', letterSpacing:1.5, borderRight:`1px solid ${C.border}`, flexShrink:0, minHeight:22 }}>MARKETS</div>
+            <div style={{ display:'flex', gap:20, padding:'0 14px', overflowX:'auto', scrollbarWidth:'none' }}>
+              {tapeItems.map((t, i) => {
+                const noData = !tapeReady || t.price == null;
+                const noPct  = !tapeReady || t.change_pct == null;
+                return (
+                  <div key={i} style={{ display:'flex', gap:6, alignItems:'center', whiteSpace:'nowrap', flexShrink:0 }}>
+                    <span style={{ color:C.dim, fontSize:10 }}>{t.symbol}</span>
+                    <span style={{ color:C.text, fontSize:10, fontWeight:600 }}>{noData ? '—' : fmtN(t.price, 2)}</span>
+                    <span style={{ fontSize:10, color: noPct ? C.dim : pctClr(t.change_pct) }}>{noPct ? '—' : `${sign(t.change_pct)}${fmtN(t.change_pct)}%`}</span>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* ── MAIN GRID (row: LeftCol | RightSide) ──────────────────────── */}
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>

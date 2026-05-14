@@ -1595,6 +1595,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(result);
   });
 
+  // === Market Tape — real-time price + 1d change_pct for the Portfolio MARKETS strip ===
+  app.get('/api/macro/market-tape', async (req, res) => {
+    const targets = [
+      { yahoo: 'SPY',       symbol: 'SPY' },
+      { yahoo: 'QQQ',       symbol: 'QQQ' },
+      { yahoo: 'NVDA',      symbol: 'NVDA' },
+      { yahoo: 'GLD',       symbol: 'GLD' },
+      { yahoo: 'BTC-USD',   symbol: 'BTC-USD' },
+      { yahoo: 'ETH-USD',   symbol: 'ETH-USD' },
+      { yahoo: 'IWM',       symbol: 'IWM' },
+      { yahoo: '^VIX',      symbol: 'VIX' },
+      { yahoo: 'TLT',       symbol: 'TLT' },
+      { yahoo: 'DX-Y.NYB',  symbol: 'DXY' },
+    ];
+    const results = await Promise.all(targets.map(async (t) => {
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.yahoo)}?interval=1d&range=5d`;
+        const r = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(8000),
+        });
+        const d = await r.json() as any;
+        const meta = d?.chart?.result?.[0]?.meta;
+        if (!meta) return { symbol: t.symbol, price: null, change_pct: null };
+        const price: number = meta.regularMarketPrice ?? meta.previousClose ?? 0;
+        const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price;
+        const change_pct: number | null = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : null;
+        return { symbol: t.symbol, price, change_pct };
+      } catch {
+        return { symbol: t.symbol, price: null, change_pct: null };
+      }
+    }));
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(results);
+  });
+
   // === Extra macro cards — DJI (Dow Jones) and BTC (Bitcoin) via Yahoo Finance chart API ===
   app.get('/api/macro/extra-cards', async (req, res) => {
     const targets = [
