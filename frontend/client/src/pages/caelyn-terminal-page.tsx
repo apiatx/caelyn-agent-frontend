@@ -248,7 +248,7 @@ export default function CaelynTerminalPage() {
       // Try to capture per-ticker assignments directly from FastAPI's response so
       // we cache them even if the next /api/caelyn-terminal still puts them in Unclassified.
       const newAssignments: Record<string,string> = {};
-      const themesArr = body?.theme_allocation ?? body?.themes ?? body?.assignments ?? [];
+      const themesArr = body?.theme_allocation ?? body?.themes ?? body?.assignments ?? body?.classified ?? [];
       if (Array.isArray(themesArr)) {
         for (const t of themesArr) {
           const themeName = t?.name ?? t?.theme;
