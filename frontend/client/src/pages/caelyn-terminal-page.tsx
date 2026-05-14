@@ -321,20 +321,10 @@ export default function CaelynTerminalPage() {
     refetchInterval: 5 * 60_000,
   });
 
-  // Company logos for the holdings list. Uses /api/fmp/company-identity which is
-  // server-cached for 24h and shared with the earnings page (Portfolio toggle calls
-  // the same endpoint via onFetchIdentity), so this is effectively free after first hit.
-  const portfolioTickerKey = (dashboardHoldings ?? []).map(h => h.ticker.toUpperCase()).sort().join(',');
-  const { data: companyIdentity } = useQuery<Record<string, { name: string; logo: string | null }>>({
-    queryKey: ['company-identity', portfolioTickerKey],
-    enabled: portfolioTickerKey.length > 0,
-    queryFn: async () => {
-      const r = await fetch(`/api/fmp/company-identity?symbols=${portfolioTickerKey}`);
-      if (!r.ok) return {};
-      return r.json();
-    },
-    staleTime: 24 * 60 * 60_000,
-  });
+  // Company logos: FMP serves logos directly from a CDN at a predictable URL pattern,
+  // so no API call is needed. onError on the <img> hides any 404s gracefully. This
+  // matches what the earnings page renders and means zero extra network round-trips.
+  const tickerLogoUrl = (t: string) => `https://images.financialmodelingprep.com/symbol/${t.toUpperCase()}.png`;
 
   const handleAIReview = async () => {
     if (!dashboardHoldings?.length) return;
@@ -666,13 +656,12 @@ export default function CaelynTerminalPage() {
                     </thead>
                     <tbody>
                       {sortedHoldings.map((h, i) => {
-                        const logo = companyIdentity?.[h.ticker.toUpperCase()]?.logo || null;
                         return (
                         <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
                           <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                             <span style={{ display:'inline-flex', alignItems:'center', gap:5, minWidth:0 }}>
-                              <span style={{ width:14, height:14, borderRadius:3, background: logo ? '#ffffff10' : 'transparent', flexShrink:0, display:'inline-flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-                                {logo && <img src={logo} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }} />}
+                              <span style={{ width:14, height:14, borderRadius:3, background:'#ffffff10', flexShrink:0, display:'inline-flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                                <img src={tickerLogoUrl(h.ticker)} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'contain' }} onError={(e)=>{ const el = e.currentTarget as HTMLImageElement; el.style.display='none'; (el.parentElement as HTMLElement).style.background='transparent'; }} />
                               </span>
                               <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</span>
                             </span>
