@@ -2958,6 +2958,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const data = await response.json();
 
+      // Preserve FastAPI's original earnings_calendar before any override pipeline runs.
+      if (Array.isArray(data.earnings_calendar) && data.earnings_calendar.length > 0) {
+        (data as any)._fastapi_earnings_calendar = data.earnings_calendar;
+      }
+
       // Capture FastAPI's canonical symbols BEFORE any hydration override
       const fastapiCanonicalSymbols: string[] = (data.holdings || [])
         .map((h: any) => (h.ticker || h.symbol || '').toUpperCase())
@@ -2980,16 +2985,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, 0);
 
           // ── Holdings sidebar ─────────────────────────────────────────────
+          // Preserve FastAPI's per-ticker analytics fields (vol_x, volume, avg_volume,
+          // sector, w52_high/low, etc.) by merging them in before our local overrides.
+          const fastapiHoldingMap = new Map<string, any>(
+            (data.holdings || []).map((h: any) => [String(h.ticker || h.symbol || '').toUpperCase(), h])
+          );
           data.holdings = localHoldings.map(h => {
             const q: any = quoteMap.get(h.ticker);
+            const fa: any = fastapiHoldingMap.get(h.ticker.toUpperCase()) || {};
             const price  = q?.price ?? h.avgCost;
             const mv     = h.shares * price;
             return {
+              ...fa, // includes vol_x, volume, avg_volume, sector, w52_high/low, name, etc.
               ticker:         h.ticker,
               price,
-              change:         q?.change ?? null,
-              change_pct:     q?.changesPercentage ?? null,
-              allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : null,
+              change:         q?.change ?? fa.change ?? null,
+              change_pct:     q?.changesPercentage ?? fa.change_pct ?? null,
+              allocation_pct: totalValue > 0 ? (mv / totalValue) * 100 : (fa.allocation_pct ?? null),
             };
           });
           data.positions_count    = data.holdings.length;
@@ -3128,8 +3140,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log('[portfolio-terminal-earnings]', JSON.stringify({ rows: data.earnings_calendar.length, source: 'fallback week-clean fan-out' }));
             } catch (fallbackErr: any) {
               console.warn('[portfolio-terminal-earnings] Fallback also failed:', fallbackErr?.message);
-              data.earnings_calendar = [];
+              // Preserve FastAPI's earnings_calendar if it was already populated
+              if (!Array.isArray(data.earnings_calendar) || data.earnings_calendar.length === 0) {
+                data.earnings_calendar = [];
+              }
             }
+          }
+          // Final guard: if our overrides ended up empty but FastAPI had earnings, keep FastAPI's.
+          if ((!Array.isArray(data.earnings_calendar) || data.earnings_calendar.length === 0)
+              && Array.isArray((data as any)._fastapi_earnings_calendar)
+              && (data as any)._fastapi_earnings_calendar.length > 0) {
+            data.earnings_calendar = (data as any)._fastapi_earnings_calendar;
+            console.log('[portfolio-terminal-earnings]', JSON.stringify({ rows: data.earnings_calendar.length, source: 'fastapi original (preserved)' }));
           }
 
           // ── Asset allocation by sector (from Yahoo quotes) ───────────────
