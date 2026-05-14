@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
-import { PortfolioCompareWatchlistButton, PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
+import { PortfolioCompareWatchlistModal } from '@/components/portfolio-compare-watchlist';
+import { GitCompare } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
@@ -262,15 +263,29 @@ export default function CaelynTerminalPage() {
           if (theme && !/unclassified/i.test(String(theme))) newAssignments[String(tk).toUpperCase()] = String(theme);
         }
       }
-      if (Object.keys(newAssignments).length > 0) {
-        const next = { ...tickerThemeMap, ...newAssignments };
-        setTickerThemeMap(next);
-        try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
+      // Mark every submitted symbol as attempted so the CATEGORIZE button only
+      // re-appears when a genuinely NEW ticker is added to the portfolio.
+      // Real assignments win; everything else gets a sentinel so the
+      // !tickerThemeMap[…] check returns false going forward.
+      const attempted: Record<string,string> = {};
+      for (const s of symbols) {
+        const key = String(s).toUpperCase();
+        attempted[key] = newAssignments[key] ?? '__UNCATEGORIZED__';
       }
+      const next = { ...tickerThemeMap, ...attempted };
+      setTickerThemeMap(next);
+      try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
       setCategorizeResult('success');
       setTimeout(() => setCategorizeResult(null), 4000);
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch {
+      // Even on backend error, mark as attempted so we don't nag the user every
+      // refresh — they can manually retry by adding a new ticker.
+      const attempted: Record<string,string> = {};
+      for (const s of symbols) attempted[String(s).toUpperCase()] = '__UNCATEGORIZED__';
+      const next = { ...tickerThemeMap, ...attempted };
+      setTickerThemeMap(next);
+      try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
       setCategorizeResult('error');
       setTimeout(() => setCategorizeResult(null), 4000);
     } finally {
@@ -589,9 +604,6 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
         )}
-        <div style={{ flexShrink:0, marginLeft:8 }}>
-          <PortfolioCompareWatchlistButton onClick={() => setCompareOpen(true)} />
-        </div>
       </div>
 
       {view === 'terminal' && (<>
@@ -1277,6 +1289,12 @@ export default function CaelynTerminalPage() {
                   Run AI Review
                 </button>
                 <span style={{ fontSize:9, color:C.dimLow }}>Takes 20–40 seconds</span>
+                <button onClick={() => setCompareOpen(true)}
+                  style={{ marginTop:6, background:'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.12))', border:'1px solid rgba(56,189,248,0.35)', borderRadius:8, padding:'8px 16px', cursor:'pointer', fontSize:11, fontWeight:700, color:'#38bdf8', letterSpacing:0.5, boxShadow:'0 0 12px rgba(56,189,248,0.08)', display:'inline-flex', alignItems:'center', gap:6 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(56,189,248,0.2), rgba(167,139,250,0.18))'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.6)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(56,189,248,0.15)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.12))'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.35)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 12px rgba(56,189,248,0.08)'; }}>
+                  <GitCompare size={12} /> Compare to Watchlist
+                </button>
               </div>
             )}
             {aiLoading && (
@@ -1291,10 +1309,18 @@ export default function CaelynTerminalPage() {
                 <div style={{ flex:1, overflowY:'auto', fontSize:11, color:C.text, lineHeight:1.65, whiteSpace:'pre-wrap', padding:'2px 0 8px' }}>
                   {aiReview}
                 </div>
-                <button onClick={handleAIReview}
-                  style={{ marginTop:8, padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600, flexShrink:0 }}>
-                  Re-run Analysis
-                </button>
+                <div style={{ display:'flex', gap:8, marginTop:8, flexShrink:0, flexWrap:'wrap' }}>
+                  <button onClick={handleAIReview}
+                    style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600 }}>
+                    Re-run Analysis
+                  </button>
+                  <button onClick={() => setCompareOpen(true)}
+                    style={{ padding:'7px 14px', background:'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.12))', border:'1px solid rgba(56,189,248,0.35)', borderRadius:6, color:'#38bdf8', fontSize:10, cursor:'pointer', fontWeight:700, letterSpacing:0.5, display:'inline-flex', alignItems:'center', gap:6, boxShadow:'0 0 12px rgba(56,189,248,0.08)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(56,189,248,0.2), rgba(167,139,250,0.18))'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.6)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.12))'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.35)'; }}>
+                    <GitCompare size={11} /> Compare to Watchlist
+                  </button>
+                </div>
               </div>
             )}
           </div>
