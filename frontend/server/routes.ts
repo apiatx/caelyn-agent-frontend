@@ -2884,12 +2884,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!isNaN(dobj.getTime())) { rawIso = dobj.toISOString().slice(0, 10); dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`; }
                 }
               } catch { /* keep '—' */ }
-              return { ticker: sym, company: q?.companyName || q?.name || sym, wtd, last_eps: lastStr, next_date: dateStr, est_eps: estStr, _iso: rawIso };
+              return { ticker: sym, company: q?.companyName || q?.name || sym, wtd, last_eps: lastStr, next_date: dateStr, est_eps: estStr, date_iso: rawIso };
             }).sort((a: any, b: any) => {
-              if (!a._iso && !b._iso) return a.ticker.localeCompare(b.ticker);
-              if (!a._iso) return 1; if (!b._iso) return -1;
-              return a._iso < b._iso ? -1 : a._iso > b._iso ? 1 : a.ticker.localeCompare(b.ticker);
-            }).map(({ _iso: _, ...rest }: any) => rest);
+              if (!a.date_iso && !b.date_iso) return a.ticker.localeCompare(b.ticker);
+              if (!a.date_iso) return 1; if (!b.date_iso) return -1;
+              return a.date_iso < b.date_iso ? -1 : a.date_iso > b.date_iso ? 1 : a.ticker.localeCompare(b.ticker);
+            });
           };
           try {
             // ── Primary: single FastAPI endpoint (does fan-out internally) ──
@@ -3012,6 +3012,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               allocation_pct: Number((h.allocation_pct ?? 0).toFixed(1)),
             };
           });
+
+          // ── Enrich allocation items with constituent tickers + company names ──
+          // Builds a per-holding lookup so each allocation bucket knows which holdings it contains.
+          const _holdingMeta: Record<string, { ticker: string; company: string; sector: string; assetClass: string }> = {};
+          data.holdings.forEach((h: any) => {
+            const q: any   = quoteMap.get(h.ticker);
+            const lh: any  = localHoldings.find((l: any) => l.ticker === h.ticker);
+            const aType    = (lh?.assetType || 'stock').toLowerCase();
+            const aLabel   = aType === 'etf' ? 'ETFs' : aType === 'crypto' ? 'Crypto'
+                           : (aType === 'commodity' || aType === 'commodities') ? 'Commodities'
+                           : aType === 'stock' ? 'Individual Stocks' : 'Other';
+            _holdingMeta[h.ticker] = {
+              ticker:     h.ticker,
+              company:    q?.companyName || q?.name || h.ticker,
+              sector:     (q?.sector && q.sector !== 'Unknown') ? q.sector : 'Other',
+              assetClass: aLabel,
+            };
+          });
+          const _withTickers = (items: any[], matchFn: (item: any, meta: typeof _holdingMeta[string]) => boolean) =>
+            items.map((item: any) => ({
+              ...item,
+              tickers: Object.values(_holdingMeta).filter(m => matchFn(item, m)).map(m => ({ ticker: m.ticker, company: m.company })),
+            }));
+          if (Array.isArray(data.sector_allocation) && data.sector_allocation.length)
+            data.sector_allocation = _withTickers(data.sector_allocation, (item, m) => m.sector === item.label);
+          if (Array.isArray(data.asset_class_allocation) && data.asset_class_allocation.length)
+            data.asset_class_allocation = _withTickers(data.asset_class_allocation, (item, m) => m.assetClass === item.label);
+          if (Array.isArray(data.asset_allocation))
+            data.asset_allocation = _withTickers(data.asset_allocation, (item, m) => m.sector === item.label || m.assetClass === item.label);
+          if (Array.isArray(data.theme_allocation) && data.theme_allocation.length)
+            data.theme_allocation = data.theme_allocation.map((t: any) => ({
+              ...t,
+              tickers: (t.symbols || []).map((sym: string) => ({ ticker: sym, company: _holdingMeta[sym]?.company || sym })),
+            }));
 
           // ── Analytics: use FastAPI's when canonical matches local; sync+null when stale ──
           const localSorted     = localHoldings.map(h => h.ticker.toUpperCase()).sort().join(',');

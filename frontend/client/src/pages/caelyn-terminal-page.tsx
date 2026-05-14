@@ -20,7 +20,8 @@ const C = {
 type N = number | null | undefined;
 interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; }
 interface CTChartPoint { date: string; portfolio: N; sp500: N; }
-interface CTAllocationItem { label: string; pct: N; color: string; }
+interface CTAllocTicker { ticker: string; company: string; }
+interface CTAllocationItem { label: string; pct: N; color: string; tickers?: CTAllocTicker[]; }
 interface CTCorrelationMatrix { tickers: string[]; values: (N)[][]; }
 interface CTRiskMetrics {
   weighted_volatility: N; max_drawdown: N;
@@ -30,7 +31,7 @@ interface CTRiskMetrics {
 interface CTVolatilityItem { ticker: string; vol: N; }
 interface CTRiskSuggestion { level: string; title: string; body: string; }
 interface CTMover { ticker: string; change_pct: N; price: N; w52_low: N; w52_high: N; }
-interface CTEarningsItem { ticker: string; company: string; wtd: string; last_eps: N; next_date: string; est_eps: N; }
+interface CTEarningsItem { ticker: string; company: string; wtd: string; last_eps: N; next_date: string; est_eps: N; date_iso?: string; }
 interface CTNewsItem { symbol: string; headline: string; time_ago: string; }
 interface CTTickerItem { symbol: string; price: N; change_pct: N; }
 interface CaelynTerminalData {
@@ -47,8 +48,8 @@ interface CaelynTerminalData {
   performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
   asset_allocation: CTAllocationItem[];
   asset_class_allocation?: CTAllocationItem[];
-  sector_allocation?: Array<{ label: string; pct: N; color?: string }>;
-  theme_allocation?: Array<{ name: string; weight_pct: N; symbols?: string[]; market_value?: N; color?: string }>;
+  sector_allocation?: Array<{ label: string; pct: N; color?: string; tickers?: CTAllocTicker[] }>;
+  theme_allocation?: Array<{ name: string; weight_pct: N; symbols?: string[]; market_value?: N; color?: string; tickers?: CTAllocTicker[] }>;
   period_returns?: Record<string, { pct: N; value: N; reason?: string | null }>;
   correlation_matrix: CTCorrelationMatrix;
   risk_metrics: CTRiskMetrics;
@@ -206,6 +207,10 @@ export default function CaelynTerminalPage() {
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [compareOpen, setCompareOpen] = useState(false);
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'>('sectors');
+  type SortDir = 'asc'|'desc';
+  const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
+  const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
+  const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
 
   const { data, isLoading, isFetching } = useQuery<CaelynTerminalData>({
     queryKey: ['caelyn-terminal'],
@@ -459,72 +464,107 @@ export default function CaelynTerminalPage() {
         <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
           {/* Holdings */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'0 0 auto', maxHeight:'55%', overflow:'hidden' }}>
-            <CardHdr label="Holdings" badge={posLabel} />
-            <div style={{ overflowY:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9, tableLayout:'fixed' }}>
-                <colgroup>
-                  <col style={{ width:'22%' }} />
-                  <col style={{ width:'22%' }} />
-                  <col style={{ width:'19%' }} />
-                  <col style={{ width:'19%' }} />
-                  <col style={{ width:'18%' }} />
-                </colgroup>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                    {['TICKER','PRICE','CHG','CHG%','ALLOC'].map(h => (
-                      <th key={h} style={{ padding:'4px 3px', color:C.dim, fontWeight:600, textAlign:h==='TICKER'?'left':'right', fontSize:8, letterSpacing:0.3, overflow:'hidden' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.holdings.map((h, i) => (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                      <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
-                      <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
-                      <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${sign(h.change)}${fmtN(h.change,2)}`}</td>
-                      <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
-                      <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {(() => {
+            const mkHoldSort = (col: string) => () => setHoldSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
+            const parseNum = (s: string | N) => typeof s === 'number' ? s : 0;
+            const sortedHoldings = ph ? d.holdings : [...d.holdings].sort((a, b) => {
+              let av: any, bv: any;
+              if (holdSort.col === 'TICKER')  { av = a.ticker; bv = b.ticker; return holdSort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
+              if (holdSort.col === 'PRICE')   { av = parseNum(a.price);        bv = parseNum(b.price); }
+              if (holdSort.col === 'CHG')     { av = parseNum(a.change);       bv = parseNum(b.change); }
+              if (holdSort.col === 'CHG%')    { av = parseNum(a.change_pct);   bv = parseNum(b.change_pct); }
+              if (holdSort.col === 'ALLOC')   { av = parseNum(a.allocation_pct); bv = parseNum(b.allocation_pct); }
+              return holdSort.dir === 'asc' ? av - bv : bv - av;
+            });
+            const thStyle = (col: string) => ({ padding:'4px 3px', color: holdSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'?'left':'right') as 'left'|'right', fontSize:8, letterSpacing:0.3, overflow:'hidden', cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
+            const arrow = (col: string) => holdSort.col === col ? (holdSort.dir === 'asc' ? '▲' : '▼') : '';
+            return (
+              <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, display:'flex', flexDirection:'column', flex:'0 0 auto', maxHeight:'55%', overflow:'hidden' }}>
+                <CardHdr label="Holdings" badge={posLabel} />
+                <div style={{ overflowY:'auto' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:9, tableLayout:'fixed' }}>
+                    <colgroup>
+                      <col style={{ width:'22%' }} /><col style={{ width:'22%' }} /><col style={{ width:'19%' }} /><col style={{ width:'19%' }} /><col style={{ width:'18%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                        {(['TICKER','PRICE','CHG','CHG%','ALLOC'] as const).map(h => (
+                          <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedHoldings.map((h, i) => (
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
+                          <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
+                          <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
+                          <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${sign(h.change)}${fmtN(h.change,2)}`}</td>
+                          <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
+                          <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
 
-          {/* Earnings Calendar */}
-          <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Earnings Calendar" badge="Upcoming" />
-            <div style={{ overflowY:'auto', flex:1 }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
-                <colgroup>
-                  <col style={{ width:'22%' }} />
-                  <col style={{ width:'20%' }} />
-                  <col style={{ width:'18%' }} />
-                  <col style={{ width:'22%' }} />
-                  <col style={{ width:'18%' }} />
-                </colgroup>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                    {['TICKER','WTD','LAST','DATE','EST'].map(h => (
-                      <th key={h} style={{ padding:'3px 3px', color:C.dim, fontWeight:600, textAlign:h==='TICKER'?'left':'right', fontSize:7, letterSpacing:0.2 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.earnings_calendar.map((e, i) => (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                      <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.ticker}</td>
-                      <td style={{ padding:'3px 3px', textAlign:'right', color: ph ? C.dim : pctClr(parseFloat(e.wtd)), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.wtd}</td>
-                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.last_eps}</td>
-                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.amber, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.next_date}</td>
-                      <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.est_eps}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Earnings */}
+          {(() => {
+            const mkEarnSort = (col: string) => () => setEarnSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : col === 'DATE' ? 'asc' : 'desc') }));
+            const parseVal = (s: N | string): number => {
+              if (s == null) return -Infinity;
+              const str = String(s).replace(/[$,+%M]/g, '').trim();
+              if (str === '—' || str === '') return -Infinity;
+              return parseFloat(str) || -Infinity;
+            };
+            const sortedEarnings = ph ? d.earnings_calendar : [...d.earnings_calendar].sort((a, b) => {
+              const dir = earnSort.dir === 'asc' ? 1 : -1;
+              if (earnSort.col === 'TICKER') return dir * a.ticker.localeCompare(b.ticker);
+              if (earnSort.col === 'DATE') {
+                const ai = a.date_iso || '', bi = b.date_iso || '';
+                if (!ai && !bi) return 0; if (!ai) return dir; if (!bi) return -dir;
+                return dir * (ai < bi ? -1 : ai > bi ? 1 : 0);
+              }
+              if (earnSort.col === 'WTD')  return dir * (parseVal(a.wtd)    - parseVal(b.wtd));
+              if (earnSort.col === 'LAST') return dir * (parseVal(a.last_eps) - parseVal(b.last_eps));
+              if (earnSort.col === 'EST')  return dir * (parseVal(a.est_eps) - parseVal(b.est_eps));
+              return 0;
+            });
+            const thE = (col: string) => ({ padding:'3px 3px', color: earnSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'?'left':'right') as 'left'|'right', fontSize:7, letterSpacing:0.2, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
+            const arrE = (col: string) => earnSort.col === col ? (earnSort.dir === 'asc' ? '▲' : '▼') : '';
+            return (
+              <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                <CardHdr label="Earnings" />
+                <div style={{ overflowY:'auto', flex:1 }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:8, tableLayout:'fixed' }}>
+                    <colgroup>
+                      <col style={{ width:'22%' }} /><col style={{ width:'20%' }} /><col style={{ width:'18%' }} /><col style={{ width:'22%' }} /><col style={{ width:'18%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                        {(['TICKER','WTD','LAST','DATE','EST'] as const).map(h => (
+                          <th key={h} style={thE(h)} onClick={mkEarnSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrE(h)}</span></th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedEarnings.map((e, i) => (
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
+                          <td style={{ padding:'3px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.ticker}</td>
+                          <td style={{ padding:'3px 3px', textAlign:'right', color: ph ? C.dim : pctClr(parseFloat(e.wtd)), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.wtd}</td>
+                          <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.last_eps}</td>
+                          <td style={{ padding:'3px 3px', textAlign:'right', color:C.amber, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.next_date}</td>
+                          <td style={{ padding:'3px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : e.est_eps}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── COL 2: Charts ─────────────────────────────────────── */}
@@ -637,18 +677,25 @@ export default function CaelynTerminalPage() {
                     </ResponsiveContainer>
                   </div>
                   <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4, overflowY:'auto', maxHeight:108 }}>
-                    {allocData.map((a, i) => (
-                      <div key={i} style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6, minWidth:0 }}>
-                        <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
-                          <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
-                          <div style={{ minWidth:0, flex:1 }}>
-                            <span style={{ fontSize:9, color:C.dim, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
-                            {a.sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.sublabel}</span>}
+                    {allocData.map((a, i) => {
+                      const hasTickers = !ph && (a as any).tickers?.length > 0;
+                      return (
+                        <div key={i}
+                          style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6, minWidth:0, borderRadius:3, padding:'1px 2px', cursor: hasTickers ? 'default' : undefined, background: allocHover?.label === a.label ? `${a.color}14` : 'transparent', transition:'background 0.1s' }}
+                          onMouseEnter={hasTickers ? (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); setAllocHover({ label: a.label, tickers: (a as any).tickers, x: r.right + 6, y: r.top }); } : undefined}
+                          onMouseLeave={hasTickers ? () => setAllocHover(null) : undefined}
+                        >
+                          <div style={{ display:'flex', alignItems:'flex-start', gap:5, minWidth:0, flex:1 }}>
+                            <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
+                            <div style={{ minWidth:0, flex:1 }}>
+                              <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
+                              {(a as any).sublabel && <span style={{ fontSize:7, color:C.dimLow, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
+                            </div>
                           </div>
+                          <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, flexShrink:0 }}>{ph ? '—' : `${fmtN(a.pct as number, 1)}%`}</span>
                         </div>
-                        <span style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, flexShrink:0 }}>{ph ? '—' : `${fmtN(a.pct as number, 1)}%`}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {!ph && allocData.length === 0 && (
                       <span style={{ fontSize:9, color:C.dimLow, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
                     )}
@@ -813,6 +860,19 @@ export default function CaelynTerminalPage() {
         </div>
         <style>{`@keyframes ctscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
       </div>
+
+      {/* ── Asset Allocation Hover Tooltip ──────────────────────────── */}
+      {allocHover && allocHover.tickers.length > 0 && (
+        <div style={{ position:'fixed', left: Math.min(allocHover.x, window.innerWidth - 200), top: Math.max(4, Math.min(allocHover.y, window.innerHeight - (allocHover.tickers.length * 22 + 28))), zIndex:9999, background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 10px', minWidth:180, maxWidth:240, boxShadow:'0 8px 32px rgba(0,0,0,0.6)', pointerEvents:'none' }}>
+          <div style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, color:C.dim, textTransform:'uppercase', marginBottom:6, borderBottom:`1px solid ${C.border}`, paddingBottom:4 }}>{allocHover.label}</div>
+          {allocHover.tickers.map((t, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:8, padding:'2px 0' }}>
+              <span style={{ fontSize:10, fontWeight:700, color:C.teal, flexShrink:0 }}>{t.ticker}</span>
+              <span style={{ fontSize:9, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'right', flex:1 }}>{t.company !== t.ticker ? t.company : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       </>)}
 
