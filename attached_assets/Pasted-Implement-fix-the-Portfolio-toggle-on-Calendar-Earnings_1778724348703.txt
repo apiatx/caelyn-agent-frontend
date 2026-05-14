@@ -1,0 +1,321 @@
+Implement/fix the Portfolio toggle on Calendar → Earnings frontend.
+
+Frontend repo:
+apiatx/caelyn-agent-frontend
+
+Goal:
+Calendar → Earnings → Portfolio should display upcoming earnings events for the exact active stocks saved on the Portfolio page.
+
+Backend status:
+The backend Portfolio earnings source-of-truth bug has been fixed.
+scope=portfolio now reads from the same Neon-backed Portfolio holdings source used by the Portfolio page:
+portfolio_store.load_active_holdings()
+
+Backend validation passed:
+- 19 real Neon portfolio holdings loaded
+- week-clean?scope=portfolio this week → 1 event, 0 leaks
+- week-clean?scope=portfolio next week → 1 event, 0 leaks
+- day-clean?scope=portfolio today → 0 events, 0 leaks
+- month-all?scope=portfolio → 5 events, 0 leaks
+- month-curated?scope=portfolio → 5 events, 0 leaks
+- repeat request → cache hit, 0 FMP calls
+- Watchlist regression passed
+- All regression passed
+
+Now the frontend needs to wire/render Portfolio exactly like the working Watchlist toggle.
+
+Do not touch:
+- All behavior
+- Watchlist behavior except safely generalizing shared user-scope rendering
+- backend
+- previous earnings details
+- EPS actuals
+- revenue actuals
+- beat/miss UI
+- Portfolio Dashboard CRUD
+
+This task is only:
+Calendar → Earnings → Portfolio toggle rendering.
+
+Required frontend behavior:
+- All toggle: unchanged curated/thematic earnings calendar.
+- Watchlist toggle: unchanged and still working.
+- Portfolio toggle: shows only Portfolio holdings’ earnings events from backend scope=portfolio.
+- No All symbols under Portfolio.
+- No Watchlist symbols under Portfolio unless they are also in Portfolio.
+- If Portfolio has no earnings in a selected date window, show a Portfolio empty state, not All fallback.
+
+1. Verify scope mapping
+Find the Calendar Earnings toggle state.
+
+Mapping must be:
+- All → scope=all or existing default All behavior
+- Watchlist → scope=watchlist
+- Portfolio → scope=portfolio
+
+When Portfolio is selected, every Earnings request must include:
+scope=portfolio
+
+2. Verify all Earnings request builders
+Audit every frontend API call used by the Calendar Earnings page.
+
+Check:
+- day-clean
+- day-curated
+- week-clean
+- week-all if used
+- month-all
+- month-curated
+- upcoming-clean if used
+
+Every request for Portfolio must include scope=portfolio.
+
+Example:
+Good:
+  /api/catalysts/earnings/week-clean?...&scope=portfolio
+  /api/catalysts/earnings/month-curated?...&scope=portfolio
+
+Bad:
+  /api/catalysts/earnings/week-clean?...
+  /api/catalysts/earnings/month-curated?...
+
+3. Verify Express proxy forwarding in routes.ts
+This is critical.
+
+Watchlist previously failed because the Express month proxies received scope=watchlist but dropped it when fanning out to weekly backend calls.
+
+Do not repeat that for Portfolio.
+
+Audit routes.ts:
+- month-curated proxy
+- month-all proxy
+- day-clean proxy
+- day-curated proxy
+- week-clean proxy
+- week-all proxy
+- upcoming-clean proxy if present
+
+If browser calls:
+  /api/.../month-curated?year=2026&month=5&scope=portfolio
+
+Then every internal backend/FastAPI sub-call must include:
+  scope=portfolio
+
+Bad:
+  week-clean?weekStart=...
+
+Good:
+  week-clean?weekStart=...&scope=portfolio
+
+Make sure month fan-out forwards scope=portfolio exactly the same way it now forwards scope=watchlist.
+
+4. React Query keys must include selectedScope
+Every earnings query key must include selectedScope.
+
+Good:
+  ["earnings", view, signalMode, selectedScope, dateArgs...]
+
+Bad:
+  ["earnings", view, signalMode, dateArgs...]
+
+Portfolio must have its own cache slot.
+It must not reuse All or Watchlist cached data.
+
+Also check prefetch queries:
+- If prefetching All, explicitly key it with "all".
+- Do not let All prefetch populate Portfolio cache.
+- Do not let Watchlist cache populate Portfolio.
+
+5. No fallback to All
+Search for fallback patterns:
+- scopedData || allData
+- portfolioData || allData
+- events ?? allEvents
+- if empty, show All
+- applyScope(allEvents)
+- selectedScope === "portfolio" ? filteredAllEvents : allEvents
+
+For Portfolio:
+- render the Portfolio response
+- if empty, show Portfolio empty state
+- never show All data as fallback
+
+6. Generalize the working Watchlist renderer fix
+Watchlist finally worked after the renderer was fixed to handle user-scope entries.
+
+The bug was:
+- Watchlist events came in day.entries
+- Week/Day renderer only checked session arrays
+- isJunkEntry filtered out non-curated entries
+- “No major calls” appeared even when counts existed
+
+Portfolio will have the same issue unless the renderer treats Portfolio as a user scope.
+
+Find code that does:
+  scope === "watchlist"
+
+For rendering user-scope events, change to:
+  const isUserScope = scope === "watchlist" || scope === "portfolio";
+
+Use isUserScope for:
+- hasAny checks day.entries
+- SessionSection bypasses isJunkEntry and only requires symbol
+- day.entries fallback rendering
+- top strip fallback to all day.entries
+- renderer does not require curated-only fields:
+  - themeTags
+  - isThemeAnchor
+  - isBottleneck
+  - marketCapBucket
+  - importance score
+
+Portfolio entries should render if they have a valid symbol and date.
+
+7. Portfolio-specific labels
+For scope=portfolio, use Portfolio labels.
+
+Week top strip:
+- "Your portfolio this week"
+
+Empty day card:
+- "No portfolio earnings"
+
+Day loading:
+- "Loading portfolio earnings..."
+
+Day count:
+- "N portfolio earnings"
+
+Empty day view:
+- "No portfolio earnings today."
+
+Keep Watchlist labels unchanged:
+- "Your watchlist this week"
+- "No watchlist earnings"
+
+Keep All labels unchanged:
+- "Top watches this week"
+- "No major calls"
+- curated/major-call language
+
+8. Month rendering
+Month currently works for Watchlist after proxy and rendering fixes.
+
+Make sure Month Portfolio behaves exactly like Month Watchlist:
+- sends scope=portfolio
+- Express proxy forwards scope=portfolio into every backend fan-out call
+- renders returned Portfolio symbols
+- does not show curated All symbols
+- does not show Watchlist symbols
+- supports current month and next month
+
+9. Week and Day rendering
+Portfolio Week/Day must render the same kind of user-scope data as Watchlist.
+
+If backend returns:
+- days[].entries
+- day.entries
+- topEvents
+- topSymbols
+
+The UI should extract and display those events.
+
+Do not hide Portfolio entries because they lack curated fields.
+Do not say “No major calls” if Portfolio events exist.
+
+10. Diagnostics
+Add or keep dev-only diagnostic logging:
+
+console.log("[earnings-ui]", {
+  selectedScope,
+  view,
+  signalMode,
+  requestUrl,
+  queryKey,
+  responseScope: data?.scope,
+  responseKeys: Object.keys(data || {}),
+  rawCount: countAllEvents(data),
+  renderedCount,
+  first20ExtractedSymbols,
+  first20RenderedSymbols,
+});
+
+For Portfolio it must prove:
+- selectedScope = "portfolio"
+- requestUrl includes scope=portfolio
+- queryKey includes "portfolio"
+- responseScope = "portfolio"
+- rawCount matches backend response
+- renderedCount matches what appears on screen
+- rendered symbols are Portfolio symbols
+
+11. Browser validation
+Hard refresh the app, then test:
+
+A. All + Week
+Expected:
+- unchanged curated All behavior
+
+B. All + Month
+Expected:
+- unchanged curated All behavior
+
+C. Watchlist + Week
+Expected:
+- still works
+- no regression
+
+D. Watchlist + Month
+Expected:
+- still works
+- no regression
+
+E. Portfolio + Week current
+Expected:
+- request includes scope=portfolio
+- responseScope=portfolio
+- day cards render Portfolio ticker icons/events if backend returns events
+- no All/Watchlist leakage
+
+F. Portfolio + Week next
+Expected:
+- request includes scope=portfolio
+- responseScope=portfolio
+- renders Portfolio events if backend returns them
+- if backend returns empty, show Portfolio empty state
+
+G. Portfolio + Day
+Expected:
+- selected day with Portfolio events renders Portfolio earnings
+- no “No major calls” if Portfolio events exist
+- if empty, show “No portfolio earnings today.”
+
+H. Portfolio + Month current
+Expected:
+- request includes scope=portfolio
+- responseScope=portfolio
+- month grid renders Portfolio events
+- no All/Watchlist leakage
+
+I. Portfolio + Month next
+Expected:
+- request includes scope=portfolio
+- responseScope=portfolio
+- renders Portfolio events if backend returns them
+
+12. Rendered leakage check
+Compare displayed Portfolio symbols against the Portfolio Dashboard holdings.
+
+For every Portfolio UI state:
+rendered_symbols - portfolio_dashboard_symbols == empty set
+
+If any symbol appears in Portfolio Earnings that is not in Portfolio Dashboard holdings, fix it before marking complete.
+
+13. Do not mark complete unless:
+- Portfolio toggle sends scope=portfolio everywhere.
+- Express proxy forwards scope=portfolio everywhere, including month fan-out calls.
+- React Query keys include portfolio.
+- Portfolio renders through the same user-scope path as Watchlist.
+- All remains unchanged.
+- Watchlist remains unchanged.
+- Browser UI proves Portfolio events render correctly.
