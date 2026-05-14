@@ -1129,8 +1129,9 @@ function WeeklyEarningsBoard({
   }
 
   function SessionSection({ label, entries, colorClass, topSymbols }: { label: string; entries: WeekCleanEntry[]; colorClass: string; topSymbols?: Set<string> }) {
-    // For watchlist (or any non-all scope) every entry is intentional — skip the curated junk filter
-    const clean = scope === "watchlist"
+    // For user-owned scopes (watchlist, portfolio) every entry is intentional — skip the curated junk filter
+    const isUserScope = scope === "watchlist" || scope === "portfolio";
+    const clean = isUserScope
       ? entries.filter(e => !!(e.symbol))
       : entries.filter(e => !isJunkEntry(e));
     if (clean.length === 0) return null;
@@ -1268,14 +1269,19 @@ function WeeklyEarningsBoard({
 
       {/* ── Top watches this week ───────────────────────────── */}
       {!weekLoading && !weekError && (() => {
-        // For watchlist scope: skip the curated junk filter; fall back to day entries if topEvents is empty
-        const topWatches: WeekCleanEntry[] = scope === "watchlist"
+        // For user-owned scopes: skip the curated junk filter; fall back to day entries if topEvents is empty
+        const isUserScope = scope === "watchlist" || scope === "portfolio";
+        const topWatches: WeekCleanEntry[] = isUserScope
           ? ((weekData?.topEvents || []).filter(e => !!(e.symbol)).length > 0
               ? (weekData!.topEvents!).filter(e => !!(e.symbol))
               : (weekData?.days ?? []).flatMap(d => d.entries || []).filter(e => !!(e.symbol)))
           : (weekData?.topEvents || []).filter(e => !isJunkEntry(e));
         if (topWatches.length === 0) return null;
-        const stripLabel = scope === "watchlist" ? "Your watchlist this week" : "Top watches this week";
+        const stripLabel = scope === "watchlist"
+          ? "Your watchlist this week"
+          : scope === "portfolio"
+          ? "Your portfolio this week"
+          : "Top watches this week";
         return (
         <div className="mb-4">
           <p className="text-[9px] font-bold uppercase tracking-wider text-white/25 mb-2">{stripLabel}</p>
@@ -1363,7 +1369,9 @@ function WeeklyEarningsBoard({
 
                 {/* Content */}
                 {!hasAny ? (
-                  <p className="text-[9px] text-white/15 italic">{scope === "watchlist" ? "No watchlist earnings" : "No major calls"}</p>
+                  <p className="text-[9px] text-white/15 italic">
+                    {scope === "watchlist" ? "No watchlist earnings" : scope === "portfolio" ? "No portfolio earnings" : "No major calls"}
+                  </p>
                 ) : (() => {
                   const sessionEntries = [
                     ...(day!.preMarket), ...(day!.duringMarket),
@@ -1815,6 +1823,8 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
               {signalMode === "curated"
                 ? scope === "watchlist"
                   ? `${dayCuratedEntries.length} watchlist earning${dayCuratedEntries.length !== 1 ? "s" : ""}`
+                  : scope === "portfolio"
+                  ? `${dayCuratedEntries.length} portfolio earning${dayCuratedEntries.length !== 1 ? "s" : ""}`
                   : `${dayCuratedEntries.length} curated pick${dayCuratedEntries.length !== 1 ? "s" : ""}`
                 : `${dayCleanEntries.length} earning${dayCleanEntries.length !== 1 ? "s" : ""} call${dayCleanEntries.length !== 1 ? "s" : ""}`}
             </span>
@@ -1827,12 +1837,12 @@ function EarningsCalendarWidget({ markets, identityMap, onFetchIdentity, signalM
         dayCuratedLoading ? (
           <div className="text-center py-10">
             <Loader2 className="w-5 h-5 text-amber-400/40 mx-auto mb-2 animate-spin" />
-            <p className="text-[11px] text-white/25">{scope === "watchlist" ? "Loading watchlist earnings..." : "Loading curated picks..."}</p>
+            <p className="text-[11px] text-white/25">{scope === "watchlist" ? "Loading watchlist earnings..." : scope === "portfolio" ? "Loading portfolio earnings..." : "Loading curated picks..."}</p>
           </div>
         ) : dayCuratedEntries.length === 0 ? (
           <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
             <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
-            <p className="text-sm text-white/25">{scope === "watchlist" ? "No watchlist earnings today." : "No curated earnings for this day"}</p>
+            <p className="text-sm text-white/25">{scope === "watchlist" ? "No watchlist earnings today." : scope === "portfolio" ? "No portfolio earnings today." : "No curated earnings for this day"}</p>
           </div>
         ) : (
           <div className="space-y-1.5">
