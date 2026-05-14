@@ -2866,7 +2866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const _pad = (n: number) => String(n).padStart(2, '0');
             const _ds  = (d: Date)   => `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
             const todayD = new Date();
-            const in60D  = new Date(todayD.getTime() + 60 * 24 * 60 * 60 * 1000);
+            const in60D  = new Date(todayD.getTime() + 90 * 24 * 60 * 60 * 1000);
             // Walk Mon-aligned weeks from today through +60 days
             const wCursor = new Date(todayD);
             const dow0 = wCursor.getDay();
@@ -2919,17 +2919,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const revEst = event.revenueEstimate != null ? `$${(Number(event.revenueEstimate)/1e6).toFixed(0)}M` : null;
               const estStr = epsEst || revEst || '—';
               let dateStr = '—';
+              let rawIso  = '';   // kept for sort only
               try {
                 const raw = event.date;
-                if (raw) { const dobj = new Date(raw + (raw.includes('T') ? '' : 'T12:00:00')); if (!isNaN(dobj.getTime())) dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`; }
+                if (raw) {
+                  const dobj = new Date(raw + (raw.includes('T') ? '' : 'T12:00:00'));
+                  if (!isNaN(dobj.getTime())) {
+                    rawIso  = dobj.toISOString().slice(0, 10);   // "2026-05-15" — sort key
+                    dateStr = `${MONS[dobj.getMonth()]} ${dobj.getDate()}`;
+                  }
+                }
               } catch { /* keep '—' */ }
-              return { ticker: sym, company: q?.companyName || q?.name || sym, wtd, last_eps: lastStr, next_date: dateStr, est_eps: estStr };
-            }).sort((a, b) => {
-              if (a.next_date === '—' && b.next_date === '—') return a.ticker.localeCompare(b.ticker);
-              if (a.next_date === '—') return 1;
-              if (b.next_date === '—') return -1;
-              return a.next_date < b.next_date ? -1 : a.next_date > b.next_date ? 1 : a.ticker.localeCompare(b.ticker);
-            });
+              return { ticker: sym, company: q?.companyName || q?.name || sym, wtd, last_eps: lastStr, next_date: dateStr, est_eps: estStr, _iso: rawIso };
+            }).sort((a: any, b: any) => {
+              if (!a._iso && !b._iso) return a.ticker.localeCompare(b.ticker);
+              if (!a._iso) return 1;
+              if (!b._iso) return -1;
+              return a._iso < b._iso ? -1 : a._iso > b._iso ? 1 : a.ticker.localeCompare(b.ticker);
+            }).map(({ _iso: _, ...rest }: any) => rest);
           } catch (earningsErr: any) {
             console.warn('[portfolio-terminal-earnings] Fan-out failed:', earningsErr?.message);
             // Fallback: all holdings, prices from quoteMap, dates from earningsAnnouncement
