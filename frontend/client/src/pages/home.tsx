@@ -1045,6 +1045,18 @@ export default function HomePage() {
     },
   });
 
+  // Theme Universe — same cache key as the Themes page ("themes-unified", "themes")
+  // so if the user has visited /app/stocks/sectors the data is already warm.
+  // Filtered client-side to proxy_type === "custom" for the Theme Performance card.
+  const { data: themesRS, isLoading: themesRSLoading } = useQuery<{ themes: any[] }>({
+    queryKey: ["themes-unified", "themes"],
+    queryFn: () =>
+      fetch("/api/themes/relative-strength?timeframe=1D&classification=all")
+        .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
   // Hyperliquid top signals — secondary query using the same cache key as the
   // HL page. If the user visited /app/hyperliquid-screener, this is free from
   // React Query cache. No polling on Home (HL page owns that 30s interval).
@@ -1347,55 +1359,52 @@ export default function HomePage() {
           <div className="lg:col-span-1">
             <GlassCard className="flex flex-col h-[480px]">
               <div className="px-4 pt-4 pb-2 shrink-0">
-                {(() => {
-                  const subThemes = data?.sub_theme_performance;
-                  const hasSubThemes = subThemes && subThemes.length > 0;
-                  return (
-                    <SectionHeader
-                      icon={BarChart3}
-                      title="Theme Performance"
-                      accent={hasSubThemes ? "sub-theme leaders" : "sector rotation"}
-                      viewMore="/app/stocks/sectors"
-                    />
-                  );
-                })()}
+                <SectionHeader
+                  icon={BarChart3}
+                  title="Theme Performance"
+                  accent="custom themes · live"
+                  viewMore="/app/stocks/sectors"
+                />
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
                 {(() => {
-                  const subThemes = data?.sub_theme_performance;
-                  const hasSubThemes = subThemes && subThemes.length > 0;
+                  // Pull directly from the same Themes page endpoint, filtered to custom themes.
+                  // Uses the identical React Query cache key as /app/stocks/sectors so the
+                  // data is already warm if the user has visited that page.
+                  const allThemes: any[] = themesRS?.themes ?? [];
+                  const customThemes = allThemes.filter((t: any) => t.proxy_type === "custom");
+                  const loading = themesRSLoading;
+                  const items: HomeSubThemeItem[] = customThemes.map((t: any) => ({
+                    sub_theme:      t.display_name,
+                    avg_change_1d:  t.performance?.["1D"] ?? t.return_pct ?? null,
+                    avg_change_7d:  t.performance?.["7D"] ?? null,
+                    leader_symbols: (t.leaders ?? []).map((l: any) => l.symbol).slice(0, 5)
+                                      .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 5))
+                                      .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx)
+                                      .slice(0, 5),
+                    leader_count:   (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? []).length,
+                    breadth_score:  t.breadth_pct ?? null,
+                    momentum_score: t.rs_score ?? null,
+                    pattern_summary: t.state_reason ?? null,
+                  }));
                   return (
                     <>
-                      {isLoading && Array.from({ length: 8 }).map((_, i) => (
+                      {loading && Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
                       ))}
-                      {!isLoading && hasSubThemes && (
+                      {!loading && items.length > 0 && (
                         <div>
                           <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
-                            <span>Sub-theme · leaders</span>
+                            <span>Theme · leaders</span>
                             <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
                           </div>
-                          {subThemes.map((item, i) => (
+                          {items.map((item, i) => (
                             <SubThemeRow key={item.sub_theme || i} item={item} onSymbolClick={openTicker} />
                           ))}
                         </div>
                       )}
-                      {!isLoading && !hasSubThemes && (data?.theme_performance?.themes || []).length > 0 && (
-                        <>
-                          <div className="grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider text-white/40 px-2 mb-1">
-                            <div className="col-span-4">Sector</div>
-                            <div className="col-span-5 text-center">30D relative</div>
-                            <div className="col-span-1 text-right">1D</div>
-                            <div className="col-span-1 text-right">7D</div>
-                            <div className="col-span-1 text-right">30D</div>
-                          </div>
-                          {(data?.theme_performance?.themes || []).map((t, i) => (
-                            <ThemeRow key={i} theme={t} />
-                          ))}
-                        </>
-                      )}
-                      {!isLoading && !hasSubThemes && (!data?.theme_performance?.themes || data.theme_performance.themes.length === 0) && (
-                        <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
+                      {!loading && items.length === 0 && (
+                        <div className="text-sm text-white/40 py-8 text-center">No custom themes available.</div>
                       )}
                     </>
                   );
