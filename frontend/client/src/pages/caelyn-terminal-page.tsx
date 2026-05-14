@@ -950,7 +950,9 @@ export default function CaelynTerminalPage() {
                 for (const t of (d.theme_allocation ?? [])) for (const s of (t.symbols ?? [])) fapiBucketOf[String(s).toUpperCase()] = t.name;
                 for (const sym of portTickers) {
                   const fapi = fapiBucketOf[sym];
-                  const cached = tickerThemeMap[sym];
+                  const rawCached = tickerThemeMap[sym];
+                  // Sentinel '__UNCATEGORIZED__' only suppresses the CATEGORIZE button — it must NOT become a bucket label.
+                  const cached = rawCached && rawCached !== '__UNCATEGORIZED__' ? rawCached : null;
                   // Prefer cache only when FastAPI bucketed this ticker into Unclassified
                   const target = (fapi && !/unclassified/i.test(fapi)) ? fapi : (cached || fapi || 'Unclassified');
                   if (!buckets.has(target)) buckets.set(target, { symbols: [], pct: 0, isUnclassified: /unclassified/i.test(target) });
@@ -1088,16 +1090,16 @@ export default function CaelynTerminalPage() {
         {/* ── COL 4: Risk Suggestions + Risk Analysis ─────────────────────── */}
         <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* Risk Suggestions */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Risk Suggestions — pushed down so its bottom edge meets the top of Risk Analysis below */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', marginTop:'auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Suggestions" badge="Intel" />
             <div style={{ padding:8, overflowY:'auto', flex:1 }}>
               {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
             </div>
           </div>
 
-          {/* Risk Analysis — pushed to bottom of column so it sits flush with the AI Portfolio Review row beneath it */}
-          <div style={{ background:C.card, flex:'0 0 auto', marginTop:'auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Risk Analysis — sits flush with AI Portfolio Review row beneath it */}
+          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Analysis" badge="Metrics" />
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
               {[
