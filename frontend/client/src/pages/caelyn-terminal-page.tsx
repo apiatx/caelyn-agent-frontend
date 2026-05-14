@@ -977,8 +977,8 @@ export default function CaelynTerminalPage() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  {/* Labels + % zone — anchored at section's right edge */}
-                  <div style={{ flexShrink:0, display:'grid', gridTemplateColumns:'auto auto', columnGap:14, alignContent:'center', alignItems:'center' }}>
+                  {/* Labels + % zone — scrollable if rows overflow the section height */}
+                  <div style={{ flexShrink:0, overflowY:'auto', display:'grid', gridTemplateColumns:'auto auto', columnGap:14, alignContent:'start', alignItems:'center' }}>
                     {allocData.map((a, i) => {
                       const hasTickers = !ph && (a as any).tickers?.length > 0;
                       return (
@@ -1082,8 +1082,8 @@ export default function CaelynTerminalPage() {
         {/* ── COL 4: Risk Suggestions + Risk Analysis ─────────────────────── */}
         <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* Risk Suggestions — pushed down so its bottom edge meets the top of Risk Analysis below */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', maxHeight:'45%', marginTop:'auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Risk Suggestions — fills available space between top of column and Risk Analysis below */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Suggestions" badge="Intel" />
             <div style={{ padding:8, overflowY:'auto', flex:1 }}>
               {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
