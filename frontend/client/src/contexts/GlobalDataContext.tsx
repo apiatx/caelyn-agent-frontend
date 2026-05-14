@@ -71,6 +71,9 @@ export function GlobalPrefetch() {
     pre(["sector-rotation-dashboard"], "/api/sector-rotation/dashboard?include_analysis=false", undefined, 2 * 60_000);
     pre(["sector-rotation-analysis"],  "/api/sector-rotation/analysis",  undefined, 10 * 60_000);
 
+    // ── Theme Relative Strength — shared by Themes page + Home Theme Perf card ──
+    pre(["themes-unified", "themes"], "/api/themes/relative-strength?timeframe=1D&classification=all", undefined, 5 * 60_000);
+
     // ── Watchlist ───────────────────────────────────────────────────────────
     pre(["/api/watchlist/list"], "/api/watchlist/list", { headers: authH() });
 
