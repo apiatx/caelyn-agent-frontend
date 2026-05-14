@@ -1,0 +1,64 @@
+Theme Performance (Home) + Themes Page
+Backend state (already done — no backend changes needed from you)
+GET /api/home/dashboard → sub_theme_performance now returns exactly 9 rows, all sourced from the Theme Universe
+GET /api/themes/relative-strength returns 55 themes including the 4 new custom ones
+Removed from the system entirely: Datacenter / Compute, Semi Materials, Data Infra / Storage — delete any hardcoded references to these in the frontend
+Change 1 — Home Page: "Thematic Performance" section
+Replace whatever currently populates this section with the sub_theme_performance array from GET /api/home/dashboard.
+
+Exact current live data (9 rows, sorted by performance):
+
+Cybersecurity           +3.01%   leaders: PANW, FTNT, CRWD
+AI Networking           +2.54%   leaders: AVGO, ANET, MRVL
+Substrates / Packaging  +2.34%   leaders: IBIDF, TSM, UMICF
+Power / Cooling         +2.32%   leaders: BE, GEV, TT
+Aerospace / Defense     +1.06%   leaders: KTOS, AVAV, LMT
+Photonics / Lasers      +0.97%   leaders: SIVEF, FN, COHR
+Robotics / Automation   -0.36%   leaders: SYM, ABBNY, ISRG
+Nuclear / Grid          -0.64%   leaders: BWXT, SMR, LEU
+Memory / Storage        -2.05%   leaders: WDC, STX, SIMO
+
+Schema per row:
+
+{
+  "sub_theme": "AI Networking",
+  "avg_change_1d": 2.54,
+  "avg_change_7d": null,
+  "leader_symbols": ["AVGO", "ANET", "MRVL"],
+  "leader_count": 5,
+  "breadth_score": 80.0,
+  "momentum_score": 4.9,
+  "pattern_summary": "broad strength — most names moving"
+}
+
+Delete any hardcoded references to: "Datacenter / Compute", "Semi Materials", "Data Infra / Storage" — these no longer exist.
+
+Change 2 — Themes Page: show 4 new custom themes with CUSTOM badge
+Endpoint: GET /api/themes/relative-strength
+
+The 4 new themes appear automatically in the response. The only UI change needed is a CUSTOM badge for themes where proxy_type === "custom".
+
+New themes (already in API, need to render):
+
+display_name	proxy_type	tickers
+AI Networking	custom	ANET, AVGO, MRVL, CRDO, ALAB
+Photonics / Lasers	custom	COHR, LITE, AAOI, FN, SIVEF
+Power / Cooling	custom	VRT, ETN, GEV, TT, BE
+Substrates / Packaging	custom	TSM, AMKR, ASX, IBIDF, UMICF
+Badge logic — wherever the theme card shows the proxy type label (ETF / BASKET / HYBRID):
+
+const PROXY_BADGE = {
+  etf:    'ETF',
+  basket: 'BASKET',
+  hybrid: 'HYBRID',
+  custom: 'CUSTOM',   // ← add this
+};
+const badge = PROXY_BADGE[theme.proxy_type] ?? theme.proxy_type.toUpperCase();
+
+Style CUSTOM with a distinct color (e.g. amber/orange) to signal manually curated ticker baskets.
+
+Summary checklist for the agent
+ Home page Thematic Performance: read from dashboard.sub_theme_performance, render all 9 rows
+ Home page: delete any hardcoded Datacenter / Compute, Semi Materials, Data Infra / Storage entries
+ Themes page: add CUSTOM badge handling for proxy_type === "custom"
+ Themes page: the 4 new themes render automatically once the badge logic is in — no hardcoding needed

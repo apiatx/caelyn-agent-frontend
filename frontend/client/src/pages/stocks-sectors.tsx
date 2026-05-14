@@ -1331,7 +1331,7 @@ function UnifiedThemesCard({
                         <div className="flex items-center gap-1.5">
                           <div className="text-xs text-gray-400 truncate max-w-[130px]">{row.name}</div>
                           {row.proxy_type === "custom" && (
-                            <span className="shrink-0 text-[8px] font-bold tracking-wider px-1 py-0.5 rounded border bg-violet-500/20 text-violet-300 border-violet-500/30">CUSTOM</span>
+                            <span className="shrink-0 text-[8px] font-bold tracking-wider px-1 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/30">CUSTOM</span>
                           )}
                         </div>
                         {row.classification && (
