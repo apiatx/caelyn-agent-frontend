@@ -3974,12 +3974,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })();
 
+    // Compose portfolio snapshot from local stock-holdings.json + live Yahoo prices.
+    // This ensures the home page always reflects the real portfolio regardless of
+    // what the FastAPI backend returns for portfolio_snapshot.
+    const portfolioSnapP = (async (): Promise<any[]> => {
+      try {
+        const localHoldings = readHoldings();
+        if (!localHoldings.length) return [];
+        // Cap at 30 tickers to avoid excessive parallel requests
+        const tickers = localHoldings.slice(0, 30).map(h => h.ticker);
+        const snapItems = await Promise.all(tickers.map(async (ticker) => {
+          const holding = localHoldings.find(h => h.ticker === ticker);
+          try {
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+            const r = await fetch(url, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+              signal: AbortSignal.timeout(8000),
+            });
+            const d = await r.json() as any;
+            const meta = d?.chart?.result?.[0]?.meta;
+            if (!meta) return { symbol: ticker, current_price: null, change_1d_pct: null, volume_vs_avg: null, asset_type: holding?.assetType || 'stock' };
+            const price: number = meta.regularMarketPrice ?? meta.previousClose ?? 0;
+            const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price;
+            const change_1d_pct: number | null = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : null;
+            return {
+              symbol: ticker,
+              current_price: price > 0 ? price : null,
+              change_1d_pct,
+              volume_vs_avg: null,
+              asset_type: holding?.assetType || 'stock',
+            };
+          } catch {
+            return { symbol: ticker, current_price: null, change_1d_pct: null, volume_vs_avg: null, asset_type: holding?.assetType || 'stock' };
+          }
+        }));
+        return snapItems;
+      } catch (e) {
+        console.warn('[Home] Portfolio snapshot compose failed:', (e as any)?.message);
+        return [];
+      }
+    })();
+
     try {
-      const [backend, news, cryptoFg] = await Promise.all([backendP, newsP, cryptoFgP]);
+      const [backend, news, cryptoFg, portfolioSnap] = await Promise.all([backendP, newsP, cryptoFgP, portfolioSnapP]);
 
       // Attach composed fields on top of the backend payload. Backend's
       // `fear_greed.crypto` is always null (see home_service._extract_fear_greed);
       // we populate it here from the already-cached CMC overview.
+      // portfolio_snapshot is always composed from local stock-holdings.json + live
+      // Yahoo prices so it stays in sync with the Portfolio page.
       const composed = {
         ...backend,
         news: { articles: news, source: 'rss', count: (news || []).length },
@@ -3987,10 +4030,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...(backend.fear_greed || {}),
           crypto: cryptoFg,
         },
+        portfolio_snapshot: (portfolioSnap && portfolioSnap.length > 0)
+          ? portfolioSnap
+          : (backend.portfolio_snapshot || []),
         section_status: {
           ...(backend.section_status || {}),
           news: (news && news.length > 0) ? 'ok' : 'unavailable',
           crypto_fg: cryptoFg ? 'ok' : 'unavailable',
+          portfolio_snapshot: (portfolioSnap && portfolioSnap.length > 0) ? 'ok' : (backend.section_status?.portfolio_snapshot || 'unavailable'),
         },
       };
       res.json(composed);

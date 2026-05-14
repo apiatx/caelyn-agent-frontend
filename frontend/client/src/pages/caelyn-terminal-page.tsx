@@ -1058,9 +1058,9 @@ export default function CaelynTerminalPage() {
         {/* ── COL 3: Portfolio News (taller) + Investment Style (shorter) ──────────────── */}
         <div style={{ flex:'0 0 210px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* Portfolio News — moved up, takes remaining space */}
+          {/* News — moved up, takes remaining space */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Portfolio News" badge={`${flatPortfolioNews.length}`} />
+            <CardHdr label="News" badge={`${flatPortfolioNews.length}`} />
             <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
               {flatPortfolioNews.length === 0 && (
                 <div style={{ padding:'14px 8px', textAlign:'center', fontSize:10, color:C.dim }}>
@@ -1213,10 +1213,10 @@ export default function CaelynTerminalPage() {
           </div>
         </div>
 
-        {/* ── PANEL 4: Portfolio Options (swapped here from top row) ── */}
+        {/* ── PANEL 4: Options (swapped here from top row) ── */}
         <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio Options</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Options</span>
             <span style={{ fontSize:8, color:C.dimLow }}>Flow</span>
           </div>
           {(() => {
