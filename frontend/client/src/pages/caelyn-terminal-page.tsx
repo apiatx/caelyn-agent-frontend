@@ -564,7 +564,7 @@ export default function CaelynTerminalPage() {
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
       {/* ── TOP ROW: 4-column grid ─────────────────────────────────── */}
-      <div style={{ flex:'0 0 80%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
+      <div style={{ flex:'0 0 68%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
         <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
@@ -961,8 +961,8 @@ export default function CaelynTerminalPage() {
       {/* ── BOTTOM ROW: 5 new panels ──────────────────────────────── */}
       <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
 
-        {/* ── PANEL 1: Investment Goals ── */}
-        <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+        {/* ── PANEL 1: Investment Goals (shorter than siblings — anchored to top) ── */}
+        <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, alignSelf:'flex-start', maxHeight:175 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Goals</span>
             <button onClick={() => {
