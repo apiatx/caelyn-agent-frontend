@@ -1096,10 +1096,10 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
 
-          {/* Risk Analysis — moved down from col 3 */}
-          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Risk Analysis — pushed to bottom of column so it sits flush with the AI Portfolio Review row beneath it */}
+          <div style={{ background:C.card, flex:'0 0 auto', marginTop:'auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Analysis" badge="Metrics" />
-            <div style={{ flex:1, overflowY:'auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border, alignContent:'start' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
               {[
                 { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
                 { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
