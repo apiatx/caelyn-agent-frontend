@@ -117,6 +117,7 @@ interface ThemeRow {
   classification:      "sector" | "theme" | "sub_theme" | string | null;
   parent_sector:       string | null;
   sector_tags:         string[] | null;
+  proxy_type:          string | null;
   proxy_symbols:       string[];
   proxy_symbols_used:  string[];
   price:               number | null;
@@ -549,6 +550,7 @@ interface DisplayRow {
   rs_vs_spy:              number | null;
   rs_vs_qqq:              number | null;
   breadth_pct:            number | null;
+  proxy_type:             string | null;
   proxy_symbols_used:     string[];
   last_updated:           string | null;
   spkPrices:              number[];
@@ -608,6 +610,7 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     rs_vs_spy:              theme.rs_vs_spy ?? null,
     rs_vs_qqq:              theme.rs_vs_qqq ?? null,
     breadth_pct:            theme.breadth_pct ?? null,
+    proxy_type:             theme.proxy_type ?? null,
     proxy_symbols_used:     theme.proxy_symbols_used ?? theme.proxy_symbols ?? [],
     last_updated:           theme.last_updated ?? null,
     spkPrices,
@@ -1325,7 +1328,12 @@ function UnifiedThemesCard({
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
-                        <div className="text-xs text-gray-400 truncate max-w-[140px]">{row.name}</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-xs text-gray-400 truncate max-w-[130px]">{row.name}</div>
+                          {row.proxy_type === "custom" && (
+                            <span className="shrink-0 text-[8px] font-bold tracking-wider px-1 py-0.5 rounded border bg-violet-500/20 text-violet-300 border-violet-500/30">CUSTOM</span>
+                          )}
+                        </div>
                         {row.classification && (
                           <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace("_", " ")}</div>
                         )}

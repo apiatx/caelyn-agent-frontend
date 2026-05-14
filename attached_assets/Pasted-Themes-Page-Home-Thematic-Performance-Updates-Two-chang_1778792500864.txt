@@ -1,0 +1,104 @@
+Themes Page + Home Thematic Performance Updates
+Two changes needed. No backend changes required — the backend already serves the correct data.
+
+Change 1 — Themes Page
+Endpoint: GET /api/themes/relative-strength
+What changed: Now returns 55 themes (was fewer). The 4 new ones below are now present with proxy_type: "custom".
+
+New themes to display (already in the API response):
+
+theme_id	display_name	proxy_type
+ai_networking	AI Networking	custom
+photonics_lasers	Photonics / Lasers	custom
+power_cooling	Power / Cooling	custom
+substrates_packaging	Substrates / Packaging	custom
+Full response schema per theme item:
+
+{
+  "theme_id": "ai_networking",
+  "display_name": "AI Networking",
+  "classification": "sub_theme",
+  "parent_sector": "technology",
+  "proxy_type": "custom",
+  "proxy_symbols": ["ANET", "AVGO", "MRVL", "CRDO", "ALAB"],
+  "candidate_symbols": ["ANET", "AVGO", "MRVL", "CRDO", "ALAB"],
+  "sector_tags": ["Technology"],
+  "keywords": ["AI networking", "data center networking", "optical interconnects"],
+  "macro_sensitivities": ["AI capex", "data center buildout"],
+  "return_pct": -0.5,
+  "rs_score": 62.3,
+  "rs_vs_spy": 1.2,
+  "rs_vs_qqq": 0.8,
+  "breadth_pct": 80.0,
+  "pct_from_50d": 3.1,
+  "trend_accel_20d": 0.4,
+  "momentum_rank": 12,
+  "state": "bullish",
+  "state_reason": "...",
+  "leaders": [{"symbol": "AVGO", ...}],
+  "laggards": [...],
+  "price": 142.5,
+  "lead_proxy": "ANET",
+  "last_updated": "2026-05-14T..."
+}
+
+Required UI change — CUSTOM badge:
+Wherever the Themes page shows the theme's proxy type (ETF, basket, hybrid), add a distinct "CUSTOM" badge/tag for any theme where proxy_type === "custom". The 4 new themes above plus any future custom themes will carry this field. Example display logic:
+
+const badgeLabel = {
+  etf: 'ETF',
+  basket: 'BASKET',
+  hybrid: 'HYBRID',
+  custom: 'CUSTOM',   // ← new
+}[theme.proxy_type] ?? theme.proxy_type.toUpperCase();
+
+Style "CUSTOM" distinctly (e.g. different color than ETF/basket) so users know these use a manually curated ticker list.
+
+Change 2 — Home Page "Thematic Performance" section
+Endpoint: GET /api/home/dashboard
+Field: response.sub_theme_performance (array)
+
+What changed: This section previously sourced its tickers from a static hardcoded map. It now pulls from the same Theme Universe as the Themes page. The 4 new themes are included in the array automatically.
+
+Full schema per row:
+
+{
+  "sub_theme": "AI Networking",
+  "avg_change_1d": 2.54,
+  "avg_change_7d": null,
+  "leader_symbols": ["AVGO", "ANET", "MRVL"],
+  "leader_count": 5,
+  "breadth_score": 80.0,
+  "momentum_score": 4.9,
+  "pattern_summary": "broad strength — most names moving"
+}
+
+Current live data (12 rows, sorted by avg_change_1d desc):
+
+Cybersecurity          +3.01%   leaders: PANW, FTNT, CRWD    breadth: 100%
+Datacenter / Compute   +2.80%   leaders: IREN, CLSK, WULF    breadth:  92%
+AI Networking          +2.54%   leaders: AVGO, ANET, MRVL    breadth:  80%  ← NEW
+Substrates / Packaging +2.34%   leaders: IBIDF, TSM, UMICF   breadth:  60%  ← NEW
+Power / Cooling        +2.32%   leaders: BE, GEV, TT          breadth: 100%  ← NEW
+Aerospace / Defense    +1.06%   leaders: KTOS, AVAV, LMT      breadth:  60%
+Photonics / Lasers     +0.97%   leaders: SIVEF, FN, COHR      breadth:  60%  ← NEW
+Semi Materials         -0.14%   leaders: KLAC, ON, TE          breadth:  60%
+Robotics / Automation  -0.36%   leaders: SYM, ABBNY, ISRG     breadth:  50%
+Nuclear / Grid         -0.64%   leaders: BWXT, SMR, LEU        breadth:  60%
+Data Infra / Storage   -1.29%   leaders: EQIX, MDB, WDC        breadth:  29%
+Memory / Storage       -2.05%   leaders: WDC, STX, SIMO        breadth:   0%
+
+If the Thematic Performance section currently fetches from a separate endpoint or uses hardcoded theme names, replace it to read sub_theme_performance from the home dashboard response. The array is already sorted by performance descending — render it directly. No filtering needed.
+
+Suggested fields to display per row:
+
+sub_theme — theme name
+avg_change_1d — formatted as +2.54% with color (green/red)
+leader_symbols — show first 3 as pill tags
+breadth_score — shown as 80% with a mini bar or color indicator
+pattern_summary — subtitle text below the theme name
+Summary of what to change
+Location	Change
+Themes page render loop	No filtering change needed — just render all 55 themes from the API. Add CUSTOM badge for proxy_type === "custom"
+Themes page — new entries	AI Networking, Photonics/Lasers, Power/Cooling, Substrates/Packaging will appear automatically since they're in the API
+Home page — Thematic Performance	Source from dashboard.sub_theme_performance array. The 4 new themes are already in the response
