@@ -213,9 +213,14 @@ export default function CaelynTerminalPage() {
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
   const [categorizingThemes, setCategorizingThemes] = useState(false);
   const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
-  const [categorizedSymbols, setCategorizedSymbols] = useState<Set<string>>(() => {
-    try { return new Set<string>(JSON.parse(localStorage.getItem('categorized_symbols') || '[]')); }
-    catch { return new Set<string>(); }
+  // ticker -> themeName authoritative client cache.
+  // Populated automatically from any successful FastAPI theme_allocation render
+  // (everything except the Unclassified bucket). Used to (a) re-bucket Unclassified
+  // tickers locally if FastAPI regresses, and (b) suppress the CATEGORIZE button
+  // for any ticker we've already classified once.
+  const [tickerThemeMap, setTickerThemeMap] = useState<Record<string,string>>(() => {
+    try { return JSON.parse(localStorage.getItem('ticker_theme_map') || '{}') || {}; }
+    catch { return {}; }
   });
   const [aiReview, setAiReview] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -238,12 +243,32 @@ export default function CaelynTerminalPage() {
         body: JSON.stringify({ tickers: symbols }),
       });
       if (!res.ok) throw new Error('Failed');
+      const body = await res.json().catch(() => ({} as any));
+      // Try to capture per-ticker assignments directly from FastAPI's response so
+      // we cache them even if the next /api/caelyn-terminal still puts them in Unclassified.
+      const newAssignments: Record<string,string> = {};
+      const themesArr = body?.theme_allocation ?? body?.themes ?? body?.assignments ?? [];
+      if (Array.isArray(themesArr)) {
+        for (const t of themesArr) {
+          const themeName = t?.name ?? t?.theme;
+          const syms = t?.symbols ?? (t?.ticker ? [t.ticker] : []);
+          if (themeName && !/unclassified/i.test(themeName) && Array.isArray(syms)) {
+            for (const s of syms) newAssignments[String(s).toUpperCase()] = themeName;
+          }
+        }
+      }
+      if (body?.classifications && typeof body.classifications === 'object') {
+        for (const [tk, theme] of Object.entries(body.classifications)) {
+          if (theme && !/unclassified/i.test(String(theme))) newAssignments[String(tk).toUpperCase()] = String(theme);
+        }
+      }
+      if (Object.keys(newAssignments).length > 0) {
+        const next = { ...tickerThemeMap, ...newAssignments };
+        setTickerThemeMap(next);
+        try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
+      }
       setCategorizeResult('success');
       setTimeout(() => setCategorizeResult(null), 4000);
-      const next = new Set(categorizedSymbols);
-      symbols.forEach(s => next.add(s));
-      setCategorizedSymbols(next);
-      try { localStorage.setItem('categorized_symbols', JSON.stringify(Array.from(next))); } catch {}
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch {
       setCategorizeResult('error');
@@ -330,6 +355,29 @@ export default function CaelynTerminalPage() {
       setAiLoading(false);
     }
   };
+
+  // Passively learn ticker -> theme assignments from any successful FastAPI render.
+  // Anything in a non-Unclassified bucket is recorded once and persisted forever
+  // (until user removes the ticker from their portfolio or manually clears).
+  useEffect(() => {
+    const themes = data?.theme_allocation;
+    if (!Array.isArray(themes) || themes.length === 0) return;
+    const learned: Record<string,string> = {};
+    for (const t of themes) {
+      const name = (t as any)?.name;
+      const syms = (t as any)?.symbols ?? [];
+      if (!name || /unclassified/i.test(name) || !Array.isArray(syms)) continue;
+      for (const s of syms) {
+        const sym = String(s).toUpperCase();
+        if (!tickerThemeMap[sym] || tickerThemeMap[sym] !== name) learned[sym] = name;
+      }
+    }
+    if (Object.keys(learned).length > 0) {
+      const next = { ...tickerThemeMap, ...learned };
+      setTickerThemeMap(next);
+      try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
+    }
+  }, [data?.theme_allocation]);
 
   useEffect(() => {
     const canonicalSymbols  = (dashboardHoldings ?? []).map(h => h.ticker).sort();
@@ -873,16 +921,40 @@ export default function CaelynTerminalPage() {
                   label: a.label, pct: a.pct, color: a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
                 }));
               } else {
-                allocData = (d.theme_allocation ?? []).map((t, i) => {
-                  const syms = t.symbols ?? [];
-                  return {
-                    label: t.name, pct: t.weight_pct,
-                    color: t.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
-                    sublabel: syms.length ? syms.slice(0,4).join(', ') + (syms.length > 4 ? ` +${syms.length - 4}` : '') : undefined,
-                    fallback_used: (t as any).fallback_used ?? false,
-                    symbols: syms,
-                  };
-                });
+                // Re-bucket using the persistent ticker_theme_map cache so previously
+                // classified tickers stay out of Unclassified even if FastAPI regresses.
+                const allocByTicker: Record<string, number> = {};
+                for (const h of (d.holdings ?? [])) allocByTicker[h.ticker.toUpperCase()] = Number(h.allocation_pct ?? 0);
+                const portTickers = Object.keys(allocByTicker);
+                type Bucket = { symbols: string[]; pct: number; color?: string; isUnclassified: boolean };
+                const buckets = new Map<string, Bucket>();
+                // Seed with FastAPI's order/colors so the pie keeps a stable look
+                for (const t of (d.theme_allocation ?? [])) {
+                  buckets.set(t.name, { symbols: [], pct: 0, color: t.color, isUnclassified: /unclassified/i.test(t.name) });
+                }
+                // FastAPI's current bucket per ticker (this render)
+                const fapiBucketOf: Record<string,string> = {};
+                for (const t of (d.theme_allocation ?? [])) for (const s of (t.symbols ?? [])) fapiBucketOf[String(s).toUpperCase()] = t.name;
+                for (const sym of portTickers) {
+                  const fapi = fapiBucketOf[sym];
+                  const cached = tickerThemeMap[sym];
+                  // Prefer cache only when FastAPI bucketed this ticker into Unclassified
+                  const target = (fapi && !/unclassified/i.test(fapi)) ? fapi : (cached || fapi || 'Unclassified');
+                  if (!buckets.has(target)) buckets.set(target, { symbols: [], pct: 0, isUnclassified: /unclassified/i.test(target) });
+                  const b = buckets.get(target)!;
+                  b.symbols.push(sym);
+                  b.pct += allocByTicker[sym] ?? 0;
+                }
+                allocData = Array.from(buckets.entries())
+                  .filter(([_, b]) => b.symbols.length > 0)
+                  .map(([name, b], i) => ({
+                    label: name, pct: b.pct,
+                    color: b.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                    sublabel: b.symbols.length ? b.symbols.slice(0,4).join(', ') + (b.symbols.length > 4 ? ` +${b.symbols.length - 4}` : '') : undefined,
+                    fallback_used: b.isUnclassified,
+                    symbols: b.symbols,
+                    isUnclassified: b.isUnclassified,
+                  } as any));
               }
               return (
                 <div style={{ flex:1, display:'flex', alignItems:'flex-start', padding:'10px 10px', gap:12, minHeight:0, overflow:'hidden' }}>
@@ -909,10 +981,10 @@ export default function CaelynTerminalPage() {
                             <div style={{ minWidth:0, flex:1 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                 <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.label}</span>
-                                {allocTab === 'themes' && !ph && (a as any).fallback_used && (((a as any).symbols ?? []) as string[]).some((s: string) => !categorizedSymbols.has(s)) && (
+                                {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => !tickerThemeMap[s.toUpperCase()]) && (
                                   <button
                                     disabled={categorizingThemes}
-                                    onClick={(e) => { e.stopPropagation(); handleCategorizeThemes((a as any).symbols ?? []); }}
+                                    onClick={(e) => { e.stopPropagation(); const uncached = ((a as any).symbols ?? []).filter((s: string) => !tickerThemeMap[s.toUpperCase()]); handleCategorizeThemes(uncached.length ? uncached : ((a as any).symbols ?? [])); }}
                                     style={{ fontSize:7, fontWeight:800, letterSpacing:0.8, padding:'1px 5px', borderRadius:3, border:`1px solid ${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}55`, background:`${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}14`, color: categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber, cursor: categorizingThemes ? 'wait' : 'pointer', flexShrink:0, transition:'all 0.15s', opacity: categorizingThemes ? 0.6 : 1 }}
                                   >
                                     {categorizingThemes ? '···' : categorizeResult === 'success' ? '✓ DONE' : categorizeResult === 'error' ? 'RETRY' : 'CATEGORIZE'}
