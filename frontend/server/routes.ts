@@ -2875,7 +2875,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!q) return;
         const volume    = typeof q.volume        === 'number' ? q.volume        : 0;
         const avg_vol   = typeof q.average_volume === 'number' ? q.average_volume : 0;
-        const vol_x     = avg_vol > 0 ? volume / avg_vol : null;
+        // Only compute vol_x when there is actual trading activity today.
+        // volume=0 means the market is closed or pre-market — show "—" not "0.0×".
+        const vol_x     = (avg_vol > 0 && volume > 0) ? volume / avg_vol : null;
         result.set(ticker.toUpperCase(), { volume, avg_volume: avg_vol, vol_x });
       })
     );
