@@ -155,15 +155,14 @@ const sign   = (n: N) => coerce(n) >= 0 ? '+' : '';
 const pctClr = (n: N) => coerce(n) >= 0 ? C.green : C.red;
 const isNull = (n: N) => n == null;
 
-function corrBg(v: N): string {
-  const n = coerce(v);
-  if (n >= 0.8) return '#0c3b2e'; if (n >= 0.5) return '#0a3328'; if (n >= 0.2) return '#0d2b22';
-  if (n >= -0.2) return '#151f2e'; if (n >= -0.5) return '#331212'; return '#4a1010';
-}
-function corrTxt(v: N): string {
-  const n = coerce(v);
-  if (n >= 0.5) return '#4ade80'; if (n >= 0.2) return '#86efac';
-  if (n >= -0.2) return C.dim; if (n >= -0.5) return '#fca5a5'; return '#f87171';
+function timeAgo(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -213,6 +212,15 @@ export default function CaelynTerminalPage() {
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
   const [categorizingThemes, setCategorizingThemes] = useState(false);
   const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
+  const [aiReview, setAiReview] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiStage, setAiStage] = useState('');
+  const [goals, setGoals] = useState<{ target_value: number; target_return: number; horizon: string }>(() => {
+    try { return JSON.parse(localStorage.getItem('portfolio_goals') || 'null') ?? { target_value: 500000, target_return: 25, horizon: '3Y' }; }
+    catch { return { target_value: 500000, target_return: 25, horizon: '3Y' }; }
+  });
+  const [editingGoals, setEditingGoals] = useState(false);
+  const [editGoalVals, setEditGoalVals] = useState<{ target_value: string; target_return: string; horizon: string }>({ target_value: '', target_return: '', horizon: '' });
   const queryClient = useQueryClient();
 
   const handleCategorizeThemes = async (symbols: string[]) => {
@@ -257,61 +265,73 @@ export default function CaelynTerminalPage() {
     staleTime: 60_000,
   });
 
+  const { data: portfolioNewsData } = useQuery<Record<string, { title: string; url: string; source: string; published_at: string }[]>>({
+    queryKey: ['portfolio-news'],
+    queryFn: async () => {
+      const r = await fetch('/api/portfolio/news');
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+
+  const handleAIReview = async () => {
+    if (!dashboardHoldings?.length) return;
+    setAiLoading(true);
+    setAiReview(null);
+    const stages = ['Analyzing portfolio...','Pulling price data...','Scanning technicals...','Checking fundamentals...','Reading sentiment...','Building portfolio view...','Generating ratings...','Almost done — this can take up to 30 seconds...'];
+    let idx = 0;
+    setAiStage(stages[0]);
+    const iv = setInterval(() => { idx++; if (idx < stages.length) setAiStage(stages[idx]); }, 2000);
+    try {
+      const holdingsPayload = dashboardHoldings.map(h => ({ ticker: h.ticker, shares: h.shares, avg_cost: h.avgCost }));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      const res = await fetch('/api/portfolio-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ holdings: holdingsPayload }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Server returned ${res.status}${errText ? ': ' + errText.slice(0, 120) : ''}`);
+      }
+      const rev = await res.json();
+      setAiReview(rev.message || rev.text || rev.analysis || 'No analysis returned.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') setAiReview('Portfolio review timed out. Please try again.');
+      else setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
+    } finally {
+      clearInterval(iv);
+      setAiStage('');
+      setAiLoading(false);
+    }
+  };
+
   useEffect(() => {
     const canonicalSymbols  = (dashboardHoldings ?? []).map(h => h.ticker).sort();
     const terminalSymbols   = (data?.holdings ?? []).map((h: CTHolding) => h.ticker).sort();
     const symbolsMatch      = JSON.stringify(canonicalSymbols) === JSON.stringify(terminalSymbols);
     const renderedState     = data ? (data.is_placeholder ? 'placeholder' : data._synced_from_local ? 'synced_local' : 'live') : 'no_data';
     const chartPts          = data?.performance_charts?.[perfPeriod] ?? data?.performance_chart ?? [];
-    const cm_               = data?.correlation_matrix;
     const missingUiFields: string[] = [];
-    if (!chartPts || chartPts.length < 2)         missingUiFields.push(`performance_chart(${chartPts.length ?? 0}pts<2)`);
-    if (!cm_ || cm_.tickers.length === 0)          missingUiFields.push('correlation_matrix(empty—needs_history)');
-    if (!data?.volatility?.length)                 missingUiFields.push('volatility(empty—needs_history)');
-    if (data?.risk_metrics) {
-      const nullMetrics = Object.entries(data.risk_metrics)
-        .filter(([k, v]) => k !== 'top_concentration_label' && v == null)
-        .map(([k]) => k);
-      if (nullMetrics.length) missingUiFields.push(`risk_metrics.null:[${nullMetrics.join(',')}]`);
-    }
+    if (!chartPts || chartPts.length < 2) missingUiFields.push(`performance_chart(${chartPts.length ?? 0}pts<2)`);
+    if (!data?.volatility?.length)        missingUiFields.push('volatility(empty—needs_history)');
     const volCount   = data?.volatility?.length ?? 0;
-    const corrDim    = cm_?.tickers?.length ?? 0;
     const perfPeriodCounts: Record<string, number> = {};
     if (data?.performance_charts) {
       for (const k of ['1D','5D','1M','6M','1Y'] as const) {
         perfPeriodCounts[k] = (data.performance_charts as any)[k]?.length ?? 0;
       }
     }
-    const renderedSections: string[] = [];
-    if ((chartPts?.length ?? 0) >= 2)             renderedSections.push('performance_chart');
-    if (corrDim > 0)                               renderedSections.push('correlation_matrix');
-    if (data?.risk_metrics)                        renderedSections.push('risk_analysis');
-    if (volCount > 0)                              renderedSections.push('volatility');
-    if ((data?.risk_suggestions?.length ?? 0) > 0) renderedSections.push('risk_suggestions');
-    if ((data?.top_movers as any)?.gainers?.length || (data?.top_movers as any)?.losers?.length) renderedSections.push('top_movers');
-    if (Array.isArray((data as any)?.theme_mapping) && (data as any).theme_mapping.length > 0) renderedSections.push('theme_mapping');
-    const missingExpected: string[] = [];
-    if (!data?.risk_metrics)                             missingExpected.push('risk_metrics');
-    if (!(data?.top_movers as any)?.gainers?.length)     missingExpected.push('top_movers.gainers');
-    if (!(data?.risk_suggestions?.length))               missingExpected.push('risk_suggestions');
-
     console.log('[portfolio-terminal-render-debug]', JSON.stringify({
-      dashboardSymbols:         canonicalSymbols,
-      canonicalSymbols,
-      terminalSymbols,
-      allMatch:                 symbolsMatch,
-      backendKeys:              data ? Object.keys(data) : [],
-      performancePointCounts:   Object.keys(perfPeriodCounts).length ? perfPeriodCounts : { current: chartPts?.length ?? 0 },
-      correlationDimensions:    corrDim,
-      volatilityCount:          volCount,
-      riskMetricKeys:           data?.risk_metrics
-        ? Object.entries(data.risk_metrics).map(([k, v]) => `${k}:${v}`).join(',')
-        : '',
-      riskSuggestionsCount:     data?.risk_suggestions?.length ?? 0,
-      renderedSections,
-      renderedState,
-      missingUiFields:          missingUiFields,
-      missingExpectedFields:    missingExpected,
+      dashboardSymbols: canonicalSymbols, terminalSymbols, allMatch: symbolsMatch,
+      backendKeys: data ? Object.keys(data) : [],
+      performancePointCounts: Object.keys(perfPeriodCounts).length ? perfPeriodCounts : { current: chartPts?.length ?? 0 },
+      volatilityCount: volCount, renderedState, missingUiFields,
     }));
   }, [data, dashboardHoldings, isFetching, isLoading, perfPeriod]);
 
@@ -329,12 +349,52 @@ export default function CaelynTerminalPage() {
       if (p.perf_1d!=null) parts.push(`Today: ${p.perf_1d>0?'+':''}${Number(p.perf_1d).toFixed(2)}% · 1M: ${p.perf_1m!=null?(p.perf_1m>0?'+':'')+Number(p.perf_1m).toFixed(2)+'%':'—'}`);
       if (p.sentiment) parts.push(`Sentiment: ${p.sentiment}`);
     } else {
-      parts.push('Portfolio analytics terminal — shows holdings, performance, risk metrics, correlation matrix, and earnings calendar for the connected portfolio.');
+      parts.push('Portfolio analytics terminal — shows holdings, performance, risk metrics, investment style, goals, news, and earnings calendar for the connected portfolio.');
     }
     return parts.join('\n');
   })(), [d, ph]);
   const p   = d.portfolio;
-  const cm  = d.correlation_matrix;
+
+  // ── Derived values for new panels ────────────────────────────────────────
+  const styleScore = (() => {
+    if (ph || !d?.risk_metrics) return null;
+    const rm = d.risk_metrics;
+    const beta    = Math.min(Math.max((coerce(rm.portfolio_beta) - 0.5) / 1.5, 0), 1);
+    const vol     = Math.min(coerce(rm.weighted_volatility) / 55, 1);
+    const conc    = Math.min(coerce(rm.top_concentration) / 100, 1);
+    const posCount = coerce(d.positions_count);
+    const diversity = posCount > 0 ? Math.max(0, 1 - (posCount - 1) / 19) : 0.5;
+    const dd      = Math.min(Math.abs(coerce(rm.max_drawdown)) / 40, 1);
+    return Math.round((beta * 0.28 + vol * 0.28 + conc * 0.18 + diversity * 0.13 + dd * 0.13) * 100);
+  })();
+  const styleLabel = styleScore === null ? null
+    : styleScore < 18 ? 'Conservative' : styleScore < 36 ? 'Moderate'
+    : styleScore < 55 ? 'Growth'        : styleScore < 72 ? 'Aggressive' : 'High Risk';
+  const styleColor = styleScore === null ? C.dim
+    : styleScore < 18 ? C.green : styleScore < 36 ? C.teal
+    : styleScore < 55 ? C.amber : styleScore < 72 ? '#f97316' : C.red;
+
+  const topPerformers = (() => {
+    if (!d?.holdings?.length || !dashboardHoldings?.length) return [];
+    return d.holdings.map(h => {
+      const raw = dashboardHoldings.find(r => r.ticker === h.ticker);
+      const avgCost = raw?.avgCost ?? 0;
+      const returnPct = avgCost > 0 && h.price != null
+        ? ((Number(h.price) - avgCost) / avgCost) * 100 : null;
+      return { ticker: h.ticker, returnPct, price: h.price, avgCost };
+    }).filter(h => h.returnPct !== null)
+      .sort((a, b) => (b.returnPct ?? 0) - (a.returnPct ?? 0))
+      .slice(0, 6);
+  })();
+
+  const flatPortfolioNews = (() => {
+    if (!portfolioNewsData) return [];
+    const items: { ticker: string; title: string; url: string; source: string; published_at: string }[] = [];
+    for (const [ticker, articles] of Object.entries(portfolioNewsData)) {
+      for (const a of articles) items.push({ ticker, ...a });
+    }
+    return items.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()).slice(0, 50);
+  })();
 
   // Placeholder-aware formatters
   const D$   = (n: N) => (ph || isNull(n)) ? '—' : fmt$(n);
@@ -482,7 +542,10 @@ export default function CaelynTerminalPage() {
       </div>
 
       {/* ── MAIN GRID ─────────────────────────────────────────────────── */}
-      <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
+
+      {/* ── TOP ROW: 4-column grid ─────────────────────────────────── */}
+      <div style={{ flex:'0 0 57%', display:'flex', flexDirection:'row', overflow:'hidden', borderBottom:`1px solid ${C.border}` }}>
 
         {/* ── COL 1: Holdings + Earnings ──────────────────────────── */}
         <div style={{ flex:'0 0 235px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
@@ -753,44 +816,6 @@ export default function CaelynTerminalPage() {
             })()}
           </div>
 
-          {/* Correlation Matrix */}
-          <div style={{ background:C.card, flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-            <CardHdr label="Correlation Matrix" badge="Heat Map" />
-            <div style={{ padding:'8px 10px', overflowY:'auto', flex:1 }}>
-              {cm.tickers.length === 0 && !ph && (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:80, gap:4 }}>
-                  <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>UNAVAILABLE</span>
-                  <span style={{ fontSize:8, color:C.dimLow, textAlign:'center', lineHeight:1.6 }}>Correlation requires historical<br/>price series per holding</span>
-                </div>
-              )}
-              {cm.tickers.length > 0 && (
-                <table style={{ borderCollapse:'separate', borderSpacing:2, fontSize:8, tableLayout:'fixed', width:'100%' }}>
-                  <colgroup>
-                    <col style={{ width:'12%' }} />
-                    {cm.tickers.map((_,i) => <col key={i} style={{ width:`${88 / cm.tickers.length}%` }} />)}
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th />
-                      {cm.tickers.map(t => <th key={t} style={{ padding:'2px 2px', color:C.dim, fontWeight:600, textAlign:'center', fontSize:7, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cm.tickers.map((row, ri) => (
-                      <tr key={ri}>
-                        <td style={{ padding:'2px 3px', color:C.dim, fontWeight:700, textAlign:'right', fontSize:7, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{row}</td>
-                        {cm.values[ri]?.map((v, ci) => (
-                          <td key={ci} style={{ padding:'3px 2px', background: ph && ri !== ci ? C.dimLow + '44' : corrBg(v), textAlign:'center', borderRadius:3, color: ph && ri !== ci ? C.dimLow : corrTxt(v), fontWeight:700, fontSize:8, height:22 }}>
-                            {ph && ri !== ci ? '—' : fmtN(v, 2)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* ── COL 3: Risk Analysis + Volatility ──────────────── */}
@@ -889,7 +914,264 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div>{/* close top row */}
+
+      {/* ── BOTTOM ROW: 5 new panels ──────────────────────────────── */}
+      <div style={{ flex:1, display:'flex', flexDirection:'row', overflow:'hidden', minHeight:0 }}>
+
+        {/* ── PANEL 1: Investment Goals ── */}
+        <div style={{ flex:'0 0 195px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Goals</span>
+            <button onClick={() => {
+              if (!editingGoals) {
+                setEditGoalVals({ target_value: String(goals.target_value), target_return: String(goals.target_return), horizon: goals.horizon });
+              } else {
+                const tv = parseFloat(editGoalVals.target_value) || goals.target_value;
+                const tr = parseFloat(editGoalVals.target_return) || goals.target_return;
+                const updated = { target_value: tv, target_return: tr, horizon: editGoalVals.horizon || goals.horizon };
+                setGoals(updated);
+                localStorage.setItem('portfolio_goals', JSON.stringify(updated));
+              }
+              setEditingGoals(e => !e);
+            }} style={{ fontSize:8, fontWeight:700, letterSpacing:0.8, padding:'2px 7px', borderRadius:3, border:`1px solid ${editingGoals ? C.teal : C.border}`, background: editingGoals ? `${C.teal}22` : 'transparent', color: editingGoals ? C.teal : C.dim, cursor:'pointer' }}>
+              {editingGoals ? 'SAVE' : 'EDIT'}
+            </button>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'10px 12px', display:'flex', flexDirection:'column', gap:14 }}>
+            {/* Goal 1: Portfolio Value */}
+            {(() => {
+              const current = ph ? 0 : coerce(p.value);
+              const target = goals.target_value;
+              const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+              return (
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                    <span style={{ fontSize:9, color:C.dim, fontWeight:600 }}>Portfolio Target</span>
+                    <span style={{ fontSize:9, color:C.teal, fontWeight:700 }}>{ph ? '—' : `${fmtN(pct, 0)}%`}</span>
+                  </div>
+                  {editingGoals ? (
+                    <input type="number" value={editGoalVals.target_value} onChange={e => setEditGoalVals(v => ({ ...v, target_value: e.target.value }))}
+                      style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:4, padding:'3px 7px', color:C.text, fontSize:10, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                  ) : (
+                    <>
+                      <div style={{ height:5, background:C.dimLow, borderRadius:3, overflow:'hidden', marginBottom:3 }}>
+                        <div style={{ height:'100%', width:`${pct}%`, background: pct >= 100 ? C.green : C.teal, borderRadius:3, transition:'width 0.4s' }} />
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}>
+                        <span style={{ fontSize:8, color:C.dim }}>{ph ? '—' : fmt$(current)}</span>
+                        <span style={{ fontSize:8, color:C.dimLow }}>{fmt$(target)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+            {/* Goal 2: Return Target */}
+            {(() => {
+              const current = ph ? 0 : coerce(p.total_return_pct);
+              const target = goals.target_return;
+              const pct = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+              return (
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                    <span style={{ fontSize:9, color:C.dim, fontWeight:600 }}>Return Target</span>
+                    <span style={{ fontSize:9, color: ph ? C.dim : pctClr(current), fontWeight:700 }}>{ph ? '—' : `${sign(current)}${fmtN(current, 1)}%`}</span>
+                  </div>
+                  {editingGoals ? (
+                    <input type="number" value={editGoalVals.target_return} onChange={e => setEditGoalVals(v => ({ ...v, target_return: e.target.value }))}
+                      style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:4, padding:'3px 7px', color:C.text, fontSize:10, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                  ) : (
+                    <>
+                      <div style={{ height:5, background:C.dimLow, borderRadius:3, overflow:'hidden', marginBottom:3 }}>
+                        <div style={{ height:'100%', width:`${Math.max(pct, 0)}%`, background: current < 0 ? C.red : pct >= 100 ? C.green : C.teal, borderRadius:3, transition:'width 0.4s' }} />
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}>
+                        <span style={{ fontSize:8, color: ph ? C.dim : pctClr(current) }}>{ph ? '—' : `${sign(current)}${fmtN(current, 1)}%`}</span>
+                        <span style={{ fontSize:8, color:C.dimLow }}>{target}% goal</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+            {/* Goal 3: Time Horizon */}
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                <span style={{ fontSize:9, color:C.dim, fontWeight:600 }}>Time Horizon</span>
+              </div>
+              {editingGoals ? (
+                <div style={{ display:'flex', gap:4 }}>
+                  {['1Y','2Y','3Y','5Y','10Y'].map(h => (
+                    <button key={h} onClick={() => setEditGoalVals(v => ({ ...v, horizon: h }))}
+                      style={{ flex:1, fontSize:8, fontWeight:700, padding:'3px 0', borderRadius:3, border:`1px solid ${editGoalVals.horizon === h ? C.teal : C.border}`, background: editGoalVals.horizon === h ? `${C.teal}22` : 'transparent', color: editGoalVals.horizon === h ? C.teal : C.dim, cursor:'pointer' }}>
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:18, fontWeight:900, color:C.teal }}>{goals.horizon}</span>
+                  <span style={{ fontSize:9, color:C.dim }}>investment window</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── PANEL 2: Top Performing Assets ── */}
+        <div style={{ flex:'0 0 185px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Top Performers</span>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'6px 0' }}>
+            {(ph || topPerformers.length === 0) ? (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:80, gap:4 }}>
+                <span style={{ fontSize:9, color:C.dim, letterSpacing:1.5 }}>{ph ? 'AWAITING DATA' : 'LOADING...'}</span>
+              </div>
+            ) : topPerformers.map((t, i) => {
+              const ret = t.returnPct ?? 0;
+              const color = ret >= 0 ? C.green : C.red;
+              const maxAbs = Math.max(...topPerformers.map(x => Math.abs(x.returnPct ?? 0)), 1);
+              const barW = (Math.abs(ret) / maxAbs) * 100;
+              return (
+                <div key={t.ticker} style={{ padding:'7px 12px', borderBottom:`1px solid ${C.dimLow}22`, display:'flex', flexDirection:'column', gap:3 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+                    <span style={{ fontSize:11, fontWeight:800, color:C.teal }}>{t.ticker}</span>
+                    <span style={{ fontSize:11, fontWeight:700, color }}>{ret >= 0 ? '+' : ''}{fmtN(ret, 1)}%</span>
+                  </div>
+                  <div style={{ height:3, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${barW}%`, background:color, borderRadius:2 }} />
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:8, color:C.dim }}>Avg: {fmt$(t.avgCost)}</span>
+                    <span style={{ fontSize:8, color:C.dim }}>Now: {fmt$(t.price)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── PANEL 3: Investment Style Meter ── */}
+        <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Style</span>
+          </div>
+          <div style={{ flex:1, padding:'14px 14px', display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+            {/* Score display */}
+            <div style={{ textAlign:'center' }}>
+              <div style={{ fontSize:34, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
+              <div style={{ fontSize:10, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:4 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
+              <div style={{ fontSize:8, color:C.dim, marginTop:3 }}>Risk profile score / 100</div>
+            </div>
+            {/* Spectrum bar */}
+            <div style={{ padding:'0 4px' }}>
+              <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:6 }}>
+                {!ph && styleScore !== null && (
+                  <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
+                )}
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between' }}>
+                <span style={{ fontSize:7, color:C.dim }}>Conservative</span>
+                <span style={{ fontSize:7, color:C.dim }}>High Risk</span>
+              </div>
+            </div>
+            {/* Factor breakdown */}
+            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+              {[
+                { label:'Beta vs SPX',   val: DM(d.risk_metrics.portfolio_beta, 2, 'x'),  sub: 'Market sensitivity' },
+                { label:'Volatility',    val: DM(d.risk_metrics.weighted_volatility, 1, '%'), sub: 'Annualized' },
+                { label:'Concentration',val: DM(d.risk_metrics.top_concentration, 1, '%'),sub: d.risk_metrics.top_concentration_label || 'Top position' },
+              ].map((row, i) => (
+                <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+                  <div>
+                    <span style={{ fontSize:9, color:C.dim }}>{row.label}</span>
+                    <span style={{ fontSize:7, color:C.dimLow, display:'block' }}>{row.sub}</span>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : C.text }}>{row.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── PANEL 4: Portfolio News ── */}
+        <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio News</span>
+            <span style={{ fontSize:9, color:C.dim }}>({flatPortfolioNews.length})</span>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
+            {flatPortfolioNews.length === 0 && (
+              <div style={{ padding:'20px', textAlign:'center', fontSize:11, color:C.dim }}>
+                {ph ? 'Awaiting data...' : 'Loading news for your holdings...'}
+              </div>
+            )}
+            {flatPortfolioNews.map((item, i) => (
+              <a key={`pn-${i}`} href={item.url} target="_blank" rel="noopener noreferrer"
+                style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'8px 14px', borderBottom:`1px solid ${C.border}`, textDecoration:'none', cursor:'pointer' }}
+                onMouseEnter={e => (e.currentTarget.style.background = `${C.teal}08`)}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <span style={{ flexShrink:0, fontSize:8, fontWeight:800, fontFamily:C.font, padding:'2px 7px', borderRadius:3, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, textTransform:'uppercase' }}>
+                  {item.ticker}
+                </span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:11, color:C.text, lineHeight:1.4, marginBottom:3, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const, overflow:'hidden' }}>
+                    {item.title}
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ fontSize:9, color:C.dim }}>{item.source}</span>
+                    <span style={{ fontSize:9, color:C.dim }}>{timeAgo(item.published_at)}</span>
+                  </div>
+                </div>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="2" style={{ flexShrink:0, marginTop:2 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PANEL 5: AI Portfolio Review ── */}
+        <div style={{ flex:'0 0 280px', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>AI Portfolio Review</span>
+          </div>
+          <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', padding:'12px' }}>
+            {!aiReview && !aiLoading && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:10 }}>
+                <div style={{ textAlign:'center', marginBottom:4 }}>
+                  <div style={{ fontSize:10, color:C.dim, lineHeight:1.6 }}>Comprehensive AI analysis of your portfolio — risk exposure, position sizing, momentum, and actionable recommendations.</div>
+                </div>
+                <button onClick={handleAIReview} disabled={aiLoading || !dashboardHoldings?.length}
+                  style={{ background:'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)', boxShadow:'0 0 20px rgba(32,144,208,0.4), 0 0 40px rgba(92,200,240,0.2)', borderRadius:8, padding:'9px 20px', border:'none', cursor:'pointer', fontSize:12, fontWeight:700, color:'#fff', letterSpacing:0.5, opacity: aiLoading || !dashboardHoldings?.length ? 0.6 : 1 }}>
+                  Run AI Review
+                </button>
+                <span style={{ fontSize:9, color:C.dimLow }}>Takes 20–40 seconds</span>
+              </div>
+            )}
+            {aiLoading && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flex:1, gap:8 }}>
+                <div style={{ width:28, height:28, border:`3px solid ${C.teal}33`, borderTop:`3px solid ${C.teal}`, borderRadius:'50%', animation:'spin 0.9s linear infinite' }} />
+                <span style={{ fontSize:10, color:C.teal, textAlign:'center', lineHeight:1.5 }}>{aiStage}</span>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+              </div>
+            )}
+            {aiReview && !aiLoading && (
+              <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+                <div style={{ flex:1, overflowY:'auto', fontSize:11, color:C.text, lineHeight:1.65, whiteSpace:'pre-wrap', padding:'2px 0 8px' }}>
+                  {aiReview}
+                </div>
+                <button onClick={handleAIReview}
+                  style={{ marginTop:8, padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600, flexShrink:0 }}>
+                  Re-run Analysis
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>{/* close bottom row */}
+      </div>{/* close outer main grid */}
 
       {/* ── NEWS TICKER ──────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderTop:`1px solid ${C.border}`, height:26, display:'flex', alignItems:'center', overflow:'hidden', flexShrink:0 }}>

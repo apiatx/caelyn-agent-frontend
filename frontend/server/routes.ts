@@ -165,6 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Canonical Portfolio Holdings — must be before /api/portfolio/:userId catch-all ===
 
+  // Portfolio news — fetch RSS news for all local holdings (must be before /:userId catch-all)
+  app.get('/api/portfolio/news', async (_req, res) => {
+    try {
+      const holdings = readHoldings();
+      if (!holdings.length) return res.json({});
+      const tickers = holdings.map((h: any) => h.ticker).join(',');
+      const port = process.env.PORT || 5000;
+      const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${tickers}`);
+      if (!newsRes.ok) return res.json({});
+      res.json(await newsRes.json());
+    } catch { res.json({}); }
+  });
+
   // Ping FastAPI — proof of live backend
   app.get('/api/portfolio/ping', async (req, res) => {
     const FA_URL = 'https://fast-api-server-trading-agent-aidanpilon.replit.app';
