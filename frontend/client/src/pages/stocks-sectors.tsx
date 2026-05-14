@@ -1324,7 +1324,9 @@ function UnifiedThemesCard({
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                          <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
+                          <span className="font-mono font-bold text-white text-sm">
+                            {row.proxy_type === "custom" ? "CUSTOM" : row.ticker}
+                          </span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
@@ -1334,9 +1336,15 @@ function UnifiedThemesCard({
                             <span className="shrink-0 text-[8px] font-bold tracking-wider px-1 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/30">CUSTOM</span>
                           )}
                         </div>
-                        {row.classification && (
+                        {row.proxy_type === "custom" && row.proxy_symbols_used.length > 0 ? (
+                          <div className="flex flex-wrap gap-0.5 mt-1">
+                            {row.proxy_symbols_used.map((sym: string) => (
+                              <span key={sym} className="text-[9px] px-1 py-0 rounded bg-white/[0.06] border border-white/[0.08] text-white/50 font-mono">{sym}</span>
+                            ))}
+                          </div>
+                        ) : row.classification ? (
                           <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace("_", " ")}</div>
-                        )}
+                        ) : null}
                       </td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)} ${tfClsActive("change_1d")}`}>{fmtPct(row.change_1d)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)} ${tfClsActive("change_7d")}`}>{fmtPct(row.change_7d)}</td>

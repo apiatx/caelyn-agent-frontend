@@ -1368,34 +1368,37 @@ export default function HomePage() {
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
                 {(() => {
-                  // Pull directly from the same Themes page endpoint, filtered to custom themes.
-                  // Uses the identical React Query cache key as /app/stocks/sectors so the
-                  // data is already warm if the user has visited that page.
+                  // Pull directly from the same Themes page endpoint — ALL themes,
+                  // same data as /app/stocks/sectors. Uses the identical React Query
+                  // cache key so data is already warm if the user has visited that page.
                   const allThemes: any[] = themesRS?.themes ?? [];
-                  const customThemes = allThemes.filter((t: any) => t.proxy_type === "custom");
                   const loading = themesRSLoading;
-                  const items: HomeSubThemeItem[] = customThemes.map((t: any) => ({
-                    sub_theme:      t.display_name,
-                    avg_change_1d:  t.performance?.["1D"] ?? t.return_pct ?? null,
-                    avg_change_7d:  t.performance?.["7D"] ?? null,
-                    leader_symbols: (t.leaders ?? []).map((l: any) => l.symbol).slice(0, 5)
-                                      .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 5))
-                                      .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx)
-                                      .slice(0, 5),
-                    leader_count:   (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? []).length,
-                    breadth_score:  t.breadth_pct ?? null,
-                    momentum_score: t.rs_score ?? null,
+                  const items: HomeSubThemeItem[] = allThemes.map((t: any) => ({
+                    sub_theme:       t.display_name,
+                    avg_change_1d:   t.performance?.["1D"] ?? t.return_pct ?? null,
+                    avg_change_7d:   t.performance?.["7D"] ?? null,
+                    leader_symbols:  t.proxy_type === "custom"
+                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 5)
+                      : (t.leaders ?? []).map((l: any) => l.symbol).slice(0, 4)
+                          .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 4))
+                          .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx)
+                          .slice(0, 4),
+                    leader_count:    (t.proxy_type === "custom"
+                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
+                      : (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? [])).length,
+                    breadth_score:   t.breadth_pct ?? null,
+                    momentum_score:  t.rs_score ?? null,
                     pattern_summary: t.state_reason ?? null,
                   }));
                   return (
                     <>
-                      {loading && Array.from({ length: 4 }).map((_, i) => (
+                      {loading && Array.from({ length: 8 }).map((_, i) => (
                         <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
                       ))}
                       {!loading && items.length > 0 && (
                         <div>
                           <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
-                            <span>Theme · leaders</span>
+                            <span>Theme · tickers</span>
                             <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
                           </div>
                           {items.map((item, i) => (
@@ -1404,7 +1407,7 @@ export default function HomePage() {
                         </div>
                       )}
                       {!loading && items.length === 0 && (
-                        <div className="text-sm text-white/40 py-8 text-center">No custom themes available.</div>
+                        <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
                       )}
                     </>
                   );
