@@ -220,7 +220,13 @@ export default function CaelynTerminalPage() {
   // tickers locally if FastAPI regresses, and (b) suppress the CATEGORIZE button
   // for any ticker we've already classified once.
   const [tickerThemeMap, setTickerThemeMap] = useState<Record<string,string>>(() => {
-    try { return JSON.parse(localStorage.getItem('ticker_theme_map') || '{}') || {}; }
+    try {
+      const raw = JSON.parse(localStorage.getItem('ticker_theme_map') || '{}') || {};
+      // Strip any stale __UNCATEGORIZED__ sentinels so the CATEGORIZE button reappears
+      const cleaned: Record<string,string> = {};
+      for (const [k, v] of Object.entries(raw)) { if (v && v !== '__UNCATEGORIZED__') cleaned[k] = v as string; }
+      return cleaned;
+    }
     catch { return {}; }
   });
   const [aiReview, setAiReview] = useState<string | null>(null);
@@ -263,29 +269,15 @@ export default function CaelynTerminalPage() {
           if (theme && !/unclassified/i.test(String(theme))) newAssignments[String(tk).toUpperCase()] = String(theme);
         }
       }
-      // Mark every submitted symbol as attempted so the CATEGORIZE button only
-      // re-appears when a genuinely NEW ticker is added to the portfolio.
-      // Real assignments win; everything else gets a sentinel so the
-      // !tickerThemeMap[…] check returns false going forward.
-      const attempted: Record<string,string> = {};
-      for (const s of symbols) {
-        const key = String(s).toUpperCase();
-        attempted[key] = newAssignments[key] ?? '__UNCATEGORIZED__';
-      }
-      const next = { ...tickerThemeMap, ...attempted };
+      // Only stamp tickers that got real theme names — leave unresolved tickers
+      // with no entry so the CATEGORIZE button stays visible for them.
+      const next = { ...tickerThemeMap, ...newAssignments };
       setTickerThemeMap(next);
       try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
       setCategorizeResult('success');
       setTimeout(() => setCategorizeResult(null), 4000);
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
     } catch {
-      // Even on backend error, mark as attempted so we don't nag the user every
-      // refresh — they can manually retry by adding a new ticker.
-      const attempted: Record<string,string> = {};
-      for (const s of symbols) attempted[String(s).toUpperCase()] = '__UNCATEGORIZED__';
-      const next = { ...tickerThemeMap, ...attempted };
-      setTickerThemeMap(next);
-      try { localStorage.setItem('ticker_theme_map', JSON.stringify(next)); } catch {}
       setCategorizeResult('error');
       setTimeout(() => setCategorizeResult(null), 4000);
     } finally {
@@ -1000,10 +992,10 @@ export default function CaelynTerminalPage() {
                             <div style={{ minWidth:0 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                                 <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, whiteSpace:'nowrap' }}>{a.label}</span>
-                                {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => !tickerThemeMap[s.toUpperCase()]) && (
+                                {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => { const v = tickerThemeMap[s.toUpperCase()]; return !v || v === '__UNCATEGORIZED__'; }) && (
                                   <button
                                     disabled={categorizingThemes}
-                                    onClick={(e) => { e.stopPropagation(); const uncached = ((a as any).symbols ?? []).filter((s: string) => !tickerThemeMap[s.toUpperCase()]); handleCategorizeThemes(uncached.length ? uncached : ((a as any).symbols ?? [])); }}
+                                    onClick={(e) => { e.stopPropagation(); const needsCat = ((a as any).symbols ?? []).filter((s: string) => { const v = tickerThemeMap[s.toUpperCase()]; return !v || v === '__UNCATEGORIZED__'; }); handleCategorizeThemes(needsCat.length ? needsCat : ((a as any).symbols ?? [])); }}
                                     style={{ fontSize:7, fontWeight:800, letterSpacing:0.8, padding:'1px 5px', borderRadius:3, border:`1px solid ${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}55`, background:`${categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber}14`, color: categorizeResult === 'error' ? C.red : categorizeResult === 'success' ? C.green : C.amber, cursor: categorizingThemes ? 'wait' : 'pointer', flexShrink:0, transition:'all 0.15s', opacity: categorizingThemes ? 0.6 : 1 }}
                                   >
                                     {categorizingThemes ? '···' : categorizeResult === 'success' ? '✓ DONE' : categorizeResult === 'error' ? 'RETRY' : 'CATEGORIZE'}
