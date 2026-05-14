@@ -1,0 +1,117 @@
+The RS endpoint returns 55 themes but apparently none have proxy_type: "custom". Let me check exactly what it returns for our 4 custom themes:
+
+
+2 actions
+The 5 custom themes are in the universe but get dropped by the RS service — it only handles ETF/basket/hybrid proxy types. I need to find where themes are filtered and make custom types pass through:
+
+
+3 actions
+Let me read the RS service's theme processing loop to find exactly where custom types fall through:
+
+
+3 actions
+Let me find exactly where _build_theme_row fails for custom proxy types:
+
+
+2 actions
+Let me read _build_theme_row and _compute_theme_perf in full to find the exact failure point:
+
+
+3 actions
+Need to find where proxy histories are fetched — that's the root of why custom tickers have no history:
+
+
+2 actions
+The key is ALL_PROXY_SYMBOLS — if it's a pre-computed constant that doesn't include custom tickers, those never get history fetched. Let me check:
+
+
+3 actions
+Let me check what ALL_PROXY_SYMBOLS and ALL_CANDIDATE_SYMBOLS are in the universe file:
+
+
+4 actions
+ALL_PROXY_SYMBOLS IS dynamic — custom tickers are included. The bug is somewhere in _perf_for_timeframe or the history fetch. Let me check both simultaneously to find the exact failure point:
+
+
+3 actions
+Source is lkg_stale_revalidating — old cache. Even after fresh compute, custom themes will be dropped. Let me read _perf_for_timeframe and the RS route handler simultaneously to find and fix the root cause:
+
+
+4 actions
+The endpoint is serving a stale LKG cache while recomputing in background. Let me check the server logs to see if custom themes appear in the fresh compute:
+
+
+2 actions
+Let me grep the log file for THEME_RS entries to see what's happening with the custom themes during compute:
+
+
+2 actions
+The daily cadence guard is blocking a fresh recompute (next eligible in 4527s). The stale LKG cache was computed before the custom themes were added. I need to force-refresh and also verify custom themes won't be dropped. Let me check the refresh endpoint and the cadence guard:
+
+
+3 actions
+I need to understand the cadence guard and how to bypass it. Let me read the relevant section:
+
+
+3 actions
+Now I have the complete picture. The fix needs two parts:
+
+Prevent custom themes from being dropped when price data is unavailable (especially VCX)
+Clear the stale LKG/timestamp cache and force a fresh compute
+Let me find the refresh timestamp path and make the code fix:
+
+
+3 actions
+Now I have everything I need. The fix is:
+
+Code: Don't drop custom themes in _build_theme_row even when price data is unavailable
+Data: Delete stale disk caches and force-refresh
+Let me first check the remaining part of _build_theme_row between lines 848-881 to ensure nothing else breaks:
+
+
+2 actions
+Good — the rest of _build_theme_row handles null values gracefully. Now I'll apply the fix and clear stale cache files simultaneously:
+
+
+3 actions
+Now restart the server to pick up the code change, then force-refresh the RS endpoint:
+
+
+2 actions
+Good, server is running. Now force-refresh the RS endpoint to trigger a fresh compute with the fixed code:
+
+
+2 actions
+All 5 custom themes are now present in the RS endpoint with proxy_type: "custom" and live data:
+
+photonics_lasers — +23.34%, RS 90.9
+ai_networking — +15.68%, RS 82.2
+pre_ipo — +128.09%, RS 79.0 (VCX has live price data)
+power_cooling — +10.43%, RS 70.7
+substrates_packaging — +13.76%, RS 68.9
+Theme count went from 55 → 60. The frontend filter on proxy_type === "custom" will now find all 5.
+
+Let me write the commit message and wrap up:
+
+
+3 actions
+The fix is working. Here's a summary of what was done:
+
+Root cause: /api/themes/relative-strength was silently dropping all 5 custom themes because:
+
+_build_theme_row() returned None and discarded any theme where all performance timeframes returned null — which hit custom themes on their first compute pass before history was cached
+The stale LKG disk cache (saved before the custom themes were added) was being served indefinitely due to the 24-hour cadence guard blocking a fresh recompute
+Fix applied:
+
+Modified _build_theme_row() in theme_rs_service.py — custom themes (proxy_type == "custom") now bypass the null-performance early exit, so they always appear in the response even if price data is temporarily unavailable
+Deleted the stale themes_rs_lkg.json and theme_rs_refresh_ts.json disk files to clear the cadence guard
+Restarted the server and triggered a force-refresh to get a clean live compute
+Result: The endpoint now returns 60 themes (up from 55) with all 5 custom themes present:
+
+Theme	Return	RS Score
+photonics_lasers	+23.3%	90.9
+ai_networking	+15.7%	82.2
+pre_ipo	+128.1%	79.0
+power_cooling	+10.4%	70.7
+substrates_packaging	+13.8%	68.9
+The frontend's proxy_type === "custom" filter will now match all 5, showing the CUSTOM badge on the Themes page and populating the Home page Theme Performance section.
