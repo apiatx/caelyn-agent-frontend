@@ -724,7 +724,7 @@ export default function ScreenerHub() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold tracking-tight bg-gradient-to-r from-purple-300 to-fuchsia-300 bg-clip-text text-transparent">
-              Caelyn Screener Hub
+              Caelyn Screener
             </h2>
             <p className="text-xs text-white/50 mt-1">
               Hidden-gem discovery — volume, accumulation, and options signals across all tabs.
