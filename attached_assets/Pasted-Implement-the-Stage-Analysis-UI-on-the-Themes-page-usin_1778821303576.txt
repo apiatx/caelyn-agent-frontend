@@ -1,0 +1,79 @@
+Implement the Stage Analysis UI on the Themes page using the new backend fields. Do not calculate stages in the frontend.
+
+Backend now returns additive stage fields on theme rows from /api/sectors/relative-strength?mode=themes and/or the existing Themes page performance endpoints:
+- stage
+- stage_label
+- stage_score
+- stage_confidence
+- stage_reason
+- stage_signals
+- stage_updated_at
+- stage_source
+
+Goal:
+Add Stage Analysis to the Themes page table so every theme row clearly shows whether the theme is:
+- Stage 1 Base
+- Stage 1 → 2 Breakout Watch
+- Stage 2 Advance
+- Stage 3 Top/Range
+- Stage 3 → 4 Danger
+- Stage 4 Decline
+- Unknown / n/a
+
+Tasks:
+1. Locate the Themes page table/components currently rendering Market Performance / Relative Strength rows.
+2. Add a compact STAGE column or stage badge to each row.
+3. Use backend fields only. Do not recreate Weinstein logic in React.
+4. Badge labels:
+   - Stage 1 Base: "S1 Base"
+   - Stage 1 → 2 Breakout Watch: "S1→S2 Watch"
+   - Stage 2 Advance: "S2 Advance"
+   - Stage 3 Top/Range: "S3 Top/Range"
+   - Stage 3 → 4 Danger: "S3→S4 Danger"
+   - Stage 4 Decline: "S4 Decline"
+   - Unknown: "Stage n/a"
+
+5. Suggested visual meaning:
+   - S1 Base: muted/neutral watchlist badge
+   - S1→S2 Watch: bright/opportunity badge
+   - S2 Advance: strong green/trend badge
+   - S3 Top/Range: yellow/caution badge
+   - S3→S4 Danger: orange/red warning badge
+   - S4 Decline: red/avoid badge
+   Preserve the existing dark/glass style.
+
+6. Add hover tooltip, row expansion, or small info popover showing:
+   - stage_reason
+   - stage_score
+   - stage_confidence
+   - stage_source
+   - price_vs_30w_ma_pct
+   - ma_30w_slope_pct
+   - rs_vs_spy_trend
+   - rs_vs_spy_8w_pct
+   - weeks_above_30w_ma_of_8
+   - breadth_above_30w_ma_pct if available
+   - breadth_rising_30w_ma_pct if available
+   - breakout_watch
+   - danger_zone
+
+7. Do not show undefined/null clutter.
+   If a field is missing, omit it from the tooltip.
+   If stage is missing, show "Stage n/a" with muted styling.
+
+8. Add optional sorting by stage_score if simple, but do not break existing sorting.
+   Existing 1D/7D/30D/YTD/1Y sorting must continue working.
+
+9. Add a small timestamp if easy:
+   "Stage updated: X ago"
+   using stage_updated_at.
+   Do not confuse this with price freshness or theme universe freshness.
+
+Validation:
+- Load Themes page.
+- Confirm every row has a stage badge or Stage n/a fallback.
+- Confirm custom themes like Power / Cooling show stage data.
+- Confirm pre_ipo does not crash and shows Stage n/a.
+- Confirm no frontend-side stage calculations were added.
+- Confirm existing performance table still renders and sorts.
+- Paste screenshot/result summary and exact files changed.

@@ -149,6 +149,24 @@ interface ThemeRow {
   laggards:            Array<{ symbol: string; return_pct: number }> | null;
   last_updated:        string | null;
   proxy_source_health: Record<string, string> | null;
+  // Stage Analysis fields (additive, all optional)
+  stage:                     number | null;
+  stage_label:               string | null;
+  stage_score:               number | null;
+  stage_confidence:          number | null;
+  stage_reason:              string | null;
+  stage_signals:             any;
+  stage_updated_at:          string | null;
+  stage_source:              string | null;
+  price_vs_30w_ma_pct:       number | null;
+  ma_30w_slope_pct:          number | null;
+  rs_vs_spy_trend:           string | null;
+  rs_vs_spy_8w_pct:          number | null;
+  weeks_above_30w_ma_of_8:   number | null;
+  breadth_above_30w_ma_pct:  number | null;
+  breadth_rising_30w_ma_pct: number | null;
+  breakout_watch:            boolean | null;
+  danger_zone:               boolean | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -568,6 +586,24 @@ interface DisplayRow {
   dotColor:               string;
   tvSymbol:               string;
   series?:                any;
+  // Stage Analysis
+  stage:                     number | null;
+  stage_label:               string | null;
+  stage_score:               number | null;
+  stage_confidence:          number | null;
+  stage_reason:              string | null;
+  stage_signals:             any;
+  stage_updated_at:          string | null;
+  stage_source:              string | null;
+  price_vs_30w_ma_pct:       number | null;
+  ma_30w_slope_pct:          number | null;
+  rs_vs_spy_trend:           string | null;
+  rs_vs_spy_8w_pct:          number | null;
+  weeks_above_30w_ma_of_8:   number | null;
+  breadth_above_30w_ma_pct:  number | null;
+  breadth_rising_30w_ma_pct: number | null;
+  breakout_watch:            boolean | null;
+  danger_zone:               boolean | null;
 }
 
 function buildThemeSparkline(theme: ThemeRow): number[] {
@@ -627,7 +663,84 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     spkPos:                 (ch7 ?? 0) >= 0,
     dotColor:               THEME_PALETTE[idx % THEME_PALETTE.length],
     tvSymbol:               themeEtfTvSymbol(ticker),
+    stage:                     (theme as any).stage                     ?? null,
+    stage_label:               (theme as any).stage_label               ?? null,
+    stage_score:               (theme as any).stage_score               ?? null,
+    stage_confidence:          (theme as any).stage_confidence          ?? null,
+    stage_reason:              (theme as any).stage_reason              ?? null,
+    stage_signals:             (theme as any).stage_signals             ?? null,
+    stage_updated_at:          (theme as any).stage_updated_at          ?? null,
+    stage_source:              (theme as any).stage_source              ?? null,
+    price_vs_30w_ma_pct:       (theme as any).price_vs_30w_ma_pct       ?? null,
+    ma_30w_slope_pct:          (theme as any).ma_30w_slope_pct          ?? null,
+    rs_vs_spy_trend:           (theme as any).rs_vs_spy_trend           ?? null,
+    rs_vs_spy_8w_pct:          (theme as any).rs_vs_spy_8w_pct          ?? null,
+    weeks_above_30w_ma_of_8:   (theme as any).weeks_above_30w_ma_of_8   ?? null,
+    breadth_above_30w_ma_pct:  (theme as any).breadth_above_30w_ma_pct  ?? null,
+    breadth_rising_30w_ma_pct: (theme as any).breadth_rising_30w_ma_pct ?? null,
+    breakout_watch:            (theme as any).breakout_watch            ?? null,
+    danger_zone:               (theme as any).danger_zone               ?? null,
   };
+}
+
+// ─── Stage Analysis helpers ───────────────────────────────────────────────────
+interface StageStyle { label: string; bg: string; clr: string; border: string }
+function stageStyle(stageLabel: string | null): StageStyle {
+  if (!stageLabel) return { label: "Stage n/a", bg: "rgba(55,65,81,0.25)", clr: "#475569", border: "rgba(55,65,81,0.35)" };
+  const s = stageLabel.toLowerCase();
+  if ((s.includes("1") && s.includes("2")) || s.includes("breakout") || s.includes("watch"))
+    return { label: "S1→S2 Watch", bg: "rgba(14,165,233,0.15)",  clr: "#0ea5e9", border: "rgba(14,165,233,0.3)"  };
+  if ((s.includes("3") && s.includes("4")) || (s.includes("3") && s.includes("danger")))
+    return { label: "S3→S4 Danger", bg: "rgba(249,115,22,0.15)", clr: "#f97316", border: "rgba(249,115,22,0.3)"  };
+  if (s.includes("stage 1") || (s.includes("1") && s.includes("base")))
+    return { label: "S1 Base",     bg: "rgba(100,116,139,0.15)", clr: "#94a3b8", border: "rgba(100,116,139,0.3)" };
+  if (s.includes("stage 2") || s.includes("advance"))
+    return { label: "S2 Advance",  bg: "rgba(34,197,94,0.15)",   clr: "#22c55e", border: "rgba(34,197,94,0.3)"   };
+  if (s.includes("stage 4") || s.includes("decline"))
+    return { label: "S4 Decline",  bg: "rgba(239,68,68,0.15)",   clr: "#ef4444", border: "rgba(239,68,68,0.3)"   };
+  if (s.includes("stage 3") || s.includes("top") || s.includes("range"))
+    return { label: "S3 Top/Range",bg: "rgba(245,158,11,0.15)",  clr: "#f59e0b", border: "rgba(245,158,11,0.3)"  };
+  return { label: "Stage n/a",     bg: "rgba(55,65,81,0.25)",    clr: "#475569", border: "rgba(55,65,81,0.35)"   };
+}
+
+function StageBadge({ row }: { row: DisplayRow }) {
+  const st = stageStyle(row.stage_label);
+
+  const tipLines: string[] = [];
+  if (row.stage_reason)              tipLines.push(`Reason: ${row.stage_reason}`);
+  if (row.stage_score != null)       tipLines.push(`Score: ${row.stage_score.toFixed(1)}`);
+  if (row.stage_confidence != null)  tipLines.push(`Confidence: ${(row.stage_confidence * 100).toFixed(0)}%`);
+  if (row.stage_source)              tipLines.push(`Source: ${row.stage_source}`);
+  if (row.price_vs_30w_ma_pct != null)     tipLines.push(`Price vs 30W MA: ${row.price_vs_30w_ma_pct > 0 ? "+" : ""}${row.price_vs_30w_ma_pct.toFixed(2)}%`);
+  if (row.ma_30w_slope_pct != null)        tipLines.push(`30W MA slope: ${row.ma_30w_slope_pct > 0 ? "+" : ""}${row.ma_30w_slope_pct.toFixed(2)}%`);
+  if (row.rs_vs_spy_trend)                 tipLines.push(`RS vs SPY trend: ${row.rs_vs_spy_trend}`);
+  if (row.rs_vs_spy_8w_pct != null)        tipLines.push(`RS vs SPY 8W: ${row.rs_vs_spy_8w_pct > 0 ? "+" : ""}${row.rs_vs_spy_8w_pct.toFixed(2)}%`);
+  if (row.weeks_above_30w_ma_of_8 != null) tipLines.push(`Weeks above 30W MA: ${row.weeks_above_30w_ma_of_8}/8`);
+  if (row.breadth_above_30w_ma_pct != null)  tipLines.push(`Breadth above 30W MA: ${row.breadth_above_30w_ma_pct.toFixed(1)}%`);
+  if (row.breadth_rising_30w_ma_pct != null) tipLines.push(`Breadth rising 30W MA: ${row.breadth_rising_30w_ma_pct.toFixed(1)}%`);
+  if (row.breakout_watch === true)   tipLines.push("⚡ Breakout Watch");
+  if (row.danger_zone === true)      tipLines.push("⚠ Danger Zone");
+  if (row.stage_updated_at)         tipLines.push(`Stage updated: ${fmtFreshness(row.stage_updated_at)}`);
+
+  return (
+    <span
+      title={tipLines.length ? tipLines.join("\n") : undefined}
+      style={{
+        display: "inline-block",
+        padding: "1px 6px",
+        borderRadius: 4,
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.04em",
+        whiteSpace: "nowrap",
+        cursor: tipLines.length ? "help" : "default",
+        background: st.bg,
+        color: st.clr,
+        border: `1px solid ${st.border}`,
+      }}>
+      {st.label}
+    </span>
+  );
 }
 
 // ─── Theme Relative Strength Chart ────────────────────────────────────────────
@@ -1188,7 +1301,7 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
 }
 
 // ─── B + C: Unified Themes Card ───────────────────────────────────────────────
-type SortKey = "ticker" | "name" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "change_5y" | "rotation_score";
+type SortKey = "ticker" | "name" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "change_5y" | "rotation_score" | "stage_score";
 
 function UnifiedThemesCard({
   loading: sectorLoading,
@@ -1305,6 +1418,7 @@ function UnifiedThemesCard({
                 <Th label="30D" k="change_30d" /><Th label="YTD" k="change_ytd" />
                 <Th label="1Y" k="change_1y" /><Th label="5Y" k="change_5y" />
                 <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
+                <Th label="Stage" k="stage_score" />
               </tr>
             </thead>
             <tbody>
@@ -1380,10 +1494,13 @@ function UnifiedThemesCard({
                           ? <Badge title={row.state_reason ?? undefined} className={`border text-[10px] px-1.5 py-0 cursor-help ${tagCls}`}>{row.regime_tag}</Badge>
                           : <span className="text-gray-600 text-xs">—</span>}
                       </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <StageBadge row={row} />
+                      </td>
                     </tr>
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
-                        <td colSpan={12} className="px-4 py-4">
+                        <td colSpan={13} className="px-4 py-4">
                           <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
                         </td>
                       </tr>
