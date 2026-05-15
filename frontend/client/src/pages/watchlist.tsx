@@ -519,6 +519,9 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
     const tickers: any[] = section.tickers || [];
     // Use canonical_theme_name if backend provides it; fall back to title
     const displayTitle = resolveSectionTitle(section);
+    const avg1d = sectionAvg1d(section);
+    const hasAvg = Number.isFinite(avg1d) && avg1d !== -Infinity;
+    const avg1dColor = hasAvg ? (avg1d >= 0 ? C.green : C.red) : C.dim;
     return (
       <div key={key} style={{
         background: C.card,
@@ -530,8 +533,22 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
         flexDirection: 'column',
       }}>
         <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em' }}>
-            {displayTitle}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+              {displayTitle}
+            </div>
+            {hasAvg && (
+              <span style={{
+                fontSize: 11, fontWeight: 800, fontFamily: C.font,
+                color: avg1dColor,
+                background: avg1dColor + '18',
+                padding: '2px 7px', borderRadius: 4,
+                flexShrink: 0,
+                letterSpacing: '0.02em',
+              }}>
+                {avg1d > 0 ? '+' : ''}{avg1d.toFixed(2)}%
+              </span>
+            )}
           </div>
           {/* Show legacy title dimmed if canonical name overrides it */}
           {section.canonical_theme_name && section.title && section.canonical_theme_name !== section.title && (
