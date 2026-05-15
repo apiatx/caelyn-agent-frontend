@@ -63,7 +63,7 @@ import type {
 // ── Lightweight HL signal types (mirrors hl-advanced-signals shape) ──────────
 interface HLRSLeader  { symbol: string; rs_score: number; return_1h: number; return_4h: number; return_24h: number; }
 interface HLOIRegime  { symbol: string; regime: string; price_change_24h_pct?: number; oi_change_1h_pct: number; regime_score: number; }
-interface HLAdvSigs   { relative_strength_leaders: HLRSLeader[]; oi_regime_shift: HLOIRegime[]; as_of?: string; }
+interface HLAdvSigs   { relative_strength_leaders: HLRSLeader[]; oi_regime_shift: HLOIRegime[]; as_of?: string; market_regime?: string | null; }
 
 // ───────────────────────────────────────────────────────────────────────────
 // External chart URL resolution for movers
@@ -880,8 +880,9 @@ const OI_REGIME_CLR: Record<string, string> = {
 };
 
 function HLTopSignals({ signals, loading, viewMore, onTickerClick }: { signals: HLAdvSigs | undefined; loading: boolean; viewMore?: string; onTickerClick?: (sym: string) => void }) {
-  const rsLeaders = (signals?.relative_strength_leaders || []).slice(0, 5);
-  const oiShifts  = (signals?.oi_regime_shift || []).slice(0, 5);
+  const rsLeaders   = (signals?.relative_strength_leaders || []).slice(0, 5);
+  const oiShifts    = (signals?.oi_regime_shift || []).slice(0, 5);
+  const marketRegime = signals?.market_regime ?? null;
 
   const colHdr  = "text-[9px] uppercase tracking-widest text-white/30 font-medium select-none";
   const numCell = "text-xs font-mono tabular-nums text-right";
@@ -889,6 +890,14 @@ function HLTopSignals({ signals, loading, viewMore, onTickerClick }: { signals: 
   return (
     <GlassCard className="p-4">
       <SectionHeader icon={Activity} title="Hyperliquid Top Signals" accent="Perps · live" viewMore={viewMore} />
+
+      {/* ── Market Regime strip ── */}
+      {!loading && marketRegime && (
+        <div className="flex items-center gap-2 mt-2 mb-1 px-2 py-1.5 rounded bg-white/[0.03] border border-white/[0.06]">
+          <span className="text-[9px] uppercase tracking-widest text-white/30 font-medium select-none shrink-0">Market Regime</span>
+          <span className="text-xs font-bold text-white/90 tabular-nums">{marketRegime}</span>
+        </div>
+      )}
 
       {loading && Array.from({ length: 5 }).map((_, i) => (
         <Skeleton key={i} className="h-7 my-1 rounded bg-white/[0.04]" />

@@ -3772,6 +3772,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  function _computeMarketRegime(): string | null {
+    const rows: any[] = Array.isArray(_hlCache['all:200']?.data?.rows) ? _hlCache['all:200'].data.rows : [];
+    if (!rows.length) return null;
+    const longs = rows.filter((r: any) => r.signalDirection === 'bullish').length;
+    const pctBull = ((longs / rows.length) * 100).toFixed(0);
+    return `${pctBull}% long · ${rows.length} perps scanned`;
+  }
+
   app.get('/api/hyperliquid/signals', async (req, res) => {
     try {
       const r = await fetch(
@@ -3779,7 +3787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { headers: hlHdr(), signal: AbortSignal.timeout(12_000) }
       );
       if (!r.ok) {
-        if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
+        if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json({ ..._signalsCache, market_regime: _computeMarketRegime() ?? _signalsCache.market_regime ?? null }); }
         return res.status(r.status).json({ error: `Backend ${r.status}` });
       }
       const json = await r.json();
@@ -3788,11 +3796,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (json.order_book_pressure?.length ?? 0) > 0 ||
         (json.oi_regime_shift?.length ?? 0) > 0
       ));
-      if (hasContent) _signalsCache = json;
-      if (!hasContent && _signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
-      res.json(json);
+      const enriched = { ...json, market_regime: _computeMarketRegime() ?? null };
+      if (hasContent) _signalsCache = enriched;
+      if (!hasContent && _signalsCache) { res.setHeader('X-Cache','STALE'); return res.json({ ..._signalsCache, market_regime: _computeMarketRegime() ?? _signalsCache.market_regime ?? null }); }
+      res.json(enriched);
     } catch (e: any) {
-      if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json(_signalsCache); }
+      if (_signalsCache) { res.setHeader('X-Cache','STALE'); return res.json({ ..._signalsCache, market_regime: _computeMarketRegime() ?? _signalsCache.market_regime ?? null }); }
       res.status(500).json({ error: 'Failed to fetch Hyperliquid signals' });
     }
   });
