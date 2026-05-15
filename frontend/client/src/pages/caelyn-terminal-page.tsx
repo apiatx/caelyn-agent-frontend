@@ -521,12 +521,9 @@ export default function CaelynTerminalPage() {
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', height:46, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-          <div style={{ width:28, height:28, borderRadius:5, background:`linear-gradient(135deg, ${C.teal}, #0369a1)`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:11, color:'#fff', letterSpacing:0.5 }}>{view === 'terminal' ? 'PT' : 'PD'}</div>
-          <div>
-            <div style={{ fontSize:13, fontWeight:800, letterSpacing:1.5, color:C.text }}>{view === 'terminal' ? 'PORTFOLIO TERMINAL' : 'PORTFOLIO DASHBOARD'}</div>
-          </div>
+          <div style={{ fontSize:14, fontWeight:900, letterSpacing:2, color:C.text }}>PORTFOLIO</div>
           {/* ── View Toggle ── */}
-          <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:8 }}>
+          <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:4 }}>
             {(['TERMINAL','DASHBOARD'] as const).map(v => {
               const isActive = view === v.toLowerCase();
               return (
@@ -537,29 +534,28 @@ export default function CaelynTerminalPage() {
         </div>
 
         {view === 'terminal' ? (
-          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
             <div style={{ textAlign:'center', flexShrink:0 }}>
               <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
-              <div style={{ fontSize:9, color: ph ? C.dim : pctClr(p.change_today) }}>
+              <div style={{ fontSize:10, color: ph ? C.dim : pctClr(p.change_today) }}>
                 {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
               </div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-              <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
-              <div style={{ display:'flex', gap:12 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
+              <div style={{ display:'flex', gap:16 }}>
                 {(['1D','5D','1M','6M','1Y'] as const).map(k => (
-                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
                     <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
-                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
               <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
               <div style={{ fontSize:13, fontWeight:800, color: ph ? C.dim : pctClr(p.total_return_pct) }}>{DPct(p.total_return_pct)}</div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
               <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>SENTIMENT</div>
               <div style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : sentColor }}>{DS(p.sentiment)}</div>
             </div>
@@ -572,29 +568,28 @@ export default function CaelynTerminalPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display:'flex', alignItems:'center', gap:18 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:24 }}>
             <div style={{ textAlign:'center', flexShrink:0 }}>
               <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
-              <div style={{ fontSize:9, color: ph ? C.dim : pctClr(p.change_today) }}>
+              <div style={{ fontSize:10, color: ph ? C.dim : pctClr(p.change_today) }}>
                 {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
               </div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
-              <div style={{ fontSize:7, color:C.dim, letterSpacing:2, marginBottom:3, textTransform:'uppercase' }}>Change</div>
-              <div style={{ display:'flex', gap:12 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
+              <div style={{ display:'flex', gap:16 }}>
                 {(['1D','5D','1M','6M','1Y'] as const).map(k => (
-                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                  <div key={k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
                     <span style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>{k}</span>
-                    <span style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color: ph ? C.dim : pctClr(perfMap[k]) }}>{DPct(perfMap[k])}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
               <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>TOTAL RETURN</div>
               <div style={{ fontSize:13, fontWeight:800, color: ph ? C.dim : pctClr(p.total_return_pct) }}>{DPct(p.total_return_pct)}</div>
             </div>
-            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:18, flexShrink:0 }}>
+            <div style={{ borderLeft:`1px solid ${C.border}`, paddingLeft:22, flexShrink:0 }}>
               <div style={{ fontSize:9, color:C.dim, letterSpacing:1 }}>SENTIMENT</div>
               <div style={{ fontSize:11, fontWeight:700, color: ph ? C.dim : sentColor }}>{DS(p.sentiment)}</div>
             </div>
