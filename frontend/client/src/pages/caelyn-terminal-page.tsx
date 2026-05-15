@@ -1110,11 +1110,67 @@ export default function CaelynTerminalPage() {
 
         </div>
 
-        {/* ── COL 3: Portfolio News (taller) + Investment Style (shorter) ──────────────── */}
+        {/* ── COL 3: Risk Suggestions (taller) + Risk Analysis (shorter) ──────────────── */}
         <div style={{ flex:'0 0 210px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* News — moved up, takes remaining space */}
+          {/* Risk Suggestions — fills available space */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <CardHdr label="Risk Suggestions" badge="Intel" />
+            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
+              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
+            </div>
+          </div>
+
+          {/* Risk Analysis — fixed height at bottom */}
+          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <CardHdr label="Risk Analysis" badge="Metrics" />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
+              {[
+                { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
+                { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
+                { label:'Top Concentration',   value: DM(d.risk_metrics.top_concentration,1,'%'),   sub: d.risk_metrics.top_concentration_label || '—' },
+                { label:'Portfolio Beta',       value: DM(d.risk_metrics.portfolio_beta,2,''),       sub:'vs S&P 500' },
+                { label:'Sharpe Ratio',         value: DM(d.risk_metrics.sharpe_ratio,2,''),         sub:'Risk-adj. return' },
+                { label:'Sortino Ratio',        value: DM(d.risk_metrics.sortino_ratio,2,''),        sub:'Downside risk-adj.' },
+              ].map((m, i) => (
+                <div key={i} style={{ padding:'10px 12px', background:C.card }}>
+                  <div style={{ fontSize:18, fontWeight:900, color: ph ? C.dim : C.text, lineHeight:1 }}>{m.value}</div>
+                  <div style={{ fontSize:9, color:C.teal, marginTop:3, fontWeight:600 }}>{m.label}</div>
+                  <div style={{ fontSize:8, color:C.text, marginTop:2 }}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── COL 4: Investment Style (shorter) + News (taller) ─────────────────────── */}
+        <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
+
+          {/* Investment Style — fixed height at top */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', display:'flex', flexDirection:'column' }}>
+            <CardHdr label="Investment Style" badge="Risk Profile" />
+            <div style={{ padding:'10px 12px 12px', display:'flex', flexDirection:'column' }}>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:30, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
+                <div style={{ fontSize:9, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:3 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
+                <div style={{ fontSize:8, color:C.text, marginTop:2 }}>Risk profile score / 100</div>
+              </div>
+              <div style={{ padding:'0 4px', margin:'8px 0 2px' }}>
+                <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:5 }}>
+                  {!ph && styleScore !== null && (
+                    <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
+                  )}
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ fontSize:7, color:C.text }}>Conservative</span>
+                  <span style={{ fontSize:7, color:C.text }}>High Risk</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* News — takes remaining space below Investment Style */}
+          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="News" badge={`${flatPortfolioNews.length}`} />
             <div style={{ flex:1, overflowY:'auto', padding:'2px 0' }}>
               {flatPortfolioNews.length === 0 && (
@@ -1139,62 +1195,6 @@ export default function CaelynTerminalPage() {
                     </div>
                   </div>
                 </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Investment Style — shorter, redundant metric rows removed */}
-          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column' }}>
-            <CardHdr label="Investment Style" badge="Risk Profile" />
-            <div style={{ padding:'10px 12px 12px', display:'flex', flexDirection:'column' }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:30, fontWeight:900, color: ph ? C.dim : styleColor, lineHeight:1 }}>{ph ? '—' : styleScore}</div>
-                <div style={{ fontSize:9, fontWeight:700, color: ph ? C.dim : styleColor, letterSpacing:1, marginTop:3 }}>{ph ? 'AWAITING DATA' : (styleLabel ?? '—')}</div>
-                <div style={{ fontSize:8, color:C.text, marginTop:2 }}>Risk profile score / 100</div>
-              </div>
-              <div style={{ padding:'0 4px', margin:'8px 0 2px' }}>
-                <div style={{ position:'relative', height:8, borderRadius:4, background:`linear-gradient(to right, ${C.green}, ${C.teal}, ${C.amber}, #f97316, ${C.red})`, marginBottom:5 }}>
-                  {!ph && styleScore !== null && (
-                    <div style={{ position:'absolute', top:-3, left:`${styleScore}%`, transform:'translateX(-50%)', width:4, height:14, background:'#fff', borderRadius:2, boxShadow:'0 0 6px rgba(255,255,255,0.7)' }} />
-                  )}
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between' }}>
-                  <span style={{ fontSize:7, color:C.text }}>Conservative</span>
-                  <span style={{ fontSize:7, color:C.text }}>High Risk</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── COL 4: Risk Suggestions + Risk Analysis ─────────────────────── */}
-        <div style={{ flex:'0 0 245px', display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
-
-          {/* Risk Suggestions — fills available space between top of column and Risk Analysis below */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Risk Suggestions" badge="Intel" />
-            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
-              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
-            </div>
-          </div>
-
-          {/* Risk Analysis — sits flush with AI Portfolio Review row beneath it */}
-          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Risk Analysis" badge="Metrics" />
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
-              {[
-                { label:'Weighted Volatility', value: DM(d.risk_metrics.weighted_volatility,1,'%'), sub:'Annualized' },
-                { label:'Max Drawdown (1Y)',   value: DM(d.risk_metrics.max_drawdown,1,'%'),        sub:'Peak to trough' },
-                { label:'Top Concentration',   value: DM(d.risk_metrics.top_concentration,1,'%'),   sub: d.risk_metrics.top_concentration_label || '—' },
-                { label:'Portfolio Beta',       value: DM(d.risk_metrics.portfolio_beta,2,''),       sub:'vs S&P 500' },
-                { label:'Sharpe Ratio',         value: DM(d.risk_metrics.sharpe_ratio,2,''),         sub:'Risk-adj. return' },
-                { label:'Sortino Ratio',        value: DM(d.risk_metrics.sortino_ratio,2,''),        sub:'Downside risk-adj.' },
-              ].map((m, i) => (
-                <div key={i} style={{ padding:'10px 12px', background:C.card }}>
-                  <div style={{ fontSize:18, fontWeight:900, color: ph ? C.dim : C.text, lineHeight:1 }}>{m.value}</div>
-                  <div style={{ fontSize:9, color:C.teal, marginTop:3, fontWeight:600 }}>{m.label}</div>
-                  <div style={{ fontSize:8, color:C.text, marginTop:2 }}>{m.sub}</div>
-                </div>
               ))}
             </div>
           </div>
