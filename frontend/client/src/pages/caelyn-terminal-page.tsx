@@ -834,7 +834,7 @@ export default function CaelynTerminalPage() {
                         <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
                           <div style={{ height:'100%', width:`${Math.max(pct, 0)}%`, background: current < 0 ? C.red : pct >= 100 ? C.green : C.teal, borderRadius:2, transition:'width 0.4s' }} />
                         </div>
-                        <span style={{ fontSize:7, color:C.textLow, whiteSpace:'nowrap' }}>{target}% goal</span>
+                        <span style={{ fontSize:7, color:C.dim, whiteSpace:'nowrap' }}>{target}% goal</span>
                       </div>
                     )}
                   </div>
@@ -894,7 +894,7 @@ export default function CaelynTerminalPage() {
               {!ph && !hasChartData && (
                 <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', zIndex:2, gap:4, background:C.card, borderRadius:4 }}>
                   <span style={{ fontSize:9, color:C.text, letterSpacing:1.5 }}>NO HISTORY YET</span>
-                  <span style={{ fontSize:8, color:C.textLow, textAlign:'center', lineHeight:1.6 }}>Performance chart builds as portfolio<br/>saves &amp; value snapshots accumulate</span>
+                  <span style={{ fontSize:8, color:C.dim, textAlign:'center', lineHeight:1.6 }}>Performance chart builds as portfolio<br/>saves &amp; value snapshots accumulate</span>
                 </div>
               )}
               <ResponsiveContainer width="100%" height="100%">
@@ -1052,7 +1052,7 @@ export default function CaelynTerminalPage() {
                             <div style={{ width:8, height:8, borderRadius:2, background:a.color, flexShrink:0, opacity: ph ? 0.4 : 1, marginTop:2 }} />
                             <div style={{ minWidth:0 }}>
                               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                                <span style={{ fontSize:9, color: allocHover?.label === a.label ? C.text : C.dim, whiteSpace:'nowrap' }}>{a.label}</span>
+                                <span style={{ fontSize:9, color: C.text, whiteSpace:'nowrap' }}>{a.label}</span>
                                 {allocTab === 'themes' && !ph && (a as any).isUnclassified && (((a as any).symbols ?? []) as string[]).some((s: string) => { const v = tickerThemeMap[s.toUpperCase()]; return !v || v === '__UNCATEGORIZED__'; }) && (
                                   <button
                                     disabled={categorizingThemes}
@@ -1063,7 +1063,7 @@ export default function CaelynTerminalPage() {
                                   </button>
                                 )}
                               </div>
-                              {(a as any).sublabel && <span style={{ fontSize:7, color:C.textLow, display:'block', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
+                              {(a as any).sublabel && <span style={{ fontSize:7, color:C.dim, display:'block', whiteSpace:'nowrap' }}>{(a as any).sublabel}</span>}
                             </div>
                           </div>
                           <span style={{ justifySelf:'end', alignSelf:'center', fontSize:10, fontWeight:700, color: ph ? C.dim : C.text, padding:'2px 0' }}>
@@ -1073,7 +1073,7 @@ export default function CaelynTerminalPage() {
                       );
                     })}
                     {!ph && allocData.length === 0 && (
-                      <span style={{ gridColumn:'1 / span 2', fontSize:9, color:C.textLow, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
+                      <span style={{ gridColumn:'1 / span 2', fontSize:9, color:C.dim, textAlign:'center', padding:'8px 0', display:'block' }}>No data</span>
                     )}
                   </div>
                 </div>
@@ -1215,13 +1215,13 @@ export default function CaelynTerminalPage() {
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Volatility</span>
-            <span style={{ fontSize:8, color:C.textLow }}>Annualized</span>
+            <span style={{ fontSize:8, color:C.dim }}>Annualized</span>
           </div>
           <div style={{ flex:1, padding:'8px 10px', display:'flex', flexDirection:'column', gap:5, overflowY:'auto' }}>
             {d.volatility.length === 0 && !ph && (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:80, gap:4 }}>
                 <span style={{ fontSize:9, color:C.text, letterSpacing:1.5 }}>UNAVAILABLE</span>
-                <span style={{ fontSize:8, color:C.textLow, textAlign:'center', lineHeight:1.6 }}>Volatility requires historical<br/>price returns per holding</span>
+                <span style={{ fontSize:8, color:C.dim, textAlign:'center', lineHeight:1.6 }}>Volatility requires historical<br/>price returns per holding</span>
               </div>
             )}
             {d.volatility.map((v, i) => {
@@ -1245,7 +1245,7 @@ export default function CaelynTerminalPage() {
         <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Options</span>
-            <span style={{ fontSize:8, color:C.textLow }}>Flow</span>
+            <span style={{ fontSize:8, color:C.dim }}>Flow</span>
           </div>
           {(() => {
             const rows = portfolioOptions?.tickers ?? [];
@@ -1334,7 +1334,7 @@ export default function CaelynTerminalPage() {
                   style={{ background:'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)', boxShadow:'0 0 20px rgba(32,144,208,0.4), 0 0 40px rgba(92,200,240,0.2)', borderRadius:8, padding:'9px 20px', border:'none', cursor:'pointer', fontSize:12, fontWeight:700, color:'#fff', letterSpacing:0.5, opacity: aiLoading || !dashboardHoldings?.length ? 0.6 : 1 }}>
                   Run AI Review
                 </button>
-                <span style={{ fontSize:9, color:C.textLow }}>Takes 20–40 seconds</span>
+                <span style={{ fontSize:9, color:C.dim }}>Takes 20–40 seconds</span>
                 <button onClick={() => setCompareOpen(true)}
                   style={{ marginTop:6, background:'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.12))', border:'1px solid rgba(56,189,248,0.35)', borderRadius:8, padding:'8px 16px', cursor:'pointer', fontSize:11, fontWeight:700, color:'#38bdf8', letterSpacing:0.5, boxShadow:'0 0 12px rgba(56,189,248,0.08)', display:'inline-flex', alignItems:'center', gap:6 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(56,189,248,0.2), rgba(167,139,250,0.18))'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(56,189,248,0.6)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(56,189,248,0.15)'; }}
@@ -1385,7 +1385,7 @@ export default function CaelynTerminalPage() {
               <span key={i} style={{ fontSize:9, color:C.text, flexShrink:0 }}>
                 <span style={{ color:C.teal, fontWeight:700, marginRight:4 }}>{n.symbol}</span>
                 {n.headline}
-                <span style={{ color:C.textLow, marginLeft:6 }}>{n.time_ago}</span>
+                <span style={{ color:C.dim, marginLeft:6 }}>{n.time_ago}</span>
                 <span style={{ color:C.border, margin:'0 16px' }}>·</span>
               </span>
             ))}
