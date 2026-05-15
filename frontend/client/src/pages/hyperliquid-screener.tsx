@@ -734,9 +734,10 @@ function GuidanceBlock({ label, icon: Icon, color, coins, onSelect, selectedCoin
 }
 
 // ─── Hero: Agent Market Brief ─────────────────────────────────────────────────
-function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selectedCoin, onSelect }: {
+function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selectedCoin, onSelect, middleSlot }: {
   agentResult: AgentResult | null; agentLoading: boolean; agentStage: string;
   rows: ScreenerRow[]; selectedCoin: string | null; onSelect: (coin: string) => void;
+  middleSlot?: React.ReactNode;
 }) {
   const briefing  = agentResult?.briefing ?? null;
   const isPreview = !agentResult;
@@ -852,6 +853,9 @@ function AgentMarketBrief({ agentResult, agentLoading, agentStage, rows, selecte
           <span style={{ fontSize:11, fontWeight:700, color:ql.regime?C.text:C.dimLow, lineHeight:1.2 }}>{ql.regime ?? '—'}</span>
         </div>
       </div>
+
+      {/* ── Market Matrix (injected between quick-look tiles and ranked ideas) ── */}
+      {middleSlot}
 
       {/* ── B: Ranked ideas + C: Thesis ── */}
       <div style={{ display:'flex', height:320 }}>
@@ -2840,15 +2844,11 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && (
           <>
-            {/* ── HERO: SIGNAL BRIEF ───────────────────────────────── */}
+            {/* ── HERO: SIGNAL BRIEF (Market Matrix injected between quick-look and ranked ideas) ── */}
             <AgentMarketBrief
               agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
-              rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin} />
-
-            {/* ── MARKET MATRIX (tabbed, backend-driven, with fallback) ── */}
-            <div style={{ marginTop: 8 }}>
-              <MarketMatrixSection search={search} fallbackRows={sorted} />
-            </div>
+              rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+              middleSlot={<MarketMatrixSection search={search} fallbackRows={sorted} />} />
 
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
