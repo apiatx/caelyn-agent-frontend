@@ -231,10 +231,12 @@ const pctCls = (v: number | null) =>
   v == null ? "text-gray-500" : v >= 0 ? "text-emerald-400" : "text-red-400";
 
 const TAG_STYLES: Record<string, string> = {
-  Leading:   "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  Leading:   "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  Emerging:  "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   Improving: "bg-sky-500/20 text-sky-400 border-sky-500/30",
   Weakening: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   Lagging:   "bg-red-500/20 text-red-400 border-red-500/30",
+  Neutral:   "bg-gray-500/20 text-gray-400 border-gray-500/30",
 };
 const REGIME_BADGE: Record<string, string> = {
   "risk-on":       "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
@@ -623,6 +625,7 @@ function normalizeThemeStatus(state: string | null): string | null {
   if (!state) return null;
   const s = state.toLowerCase();
   if (s.includes("lead"))                      return "Leading";
+  if (s.includes("emerg"))                     return "Emerging";
   if (s.includes("improv"))                    return "Improving";
   if (s.includes("weak") || s.includes("deteriorat")) return "Weakening";
   if (s.includes("lag"))                       return "Lagging";
