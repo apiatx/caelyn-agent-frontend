@@ -501,11 +501,9 @@ function SubThemeRow({ item, onSymbolClick }: { item: HomeSubThemeItem; onSymbol
       </div>
       <div className="flex items-center gap-3 shrink-0 text-right">
         <div className="hidden sm:block">
-          <div className="text-[9px] uppercase tracking-wide text-white/30">breadth</div>
           <div className={`text-xs font-medium ${breadthColor}`}>{breadth.toFixed(0)}%</div>
         </div>
         <div>
-          <div className="text-[9px] uppercase tracking-wide text-white/30">1D</div>
           <div className={`text-sm font-semibold tabular-nums ${pctColor(chg)}`}>{fmtPct(chg)}</div>
         </div>
       </div>
@@ -1366,22 +1364,6 @@ export default function HomePage() {
                   accent="all themes · live"
                   viewMore="/app/stocks/sectors"
                 />
-                {/* Sort pills */}
-                <div className="flex gap-1 mt-2">
-                  {(["gain", "breadth", "name"] as const).map(k => (
-                    <button
-                      key={k}
-                      onClick={() => setThemeSortKey(k)}
-                      className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded transition-colors ${
-                        themeSortKey === k
-                          ? "bg-white/10 text-white/80"
-                          : "text-white/30 hover:text-white/55"
-                      }`}
-                    >
-                      {k === "gain" ? "Gainers" : k === "breadth" ? "Breadth" : "Name"}
-                    </button>
-                  ))}
-                </div>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
                 {(() => {
@@ -1419,9 +1401,18 @@ export default function HomePage() {
                       ))}
                       {!loading && items.length > 0 && (
                         <div>
-                          <div className="flex justify-between text-[9px] uppercase tracking-wider text-white/30 px-2 mb-1">
-                            <span>Theme · tickers</span>
-                            <span className="flex gap-6 mr-1"><span>breadth</span><span>1D</span></span>
+                          <div className="flex justify-between text-[9px] uppercase tracking-wider px-2 mb-1 select-none">
+                            <button onClick={() => setThemeSortKey("name")} className={`transition-colors hover:text-white/60 ${themeSortKey === "name" ? "text-white/70" : "text-white/30"}`}>
+                              Theme {themeSortKey === "name" ? "↑" : ""}
+                            </button>
+                            <span className="flex gap-4 mr-1">
+                              <button onClick={() => setThemeSortKey("breadth")} className={`transition-colors hover:text-white/60 ${themeSortKey === "breadth" ? "text-white/70" : "text-white/30"}`}>
+                                breadth {themeSortKey === "breadth" ? "↓" : ""}
+                              </button>
+                              <button onClick={() => setThemeSortKey("gain")} className={`transition-colors hover:text-white/60 ${themeSortKey === "gain" ? "text-white/70" : "text-white/30"}`}>
+                                1D% {themeSortKey === "gain" ? "↓" : ""}
+                              </button>
+                            </span>
                           </div>
                           {items.map((item, i) => (
                             <SubThemeRow key={item.sub_theme || i} item={item} onSymbolClick={openTicker} />
