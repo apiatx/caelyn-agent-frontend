@@ -1916,7 +1916,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agentUrl = 'https://fast-api-server-aidanpilon.replit.app';
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 75000);
+      // 120s hard deadline — backend keepalive-streams for ~33s then sends JSON
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
       try {
         const response = await fetch(`${agentUrl}/api/portfolio/review`, {
           method: 'POST',
@@ -1928,15 +1929,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!response.ok) {
           return res.status(response.status).json({ error: `Agent returned ${response.status}` });
         }
-        const data = await response.json();
-        const message = data?.structured?.message || data?.message || data?.analysis || '';
-        res.json({ message, raw: data });
+        // Backend uses StreamingResponse with keepalive space-bytes before the JSON.
+        // Using text()+trim()+JSON.parse is robust against any leading whitespace.
+        const raw = await response.text();
+        const data = JSON.parse(raw.trim());
+        // Pass the full structured payload through — frontend renders it directly
+        res.json(data);
       } finally {
         clearTimeout(timeoutId);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Portfolio review error:', error);
-      res.status(500).json({ error: 'Failed to get portfolio review' });
+      res.status(500).json({ error: 'Failed to get portfolio review', detail: error?.message });
     }
   });
 

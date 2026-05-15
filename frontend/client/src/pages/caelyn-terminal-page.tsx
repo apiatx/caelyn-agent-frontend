@@ -221,6 +221,7 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
 export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [aiReviewExpanded, setAiReviewExpanded] = useState(false);
+  const [aiReviewData, setAiReviewData] = useState<any | null>(null);
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
@@ -370,7 +371,9 @@ export default function CaelynTerminalPage() {
         throw new Error(`Server returned ${res.status}${errText ? ': ' + errText.slice(0, 120) : ''}`);
       }
       const rev = await res.json();
-      setAiReview(rev.message || rev.text || rev.analysis || 'No analysis returned.');
+      setAiReviewData(rev);
+      // Narrow panel shows the flat analysis text; expanded modal gets the full structure
+      setAiReview(rev.analysis || rev.message || rev.portfolio_summary?.overview || 'No analysis returned.');
     } catch (err: any) {
       if (err.name === 'AbortError') setAiReview('Portfolio review timed out. Please try again.');
       else setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
@@ -1419,41 +1422,187 @@ export default function CaelynTerminalPage() {
       </div>{/* close outer main grid */}
 
       {/* ── AI Review Expanded Modal ─────────────────────────────────── */}
-      {aiReviewExpanded && aiReview && (
-        <div
-          onClick={() => setAiReviewExpanded(false)}
-          style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(4,8,16,0.82)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:12, width:'100%', maxWidth:780, maxHeight:'86vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.7)', overflow:'hidden' }}>
-            {/* Modal header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', borderBottom:`1px solid ${C.border}`, background:'#0a1420', flexShrink:0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span style={{ fontFamily:C.font, fontSize:11, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
-                <span style={{ fontSize:9, color:C.teal, background:`${C.teal}18`, border:`1px solid ${C.teal}33`, borderRadius:4, padding:'2px 7px', letterSpacing:1, textTransform:'uppercase', fontWeight:700 }}>Full Report</span>
+      {aiReviewExpanded && aiReview && (() => {
+        const d = aiReviewData;
+        const ps = d?.portfolio_summary;
+        const isStructured = !!(ps?.overview || d?.asset_reviews?.length || d?.weighting_suggestions?.length);
+        const llmOk = d?.raw_inputs_used?.llm_synthesis !== false;
+
+        const ACTION_CLR: Record<string, string> = {
+          keep_core:            C.dim,
+          add_on_confirmation:  C.green,
+          trim_watch:           C.amber,
+          reduce_risk:          C.red,
+          monitor:              C.teal,
+        };
+        const SEV_CLR: Record<string, string> = { critical: C.red, warning: C.amber, info: C.teal };
+
+        return (
+          <div onClick={() => setAiReviewExpanded(false)}
+            style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(4,8,16,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:12, width:'100%', maxWidth:860, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.75)', overflow:'hidden' }}>
+
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 18px', borderBottom:`1px solid ${C.border}`, background:'#0a1420', flexShrink:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                  <span style={{ fontFamily:C.font, fontSize:11, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
+                  <span style={{ fontSize:9, color: llmOk ? C.teal : C.amber, background: llmOk ? `${C.teal}18` : `${C.amber}18`, border:`1px solid ${llmOk ? C.teal : C.amber}33`, borderRadius:4, padding:'2px 7px', letterSpacing:1, textTransform:'uppercase', fontWeight:700 }}>
+                    {llmOk ? 'AI' : 'Estimated'}
+                  </span>
+                  {ps?.macro_read && <span style={{ fontSize:9, color:C.dim, fontFamily:C.font }}>{ps.macro_read}</span>}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <button onClick={handleAIReview} disabled={aiLoading}
+                    style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; }}>
+                    <RotateCcw size={10} /> Re-run
+                  </button>
+                  <button onClick={() => setAiReviewExpanded(false)}
+                    style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:6, padding:'5px 8px', cursor:'pointer', color:C.dim, display:'flex', alignItems:'center' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; }}>
+                    <X size={13} />
+                  </button>
+                </div>
               </div>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <button onClick={handleAIReview}
-                  style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; (e.currentTarget as HTMLButtonElement).style.borderColor = C.dimLow; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
-                  <RotateCcw size={10} /> Re-run
-                </button>
-                <button onClick={() => setAiReviewExpanded(false)}
-                  style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:6, padding:'5px 8px', cursor:'pointer', color:C.dim, display:'flex', alignItems:'center', lineHeight:1 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; (e.currentTarget as HTMLButtonElement).style.borderColor = C.dimLow; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
-                  <X size={13} />
-                </button>
+
+              {/* Body */}
+              <div style={{ flex:1, overflowY:'auto', padding:'20px 24px' }}>
+                {isStructured ? (
+                  <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
+
+                    {/* Portfolio Summary */}
+                    {ps && (
+                      <div>
+                        {ps.headline && <div style={{ fontSize:12, fontWeight:700, color:'#fff', marginBottom:6 }}>{ps.headline}</div>}
+                        {ps.overview && <div style={{ fontSize:12, color:C.text, lineHeight:1.7, marginBottom:10 }}>{ps.overview}</div>}
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                          {ps.strengths?.length > 0 && (
+                            <div style={{ background:`${C.green}0d`, border:`1px solid ${C.green}22`, borderRadius:8, padding:'10px 12px' }}>
+                              <div style={{ fontSize:9, fontWeight:700, color:C.green, letterSpacing:1.2, textTransform:'uppercase', marginBottom:7 }}>Strengths</div>
+                              {ps.strengths.map((s: string, i: number) => (
+                                <div key={i} style={{ fontSize:11, color:C.text, lineHeight:1.55, marginBottom:3, paddingLeft:8, borderLeft:`2px solid ${C.green}44` }}>{s}</div>
+                              ))}
+                            </div>
+                          )}
+                          {ps.risks?.length > 0 && (
+                            <div style={{ background:`${C.red}0d`, border:`1px solid ${C.red}22`, borderRadius:8, padding:'10px 12px' }}>
+                              <div style={{ fontSize:9, fontWeight:700, color:C.red, letterSpacing:1.2, textTransform:'uppercase', marginBottom:7 }}>Risks</div>
+                              {ps.risks.map((r: string, i: number) => (
+                                <div key={i} style={{ fontSize:11, color:C.text, lineHeight:1.55, marginBottom:3, paddingLeft:8, borderLeft:`2px solid ${C.red}44` }}>{r}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {ps.social_portfolio_read && ps.social_portfolio_read !== 'Social data unavailable' && (
+                          <div style={{ marginTop:8, fontSize:10, color:C.dim, lineHeight:1.5, fontStyle:'italic' }}>{ps.social_portfolio_read}</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Risk Flags */}
+                    {d?.risk_flags?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Risk Flags</div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          {d.risk_flags.map((f: any, i: number) => (
+                            <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:`${SEV_CLR[f.severity] ?? C.dim}0d`, border:`1px solid ${SEV_CLR[f.severity] ?? C.dim}28`, borderRadius:6, padding:'8px 12px' }}>
+                              <span style={{ fontSize:9, fontWeight:700, color: SEV_CLR[f.severity] ?? C.dim, textTransform:'uppercase', letterSpacing:1, flexShrink:0, marginTop:1 }}>{f.severity}</span>
+                              <div>
+                                <div style={{ fontSize:11, fontWeight:600, color:C.text, marginBottom:2 }}>{f.title}</div>
+                                <div style={{ fontSize:10, color:C.dim, lineHeight:1.5 }}>{f.details}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Weighting Suggestions */}
+                    {d?.weighting_suggestions?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Position Sizing</div>
+                        <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
+                          <div style={{ display:'grid', gridTemplateColumns:'70px 80px 160px 1fr', gap:'0 12px', padding:'6px 12px', borderBottom:`1px solid ${C.border}`, background:'#080e1a' }}>
+                            {['Ticker','Weight','Action','Reason'].map(h => (
+                              <span key={h} style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.2, textTransform:'uppercase' }}>{h}</span>
+                            ))}
+                          </div>
+                          {d.weighting_suggestions.map((w: any, i: number) => (
+                            <div key={i} style={{ display:'grid', gridTemplateColumns:'70px 80px 160px 1fr', gap:'0 12px', padding:'7px 12px', borderBottom: i < d.weighting_suggestions.length - 1 ? `1px solid ${C.border}22` : 'none', alignItems:'start' }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:'#fff', fontFamily:C.font }}>{w.ticker}</span>
+                              <span style={{ fontSize:10, color:C.dim, fontFamily:C.font }}>{w.current_weight != null ? `${Number(w.current_weight).toFixed(1)}%` : '—'}</span>
+                              <span style={{ fontSize:10, fontWeight:600, color: ACTION_CLR[w.suggested_action] ?? C.dim }}>{(w.suggested_action ?? '').replace(/_/g,' ')}</span>
+                              <span style={{ fontSize:10, color:C.text, lineHeight:1.5 }}>{w.reason}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Watchlist Swaps */}
+                    {d?.watchlist_swaps?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Watchlist Swap Ideas</div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                          {d.watchlist_swaps.map((sw: any, i: number) => (
+                            <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 12px' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                                <span style={{ fontSize:11, fontWeight:700, color:C.red, fontFamily:C.font }}>{sw.drop}</span>
+                                <span style={{ fontSize:9, color:C.dim }}>→</span>
+                                <span style={{ fontSize:11, fontWeight:700, color:C.green, fontFamily:C.font }}>{sw.add}</span>
+                              </div>
+                              <span style={{ fontSize:10, color:C.dim, lineHeight:1.5 }}>{sw.reason}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Asset Reviews */}
+                    {d?.asset_reviews?.length > 0 && (
+                      <div>
+                        <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Holding-Level Analysis</div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                          {d.asset_reviews.map((ar: any, i: number) => (
+                            <div key={i} style={{ background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', borderBottom:`1px solid ${C.border}22`, background:'#080e1a' }}>
+                                <span style={{ fontSize:12, fontWeight:700, color:'#fff', fontFamily:C.font }}>{ar.ticker}</span>
+                                {ar.company && ar.company !== ar.ticker && <span style={{ fontSize:10, color:C.dim }}>{ar.company}</span>}
+                                {ar.theme && <span style={{ fontSize:9, color:C.teal, background:`${C.teal}15`, border:`1px solid ${C.teal}25`, borderRadius:4, padding:'1px 6px' }}>{ar.theme}</span>}
+                              </div>
+                              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:0 }}>
+                                {ar.bull_case && (
+                                  <div style={{ padding:'8px 12px', borderRight:`1px solid ${C.border}22` }}>
+                                    <div style={{ fontSize:9, fontWeight:700, color:C.green, letterSpacing:1, marginBottom:4 }}>BULL</div>
+                                    <div style={{ fontSize:10, color:C.text, lineHeight:1.55 }}>{ar.bull_case}</div>
+                                  </div>
+                                )}
+                                {ar.bear_case && (
+                                  <div style={{ padding:'8px 12px' }}>
+                                    <div style={{ fontSize:9, fontWeight:700, color:C.red, letterSpacing:1, marginBottom:4 }}>BEAR</div>
+                                    <div style={{ fontSize:10, color:C.text, lineHeight:1.55 }}>{ar.bear_case}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                ) : (
+                  /* Fallback: flat text */
+                  <div style={{ fontSize:12.5, color:C.text, lineHeight:1.75, whiteSpace:'pre-wrap' }}>{aiReview}</div>
+                )}
               </div>
-            </div>
-            {/* Modal body */}
-            <div style={{ flex:1, overflowY:'auto', padding:'20px 24px', fontSize:12.5, color:C.text, lineHeight:1.75, whiteSpace:'pre-wrap', fontFamily:'inherit' }}>
-              {aiReview}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── NEWS TICKER ──────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderTop:`1px solid ${C.border}`, height:26, display:'flex', alignItems:'center', overflow:'hidden', flexShrink:0 }}>
