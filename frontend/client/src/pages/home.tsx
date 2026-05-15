@@ -1,6 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { AreaChart, Area, LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
@@ -24,6 +39,7 @@ import {
   ChevronRight,
   X,
   Signal,
+  GripVertical,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import { Card } from "@/components/ui/card";
@@ -218,6 +234,39 @@ function SectionHeader({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Home section drag-and-drop ────────────────────────────────────────────────
+const HOME_SECTIONS_KEY = 'caelyn_home_section_order_v1';
+const HOME_DEFAULT_SECTIONS = ['themes_signals_news', 'social_movers', 'snapshots', 'flows_hl', 'fear_greed'];
+
+function SortableSection({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+    opacity: isDragging ? 0.45 : 1,
+    zIndex: isDragging ? 20 : 'auto',
+    position: 'relative',
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="group/section">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center h-5 mb-0.5 opacity-0 group-hover/section:opacity-100 transition-opacity cursor-grab active:cursor-grabbing select-none touch-none"
+        title="Drag to reorder"
+      >
+        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-white/20 hover:text-white/40 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <GripVertical className="w-3 h-3" />
+          <span className="text-[8px] uppercase tracking-widest">drag to reorder</span>
+          <GripVertical className="w-3 h-3" />
+        </div>
+      </div>
+      {children}
     </div>
   );
 }
@@ -1022,6 +1071,29 @@ export default function HomePage() {
   const openTicker = (symbol: string, assetType?: string, price?: number | null, changePct?: number | null) =>
     setTickerPopup({ symbol, assetType, price, changePct });
   const [moverCategory, setMoverCategory] = useState<"all" | "stocks" | "commodities" | "crypto" | "etfs">("stocks");
+
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(HOME_SECTIONS_KEY);
+      if (!saved) return [...HOME_DEFAULT_SECTIONS];
+      const parsed = JSON.parse(saved) as string[];
+      if (!Array.isArray(parsed) || parsed.length < HOME_DEFAULT_SECTIONS.length) return [...HOME_DEFAULT_SECTIONS];
+      return parsed;
+    } catch { return [...HOME_DEFAULT_SECTIONS]; }
+  });
+  const homeSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const handleSectionDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setSectionOrder(prev => {
+      const oldIdx = prev.indexOf(String(active.id));
+      const newIdx = prev.indexOf(String(over.id));
+      if (oldIdx === -1 || newIdx === -1) return prev;
+      const next = arrayMove(prev, oldIdx, newIdx);
+      try { localStorage.setItem(HOME_SECTIONS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
   const moverViewMore =
     moverCategory === "crypto"      ? "/app/crypto-stocks" :
     moverCategory === "commodities" ? "/app/commodities"   :
@@ -1362,419 +1434,323 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-        {/* F + G + G2. Three-column row: Theme Performance | Top Equity Signals | Latest News */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-          {/* Theme Performance — 1/3 width */}
-          <div className="lg:col-span-1">
-            <GlassCard className="flex flex-col h-[480px]">
-              <div className="px-4 pt-4 pb-2 shrink-0">
-                <SectionHeader
-                  icon={BarChart3}
-                  title="Theme Performance"
-                  viewMore="/app/stocks/sectors"
-                />
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
-                {(() => {
-                  // Pull directly from the same Themes page endpoint — ALL themes,
-                  // same data as /app/stocks/sectors. Uses the identical React Query
-                  // cache key so data is already warm if the user has visited that page.
-                  const allThemes: any[] = themesRS?.themes ?? [];
-                  const loading = themesRSLoading;
-                  const rawItems: HomeSubThemeItem[] = allThemes.map((t: any) => ({
-                    sub_theme:       t.display_name,
-                    avg_change_1d:   t.performance?.["1D"] ?? t.return_pct ?? null,
-                    avg_change_7d:   t.performance?.["7D"] ?? null,
-                    leader_symbols:  t.proxy_type === "custom"
-                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
-                      : (t.leaders ?? []).map((l: any) => l.symbol)
-                          .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []))
-                          .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx),
-                    leader_count:    (t.proxy_type === "custom"
-                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
-                      : (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? [])).length,
-                    breadth_score:   t.breadth_pct ?? null,
-                    momentum_score:  t.rs_score ?? null,
-                    pattern_summary: t.state_reason ?? null,
-                  }));
-                  const items = [...rawItems].sort((a, b) => {
-                    if (themeSortKey === "gain")    return (b.avg_change_1d ?? -Infinity) - (a.avg_change_1d ?? -Infinity);
-                    if (themeSortKey === "breadth") return (b.breadth_score ?? -1) - (a.breadth_score ?? -1);
-                    return (a.sub_theme ?? "").localeCompare(b.sub_theme ?? "");
-                  });
-                  return (
-                    <>
-                      {loading && Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
-                      ))}
-                      {!loading && items.length > 0 && (
-                        <div>
-                          <div className="flex justify-between text-[9px] uppercase tracking-wider px-2 mb-1 select-none">
-                            <button onClick={() => setThemeSortKey("name")} className={`transition-colors hover:text-white/60 ${themeSortKey === "name" ? "text-white/70" : "text-white/30"}`}>
-                              Theme {themeSortKey === "name" ? "↑" : ""}
-                            </button>
-                            <span className="flex gap-4 mr-1">
-                              <button onClick={() => setThemeSortKey("breadth")} className={`transition-colors hover:text-white/60 ${themeSortKey === "breadth" ? "text-white/70" : "text-white/30"}`}>
-                                breadth {themeSortKey === "breadth" ? "↓" : ""}
-                              </button>
-                              <button onClick={() => setThemeSortKey("gain")} className={`transition-colors hover:text-white/60 ${themeSortKey === "gain" ? "text-white/70" : "text-white/30"}`}>
-                                1D% {themeSortKey === "gain" ? "↓" : ""}
-                              </button>
-                            </span>
-                          </div>
-                          {items.map((item, i) => (
-                            <SubThemeRow key={item.sub_theme || i} item={item} onSymbolClick={openTicker} />
+        <DndContext sensors={homeSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+          <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+
+            {sectionOrder.map(id => {
+              if (id === 'themes_signals_news') return (
+                <SortableSection key={id} id={id}>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                    {/* Theme Performance — 1/3 width */}
+                    <div className="lg:col-span-1">
+                      <GlassCard className="flex flex-col h-[480px]">
+                        <div className="px-4 pt-4 pb-2 shrink-0">
+                          <SectionHeader icon={BarChart3} title="Theme Performance" viewMore="/app/stocks/sectors" />
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+                          {(() => {
+                            const allThemes: any[] = themesRS?.themes ?? [];
+                            const loading = themesRSLoading;
+                            const rawItems: HomeSubThemeItem[] = allThemes.map((t: any) => ({
+                              sub_theme:       t.display_name,
+                              avg_change_1d:   t.performance?.["1D"] ?? t.return_pct ?? null,
+                              avg_change_7d:   t.performance?.["7D"] ?? null,
+                              leader_symbols:  t.proxy_type === "custom"
+                                ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
+                                : (t.leaders ?? []).map((l: any) => l.symbol)
+                                    .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []))
+                                    .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx),
+                              leader_count:    (t.proxy_type === "custom"
+                                ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
+                                : (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? [])).length,
+                              breadth_score:   t.breadth_pct ?? null,
+                              momentum_score:  t.rs_score ?? null,
+                              pattern_summary: t.state_reason ?? null,
+                            }));
+                            const items = [...rawItems].sort((a, b) => {
+                              if (themeSortKey === "gain")    return (b.avg_change_1d ?? -Infinity) - (a.avg_change_1d ?? -Infinity);
+                              if (themeSortKey === "breadth") return (b.breadth_score ?? -1) - (a.breadth_score ?? -1);
+                              return (a.sub_theme ?? "").localeCompare(b.sub_theme ?? "");
+                            });
+                            return (
+                              <>
+                                {loading && Array.from({ length: 8 }).map((_, i) => (
+                                  <Skeleton key={i} className="h-10 my-1 rounded bg-white/[0.04]" />
+                                ))}
+                                {!loading && items.length > 0 && (
+                                  <div>
+                                    <div className="flex justify-between text-[9px] uppercase tracking-wider px-2 mb-1 select-none">
+                                      <button onClick={() => setThemeSortKey("name")} className={`transition-colors hover:text-white/60 ${themeSortKey === "name" ? "text-white/70" : "text-white/30"}`}>
+                                        Theme {themeSortKey === "name" ? "↑" : ""}
+                                      </button>
+                                      <span className="flex gap-4 mr-1">
+                                        <button onClick={() => setThemeSortKey("breadth")} className={`transition-colors hover:text-white/60 ${themeSortKey === "breadth" ? "text-white/70" : "text-white/30"}`}>
+                                          breadth {themeSortKey === "breadth" ? "↓" : ""}
+                                        </button>
+                                        <button onClick={() => setThemeSortKey("gain")} className={`transition-colors hover:text-white/60 ${themeSortKey === "gain" ? "text-white/70" : "text-white/30"}`}>
+                                          1D% {themeSortKey === "gain" ? "↓" : ""}
+                                        </button>
+                                      </span>
+                                    </div>
+                                    {items.map((item, i) => (
+                                      <SubThemeRow key={item.sub_theme || i} item={item} onSymbolClick={openTicker} />
+                                    ))}
+                                  </div>
+                                )}
+                                {!loading && items.length === 0 && (
+                                  <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </GlassCard>
+                    </div>
+
+                    {/* Top Equity Signals — 1/3 width */}
+                    <div className="lg:col-span-1">
+                      <GlassCard className="flex flex-col h-[480px]">
+                        <div className="px-4 pt-4 pb-2 shrink-0">
+                          <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+                          {!equityOverview && (
+                            <div className="space-y-2">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} className="h-24 rounded bg-white/[0.04]" />
+                              ))}
+                            </div>
+                          )}
+                          {equityOverview && topEquitySignals.length === 0 && (
+                            <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
+                          )}
+                          {topEquitySignals.length > 0 && (
+                            <div className="space-y-2.5">
+                              {topEquitySignals.map((sig: any, i: number) => {
+                                const dir = (() => {
+                                  const s = (sig.summary_direction || '').toLowerCase();
+                                  if (s.includes('bull') || s === 'up') return 'bullish';
+                                  if (s.includes('bear') || s === 'down') return 'bearish';
+                                  return 'neutral';
+                                })();
+                                const dirColor = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
+                                const dirBg    = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
+                                const bullSectors: string[] = sig.bullish_sectors ?? [];
+                                const bearSectors: string[] = sig.bearish_sectors ?? [];
+                                const bullStocks:  string[] = sig.bullish_stocks  ?? [];
+                                const bearStocks:  string[] = sig.bearish_stocks  ?? [];
+                                return (
+                                  <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                      <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
+                                      {sig.confidence && <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>}
+                                    </div>
+                                    <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
+                                    {sig.summary && <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>}
+                                    {sig.odds_move_summary && <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>}
+                                    {(bullSectors.length > 0 || bearSectors.length > 0) && (
+                                      <div className="flex gap-2 mb-2">
+                                        {bullSectors.length > 0 && (
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
+                                            {bullSectors.slice(0, 3).map(s => <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>)}
+                                          </div>
+                                        )}
+                                        {bearSectors.length > 0 && (
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
+                                            {bearSectors.slice(0, 3).map(s => <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    {(bullStocks.length > 0 || bearStocks.length > 0) && (
+                                      <div className="flex gap-2">
+                                        {bullStocks.length > 0 && (
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
+                                            <div className="flex flex-wrap gap-1">
+                                              {bullStocks.slice(0, 4).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {bearStocks.length > 0 && (
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
+                                            <div className="flex flex-wrap gap-1">
+                                              {bearStocks.slice(0, 4).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </GlassCard>
+                    </div>
+
+                    {/* Latest News — 1/3 width */}
+                    <div className="lg:col-span-1">
+                      <GlassCard className="flex flex-col h-[480px]">
+                        <div className="px-4 pt-4 pb-2 shrink-0">
+                          <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" viewMore="/app/notifai" />
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 divide-y divide-white/[0.04]">
+                          {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                            <Skeleton key={i} className="h-14 my-1 rounded bg-white/[0.04]" />
                           ))}
-                        </div>
-                      )}
-                      {!loading && items.length === 0 && (
-                        <div className="text-sm text-white/40 py-8 text-center">Theme data temporarily unavailable.</div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </GlassCard>
-          </div>
-
-          {/* Top Equity Signals — 1/3 width */}
-          <div className="lg:col-span-1">
-            <GlassCard className="flex flex-col h-[480px]">
-              <div className="px-4 pt-4 pb-2 shrink-0">
-                <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
-                {!equityOverview && (
-                  <div className="space-y-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-24 rounded bg-white/[0.04]" />
-                    ))}
-                  </div>
-                )}
-                {equityOverview && topEquitySignals.length === 0 && (
-                  <div className="text-sm text-white/40 py-8 text-center">No equity signals available.</div>
-                )}
-                {topEquitySignals.length > 0 && (
-                  <div className="space-y-2.5">
-                    {topEquitySignals.map((sig: any, i: number) => {
-                      const dir = (() => {
-                        const s = (sig.summary_direction || '').toLowerCase();
-                        if (s.includes('bull') || s === 'up') return 'bullish';
-                        if (s.includes('bear') || s === 'down') return 'bearish';
-                        return 'neutral';
-                      })();
-                      const dirColor  = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
-                      const dirBg     = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
-                      const bullSectors: string[] = sig.bullish_sectors ?? [];
-                      const bearSectors: string[] = sig.bearish_sectors ?? [];
-                      const bullStocks:  string[] = sig.bullish_stocks  ?? [];
-                      const bearStocks:  string[] = sig.bearish_stocks  ?? [];
-                      return (
-                        <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
-                            {sig.confidence && (
-                              <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
-                          {sig.summary && (
-                            <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>
-                          )}
-                          {sig.odds_move_summary && (
-                            <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>
-                          )}
-                          {(bullSectors.length > 0 || bearSectors.length > 0) && (
-                            <div className="flex gap-2 mb-2">
-                              {bullSectors.length > 0 && (
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
-                                  {bullSectors.slice(0, 3).map(s => (
-                                    <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>
-                                  ))}
+                          {newsArticles.slice(0, 15).map((a: any, i: number) => (
+                            <a key={i} href={a.url} target="_blank" rel="noreferrer noopener"
+                              className="flex items-start gap-2.5 py-2.5 hover:bg-white/[0.03] rounded-md transition-colors">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs text-white/90 line-clamp-2">{a.title}</div>
+                                <div className="text-[10px] text-white/40 mt-0.5 flex items-center gap-1.5">
+                                  <span className="truncate">{a.source}</span>
+                                  {a.published && <span className="text-white/25">· {new Date(a.published).toLocaleDateString()}</span>}
                                 </div>
-                              )}
-                              {bearSectors.length > 0 && (
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
-                                  {bearSectors.slice(0, 3).map(s => (
-                                    <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {(bullStocks.length > 0 || bearStocks.length > 0) && (
-                            <div className="flex gap-2">
-                              {bullStocks.length > 0 && (
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {bullStocks.slice(0, 4).map(t => (
-                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {bearStocks.length > 0 && (
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {bearStocks.slice(0, 4).map(t => (
-                                      <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            </a>
+                          ))}
+                          {newsArticles.length === 0 && !isLoading && (
+                            <div className="text-sm text-white/40 py-6 text-center">News feed loading…</div>
                           )}
                         </div>
-                      );
-                    })}
+                      </GlassCard>
+                    </div>
                   </div>
-                )}
-              </div>
-            </GlassCard>
-          </div>
-
-          {/* Latest News — 1/3 width */}
-          <div className="lg:col-span-1">
-            <GlassCard className="flex flex-col h-[480px]">
-              <div className="px-4 pt-4 pb-2 shrink-0">
-                <SectionHeader icon={Newspaper} title="Latest News" accent="Cross-market" viewMore="/app/notifai" />
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 divide-y divide-white/[0.04]">
-                {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 my-1 rounded bg-white/[0.04]" />
-                ))}
-                {newsArticles.slice(0, 15).map((a: any, i: number) => (
-                  <a
-                    key={i}
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="flex items-start gap-2.5 py-2.5 hover:bg-white/[0.03] rounded-md transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs text-white/90 line-clamp-2">{a.title}</div>
-                      <div className="text-[10px] text-white/40 mt-0.5 flex items-center gap-1.5">
-                        <span className="truncate">{a.source}</span>
-                        {a.published && (
-                          <span className="text-white/25">· {new Date(a.published).toLocaleDateString()}</span>
-                        )}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-                {newsArticles.length === 0 && !isLoading && (
-                  <div className="text-sm text-white/40 py-6 text-center">News feed loading…</div>
-                )}
-              </div>
-            </GlassCard>
-          </div>
-        </div>
-
-        {/* Category toggle — above social + movers 4-across row */}
-        <div className="flex justify-end mb-2">
-          <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2 py-1">
-            {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
-              <button
-                key={cat}
-                onClick={() => setMoverCategory(cat)}
-                className={`text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-md transition-colors ${
-                  moverCategory === cat
-                    ? "bg-white/[0.10] text-white font-medium"
-                    : "text-white/40 hover:text-white/65"
-                }`}
-              >
-                {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Social + Movers: 4-across on xl screens (2-across on smaller) */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
-          {/* Trending on X */}
-          <GlassCard className="p-4 flex flex-col overflow-hidden">
-            {(() => {
-              const tx = data?.trending_on_x;
-              const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
-              const relativeUpdated = (() => {
-                if (!generatedAt) return "Weekly";
-                const ageMs = Date.now() - generatedAt.getTime();
-                const ageSec = Math.max(0, Math.floor(ageMs / 1000));
-                if (ageSec < 60) return `${ageSec}s ago`;
-                const ageMin = Math.floor(ageSec / 60);
-                if (ageMin < 60) return `${ageMin}m ago`;
-                const ageHr = Math.floor(ageMin / 60);
-                if (ageHr < 24) return `${ageHr}h ago`;
-                return `${Math.floor(ageHr / 24)}d ago`;
-              })();
-              const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
-              const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
-              const isRefreshing = tx?.refresh_in_progress === true;
-              return (
-                <SectionHeader
-                  icon={LineChart}
-                  title="Trending on X"
-                  accent={relativeUpdated}
-                  viewMore="/app/onchain/social"
-                  action={
-                    <div className="flex items-center gap-1">
-                      {isStale && <span className="text-[9px] px-1 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">stale</span>}
-                      {isRefreshing && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />}
-                    </div>
-                  }
-                />
+                </SortableSection>
               );
-            })()}
-            <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
-              {(data?.trending_on_x?.top_tickers || []).map((t, i) => (
-                <div key={t.symbol || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(t.symbol)}>
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-xs font-semibold text-white/90 truncate">${t.symbol}</span>
-                    {t.sentiment && (
-                      <Badge variant="outline" className={`h-4 text-[9px] px-1 shrink-0 ${/bull/i.test(t.sentiment) ? "border-emerald-500/25 text-emerald-300" : /bear/i.test(t.sentiment) ? "border-rose-500/25 text-rose-300" : "border-white/10 text-white/55"}`}>{t.sentiment}</Badge>
-                    )}
+
+              if (id === 'social_movers') return (
+                <SortableSection key={id} id={id}>
+                  <div className="flex justify-end mb-2">
+                    <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-2 py-1">
+                      {(["all", "stocks", "commodities", "crypto", "etfs"] as const).map(cat => (
+                        <button key={cat} onClick={() => setMoverCategory(cat)}
+                          className={`text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-md transition-colors ${moverCategory === cat ? "bg-white/[0.10] text-white font-medium" : "text-white/40 hover:text-white/65"}`}>
+                          {cat === "commodities" ? "Commod." : cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  {t.rationale && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{t.rationale}</div>}
-                </div>
-              ))}
-              {(!data?.trending_on_x?.top_tickers || data.trending_on_x.top_tickers.length === 0) && (
-                <div className="text-xs text-white/40 py-4 text-center">No snapshot yet.</div>
-              )}
-            </div>
-          </GlassCard>
-
-          {/* Trending on Stocktwits */}
-          <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" viewMore="/app/onchain/social" />
-            <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
-              {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />
-              ))}
-              {!isLoading && (data?.trending_ideas || []).map((d, i) => (
-                <div key={d.ticker || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(d.ticker)}>
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-xs font-semibold text-white/90 truncate">${d.ticker}</span>
-                    {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && (
-                      <Badge variant="outline" className="h-4 text-[9px] px-1 border-white/10 text-white/55 shrink-0">{d.watchlist_count.toLocaleString()}</Badge>
-                    )}
+                  <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-6" style={{ gridAutoRows: "460px" }}>
+                    <GlassCard className="p-4 flex flex-col overflow-hidden">
+                      {(() => {
+                        const tx = data?.trending_on_x;
+                        const generatedAt = tx?.generated_at ? new Date(tx.generated_at) : null;
+                        const relativeUpdated = (() => {
+                          if (!generatedAt) return "Weekly";
+                          const ageMs = Date.now() - generatedAt.getTime();
+                          const ageSec = Math.max(0, Math.floor(ageMs / 1000));
+                          if (ageSec < 60) return `${ageSec}s ago`;
+                          const ageMin = Math.floor(ageSec / 60);
+                          if (ageMin < 60) return `${ageMin}m ago`;
+                          const ageHr = Math.floor(ageMin / 60);
+                          if (ageHr < 24) return `${ageHr}h ago`;
+                          return `${Math.floor(ageHr / 24)}d ago`;
+                        })();
+                        const ageSeconds = typeof tx?.age_seconds === "number" ? tx.age_seconds : null;
+                        const isStale = tx?.is_stale === true || (ageSeconds !== null && ageSeconds > 7 * 86400);
+                        const isRefreshing = tx?.refresh_in_progress === true;
+                        return (
+                          <SectionHeader icon={LineChart} title="Trending on X" accent={relativeUpdated} viewMore="/app/onchain/social"
+                            action={<div className="flex items-center gap-1">
+                              {isStale && <span className="text-[9px] px-1 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">stale</span>}
+                              {isRefreshing && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />}
+                            </div>} />
+                        );
+                      })()}
+                      <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
+                        {(data?.trending_on_x?.top_tickers || []).map((t, i) => (
+                          <div key={t.symbol || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(t.symbol)}>
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className="text-xs font-semibold text-white/90 truncate">${t.symbol}</span>
+                              {t.sentiment && <Badge variant="outline" className={`h-4 text-[9px] px-1 shrink-0 ${/bull/i.test(t.sentiment) ? "border-emerald-500/25 text-emerald-300" : /bear/i.test(t.sentiment) ? "border-rose-500/25 text-rose-300" : "border-white/10 text-white/55"}`}>{t.sentiment}</Badge>}
+                            </div>
+                            {t.rationale && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{t.rationale}</div>}
+                          </div>
+                        ))}
+                        {(!data?.trending_on_x?.top_tickers || data.trending_on_x.top_tickers.length === 0) && <div className="text-xs text-white/40 py-4 text-center">No snapshot yet.</div>}
+                      </div>
+                    </GlassCard>
+                    <GlassCard className="p-4 flex flex-col overflow-hidden">
+                      <SectionHeader icon={Sparkles} title="Trending on Stocktwits" accent="Stocktwits" viewMore="/app/onchain/social" />
+                      <div className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
+                        {isLoading && Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded bg-white/[0.04]" />)}
+                        {!isLoading && (data?.trending_ideas || []).map((d, i) => (
+                          <div key={d.ticker || i} className="px-2 py-2 rounded-lg border border-white/[0.05] bg-white/[0.02] hover:border-white/12 transition-colors cursor-pointer" onClick={() => openTicker(d.ticker)}>
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className="text-xs font-semibold text-white/90 truncate">${d.ticker}</span>
+                              {typeof d.watchlist_count === "number" && d.watchlist_count > 0 && <Badge variant="outline" className="h-4 text-[9px] px-1 border-white/10 text-white/55 shrink-0">{d.watchlist_count.toLocaleString()}</Badge>}
+                            </div>
+                            {d.title && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{d.title}</div>}
+                          </div>
+                        ))}
+                        {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && <div className="text-xs text-white/40 py-4 text-center">No trending ideas right now.</div>}
+                      </div>
+                    </GlassCard>
+                    <GlassCard className="p-4 flex flex-col overflow-hidden">
+                      <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore={moverViewMore} />
+                      <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
+                        {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />)}
+                        {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => {
+                          const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
+                          return <MoverRow key={i} row={row} onClick={row.ticker ? () => { if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); } else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); } } : undefined} />;
+                        })}
+                        {!categoryMoversLoading && (!categoryMovers?.gainers || categoryMovers.gainers.length === 0) && <div className="text-sm text-white/40 py-6 text-center">No data</div>}
+                      </div>
+                    </GlassCard>
+                    <GlassCard className="p-4 flex flex-col overflow-hidden">
+                      <SectionHeader icon={TrendingDown} title="Top Losers" accent="today" viewMore={moverViewMore} />
+                      <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
+                        {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />)}
+                        {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => {
+                          const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
+                          return <MoverRow key={i} row={row} onClick={row.ticker ? () => { if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); } else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); } } : undefined} />;
+                        })}
+                        {!categoryMoversLoading && (!categoryMovers?.losers || categoryMovers.losers.length === 0) && <div className="text-sm text-white/40 py-6 text-center">No data</div>}
+                      </div>
+                    </GlassCard>
                   </div>
-                  {d.title && <div className="text-[10px] text-white/45 mt-0.5 line-clamp-1">{d.title}</div>}
-                </div>
-              ))}
-              {!isLoading && (!data?.trending_ideas || data.trending_ideas.length === 0) && (
-                <div className="text-xs text-white/40 py-4 text-center">No trending ideas right now.</div>
-              )}
-            </div>
-          </GlassCard>
+                </SortableSection>
+              );
 
-          {/* Top Movers */}
-          <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader icon={TrendingUp} title="Top Movers" accent="today" viewMore={moverViewMore} />
-            <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
-              {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
-              ))}
-              {!categoryMoversLoading && (categoryMovers?.gainers || []).slice(0, 8).map((row, i) => {
-                const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
-                return (
-                  <MoverRow key={i} row={row} onClick={row.ticker ? () => {
-                    if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); }
-                    else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); }
-                  } : undefined} />
-                );
-              })}
-              {!categoryMoversLoading && (!categoryMovers?.gainers || categoryMovers.gainers.length === 0) && (
-                <div className="text-sm text-white/40 py-6 text-center">No data</div>
-              )}
-            </div>
-          </GlassCard>
+              if (id === 'snapshots') return (
+                <SortableSection key={id} id={id}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                    <SnapshotTable items={data?.portfolio_snapshot} loading={isLoading} title="Portfolio Snapshot" icon={Briefcase} accent="tracked positions" status={data?.section_status?.portfolio_snapshot} scrollable viewMore="/app/caelyn-terminal" onRowClick={openTicker} />
+                    <SnapshotTable items={data?.watchlist_snapshot} loading={isLoading} title="Watchlist Snapshot" icon={Wallet} accent="top movers from watchlist" status={data?.section_status?.watchlist_snapshot} scrollable viewMore="/app/watchlist" onRowClick={openTicker} />
+                  </div>
+                </SortableSection>
+              );
 
-          {/* Top Losers */}
-          <GlassCard className="p-4 flex flex-col overflow-hidden">
-            <SectionHeader
-              icon={TrendingDown}
-              title="Top Losers"
-              accent="today"
-              viewMore={moverViewMore}
-            />
-            <div className="divide-y divide-white/[0.04] overflow-y-auto flex-1 min-h-0">
-              {categoryMoversLoading && Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 my-0.5 rounded bg-white/[0.04]" />
-              ))}
-              {!categoryMoversLoading && (categoryMovers?.losers || []).slice(0, 8).map((row, i) => {
-                const externalUrl = row.ticker ? getMoverExternalUrl(row.ticker, row.asset_type || moverCategory, row.company) : null;
-                return (
-                  <MoverRow key={i} row={row} onClick={row.ticker ? () => {
-                    if (externalUrl) { window.open(externalUrl, "_blank", "noopener,noreferrer"); }
-                    else { openTicker(row.ticker!, moverCategory, typeof row.price === "number" ? row.price : null, row.change_pct); }
-                  } : undefined} />
-                );
-              })}
-              {!categoryMoversLoading && (!categoryMovers?.losers || categoryMovers.losers.length === 0) && (
-                <div className="text-sm text-white/40 py-6 text-center">No data</div>
-              )}
-            </div>
-          </GlassCard>
-        </div>
+              if (id === 'flows_hl') return (
+                <SortableSection key={id} id={id}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+                    <UnusualFlowsSection flows={data?.unusual_options_flows} status={data?.unusual_options_meta?.data_state || data?.section_status?.unusual_options_flows} loading={isLoading} onTickerClick={openTicker} viewMore="/app/options" />
+                    <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" onTickerClick={openTicker} />
+                  </div>
+                </SortableSection>
+              );
 
-        {/* H2. Portfolio Snapshot + Watchlist Snapshot */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-          <SnapshotTable
-            items={data?.portfolio_snapshot}
-            loading={isLoading}
-            title="Portfolio Snapshot"
-            icon={Briefcase}
-            accent="tracked positions"
-            status={data?.section_status?.portfolio_snapshot}
-            scrollable
-            viewMore="/app/caelyn-terminal"
-            onRowClick={openTicker}
-          />
-          <SnapshotTable
-            items={data?.watchlist_snapshot}
-            loading={isLoading}
-            title="Watchlist Snapshot"
-            icon={Wallet}
-            accent="top movers from watchlist"
-            status={data?.section_status?.watchlist_snapshot}
-            scrollable
-            viewMore="/app/watchlist"
-            onRowClick={openTicker}
-          />
-        </div>
+              if (id === 'fear_greed') return (
+                <SortableSection key={id} id={id}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                    <FearGreedGauge title="Equities Fear & Greed" side={data?.fear_greed?.equities} tint="#93c5fd" />
+                    <FearGreedGauge title="Crypto Fear & Greed" side={cryptoFG} tint="#f0abfc" />
+                  </div>
+                </SortableSection>
+              );
 
-        {/* H3. Unusual Options Flows + Hyperliquid Top Signals */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-          <UnusualFlowsSection
-            flows={data?.unusual_options_flows}
-            status={
-              data?.unusual_options_meta?.data_state ||
-              data?.section_status?.unusual_options_flows
-            }
-            loading={isLoading}
-            onTickerClick={openTicker}
-            viewMore="/app/options"
-          />
-          <HLTopSignals signals={hlSignals} loading={hlLoading} viewMore="/app/hyperliquid-screener" onTickerClick={openTicker} />
-        </div>
+              return null;
+            })}
 
-        {/* K. Fear & Greed — equities + crypto */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-          <FearGreedGauge
-            title="Equities Fear & Greed"
-            side={data?.fear_greed?.equities}
-            tint="#93c5fd"
-          />
-          <FearGreedGauge
-            title="Crypto Fear & Greed"
-            side={cryptoFG}
-            tint="#f0abfc"
-          />
-        </div>
+          </SortableContext>
+        </DndContext>
 
         {isError && (
           <Card className="p-4 border border-rose-500/20 bg-rose-500/5 text-rose-200 text-sm mb-6">
