@@ -932,10 +932,10 @@ export default function StocksPortfolioPage() {
           {/* Holdings Table */}
           {holdings.length > 0 && (
             <GlassCard className="p-3 sm:p-4">
-              <div className="overflow-x-auto">
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' }}>
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#08090e' }}>
                       <th className="pb-2 pr-1 w-6"></th>
                       <th className="text-left pb-2 pr-3"><SortHeader label="Ticker" keyName="ticker" /></th>
                       <th className="text-right pb-2 px-3"><SortHeader label="Shares" keyName="shares" /></th>
