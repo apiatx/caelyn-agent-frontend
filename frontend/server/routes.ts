@@ -1927,7 +1927,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!upstream.ok) {
         const errText = await upstream.text().catch(() => '');
-        return res.status(upstream.status).json({ error: `Agent returned ${upstream.status}`, detail: errText.slice(0, 200) });
+        console.error(`[portfolio-review] FastAPI returned ${upstream.status}. Body: ${errText.slice(0, 500)}`);
+        return res.status(upstream.status).json({ error: `Agent returned ${upstream.status}`, detail: errText.slice(0, 500) });
       }
 
       // FastAPI keeps the connection alive by streaming space bytes every 8s.
