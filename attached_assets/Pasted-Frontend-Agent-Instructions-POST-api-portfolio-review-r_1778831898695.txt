@@ -1,0 +1,134 @@
+Frontend Agent Instructions — POST /api/portfolio/review response contract
+The backend response shape has been stabilized. The endpoint always returns HTTP 200. Pass these to your frontend agent verbatim:
+
+Full response shape
+POST /api/portfolio/review
+Always HTTP 200. Never throws. Fields:
+{
+  ok: boolean,                   // true even on fallback; false only on server crash
+  agent_status: "ok" | "fallback" | "error",
+  as_of: string,                 // ISO timestamp
+  type: "portfolio_review",
+  message: string,               // short headline — good for toasts/section header
+  analysis: string,              // full flat-text version — good for copy/export button
+  portfolio_summary: {
+    headline: string,            // e.g. "19 holdings | moderate risk"
+    overview: string,            // 2–3 sentence portfolio-level read from Claude
+    strengths: string[],
+    risks: string[],
+    macro_read: string,          // e.g. "VIX 18.2 | Fear/Greed 42 (Fear) | regime: risk-off"
+    social_portfolio_read: string  // cross-portfolio social summary, or "Social data unavailable"
+  },
+  weighting_suggestions: [       // one entry per holding
+    {
+      ticker: string,
+      current_weight: number,    // percent (e.g. 8.1 means 8.1%)
+      suggested_action: "keep_core" | "add_on_confirmation" | "trim_watch" | "reduce_risk" | "monitor",
+      confidence: "high" | "medium" | "low",
+      reason: string
+    }
+  ],
+  asset_reviews: [               // one entry per holding
+    {
+      ticker: string,
+      company: string,           // full company name (Claude fills this; fallback = ticker)
+      theme: string,             // thematic category e.g. "AI Infrastructure", "Energy Storage"
+      bull_case: string,
+      bear_case: string,
+      view: string,              // combined narrative (bull + bear in one paragraph)
+      // NOTE: `signals` object is present in fallback mode only. Do not depend on it
+      // for the "ok" path. Render bull_case / bear_case instead.
+      signals?: {
+        price_momentum: string,  // "bullish" | "bearish" | "neutral" | "unavailable"
+        options_flow: string,
+        social_sentiment: string,
+        // ... other signal keys all strings
+      }
+    }
+  ],
+  watchlist_swaps: [             // 0–3 swap suggestions from Claude
+    {
+      drop: string,              // ticker to reduce/exit
+      add: string,               // ticker to consider adding
+      reason: string
+    }
+  ],
+  risk_flags: [                  // 0–N flags
+    {
+      severity: "critical" | "warning" | "info",
+      title: string,
+      details: string
+    }
+  ],
+  raw_inputs_used: {
+    holdings_count: number,
+    options_scan: boolean,
+    macro_snapshot: boolean,
+    social_sentiment: boolean,   // XAI Grok — false on cold first call, true when cached
+    watchlist_swap_pool: boolean,
+    x_consensus: boolean,
+    llm_synthesis: boolean       // false = fallback path, true = Claude succeeded
+  },
+  agent_error_summary: string | null,  // only set on fallback/error
+  structured: { display_type: "portfolio_review", ...same fields above }
+}
+
+Key rendering rules for the frontend
+agent_status: "ok" vs "fallback" — both have the same shape. You can show a subtle badge ("AI" vs "Estimated") but never block rendering. llm_synthesis in raw_inputs_used is the cleanest boolean for this.
+
+asset_reviews[n].signals — only guaranteed to exist on agent_status: "fallback". On "ok", render bull_case / bear_case / view instead. Wrap any signals access in optional chaining.
+
+Social sentiment — raw_inputs_used.social_sentiment: false on first call is expected and normal. On a repeat call (within 30 min) it will flip to true if Grok's background task succeeded. No frontend change needed — just display portfolio_summary.social_portfolio_read as-is; it self-describes when unavailable.
+
+weighting_suggestions[n].suggested_action values to style:
+
+keep_core → neutral/grey
+add_on_confirmation → green/bullish
+trim_watch → amber/caution
+reduce_risk → red/warning
+monitor → blue/neutral
+risk_flags[n].severity values to style:
+
+critical → red
+warning → amber
+info → blue/grey
+watchlist_swaps — may be empty array []. Only render the swap section when watchlist_swaps.length > 0.
+
+Request shape (unchanged — confirm frontend is sending this):
+
+{
+  "holdings": [
+    { "ticker": "MRVL", "shares": 50, "avg_cost": 65.0, "asset_type": "stock" }
+  ]
+}
+
+avg_cost (snake_case) is preferred; avgCost (camelCase) also accepted.
+
+
+Checkpoint made
+2 minutes ago
+
+Worked for 1 minute
+So XAI/Grok is just running in the backgrround making API calls for my portfolio? Nah, it's supposed to be just when prompted. It will get too expensive with XAI this way
+
+1 minute ago
+
+Planning background API call disabling
+Fair point. Let me remove the automatic background Grok call and gate it so social ranking only runs when explicitly requested.
+
+
+3 actions
+
+Published your app
+1 minute ago
+
+3 actions
+Simple fix — strip out the auto-fire entirely. Social will only ever hit XAI when the cache is already warm (meaning it was explicitly triggered elsewhere):
+
+
+2 actions
+Deployed. Now the behavior is:
+
+Default (no flag) — XAI is never called. Zero cost.
+include_social: true in the request body — XAI runs inline, result is cached 30 min so repeat calls within that window are free.
+Tell your frontend agent: to trigger social enrichment, add "include_social": true to the POST /api/portfolio/review request body (e.g., wire it to a "Refresh with Social" button rather than every load). Omitting the flag (the current default) costs nothing.
