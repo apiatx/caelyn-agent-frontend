@@ -964,6 +964,7 @@ export default function CaelynTerminalPage() {
                     label: h.ticker,
                     pct: Number(h.allocation_pct ?? 0),
                     color: THEME_PIE_C[i % THEME_PIE_C.length],
+                    tickers: [{ ticker: h.ticker, company: `${fmtN(Number(h.allocation_pct ?? 0), 1)}%` }],
                   }));
               } else {
                 // Re-bucket using the persistent ticker_theme_map cache so previously
