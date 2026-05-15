@@ -170,7 +170,7 @@ function timeAgo(dateStr: string): string {
 function CardHdr({ label, badge }: { label: string; badge?: string }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
-      <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>{label}</span>
+      <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>{label}</span>
       {badge && <span style={{ fontSize:9, fontWeight:700, letterSpacing:1, color:C.teal, textTransform:'uppercase', background:`${C.teal}18`, border:`1px solid ${C.teal}44`, borderRadius:3, padding:'1px 6px' }}>{badge}</span>}
     </div>
   );
@@ -780,7 +780,7 @@ export default function CaelynTerminalPage() {
           {/* ── Investment Goals — anchored to bottom of LeftCol ── */}
           <div style={{ flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, maxHeight:175 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
-              <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Investment Goals</span>
+              <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Investment Goals</span>
               <button onClick={() => {
                 if (!editingGoals) {
                   setEditGoalVals({ target_value: String(goals.target_value), target_return: String(goals.target_return), horizon: goals.horizon });
@@ -877,7 +877,7 @@ export default function CaelynTerminalPage() {
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Portfolio vs S&amp;P 500</span>
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Portfolio vs S&amp;P 500</span>
                 <div style={{ display:'flex', gap:12, marginLeft:6 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:14, height:2, background: ph ? C.dimLow : C.teal, opacity: ph ? 0.3 : 1 }} /><span style={{ fontSize:9, color:C.dim }}>Portfolio</span></div>
                   <div style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:12, height:2, background: ph ? C.dimLow : C.dim, opacity: ph ? 0.3 : 1, backgroundImage: ph ? undefined : `repeating-linear-gradient(90deg,${C.dim} 0 4px,transparent 4px 7px)` }} /><span style={{ fontSize:9, color:C.dim }}>S&amp;P 500</span></div>
@@ -923,7 +923,7 @@ export default function CaelynTerminalPage() {
           {/* Asset Allocation — three-tab: Asset Class | Sectors | Themes */}
           <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
-              <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Asset Allocation</span>
+              <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Asset Allocation</span>
               <div style={{ display:'flex', gap:1, background:'#080c13', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
                 {(['asset','sectors','themes'] as const).map(tab => (
                   <button key={tab} onClick={() => setAllocTab(tab)} style={{
@@ -1185,7 +1185,7 @@ export default function CaelynTerminalPage() {
         {/* ── PANEL 2: Top Performing Assets ── */}
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Top Performers</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Top Performers</span>
           </div>
           <div style={{ flex:1, overflowY:'auto', padding:'6px 0' }}>
             {(ph || topPerformers.length === 0) ? (
@@ -1219,7 +1219,7 @@ export default function CaelynTerminalPage() {
         {/* ── PANEL 3: Volatility (swapped here from top row) ── */}
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Volatility</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Volatility</span>
             <span style={{ fontSize:8, color:C.dimLow }}>Annualized</span>
           </div>
           <div style={{ flex:1, padding:'8px 10px', display:'flex', flexDirection:'column', gap:5, overflowY:'auto' }}>
@@ -1249,7 +1249,7 @@ export default function CaelynTerminalPage() {
         {/* ── PANEL 4: Options (swapped here from top row) ── */}
         <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>Options</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Options</span>
             <span style={{ fontSize:8, color:C.dimLow }}>Flow</span>
           </div>
           {(() => {
@@ -1327,7 +1327,7 @@ export default function CaelynTerminalPage() {
         {/* ── PANEL 5: AI Portfolio Review ── */}
         <div style={{ flex:'0 0 280px', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
           <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
-            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:C.dim, textTransform:'uppercase' }}>AI Portfolio Review</span>
+            <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
           </div>
           <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', padding:'12px' }}>
             {!aiReview && !aiLoading && (
