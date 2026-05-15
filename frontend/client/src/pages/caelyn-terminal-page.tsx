@@ -211,7 +211,7 @@ export default function CaelynTerminalPage() {
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
   const [optSort,  setOptSort]  = useState<{ col: string; dir: SortDir }>({ col: 'SCORE', dir: 'desc' });
-  const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; x: number; y: number } | null>(null);
+  const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; symbols?: string[]; color?: string; x: number; y: number } | null>(null);
   const [categorizingThemes, setCategorizingThemes] = useState(false);
   const [categorizeResult, setCategorizeResult] = useState<'success'|'error'|null>(null);
   // ticker -> themeName authoritative client cache.
@@ -1003,8 +1003,38 @@ export default function CaelynTerminalPage() {
                     <div style={{ height:'100%', aspectRatio:'1 / 1', maxWidth:'100%', maxHeight:'100%', display:'flex' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={allocData} cx="50%" cy="50%" innerRadius="58%" outerRadius="98%" dataKey="pct" strokeWidth={0}>
-                            {allocData.map((a, i) => <Cell key={i} fill={a.color} />)}
+                          <Pie
+                            data={allocData}
+                            cx="50%" cy="50%"
+                            innerRadius="58%" outerRadius="98%"
+                            dataKey="pct"
+                            strokeWidth={0}
+                            onMouseEnter={(data: any, _index: number, event: any) => {
+                              if (!data) return;
+                              const symbols: string[] = (data as any).symbols ?? [];
+                              const tickers: CTAllocTicker[] = (data as any).tickers ?? [];
+                              if (!symbols.length && !tickers.length) return;
+                              const clientX = event?.clientX ?? event?.nativeEvent?.clientX ?? 0;
+                              const clientY = event?.clientY ?? event?.nativeEvent?.clientY ?? 0;
+                              setAllocHover({
+                                label: data.label ?? data.name ?? '',
+                                tickers,
+                                symbols,
+                                color: data.color,
+                                x: clientX + 14,
+                                y: clientY - 10,
+                              });
+                            }}
+                            onMouseLeave={() => setAllocHover(null)}
+                          >
+                            {allocData.map((a, i) => (
+                              <Cell
+                                key={i}
+                                fill={a.color}
+                                opacity={allocHover ? (allocHover.label === a.label ? 1 : 0.55) : 1}
+                                style={{ cursor: 'pointer', transition: 'opacity 0.15s' }}
+                              />
+                            ))}
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
@@ -1367,17 +1397,46 @@ export default function CaelynTerminalPage() {
       </div>
 
       {/* ── Asset Allocation Hover Tooltip ──────────────────────────── */}
-      {allocHover && allocHover.tickers.length > 0 && (
-        <div style={{ position:'fixed', left: Math.min(allocHover.x, window.innerWidth - 200), top: Math.max(4, Math.min(allocHover.y, window.innerHeight - (allocHover.tickers.length * 22 + 28))), zIndex:9999, background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 10px', minWidth:180, maxWidth:240, boxShadow:'0 8px 32px rgba(0,0,0,0.6)', pointerEvents:'none' }}>
-          <div style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, color:C.dim, textTransform:'uppercase', marginBottom:6, borderBottom:`1px solid ${C.border}`, paddingBottom:4 }}>{allocHover.label}</div>
-          {allocHover.tickers.map((t, i) => (
-            <div key={i} style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:8, padding:'2px 0' }}>
-              <span style={{ fontSize:10, fontWeight:700, color:C.teal, flexShrink:0 }}>{t.ticker}</span>
-              <span style={{ fontSize:9, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'right', flex:1 }}>{t.company !== t.ticker ? t.company : ''}</span>
+      {allocHover && (allocHover.tickers.length > 0 || (allocHover.symbols ?? []).length > 0) && (() => {
+        const syms = allocHover.symbols ?? [];
+        const tickers = allocHover.tickers;
+        const rowCount = tickers.length > 0 ? tickers.length : syms.length;
+        const accentColor = allocHover.color ?? C.teal;
+        return (
+          <div style={{
+            position:'fixed',
+            left: Math.min(allocHover.x, window.innerWidth - 210),
+            top: Math.max(4, Math.min(allocHover.y, window.innerHeight - (rowCount * 22 + 48))),
+            zIndex:9999,
+            background:'#0d1623',
+            border:`1px solid ${accentColor}50`,
+            borderTop:`2px solid ${accentColor}`,
+            borderRadius:6,
+            padding:'8px 10px',
+            minWidth:180,
+            maxWidth:260,
+            boxShadow:'0 8px 32px rgba(0,0,0,0.7)',
+            pointerEvents:'none',
+          }}>
+            <div style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, color: accentColor, textTransform:'uppercase', marginBottom:6, borderBottom:`1px solid ${C.border}`, paddingBottom:4 }}>
+              {allocHover.label}
             </div>
-          ))}
-        </div>
-      )}
+            {tickers.length > 0
+              ? tickers.map((t, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:8, padding:'2px 0' }}>
+                    <span style={{ fontSize:10, fontWeight:700, color:C.teal, flexShrink:0 }}>{t.ticker}</span>
+                    <span style={{ fontSize:9, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'right', flex:1 }}>{t.company !== t.ticker ? t.company : ''}</span>
+                  </div>
+                ))
+              : syms.map((sym, i) => (
+                  <div key={i} style={{ padding:'2px 0' }}>
+                    <span style={{ fontSize:10, fontWeight:700, color:C.teal }}>{sym}</span>
+                  </div>
+                ))
+            }
+          </div>
+        );
+      })()}
 
       </>)}
 
