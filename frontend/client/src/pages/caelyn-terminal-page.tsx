@@ -1113,16 +1113,8 @@ export default function CaelynTerminalPage() {
         {/* ── COL 3: Risk Suggestions (taller) + Risk Analysis (shorter) ──────────────── */}
         <div style={{ flex:'0 0 210px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', height:'100%' }}>
 
-          {/* Risk Suggestions — fills available space */}
-          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-            <CardHdr label="Risk Suggestions" badge="Intel" />
-            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
-              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
-            </div>
-          </div>
-
-          {/* Risk Analysis — fixed height at bottom */}
-          <div style={{ background:C.card, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Risk Analysis — fixed height at top */}
+          <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <CardHdr label="Risk Analysis" badge="Metrics" />
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:C.border }}>
               {[
@@ -1139,6 +1131,14 @@ export default function CaelynTerminalPage() {
                   <div style={{ fontSize:8, color:C.text, marginTop:2 }}>{m.sub}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Risk Suggestions — fills remaining space below */}
+          <div style={{ background:C.card, flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            <CardHdr label="Risk Suggestions" badge="Intel" />
+            <div style={{ padding:8, overflowY:'auto', flex:1 }}>
+              {d.risk_suggestions.map((s, i) => <SuggCard key={i} s={s} />)}
             </div>
           </div>
         </div>
