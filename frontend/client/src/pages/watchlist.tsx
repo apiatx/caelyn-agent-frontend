@@ -375,9 +375,28 @@ function parseCsvTickers(csvText: string): string[] {
 }
 
 /* ── new-format sections display ────────────────────────────────────── */
-function NewFormatSections({ analysis, onTickerClick, allTickerSymbols }: { analysis: any; onTickerClick?: (t: string) => void; allTickerSymbols?: string[] }) {
-  const sections: any[] = analysis?.sections || [];
-  if (!sections.length) return null;
+function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtimeQuotes }: { analysis: any; onTickerClick?: (t: string) => void; allTickerSymbols?: string[]; realtimeQuotes?: Record<string, any> }) {
+  const rawSections: any[] = analysis?.sections || [];
+  if (!rawSections.length) return null;
+
+  // Compute average 1D% for each section using live Tradier quotes (fallback to analysis data)
+  function sectionAvg1d(section: any): number {
+    const tickers: any[] = section.tickers || [];
+    const vals: number[] = [];
+    for (const t of tickers) {
+      const sym = (t.symbol || t.ticker || '').toUpperCase();
+      const rt = sym && realtimeQuotes ? realtimeQuotes[sym] : undefined;
+      const pct = rt?.change_percent != null
+        ? Number(rt.change_percent)
+        : Number(t.change_pct ?? t.change_pct_1d ?? NaN);
+      if (Number.isFinite(pct)) vals.push(pct);
+    }
+    if (!vals.length) return -Infinity;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }
+
+  // Sort sections by avg 1D% descending (best performers first)
+  const sections = [...rawSections].sort((a, b) => sectionAvg1d(b) - sectionAvg1d(a));
 
   // Build set of all symbols that appear in any section
   const analyzedSymbols = new Set<string>();
@@ -2074,7 +2093,7 @@ export default function WatchlistPage() {
             <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
               {refreshMut.isPending && <AnalysisLoadingOverlay />}
               {newFmt
-                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} />
+                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
                 : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
               }
             </div>
