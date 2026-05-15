@@ -1361,7 +1361,6 @@ export default function HomePage() {
                 <SectionHeader
                   icon={BarChart3}
                   title="Theme Performance"
-                  accent="all themes · live"
                   viewMore="/app/stocks/sectors"
                 />
               </div>
