@@ -1,0 +1,43 @@
+What was built
+New: backend/data/portfolio_options_service.py
+A standalone async service, scan_portfolio_options(), that holds the canonical options scoring logic — shared by both the terminal and the HTTP endpoint. No duplication.
+
+Three-layer cache strategy:
+
+Whole-portfolio cache portfolio_opts_scan_v1:{holdings_sig} — 300s TTL
+Per-ticker cache portfolio_opts:{sym} — 300s TTL (reuses existing key)
+Master screener cache rows (already scored by TradierFlowEngine — best quality, zero calls)
+Live Tradier scan for anything not in any cache (batch quote → semaphore(6) concurrent chain scans)
+Same definitions as the Options Screener page:
+
+IV: smv_vol (ORATS smoothed) → iv field fallback
+EM: ATM straddle (c_mid + p_mid) / price × 100 → percentage (e.g. 3.96 = 3.96%)
+Signal: UNUSUAL CALL FLOW / UNUSUAL PUT FLOW / HIGH IV / OPTIONS ACTIVITY / LOW ACTIVITY
+Score: vol_score(35) + iv_score(20) + dir_score(20), max 75
+Updated: backend/data/caelyn_terminal.py
+_fetch_options_status() — replaced sync cache-only lookup with async call to scan_portfolio_options(), passing holdings_sig for whole-portfolio caching
+Terminal response now includes: portfolio_options, options_available_count, options_unavailable_count, options_unavailable_reasons_by_symbol, options_cache_status, options_source
+Per-holding options_status now carries live scan data (score, p_c, iv, em, vol, signal)
+Debug log renamed [portfolio-options-screener-debug] with full diagnostics matching spec
+Updated: backend/main.py /api/portfolio/options
+Removed 120 lines of inline _scan_one / batch scan logic
+Now delegates to scan_portfolio_options() from the service
+Return shape preserved for backward compat + new fields: all_statuses, available_count, unavailable_count, unavailable_reasons, options_cache_status, source
+Validation results (live 19-holding portfolio)
+Before	After
+Options available	1/19 (master LKG cache only)	12/19 (live scan, full screener logic)
+Engine used	_fetch_options_status (cache-only)	scan_portfolio_options (full screener)
+Sample row (MRVL):
+
+score=64.9  p_c=0.342  iv=1.119  em=3.96  vol=135,341  signal=UNUSUAL CALL FLOW
+source=portfolio_scoped_options_screener
+
+All 12 available: MRVL, LWLG, NBIS, PENG, OUST, P, NRGV, AEHR, AMPX, AMKR, VPG, VECO
+
+7 unavailable — all structured reasons, not silent null:
+
+SIVEF, SLOIF, IQEPF, FPLSF — OTC/foreign, no_chain_returned
+TRT, SLNH, SILC — micro-cap with no listed options chain
+All 15 required fields present: ticker, symbol, score, p_c, put_call, iv, em, expected_move, vol, volume, signal, optionable, data_available, unavailable_reason, source — field check: True, missing=set()
+
+All 9 required terminal sections intact. Existing /api/options/screener page unaffected.
