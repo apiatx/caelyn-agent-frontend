@@ -1008,7 +1008,8 @@ export default function CaelynTerminalPage() {
                 <div style={{ flex:1, display:'flex', alignItems:'stretch', columnGap:18, padding:'10px 10px', minHeight:0, overflow:'hidden' }}>
                   {/* Pie zone — flex:1 takes leftover width; pie auto-sizes to fit zone (square, capped by both width & height) and centers itself */}
                   <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'center', opacity: ph ? 0.4 : 1 }}>
-                    <div style={{ height:'100%', aspectRatio:'1 / 1', maxWidth:'100%', maxHeight:'100%', display:'flex' }}>
+                    <div style={{ height:'100%', aspectRatio:'1 / 1', maxWidth:'100%', maxHeight:'100%', display:'flex', position:'relative' }}>
+                      <img src="/caelyn-logo-nobg.png" alt="" style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'42%', height:'42%', objectFit:'contain', pointerEvents:'none', zIndex:1 }} />
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
