@@ -483,30 +483,40 @@ function SubThemeRow({ item, onSymbolClick }: { item: HomeSubThemeItem; onSymbol
   const breadthColor =
     breadth >= 80 ? "text-emerald-300" :
     breadth >= 50 ? "text-amber-300"   : "text-rose-300";
+  const syms = item.leader_symbols || [];
   return (
-    <div className="flex items-start gap-3 px-2 py-2.5 rounded-md hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-white/90">{item.sub_theme}</span>
-          {(item.leader_symbols || []).slice(0, 4).map(sym => (
-            <span key={sym} className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/70 font-mono cursor-pointer hover:bg-white/[0.10] hover:text-white/95 transition-colors" onClick={() => onSymbolClick?.(sym)}>{sym}</span>
-          ))}
-          {item.leader_count > 4 && (
-            <span className="text-[10px] text-white/35">+{item.leader_count - 4}</span>
+    <div className="px-2 py-2.5 rounded-md hover:bg-white/[0.03] transition-colors border-b border-white/[0.04] last:border-0">
+      {/* Row 1: theme name + breadth + 1D% */}
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-sm font-medium text-white/90 flex-1 min-w-0 truncate">{item.sub_theme}</span>
+        <div className="flex items-center gap-3 shrink-0">
+          {breadth > 0 && (
+            <span className={`text-xs font-medium ${breadthColor}`}>{breadth.toFixed(0)}%</span>
           )}
-        </div>
-        {item.pattern_summary && (
-          <div className="text-[11px] text-white/45 mt-0.5 truncate">{item.pattern_summary}</div>
-        )}
-      </div>
-      <div className="flex items-center gap-3 shrink-0 text-right">
-        <div className="hidden sm:block">
-          <div className={`text-xs font-medium ${breadthColor}`}>{breadth.toFixed(0)}%</div>
-        </div>
-        <div>
-          <div className={`text-sm font-semibold tabular-nums ${pctColor(chg)}`}>{fmtPct(chg)}</div>
+          <span className={`text-sm font-semibold tabular-nums ${pctColor(chg)}`}>{fmtPct(chg)}</span>
         </div>
       </div>
+      {/* Row 2: horizontally scrollable ticker chips */}
+      {syms.length > 0 && (
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-0.5 mb-1"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {syms.map(sym => (
+            <span
+              key={sym}
+              className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/70 font-mono cursor-pointer hover:bg-white/[0.10] hover:text-white/95 transition-colors shrink-0"
+              onClick={() => onSymbolClick?.(sym)}
+            >
+              {sym}
+            </span>
+          ))}
+        </div>
+      )}
+      {/* Row 3: description */}
+      {item.pattern_summary && (
+        <div className="text-[11px] text-white/45 leading-snug">{item.pattern_summary}</div>
+      )}
     </div>
   );
 }
@@ -1376,11 +1386,10 @@ export default function HomePage() {
                     avg_change_1d:   t.performance?.["1D"] ?? t.return_pct ?? null,
                     avg_change_7d:   t.performance?.["7D"] ?? null,
                     leader_symbols:  t.proxy_type === "custom"
-                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 5)
-                      : (t.leaders ?? []).map((l: any) => l.symbol).slice(0, 4)
-                          .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []).slice(0, 4))
-                          .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx)
-                          .slice(0, 4),
+                      ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
+                      : (t.leaders ?? []).map((l: any) => l.symbol)
+                          .concat((t.proxy_symbols_used ?? t.proxy_symbols ?? []))
+                          .filter((s: string, idx: number, arr: string[]) => arr.indexOf(s) === idx),
                     leader_count:    (t.proxy_type === "custom"
                       ? (t.proxy_symbols_used ?? t.proxy_symbols ?? [])
                       : (t.leaders ?? t.proxy_symbols_used ?? t.proxy_symbols ?? [])).length,
