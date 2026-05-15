@@ -1,0 +1,61 @@
+volume — already on every position (from Tradier, q.get("volume"))
+market_cap — already fetched in fundamentals_raw via _fetch_fundamentals(), keyed as "market_cap", pulled into funda = fundamentals_raw.get(sym, {}) per holding
+_format_holdings() — the single output formatter, perfect injection point
+Zero new API calls needed — all data is already in-flight
+Now I'll add the computation in the positions loop and surface it in _format_holdings:
+
+
+2 actions
+Now I'll make both edits in parallel — the computation in the positions loop, and the output in _format_holdings:
+
+
+2 actions
+Now update _format_holdings to surface the Vol/MC fields:
+
+
+2 actions
+Both edits are in. Now restart the server and bust the terminal cache so we get a fresh build:
+
+
+2 actions
+Server is up. Let me validate the live endpoint now:
+
+
+2 actions
+All 19 holdings present, all 6 terminal sections intact. Let me write the commit message:
+
+
+3 actions
+Done. Here's a full summary of what was built and validated.
+
+Audit Results
+Data needed	Where it already lived	New API calls?
+volume	Tradier quote → q.get("volume") — already on every position	None
+market_cap	_fetch_fundamentals() → FMP cache → live FMP → Finnhub fallback, keyed as "market_cap" in funda dict	None
+Computation point	Positions loop in _build(), after existing vol_x computation	—
+Output point	_format_holdings() — the single formatter	—
+Zero new API calls. All inputs were already in-flight on every terminal request.
+
+New Fields on Every Holding
+{
+  "market_cap": 144241847100.0,
+  "dollar_volume": 5963255969.64,
+  "vol_mc_ratio": 0.041342,
+  "vol_mc_pct": 4.1342,
+  "vol_mc_label": "normal",
+  "vol_mc_unavailable_reason": null
+}
+
+Signal buckets: high ≥10% · elevated ≥5% · normal ≥1% · low <1%
+
+Live Validation (19-holding portfolio)
+Holding	Price	Dollar Vol	Market Cap	Vol/MC%	Label
+SIVEF	$6.38	$41.8M	—	null	market_cap_unavailable (OTC pink-sheet)
+NBIS	$221.15	$6.58B	$37.1B	17.74%	high
+TRT	$14.02	$33.5M	$140.8M	23.78%	high
+AEHR	$106.34	$224.7M	$2.93B	7.68%	elevated
+MRVL	$182.58	$5.96B	$144.2B	4.13%	normal
+FPLSF	$29.30	$1.82M	$2.61B	0.07%	low
+18/19 have computed values. The 1 null (SIVEF) has an explicit "market_cap_unavailable" reason — it's a legitimate OTC pink-sheet with no FMP/Finnhub profile data.
+
+All 6 terminal sections confirmed intact: holdings, performance_chart, correlation_matrix, risk_metrics, volatility, risk_suggestions. allocation_pct untouched.

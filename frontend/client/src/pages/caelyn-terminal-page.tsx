@@ -208,7 +208,7 @@ export default function CaelynTerminalPage() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
-  const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
+  const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'VOL_MC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
   const [optSort,  setOptSort]  = useState<{ col: string; dir: SortDir }>({ col: 'SCORE', dir: 'desc' });
   const [allocHover, setAllocHover] = useState<{ label: string; tickers: CTAllocTicker[]; symbols?: string[]; color?: string; x: number; y: number } | null>(null);
@@ -663,6 +663,7 @@ export default function CaelynTerminalPage() {
               }
               if (holdSort.col === 'CHG%')    { av = parseNum(a.change_pct);   bv = parseNum(b.change_pct); }
               if (holdSort.col === 'ALLOC')   { av = parseNum(a.allocation_pct); bv = parseNum(b.allocation_pct); }
+              if (holdSort.col === 'VOL_MC')  { av = parseNum(a.vol_mc_pct);    bv = parseNum(b.vol_mc_pct); }
               return holdSort.dir === 'asc' ? av - bv : bv - av;
             });
             const thStyle = (col: string) => ({ padding:'4px 3px', color: holdSort.col === col ? C.teal : C.dim, fontWeight:600, textAlign:(col==='TICKER'?'left':'right') as 'left'|'right', fontSize:8, letterSpacing:0.3, overflow:'hidden', cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
@@ -677,8 +678,8 @@ export default function CaelynTerminalPage() {
                     </colgroup>
                     <thead>
                       <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                        {(['TICKER','PRICE','VOLX','CHG%','ALLOC'] as const).map(h => (
-                          <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
+                        {(['TICKER','PRICE','VOLX','CHG%','VOL_MC'] as const).map(h => (
+                          <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h === 'VOL_MC' ? 'VOL/MC' : h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
                         ))}
                       </tr>
                     </thead>
@@ -695,7 +696,16 @@ export default function CaelynTerminalPage() {
                             return <td title={isUnusual ? 'Unusual: ≥ 2.5× average volume' : 'Volume vs 30-day average'} style={{ padding:'4px 3px', textAlign:'right', color, fontWeight: isUnusual ? 700 : 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{txt}</td>;
                           })()}
                           <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
-                          <td style={{ padding:'4px 3px', textAlign:'right', color:C.purple, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ph ? '—' : `${fmtN(h.allocation_pct,1)}%`}</td>
+                          {(() => {
+                            const pct = h.vol_mc_pct != null ? Number(h.vol_mc_pct) : null;
+                            const label = h.vol_mc_label ?? '';
+                            const reason = h.vol_mc_unavailable_reason ?? '';
+                            const color = ph || pct == null ? C.dim : label === 'high' ? C.amber : label === 'elevated' ? C.teal : label === 'low' ? C.dim : C.text;
+                            const fw = label === 'high' || label === 'elevated' ? 700 : 500;
+                            const txt = ph || pct == null ? '—' : `${fmtN(pct, 1)}%`;
+                            const tip = reason ? reason.replace(/_/g, ' ') : label ? label : undefined;
+                            return <td title={tip} style={{ padding:'4px 3px', textAlign:'right', color, fontWeight:fw, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{txt}</td>;
+                          })()}
                         </tr>
                       ))}
                     </tbody>

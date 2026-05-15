@@ -1,0 +1,69 @@
+FRONTEND REPLIT AGENT — Replace Alloc column with Vol/MC in Portfolio Terminal holdings
+
+On Portfolio page → Terminal tab → Holdings section, replace the visible "Alloc" column with a new "Vol/MC" column.
+
+Backend will add Vol/MC fields to each holding in /api/caelyn-terminal:
+- volume
+- dollar_volume
+- market_cap
+- vol_mc_ratio
+- vol_mc_pct
+- vol_mc_unavailable_reason
+Possibly also vol_mc_label / signal.
+
+Goal:
+Display the new Vol/MC metric in the Holdings table where Alloc currently appears.
+
+Do NOT:
+- change Dashboard holdings table
+- remove allocation logic elsewhere
+- break Portfolio Terminal analytics
+- hardcode tickers
+- calculate with fake data
+- make new API calls if backend already provides the field
+- change unrelated columns
+
+Current Terminal Holdings columns:
+Ticker | Price | VolX | Chg% | Alloc
+
+Requested Terminal Holdings columns:
+Ticker | Price | VolX | Chg% | Vol/MC
+
+Implementation:
+1. Locate the Portfolio Terminal Holdings table.
+2. Find where the Alloc column is rendered.
+3. Replace header label "Alloc" with "Vol/MC".
+4. Render holding.vol_mc_pct if available.
+5. Format as percentage:
+   - 12.3%
+   - 0.8%
+   - — if unavailable
+6. If vol_mc_unavailable_reason exists, optionally show it in title/tooltip.
+7. Preserve existing table width/style.
+8. Preserve sorting behavior if easy:
+   - if Alloc was sortable, make Vol/MC sortable numerically.
+   - if not sortable, do not overbuild.
+
+Optional styling:
+- High Vol/MC should visually pop but stay consistent with existing theme.
+- If backend provides vol_mc_label:
+  - high/elevated can use accent coloring
+  - normal/low can use muted color
+Keep this subtle.
+
+Validation:
+Use the current 19-holding portfolio.
+
+Confirm:
+1. Terminal Holdings section shows "Vol/MC" instead of "Alloc".
+2. Every visible holding shows a Vol/MC value or "—".
+3. No stale/deleted tickers appear.
+4. Portfolio Dashboard remains unchanged.
+5. Asset Allocation section still works.
+6. Performance chart, correlation matrix, risk analysis, volatility, and risk suggestions still work.
+7. Hard refresh keeps the column populated.
+
+Return:
+- exact files changed
+- backend fields consumed
+- screenshot/console validation
