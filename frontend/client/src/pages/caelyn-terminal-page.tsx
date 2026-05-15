@@ -678,7 +678,7 @@ export default function CaelynTerminalPage() {
                     </colgroup>
                     <thead>
                       <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                        {(['TICKER','PRICE','VOLX','CHG%','VOL_MC'] as const).map(h => (
+                        {(['TICKER','PRICE','CHG%','VOLX','VOL_MC'] as const).map(h => (
                           <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h === 'VOL_MC' ? 'VOL/MC' : h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
                         ))}
                       </tr>
@@ -688,6 +688,7 @@ export default function CaelynTerminalPage() {
                         <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
                           <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{h.ticker}</td>
                           <td style={{ padding:'4px 3px', textAlign:'right', color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h.price)}</td>
+                          <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
                           {(() => {
                             const vx = h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null);
                             const isUnusual = vx != null && vx >= 2.5;
@@ -695,7 +696,6 @@ export default function CaelynTerminalPage() {
                             const txt = ph || vx == null ? '—' : `${fmtN(vx, 1)}×`;
                             return <td title={isUnusual ? 'Unusual: ≥ 2.5× average volume' : 'Volume vs 30-day average'} style={{ padding:'4px 3px', textAlign:'right', color, fontWeight: isUnusual ? 700 : 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{txt}</td>;
                           })()}
-                          <td style={{ padding:'4px 3px', textAlign:'right', color: ph ? C.dim : pctClr(h.change_pct), overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h.change_pct)}</td>
                           {(() => {
                             const pct = h.vol_mc_pct != null ? Number(h.vol_mc_pct) : null;
                             const label = h.vol_mc_label ?? '';
