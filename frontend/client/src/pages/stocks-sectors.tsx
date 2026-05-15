@@ -15,6 +15,16 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 
+/* ── Color tokens — Watchlist palette ──────────────────────────────────── */
+const C = {
+  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
+  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
+  teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
+  amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
+  font: "'JetBrains Mono','Fira Code',monospace",
+  sansFont: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+};
+
 // ─── Types — exact backend shapes ────────────────────────────────────────────
 interface SectorSeries {
   dates:  string[];
@@ -272,9 +282,9 @@ function Skel({ w = "100%", h = 16, className = "" }: { w?: string | number; h?:
 // ─── Shared primitives ────────────────────────────────────────────────────────
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <Card className={`bg-black/40 backdrop-blur-lg border-white/[0.06] ${className}`}>
+    <div className={className} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12 }}>
       {children}
-    </Card>
+    </div>
   );
 }
 function SectionHeader({ icon: Icon, title, badge, right, color = "teal" }: {
@@ -1233,11 +1243,12 @@ function UnifiedThemesCard({
 
   const Th = ({ label, k }: { label: string; k?: SortKey }) => (
     <th onClick={k ? () => handleSort(k) : undefined}
-      className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap ${k ? "cursor-pointer select-none hover:text-gray-300 transition-colors" : ""}`}>
+      className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap ${k ? "cursor-pointer select-none transition-colors" : ""}`}
+      style={{ color: k && sortKey === k ? C.teal : C.dim }}>
       <div className="flex items-center gap-1">
         {label}
         {k && (sortKey === k
-          ? sortDir === "asc" ? <ChevronUp className="w-3 h-3 text-teal-400" /> : <ChevronDown className="w-3 h-3 text-teal-400" />
+          ? sortDir === "asc" ? <ChevronUp className="w-3 h-3" style={{ color: C.teal }} /> : <ChevronDown className="w-3 h-3" style={{ color: C.teal }} />
           : <ChevronsUpDown className="w-3 h-3 opacity-30" />)}
       </div>
     </th>
@@ -1371,7 +1382,7 @@ function UnifiedThemesCard({
                       </td>
                     </tr>
                     {expanded && (
-                      <tr key={`${row.key}-detail`} className="bg-black/30">
+                      <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
                         <td colSpan={12} className="px-4 py-4">
                           <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
                         </td>
@@ -1813,7 +1824,16 @@ export default function StocksSectorsPage() {
   })(), [sectors, leaders, laggards, dash, selectedTickers]);
 
   return (
-    <div className="min-h-screen text-white" style={{ background: "#050608" }}>
+    <div className="sectors-themes-page min-h-screen text-white" style={{ background: C.bg }}>
+      <style>{`
+        .sectors-themes-page .text-gray-300 { color: #e2e8f0 !important; }
+        .sectors-themes-page .text-gray-400 { color: #94a3b8 !important; }
+        .sectors-themes-page .text-gray-500 { color: #64748b !important; }
+        .sectors-themes-page .text-gray-600 { color: #475569 !important; }
+        .sectors-themes-page thead tr { border-bottom: 1px solid #1a2540 !important; }
+        .sectors-themes-page tbody tr { border-bottom: 1px solid rgba(26,37,64,0.4) !important; }
+        .sectors-themes-page tbody tr:hover { background: rgba(14,165,233,0.04) !important; }
+      `}</style>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4 space-y-4 lg:space-y-6">
 
         {/* A: Regime Header */}
