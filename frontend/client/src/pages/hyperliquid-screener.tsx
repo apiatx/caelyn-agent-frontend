@@ -2397,7 +2397,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   if (!useTabbed && fallbackRows.length === 0 && !isLoading) return null;
 
   return (
-    <div style={{ margin:'0 14px 14px', border:`1px solid ${C.border}`, borderRadius:6, overflow:'hidden' }}>
+    <div style={{ margin:'0 0 14px', border:`1px solid ${C.border}`, borderRadius:0, overflow:'hidden' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', background:C.card2, color:C.text, borderBottom:`1px solid ${C.border}` }}>
         <BarChart2 style={{ width:11, height:11, color:C.teal, flexShrink:0 }} />
         <span style={{ fontSize:9, fontWeight:700, letterSpacing:1.5, color:C.teal, textTransform:'uppercase' }}>Market Matrix</span>
