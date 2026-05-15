@@ -1,0 +1,77 @@
+FRONTEND REPLIT AGENT — Replace Portfolio Options side-path with backend portfolio_options only
+
+Backend is adding Portfolio Options data through the same Options Screener logic, scoped to current portfolio holdings.
+
+Important:
+Delete or disable the current frontend/Express logic that separately calls FastAPI/Tradier/options endpoints for Portfolio Terminal options data.
+
+The Portfolio Terminal Options section must use only the backend-provided data from:
+- /api/caelyn-terminal portfolio_options
+and/or
+- holding.options_status
+
+Do NOT:
+- make separate frontend/Express calls for Tradier options data
+- call /api/portfolio/options separately if /api/caelyn-terminal already includes portfolio_options
+- call option chains directly from frontend
+- duplicate the options screener logic
+- create extra Tradier API usage
+- hardcode tickers
+
+Goal:
+One backend-owned options path:
+FastAPI Options Screener logic → portfolio_options in /api/caelyn-terminal → frontend renders rows.
+
+Expected backend row fields:
+- ticker
+- score
+- p_c or put_call
+- iv
+- em or expected_move
+- vol or volume
+- signal
+- optionable
+- data_available
+- unavailable_reason
+
+Tasks:
+1. Find current Portfolio Terminal Options logic.
+2. Identify any separate fetches/calls used only for Portfolio options:
+   - direct Tradier/options calls
+   - Express-only options calls
+   - separate FastAPI options fetches
+   - frontend-calculated options score
+3. Remove/disable those duplicate calls.
+4. Render rows from backend portfolio_options only.
+5. Map backend fields to table columns:
+   - ticker → TICKER
+   - score → SCORE
+   - p_c / put_call → P/C
+   - iv → IV
+   - em / expected_move → EM
+   - vol / volume → VOL
+   - signal → SIGNAL
+6. If a ticker has no options data, use backend unavailable_reason. Do not trigger another provider call.
+7. Preserve the existing Options table style.
+
+Diagnostics:
+Add:
+
+[portfolio-options-ui] {
+  source: "caelyn-terminal.portfolio_options",
+  duplicateOptionsFetchesRemoved: true,
+  renderedRows,
+  backendRows,
+  fieldsSeen,
+  unavailableCount,
+  unavailableReasons
+}
+
+Validation:
+1. Load Portfolio Terminal.
+2. Confirm there are no separate frontend/Express Tradier options calls for portfolio options.
+3. Confirm Options table renders only backend portfolio_options.
+4. Confirm displayed columns are:
+   ticker, score, P/C, IV, EM, VOL, signal.
+5. Confirm unavailable tickers do not trigger fallback provider calls.
+6. Confirm existing Options Screener page still works.

@@ -35,6 +35,19 @@ interface CTMover { ticker: string; change_pct: N; price: N; w52_low: N; w52_hig
 interface CTEarningsItem { ticker: string; company: string; wtd: string; last_eps: N; next_date: string; est_eps: N; date_iso?: string; }
 interface CTNewsItem { symbol: string; headline: string; time_ago: string; }
 interface CTTickerItem { symbol: string; price: N; change_pct: N; }
+interface CTOptionsRow {
+  ticker: string;
+  score?: N; composite_score?: N;
+  p_c?: N; put_call?: N;
+  iv?: N;
+  em?: N; expected_move?: N;
+  vol?: N; volume?: N;
+  signal?: string | null;
+  optionable?: boolean | null;
+  data_available?: boolean | null;
+  unavailable_reason?: string | null;
+  source?: string | null;
+}
 interface CaelynTerminalData {
   is_placeholder?: boolean;
   portfolio: {
@@ -60,6 +73,10 @@ interface CaelynTerminalData {
   earnings_calendar: CTEarningsItem[];
   news_ticker: CTNewsItem[];
   ticker_tape: CTTickerItem[];
+  portfolio_options?: CTOptionsRow[];
+  options_available_count?: N;
+  options_unavailable_count?: N;
+  options_unavailable_reasons_by_symbol?: Record<string, string>;
   _synced_from_local?: boolean;
   as_of: string;
 }
@@ -317,16 +334,6 @@ export default function CaelynTerminalPage() {
     refetchInterval: 5 * 60_000,
   });
 
-  const { data: portfolioOptions } = useQuery<{ tickers: Array<{ ticker: string; underlying_price?: N; price_change_pct?: N; pc_ratio?: N; iv_current?: N; expected_move?: N; primary_signal?: string | null; confidence?: string | null; composite_score?: N; total_volume?: N; call_put_volume_ratio?: N; }> }>({
-    queryKey: ['portfolio-options'],
-    queryFn: async () => {
-      const r = await fetch('/api/portfolio/options');
-      if (!r.ok) return { tickers: [] };
-      return r.json();
-    },
-    staleTime: 5 * 60_000,
-    refetchInterval: 5 * 60_000,
-  });
 
   const { data: marketTapeData } = useQuery<{ symbol: string; price: N; change_pct: N }[]>({
     queryKey: ['market-tape'],
@@ -1268,29 +1275,37 @@ export default function CaelynTerminalPage() {
             <span style={{ fontSize:8, color:C.dim }}>Flow</span>
           </div>
           {(() => {
-            const rows = portfolioOptions?.tickers ?? [];
+            const backendRows: CTOptionsRow[] = data?.portfolio_options ?? [];
             const dir = optSort.dir === 'asc' ? 1 : -1;
             const numCmp = (a: any, b: any) => {
               const av = a == null ? -Infinity : Number(a);
               const bv = b == null ? -Infinity : Number(b);
               return dir * (av - bv);
             };
-            const sorted = [...rows].sort((a, b) => {
+            const sorted = [...backendRows].sort((a, b) => {
               switch (optSort.col) {
                 case 'TICKER': return dir * a.ticker.localeCompare(b.ticker);
-                case 'SCORE':  return numCmp(a.composite_score, b.composite_score);
-                case 'P/C': {
-                  const av = a.pc_ratio ?? a.call_put_volume_ratio;
-                  const bv = b.pc_ratio ?? b.call_put_volume_ratio;
-                  return numCmp(av, bv);
-                }
-                case 'IV':   return numCmp(a.iv_current, b.iv_current);
-                case 'EM':   return numCmp(a.expected_move, b.expected_move);
-                case 'VOL':  return numCmp(a.total_volume, b.total_volume);
-                case 'SIGNAL': return dir * (a.primary_signal || '').localeCompare(b.primary_signal || '');
+                case 'SCORE':  return numCmp(a.score ?? a.composite_score, b.score ?? b.composite_score);
+                case 'P/C':    return numCmp(a.p_c ?? a.put_call, b.p_c ?? b.put_call);
+                case 'IV':     return numCmp(a.iv, b.iv);
+                case 'EM':     return numCmp(a.em ?? a.expected_move, b.em ?? b.expected_move);
+                case 'VOL':    return numCmp(a.vol ?? a.volume, b.vol ?? b.volume);
+                case 'SIGNAL': return dir * (a.signal || '').localeCompare(b.signal || '');
                 default: return 0;
               }
             });
+            // Diagnostics
+            const fieldsSeen = backendRows.length > 0 ? Object.keys(backendRows[0]) : [];
+            const unavailableRows = backendRows.filter(r => r.data_available === false);
+            console.log('[portfolio-options-ui]', JSON.stringify({
+              source: 'caelyn-terminal.portfolio_options',
+              duplicateOptionsFetchesRemoved: true,
+              renderedRows: sorted.length,
+              backendRows: backendRows.length,
+              fieldsSeen,
+              unavailableCount: unavailableRows.length,
+              unavailableReasons: Object.fromEntries(unavailableRows.map(r => [r.ticker, r.unavailable_reason ?? null])),
+            }));
             const mkSort = (col: string) => () => setOptSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
             const thO = (col: string) => ({ padding:'5px 6px', color: optSort.col === col ? C.teal : C.dim, fontWeight:700, textAlign:(col==='TICKER'||col==='SIGNAL'?'left':'right') as 'left'|'right', fontSize:9, letterSpacing:0.5, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
             const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
@@ -1310,25 +1325,33 @@ export default function CaelynTerminalPage() {
                   </thead>
                   <tbody>
                     {sorted.map((t, i) => {
-                      const sig = (t.primary_signal || '').toLowerCase();
-                      const sigColor = sig.includes('unusual') ? C.amber : sig.includes('gamma') ? C.purple : sig.includes('asym') ? C.green : sig.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
-                      const cp = t.pc_ratio ?? t.call_put_volume_ratio ?? null;
+                      const unavailable = t.data_available === false;
+                      const scoreVal = t.score ?? t.composite_score ?? null;
+                      const score = scoreVal != null ? fmtN(scoreVal as number, 0) : '—';
+                      const scoreColor = scoreVal != null && (scoreVal as number) >= 70 ? C.green : scoreVal != null && (scoreVal as number) >= 50 ? C.amber : C.dim;
+                      const cp = t.p_c ?? t.put_call ?? null;
                       const cpStr = cp == null ? '—' : fmtN(cp as number, 2);
                       const cpColor = cp == null ? C.dimLow : ((cp as number) < 0.7 ? C.green : (cp as number) > 1.3 ? C.red : C.dim);
-                      const iv = t.iv_current != null ? `${fmtN((t.iv_current as number) * 100, 0)}%` : '—';
-                      const em = t.expected_move != null ? `${fmtN((t.expected_move as number) * 100, 1)}%` : '—';
-                      const vol = t.total_volume != null ? (t.total_volume >= 1000 ? `${fmtN((t.total_volume as number)/1000, 1)}K` : String(t.total_volume)) : '—';
-                      const score = t.composite_score != null ? fmtN(t.composite_score as number, 0) : '—';
-                      const scoreColor = t.composite_score != null && (t.composite_score as number) >= 70 ? C.green : t.composite_score != null && (t.composite_score as number) >= 50 ? C.amber : C.dim;
+                      const ivVal = t.iv ?? null;
+                      const ivStr = ivVal != null ? `${fmtN((ivVal as number) * (ivVal as number > 5 ? 1 : 100), 0)}%` : '—';
+                      const emVal = t.em ?? t.expected_move ?? null;
+                      const emStr = emVal != null ? `${fmtN(emVal as number, 1)}%` : '—';
+                      const volVal = t.vol ?? t.volume ?? null;
+                      const volStr = volVal != null ? ((volVal as number) >= 1000 ? `${fmtN((volVal as number)/1000, 1)}K` : String(Math.round(volVal as number))) : '—';
+                      const sig = t.signal || '';
+                      const sigLower = sig.toLowerCase();
+                      const sigColor = sigLower.includes('unusual') ? C.amber : sigLower.includes('gamma') ? C.purple : sigLower.includes('asym') ? C.green : sigLower.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
                       return (
-                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22` }}>
-                          <td style={{ padding:'5px 6px', color:C.teal, fontWeight:700 }}>{t.ticker}</td>
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22`, opacity: unavailable ? 0.45 : 1 }}>
+                          <td style={{ padding:'5px 6px', color: unavailable ? C.dim : C.teal, fontWeight:700 }}>{t.ticker}</td>
                           <td style={{ padding:'5px 6px', textAlign:'right', color:scoreColor, fontWeight:700 }}>{score}</td>
                           <td style={{ padding:'5px 6px', textAlign:'right', color:cpColor }}>{cpStr}</td>
-                          <td style={{ padding:'5px 6px', textAlign:'right', color: t.iv_current != null ? C.amber : C.dimLow }}>{iv}</td>
-                          <td style={{ padding:'5px 6px', textAlign:'right', color: t.expected_move != null ? C.purple : C.dimLow }}>{em}</td>
-                          <td style={{ padding:'5px 6px', textAlign:'right', color:C.text }}>{vol}</td>
-                          <td style={{ padding:'5px 6px', color:sigColor, fontSize:9, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.primary_signal || '—'}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color: ivVal != null ? C.amber : C.dimLow }}>{ivStr}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color: emVal != null ? C.purple : C.dimLow }}>{emStr}</td>
+                          <td style={{ padding:'5px 6px', textAlign:'right', color:C.text }}>{volStr}</td>
+                          <td style={{ padding:'5px 6px', color: unavailable ? C.dim : sigColor, fontSize:9, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.unavailable_reason ?? undefined}>
+                            {unavailable ? (t.unavailable_reason ?? 'unavailable') : (sig || '—')}
+                          </td>
                         </tr>
                       );
                     })}
