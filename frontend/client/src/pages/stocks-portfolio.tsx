@@ -392,7 +392,7 @@ export default function StocksPortfolioPage() {
 
   const startEdit = (h: Holding, e: React.MouseEvent) => {
     e.stopPropagation();
-    setClosingId(null);
+    setSellModal(null);
     setEditingId(h.id);
     setEditShares(String(h.shares));
     setEditAvgCost(String(h.avgCost));
