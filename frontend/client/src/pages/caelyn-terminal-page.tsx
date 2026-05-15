@@ -19,7 +19,7 @@ const C = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type N = number | null | undefined;
-interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; volume?: N; avg_volume?: N; vol_x?: N; }
+interface CTHolding { ticker: string; price: N; change: N; change_pct: N; allocation_pct: N; volume?: N; avg_volume?: N; vol_x?: N; market_cap?: N; dollar_volume?: N; vol_mc_ratio?: N; vol_mc_pct?: N; vol_mc_label?: string; vol_mc_unavailable_reason?: string | null; }
 interface CTChartPoint { date: string; portfolio: N; sp500: N; }
 interface CTAllocTicker { ticker: string; company: string; }
 interface CTAllocationItem { label: string; pct: N; color: string; tickers?: CTAllocTicker[]; }
