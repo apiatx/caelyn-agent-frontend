@@ -851,7 +851,7 @@ export default function CaelynTerminalPage() {
                         <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
                           <div style={{ height:'100%', width:`${Math.max(pct, 0)}%`, background: current < 0 ? C.red : pct >= 100 ? C.green : C.teal, borderRadius:2, transition:'width 0.4s' }} />
                         </div>
-                        <span style={{ fontSize:7, color:C.dim, whiteSpace:'nowrap' }}>{target}% goal</span>
+                        <span style={{ fontSize:7, color:'#fff', whiteSpace:'nowrap' }}>{target}% goal</span>
                       </div>
                     )}
                   </div>
