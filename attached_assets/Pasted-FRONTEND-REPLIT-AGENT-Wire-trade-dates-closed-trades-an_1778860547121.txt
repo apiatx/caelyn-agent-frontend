@@ -1,0 +1,174 @@
+FRONTEND REPLIT AGENT — Wire trade dates, closed trades, and accurate Portfolio vs S&P chart
+
+Backend is ready. Do not rebuild the backend logic in frontend.
+
+Backend added and verified:
+- PATCH /api/portfolio/holdings/{ticker}
+- GET /api/portfolio/closed-trades
+- POST /api/portfolio/closed-trades
+- PATCH /api/portfolio/closed-trades/{id}
+- DELETE /api/portfolio/closed-trades/{id}
+- POST /api/portfolio/holdings/{ticker}/close
+- /api/caelyn-terminal now returns performance_chart_meta and trade-ledger-based chart data.
+
+Backend validation:
+- current portfolio restored to 19 holdings
+- closed_trades Neon table exists
+- atomic close endpoint works
+- chart changes when entry_date changes
+- Terminal regression passed: 19 holdings, correlation, volatility, risk metrics, risk suggestions, allocations, period returns, and all chart periods still work.
+
+Frontend goal:
+Make this usable in Portfolio Dashboard and visible in Portfolio Terminal.
+
+Do NOT:
+- calculate the Portfolio vs S&P chart in frontend
+- create local-only trade history
+- bypass backend closed-trades endpoints
+- break Dashboard holdings
+- break Terminal analytics
+- hardcode tickers
+- create duplicate state
+
+Part 1 — Active holdings entry date editing
+
+On Portfolio Dashboard active holdings:
+1. Confirm the Add Holding date field maps to backend entry_date/date_added.
+2. Existing active holdings must be editable for:
+   - shares
+   - avg price
+   - entry_date/date_added
+3. On save, call:
+   PATCH /api/portfolio/holdings/{ticker}
+4. After save, invalidate/refetch:
+   - active holdings
+   - /api/caelyn-terminal
+5. Show entry_date in the edit UI.
+6. If entry_date is missing, show a subtle indicator like “Entry date missing” in expanded details or edit modal.
+
+Important:
+Current 19 holdings currently have entry_date=null, so the UI must let the user fill these in.
+
+Part 2 — Closed Positions section
+
+Wire Closed Positions to backend, not localStorage.
+
+Use:
+- GET /api/portfolio/closed-trades
+- POST /api/portfolio/closed-trades
+- PATCH /api/portfolio/closed-trades/{id}
+- DELETE /api/portfolio/closed-trades/{id}
+
+Closed trades should show/edit:
+- ticker
+- shares
+- entry_date
+- exit_date
+- entry_price
+- exit_price
+- realized_pnl
+- realized_pnl_pct
+- holding_period_days
+- notes if supported
+
+After any edit/delete:
+- refetch closed trades
+- refetch /api/caelyn-terminal
+
+Part 3 — Active delete should become Close Position
+
+When user deletes an active holding, use backend atomic close endpoint:
+
+POST /api/portfolio/holdings/{ticker}/close
+
+UX:
+- Change delete behavior to close-position flow if practical.
+- Use current price as default exit_price.
+- Use today as default exit_date.
+- Allow user to confirm/edit exit_price and exit_date before closing if practical.
+- Backend will:
+  - create closed trade
+  - remove active holding
+  - calculate realized P&L
+  - return updated signature
+
+After close:
+- active holding disappears
+- closed trade appears
+- Terminal refetches
+- deleted symbol does not show as active again
+
+Part 4 — Portfolio vs S&P 500 chart metadata
+
+Terminal chart already uses backend data. Do not recalculate it.
+
+Surface backend performance metadata:
+- performance_chart_meta.method
+- estimated
+- entry_dates_set
+- active_trades_used
+- closed_trades_included
+- missing_entry_dates
+- missing_exit_dates
+- missing_price_history_symbols
+- warnings
+
+UI note:
+- If some holdings lack entry_date, show subtle note:
+  “Some holdings are missing entry dates; chart assumes full-period ownership for those positions.”
+- If trade-ledger method is active, show subtle note:
+  “Trade-history based performance.”
+
+Part 5 — Validation
+
+Use current 19-holding portfolio.
+
+Validate:
+1. Edit active holding entry_date.
+2. Hard refresh.
+3. Confirm entry_date persists.
+4. Confirm /api/caelyn-terminal chart/meta updates.
+5. Close a test active holding through POST /api/portfolio/holdings/{ticker}/close.
+6. Confirm it leaves active holdings.
+7. Confirm it appears in Closed Positions.
+8. Confirm realized P&L and holding_period_days show.
+9. Edit closed trade entry/exit dates.
+10. Confirm edits persist after refresh.
+11. Confirm Terminal chart/meta changes after edits.
+12. Confirm existing Terminal sections still work:
+   - holdings
+   - Portfolio vs S&P
+   - allocation
+   - correlation
+   - volatility
+   - risk metrics
+   - options
+   - risk suggestions
+
+Diagnostics:
+Add:
+
+[portfolio-history-ui] {
+  activeHoldingsCount,
+  activeWithEntryDate,
+  closedTradesCount,
+  closedWithEntryExitDates,
+  chartMethod,
+  estimated,
+  entryDatesSet,
+  closedTradesIncluded,
+  missingEntryDates,
+  selectedPeriod,
+  chartPoints,
+  benchmarkPoints,
+  refetchedAfterEdit
+}
+
+Return:
+- files changed
+- endpoints used
+- active entry_date edit validation
+- closed trades CRUD validation
+- close-position validation
+- Terminal chart metadata validation
+- screenshots/logs

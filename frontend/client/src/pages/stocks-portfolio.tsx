@@ -17,6 +17,7 @@ interface Holding {
   avgCost: number;
   addedAt: string;
   assetType?: string;
+  entry_date?: string;
 }
 
 interface QuoteData {
@@ -185,8 +186,17 @@ export default function StocksPortfolioPage() {
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
-  const [tradeHistory, setTradeHistory] = useState<any[]>([]);
-  const [tradeSummary, setTradeSummary] = useState<any>(null);
+  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ trades: any[]; summary: any }>({
+    queryKey: ['portfolio-closed-trades'],
+    queryFn: async () => {
+      const res = await fetch('/api/portfolio/closed-trades');
+      if (!res.ok) return { trades: [], summary: null };
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+  const tradeHistory: any[] = closedTradesData?.trades ?? [];
+  const tradeSummary: any = closedTradesData?.summary ?? null;
   const [sortKey, setSortKey] = useState<SortKey>('weight');
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
@@ -201,7 +211,17 @@ export default function StocksPortfolioPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editShares, setEditShares] = useState('');
   const [editAvgCost, setEditAvgCost] = useState('');
+  const [editEntryDate, setEditEntryDate] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+  const [closingId, setClosingId] = useState<string | null>(null);
+  const [closingTicker, setClosingTicker] = useState('');
+  const [closePrice, setClosePrice] = useState('');
+  const [closeDate, setCloseDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [closingInProgress, setClosingInProgress] = useState(false);
+  const [editingClosedId, setEditingClosedId] = useState<string | null>(null);
+  const [editClosedExitPrice, setEditClosedExitPrice] = useState('');
+  const [editClosedExitDate, setEditClosedExitDate] = useState('');
+  const [savingClosedEdit, setSavingClosedEdit] = useState(false);
 
   // Refetch by invalidating the shared query cache (used by both this page
   // and the parent caelyn-terminal page's dashboardHoldings query).
@@ -310,11 +330,18 @@ export default function StocksPortfolioPage() {
   }, [holdings, fetchQuotes, fetchPriceTargets, fetchEvents]);
 
   useEffect(() => {
-    fetch('/api/stock-holdings/history')
-      .then(r => r.ok ? r.json() : { trades: [], summary: null })
-      .then(d => { setTradeHistory(d.trades || []); setTradeSummary(d.summary || null); })
-      .catch(() => {});
-  }, [holdings]);
+    if (!closedTradesData) return;
+    const trades = closedTradesData.trades ?? [];
+    const summary = closedTradesData.summary;
+    console.log('[portfolio-history-ui]', JSON.stringify({
+      source: 'GET /api/portfolio/closed-trades',
+      tradeCount: trades.length,
+      tickers: trades.map((t: any) => (t.symbol || t.ticker || '').toUpperCase()).filter(Boolean).sort(),
+      hasSummary: summary != null,
+      totalRealizedPnl: summary?.total_realized_pnl ?? null,
+      bestTicker: summary?.best_pnl_pct?.symbol ?? null,
+    }));
+  }, [closedTradesData]);
 
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
@@ -361,9 +388,12 @@ export default function StocksPortfolioPage() {
 
   const startEdit = (h: Holding, e: React.MouseEvent) => {
     e.stopPropagation();
+    setClosingId(null);
     setEditingId(h.id);
     setEditShares(String(h.shares));
     setEditAvgCost(String(h.avgCost));
+    const rawDate = h.entry_date || h.addedAt || '';
+    setEditEntryDate(rawDate ? rawDate.split('T')[0] : '');
     setExpandedCard(null);
   };
 
@@ -372,31 +402,134 @@ export default function StocksPortfolioPage() {
     setEditingId(null);
     setEditShares('');
     setEditAvgCost('');
+    setEditEntryDate('');
   };
 
   const saveEdit = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!editingId || !editShares || !editAvgCost) return;
     setSavingEdit(true);
+    const holding = holdings.find(h => h.id === editingId);
     try {
       await fetch(`/api/stock-holdings/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shares: parseFloat(editShares), avgCost: parseFloat(editAvgCost) }),
       });
+      if (holding && editEntryDate) {
+        fetch(`/api/portfolio/holdings/${encodeURIComponent(holding.ticker)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_date: editEntryDate }),
+        }).catch(() => {});
+      }
       setEditingId(null);
       setEditShares('');
       setEditAvgCost('');
+      setEditEntryDate('');
       await refetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
-      // Invalidate Calendar Earnings for portfolio scope so next visit refetches
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
       if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-edit', invalidatedKeys: ['earnings+portfolio'] });
     } catch (err) {
       console.error('Failed to update holding:', err);
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const initiateClose = (h: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(null);
+    setClosingId(h.id);
+    setClosingTicker(h.ticker);
+    setClosePrice(h.currentPrice > 0 ? String(parseFloat(h.currentPrice.toFixed(4))) : '');
+    setCloseDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const cancelClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setClosingId(null);
+    setClosingTicker('');
+    setClosePrice('');
+  };
+
+  const confirmClose = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!closingTicker || !closePrice) return;
+    setClosingInProgress(true);
+    try {
+      const res = await fetch(`/api/portfolio/holdings/${encodeURIComponent(closingTicker)}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exit_price: parseFloat(closePrice), exit_date: closeDate }),
+      });
+      await fetch(`/api/stock-holdings/${closingId}`, { method: 'DELETE' }).catch(() => {});
+      if (res.ok) {
+        console.log('[portfolio-close-position]', { ticker: closingTicker, exit_price: parseFloat(closePrice), exit_date: closeDate, status: res.status });
+      }
+      setClosingId(null);
+      setClosingTicker('');
+      setClosePrice('');
+      await refetchHoldings();
+      await refetchClosedTrades();
+      syncToFastAPI();
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
+    } catch (err) {
+      console.error('Failed to close position:', err);
+    } finally {
+      setClosingInProgress(false);
+    }
+  };
+
+  const startClosedEdit = (t: any, tradeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingClosedId(tradeId);
+    setEditClosedExitPrice(String(t.exit_price ?? ''));
+    const rawDate = t.exit_date || '';
+    setEditClosedExitDate(rawDate ? rawDate.split('T')[0] : '');
+  };
+
+  const cancelClosedEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingClosedId(null);
+    setEditClosedExitPrice('');
+    setEditClosedExitDate('');
+  };
+
+  const saveClosedEdit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editingClosedId) return;
+    setSavingClosedEdit(true);
+    try {
+      await fetch(`/api/portfolio/closed-trades/${encodeURIComponent(editingClosedId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exit_price: editClosedExitPrice ? parseFloat(editClosedExitPrice) : undefined,
+          exit_date: editClosedExitDate || undefined,
+        }),
+      });
+      setEditingClosedId(null);
+      setEditClosedExitPrice('');
+      setEditClosedExitDate('');
+      await refetchClosedTrades();
+    } catch (err) {
+      console.error('Failed to update closed trade:', err);
+    } finally {
+      setSavingClosedEdit(false);
+    }
+  };
+
+  const deleteClosedTrade = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/portfolio/closed-trades/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await refetchClosedTrades();
+    } catch (err) {
+      console.error('Failed to delete closed trade:', err);
     }
   };
 
@@ -985,7 +1118,24 @@ export default function StocksPortfolioPage() {
                                     </span>
                                     <div style={{ minWidth: 0 }}>
                                       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
-                                      <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>{getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}</div>
+                                      {isEditing ? (
+                                        <input
+                                          type="date"
+                                          value={editEntryDate}
+                                          onChange={e => setEditEntryDate(e.target.value)}
+                                          onClick={e => e.stopPropagation()}
+                                          title="Entry date"
+                                          className="bg-transparent border-b border-[#5cc8f0]/40 text-[10px] text-[#5cc8f0] focus:outline-none focus:border-[#5cc8f0] px-0 py-0 w-[90px]"
+                                          style={{ colorScheme: 'dark' as any }}
+                                        />
+                                      ) : (
+                                        <div className="truncate max-w-[120px]" style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                                          {getDisplayName(h.ticker, h.assetType, h.quote?.companyName || h.quote?.name)}
+                                          {!h.entry_date && !h.addedAt && (
+                                            <span title="Entry date missing — click Pencil to set" style={{ marginLeft: 4, color: '#e8a020', fontSize: '0.65rem' }}>⚠ no date</span>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </td>
@@ -1028,7 +1178,7 @@ export default function StocksPortfolioPage() {
                                 <td className="text-right py-2.5 pl-3">
                                   {isEditing ? (
                                     <div className="flex items-center justify-end gap-1">
-                                      <button onClick={saveEdit} disabled={savingEdit} title="Save" className="p-1 rounded transition-all hover:bg-green-500/15" style={{ color: '#4ade80', opacity: savingEdit ? 0.4 : 1 }}>
+                                      <button onClick={saveEdit} disabled={savingEdit} title="Save changes" className="p-1 rounded transition-all hover:bg-green-500/15" style={{ color: '#4ade80', opacity: savingEdit ? 0.4 : 1 }}>
                                         <Check className="w-3.5 h-3.5" />
                                       </button>
                                       <button onClick={cancelEdit} title="Cancel" className="p-1 rounded transition-all hover:bg-red-500/15" style={{ color: '#f87171' }}>
@@ -1037,10 +1187,17 @@ export default function StocksPortfolioPage() {
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-end gap-1">
-                                      <button onClick={e => startEdit(h, e)} title="Edit" className="opacity-40 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
+                                      <button onClick={e => startEdit(h, e)} title="Edit shares / avg cost / entry date" className="opacity-40 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
                                         <Pencil className="w-3 h-3" />
                                       </button>
-                                      <button onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} title="Delete" className="opacity-40 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                      <button
+                                        onClick={e => initiateClose(h, e)}
+                                        title="Close position"
+                                        className="opacity-40 hover:opacity-100 transition-all p-1"
+                                        style={{ color: closingId === h.id ? '#ef4444' : '#475569' }}
+                                        onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                                        onMouseLeave={e => (e.currentTarget.style.color = closingId === h.id ? '#ef4444' : '#475569')}
+                                      >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
@@ -1049,6 +1206,49 @@ export default function StocksPortfolioPage() {
                               </tr>
                             );
                           })()}
+                          {/* Close Position Confirmation Row */}
+                          {closingId === h.id && (
+                            <tr style={{ background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.18)' }}>
+                              <td colSpan={10} className="px-4 py-2.5">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <span className="text-xs font-bold" style={{ color: '#f87171' }}>Close {closingTicker}</span>
+                                  <label className="text-[11px] text-slate-400">Exit&nbsp;Price&nbsp;$</label>
+                                  <input
+                                    type="number"
+                                    value={closePrice}
+                                    onChange={e => setClosePrice(e.target.value)}
+                                    onClick={e => e.stopPropagation()}
+                                    className="w-24 bg-transparent border-b border-red-400/50 text-white text-xs px-1 py-0.5 focus:outline-none focus:border-red-400"
+                                    placeholder="0.00"
+                                  />
+                                  <label className="text-[11px] text-slate-400">Date</label>
+                                  <input
+                                    type="date"
+                                    value={closeDate}
+                                    onChange={e => setCloseDate(e.target.value)}
+                                    onClick={e => e.stopPropagation()}
+                                    className="bg-transparent border-b border-red-400/50 text-white text-xs px-1 py-0.5 focus:outline-none focus:border-red-400"
+                                    style={{ colorScheme: 'dark' as any }}
+                                  />
+                                  <button
+                                    onClick={confirmClose}
+                                    disabled={closingInProgress || !closePrice}
+                                    className="px-3 py-1 rounded text-xs font-semibold border disabled:opacity-40 transition-all"
+                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.35)' }}
+                                  >
+                                    {closingInProgress ? 'Closing…' : 'Confirm Close'}
+                                  </button>
+                                  <button
+                                    onClick={cancelClose}
+                                    className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-all"
+                                    style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                           {isExpanded && (
                             <tr style={{ borderBottom: '1px solid #1a1c3a' }}>
                               <td colSpan={9} className="p-0">
@@ -1288,25 +1488,69 @@ export default function StocksPortfolioPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      {['Symbol','Shares','Entry $','Exit $','P&L','P&L %','Days'].map(h => (
-                        <th key={h} className={`pb-2 text-slate-400 font-medium text-[11px] ${h === 'Symbol' ? 'text-left pr-3' : 'text-right px-2'}`}>{h}</th>
+                      {['Symbol','Shares','Entry $','Exit $','Exit Date','P&L','P&L %','Days',''].map(h => (
+                        <th key={h} className={`pb-2 text-slate-400 font-medium text-[11px] ${h === 'Symbol' ? 'text-left pr-3' : h === '' ? 'text-right pl-2 w-12' : 'text-right px-2'}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {tradeHistory.map((t: any, i: number) => {
+                      const tradeId = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
+                      const isEditingClosed = editingClosedId === tradeId;
                       const pl = t.realized_pnl ?? 0;
                       const plPct = t.realized_pnl_pct ?? 0;
                       const clr = pl >= 0 ? '#4ade80' : '#f87171';
+                      const exitDateDisplay = t.exit_date ? t.exit_date.split('T')[0] : '—';
                       return (
-                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td className="py-2 pr-3 font-bold text-white">{t.symbol}</td>
+                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isEditingClosed ? 'rgba(92,200,240,0.04)' : 'transparent' }}>
+                          <td className="py-2 pr-3 font-bold text-white">{t.symbol ?? t.ticker}</td>
                           <td className="text-right py-2 px-2 text-slate-400">{t.shares}</td>
-                          <td className="text-right py-2 px-2 text-slate-400">${(t.avg_entry_price ?? 0).toFixed(2)}</td>
-                          <td className="text-right py-2 px-2 text-slate-400">${(t.exit_price ?? 0).toFixed(2)}</td>
+                          <td className="text-right py-2 px-2 text-slate-400">${(t.avg_entry_price ?? t.entry_price ?? 0).toFixed(2)}</td>
+                          <td className="text-right py-2 px-2 text-slate-400">
+                            {isEditingClosed ? (
+                              <input
+                                type="number"
+                                value={editClosedExitPrice}
+                                onChange={e => setEditClosedExitPrice(e.target.value)}
+                                className="w-20 bg-transparent border-b border-[#5cc8f0]/60 text-white text-right text-xs focus:outline-none"
+                              />
+                            ) : `$${(t.exit_price ?? 0).toFixed(2)}`}
+                          </td>
+                          <td className="text-right py-2 px-2 text-slate-400">
+                            {isEditingClosed ? (
+                              <input
+                                type="date"
+                                value={editClosedExitDate}
+                                onChange={e => setEditClosedExitDate(e.target.value)}
+                                className="bg-transparent border-b border-[#5cc8f0]/60 text-white text-xs focus:outline-none"
+                                style={{ colorScheme: 'dark' as any }}
+                              />
+                            ) : exitDateDisplay}
+                          </td>
                           <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{pl >= 0 ? '+' : ''}${Math.abs(pl).toFixed(2)}</td>
                           <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{plPct >= 0 ? '+' : ''}{plPct.toFixed(1)}%</td>
                           <td className="text-right py-2 pl-2 text-slate-400">{t.holding_period_days ?? 0}d</td>
+                          <td className="text-right py-2 pl-2">
+                            {isEditingClosed ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit exit price / date" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
+                                  <Pencil className="w-2.5 h-2.5" />
+                                </button>
+                                <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete trade record" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}

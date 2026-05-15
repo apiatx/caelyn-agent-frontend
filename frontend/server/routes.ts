@@ -370,6 +370,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ holdings: localHoldings.map(h => ({ ticker: h.ticker, symbol: h.ticker, shares: h.shares, avg_cost: h.avgCost, asset_type: h.assetType || 'stock' })) });
   });
 
+  // PATCH /api/portfolio/holdings/:ticker — update entry_date / fields on FastAPI canonical
+  app.patch('/api/portfolio/holdings/:ticker', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { ticker } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings/${encodeURIComponent(ticker)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
+  // POST /api/portfolio/holdings/:ticker/close — atomic close position on FastAPI
+  app.post('/api/portfolio/holdings/:ticker/close', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { ticker } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings/${encodeURIComponent(ticker)}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
+  // GET /api/portfolio/closed-trades — fetch closed trade ledger from FastAPI
+  app.get('/api/portfolio/closed-trades', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/closed-trades`, {
+        headers: { 'X-API-Key': FA_KEY },
+      });
+      if (upRes.ok) {
+        const data = await upRes.json();
+        return res.json(data);
+      }
+      return res.status(upRes.status).json({ trades: [], summary: null });
+    } catch (err: any) {
+      return res.status(502).json({ trades: [], summary: null, error: err?.message });
+    }
+  });
+
+  // POST /api/portfolio/closed-trades — manually add a closed trade record
+  app.post('/api/portfolio/closed-trades', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/closed-trades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
+  // PATCH /api/portfolio/closed-trades/:id — edit a closed trade (exit_price, exit_date, etc.)
+  app.patch('/api/portfolio/closed-trades/:id', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { id } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/closed-trades/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
+  // DELETE /api/portfolio/closed-trades/:id — delete a closed trade record
+  app.delete('/api/portfolio/closed-trades/:id', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { id } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/closed-trades/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'X-API-Key': FA_KEY },
+      });
+      if (upRes.status === 204) return res.status(204).send();
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
   // Portfolio endpoints with security validation
   app.get("/api/portfolio/:userId", 
     optionalAuth,

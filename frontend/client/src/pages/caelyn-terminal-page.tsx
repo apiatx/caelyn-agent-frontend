@@ -59,6 +59,16 @@ interface CaelynTerminalData {
   holdings: CTHolding[];
   performance_chart?: CTChartPoint[];
   performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
+  performance_chart_meta?: {
+    method?: string;
+    estimated?: boolean;
+    entry_dates_set?: boolean;
+    active_trades_used?: number;
+    closed_trades_included?: number;
+    missing_entry_dates?: string[];
+    missing_exit_dates?: string[];
+    warnings?: string[];
+  };
   asset_allocation: CTAllocationItem[];
   asset_class_allocation?: CTAllocationItem[];
   sector_allocation?: Array<{ label: string; pct: N; color?: string; tickers?: CTAllocTicker[] }>;
@@ -943,6 +953,39 @@ export default function CaelynTerminalPage() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
+            {/* Chart metadata strip — only when backend provides it */}
+            {d?.performance_chart_meta && !ph && (
+              <div style={{ padding: '3px 10px 3px 10px', background: '#060b12', borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minHeight: 20 }}>
+                {d.performance_chart_meta.method && (
+                  <span style={{ fontSize: 8, color: '#475569', letterSpacing: 0.4 }}>
+                    METHOD: <span style={{ color: '#64748b' }}>{d.performance_chart_meta.method}</span>
+                  </span>
+                )}
+                {d.performance_chart_meta.active_trades_used != null && (
+                  <span style={{ fontSize: 8, color: '#475569' }}>
+                    ACTIVE: <span style={{ color: C.teal }}>{d.performance_chart_meta.active_trades_used}</span>
+                  </span>
+                )}
+                {(d.performance_chart_meta.closed_trades_included ?? 0) > 0 && (
+                  <span style={{ fontSize: 8, color: '#475569' }}>
+                    CLOSED: <span style={{ color: '#a78bfa' }}>{d.performance_chart_meta.closed_trades_included}</span>
+                  </span>
+                )}
+                {d.performance_chart_meta.estimated && (
+                  <span style={{ fontSize: 8, color: '#e8a020', letterSpacing: 0.3 }}>EST</span>
+                )}
+                {(d.performance_chart_meta.missing_entry_dates?.length ?? 0) > 0 && (
+                  <span style={{ fontSize: 8, color: '#e8a020', letterSpacing: 0.3 }}>
+                    ⚠ MISSING DATES: {d.performance_chart_meta.missing_entry_dates!.join(', ')}
+                  </span>
+                )}
+                {(d.performance_chart_meta.warnings?.length ?? 0) > 0 && (
+                  <span style={{ fontSize: 8, color: '#f04d4d' }}>
+                    {d.performance_chart_meta.warnings![0]}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Asset Allocation — three-tab: Asset Class | Sectors | Themes */}
