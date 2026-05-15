@@ -206,7 +206,7 @@ export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [compareOpen, setCompareOpen] = useState(false);
-  const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'>('themes');
+  const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'ALLOC', dir: 'desc' });
   const [earnSort, setEarnSort] = useState<{ col: string; dir: SortDir }>({ col: 'DATE', dir: 'asc' });
@@ -920,13 +920,13 @@ export default function CaelynTerminalPage() {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
               <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Asset Allocation</span>
               <div style={{ display:'flex', gap:1, background:'#080c13', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
-                {(['asset','sectors','themes'] as const).map(tab => (
+                {(['asset','sectors','themes','assets'] as const).map(tab => (
                   <button key={tab} onClick={() => setAllocTab(tab)} style={{
                     fontSize:8, fontWeight:700, padding:'2px 8px', borderRadius:3, border:'none', cursor:'pointer', letterSpacing:0.5,
                     background: allocTab === tab ? C.teal : 'transparent',
                     color: allocTab === tab ? '#fff' : C.dim, transition:'all 0.1s',
                   }}>
-                    {tab === 'asset' ? 'Asset Class' : tab === 'sectors' ? 'Sectors' : 'Themes'}
+                    {tab === 'asset' ? 'Asset Class' : tab === 'sectors' ? 'Sectors' : tab === 'themes' ? 'Themes' : 'Assets'}
                   </button>
                 ))}
               </div>
@@ -956,6 +956,15 @@ export default function CaelynTerminalPage() {
                 if (!allocData.length) allocData = d.asset_allocation.map((a, i) => ({
                   label: a.label, pct: a.pct, color: a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
                 }));
+              } else if (allocTab === 'assets') {
+                allocData = (d.holdings ?? [])
+                  .filter(h => h.allocation_pct != null && Number(h.allocation_pct) > 0)
+                  .sort((a, b) => Number(b.allocation_pct ?? 0) - Number(a.allocation_pct ?? 0))
+                  .map((h, i) => ({
+                    label: h.ticker,
+                    pct: Number(h.allocation_pct ?? 0),
+                    color: THEME_PIE_C[i % THEME_PIE_C.length],
+                  }));
               } else {
                 // Re-bucket using the persistent ticker_theme_map cache so previously
                 // classified tickers stay out of Unclassified even if FastAPI regresses.
