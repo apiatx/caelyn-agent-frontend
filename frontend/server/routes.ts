@@ -1908,6 +1908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === AI Portfolio Review (server-side proxy) ===
   app.post('/api/portfolio-review', async (req, res) => {
+    let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
     try {
       const { holdings } = req.body;
       if (!holdings || !Array.isArray(holdings) || holdings.length < 1) {
@@ -1915,32 +1916,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const agentUrl = 'https://fast-api-server-aidanpilon.replit.app';
       const agentKey = 'hippo_ak_7f3x9k2m4p8q1w5t';
-      const controller = new AbortController();
-      // 120s hard deadline — backend keepalive-streams for ~33s then sends JSON
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-      try {
-        const response = await fetch(`${agentUrl}/api/portfolio/review`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
-          body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-          return res.status(response.status).json({ error: `Agent returned ${response.status}` });
-        }
-        // Backend uses StreamingResponse with keepalive space-bytes before the JSON.
-        // Using text()+trim()+JSON.parse is robust against any leading whitespace.
-        const raw = await response.text();
-        const data = JSON.parse(raw.trim());
-        // Pass the full structured payload through — frontend renders it directly
-        res.json(data);
-      } finally {
-        clearTimeout(timeoutId);
+
+      // Open the upstream connection first (headers arrive quickly from FastAPI's StreamingResponse)
+      const upstream = await fetch(`${agentUrl}/api/portfolio/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': agentKey },
+        body: JSON.stringify({ holdings: holdings.slice(0, 25) }),
+        signal: AbortSignal.timeout(120_000),
+      });
+
+      if (!upstream.ok) {
+        const errText = await upstream.text().catch(() => '');
+        return res.status(upstream.status).json({ error: `Agent returned ${upstream.status}`, detail: errText.slice(0, 200) });
       }
+
+      // FastAPI keeps the connection alive by streaming space bytes every 8s.
+      // Replit's reverse proxy sits between the BROWSER and Express and has its own
+      // idle timeout — if Express is silent the proxy 502s the browser even though
+      // our fetch to FastAPI is still alive. Fix: mirror the same keepalive pattern
+      // ourselves so the browser←→proxy←→Express leg stays warm too.
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      keepaliveTimer = setInterval(() => {
+        try { res.write(' '); } catch { /* socket already closed */ }
+      }, 5_000);
+
+      // Buffer the full body (keepalive spaces + final JSON) then flush clean JSON
+      const raw = await upstream.text();
+      clearInterval(keepaliveTimer);
+      keepaliveTimer = null;
+
+      let data: any;
+      try {
+        data = JSON.parse(raw.trim());
+      } catch {
+        console.error('Portfolio review: JSON parse failed. raw[:200]:', raw.slice(0, 200));
+        res.end(JSON.stringify({ error: 'Bad JSON from agent', raw: raw.slice(0, 500) }));
+        return;
+      }
+
+      res.end(JSON.stringify(data));
     } catch (error: any) {
+      if (keepaliveTimer) { clearInterval(keepaliveTimer); keepaliveTimer = null; }
       console.error('Portfolio review error:', error);
-      res.status(500).json({ error: 'Failed to get portfolio review', detail: error?.message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to get portfolio review', detail: error?.message });
+      } else {
+        try { res.end(JSON.stringify({ error: 'Failed mid-stream', detail: error?.message })); } catch {}
+      }
     }
   });
 
