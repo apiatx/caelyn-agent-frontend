@@ -252,18 +252,16 @@ function SortableSection({ id, children }: { id: string; children: React.ReactNo
     position: 'relative',
   };
   return (
-    <div ref={setNodeRef} style={style} className="group/section">
+    <div ref={setNodeRef} style={style} className="group/section relative">
       <div
         {...attributes}
         {...listeners}
-        className="flex items-center justify-center h-5 mb-0.5 opacity-0 group-hover/section:opacity-100 transition-opacity cursor-grab active:cursor-grabbing select-none touch-none"
+        className="absolute -left-8 top-3 z-20 opacity-0 group-hover/section:opacity-100 transition-opacity cursor-grab active:cursor-grabbing select-none touch-none"
         title="Drag to reorder"
       >
-        <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-white/20 hover:text-white/40 transition-colors"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <GripVertical className="w-3 h-3" />
-          <span className="text-[8px] uppercase tracking-widest">drag to reorder</span>
-          <GripVertical className="w-3 h-3" />
+        <div className="w-6 h-6 rounded flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <GripVertical className="w-4 h-4 text-white/40" />
         </div>
       </div>
       {children}
