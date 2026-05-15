@@ -213,11 +213,15 @@ export default function StocksPortfolioPage() {
   const [editAvgCost, setEditAvgCost] = useState('');
   const [editEntryDate, setEditEntryDate] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-  const [closingId, setClosingId] = useState<string | null>(null);
-  const [closingTicker, setClosingTicker] = useState('');
-  const [closePrice, setClosePrice] = useState('');
-  const [closeDate, setCloseDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [closingInProgress, setClosingInProgress] = useState(false);
+  const [sellModal, setSellModal] = useState<{ id: string; ticker: string; shares: number; avgCost: number; currentPrice: number } | null>(null);
+  const [sellType, setSellType] = useState<'shares' | 'dollars' | 'percent' | 'full'>('shares');
+  const [sellShares, setSellShares] = useState('');
+  const [sellDollars, setSellDollars] = useState('');
+  const [sellPercent, setSellPercent] = useState('');
+  const [sellExitPrice, setSellExitPrice] = useState('');
+  const [sellExitDate, setSellExitDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [sellInProgress, setSellInProgress] = useState(false);
+  const [sellError, setSellError] = useState('');
   const [editingClosedId, setEditingClosedId] = useState<string | null>(null);
   const [editClosedExitPrice, setEditClosedExitPrice] = useState('');
   const [editClosedExitDate, setEditClosedExitDate] = useState('');
@@ -439,48 +443,95 @@ export default function StocksPortfolioPage() {
     }
   };
 
-  const initiateClose = (h: any, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const openSellModal = (h: any) => {
     setEditingId(null);
-    setClosingId(h.id);
-    setClosingTicker(h.ticker);
-    setClosePrice(h.currentPrice > 0 ? String(parseFloat(h.currentPrice.toFixed(4))) : '');
-    setCloseDate(new Date().toISOString().split('T')[0]);
+    setSellType('shares');
+    setSellShares('');
+    setSellDollars('');
+    setSellPercent('');
+    setSellError('');
+    const price = h.currentPrice > 0 ? parseFloat(h.currentPrice.toFixed(4)) : 0;
+    setSellExitPrice(price > 0 ? String(price) : '');
+    setSellExitDate(new Date().toISOString().split('T')[0]);
+    setSellModal({ id: h.id, ticker: h.ticker, shares: h.shares, avgCost: h.avgCost, currentPrice: price });
   };
 
-  const cancelClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setClosingId(null);
-    setClosingTicker('');
-    setClosePrice('');
+  const closeSellModal = () => {
+    setSellModal(null);
+    setSellError('');
   };
 
-  const confirmClose = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!closingTicker || !closePrice) return;
-    setClosingInProgress(true);
+  const confirmSell = async () => {
+    if (!sellModal || !sellExitPrice) { setSellError('Exit price is required.'); return; }
+    const exitPrice = parseFloat(sellExitPrice);
+    if (!exitPrice || exitPrice <= 0) { setSellError('Enter a valid exit price.'); return; }
+
+    const payload: any = { sell_type: sellType, exit_price: exitPrice, exit_date: sellExitDate };
+    if (sellType === 'shares') {
+      const s = parseFloat(sellShares);
+      if (!s || s <= 0) { setSellError('Enter shares to sell.'); return; }
+      payload.shares_sold = s;
+    } else if (sellType === 'dollars') {
+      const d = parseFloat(sellDollars);
+      if (!d || d <= 0) { setSellError('Enter dollar amount.'); return; }
+      payload.dollar_amount = d;
+    } else if (sellType === 'percent') {
+      const p = parseFloat(sellPercent);
+      if (!p || p <= 0 || p > 100) { setSellError('Enter a percent between 1–100.'); return; }
+      payload.percent_sold = p;
+    }
+
+    setSellInProgress(true);
+    setSellError('');
     try {
-      const res = await fetch(`/api/portfolio/holdings/${encodeURIComponent(closingTicker)}/close`, {
+      const res = await fetch(`/api/portfolio/holdings/${encodeURIComponent(sellModal.ticker)}/sell`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exit_price: parseFloat(closePrice), exit_date: closeDate }),
+        body: JSON.stringify(payload),
       });
-      await fetch(`/api/stock-holdings/${closingId}`, { method: 'DELETE' }).catch(() => {});
-      if (res.ok) {
-        console.log('[portfolio-close-position]', { ticker: closingTicker, exit_price: parseFloat(closePrice), exit_date: closeDate, status: res.status });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setSellError(data?.detail ?? data?.error ?? `Error ${res.status}`);
+        return;
       }
-      setClosingId(null);
-      setClosingTicker('');
-      setClosePrice('');
+
+      console.log('[portfolio-sell-ui]', JSON.stringify({
+        ticker:             sellModal.ticker,
+        sellType:           sellType,
+        sharesBefore:       data.shares_before ?? sellModal.shares,
+        sharesSold:         data.shares_sold,
+        sharesRemaining:    data.shares_remaining,
+        exitPrice:          exitPrice,
+        exitDate:           sellExitDate,
+        backendRealizedPnl:    data.realized_pnl,
+        backendRealizedPnlPct: data.realized_pnl_pct,
+        closedTradeId:      data.closed_trade?.id ?? null,
+        refetchedActive:    true,
+        refetchedClosed:    true,
+        refetchedTerminal:  true,
+      }));
+
+      if (data.shares_remaining === 0 || data.active_holding === null) {
+        await fetch(`/api/stock-holdings/${sellModal.id}`, { method: 'DELETE' }).catch(() => {});
+      } else if (data.shares_remaining > 0) {
+        await fetch(`/api/stock-holdings/${sellModal.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shares: data.shares_remaining, avgCost: sellModal.avgCost }),
+        }).catch(() => {});
+      }
+
+      closeSellModal();
       await refetchHoldings();
       await refetchClosedTrades();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
-    } catch (err) {
-      console.error('Failed to close position:', err);
+    } catch (err: any) {
+      setSellError(err?.message ?? 'Unexpected error');
     } finally {
-      setClosingInProgress(false);
+      setSellInProgress(false);
     }
   };
 
@@ -983,6 +1034,189 @@ export default function StocksPortfolioPage() {
         .portfolio-page::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
         .portfolio-page::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
       `}</style>
+
+      {/* ── Sell / Trim Position Modal ────────────────────────────────── */}
+      {sellModal && (() => {
+        const m = sellModal;
+        const exitP = parseFloat(sellExitPrice) || 0;
+        let estSharesSold = 0;
+        if (sellType === 'shares')  estSharesSold = Math.min(parseFloat(sellShares) || 0, m.shares);
+        if (sellType === 'dollars') estSharesSold = exitP > 0 ? Math.min((parseFloat(sellDollars) || 0) / exitP, m.shares) : 0;
+        if (sellType === 'percent') estSharesSold = m.shares * ((parseFloat(sellPercent) || 0) / 100);
+        if (sellType === 'full')    estSharesSold = m.shares;
+        const estProceeds  = estSharesSold * exitP;
+        const estCostBasis = estSharesSold * m.avgCost;
+        const estPnl       = estProceeds - estCostBasis;
+        const estPnlPct    = estCostBasis > 0 ? (estPnl / estCostBasis) * 100 : 0;
+        const estRemaining = Math.max(0, m.shares - estSharesSold);
+        const hasPreview   = estSharesSold > 0 && exitP > 0;
+
+        const inputCls = "w-full bg-transparent border-b text-white text-sm px-1 py-1 focus:outline-none transition-colors";
+        const borderColor = "border-slate-600 focus:border-sky-400";
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(5,6,8,0.82)', backdropFilter: 'blur(6px)' }}
+            onClick={closeSellModal}
+          >
+            <div
+              className="w-full max-w-md rounded-xl flex flex-col"
+              style={{ background: '#0d1623', border: '1px solid #1a2540', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid #1a2540' }}>
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: '#ef4444' }}>Sell / Trim Position</div>
+                  <div className="text-lg font-bold text-white">{m.ticker}</div>
+                </div>
+                <button onClick={closeSellModal} className="p-1.5 rounded hover:bg-white/5 transition-colors" style={{ color: '#64748b' }}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Holding summary strip */}
+              <div className="flex gap-4 px-5 py-3 text-xs" style={{ borderBottom: '1px solid #1a2540', background: 'rgba(255,255,255,0.02)' }}>
+                <div><span style={{ color: '#64748b' }}>Shares: </span><span className="font-semibold text-white">{m.shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                <div><span style={{ color: '#64748b' }}>Avg Cost: </span><span className="font-semibold text-white">${m.avgCost.toFixed(4)}</span></div>
+                {m.currentPrice > 0 && <div><span style={{ color: '#64748b' }}>Last: </span><span className="font-semibold" style={{ color: m.currentPrice >= m.avgCost ? '#1fd073' : '#f04d4d' }}>${m.currentPrice.toFixed(4)}</span></div>}
+              </div>
+
+              {/* Body */}
+              <div className="px-5 py-4 flex flex-col gap-4">
+
+                {/* Sell type tabs */}
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: '#64748b' }}>Sell Type</div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['shares','dollars','percent','full'] as const).map(t => {
+                      const labels: Record<string,string> = { shares: 'By Shares', dollars: 'By $', percent: 'By %', full: 'Full Close' };
+                      const active = sellType === t;
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => { setSellType(t); setSellError(''); }}
+                          className="py-1.5 rounded text-xs font-semibold transition-all"
+                          style={{
+                            background: active ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
+                            color: active ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${active ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                          }}
+                        >{labels[t]}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Amount input */}
+                {sellType !== 'full' && (
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: '#64748b' }}>
+                      {sellType === 'shares' ? 'Shares to sell' : sellType === 'dollars' ? 'Dollar amount ($)' : 'Percent to sell (%)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={sellType === 'percent' ? 100 : undefined}
+                      step={sellType === 'shares' ? 'any' : '0.01'}
+                      value={sellType === 'shares' ? sellShares : sellType === 'dollars' ? sellDollars : sellPercent}
+                      onChange={e => {
+                        setSellError('');
+                        if (sellType === 'shares')  setSellShares(e.target.value);
+                        if (sellType === 'dollars') setSellDollars(e.target.value);
+                        if (sellType === 'percent') setSellPercent(e.target.value);
+                      }}
+                      placeholder={sellType === 'shares' ? `Max ${m.shares}` : sellType === 'dollars' ? '500.00' : '25'}
+                      className={`${inputCls} ${borderColor}`}
+                    />
+                    {sellType === 'percent' && parseFloat(sellPercent) > 0 && parseFloat(sellPercent) <= 100 && (
+                      <div className="text-[10px] mt-1" style={{ color: '#64748b' }}>
+                        ≈ {(m.shares * parseFloat(sellPercent) / 100).toFixed(4)} shares
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Exit price + date */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: '#64748b' }}>Exit Price ($)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={sellExitPrice}
+                      onChange={e => { setSellError(''); setSellExitPrice(e.target.value); }}
+                      placeholder="0.00"
+                      className={`${inputCls} ${borderColor}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: '#64748b' }}>Exit Date</label>
+                    <input
+                      type="date"
+                      value={sellExitDate}
+                      onChange={e => setSellExitDate(e.target.value)}
+                      className={`${inputCls} ${borderColor}`}
+                      style={{ colorScheme: 'dark' as any }}
+                    />
+                  </div>
+                </div>
+
+                {/* Preview */}
+                {hasPreview && (
+                  <div className="rounded-lg p-3 text-xs" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1a2540' }}>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: '#64748b' }}>Estimated Preview</div>
+                    <div className="grid grid-cols-2 gap-y-1.5">
+                      <div style={{ color: '#94a3b8' }}>Shares Sold</div>
+                      <div className="text-right font-semibold text-white">{estSharesSold.toFixed(4)}</div>
+                      <div style={{ color: '#94a3b8' }}>Proceeds</div>
+                      <div className="text-right font-semibold text-white">${estProceeds.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                      <div style={{ color: '#94a3b8' }}>Remaining Shares</div>
+                      <div className="text-right font-semibold text-white">{estRemaining.toFixed(4)}</div>
+                      <div style={{ color: '#94a3b8' }}>Realized P&L</div>
+                      <div className="text-right font-semibold" style={{ color: estPnl >= 0 ? '#1fd073' : '#f04d4d' }}>
+                        {estPnl >= 0 ? '+' : ''}${estPnl.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                        <span className="ml-1.5 text-[10px]">({estPnlPct >= 0 ? '+' : ''}{estPnlPct.toFixed(2)}%)</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-[10px]" style={{ color: '#475569' }}>Backend is source of truth — preview is estimated.</div>
+                  </div>
+                )}
+
+                {/* Error */}
+                {sellError && (
+                  <div className="text-xs px-3 py-2 rounded" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                    {sellError}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 px-5 pb-5">
+                <button
+                  onClick={closeSellModal}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                  style={{ background: 'rgba(255,255,255,0.04)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSell}
+                  disabled={sellInProgress}
+                  className="flex-1 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-40"
+                  style={{ background: 'rgba(239,68,68,0.18)', color: '#f87171', border: '1px solid rgba(239,68,68,0.4)' }}
+                >
+                  {sellInProgress ? 'Processing…' : sellType === 'full' ? 'Close Full Position' : 'Confirm Sell'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {/* ─────────────────────────────────────────────────────────────── */}
+
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-6">
 
@@ -1191,12 +1425,12 @@ export default function StocksPortfolioPage() {
                                         <Pencil className="w-3 h-3" />
                                       </button>
                                       <button
-                                        onClick={e => initiateClose(h, e)}
-                                        title="Close position"
+                                        onClick={e => { e.stopPropagation(); openSellModal(h); }}
+                                        title="Sell / Trim position"
                                         className="opacity-40 hover:opacity-100 transition-all p-1"
-                                        style={{ color: closingId === h.id ? '#ef4444' : '#475569' }}
+                                        style={{ color: '#475569' }}
                                         onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                                        onMouseLeave={e => (e.currentTarget.style.color = closingId === h.id ? '#ef4444' : '#475569')}
+                                        onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
@@ -1207,48 +1441,6 @@ export default function StocksPortfolioPage() {
                             );
                           })()}
                           {/* Close Position Confirmation Row */}
-                          {closingId === h.id && (
-                            <tr style={{ background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.18)' }}>
-                              <td colSpan={10} className="px-4 py-2.5">
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <span className="text-xs font-bold" style={{ color: '#f87171' }}>Close {closingTicker}</span>
-                                  <label className="text-[11px] text-slate-400">Exit&nbsp;Price&nbsp;$</label>
-                                  <input
-                                    type="number"
-                                    value={closePrice}
-                                    onChange={e => setClosePrice(e.target.value)}
-                                    onClick={e => e.stopPropagation()}
-                                    className="w-24 bg-transparent border-b border-red-400/50 text-white text-xs px-1 py-0.5 focus:outline-none focus:border-red-400"
-                                    placeholder="0.00"
-                                  />
-                                  <label className="text-[11px] text-slate-400">Date</label>
-                                  <input
-                                    type="date"
-                                    value={closeDate}
-                                    onChange={e => setCloseDate(e.target.value)}
-                                    onClick={e => e.stopPropagation()}
-                                    className="bg-transparent border-b border-red-400/50 text-white text-xs px-1 py-0.5 focus:outline-none focus:border-red-400"
-                                    style={{ colorScheme: 'dark' as any }}
-                                  />
-                                  <button
-                                    onClick={confirmClose}
-                                    disabled={closingInProgress || !closePrice}
-                                    className="px-3 py-1 rounded text-xs font-semibold border disabled:opacity-40 transition-all"
-                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.35)' }}
-                                  >
-                                    {closingInProgress ? 'Closing…' : 'Confirm Close'}
-                                  </button>
-                                  <button
-                                    onClick={cancelClose}
-                                    className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-all"
-                                    style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
                           {isExpanded && (
                             <tr style={{ borderBottom: '1px solid #1a1c3a' }}>
                               <td colSpan={9} className="p-0">

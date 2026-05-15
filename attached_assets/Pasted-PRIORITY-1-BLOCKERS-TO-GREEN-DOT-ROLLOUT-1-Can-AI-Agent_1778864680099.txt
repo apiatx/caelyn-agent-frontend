@@ -1,0 +1,156 @@
+PRIORITY 1 — BLOCKERS TO GREEN DOT ROLLOUT
+1. Can AI / Agent Mode be disabled org-wide on Basic?
+
+Ask:
+
+Can Postman AI / Agent Mode be disabled globally for an entire org/team on the legacy Basic Team plan Green Dot purchased?
+
+Specifically:
+
+Can admins remove or hide the “Enable AI” button for all users?
+Is this Enterprise-only?
+If not supported on Basic, is there any workaround?
+Is there a deployment/config flag for disabling AI at install time?
+2. Can cloud sync / cloud upload be disabled org-wide?
+
+Ask:
+
+Can admins disable or hide the “Synchronize to Cloud” button for local/Git workspaces?
+
+Specifically:
+
+Can cloud workspace creation be prevented?
+Can local-only/Git-only workflows be enforced?
+Is this supported on any plan?
+Is there any roadmap item around org-level cloud upload restrictions?
+
+This is Dmitri’s #1 real blocker right now.
+
+PRIORITY 2 — SSO / SECURITY QUESTIONS
+3. Lightweight SSO add-on for Basic
+
+Ask:
+
+Green Dot only wants:
+
+desktop usage
+Git sync
+SSO
+
+No cloud governance/catalog/etc.
+
+Can we:
+
+enable lightweight SSO on their existing Basic Team plan?
+sell SSO standalone?
+provide JIT SSO without SCIM?
+what are exact capabilities/limitations?
+
+You specifically need:
+
+pricing path
+SKU path
+whether Product will approve exception
+4. GitHub auth vs SSO
+
+Ask:
+
+Dmitri is currently authenticating via GitHub successfully.
+
+What additional value does SSO provide beyond GitHub login in their current architecture?
+
+Specifically:
+
+auditability?
+centralized offboarding?
+org enforcement?
+domain capture?
+admin visibility?
+
+You need this to position Enterprise later.
+
+PRIORITY 3 — CLAUDE / AI INTEGRATION QUESTIONS
+5. Claude integration roadmap
+
+Ask:
+
+What is the actual roadmap/timeline for:
+
+Claude integration
+Claude plugin
+external model usage
+bring-your-own-model support
+
+Is there:
+
+a GitHub marketplace plugin?
+install documentation?
+agent-mode installation guide?
+
+Dmitri specifically asked for:
+
+plugin marketplace
+installation procedures
+official docs
+6. Can Postman AI point to customer-owned Claude?
+
+Ask:
+
+Can Postman AI / Agent Mode be configured to use a customer’s own Claude Enterprise tenant/model instead of Postman-managed AI endpoints?
+
+If not today:
+
+roadmap?
+ETA?
+architecture direction?
+
+This matters more than disabling AI entirely.
+
+PRIORITY 4 — GITSYNC / WORKSPACE QUESTIONS
+7. GitSync remote repo support
+
+Ask:
+
+Is support for directly targeting remote GitHub repositories (without manual local sync) on the roadmap for GitSync?
+
+Similar to Claude’s remote repo handling.
+
+Need:
+
+yes/no
+ETA
+beta availability
+PRIORITY 5 — COMMERCIAL / POSITIONING
+8. What Enterprise capabilities directly solve Dmitri’s asks?
+
+Ask Product/CX internally:
+
+Which of Dmitri’s asks are:
+
+already Enterprise features?
+roadmap items?
+unsupported entirely?
+
+Specifically map:
+
+AI org disable
+SSO
+SCIM
+admin hierarchy
+workspace governance
+cloud restrictions
+provisioning
+
+You need a clean matrix for your next commercial conversation.
+
+THE SINGLE MOST IMPORTANT QUESTION
+
+If you only ask ONE thing internally, ask this:
+
+Can cloud sync / cloud upload be disabled or restricted org-wide for local/Git workspaces?
+
+Because THAT is the actual blocker preventing:
+
+wider rollout
+usage expansion
+full 200-seat adoption

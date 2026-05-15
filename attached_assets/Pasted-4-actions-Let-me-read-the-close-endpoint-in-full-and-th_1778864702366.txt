@@ -1,0 +1,109 @@
+4 actions
+Let me read the close endpoint in full and the key store functions before building:
+
+
+4 actions
+I have everything I need. Here's my implementation plan:
+
+closed_trades_store.py: Add 3 new columns (sell_type, remaining_shares_after, cost_method) via ALTER TABLE IF NOT EXISTS in _ensure_table; extend INSERT; update _row_to_dict
+main.py: Add POST /api/portfolio/holdings/{ticker}/sell endpoint after the close endpoint — completely standalone, no risk to existing close logic
+Writing both in parallel:
+
+
+3 actions
+Now implementing both changes simultaneously:
+
+
+3 actions
+Now updating the save_closed_trade INSERT to include the 3 new columns, and adding the sell endpoint to main.py simultaneously:
+
+
+3 actions
+Both files edited. Restarting the server and running tests immediately:
+
+
+2 actions
+Server is up. Running all 4 test cases + regression checks in one shot:
+
+
+2 actions
+TEST_TRIM is in place. Running all 4 test scenarios in parallel:
+
+
+3 actions
+Two issues found: (1) Test A empty = Test D1 ran first and wiped TEST_TRIM (they were parallel). (2) D1 returned 200 instead of 400 — the global min(..., current_shares) cap silently converts an oversell into a full close for "shares" sell_type. The cap is only correct for "dollars"/"percent" (floating-point safety). Fix now:
+
+
+6 actions
+Restarting server and simultaneously resetting TEST_TRIM to clean 100-share state:
+
+
+2 actions
+Resetting TEST_TRIM to a clean 100-share state, running D2 and D3 (state-independent) in parallel:
+
+
+3 actions
+D2 and D3 pass. Now running D1 (oversell validation) then A→B→C sequentially:
+
+
+2 actions
+Empty response on Test A — server may still be starting. Let me check logs and retry:
+
+
+3 actions
+Test A math is correct (sells work properly), but shares_before=75 means an earlier phantom sell ran. Resetting TEST_TRIM to 100 to run the canonical A→B→C suite cleanly:
+
+
+3 actions
+State is clean. Verifying TEST_TRIM reset then running the canonical A→B→C suite:
+
+
+2 actions
+Clean state confirmed: 100 shares, 0 closed trades. Running Tests A → B → C sequentially:
+
+
+2 actions
+All A/B/C pass. Now running regression checks for all existing endpoints and terminal analytics, plus verifying the 3 closed trades are in Neon:
+
+
+3 actions
+All tests pass across all 4 sell types. Cleaning up all test data and writing the commit message:
+
+
+7 actions
+Follow-ups already set for this task slot — marking obsolete since they're unrelated to partial sell work, then completing:
+
+
+3 actions
+Everything is done and verified. Here's what was built and confirmed working:
+
+New endpoint: POST /api/portfolio/holdings/{ticker}/sell
+Handles partial sells, trims, and full closes via a single unified endpoint with 4 sell types:
+
+sell_type	Logic	Oversell behavior
+shares	Exact share count you specify	Hard 400 error — no silent capping
+dollars	dollar_amount ÷ exit_price	Capped at current shares (FP safety only)
+percent	current_shares × percent_sold / 100	Capped at current shares (FP safety only)
+full	All current shares	N/A
+Accounting: Average-cost — avg_cost is unchanged on the remaining shares after a partial sell. Every response carries "cost_method": "average_cost".
+
+Files changed
+backend/data/closed_trades_store.py
+
+_ensure_table: 3 new columns via ALTER TABLE IF NOT EXISTS — sell_type, remaining_shares_after, cost_method
+_row_to_dict: remaining_shares_after cast to float alongside existing numeric fields
+save_closed_trade: INSERT extended to write the 3 new columns
+backend/main.py
+
+New standalone POST /api/portfolio/holdings/{ticker}/sell endpoint — does not touch the existing /close logic
+Validates sell amount, computes P&L, creates closed trade for the sold portion, updates or removes active holding, invalidates terminal cache, returns full sell summary
+Test results
+Test	Scenario	Result
+A	Sell 25 shares of 100 @ $20 → pnl=$250 (+100%), 75 remain	PASS
+B	Sell $500 of 75sh @ $25 → 20 sold, pnl=$300 (+150%), 55 remain	PASS
+C	Full close 55sh @ $30 via sell endpoint → active_holding=null, count=19	PASS
+D1	Oversell 101 of 100 shares → HTTP 400	PASS
+D2	Missing exit_price → HTTP 400	PASS
+D3	Non-existent ticker → HTTP 404	PASS
+%	25% of 200sh @ $10 → 50 sold, 150 remain, pnl=$250 (+100%)	PASS
+Regression	All existing endpoints (GET/PATCH holdings, closed-trades CRUD, original /close, terminal)	PASS

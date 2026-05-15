@@ -1,0 +1,203 @@
+FRONTEND REPLIT AGENT — Add partial sell / trim UI to Portfolio Dashboard
+
+Backend is ready.
+
+New backend endpoint:
+POST /api/portfolio/holdings/{ticker}/sell
+
+It supports:
+- sell_type: "shares"
+- sell_type: "dollars"
+- sell_type: "percent"
+- sell_type: "full"
+
+Backend uses average-cost accounting and returns the source-of-truth math.
+
+Do not calculate final accounting only in frontend.
+Do not bypass the backend sell endpoint.
+Do not remove the full active holding when user only trims.
+Do not create local-only closed trades.
+Do not break current add/edit holdings, closed positions, or Portfolio Terminal.
+
+Goal:
+Update Portfolio Dashboard so users can:
+1. Sell/trim a specific number of shares.
+2. Sell/trim a specific dollar amount.
+3. Sell/trim a percentage.
+4. Close the full position.
+5. Keep remaining shares active after partial sell.
+6. See the sold portion in Closed Positions.
+7. Have Terminal update immediately with remaining active shares only.
+
+Current backend behavior:
+- Selling by shares:
+  - exact shares_sold
+  - oversell returns 400
+- Selling by dollars:
+  - shares_sold = dollar_amount / exit_price
+  - capped at current shares only for floating-point safety
+- Selling by percent:
+  - shares_sold = current_shares * percent_sold / 100
+- Full:
+  - sells all current shares
+- Remaining active holding keeps same avg_cost under average-cost accounting.
+- Closed trade records sold portion only.
+- Response includes:
+  - success
+  - ticker
+  - sell_type
+  - shares_before
+  - shares_sold
+  - shares_remaining
+  - exit_price
+  - exit_value
+  - cost_basis_sold
+  - realized_pnl
+  - realized_pnl_pct
+  - closed_trade
+  - active_holding or null
+  - active_count
+  - holdings_signature
+  - cost_method
+
+UI changes:
+1. Replace/enhance the current Delete/Close button on active holdings.
+2. Open a “Sell / Close Position” modal.
+3. Modal should show:
+   - ticker
+   - shares owned
+   - avg cost
+   - current/last price if available
+   - sell type selector:
+     - Sell shares
+     - Sell dollar amount
+     - Sell percent
+     - Close full position
+   - input for selected sell type:
+     - shares_sold
+     - dollar_amount
+     - percent_sold
+   - exit_price, default current/last price if available
+   - exit_date, default today
+   - optional close_reason/notes if existing pattern supports it
+
+Preview:
+Show estimated preview before submit:
+- shares sold
+- proceeds
+- remaining shares
+- realized P&L
+- realized P&L %
+This preview is for UX only. Backend response is source of truth.
+
+Submit:
+Call:
+POST /api/portfolio/holdings/{ticker}/sell
+
+Payload examples:
+
+Sell shares:
+{
+  "sell_type": "shares",
+  "shares_sold": 25,
+  "exit_price": 20,
+  "exit_date": "2026-05-15",
+  "close_reason": "trim"
+}
+
+Sell dollars:
+{
+  "sell_type": "dollars",
+  "dollar_amount": 500,
+  "exit_price": 25,
+  "exit_date": "2026-05-15"
+}
+
+Sell percent:
+{
+  "sell_type": "percent",
+  "percent_sold": 25,
+  "exit_price": 10,
+  "exit_date": "2026-05-15"
+}
+
+Full close:
+{
+  "sell_type": "full",
+  "exit_price": 30,
+  "exit_date": "2026-05-15"
+}
+
+After success:
+- refetch active holdings
+- refetch closed trades
+- refetch /api/caelyn-terminal
+- update UI from backend response
+- if partial sell:
+  - active holding remains with shares_remaining
+  - closed trade appears for sold shares
+- if full close:
+  - active holding disappears
+  - closed trade appears
+
+Closed Positions:
+Make sure partial sells show as individual closed trade records with:
+- ticker
+- shares sold
+- entry price
+- exit price
+- entry date
+- exit date
+- realized P&L
+- realized P&L %
+- holding period
+- sell_type
+- remaining_shares_after
+- cost_method if useful
+
+Error handling:
+- Oversell by shares should show backend 400 error cleanly.
+- Missing exit_price should show validation error.
+- Non-existent ticker should not crash.
+
+Validation:
+Use TEST_TRIM or another safe temporary test holding.
+
+1. Add TEST_TRIM 100 shares @ $10.
+2. Sell 25 shares at $20.
+3. Confirm active holdings show 75 shares.
+4. Confirm Closed Positions shows 25-share closed trade with +$250 / +100%.
+5. Sell $500 at $25.
+6. Confirm 20 shares sold, 55 remain.
+7. Confirm another closed trade appears.
+8. Sell 25%.
+9. Confirm shares reduce correctly and closed trade appears.
+10. Full close remaining shares.
+11. Confirm TEST_TRIM disappears from active holdings.
+12. Confirm all sold portions remain in Closed Positions.
+13. Confirm Terminal refetches and only counts remaining active shares after each sell.
+14. Hard refresh and confirm all data persists.
+
+Diagnostics:
+Add:
+
+[portfolio-sell-ui] {
+  ticker,
+  sellType,
+  sharesBefore,
+  sharesSold,
+  sharesRemaining,
+  exitPrice,
+  exitDate,
+  backendRealizedPnl,
+  backendRealizedPnlPct,
+  closedTradeId,
+  refetchedActive,
+  refetchedClosed,
+  refetchedTerminal
+}
+
+Return:
+- files changed
+- endpoint used
+- validation logs/screenshots for sell by shares, dollars, percent, and full close

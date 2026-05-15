@@ -388,6 +388,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/portfolio/holdings/:ticker/sell — partial sell / trim / full close (4 sell types)
+  app.post('/api/portfolio/holdings/:ticker/sell', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { ticker } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings/${encodeURIComponent(ticker)}/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
   // POST /api/portfolio/holdings/:ticker/close — atomic close position on FastAPI
   app.post('/api/portfolio/holdings/:ticker/close', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
