@@ -397,14 +397,11 @@ export const helmetConfig = helmet({
  * Rate limiting configuration
  */
 export const apiRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 500 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
       error: 'Rate limit exceeded',
@@ -418,8 +415,9 @@ export const apiRateLimit = rateLimit({
  * Strict rate limiting for sensitive endpoints
  */
 export const strictRateLimit = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // Limit each IP to 10 requests per 5 minutes
+  windowMs: 5 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 30 : 500,
+  validate: { trustProxy: false },
   message: {
     error: 'Too many requests to sensitive endpoint',
     retryAfter: '5 minutes'

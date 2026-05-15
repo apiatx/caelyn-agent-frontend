@@ -512,14 +512,29 @@ export default function StocksPortfolioPage() {
         refetchedTerminal:  true,
       }));
 
-      if (data.shares_remaining === 0 || data.active_holding === null) {
-        await fetch(`/api/stock-holdings/${sellModal.id}`, { method: 'DELETE' }).catch(() => {});
+      const isFullClose = data.shares_remaining === 0 || data.active_holding === null;
+
+      // Optimistically update React Query cache immediately from backend response
+      // so the UI reflects the change even before the local JSON is updated
+      queryClient.setQueryData<Holding[]>(['stock-holdings'], (prev) => {
+        if (!Array.isArray(prev)) return prev;
+        if (isFullClose) {
+          return prev.filter(h => h.id !== sellModal.id);
+        } else {
+          return prev.map(h => h.id === sellModal.id ? { ...h, shares: data.shares_remaining } : h);
+        }
+      });
+
+      // Update local JSON storage (best-effort; cache already updated above)
+      if (isFullClose) {
+        await fetch(`/api/stock-holdings/${sellModal.id}`, { method: 'DELETE' })
+          .catch(err => console.warn('[sell] local DELETE failed (non-blocking):', err?.message));
       } else if (data.shares_remaining > 0) {
         await fetch(`/api/stock-holdings/${sellModal.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ shares: data.shares_remaining, avgCost: sellModal.avgCost }),
-        }).catch(() => {});
+        }).catch(err => console.warn('[sell] local PUT failed (non-blocking):', err?.message));
       }
 
       closeSellModal();
