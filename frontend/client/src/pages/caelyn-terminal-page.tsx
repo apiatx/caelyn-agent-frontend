@@ -1,4 +1,5 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useCallback } from 'react';
+import { Maximize2, X, RotateCcw } from 'lucide-react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -219,6 +220,7 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
+  const [aiReviewExpanded, setAiReviewExpanded] = useState(false);
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
@@ -1361,8 +1363,16 @@ export default function CaelynTerminalPage() {
 
         {/* ── PANEL 5: AI Portfolio Review ── */}
         <div style={{ flex:'0 0 280px', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
+            {aiReview && !aiLoading && (
+              <button onClick={() => setAiReviewExpanded(true)} title="Expand review"
+                style={{ background:'none', border:'none', cursor:'pointer', color:C.dim, padding:'2px 4px', display:'flex', alignItems:'center', borderRadius:4, lineHeight:1 }}
+                onMouseEnter={e => (e.currentTarget.style.color = C.teal)}
+                onMouseLeave={e => (e.currentTarget.style.color = C.dim)}>
+                <Maximize2 size={12} />
+              </button>
+            )}
           </div>
           <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', padding:'12px' }}>
             {!aiReview && !aiLoading && (
@@ -1394,6 +1404,10 @@ export default function CaelynTerminalPage() {
                     style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.text, fontSize:10, cursor:'pointer', fontWeight:600 }}>
                     Re-run Analysis
                   </button>
+                  <button onClick={() => setAiReviewExpanded(true)}
+                    style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.teal}55`, borderRadius:6, color:C.teal, fontSize:10, cursor:'pointer', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
+                    <Maximize2 size={10} /> Expand
+                  </button>
                 </div>
               </div>
             )}
@@ -1403,6 +1417,43 @@ export default function CaelynTerminalPage() {
       </div>{/* close bottom row */}
       </div>{/* close right side */}
       </div>{/* close outer main grid */}
+
+      {/* ── AI Review Expanded Modal ─────────────────────────────────── */}
+      {aiReviewExpanded && aiReview && (
+        <div
+          onClick={() => setAiReviewExpanded(false)}
+          style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(4,8,16,0.82)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:12, width:'100%', maxWidth:780, maxHeight:'86vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.7)', overflow:'hidden' }}>
+            {/* Modal header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', borderBottom:`1px solid ${C.border}`, background:'#0a1420', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontFamily:C.font, fontSize:11, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
+                <span style={{ fontSize:9, color:C.teal, background:`${C.teal}18`, border:`1px solid ${C.teal}33`, borderRadius:4, padding:'2px 7px', letterSpacing:1, textTransform:'uppercase', fontWeight:700 }}>Full Report</span>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <button onClick={handleAIReview}
+                  style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.dim, fontSize:10, cursor:'pointer', fontWeight:600 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; (e.currentTarget as HTMLButtonElement).style.borderColor = C.dimLow; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
+                  <RotateCcw size={10} /> Re-run
+                </button>
+                <button onClick={() => setAiReviewExpanded(false)}
+                  style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:6, padding:'5px 8px', cursor:'pointer', color:C.dim, display:'flex', alignItems:'center', lineHeight:1 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = C.text; (e.currentTarget as HTMLButtonElement).style.borderColor = C.dimLow; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = C.dim; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+            {/* Modal body */}
+            <div style={{ flex:1, overflowY:'auto', padding:'20px 24px', fontSize:12.5, color:C.text, lineHeight:1.75, whiteSpace:'pre-wrap', fontFamily:'inherit' }}>
+              {aiReview}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── NEWS TICKER ──────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderTop:`1px solid ${C.border}`, height:26, display:'flex', alignItems:'center', overflow:'hidden', flexShrink:0 }}>
