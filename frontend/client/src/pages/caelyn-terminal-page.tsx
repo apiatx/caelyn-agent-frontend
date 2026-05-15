@@ -1017,7 +1017,7 @@ export default function CaelynTerminalPage() {
               return (
                 <div style={{ flex:1, display:'flex', alignItems:'stretch', columnGap:18, padding:'10px 10px', minHeight:0, overflow:'hidden' }}>
                   {/* Pie zone — flex:1 takes leftover width; pie auto-sizes to fit zone (square, capped by both width & height) and centers itself */}
-                  <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'center', opacity: ph ? 0.4 : 1 }}>
+                  <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', justifyContent:'center', opacity: ph ? 0.4 : 1 }} onMouseLeave={() => setAllocHover(null)}>
                     <div style={{ height:'100%', aspectRatio:'1 / 1', maxWidth:'100%', maxHeight:'100%', display:'flex' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -1411,7 +1411,7 @@ export default function CaelynTerminalPage() {
             ))}
           </div>
         </div>
-        <style>{`@keyframes ctscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
+        <style>{`@keyframes ctscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}} .recharts-pie-sector path:focus,.recharts-sector:focus{outline:none!important}`}</style>
       </div>
 
       {/* ── Asset Allocation Hover Tooltip ──────────────────────────── */}
