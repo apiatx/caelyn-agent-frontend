@@ -945,10 +945,12 @@ export default function CaelynTerminalPage() {
                 allocData = (d.asset_class_allocation ?? []).map((a, i) => ({
                   label: a.label, pct: a.pct,
                   color: ASSET_CLASS_COLORS[a.label] ?? a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                  tickers: a.tickers ?? [],
                 }));
                 if (!allocData.length) allocData = d.asset_allocation.map((a, i) => ({
                   label: a.label, pct: a.pct,
                   color: ASSET_CLASS_COLORS[a.label] ?? a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                  tickers: a.tickers ?? [],
                 }));
               } else if (allocTab === 'sectors') {
                 allocData = (d.sector_allocation ?? []).map((a, i) => ({
