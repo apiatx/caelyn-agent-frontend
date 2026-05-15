@@ -954,6 +954,7 @@ export default function CaelynTerminalPage() {
                 allocData = (d.sector_allocation ?? []).map((a, i) => ({
                   label: a.label, pct: a.pct,
                   color: a.color ?? SECTOR_COLORS[a.label] ?? THEME_PIE_C[i % THEME_PIE_C.length],
+                  tickers: a.tickers ?? [],
                 }));
                 if (!allocData.length) allocData = d.asset_allocation.map((a, i) => ({
                   label: a.label, pct: a.pct, color: a.color ?? THEME_PIE_C[i % THEME_PIE_C.length],
