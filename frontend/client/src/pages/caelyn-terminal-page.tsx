@@ -355,6 +355,8 @@ export default function CaelynTerminalPage() {
     if (!dashboardHoldings?.length) return;
     setAiLoading(true);
     setAiReview(null);
+    setAiReviewData(null);
+    try { sessionStorage.removeItem('ai_portfolio_review'); sessionStorage.removeItem('ai_portfolio_review_data'); } catch { /* ok */ }
     const stages = ['Analyzing portfolio...','Pulling price data...','Scanning technicals...','Checking fundamentals...','Reading sentiment...','Building portfolio view...','Generating ratings...','Almost done — this can take up to 30 seconds...'];
     let idx = 0;
     setAiStage(stages[0]);
@@ -1547,22 +1549,28 @@ export default function CaelynTerminalPage() {
                       </div>
                     )}
 
-                    {/* Watchlist Swaps */}
-                    {d?.watchlist_swaps?.length > 0 && (
+                    {/* Watchlist Swaps — always rendered when structured data present */}
+                    {isStructured && (
                       <div>
                         <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Watchlist Swap Ideas</div>
-                        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                          {d.watchlist_swaps.map((sw: any, i: number) => (
-                            <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 12px' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                                <span style={{ fontSize:11, fontWeight:700, color:C.red, fontFamily:C.font }}>{sw.drop}</span>
-                                <span style={{ fontSize:9, color:C.dim }}>→</span>
-                                <span style={{ fontSize:11, fontWeight:700, color:C.green, fontFamily:C.font }}>{sw.add}</span>
+                        {d?.watchlist_swaps?.length > 0 ? (
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {d.watchlist_swaps.map((sw: any, i: number) => (
+                              <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 12px' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                                  <span style={{ fontSize:11, fontWeight:700, color:C.red, fontFamily:C.font }}>{sw.drop}</span>
+                                  <span style={{ fontSize:9, color:C.dim }}>→</span>
+                                  <span style={{ fontSize:11, fontWeight:700, color:C.green, fontFamily:C.font }}>{sw.add}</span>
+                                </div>
+                                <span style={{ fontSize:10, color:C.dim, lineHeight:1.5 }}>{sw.reason}</span>
                               </div>
-                              <span style={{ fontSize:10, color:C.dim, lineHeight:1.5 }}>{sw.reason}</span>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize:10, color:C.dim, lineHeight:1.5, padding:'8px 12px', background:'#0a1220', border:`1px solid ${C.border}22`, borderRadius:6 }}>
+                            No swap recommendations — current holdings compare favorably to watchlist alternatives at this time.
+                          </div>
+                        )}
                       </div>
                     )}
 
