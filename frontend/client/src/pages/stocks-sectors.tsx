@@ -502,59 +502,60 @@ function applyClassFilter(themes: ThemeRow[], cls: Classification): ThemeRow[] {
 }
 
 // ─── Theme ETF → correct TradingView exchange prefix ─────────────────────────
-// TradingView rejects AMEX: for NASDAQ/NYSE-listed ETFs; this map provides the right prefix.
+// TradingView uses "AMEX:" for NYSE Arca ETFs and "NASDAQ:" for Nasdaq ETFs.
+// Unmapped tickers are passed bare (no prefix) — TradingView resolves them correctly.
 const THEME_ETF_TV: Record<string, string> = {
   // Semiconductors
   SMH:   "NASDAQ:SMH",   SOXX:  "NASDAQ:SOXX",  SOXL:  "NASDAQ:SOXL",  SOXS:  "NASDAQ:SOXS",
   // AI / Robotics / Tech
-  BOTZ:  "NASDAQ:BOTZ",  ROBO:  "NASDAQ:ROBO",  IRBO:  "NYSE:IRBO",
+  BOTZ:  "NASDAQ:BOTZ",  ROBO:  "NASDAQ:ROBO",  IRBO:  "AMEX:IRBO",
   QTUM:  "NASDAQ:QTUM",  SKYY:  "NASDAQ:SKYY",
   // Cybersecurity
   CIBR:  "NASDAQ:CIBR",  HACK:  "NASDAQ:HACK",  BUG:   "NASDAQ:BUG",   IHAK:  "AMEX:IHAK",
   // Fintech / Blockchain
-  FINX:  "NASDAQ:FINX",  BLOK:  "NYSE:BLOK",    LEGR:  "NYSE:LEGR",
-  // ARK
-  ARKK:  "NYSE:ARKK",    ARKW:  "NYSE:ARKW",    ARKG:  "NYSE:ARKG",
-  ARKF:  "NYSE:ARKF",    ARKX:  "NYSE:ARKX",    PRNT:  "NYSE:PRNT",    IZRL:  "AMEX:IZRL",
+  FINX:  "NASDAQ:FINX",  BLOK:  "AMEX:BLOK",    LEGR:  "AMEX:LEGR",
+  // ARK (all NYSE Arca → AMEX in TradingView)
+  ARKK:  "AMEX:ARKK",    ARKW:  "AMEX:ARKW",    ARKG:  "AMEX:ARKG",
+  ARKF:  "AMEX:ARKF",    ARKX:  "AMEX:ARKX",    PRNT:  "AMEX:PRNT",    IZRL:  "AMEX:IZRL",
   // Clean Energy / EV
-  ICLN:  "NASDAQ:ICLN",  QCLN:  "NASDAQ:QCLN",  LIT:   "NYSE:LIT",
-  FAN:   "NYSE:FAN",     TAN:   "NYSE:TAN",      DRIV:  "AMEX:DRIV",   KARS:  "NYSE:KARS",
-  HAIL:  "NYSE:HAIL",    IDRV:  "NASDAQ:IDRV",
+  ICLN:  "NASDAQ:ICLN",  QCLN:  "NASDAQ:QCLN",  LIT:   "AMEX:LIT",
+  FAN:   "AMEX:FAN",     TAN:   "AMEX:TAN",      DRIV:  "AMEX:DRIV",   KARS:  "AMEX:KARS",
+  HAIL:  "AMEX:HAIL",    IDRV:  "NASDAQ:IDRV",
   // Nuclear / Uranium
-  URA:   "NYSE:URA",     URNM:  "NYSE:URNM",     NLR:   "AMEX:NLR",
+  URA:   "AMEX:URA",     URNM:  "AMEX:URNM",     NLR:   "AMEX:NLR",
   // Defense / Aerospace
-  ITA:   "AMEX:ITA",     XAR:   "AMEX:XAR",      PPA:   "NYSE:PPA",
+  ITA:   "AMEX:ITA",     XAR:   "AMEX:XAR",      PPA:   "AMEX:PPA",
   // Biotech / Genomics
-  XBI:   "AMEX:XBI",     IBB:   "NASDAQ:IBB",    IDNA:  "NYSE:IDNA",
+  XBI:   "AMEX:XBI",     IBB:   "NASDAQ:IBB",    IDNA:  "AMEX:IDNA",
   GNOM:  "AMEX:GNOM",
   // Med Devices / Healthcare equipment
-  IHI:   "AMEX:IHI",     IHF:   "NYSE:IHF",
+  IHI:   "AMEX:IHI",     IHF:   "AMEX:IHF",
   // Regional banks / Financials
-  KRE:   "NYSE:KRE",     IAT:   "AMEX:IAT",      KBWB:  "NASDAQ:KBWB",
+  KRE:   "AMEX:KRE",     IAT:   "AMEX:IAT",      KBWB:  "NASDAQ:KBWB",
   // Energy / Oil & Gas
   OIH:   "AMEX:OIH",     FCG:   "AMEX:FCG",      XOP:   "AMEX:XOP",
-  AMLP:  "NYSE:AMLP",
+  AMLP:  "AMEX:AMLP",
   // Materials / Mining / Commodities
-  COPX:  "AMEX:COPX",    GDX:   "NYSE:GDX",      GDXJ:  "NYSE:GDXJ",
-  SLV:   "NYSE:SLV",     GLD:   "NYSE:GLD",       IAU:   "NYSE:IAU",
-  RING:  "NASDAQ:RING",  REMX:  "NYSE:REMX",
+  COPX:  "AMEX:COPX",    GDX:   "AMEX:GDX",      GDXJ:  "AMEX:GDXJ",
+  SLV:   "AMEX:SLV",     GLD:   "AMEX:GLD",       IAU:   "AMEX:IAU",
+  RING:  "NASDAQ:RING",  REMX:  "AMEX:REMX",
   // Homebuilders / Real Estate
   XHB:   "AMEX:XHB",     ITB:   "AMEX:ITB",       SRVR:  "AMEX:SRVR",
   // Water / Infrastructure
   PHO:   "NASDAQ:PHO",   IQLT:  "AMEX:IQLT",
   // International / Emerging
-  KWEB:  "NYSE:KWEB",    FXI:   "NYSE:FXI",       MCHI:  "NASDAQ:MCHI",
-  EEM:   "NYSE:EEM",     VWO:   "NYSE:VWO",       EWJ:   "NYSE:EWJ",
+  KWEB:  "AMEX:KWEB",    FXI:   "AMEX:FXI",       MCHI:  "NASDAQ:MCHI",
+  EEM:   "AMEX:EEM",     VWO:   "AMEX:VWO",       EWJ:   "AMEX:EWJ",
   // Multi-asset / broad
-  VNQ:   "NYSE:VNQ",
-  // Sector SPDR fallbacks (in case any appear as a theme leader)
-  XLC:   "NYSE:XLC",     XLY:   "NYSE:XLY",       XLP:   "NYSE:XLP",
-  XLE:   "NYSE:XLE",     XLF:   "NYSE:XLF",       XLV:   "NYSE:XLV",
-  XLI:   "NYSE:XLI",     XLB:   "NYSE:XLB",       XLRE:  "NYSE:XLRE",
-  XLK:   "NYSE:XLK",     XLU:   "NYSE:XLU",
+  VNQ:   "AMEX:VNQ",
+  // Sector SPDRs (NYSE Arca = AMEX in TradingView)
+  XLC:   "AMEX:XLC",     XLY:   "AMEX:XLY",       XLP:   "AMEX:XLP",
+  XLE:   "AMEX:XLE",     XLF:   "AMEX:XLF",       XLV:   "AMEX:XLV",
+  XLI:   "AMEX:XLI",     XLB:   "AMEX:XLB",       XLRE:  "AMEX:XLRE",
+  XLK:   "AMEX:XLK",     XLU:   "AMEX:XLU",
 };
 function themeEtfTvSymbol(ticker: string): string {
-  return THEME_ETF_TV[ticker.toUpperCase()] ?? `AMEX:${ticker}`;
+  return THEME_ETF_TV[ticker.toUpperCase()] ?? ticker;
 }
 
 // ─── Unified display row — both sectors and themes render through this shape ───
