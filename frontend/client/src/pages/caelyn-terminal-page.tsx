@@ -221,7 +221,9 @@ function SuggCard({ s }: { s: CTRiskSuggestion }) {
 export default function CaelynTerminalPage() {
   const [perfPeriod, setPerfPeriod] = useState<'1D'|'5D'|'1M'|'6M'|'1Y'>('1Y');
   const [aiReviewExpanded, setAiReviewExpanded] = useState(false);
-  const [aiReviewData, setAiReviewData] = useState<any | null>(null);
+  const [aiReviewData, setAiReviewData] = useState<any | null>(() => {
+    try { const s = sessionStorage.getItem('ai_portfolio_review_data'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
@@ -246,7 +248,9 @@ export default function CaelynTerminalPage() {
     }
     catch { return {}; }
   });
-  const [aiReview, setAiReview] = useState<string | null>(null);
+  const [aiReview, setAiReview] = useState<string | null>(() => {
+    try { return sessionStorage.getItem('ai_portfolio_review') || null; } catch { return null; }
+  });
   const [aiLoading, setAiLoading] = useState(false);
   const [aiStage, setAiStage] = useState('');
   const [goals, setGoals] = useState<{ target_value: number; target_return: number; horizon: string }>(() => {
@@ -372,8 +376,13 @@ export default function CaelynTerminalPage() {
       }
       const rev = await res.json();
       setAiReviewData(rev);
-      // Narrow panel shows the flat analysis text; expanded modal gets the full structure
-      setAiReview(rev.analysis || rev.message || rev.portfolio_summary?.overview || 'No analysis returned.');
+      const flat = rev.analysis || rev.message || rev.portfolio_summary?.overview || 'No analysis returned.';
+      setAiReview(flat);
+      // Persist for the session so navigating away and back restores the review
+      try {
+        sessionStorage.setItem('ai_portfolio_review', flat);
+        sessionStorage.setItem('ai_portfolio_review_data', JSON.stringify(rev));
+      } catch { /* storage quota — not critical */ }
     } catch (err: any) {
       if (err.name === 'AbortError') setAiReview('Portfolio review timed out. Please try again.');
       else setAiReview(`Failed to get portfolio review. Please try again. (${err.message})`);
@@ -1398,18 +1407,14 @@ export default function CaelynTerminalPage() {
               </div>
             )}
             {aiReview && !aiLoading && (
-              <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-                <div style={{ flex:1, overflowY:'auto', fontSize:11, color:C.text, lineHeight:1.65, whiteSpace:'pre-wrap', padding:'2px 0 8px' }}>
+              <div style={{ flex:1, display:'flex', flexDirection:'column', minHeight:0 }}>
+                <div style={{ flex:1, overflowY:'auto', fontSize:11, color:C.text, lineHeight:1.65, whiteSpace:'pre-wrap', padding:'2px 0 8px', minHeight:0 }}>
                   {aiReview}
                 </div>
                 <div style={{ display:'flex', gap:8, marginTop:8, flexShrink:0 }}>
                   <button onClick={handleAIReview}
                     style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, color:C.text, fontSize:10, cursor:'pointer', fontWeight:600 }}>
                     Re-run Analysis
-                  </button>
-                  <button onClick={() => setAiReviewExpanded(true)}
-                    style={{ padding:'7px 14px', background:'transparent', border:`1px solid ${C.teal}55`, borderRadius:6, color:C.teal, fontSize:10, cursor:'pointer', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
-                    <Maximize2 size={10} /> Expand
                   </button>
                 </div>
               </div>
