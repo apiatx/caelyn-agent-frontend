@@ -1098,7 +1098,7 @@ function GrokSocialAgent() {
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: '0.62rem', color: '#475569',
               margin: 0, letterSpacing: '0.02em',
-            }}>Real-time X/Twitter sentiment via xAI Grok</p>
+            }}>Real-time X/Twitter sentiment</p>
           </div>
         </div>
 
@@ -1109,7 +1109,7 @@ function GrokSocialAgent() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Grok about X/Twitter sentiment..."
+            placeholder="Ask Caelyn about X/Twitter sentiment..."
             disabled={loading}
             style={{
               flex: 1,
