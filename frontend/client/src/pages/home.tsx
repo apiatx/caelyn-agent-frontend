@@ -1518,7 +1518,7 @@ export default function HomePage() {
                     <div className="lg:col-span-1">
                       <GlassCard className="flex flex-col h-[480px]">
                         <div className="px-4 pt-4 pb-2 shrink-0">
-                          <SectionHeader icon={Signal} title="Top Equity Signals" accent="Prophetik" viewMore="/app/predict" />
+                          <SectionHeader icon={Signal} title="Prediction Markets" accent="Prophetik" viewMore="/app/predict" />
                         </div>
                         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
                           {!equityOverview && (
