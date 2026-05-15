@@ -3887,7 +3887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Compose portfolio snapshot from local stock-holdings.json with:
     //   - Yahoo v8 chart  → current_price, change_1d_pct, Yahoo volume fallback
     //   - Tradier (via fetchTradierRelVolume) → vol_x (volume_vs_avg); Yahoo fallback when null
-    //   - FastAPI options screener → primary_signal (same Tradier-based source as Portfolio Options panel)
+    //   - caelynTerminalCache.portfolio_options → signal_label (same data the Portfolio Options tab shows;
+    //     no separate FastAPI/Tradier round-trip needed — reuses already-cached data)
     // All three sources fire in parallel; each degrades gracefully on failure.
     const portfolioSnapP = (async (): Promise<any[]> => {
       try {
@@ -3929,45 +3930,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // ── 2. Tradier relative volume (existing helper) ─────────────────────
         const tradierP = fetchTradierRelVolume(tickers).catch(() => new Map<string, any>());
 
-        // ── 3. FastAPI options screener → primary_signal (Tradier-based) ─────
-        const optionsSignalP = (async (): Promise<Map<string, string | null>> => {
+        // ── 3. Options signal — sourced directly from caelynTerminalCache.portfolio_options
+        //       The Portfolio Terminal already fetched and cached this data (same Tradier-based
+        //       source). Reading from cache avoids a duplicate FastAPI/Tradier round-trip and
+        //       ensures the Home snapshot shows the exact same signals as the Options tab.
+        const signalMap = (() => {
           const sigMap = new Map<string, string | null>();
-          try {
-            const tStr = tickers.join(',');
-            const r = await fetch(`${AGENT_URL}/api/portfolio/options?tickers=${encodeURIComponent(tStr)}`, {
-              headers: { 'X-API-Key': AGENT_KEY },
-              signal: AbortSignal.timeout(15000),
-            });
-            if (r.ok) {
-              const data = await r.json();
-              for (const t of (data?.tickers ?? [])) {
-                const sym = String(t?.ticker || '').toUpperCase();
-                if (sym) sigMap.set(sym, t.primary_signal ?? null);
-              }
-            }
-          } catch { /* soft fail — signal stays null */ }
-          // Also check broad screener for any portfolio tickers not yet found
-          if (sigMap.size < tickers.length) {
-            try {
-              const r2 = await fetch(`${AGENT_URL}/api/options/screener?limit=800`, {
-                headers: { 'X-API-Key': AGENT_KEY },
-                signal: AbortSignal.timeout(15000),
-              });
-              if (r2.ok) {
-                const data2 = await r2.json();
-                const all: any[] = data2?.tickers ?? data2?.results ?? data2 ?? [];
-                const portSet = new Set(tickers.map(t => t.toUpperCase()));
-                for (const t of (Array.isArray(all) ? all : [])) {
-                  const sym = String(t?.ticker || '').toUpperCase();
-                  if (sym && portSet.has(sym) && !sigMap.has(sym)) sigMap.set(sym, t.primary_signal ?? null);
-                }
-              }
-            } catch { /* soft fail */ }
+          const opts: any[] = (caelynTerminalCache?.data?.portfolio_options) ?? [];
+          for (const item of opts) {
+            const sym = String(item?.ticker || item?.symbol || '').toUpperCase();
+            const sig = item?.signal ?? item?.put_call_direction ?? null;
+            if (sym) sigMap.set(sym, sig);
           }
           return sigMap;
         })();
 
-        const [yahooResults, tradierVolMap, signalMap] = await Promise.all([yahooP, tradierP, optionsSignalP]);
+        const [yahooResults, tradierVolMap] = await Promise.all([yahooP, tradierP]);
 
         return yahooResults.map(({ ticker, price: yahooPrice, change_1d_pct: yahooChangePct, yahooVolX }) => {
           const holding = localHoldings.find(h => h.ticker === ticker);
