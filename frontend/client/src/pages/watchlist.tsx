@@ -1957,6 +1957,9 @@ export default function WatchlistPage() {
             {/* ── Upgrade Banner (legacy → new format) ── */}
             {renderUpgradeBanner()}
 
+            {/* ── Market Themes Banner (chips) ── */}
+            {renderMarketThemes()}
+
             {/* ── Top Split: Ticker Table + Live News (fixed viewport-aware height) ── */}
             <div style={{
               display: 'grid',
@@ -2044,9 +2047,6 @@ export default function WatchlistPage() {
                 </div>
               </div>
             </div>
-
-            {/* ── Market Themes Banner (chips) ── */}
-            {renderMarketThemes()}
 
             {/* ── Signal Summary Strip (ticker chips) ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
