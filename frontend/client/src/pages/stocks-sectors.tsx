@@ -1188,7 +1188,7 @@ function TopStocksPanel({ stocks, leaders }: { stocks: TopStock[] | undefined; l
 }
 
 // ─── B + C: Unified Themes Card ───────────────────────────────────────────────
-type SortKey = "ticker" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "change_5y" | "rotation_score";
+type SortKey = "ticker" | "name" | "change_1d" | "change_7d" | "change_30d" | "change_ytd" | "change_1y" | "change_5y" | "rotation_score";
 
 function UnifiedThemesCard({
   loading: sectorLoading,
@@ -1300,7 +1300,7 @@ function UnifiedThemesCard({
           <table className="w-full min-w-[680px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <Th label="#" /><Th label="Ticker" k="ticker" /><Th label="Name" />
+                <Th label="#" /><Th label="Ticker" k="ticker" /><Th label="Name" k="name" />
                 <Th label="1D" k="change_1d" /><Th label="7D" k="change_7d" />
                 <Th label="30D" k="change_30d" /><Th label="YTD" k="change_ytd" />
                 <Th label="1Y" k="change_1y" /><Th label="5Y" k="change_5y" />
