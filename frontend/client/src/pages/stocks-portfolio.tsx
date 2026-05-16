@@ -1629,7 +1629,7 @@ export default function StocksPortfolioPage() {
           {holdings.length > 0 && totalPortfolioValue > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard className="p-3 sm:p-4">
-                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 16 }}>Trade Performance</h3>
+                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 16 }}>Performance Scorecard</h3>
                 <div className="h-[280px] flex items-center justify-center">
                   {tradeSummary ? (
                     <div className="flex flex-col items-center gap-4 w-full">
@@ -1722,7 +1722,7 @@ export default function StocksPortfolioPage() {
             </GlassCard>
           )}
 
-          {/* ── Closed Positions / Trade History ─────────────────────── */}
+          {/* ── Trading Journal ─────────────────────────────────────── */}
           <GlassCard className="p-0 overflow-hidden">
             {/* Collapsible header */}
             <button
@@ -1730,7 +1730,7 @@ export default function StocksPortfolioPage() {
               onClick={() => setClosedPanelOpen(o => !o)}
             >
               <TrendingDown className="w-4 h-4 flex-shrink-0" style={{ color: '#64748b' }} />
-              <span className="text-sm font-semibold text-white">Closed Positions</span>
+              <span className="text-sm font-semibold text-white">Trading Journal</span>
               {tradeHistory.length > 0 && (
                 <span className="text-xs ml-1" style={{ color: '#64748b' }}>
                   {tradeHistory.length} trade{tradeHistory.length !== 1 ? 's' : ''}

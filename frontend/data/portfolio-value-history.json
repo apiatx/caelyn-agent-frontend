@@ -311,5 +311,30 @@
       "VPG",
       "SILC"
     ]
+  },
+  {
+    "timestamp": "2026-05-16T03:37:11.397Z",
+    "total_value": 150224.11,
+    "holdings_count": 18,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "SILC"
+    ]
   }
 ]
