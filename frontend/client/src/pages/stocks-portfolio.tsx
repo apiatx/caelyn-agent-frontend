@@ -2627,12 +2627,23 @@ export default function StocksPortfolioPage() {
                         {csvPreview.rows_skipped} row{csvPreview.rows_skipped !== 1 ? 's' : ''} skipped
                       </span>
                     )}
+                    {(csvPreview.options_skipped ?? 0) > 0 && (
+                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(168,85,247,0.1)', color: '#c084fc' }}>
+                        {csvPreview.options_skipped} option{csvPreview.options_skipped !== 1 ? 's' : ''} skipped
+                      </span>
+                    )}
                     {(csvPreview.sells_found ?? 0) > 0 && (
                       <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(148,163,184,0.08)', color: '#94a3b8' }}>
                         {csvPreview.sells_found} sell{csvPreview.sells_found !== 1 ? 's' : ''} ignored
                       </span>
                     )}
                   </div>
+
+                  {(csvPreview.options_skipped ?? 0) > 0 && (
+                    <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.18)', color: '#c084fc' }}>
+                      {csvPreview.options_skipped} options transaction{csvPreview.options_skipped !== 1 ? 's were' : ' was'} detected and skipped — only equity positions are tracked. Any underlying stock lots in the same CSV were imported normally.
+                    </div>
+                  )}
 
                   {(csvPreview.sells_found ?? 0) > 0 && (
                     <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.15)', color: '#d97706' }}>
@@ -2683,6 +2694,35 @@ export default function StocksPortfolioPage() {
                     </details>
                   )}
 
+                  {/* Options detail */}
+                  {(csvPreview.options_skipped ?? 0) > 0 && csvPreview.options_detail?.length > 0 && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer select-none py-1" style={{ color: '#c084fc' }}>
+                        {csvPreview.options_skipped} options transaction{csvPreview.options_skipped !== 1 ? 's' : ''} skipped — click to expand
+                      </summary>
+                      <div className="mt-2 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.12)' }}>
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr style={{ background: 'rgba(168,85,247,0.06)', borderBottom: '1px solid rgba(168,85,247,0.12)' }}>
+                              {['Ticker', 'Action', 'Detected As'].map(h => (
+                                <th key={h} className="text-left py-1.5 px-3 font-medium" style={{ color: '#94a3b8' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {csvPreview.options_detail.slice(0, 20).map((o: any, i: number) => (
+                              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                <td className="py-1.5 px-3 font-bold" style={{ color: '#c084fc' }}>{o.ticker ?? '—'}</td>
+                                <td className="py-1.5 px-3" style={{ color: '#94a3b8' }}>{o.action ?? '—'}</td>
+                                <td className="py-1.5 px-3" style={{ color: '#64748b' }}>{o.reason ?? '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  )}
+
                   {csvError && (
                     <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171' }}>
                       {csvError}
@@ -2712,6 +2752,11 @@ export default function StocksPortfolioPage() {
                       {(csvImportResult.holdings_updated ?? 0) > 0 && ` · ${csvImportResult.holdings_updated} updated`}
                       {' '}· {csvImportResult.lots_added ?? 0} total lots
                     </div>
+                    {(csvImportResult.options_skipped ?? 0) > 0 && (
+                      <div className="text-xs mt-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.18)', color: '#c084fc' }}>
+                        {csvImportResult.options_skipped} options transaction{csvImportResult.options_skipped !== 1 ? 's' : ''} skipped — only equity positions are tracked
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
