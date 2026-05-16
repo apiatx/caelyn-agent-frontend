@@ -336,5 +336,80 @@
       "VPG",
       "SILC"
     ]
+  },
+  {
+    "timestamp": "2026-05-16T18:54:20.572Z",
+    "total_value": 150728.4699,
+    "holdings_count": 18,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "SILC"
+    ]
+  },
+  {
+    "timestamp": "2026-05-16T18:58:31.378Z",
+    "total_value": 150770.2899,
+    "holdings_count": 18,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "SILC"
+    ]
+  },
+  {
+    "timestamp": "2026-05-16T19:10:30.265Z",
+    "total_value": 148627.9788,
+    "holdings_count": 18,
+    "symbols": [
+      "AEHR",
+      "SIVEF",
+      "MRVL",
+      "PENG",
+      "AMKR",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "VECO",
+      "AMPX",
+      "LWLG",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "P",
+      "VPG",
+      "SILC"
+    ]
   }
 ]

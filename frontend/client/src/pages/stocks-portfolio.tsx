@@ -10,6 +10,13 @@ import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 import { usePortfolioMigration } from '@/hooks/usePortfolioMigration';
 
 
+interface Lot {
+  shares: number;
+  price: number;
+  date: string;
+  notes?: string;
+}
+
 interface Holding {
   id: string;
   ticker: string;
@@ -18,6 +25,7 @@ interface Holding {
   addedAt: string;
   assetType?: string;
   entry_date?: string;
+  lots?: Lot[];
 }
 
 interface QuoteData {
@@ -271,11 +279,83 @@ export default function StocksPortfolioPage() {
   const [editClosedEntryDate, setEditClosedEntryDate] = useState('');
   const [savingClosedEdit, setSavingClosedEdit] = useState(false);
 
+  // Buy lots state
+  const [lotsData, setLotsData] = useState<Record<string, Lot[]>>({});
+  const [buyFormTicker, setBuyFormTicker] = useState<string | null>(null);
+  const [buyShares, setBuyShares] = useState('');
+  const [buyPrice, setBuyPrice] = useState('');
+  const [buyDate, setBuyDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [buyNotes, setBuyNotes] = useState('');
+  const [addingBuy, setAddingBuy] = useState(false);
+  const [buyError, setBuyError] = useState('');
+
   // Refetch by invalidating the shared query cache (used by both this page
   // and the parent caelyn-terminal page's dashboardHoldings query).
   const refetchHoldings = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['stock-holdings'] });
   }, [queryClient]);
+
+  // Fetch lots from FastAPI when a card is expanded (lazy, cached per ticker)
+  useEffect(() => {
+    if (!expandedCard) return;
+    const h = holdingsData?.find(h => h.id === expandedCard);
+    if (!h) return;
+    if (lotsData[h.ticker] !== undefined) return;
+    fetch('/api/portfolio/holdings')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: any) => {
+        if (!data) return;
+        const list: any[] = data.holdings ?? (Array.isArray(data) ? data : []);
+        const match = list.find((x: any) => (x.ticker || '').toUpperCase() === h.ticker.toUpperCase());
+        setLotsData(prev => ({ ...prev, [h.ticker]: match?.lots ?? [] }));
+      })
+      .catch(() => {});
+  }, [expandedCard]);
+
+  // Add a buy lot to an existing position via FastAPI /buy endpoint
+  const addBuyLot = async (ticker: string) => {
+    if (!buyShares || !buyPrice) { setBuyError('Shares and price are required.'); return; }
+    setAddingBuy(true);
+    setBuyError('');
+    try {
+      const res = await fetch(`/api/portfolio/holdings/${encodeURIComponent(ticker)}/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shares: parseFloat(buyShares),
+          price: parseFloat(buyPrice),
+          ...(buyDate ? { date: buyDate } : {}),
+          ...(buyNotes.trim() ? { notes: buyNotes.trim() } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        if (data.holding?.lots) {
+          setLotsData(prev => ({ ...prev, [ticker]: data.holding.lots }));
+        }
+        queryClient.setQueryData<Holding[]>(['stock-holdings'], prev =>
+          prev ? prev.map(h => h.ticker === ticker ? {
+            ...h,
+            shares: data.holding?.shares ?? h.shares,
+            avgCost: data.holding?.avg_cost ?? h.avgCost,
+            entry_date: data.holding?.entry_date ?? h.entry_date,
+          } : h) : prev
+        );
+        setBuyShares('');
+        setBuyPrice('');
+        setBuyDate(new Date().toISOString().split('T')[0]);
+        setBuyNotes('');
+        setBuyFormTicker(null);
+        syncToFastAPI();
+      } else {
+        setBuyError(data.detail || data.error || 'Failed to add buy lot.');
+      }
+    } catch (err: any) {
+      setBuyError(err?.message || 'Network error.');
+    } finally {
+      setAddingBuy(false);
+    }
+  };
 
   // Fire-and-forget: push full updated holdings list to FastAPI/Neon after every CRUD op.
   // Reads from the shared React Query cache instead of hitting /api/stock-holdings again.
@@ -1403,7 +1483,14 @@ export default function StocksPortfolioPage() {
                                       />
                                     </span>
                                     <div style={{ minWidth: 0 }}>
-                                      <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                        <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1rem' }}>{h.ticker}</span>
+                                        {lotsData[h.ticker]?.length > 1 && (
+                                          <span style={{ fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(92,200,240,0.12)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.2)', whiteSpace: 'nowrap' }}>
+                                            {lotsData[h.ticker].length} buys
+                                          </span>
+                                        )}
+                                      </div>
                                       {isEditing ? (
                                         <input
                                           type="date"
@@ -1578,6 +1665,142 @@ export default function StocksPortfolioPage() {
                                           <div className="text-sm font-semibold text-white">${target.targetLow?.toFixed(0)} – ${target.targetHigh?.toFixed(0)}</div>
                                         </div>
                                       </>
+                                    )}
+                                  </div>
+
+                                  {/* Buy History & Add Buy */}
+                                  <div className="mt-4" onClick={e => e.stopPropagation()}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>Buy History</span>
+                                      <button
+                                        onClick={() => {
+                                          if (buyFormTicker === h.ticker) {
+                                            setBuyFormTicker(null);
+                                          } else {
+                                            setBuyShares(''); setBuyPrice(''); setBuyDate(new Date().toISOString().split('T')[0]); setBuyNotes(''); setBuyError('');
+                                            setBuyFormTicker(h.ticker);
+                                          }
+                                        }}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                                        style={{ background: 'rgba(74,222,128,0.10)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)' }}
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        Add Buy
+                                      </button>
+                                    </div>
+                                    {(() => {
+                                      const lots = lotsData[h.ticker];
+                                      const rows: Array<{ date: string; shares: number; price: number; notes?: string }> =
+                                        lots && lots.length > 0
+                                          ? lots
+                                          : [{ date: (h.entry_date || h.addedAt || '').split('T')[0] || '—', shares: h.shares, price: h.avgCost }];
+                                      return (
+                                        <div style={{ overflowX: 'auto' }}>
+                                          <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                                            <thead>
+                                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                                <th className="text-left py-1.5 pr-3 font-medium" style={{ color: '#64748b' }}>Date</th>
+                                                <th className="text-right py-1.5 px-3 font-medium" style={{ color: '#64748b' }}>Shares</th>
+                                                <th className="text-right py-1.5 px-3 font-medium" style={{ color: '#64748b' }}>Price</th>
+                                                <th className="text-right py-1.5 px-3 font-medium" style={{ color: '#64748b' }}>Cost</th>
+                                                <th className="text-left py-1.5 pl-2 font-medium" style={{ color: '#64748b' }}>Notes</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {rows.map((lot, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                                  <td className="py-1.5 pr-3" style={{ color: '#94a3b8' }}>{lot.date || '—'}</td>
+                                                  <td className="text-right py-1.5 px-3 text-white">{lot.shares?.toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+                                                  <td className="text-right py-1.5 px-3" style={{ color: '#5cc8f0' }}>{fmt(lot.price)}</td>
+                                                  <td className="text-right py-1.5 px-3" style={{ color: '#a78bfa' }}>{fmt(lot.shares * lot.price)}</td>
+                                                  <td className="text-left py-1.5 pl-2" style={{ color: '#64748b' }}>{lot.notes || ''}</td>
+                                                </tr>
+                                              ))}
+                                              {rows.length > 1 && (
+                                                <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                                                  <td className="py-1.5 pr-3 font-semibold" style={{ color: '#475569', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total / Avg</td>
+                                                  <td className="text-right py-1.5 px-3 font-semibold text-white">{h.shares.toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+                                                  <td className="text-right py-1.5 px-3 font-semibold" style={{ color: '#5cc8f0' }}>{fmt(h.avgCost)}</td>
+                                                  <td className="text-right py-1.5 px-3 font-semibold" style={{ color: '#a78bfa' }}>{fmt(h.avgCost * h.shares)}</td>
+                                                  <td></td>
+                                                </tr>
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      );
+                                    })()}
+                                    {buyFormTicker === h.ticker && (
+                                      <div className="mt-3 p-3 rounded-lg" style={{ background: 'rgba(74,222,128,0.04)', border: '1px solid rgba(74,222,128,0.15)' }}>
+                                        <div className="flex flex-wrap gap-2 items-end">
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase tracking-wider" style={{ color: '#64748b' }}>Shares</label>
+                                            <input
+                                              type="number"
+                                              value={buyShares}
+                                              onChange={e => setBuyShares(e.target.value)}
+                                              placeholder="0"
+                                              onClick={e => e.stopPropagation()}
+                                              onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); addBuyLot(h.ticker); } }}
+                                              className="rounded px-2.5 py-1.5 text-sm text-white focus:outline-none w-24"
+                                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+                                              autoFocus
+                                            />
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase tracking-wider" style={{ color: '#64748b' }}>Price / share ($)</label>
+                                            <input
+                                              type="number"
+                                              value={buyPrice}
+                                              onChange={e => setBuyPrice(e.target.value)}
+                                              placeholder="0.00"
+                                              onClick={e => e.stopPropagation()}
+                                              onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); addBuyLot(h.ticker); } }}
+                                              className="rounded px-2.5 py-1.5 text-sm text-white focus:outline-none w-28"
+                                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+                                            />
+                                          </div>
+                                          <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase tracking-wider" style={{ color: '#64748b' }}>Date</label>
+                                            <input
+                                              type="date"
+                                              value={buyDate}
+                                              onChange={e => setBuyDate(e.target.value)}
+                                              onClick={e => e.stopPropagation()}
+                                              className="rounded px-2.5 py-1.5 text-sm text-white focus:outline-none w-36"
+                                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', colorScheme: 'dark' as any }}
+                                            />
+                                          </div>
+                                          <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                                            <label className="text-[10px] uppercase tracking-wider" style={{ color: '#64748b' }}>Notes (optional)</label>
+                                            <input
+                                              type="text"
+                                              value={buyNotes}
+                                              onChange={e => setBuyNotes(e.target.value)}
+                                              placeholder="e.g. dip buy"
+                                              onClick={e => e.stopPropagation()}
+                                              className="rounded px-2.5 py-1.5 text-sm text-white focus:outline-none"
+                                              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+                                            />
+                                          </div>
+                                          <button
+                                            onClick={e => { e.stopPropagation(); addBuyLot(h.ticker); }}
+                                            disabled={addingBuy || !buyShares || !buyPrice}
+                                            className="px-3 py-1.5 rounded text-sm font-medium text-white transition-all disabled:opacity-40"
+                                            style={{ background: 'linear-gradient(135deg, #16a34a, #4ade80)', boxShadow: '0 0 8px rgba(74,222,128,0.2)' }}
+                                          >
+                                            {addingBuy ? 'Saving…' : 'Confirm'}
+                                          </button>
+                                          <button
+                                            onClick={e => { e.stopPropagation(); setBuyFormTicker(null); setBuyError(''); }}
+                                            className="px-3 py-1.5 rounded text-sm transition-all"
+                                            style={{ color: '#64748b' }}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                        {buyError && <div className="mt-2 text-xs" style={{ color: '#f87171' }}>{buyError}</div>}
+                                      </div>
                                     )}
                                   </div>
                                 </div>

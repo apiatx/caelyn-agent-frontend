@@ -424,6 +424,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/portfolio/holdings/:ticker/buy — add a buy lot (creates if new, appends if existing)
+  app.post('/api/portfolio/holdings/:ticker/buy', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { ticker } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/holdings/${encodeURIComponent(ticker)}/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
   // GET /api/portfolio/closed-trades — fetch closed trade ledger from FastAPI
   app.get('/api/portfolio/closed-trades', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
