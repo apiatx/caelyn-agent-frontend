@@ -215,33 +215,40 @@ export default function StocksPortfolioPage() {
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
-  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; count: number }>({
+  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
       const res = await fetch('/api/portfolio/closed-trades');
-      if (!res.ok) return { closed_trades: [], count: 0 };
+      if (!res.ok) return { closed_trades: [], trade_groups: [], count: 0 };
       return res.json();
     },
     staleTime: 30_000,
   });
   const tradeHistory: any[] = closedTradesData?.closed_trades ?? [];
+  // trade_groups is the new grouped view — one card per trade lifecycle
+  const tradeGroups: any[] = closedTradesData?.trade_groups ?? [];
 
-  // Compute summary client-side (FastAPI doesn't return a summary field)
+  // Summary computed from trade groups (one group = one position's full lifecycle)
   const tradeSummary = useMemo(() => {
-    if (!tradeHistory.length) return null;
-    const totalPnl = tradeHistory.reduce((s: number, t: any) => s + (t.realized_pnl ?? 0), 0);
-    const wins = tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) > 0);
-    const sorted = [...tradeHistory].sort((a, b) => (b.realized_pnl_pct ?? 0) - (a.realized_pnl_pct ?? 0));
-    const avgDays = tradeHistory.reduce((s: number, t: any) => s + (t.holding_period_days ?? 0), 0) / tradeHistory.length;
+    const groups = tradeGroups.length ? tradeGroups : tradeHistory;
+    if (!groups.length) return null;
+    const pnlKey   = tradeGroups.length ? 'total_realized_pnl'     : 'realized_pnl';
+    const pctKey   = tradeGroups.length ? 'total_realized_pnl_pct'  : 'realized_pnl_pct';
+    const daysKey  = tradeGroups.length ? 'holding_period_days'      : 'holding_period_days';
+    const tickerFn = (g: any) => (tradeGroups.length ? g.ticker : (g.symbol ?? g.ticker ?? '')) ?? '';
+    const totalPnl = groups.reduce((s: number, g: any) => s + (g[pnlKey] ?? 0), 0);
+    const wins     = groups.filter((g: any) => (g[pnlKey] ?? 0) > 0);
+    const sorted   = [...groups].sort((a, b) => (b[pctKey] ?? 0) - (a[pctKey] ?? 0));
+    const avgDays  = groups.reduce((s: number, g: any) => s + (g[daysKey] ?? 0), 0) / groups.length;
     return {
-      total_trades: tradeHistory.length,
+      total_trades: groups.length,
       total_realized_pnl: totalPnl,
-      win_rate: Math.round((wins.length / tradeHistory.length) * 100),
-      best_pnl_pct: sorted[0] ? { symbol: sorted[0].symbol ?? sorted[0].ticker, realized_pnl_pct: sorted[0].realized_pnl_pct ?? 0 } : null,
-      worst_pnl_pct: sorted[sorted.length - 1] ? { symbol: sorted[sorted.length - 1].symbol ?? sorted[sorted.length - 1].ticker, realized_pnl_pct: sorted[sorted.length - 1].realized_pnl_pct ?? 0 } : null,
+      win_rate: Math.round((wins.length / groups.length) * 100),
+      best_pnl_pct:  sorted[0]               ? { symbol: tickerFn(sorted[0]),               realized_pnl_pct: sorted[0][pctKey] ?? 0 }               : null,
+      worst_pnl_pct: sorted[sorted.length-1] ? { symbol: tickerFn(sorted[sorted.length-1]), realized_pnl_pct: sorted[sorted.length-1][pctKey] ?? 0 } : null,
       avg_holding_period_days: Math.round(avgDays),
     };
-  }, [tradeHistory]);
+  }, [tradeGroups, tradeHistory]);
 
   // current_price is now returned inline by GET /api/portfolio/closed-trades
   // (enriched server-side via the shared Tradier per-ticker cache, yfinance fallback for OTC)
@@ -278,6 +285,7 @@ export default function StocksPortfolioPage() {
   const [editClosedExitDate, setEditClosedExitDate] = useState('');
   const [editClosedEntryDate, setEditClosedEntryDate] = useState('');
   const [savingClosedEdit, setSavingClosedEdit] = useState(false);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
   // Buy lots state
   const [lotsData, setLotsData] = useState<Record<string, Lot[]>>({});
@@ -1953,9 +1961,9 @@ export default function StocksPortfolioPage() {
             >
               <TrendingDown className="w-4 h-4 flex-shrink-0" style={{ color: '#64748b' }} />
               <span className="text-sm font-semibold text-white">Trading Journal</span>
-              {tradeHistory.length > 0 && (
+              {(tradeGroups.length || tradeHistory.length) > 0 && (
                 <span className="text-xs ml-1" style={{ color: '#64748b' }}>
-                  {tradeHistory.length} trade{tradeHistory.length !== 1 ? 's' : ''}
+                  {(tradeGroups.length || tradeHistory.length)} position{(tradeGroups.length || tradeHistory.length) !== 1 ? 's' : ''}
                 </span>
               )}
               {tradeSummary && (
@@ -1972,22 +1980,28 @@ export default function StocksPortfolioPage() {
               <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
 
                 {/* Wins / Losses pills */}
-                {tradeSummary && (
-                  <div className="flex items-center gap-2 pt-3 pb-2">
-                    <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#4ade80' }}></div>
-                      <span>{tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) > 0).length} Wins</span>
+                {tradeSummary && (() => {
+                  const g = tradeGroups.length ? tradeGroups : tradeHistory;
+                  const pnlKey = tradeGroups.length ? 'total_realized_pnl' : 'realized_pnl';
+                  const wins = g.filter((x: any) => (x[pnlKey] ?? 0) > 0).length;
+                  const losses = g.filter((x: any) => (x[pnlKey] ?? 0) <= 0).length;
+                  return (
+                    <div className="flex items-center gap-2 pt-3 pb-2">
+                      <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="w-2 h-2 rounded-full" style={{ background: '#4ade80' }}></div>
+                        <span>{wins} Win{wins !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="w-2 h-2 rounded-full" style={{ background: '#f87171' }}></div>
+                        <span>{losses} Loss{losses !== 1 ? 'es' : ''}</span>
+                      </div>
+                      <span className="text-xs" style={{ color: '#475569' }}>Avg hold: {tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d'}</span>
                     </div>
-                    <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#f87171' }}></div>
-                      <span>{tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) <= 0).length} Losses</span>
-                    </div>
-                    <span className="text-xs" style={{ color: '#475569' }}>Avg hold: {tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d'}</span>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Empty state */}
-                {tradeHistory.length === 0 && (
+                {tradeGroups.length === 0 && tradeHistory.length === 0 && (
                   <div className="py-10 text-center">
                     <TrendingDown className="w-8 h-8 mx-auto mb-3 opacity-20" style={{ color: '#64748b' }} />
                     <div className="text-sm text-slate-500">No closed positions yet</div>
@@ -1995,33 +2009,272 @@ export default function StocksPortfolioPage() {
                   </div>
                 )}
 
-                {/* Trade cards grouped by month */}
-                {tradeHistory.length > 0 && (() => {
+                {/* Trade cards — grouped view when trade_groups available, flat fallback */}
+                {(tradeGroups.length > 0 || tradeHistory.length > 0) && (() => {
+                  const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
+                  const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+
+                  if (tradeGroups.length > 0) {
+                    // ── Grouped rendering (new backend format) ──────────────────
+                    const partials    = tradeGroups.filter((g: any) => !g.is_fully_closed);
+                    const fullyClosed = tradeGroups.filter((g: any) => g.is_fully_closed);
+
+                    // Group fully-closed by month of final_exit_date
+                    const monthBuckets: { monthKey: string; label: string; groups: any[] }[] = [];
+                    fullyClosed.forEach((g: any) => {
+                      const d = g.final_exit_date ? new Date(g.final_exit_date) : null;
+                      const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
+                      const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
+                      const last = monthBuckets[monthBuckets.length - 1];
+                      if (last && last.monthKey === monthKey) { last.groups.push(g); }
+                      else { monthBuckets.push({ monthKey, label, groups: [g] }); }
+                    });
+
+                    const renderGroupCard = (g: any) => {
+                      const groupId     = g.trade_group_id ?? g.ticker;
+                      const ticker      = (g.ticker ?? '').toUpperCase();
+                      const avgEntry    = g.avg_entry_price ?? 0;
+                      const avgExit     = g.avg_exit_price ?? 0;
+                      const sharesSold  = g.total_shares_sold ?? 0;
+                      const costBasis   = g.total_cost_basis ?? (sharesSold * avgEntry);
+                      const pl          = g.total_realized_pnl ?? 0;
+                      const plPct       = g.total_realized_pnl_pct ?? 0;
+                      const isWin       = pl >= 0;
+                      const borderClr   = g.is_fully_closed ? (isWin ? '#4ade80' : '#f87171') : '#d97706';
+                      const plClr       = isWin ? '#4ade80' : '#f87171';
+                      const exitDate    = g.final_exit_date ?? null;
+                      const exitDisplay = exitDate
+                        ? new Date(exitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : '—';
+                      const sellEvents: any[] = g.sell_events ?? [];
+                      const isExpandable = sellEvents.length > 1;
+                      const isExpanded   = expandedGroupId === groupId;
+                      // Use first event's id for single-event edit; multi-event groups use per-row edit in expanded view
+                      const singleEventId = sellEvents.length === 1 ? (sellEvents[0].id ?? sellEvents[0].trade_id) : null;
+                      const isEditing     = singleEventId != null && editingClosedId === singleEventId;
+
+                      return (
+                        <div
+                          key={groupId}
+                          className="rounded-xl p-4 flex flex-col gap-3"
+                          style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}
+                        >
+                          {/* Header */}
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl font-bold text-white tracking-tight">{ticker}</span>
+                                {!g.is_fully_closed && (
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(217,119,6,0.15)', color: '#d97706', border: '1px solid rgba(217,119,6,0.3)' }}>Partial</span>
+                                )}
+                                {g.is_fully_closed && sellEvents.length > 1 && (
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>{sellEvents.length} sells</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs tracking-wide" style={{ color: '#d97706' }}>{exitDisplay}</span>
+                                {g.entry_date && <span className="text-[10px]" style={{ color: '#475569' }}>· opened {g.entry_date}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {isEditing ? (
+                                <>
+                                  <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {isExpandable && (
+                                    <button
+                                      onClick={() => setExpandedGroupId(isExpanded ? null : groupId)}
+                                      title={isExpanded ? 'Collapse sell history' : 'Expand sell history'}
+                                      className="p-1 opacity-50 hover:opacity-100 transition-all"
+                                      style={{ color: '#5cc8f0' }}
+                                    >
+                                      {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                    </button>
+                                  )}
+                                  {singleEventId && (
+                                    <button onClick={e => startClosedEdit(sellEvents[0], singleEventId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}>
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  {singleEventId && (
+                                    <button onClick={e => deleteClosedTrade(singleEventId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Entry → Exit price bar */}
+                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Avg Entry</span>
+                              <span className="font-mono text-white">{fmtP(avgEntry)}</span>
+                            </div>
+                            <div className="flex-1 px-3 flex items-center">
+                              <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span style={{ color: '#64748b' }}>{g.is_fully_closed ? 'Avg Exit' : 'Last Exit'}</span>
+                              {isEditing ? (
+                                <input type="number" value={editClosedExitPrice} onChange={e => setEditClosedExitPrice(e.target.value)} className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono" style={{ borderColor: 'rgba(92,200,240,0.6)' }} />
+                              ) : (
+                                <span className="font-mono text-white">{fmtP(avgExit)}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Date edit rows */}
+                          {isEditing && (
+                            <div className="flex flex-col gap-1.5 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Open Date:</span>
+                                <input type="date" value={editClosedEntryDate} onChange={e => setEditClosedEntryDate(e.target.value)} className="bg-transparent border-b text-white text-xs focus:outline-none flex-1" style={{ borderColor: 'rgba(217,119,6,0.5)', colorScheme: 'dark' as any }} />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Exit Date:</span>
+                                <input type="date" value={editClosedExitDate} onChange={e => setEditClosedExitDate(e.target.value)} className="bg-transparent border-b text-white text-xs focus:outline-none flex-1" style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }} />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Metrics */}
+                          <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Shares Sold</span>
+                              <span style={{ color: '#e2e8f0' }}>{sharesSold.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Cost Basis</span>
+                              <span style={{ color: '#a78bfa' }}>{costBasis > 0 ? fmtM(costBasis) : '—'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Hold Time</span>
+                              <span style={{ color: '#e2e8f0' }}>{(g.holding_period_days ?? 0) > 0 ? `${g.holding_period_days}d` : '< 1d'}</span>
+                            </div>
+                          </div>
+
+                          {/* Expandable sell events table */}
+                          {isExpandable && isExpanded && (
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+                              <div className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: '#64748b' }}>Sell History</div>
+                              <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                                <thead>
+                                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <th className="text-left py-1 pr-2 font-medium" style={{ color: '#64748b' }}>Date</th>
+                                    <th className="text-right py-1 px-2 font-medium" style={{ color: '#64748b' }}>Shares</th>
+                                    <th className="text-right py-1 px-2 font-medium" style={{ color: '#64748b' }}>Exit $</th>
+                                    <th className="text-right py-1 pl-2 font-medium" style={{ color: '#64748b' }}>P&L</th>
+                                    <th className="w-12"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sellEvents.map((ev: any, ei: number) => {
+                                    const evId   = ev.id ?? ev.trade_id ?? String(ei);
+                                    const evIsEd = editingClosedId === evId;
+                                    const evPl   = ev.realized_pnl ?? 0;
+                                    return (
+                                      <tr key={evId} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                        <td className="py-1 pr-2" style={{ color: '#94a3b8' }}>{ev.exit_date ? new Date(ev.exit_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</td>
+                                        <td className="text-right py-1 px-2 text-white">{(ev.shares ?? 0).toLocaleString(undefined,{maximumFractionDigits:4})}</td>
+                                        <td className="text-right py-1 px-2" style={{ color: '#5cc8f0' }}>{fmtP(ev.exit_price ?? 0)}</td>
+                                        <td className="text-right py-1 pl-2 font-semibold" style={{ color: evPl >= 0 ? '#4ade80' : '#f87171' }}>{evPl >= 0 ? '+' : '-'}{fmtM(evPl)}</td>
+                                        <td className="text-right py-1">
+                                          {!evIsEd && (
+                                            <button onClick={e => deleteClosedTrade(evId, e)} className="opacity-30 hover:opacity-100 transition-all p-0.5" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                              <Trash2 className="w-2.5 h-2.5" />
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Divider */}
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+
+                          {/* P&L footer */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                              <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtM(pl)}</div>
+                            </div>
+                            <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>
+                              {isWin ? '+' : ''}{plPct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    return (
+                      <div className="flex flex-col gap-6">
+                        {/* Partially closed section */}
+                        {partials.length > 0 && (
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>Partially Closed</span>
+                              <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
+                              <span className="text-xs" style={{ color: '#475569' }}>{partials.length} position{partials.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                              {partials.map(renderGroupCard)}
+                            </div>
+                          </div>
+                        )}
+                        {/* Fully closed — grouped by month */}
+                        {monthBuckets.map(({ monthKey, label, groups }) => (
+                          <div key={monthKey} className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>{label}</span>
+                              <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
+                              <span className="text-xs" style={{ color: '#475569' }}>{groups.length} position{groups.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                              {groups.map(renderGroupCard)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // ── Flat fallback (old backend) ────────────────────────────
                   const sorted = [...tradeHistory].sort((a: any, b: any) => {
                     const da = a.exit_date ? new Date(a.exit_date).getTime() : 0;
                     const db = b.exit_date ? new Date(b.exit_date).getTime() : 0;
                     return db - da;
                   });
-                  const groups: { monthKey: string; label: string; trades: any[] }[] = [];
+                  const monthBuckets: { monthKey: string; label: string; trades: any[] }[] = [];
                   sorted.forEach((t: any) => {
                     const d = t.exit_date ? new Date(t.exit_date) : null;
-                    const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : 'unknown';
-                    const label = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
-                    const last = groups[groups.length - 1];
+                    const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
+                    const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
+                    const last = monthBuckets[monthBuckets.length - 1];
                     if (last && last.monthKey === monthKey) { last.trades.push(t); }
-                    else { groups.push({ monthKey, label, trades: [t] }); }
+                    else { monthBuckets.push({ monthKey, label, trades: [t] }); }
                   });
                   return (
                     <div className="flex flex-col gap-6">
-                      {groups.map(({ monthKey, label, trades }) => (
+                      {monthBuckets.map(({ monthKey, label, trades }) => (
                         <div key={monthKey} className="flex flex-col gap-3">
-                          {/* Month header */}
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>{label}</span>
                             <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
                             <span className="text-xs" style={{ color: '#475569' }}>{trades.length} trade{trades.length !== 1 ? 's' : ''}</span>
                           </div>
-                          {/* Cards for this month */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                             {trades.map((t: any, i: number) => {
                               const tradeId   = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
@@ -2036,18 +2289,9 @@ export default function StocksPortfolioPage() {
                               const isWin     = pl >= 0;
                               const borderClr = isWin ? '#4ade80' : '#f87171';
                               const plClr     = isWin ? '#4ade80' : '#f87171';
-                              const exitDisplay = t.exit_date
-                                ? new Date(t.exit_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                : '—';
-                              const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
-                              const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+                              const exitDisplay = t.exit_date ? new Date(t.exit_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
                               return (
-                                <div
-                                  key={tradeId}
-                                  className="rounded-xl p-4 flex flex-col gap-3 transition-colors"
-                                  style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}
-                                >
-                                  {/* Header: ticker + edit/delete */}
+                                <div key={tradeId} className="rounded-xl p-4 flex flex-col gap-3" style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}>
                                   <div className="flex items-start justify-between">
                                     <div>
                                       <div className="text-xl font-bold text-white tracking-tight">{ticker}</div>
@@ -2061,105 +2305,43 @@ export default function StocksPortfolioPage() {
                                     <div className="flex items-center gap-1 mt-0.5">
                                       {isEditing ? (
                                         <>
-                                          <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
-                                            <Check className="w-3.5 h-3.5" />
-                                          </button>
-                                          <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
-                                            <X className="w-3.5 h-3.5" />
-                                          </button>
+                                          <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}><Check className="w-3.5 h-3.5" /></button>
+                                          <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}><X className="w-3.5 h-3.5" /></button>
                                         </>
                                       ) : (
                                         <>
-                                          <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}>
-                                            <Pencil className="w-3 h-3" />
-                                          </button>
-                                          <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
+                                          <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}><Pencil className="w-3 h-3" /></button>
+                                          <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}><Trash2 className="w-3 h-3" /></button>
                                         </>
                                       )}
                                     </div>
                                   </div>
-
-                                  {/* Entry → Exit price path */}
                                   <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                    <div className="flex flex-col">
-                                      <span style={{ color: '#64748b' }}>Entry</span>
-                                      <span className="font-mono text-white">{fmtP(avgEntry)}</span>
-                                    </div>
-                                    <div className="flex-1 px-3 flex items-center">
-                                      <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
-                                    </div>
+                                    <div className="flex flex-col"><span style={{ color: '#64748b' }}>Entry</span><span className="font-mono text-white">{fmtP(avgEntry)}</span></div>
+                                    <div className="flex-1 px-3 flex items-center"><div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div></div>
                                     <div className="flex flex-col items-end">
                                       <span style={{ color: '#64748b' }}>{isEditing ? 'New Exit' : 'Exit'}</span>
-                                      {isEditing ? (
-                                        <input
-                                          type="number"
-                                          value={editClosedExitPrice}
-                                          onChange={e => setEditClosedExitPrice(e.target.value)}
-                                          className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono"
-                                          style={{ borderColor: 'rgba(92,200,240,0.6)' }}
-                                        />
-                                      ) : (
-                                        <span className="font-mono text-white">{fmtP(exitPrice)}</span>
-                                      )}
+                                      {isEditing ? <input type="number" value={editClosedExitPrice} onChange={e => setEditClosedExitPrice(e.target.value)} className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono" style={{ borderColor: 'rgba(92,200,240,0.6)' }} /> : <span className="font-mono text-white">{fmtP(exitPrice)}</span>}
                                     </div>
                                   </div>
-
-                                  {/* Date edit rows (only when editing) */}
                                   {isEditing && (
                                     <div className="flex flex-col gap-1.5 text-xs">
-                                      <div className="flex items-center gap-2">
-                                        <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Open Date:</span>
-                                        <input
-                                          type="date"
-                                          value={editClosedEntryDate}
-                                          onChange={e => setEditClosedEntryDate(e.target.value)}
-                                          className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
-                                          style={{ borderColor: 'rgba(217,119,6,0.5)', colorScheme: 'dark' as any }}
-                                        />
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Exit Date:</span>
-                                        <input
-                                          type="date"
-                                          value={editClosedExitDate}
-                                          onChange={e => setEditClosedExitDate(e.target.value)}
-                                          className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
-                                          style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
-                                        />
-                                      </div>
+                                      <div className="flex items-center gap-2"><span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Open Date:</span><input type="date" value={editClosedEntryDate} onChange={e => setEditClosedEntryDate(e.target.value)} className="bg-transparent border-b text-white text-xs focus:outline-none flex-1" style={{ borderColor: 'rgba(217,119,6,0.5)', colorScheme: 'dark' as any }} /></div>
+                                      <div className="flex items-center gap-2"><span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Exit Date:</span><input type="date" value={editClosedExitDate} onChange={e => setEditClosedExitDate(e.target.value)} className="bg-transparent border-b text-white text-xs focus:outline-none flex-1" style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }} /></div>
                                     </div>
                                   )}
-
-                                  {/* Metrics grid */}
                                   <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
-                                    <div className="flex flex-col">
-                                      <span style={{ color: '#64748b' }}>Shares</span>
-                                      <span style={{ color: '#e2e8f0' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span style={{ color: '#64748b' }}>Invested</span>
-                                      <span style={{ color: '#a78bfa' }}>{invested > 0 ? fmtM(invested) : '—'}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span style={{ color: '#64748b' }}>Hold Time</span>
-                                      <span style={{ color: '#e2e8f0' }}>{(t.holding_period_days ?? 0) > 0 ? `${t.holding_period_days}d` : '< 1d'}</span>
-                                    </div>
+                                    <div className="flex flex-col"><span style={{ color: '#64748b' }}>Shares</span><span style={{ color: '#e2e8f0' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>
+                                    <div className="flex flex-col"><span style={{ color: '#64748b' }}>Invested</span><span style={{ color: '#a78bfa' }}>{invested > 0 ? fmtM(invested) : '—'}</span></div>
+                                    <div className="flex flex-col"><span style={{ color: '#64748b' }}>Hold Time</span><span style={{ color: '#e2e8f0' }}>{(t.holding_period_days ?? 0) > 0 ? `${t.holding_period_days}d` : '< 1d'}</span></div>
                                   </div>
-
-                                  {/* Divider */}
                                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
-
-                                  {/* P&L footer */}
                                   <div className="flex items-center justify-between">
                                     <div>
                                       <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
                                       <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtM(pl)}</div>
                                     </div>
-                                    <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>
-                                      {isWin ? '+' : ''}{plPct.toFixed(1)}%
-                                    </span>
+                                    <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>{isWin ? '+' : ''}{plPct.toFixed(1)}%</span>
                                   </div>
                                 </div>
                               );
