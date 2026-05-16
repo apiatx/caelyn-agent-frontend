@@ -1,0 +1,129 @@
+Now I need the option to upload a portfolio by brokerage CSV file upload. The CSV fields it needs to pick up are universal that any brokerage would use "Date
+Transaction Type
+Symbol
+Description
+Quantity
+Price
+Amount
+". Wire this up in the backend and then give me the instrucitons for my frontend replit agent to add the CSV upload button to the Portfolio Dashboard page.... (we already have CSV upload capability build into the watchlist page, even though this will be picking up different fields and for a different purpose - maybe we can reuse pieces of it? Do what is best for the Portfolio Dashboard CSV upload)
+
+5 minutes ago
+
+Analyzing data structure requirements
+Let me check the existing watchlist CSV upload and portfolio structure in parallel:
+
+
+3 actions
+Let me look at the watchlist CSV parsing code and the portfolio buy endpoint more closely:
+
+
+3 actions
+Let me read the rest of the buy endpoint and the POST holdings endpoint:
+
+
+3 actions
+Now I have everything I need. Let me build the backend endpoint, then write the frontend instructions:
+
+
+4 actions
+Let me verify the endpoint compiles clean and test it, while also checking if compute_lot_totals exists in portfolio_store:
+
+
+5 actions
+Server needs a restart to pick up the new endpoint:
+
+
+4 actions
+Endpoint working perfectly. AAPL weighted avg across 2 lots (10@185.50 + 5@182.00 = 15@184.33), NVDA/MSFT created, sell detected, dividend skipped. Now let me write the frontend instructions:
+
+
+2 actions
+The backend is complete and tested. Here are the instructions for your frontend agent:
+
+Frontend Instructions: Portfolio CSV Upload Button
+Page: Portfolio Dashboard
+
+New backend endpoint available: POST /api/portfolio/upload-csv
+Headers: X-API-Key: hippo_ak_7f3x9k2m4p8q1w5t, Content-Type: application/json
+
+What to build
+Add a "Import CSV" button to the Portfolio Dashboard page (near the existing "Add Position" or holdings management controls). When clicked, it opens a modal with a two-step flow: upload → preview → confirm import.
+
+Step 1 — The button
+Place an "Import CSV" button alongside the existing portfolio action buttons. Style it consistently with the page's existing button design.
+
+Step 2 — The modal (two-phase flow)
+Phase 1: Upload
+
+The modal opens to a file drop zone. It should:
+
+Accept .csv files only
+Read the file as text using the FileReader API
+Show the filename and file size once selected
+Have an "Preview Import" button that triggers the API call
+Phase 2: Preview (shown after API responds)
+
+Replace the drop zone with a summary table showing what will be imported. The API returns a preview array — render it as:
+
+Ticker	Action	Lots Found	Total Shares	Avg Cost	Entry Date
+Also show:
+
+A small stats bar: X symbols · Y lots · Z rows skipped
+If rows_skipped > 0, a collapsible "Skipped rows" section listing skipped_detail[].reason
+If sells_found > 0, a note: "X sell transactions were found and will be ignored (sells must be logged manually via Close Position)."
+Two buttons at the bottom:
+
+"Confirm Import" → re-calls the same endpoint with mode: "import" instead of "preview"
+"Cancel / Re-upload" → goes back to Phase 1
+After successful import:
+
+Close the modal
+Refresh/reload the holdings list (call GET /api/portfolio/holdings and re-render)
+Show a brief success toast: "Imported X positions (Y updated)"
+API call details
+Phase 1 — Preview:
+
+POST /api/portfolio/upload-csv
+{
+  "csv_data": "<raw file text>",
+  "mode": "preview"
+}
+
+Phase 2 — Import:
+
+POST /api/portfolio/upload-csv
+{
+  "csv_data": "<same raw file text>",
+  "mode": "import",
+  "merge_strategy": "add_lots"
+}
+
+(Keep the raw CSV text in component state between phases so you can re-send it for the import call.)
+
+Response fields to display:
+
+resp.columns_detected   → list of column names the parser found
+resp.symbols_imported   → list of tickers that will be / were imported
+resp.holdings_created   → count of new positions
+resp.holdings_updated   → count of existing positions that got new lots
+resp.lots_added         → total buy lots processed
+resp.sells_found        → sell rows detected (skipped by default)
+resp.rows_skipped       → rows that couldn't be parsed
+resp.preview            → [{ticker, action, lots_added, total_shares, avg_cost, entry_date}]
+resp.skipped_detail     → [{reason}, ...] (first 20)
+
+Error handling:
+
+If the API returns success: false, show resp.error in the modal
+If symbols_imported is empty after preview, show: "No Buy transactions found. Make sure your CSV has a Transaction Type column with 'Buy' entries, and Symbol, Quantity, Price columns."
+Supported brokerages (you can mention these in the modal subtitle)
+Schwab · Fidelity · TD Ameritrade · IBKR · Robinhood · Webull · E*Trade · and most standard brokerage exports
+
+Reference: existing watchlist CSV upload
+The watchlist page already has a CSV upload component you can look at for reference on the file-picker UI pattern and how FileReader is wired up — though note this new one sends to a different endpoint (/api/portfolio/upload-csv not the watchlist endpoint) and displays a preview table (not a ticker list).
+
+
+Checkpoint made
+just now
+
+Worked for 4 minutes

@@ -411,5 +411,39 @@
       "VPG",
       "SILC"
     ]
+  },
+  {
+    "timestamp": "2026-05-16T20:58:35.171Z",
+    "total_value": 108953.0343,
+    "holdings_count": 10,
+    "symbols": [
+      "SIVEF",
+      "PENG",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "SILC"
+    ]
+  },
+  {
+    "timestamp": "2026-05-16T21:01:19.099Z",
+    "total_value": 107543.0343,
+    "holdings_count": 10,
+    "symbols": [
+      "SIVEF",
+      "PENG",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "SILC"
+    ]
   }
 ]

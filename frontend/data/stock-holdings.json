@@ -1,15 +1,15 @@
 [
   {
-    "id": "mp8t6i5f0f9u",
+    "id": "mp8ucirw1fqn",
     "ticker": "SIVEF",
-    "shares": 3996,
+    "shares": 2996,
     "avgCost": 1.41,
     "assetType": "stock",
     "addedAt": "2026-05-12T05:28:39.083Z",
     "date_added": "2026-05-12T05:28:39.083Z"
   },
   {
-    "id": "mp8t6i5f533e",
+    "id": "mp8ucirwekiq",
     "ticker": "PENG",
     "shares": 422,
     "avgCost": 35,
@@ -18,7 +18,7 @@
     "date_added": "2026-05-12T05:31:46.661Z"
   },
   {
-    "id": "mp8t6i5f4r75",
+    "id": "mp8ucirwc9ot",
     "ticker": "IQEPF",
     "shares": 19875,
     "avgCost": 0.35,
@@ -27,7 +27,7 @@
     "date_added": "2026-05-12T05:34:34.282Z"
   },
   {
-    "id": "mp8t6i5f2tjp",
+    "id": "mp8ucirwvw1a",
     "ticker": "SLOIF",
     "shares": 79,
     "avgCost": 61,
@@ -36,7 +36,7 @@
     "date_added": "2026-05-12T05:36:09.925Z"
   },
   {
-    "id": "mp8t6i5ffshy",
+    "id": "mp8ucirwlw6u",
     "ticker": "TRT",
     "shares": 1160,
     "avgCost": 6.2,
@@ -45,7 +45,7 @@
     "date_added": "2026-05-12T05:37:05.303Z"
   },
   {
-    "id": "mp8t6i5fjhc4",
+    "id": "mp8ucirw1ptw",
     "ticker": "NBIS",
     "shares": 76,
     "avgCost": 87,
@@ -54,7 +54,7 @@
     "date_added": "2026-05-12T05:38:56.562Z"
   },
   {
-    "id": "mp8t6i5fpzj8",
+    "id": "mp8ucirwm7vp",
     "ticker": "OUST",
     "shares": 302,
     "avgCost": 26,
@@ -63,16 +63,16 @@
     "date_added": "2026-05-13T05:21:25.990Z"
   },
   {
-    "id": "mp8t6i5fhfy8",
+    "id": "mp8ucirw252y",
     "ticker": "SLNH",
-    "shares": 5404,
-    "avgCost": 1.59,
+    "shares": 18957,
+    "avgCost": 2.1099,
     "assetType": "stock",
     "addedAt": "2026-05-13T05:22:12.000Z",
     "date_added": "2026-05-13T05:22:12.000Z"
   },
   {
-    "id": "mp8t6i5f80lf",
+    "id": "mp8ucirw6ycs",
     "ticker": "NRGV",
     "shares": 1969,
     "avgCost": 5.17,
@@ -81,7 +81,7 @@
     "date_added": "2026-05-13T05:22:58.686Z"
   },
   {
-    "id": "mp8t6i5fuz0z",
+    "id": "mp8ucirwqma9",
     "ticker": "SILC",
     "shares": 176,
     "avgCost": 28.07,

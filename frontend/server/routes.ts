@@ -513,6 +513,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/portfolio/upload-csv — parse brokerage CSV and preview / import holdings
+  app.post('/api/portfolio/upload-csv', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/upload-csv`, {
+        method: 'POST',
+        headers: { 'X-API-Key': FA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ success: false, error: err?.message });
+    }
+  });
+
   // Portfolio endpoints with security validation
   app.get("/api/portfolio/:userId", 
     optionalAuth,
