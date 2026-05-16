@@ -517,6 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/portfolio/upload-csv', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const isImport = req.body?.mode === 'import';
     try {
       const upRes = await fetch(`${FA_URL}/api/portfolio/upload-csv`, {
         method: 'POST',
@@ -524,6 +525,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify(req.body),
       });
       const data = await upRes.json().catch(() => ({}));
+
+      // After a successful import, pull the freshly-created holdings from FastAPI
+      // and write them to stock-holdings.json so the Dashboard and Terminal stay in sync.
+      if (isImport && data.success) {
+        try {
+          const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+            headers: { 'X-API-Key': FA_KEY },
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (holdRes.ok) {
+            const holdData = await holdRes.json().catch(() => ({}));
+            const faHoldings: any[] = Array.isArray(holdData)
+              ? holdData
+              : Array.isArray(holdData?.holdings)
+              ? holdData.holdings
+              : [];
+            if (faHoldings.length > 0) {
+              const normalized: StockHolding[] = faHoldings.map((h: any) => ({
+                id: h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                ticker:    (h.ticker || h.symbol || '').toUpperCase(),
+                shares:    Number(h.shares ?? 0),
+                avgCost:   Number(h.avg_cost || h.avgCost || h.avg_price || 0),
+                assetType: h.asset_type || h.assetType || 'stock',
+                addedAt:   h.date_added || h.addedAt || new Date().toISOString(),
+                date_added: h.date_added || h.addedAt || new Date().toISOString(),
+                entry_date: h.entry_date || h.date_added || h.addedAt || undefined,
+              }));
+              writeHoldings(normalized);
+              caelynTerminalCache = null;
+              console.log(`[csv-import] Synced ${normalized.length} holdings to local file: ${normalized.map(h => h.ticker).join(', ')}`);
+            }
+          }
+        } catch (syncErr: any) {
+          console.warn('[csv-import] Holdings sync after import failed:', syncErr?.message);
+        }
+      }
+
       return res.status(upRes.status).json(data);
     } catch (err: any) {
       return res.status(502).json({ success: false, error: err?.message });
