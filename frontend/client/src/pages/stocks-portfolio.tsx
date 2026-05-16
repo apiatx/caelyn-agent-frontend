@@ -1310,7 +1310,7 @@ export default function StocksPortfolioPage() {
           {/* Section 1: Portfolio Input */}
           <GlassCard className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0 mr-3">
                 <Plus className="w-4 h-4 text-green-400" />
                 <span className="text-sm font-semibold text-white whitespace-nowrap">Add Position</span>
               </div>
