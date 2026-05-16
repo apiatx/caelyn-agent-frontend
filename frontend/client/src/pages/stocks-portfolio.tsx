@@ -215,11 +215,11 @@ export default function StocksPortfolioPage() {
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
-  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; count: number }>({
+  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
       const res = await fetch('/api/portfolio/closed-trades');
-      if (!res.ok) return { closed_trades: [], trade_groups: [], count: 0 };
+      if (!res.ok) return { closed_trades: [], trade_groups: [], portfolio_performance: null, count: 0 };
       return res.json();
     },
     staleTime: 30_000,
@@ -227,28 +227,46 @@ export default function StocksPortfolioPage() {
   const tradeHistory: any[] = closedTradesData?.closed_trades ?? [];
   // trade_groups is the new grouped view — one card per trade lifecycle
   const tradeGroups: any[] = closedTradesData?.trade_groups ?? [];
+  // portfolio_performance is pre-computed by the backend (per-position win rate, best/worst trade etc.)
+  const perf: any = closedTradesData?.portfolio_performance ?? null;
 
-  // Summary computed from trade groups (one group = one position's full lifecycle)
+  // tradeSummary: prefer backend perf object; fall back to client-side compute from flat list
   const tradeSummary = useMemo(() => {
+    if (perf) {
+      return {
+        total_trades:           perf.total_closed_trades ?? 0,
+        total_realized_pnl:     perf.total_realized_pnl ?? 0,
+        win_rate:               perf.win_rate ?? 0,
+        win_count:              perf.win_count ?? 0,
+        loss_count:             perf.loss_count ?? 0,
+        avg_return_pct:         perf.avg_return_pct ?? 0,
+        avg_holding_period_days: Math.round(perf.avg_hold_days ?? 0),
+        best_pnl_pct:  perf.best_trade  ? { symbol: perf.best_trade.ticker,  realized_pnl_pct: perf.best_trade.pnl_pct  ?? 0, pnl: perf.best_trade.pnl  } : null,
+        worst_pnl_pct: perf.worst_trade ? { symbol: perf.worst_trade.ticker, realized_pnl_pct: perf.worst_trade.pnl_pct ?? 0, pnl: perf.worst_trade.pnl } : null,
+        recent_trades:          perf.recent_trades ?? [],
+        open_partial_trades:    perf.open_partial_trades ?? 0,
+      };
+    }
+    // fallback: compute from available data
     const groups = tradeGroups.length ? tradeGroups : tradeHistory;
     if (!groups.length) return null;
-    const pnlKey   = tradeGroups.length ? 'total_realized_pnl'     : 'realized_pnl';
-    const pctKey   = tradeGroups.length ? 'total_realized_pnl_pct'  : 'realized_pnl_pct';
-    const daysKey  = tradeGroups.length ? 'holding_period_days'      : 'holding_period_days';
-    const tickerFn = (g: any) => (tradeGroups.length ? g.ticker : (g.symbol ?? g.ticker ?? '')) ?? '';
+    const pnlKey  = tradeGroups.length ? 'total_realized_pnl'    : 'realized_pnl';
+    const pctKey  = tradeGroups.length ? 'total_realized_pnl_pct' : 'realized_pnl_pct';
+    const tkFn    = (g: any) => (tradeGroups.length ? g.ticker : (g.symbol ?? g.ticker ?? '')) ?? '';
     const totalPnl = groups.reduce((s: number, g: any) => s + (g[pnlKey] ?? 0), 0);
     const wins     = groups.filter((g: any) => (g[pnlKey] ?? 0) > 0);
     const sorted   = [...groups].sort((a, b) => (b[pctKey] ?? 0) - (a[pctKey] ?? 0));
-    const avgDays  = groups.reduce((s: number, g: any) => s + (g[daysKey] ?? 0), 0) / groups.length;
+    const avgDays  = groups.reduce((s: number, g: any) => s + (g.holding_period_days ?? 0), 0) / groups.length;
     return {
-      total_trades: groups.length,
-      total_realized_pnl: totalPnl,
+      total_trades: groups.length, total_realized_pnl: totalPnl,
       win_rate: Math.round((wins.length / groups.length) * 100),
-      best_pnl_pct:  sorted[0]               ? { symbol: tickerFn(sorted[0]),               realized_pnl_pct: sorted[0][pctKey] ?? 0 }               : null,
-      worst_pnl_pct: sorted[sorted.length-1] ? { symbol: tickerFn(sorted[sorted.length-1]), realized_pnl_pct: sorted[sorted.length-1][pctKey] ?? 0 } : null,
-      avg_holding_period_days: Math.round(avgDays),
+      win_count: wins.length, loss_count: groups.length - wins.length,
+      avg_return_pct: 0, avg_holding_period_days: Math.round(avgDays),
+      best_pnl_pct:  sorted[0]               ? { symbol: tkFn(sorted[0]),               realized_pnl_pct: sorted[0][pctKey] ?? 0 }               : null,
+      worst_pnl_pct: sorted[sorted.length-1] ? { symbol: tkFn(sorted[sorted.length-1]), realized_pnl_pct: sorted[sorted.length-1][pctKey] ?? 0 } : null,
+      recent_trades: [], open_partial_trades: 0,
     };
-  }, [tradeGroups, tradeHistory]);
+  }, [perf, tradeGroups, tradeHistory]);
 
   // current_price is now returned inline by GET /api/portfolio/closed-trades
   // (enriched server-side via the shared Tradier per-ticker cache, yfinance fallback for OTC)
@@ -1955,31 +1973,85 @@ export default function StocksPortfolioPage() {
           {holdings.length > 0 && totalPortfolioValue > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard className="p-3 sm:p-4">
-                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 16 }}>Performance Scorecard</h3>
-                <div className="h-[280px] flex items-center justify-center">
-                  {tradeSummary ? (
-                    <div className="flex flex-col items-center gap-4 w-full">
-                      <WinRateDonut winRate={tradeSummary.win_rate} />
-                      <div className="grid grid-cols-3 gap-2 w-full">
-                        {[
-                          { label: 'Total Realized', value: `${(tradeSummary.total_realized_pnl ?? 0) >= 0 ? '+' : '-'}$${Math.abs(tradeSummary.total_realized_pnl ?? 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`, color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' },
-                          { label: `${tradeSummary.total_trades} Trades`, value: tradeSummary.best_pnl_pct ? `Best: ${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(0)}%` : '—', color: '#a78bfa' },
-                          { label: 'Avg Hold', value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d', color: '#94a3b8' },
-                        ].map(s => (
-                          <div key={s.label} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</div>
-                            <div className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>{s.label}</div>
+                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 12 }}>Performance Scorecard</h3>
+                {tradeSummary ? (
+                  <div className="flex flex-col gap-3">
+                    {/* Donut + stats row */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0">
+                        <WinRateDonut winRate={tradeSummary.win_rate} />
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Total Realized', value: `${(tradeSummary.total_realized_pnl ?? 0) >= 0 ? '+' : '-'}$${Math.abs(tradeSummary.total_realized_pnl ?? 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`, color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' },
+                            { label: 'Avg Return', value: `${(tradeSummary.avg_return_pct ?? 0) >= 0 ? '+' : ''}${(tradeSummary.avg_return_pct ?? 0).toFixed(1)}%`, color: (tradeSummary.avg_return_pct ?? 0) >= 0 ? '#4ade80' : '#f87171' },
+                            { label: `${tradeSummary.win_count ?? 0}W / ${tradeSummary.loss_count ?? 0}L`, value: `${tradeSummary.total_trades} position${tradeSummary.total_trades !== 1 ? 's' : ''}`, color: '#a78bfa' },
+                            { label: 'Avg Hold', value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d', color: '#94a3b8' },
+                          ].map(s => (
+                            <div key={s.label} className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <div className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</div>
+                              <div className="text-[10px] mt-0.5 truncate" style={{ color: '#64748b' }}>{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Best / Worst trade */}
+                    {(tradeSummary.best_pnl_pct || tradeSummary.worst_pnl_pct) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {tradeSummary.best_pnl_pct && (
+                          <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(74,222,128,0.05)', border: '1px solid rgba(74,222,128,0.15)' }}>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#64748b' }}>Best Trade</div>
+                              <div className="text-sm font-bold text-white truncate">{tradeSummary.best_pnl_pct.symbol}</div>
+                            </div>
+                            <span className="text-xs font-bold flex-shrink-0" style={{ color: '#4ade80' }}>+{(tradeSummary.best_pnl_pct.realized_pnl_pct ?? 0).toFixed(1)}%</span>
+                          </div>
+                        )}
+                        {tradeSummary.worst_pnl_pct && (
+                          <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{ background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#64748b' }}>Worst Trade</div>
+                              <div className="text-sm font-bold text-white truncate">{tradeSummary.worst_pnl_pct.symbol}</div>
+                            </div>
+                            <span className="text-xs font-bold flex-shrink-0" style={{ color: '#f87171' }}>{(tradeSummary.worst_pnl_pct.realized_pnl_pct ?? 0).toFixed(1)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Recent trades strip */}
+                    {tradeSummary.recent_trades?.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: '#475569' }}>Recent Closed</div>
+                        {tradeSummary.recent_trades.slice(0, 4).map((rt: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <span className="font-bold w-12 flex-shrink-0 text-white">{rt.ticker}</span>
+                            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.04)' }}></div>
+                            <span className="font-semibold flex-shrink-0" style={{ color: (rt.pnl_pct ?? 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                              {(rt.pnl_pct ?? 0) >= 0 ? '+' : ''}{(rt.pnl_pct ?? 0).toFixed(1)}%
+                            </span>
+                            <span className="flex-shrink-0 text-[10px]" style={{ color: '#475569' }}>
+                              {rt.exit_date ? new Date(rt.exit_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''}
+                            </span>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center">
+                    )}
+                    {(tradeSummary.open_partial_trades ?? 0) > 0 && (
+                      <div className="text-[10px] px-2 py-1 rounded" style={{ color: '#d97706', background: 'rgba(217,119,6,0.08)' }}>
+                        {tradeSummary.open_partial_trades} partial position{tradeSummary.open_partial_trades !== 1 ? 's' : ''} still open
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-center">
+                    <div>
                       <div className="text-sm" style={{ color: '#64748b' }}>No closed trades yet</div>
                       <div className="text-xs mt-1" style={{ color: '#475569' }}>Win rate appears after your first closed position.</div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </GlassCard>
 
               <GlassCard className="p-3 sm:p-4">
@@ -2112,13 +2184,15 @@ export default function StocksPortfolioPage() {
 
                   if (tradeGroups.length > 0) {
                     // ── Grouped rendering (new backend format) ──────────────────
-                    const partials    = tradeGroups.filter((g: any) => !g.is_fully_closed);
-                    const fullyClosed = tradeGroups.filter((g: any) => g.is_fully_closed);
+                    const isFullyClosed = (g: any) => g.is_fully_closed ?? g.is_full_close ?? false;
+                    const groupExitDate = (g: any) => g.exit_date ?? g.final_exit_date ?? null;
+                    const partials    = tradeGroups.filter((g: any) => !isFullyClosed(g));
+                    const fullyClosed = tradeGroups.filter((g: any) => isFullyClosed(g));
 
-                    // Group fully-closed by month of final_exit_date
+                    // Group fully-closed by month of exit_date / final_exit_date
                     const monthBuckets: { monthKey: string; label: string; groups: any[] }[] = [];
                     fullyClosed.forEach((g: any) => {
-                      const d = g.final_exit_date ? new Date(g.final_exit_date) : null;
+                      const d = groupExitDate(g) ? new Date(groupExitDate(g)) : null;
                       const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
                       const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
                       const last = monthBuckets[monthBuckets.length - 1];
@@ -2129,16 +2203,18 @@ export default function StocksPortfolioPage() {
                     const renderGroupCard = (g: any) => {
                       const groupId     = g.trade_group_id ?? g.ticker;
                       const ticker      = (g.ticker ?? '').toUpperCase();
-                      const avgEntry    = g.avg_entry_price ?? 0;
-                      const avgExit     = g.avg_exit_price ?? 0;
-                      const sharesSold  = g.total_shares_sold ?? 0;
+                      // Accept both old field names (total_*) and new backward-compat aliases
+                      const avgEntry    = g.entry_price    ?? g.avg_entry_price   ?? 0;
+                      const avgExit     = g.exit_price     ?? g.avg_exit_price    ?? 0;
+                      const sharesSold  = g.shares         ?? g.total_shares_sold ?? 0;
                       const costBasis   = g.total_cost_basis ?? (sharesSold * avgEntry);
-                      const pl          = g.total_realized_pnl ?? 0;
-                      const plPct       = g.total_realized_pnl_pct ?? 0;
+                      const pl          = g.realized_pnl   ?? g.total_realized_pnl     ?? 0;
+                      const plPct       = g.realized_pnl_pct ?? g.total_realized_pnl_pct ?? 0;
+                      const isFully     = g.is_fully_closed ?? g.is_full_close ?? false;
                       const isWin       = pl >= 0;
-                      const borderClr   = g.is_fully_closed ? (isWin ? '#4ade80' : '#f87171') : '#d97706';
+                      const borderClr   = isFully ? (isWin ? '#4ade80' : '#f87171') : '#d97706';
                       const plClr       = isWin ? '#4ade80' : '#f87171';
-                      const exitDate    = g.final_exit_date ?? null;
+                      const exitDate    = g.exit_date ?? g.final_exit_date ?? null;
                       const exitDisplay = exitDate
                         ? new Date(exitDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : '—';

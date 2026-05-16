@@ -1,0 +1,69 @@
+Frontend Instructions: Fix Portfolio Dashboard — Performance Score & Trade Journal
+Page: Portfolio Dashboard tab
+Endpoint: GET /api/portfolio/closed-trades (same as before, response now richer)
+
+The response now has three top-level keys:
+
+data.closed_trades        → flat array (same shape as before — use this for Trade Journal)
+data.trade_groups         → grouped array (one entry per position lifecycle)
+data.portfolio_performance → pre-computed win rate / stats object (use this for Performance Score)
+
+Performance Score card (Win Rate section)
+Read from data.portfolio_performance — do not compute it yourself:
+
+const perf = data.portfolio_performance
+perf.win_rate              // number, 0-100  → e.g. "88.9%"
+perf.win_count             // int            → e.g. 8
+perf.loss_count            // int            → e.g. 1
+perf.total_closed_trades   // int            → total fully-closed positions
+perf.avg_return_pct        // number         → average % return across all closed trades
+perf.total_realized_pnl    // number (USD)   → total $ realized P&L
+perf.avg_hold_days         // number         → average days held
+perf.best_trade            // {ticker, pnl_pct, pnl, exit_date}
+perf.worst_trade           // {ticker, pnl_pct, pnl, exit_date}
+perf.recent_trades         // [{ticker, pnl_pct, pnl, exit_date, won: bool}] newest first, up to 10
+perf.open_partial_trades   // int → positions that were partially sold but still open
+
+Win rate logic: counts per position lifecycle (one AAPL entry from open→close = one trade), not per individual buy or sell lot. This is what the user wants.
+
+Trade Journal / Trade History section
+Read from data.closed_trades — this is the same flat array it always was, unchanged:
+
+const trades = data.closed_trades   // sorted newest exit_date first
+// Each trade has these fields (same as before):
+trade.ticker
+trade.shares
+trade.entry_date
+trade.exit_date
+trade.entry_price        // (also available as avg_entry_price)
+trade.exit_price
+trade.realized_pnl       // dollar P&L
+trade.realized_pnl_pct   // percentage P&L
+trade.holding_period_days
+trade.is_full_close      // true = position fully exited
+trade.notes
+trade.current_price      // live price (enriched)
+
+Or use data.trade_groups for the lifecycle-grouped view (one card per position):
+
+const groups = data.trade_groups
+// Each group has ALL the same field names as flat trades (backward-compat aliases added):
+group.ticker
+group.realized_pnl_pct     // same as total_realized_pnl_pct
+group.realized_pnl         // same as total_realized_pnl
+group.shares               // total shares sold across all sell events
+group.entry_price          // weighted avg entry price
+group.exit_price           // weighted avg exit price
+group.exit_date            // final exit date (if fully closed)
+group.is_full_close        // same as is_fully_closed
+group.is_fully_closed      // true when position fully exited
+group.sell_events          // array of individual sell rows (for partial sells)
+group.final_exit_date      // null if still partially open
+group.holding_period_days
+group.current_price
+
+If Trade Journal shows all sell events separately → use data.closed_trades
+If Trade Journal shows one card per position → use data.trade_groups
+
+What likely broke it
+When the grouped trade lifecycle feature was added, the frontend may have switched to reading from data.trade_groups but the field names were different (total_realized_pnl_pct instead of realized_pnl_pct, is_fully_closed instead of is_full_close, etc.), causing blanks. Both field name versions now exist on every group object.
