@@ -1,0 +1,116 @@
+Let me check what's already in the backend for these endpoints:
+
+
+3 actions
+Now let me check the exact GET and PATCH endpoint bodies in main.py:
+
+
+2 actions
+The picture is clear. The backend endpoints all exist and work — the only gap is that the frontend expects symbol and avg_entry_price as field names, while the DB stores ticker and entry_price. I need to add those as aliases in _row_to_dict so every response path (GET, POST, PATCH) returns them automatically.
+
+
+2 actions
+Now restart the server and verify the response shape in one shot:
+
+
+4 actions
+All done. Here's what was needed and what changed:
+
+The gap: The frontend's new Closed Positions table reads symbol and avg_entry_price from each trade record, but the backend stores and returns ticker and entry_price. Nothing else was missing — the GET, PATCH, and DELETE endpoints all existed and were correctly wired.
+
+The fix: Added two alias fields to _row_to_dict in closed_trades_store.py:
+
+d["symbol"] = d.get("ticker")
+d["avg_entry_price"] = d.get("entry_price")
+
+This runs on every load path (GET list, POST response, PATCH response), so the frontend gets both naming conventions in every response without any data duplication or schema changes.
+
+Verified live: GET /api/portfolio/closed-trades now returns all 3 stored trades with the full expected shape — symbol, avg_entry_price, exit_price, realized_pnl, realized_pnl_pct, holding_period_days, exit_date, and sell_type all present and correct.
+
+
+Checkpoint made
+20 minutes ago
+
+Worked for 1 minute
+ok that's great but does that mess up the shared tradier api call system we have for automated price/volume/profile/quote calls for the same tickers(stocks) on different sections of different pages/services of my website? We should only be hitting Tradier, FMP, Finnhub, or any other financial API in the same exact automated/scheduled Tradier call once on the same schedule for duplicate stocks/tickers
+
+16 minutes ago
+
+Evaluating ticker deduplication system
+Good question. Let me trace the existing shared price-fetch architecture before making any judgments:
+
+
+2 actions
+Let me check exactly what the /api/fmp/quotes endpoint does and how the active holdings price fetch works so I can give you a precise answer:
+
+
+6 actions
+The grep shows /api/fmp/quotes doesn't exist as a backend endpoint. Let me find what endpoint the frontend is actually calling and how the portfolio quote fetch is wired:
+
+
+10 actions
+The frontend files aren't in the backend directory. Let me find them:
+
+
+3 actions
+The frontend is a separate project — the backend is what I own here. Let me now fully trace how the active holdings price fetch actually works vs what the closed positions section would need, so I can give a precise answer and the right fix:
+
+
+3 actions
+Now I have the full picture. Let me read the Tradier per-ticker cache implementation to confirm how to read from it cleanly:
+
+
+2 actions
+Now I have the full, precise picture. Here's what's actually happening:
+
+Two problems to fix:
+
+The frontend's closedPrices query hits /api/fmp/quotes?symbols=... — that endpoint doesn't exist in the backend. Those calls are 404ing. Closed positions have no live prices right now.
+
+Even if the endpoint existed, making a separate price fetch per section is wrong. The POST /api/portfolio/quotes uses a set-level cache key (portfolio:quotes:{sorted tickers}) — if active holdings fetch [AEHR, SIVEF] and closed positions separately fetch [AEHR, FPLSF], that's two different cache keys → two Tradier calls even for AEHR.
+
+The correct fix: Enrich GET /api/portfolio/closed-trades with current_price server-side, using the Tradier per-ticker cache (tradier:quote:sym:{SYM}) that IS already shared across every caller on the site. Then the frontend needs zero extra price calls — it gets the price in the same response it already fetches.
+
+
+4 actions
+Server is already running but needs a restart to pick up the new code:
+
+
+4 actions
+current_price=None for all three — likely because FPLSF and AEHR are OTC tickers Tradier doesn't cover. Let me check Tradier's actual response and confirm the API key is set:
+
+
+3 actions
+Good — yfinance covers OTC tickers perfectly. Let me fix the constructor call and add the yfinance fallback for tickers Tradier misses:
+
+
+2 actions
+TradierProvider takes api_key and sandbox — not account_id. Fixing that and adding the yfinance fallback for OTC tickers in one edit:
+
+
+6 actions
+All three trades now have current_price populated. Let me write the commit message and wrap up:
+
+
+3 actions
+Here's the straight answer to your question, and what was fixed:
+
+The short answer: yes, it was a problem — and it's now fixed.
+
+What the frontend agent built (and why it was wrong):
+It added a separate closedPrices price query that hit /api/fmp/quotes?symbols=... every 60 seconds. Two problems with that:
+
+That endpoint doesn't exist in the backend — the calls were 404ing, so closed positions had no live prices at all
+Even if it had existed, the existing POST /api/portfolio/quotes uses a set-level cache key (portfolio:quotes:{sorted tickers}). Active holdings fetching [AEHR, SIVEF] and closed positions separately fetching [AEHR, FPLSF] are two different cache keys → two separate Tradier API calls even for the overlap
+What the correct architecture is:
+The Tradier provider already has a per-ticker shared cache at tradier:quote:sym:{SYM} with a 60-second TTL that is used by every part of the site — watchlist, screener, active holdings, caelyn terminal. Any ticker priced by any one of those within 60s is free for everyone else.
+
+What was fixed:
+The GET /api/portfolio/closed-trades endpoint now enriches every trade record with current_price server-side using that shared cache:
+
+Tradier first — reads from the shared per-ticker cache. If active holdings already fetched AEHR, it costs zero API calls
+yfinance fallback — for OTC/pink-sheet tickers (like FPLSF) that Tradier doesn't cover, runs a background thread fetch
+current_price is returned inline — the frontend gets it in the same response it already fetches, no separate price call needed at all
+Verified live: all 3 closed trades now return current_price correctly (FPLSF: $29.05, AEHR: $99.50).
+
+Tell your frontend agent: remove the separate closedPrices query entirely. current_price is now in every record from GET /api/portfolio/closed-trades — use trade.current_price directly from that response.

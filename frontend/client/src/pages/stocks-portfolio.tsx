@@ -214,26 +214,9 @@ export default function StocksPortfolioPage() {
     };
   }, [tradeHistory]);
 
-  // Unique tickers from closed trades — for live current-price lookup
-  const closedTickers = useMemo(() =>
-    [...new Set(tradeHistory.map((t: any) => (t.symbol ?? t.ticker ?? '').toUpperCase()).filter(Boolean))],
-    [tradeHistory]
-  );
-  const { data: closedPricesRaw } = useQuery<Record<string, number>>({
-    queryKey: ['closed-positions-prices', closedTickers.join(',')],
-    queryFn: async () => {
-      if (!closedTickers.length) return {};
-      const res = await fetch(`/api/fmp/quotes?symbols=${closedTickers.join(',')}`);
-      if (!res.ok) return {};
-      const arr = await res.json().catch(() => []);
-      const map: Record<string, number> = {};
-      if (Array.isArray(arr)) arr.forEach((q: any) => { if (q.symbol && q.price > 0) map[q.symbol] = q.price; });
-      return map;
-    },
-    enabled: closedTickers.length > 0,
-    staleTime: 60_000,
-  });
-  const closedPrices: Record<string, number> = closedPricesRaw ?? {};
+  // current_price is now returned inline by GET /api/portfolio/closed-trades
+  // (enriched server-side via the shared Tradier per-ticker cache, yfinance fallback for OTC)
+  // No separate price fetch needed — avoids duplicate API calls for overlapping tickers.
 
   const [closedPanelOpen, setClosedPanelOpen] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('weight');
@@ -1811,7 +1794,7 @@ export default function StocksPortfolioPage() {
                           const shares       = t.shares ?? 0;
                           const invested     = shares * avgEntry;
                           const exitPrice    = t.exit_price ?? 0;
-                          const curPrice     = closedPrices[ticker] ?? quotes[ticker]?.price ?? 0;
+                          const curPrice     = t.current_price ?? 0;
                           const pl           = t.realized_pnl ?? 0;
                           const plPct        = t.realized_pnl_pct ?? 0;
                           const plClr        = pl >= 0 ? '#4ade80' : '#f87171';
