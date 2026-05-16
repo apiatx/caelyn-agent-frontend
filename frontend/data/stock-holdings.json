@@ -1,6 +1,6 @@
 [
   {
-    "id": "mp76zv1oyebm",
+    "id": "mp7p1vt4rqzf",
     "ticker": "AEHR",
     "shares": 232,
     "avgCost": 45,
@@ -9,7 +9,7 @@
     "date_added": "2026-05-12T05:27:37.636Z"
   },
   {
-    "id": "mp76zv1owcn1",
+    "id": "mp7p1vt4nwg2",
     "ticker": "SIVEF",
     "shares": 3996,
     "avgCost": 1.41,
@@ -18,7 +18,7 @@
     "date_added": "2026-05-12T05:28:39.083Z"
   },
   {
-    "id": "mp76zv1o7w9d",
+    "id": "mp7p1vt40td8",
     "ticker": "MRVL",
     "shares": 111,
     "avgCost": 110,
@@ -27,7 +27,7 @@
     "date_added": "2026-05-12T05:31:10.040Z"
   },
   {
-    "id": "mp76zv1o6au7",
+    "id": "mp7p1vt4hiqp",
     "ticker": "PENG",
     "shares": 422,
     "avgCost": 35,
@@ -36,7 +36,7 @@
     "date_added": "2026-05-12T05:31:46.661Z"
   },
   {
-    "id": "mp76zv1o28gn",
+    "id": "mp7p1vt4rrp8",
     "ticker": "AMKR",
     "shares": 216,
     "avgCost": 48,
@@ -45,7 +45,7 @@
     "date_added": "2026-05-12T05:32:17.175Z"
   },
   {
-    "id": "mp76zv1ou8z0",
+    "id": "mp7p1vt40nsa",
     "ticker": "IQEPF",
     "shares": 19875,
     "avgCost": 0.35,
@@ -54,7 +54,7 @@
     "date_added": "2026-05-12T05:34:34.282Z"
   },
   {
-    "id": "mp76zv1ojk6t",
+    "id": "mp7p1vt4m8rb",
     "ticker": "SLOIF",
     "shares": 79,
     "avgCost": 61,
@@ -63,7 +63,7 @@
     "date_added": "2026-05-12T05:36:09.925Z"
   },
   {
-    "id": "mp76zv1orkwu",
+    "id": "mp7p1vt4csi1",
     "ticker": "TRT",
     "shares": 1160,
     "avgCost": 6.2,
@@ -72,7 +72,7 @@
     "date_added": "2026-05-12T05:37:05.303Z"
   },
   {
-    "id": "mp76zv1o0z6j",
+    "id": "mp7p1vt4ermo",
     "ticker": "NBIS",
     "shares": 76,
     "avgCost": 87,
@@ -81,7 +81,7 @@
     "date_added": "2026-05-12T05:38:56.562Z"
   },
   {
-    "id": "mp76zv1ogwdq",
+    "id": "mp7p1vt4ujhk",
     "ticker": "VECO",
     "shares": 234,
     "avgCost": 42,
@@ -90,7 +90,7 @@
     "date_added": "2026-05-12T05:40:21.152Z"
   },
   {
-    "id": "mp76zv1ohxsi",
+    "id": "mp7p1vt4c0ox",
     "ticker": "AMPX",
     "shares": 625,
     "avgCost": 15,
@@ -99,7 +99,7 @@
     "date_added": "2026-05-12T05:41:37.630Z"
   },
   {
-    "id": "mp76zv1otz3s",
+    "id": "mp7p1vt44ngq",
     "ticker": "LWLG",
     "shares": 473,
     "avgCost": 8.33,
@@ -108,7 +108,7 @@
     "date_added": "2026-05-12T05:42:41.507Z"
   },
   {
-    "id": "mp76zv1ox0ja",
+    "id": "mp7p1vt4c8k6",
     "ticker": "OUST",
     "shares": 302,
     "avgCost": 26,
@@ -117,7 +117,7 @@
     "date_added": "2026-05-13T05:21:25.990Z"
   },
   {
-    "id": "mp76zv1od793",
+    "id": "mp7p1vt467sk",
     "ticker": "SLNH",
     "shares": 5404,
     "avgCost": 1.59,
@@ -126,7 +126,7 @@
     "date_added": "2026-05-13T05:22:12.000Z"
   },
   {
-    "id": "mp76zv1owpjd",
+    "id": "mp7p1vt4baml",
     "ticker": "NRGV",
     "shares": 1969,
     "avgCost": 5.17,
@@ -135,7 +135,7 @@
     "date_added": "2026-05-13T05:22:58.686Z"
   },
   {
-    "id": "mp76zv1ol5og",
+    "id": "mp7p1vt4e1dj",
     "ticker": "P",
     "shares": 123,
     "avgCost": 81,
@@ -144,7 +144,7 @@
     "date_added": "2026-05-13T05:23:15.653Z"
   },
   {
-    "id": "mp76zv1ork75",
+    "id": "mp7p1vt44138",
     "ticker": "VPG",
     "shares": 104,
     "avgCost": 63,
@@ -153,16 +153,7 @@
     "date_added": "2026-05-13T05:24:09.019Z"
   },
   {
-    "id": "mp76zv1o3bd6",
-    "ticker": "FPLSF",
-    "shares": 197,
-    "avgCost": 25,
-    "assetType": "stock",
-    "addedAt": "2026-05-13T05:27:13.301Z",
-    "date_added": "2026-05-13T05:27:13.301Z"
-  },
-  {
-    "id": "mp76zv1ohbdo",
+    "id": "mp7p1vt46n5n",
     "ticker": "SILC",
     "shares": 176,
     "avgCost": 28.07,

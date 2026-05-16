@@ -24,5 +24,18 @@
     "realized_pnl_pct": 0,
     "holding_period_days": 0,
     "source": "deleted_from_dashboard"
+  },
+  {
+    "id": "mp7p0w8xn4nc-closed-1778896492452",
+    "symbol": "FPLSF",
+    "shares": 197,
+    "avg_entry_price": 25,
+    "exit_price": 28.56,
+    "entry_date": "2026-05-13T05:27:13.301Z",
+    "exit_date": "2026-05-16T01:54:52.452Z",
+    "realized_pnl": 701.3199999999997,
+    "realized_pnl_pct": 14.239999999999995,
+    "holding_period_days": 3,
+    "source": "deleted_from_dashboard"
   }
 ]

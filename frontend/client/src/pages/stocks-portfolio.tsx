@@ -186,17 +186,56 @@ export default function StocksPortfolioPage() {
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
-  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ trades: any[]; summary: any }>({
+  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
       const res = await fetch('/api/portfolio/closed-trades');
-      if (!res.ok) return { trades: [], summary: null };
+      if (!res.ok) return { closed_trades: [], count: 0 };
       return res.json();
     },
     staleTime: 30_000,
   });
-  const tradeHistory: any[] = closedTradesData?.trades ?? [];
-  const tradeSummary: any = closedTradesData?.summary ?? null;
+  const tradeHistory: any[] = closedTradesData?.closed_trades ?? [];
+
+  // Compute summary client-side (FastAPI doesn't return a summary field)
+  const tradeSummary = useMemo(() => {
+    if (!tradeHistory.length) return null;
+    const totalPnl = tradeHistory.reduce((s: number, t: any) => s + (t.realized_pnl ?? 0), 0);
+    const wins = tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) > 0);
+    const sorted = [...tradeHistory].sort((a, b) => (b.realized_pnl_pct ?? 0) - (a.realized_pnl_pct ?? 0));
+    const avgDays = tradeHistory.reduce((s: number, t: any) => s + (t.holding_period_days ?? 0), 0) / tradeHistory.length;
+    return {
+      total_trades: tradeHistory.length,
+      total_realized_pnl: totalPnl,
+      win_rate: Math.round((wins.length / tradeHistory.length) * 100),
+      best_pnl_pct: sorted[0] ? { symbol: sorted[0].symbol ?? sorted[0].ticker, realized_pnl_pct: sorted[0].realized_pnl_pct ?? 0 } : null,
+      worst_pnl_pct: sorted[sorted.length - 1] ? { symbol: sorted[sorted.length - 1].symbol ?? sorted[sorted.length - 1].ticker, realized_pnl_pct: sorted[sorted.length - 1].realized_pnl_pct ?? 0 } : null,
+      avg_holding_period_days: Math.round(avgDays),
+    };
+  }, [tradeHistory]);
+
+  // Unique tickers from closed trades — for live current-price lookup
+  const closedTickers = useMemo(() =>
+    [...new Set(tradeHistory.map((t: any) => (t.symbol ?? t.ticker ?? '').toUpperCase()).filter(Boolean))],
+    [tradeHistory]
+  );
+  const { data: closedPricesRaw } = useQuery<Record<string, number>>({
+    queryKey: ['closed-positions-prices', closedTickers.join(',')],
+    queryFn: async () => {
+      if (!closedTickers.length) return {};
+      const res = await fetch(`/api/fmp/quotes?symbols=${closedTickers.join(',')}`);
+      if (!res.ok) return {};
+      const arr = await res.json().catch(() => []);
+      const map: Record<string, number> = {};
+      if (Array.isArray(arr)) arr.forEach((q: any) => { if (q.symbol && q.price > 0) map[q.symbol] = q.price; });
+      return map;
+    },
+    enabled: closedTickers.length > 0,
+    staleTime: 60_000,
+  });
+  const closedPrices: Record<string, number> = closedPricesRaw ?? {};
+
+  const [closedPanelOpen, setClosedPanelOpen] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('weight');
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
@@ -335,17 +374,16 @@ export default function StocksPortfolioPage() {
 
   useEffect(() => {
     if (!closedTradesData) return;
-    const trades = closedTradesData.trades ?? [];
-    const summary = closedTradesData.summary;
+    const trades = closedTradesData.closed_trades ?? [];
     console.log('[portfolio-history-ui]', JSON.stringify({
       source: 'GET /api/portfolio/closed-trades',
       tradeCount: trades.length,
       tickers: trades.map((t: any) => (t.symbol || t.ticker || '').toUpperCase()).filter(Boolean).sort(),
-      hasSummary: summary != null,
-      totalRealizedPnl: summary?.total_realized_pnl ?? null,
-      bestTicker: summary?.best_pnl_pct?.symbol ?? null,
+      hasSummary: tradeSummary != null,
+      totalRealizedPnl: tradeSummary?.total_realized_pnl ?? null,
+      bestTicker: tradeSummary?.best_pnl_pct?.symbol ?? null,
     }));
-  }, [closedTradesData]);
+  }, [closedTradesData, tradeSummary]);
 
   const addHolding = async () => {
     if (!newTicker.trim() || !newShares || !newAvgCost) return;
@@ -1668,104 +1706,216 @@ export default function StocksPortfolioPage() {
             </GlassCard>
           )}
 
-          {/* Closed Positions / Trade History */}
-          {tradeHistory.length > 0 && (
-            <GlassCard className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingDown className="w-4 h-4 text-slate-400" />
-                <h3 className="text-sm font-semibold text-white">Closed Positions</h3>
-                <span className="ml-1 text-xs text-slate-500">{tradeHistory.length} trade{tradeHistory.length !== 1 ? 's' : ''}</span>
-              </div>
-              {tradeSummary && tradeSummary.total_trades > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-                  {[
-                    { label: 'Total Realized', value: tradeSummary.total_realized_pnl != null ? (tradeSummary.total_realized_pnl >= 0 ? `+$${tradeSummary.total_realized_pnl.toFixed(2)}` : `-$${Math.abs(tradeSummary.total_realized_pnl).toFixed(2)}`) : '—', color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' },
-                    { label: 'Best Trade', value: tradeSummary.best_pnl_pct ? `${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(1)}%` : '—', color: '#4ade80' },
-                    { label: 'Worst Trade', value: tradeSummary.worst_pnl_pct ? `${tradeSummary.worst_pnl_pct.symbol} ${tradeSummary.worst_pnl_pct.realized_pnl_pct.toFixed(1)}%` : '—', color: '#f87171' },
-                    { label: 'Avg Hold', value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d', color: '#94a3b8' },
-                  ].map(s => (
-                    <div key={s.label} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
+          {/* ── Closed Positions / Trade History ─────────────────────── */}
+          <GlassCard className="p-0 overflow-hidden">
+            {/* Collapsible header */}
+            <button
+              className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
+              onClick={() => setClosedPanelOpen(o => !o)}
+            >
+              <TrendingDown className="w-4 h-4 flex-shrink-0" style={{ color: '#64748b' }} />
+              <span className="text-sm font-semibold text-white">Closed Positions</span>
+              {tradeHistory.length > 0 && (
+                <span className="text-xs ml-1" style={{ color: '#64748b' }}>
+                  {tradeHistory.length} trade{tradeHistory.length !== 1 ? 's' : ''}
+                </span>
               )}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      {['Symbol','Shares','Entry $','Exit $','Exit Date','P&L','P&L %','Days',''].map(h => (
-                        <th key={h} className={`pb-2 text-slate-400 font-medium text-[11px] ${h === 'Symbol' ? 'text-left pr-3' : h === '' ? 'text-right pl-2 w-12' : 'text-right px-2'}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tradeHistory.map((t: any, i: number) => {
-                      const tradeId = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
-                      const isEditingClosed = editingClosedId === tradeId;
-                      const pl = t.realized_pnl ?? 0;
-                      const plPct = t.realized_pnl_pct ?? 0;
-                      const clr = pl >= 0 ? '#4ade80' : '#f87171';
-                      const exitDateDisplay = t.exit_date ? t.exit_date.split('T')[0] : '—';
-                      return (
-                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isEditingClosed ? 'rgba(92,200,240,0.04)' : 'transparent' }}>
-                          <td className="py-2 pr-3 font-bold text-white">{t.symbol ?? t.ticker}</td>
-                          <td className="text-right py-2 px-2 text-slate-400">{t.shares}</td>
-                          <td className="text-right py-2 px-2 text-slate-400">${(t.avg_entry_price ?? t.entry_price ?? 0).toFixed(2)}</td>
-                          <td className="text-right py-2 px-2 text-slate-400">
-                            {isEditingClosed ? (
-                              <input
-                                type="number"
-                                value={editClosedExitPrice}
-                                onChange={e => setEditClosedExitPrice(e.target.value)}
-                                className="w-20 bg-transparent border-b border-[#5cc8f0]/60 text-white text-right text-xs focus:outline-none"
-                              />
-                            ) : `$${(t.exit_price ?? 0).toFixed(2)}`}
-                          </td>
-                          <td className="text-right py-2 px-2 text-slate-400">
-                            {isEditingClosed ? (
-                              <input
-                                type="date"
-                                value={editClosedExitDate}
-                                onChange={e => setEditClosedExitDate(e.target.value)}
-                                className="bg-transparent border-b border-[#5cc8f0]/60 text-white text-xs focus:outline-none"
-                                style={{ colorScheme: 'dark' as any }}
-                              />
-                            ) : exitDateDisplay}
-                          </td>
-                          <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{pl >= 0 ? '+' : ''}${Math.abs(pl).toFixed(2)}</td>
-                          <td className="text-right py-2 px-2 font-medium" style={{ color: clr }}>{plPct >= 0 ? '+' : ''}{plPct.toFixed(1)}%</td>
-                          <td className="text-right py-2 pl-2 text-slate-400">{t.holding_period_days ?? 0}d</td>
-                          <td className="text-right py-2 pl-2">
-                            {isEditingClosed ? (
-                              <div className="flex items-center justify-end gap-1">
-                                <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
-                                  <Check className="w-3 h-3" />
-                                </button>
-                                <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-end gap-1">
-                                <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit exit price / date" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
-                                  <Pencil className="w-2.5 h-2.5" />
-                                </button>
-                                <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete trade record" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                  <Trash2 className="w-2.5 h-2.5" />
-                                </button>
-                              </div>
-                            )}
-                          </td>
+              {tradeSummary && (
+                <span className="ml-auto text-xs font-semibold" style={{ color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' }}>
+                  {(tradeSummary.total_realized_pnl ?? 0) >= 0 ? '+' : ''}${Math.abs(tradeSummary.total_realized_pnl ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} realized
+                </span>
+              )}
+              <span className="ml-2 flex-shrink-0" style={{ color: '#64748b' }}>
+                {closedPanelOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </span>
+            </button>
+
+            {closedPanelOpen && (
+              <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+
+                {/* Summary stats strip */}
+                {tradeSummary && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-3">
+                    {[
+                      {
+                        label: 'Total Realized',
+                        value: tradeSummary.total_realized_pnl != null
+                          ? `${tradeSummary.total_realized_pnl >= 0 ? '+' : '-'}$${Math.abs(tradeSummary.total_realized_pnl).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+                          : '—',
+                        color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171',
+                      },
+                      {
+                        label: `Win Rate (${tradeSummary.total_trades} trades)`,
+                        value: `${tradeSummary.win_rate}%`,
+                        color: tradeSummary.win_rate >= 50 ? '#4ade80' : '#f87171',
+                      },
+                      {
+                        label: 'Best Trade',
+                        value: tradeSummary.best_pnl_pct
+                          ? `${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(1)}%`
+                          : '—',
+                        color: '#4ade80',
+                      },
+                      {
+                        label: 'Avg Hold',
+                        value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d',
+                        color: '#94a3b8',
+                      },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="text-xs font-semibold truncate" style={{ color: s.color }}>{s.value}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {tradeHistory.length === 0 && (
+                  <div className="py-10 text-center">
+                    <TrendingDown className="w-8 h-8 mx-auto mb-3 opacity-20" style={{ color: '#64748b' }} />
+                    <div className="text-sm text-slate-500">No closed positions yet</div>
+                    <div className="text-xs text-slate-600 mt-1">Sell or trim a position to start building your trade history.</div>
+                  </div>
+                )}
+
+                {/* Trade history table */}
+                {tradeHistory.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          {[
+                            { label: 'Ticker',         cls: 'text-left pr-3 pl-0' },
+                            { label: 'Shares',         cls: 'text-right px-2' },
+                            { label: 'Avg Price',      cls: 'text-right px-2' },
+                            { label: 'Invested',       cls: 'text-right px-2' },
+                            { label: 'Close Price',    cls: 'text-right px-2' },
+                            { label: 'Current Price',  cls: 'text-right px-2' },
+                            { label: 'Total P&L',      cls: 'text-right px-2' },
+                            { label: 'P&L %',          cls: 'text-right px-2' },
+                            { label: 'Days',           cls: 'text-right px-2' },
+                            { label: 'Exit Date',      cls: 'text-right px-2' },
+                            { label: '',               cls: 'text-right pl-2 w-12' },
+                          ].map(h => (
+                            <th key={h.label} className={`pb-2 text-[10px] font-semibold uppercase tracking-wider ${h.cls}`} style={{ color: '#64748b' }}>{h.label}</th>
+                          ))}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {tradeHistory.map((t: any, i: number) => {
+                          const tradeId      = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
+                          const isEditing    = editingClosedId === tradeId;
+                          const ticker       = (t.symbol ?? t.ticker ?? '').toUpperCase();
+                          const avgEntry     = t.avg_entry_price ?? t.entry_price ?? 0;
+                          const shares       = t.shares ?? 0;
+                          const invested     = shares * avgEntry;
+                          const exitPrice    = t.exit_price ?? 0;
+                          const curPrice     = closedPrices[ticker] ?? quotes[ticker]?.price ?? 0;
+                          const pl           = t.realized_pnl ?? 0;
+                          const plPct        = t.realized_pnl_pct ?? 0;
+                          const plClr        = pl >= 0 ? '#4ade80' : '#f87171';
+                          const curVsClose   = curPrice > 0 && exitPrice > 0 ? ((curPrice - exitPrice) / exitPrice) * 100 : null;
+                          const exitDisplay  = t.exit_date ? t.exit_date.split('T')[0] : '—';
+                          const rowBg        = isEditing ? 'rgba(92,200,240,0.04)' : 'transparent';
+
+                          return (
+                            <tr key={tradeId} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: rowBg }}>
+                              {/* Ticker */}
+                              <td className="py-2.5 pr-3 pl-0">
+                                <div className="font-bold text-white">{ticker}</div>
+                                {t.sell_type && t.sell_type !== 'full' && (
+                                  <div className="text-[9px] mt-0.5 font-medium uppercase tracking-wide" style={{ color: '#64748b' }}>trim</div>
+                                )}
+                              </td>
+                              {/* Shares */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</td>
+                              {/* Avg Price */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>${avgEntry.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}</td>
+                              {/* Invested */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#a78bfa' }}>
+                                {invested > 0 ? `$${invested.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—'}
+                              </td>
+                              {/* Close Price */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>
+                                {isEditing ? (
+                                  <input
+                                    type="number"
+                                    value={editClosedExitPrice}
+                                    onChange={e => setEditClosedExitPrice(e.target.value)}
+                                    className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none"
+                                    style={{ borderColor: 'rgba(92,200,240,0.6)' }}
+                                  />
+                                ) : exitPrice > 0 ? `$${exitPrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}
+                              </td>
+                              {/* Current Price */}
+                              <td className="text-right py-2.5 px-2">
+                                {curPrice > 0 ? (
+                                  <div>
+                                    <div style={{ color: '#e2e8f0' }}>${curPrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}</div>
+                                    {curVsClose !== null && (
+                                      <div className="text-[9px]" style={{ color: curVsClose >= 0 ? '#4ade80' : '#f87171' }}>
+                                        {curVsClose >= 0 ? '+' : ''}{curVsClose.toFixed(1)}% vs close
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : <span style={{ color: '#475569' }}>—</span>}
+                              </td>
+                              {/* Total P&L */}
+                              <td className="text-right py-2.5 px-2 font-semibold" style={{ color: plClr }}>
+                                {pl >= 0 ? '+' : '-'}${Math.abs(pl).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                              </td>
+                              {/* P&L % */}
+                              <td className="text-right py-2.5 px-2 font-semibold" style={{ color: plClr }}>
+                                {plPct >= 0 ? '+' : ''}{plPct.toFixed(1)}%
+                              </td>
+                              {/* Days */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#64748b' }}>{(t.holding_period_days ?? 0)}d</td>
+                              {/* Exit Date */}
+                              <td className="text-right py-2.5 px-2" style={{ color: '#64748b' }}>
+                                {isEditing ? (
+                                  <input
+                                    type="date"
+                                    value={editClosedExitDate}
+                                    onChange={e => setEditClosedExitDate(e.target.value)}
+                                    className="bg-transparent border-b text-white text-xs focus:outline-none"
+                                    style={{ borderColor: 'rgba(92,200,240,0.6)', colorScheme: 'dark' as any }}
+                                  />
+                                ) : exitDisplay}
+                              </td>
+                              {/* Actions */}
+                              <td className="text-right py-2.5 pl-2">
+                                {isEditing ? (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
+                                      <Check className="w-3 h-3" />
+                                    </button>
+                                    <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
+                                      <Pencil className="w-2.5 h-2.5" />
+                                    </button>
+                                    <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                      <Trash2 className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            </GlassCard>
-          )}
+            )}
+          </GlassCard>
+          {/* ────────────────────────────────────────────────────────────── */}
 
           {/* Section 6: Quick Links */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2 pb-4">
