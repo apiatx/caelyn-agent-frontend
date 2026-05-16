@@ -292,7 +292,7 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
 
         {/* ── Tab Content ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} />}
+          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} />}
           {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
           {activeTab === 'news' && <NewsTab ticker={ticker} items={newsItems} />}
           {activeTab === 'deep-dive' && (
@@ -315,8 +315,29 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
 }
 
 /* ═══ Overview Tab ═══════════════════════════════════════════════════ */
-function OverviewTab({ stock, ticker }: { stock: any; ticker: string }) {
-  const exchange = ticker.startsWith('BTC') || ticker.startsWith('ETH') ? 'BINANCE' : 'NASDAQ';
+function resolveTVExchange(ticker: string, stock: any, csvRow: any): string {
+  const t = ticker.toUpperCase();
+  // Crypto — detect common base currencies or exchange-prefixed symbols
+  const cryptoBases = ['BTC','ETH','SOL','BNB','ADA','XRP','DOT','AVAX','MATIC','LINK','UNI','DOGE','SHIB','LTC','ATOM'];
+  if (cryptoBases.some(b => t.startsWith(b))) return 'BINANCE';
+
+  // Use exchange field from stock analysis data or CSV row (FMP uses exchangeShortName)
+  const raw: string = (
+    stock?.exchangeShortName || stock?.exchange ||
+    csvRow?.exchangeShortName || csvRow?.exchange || csvRow?.Exchange || ''
+  ).toUpperCase().trim();
+
+  if (raw === 'NASDAQ') return 'NASDAQ';
+  if (raw === 'NYSE' || raw === 'NYQ' || raw === 'NYS') return 'NYSE';
+  if (raw === 'AMEX' || raw === 'NYSEARCA' || raw === 'NYSE ARCA' || raw === 'BATS') return 'AMEX';
+  if (raw === 'OTC' || raw === 'OTCBB' || raw === 'PINK' || raw === 'OTCMKTS') return 'OTC';
+
+  // Fallback: NYSE is far more common than NASDAQ for unknown US equities
+  return 'NYSE';
+}
+
+function OverviewTab({ stock, ticker, csvRow }: { stock: any; ticker: string; csvRow?: any }) {
+  const exchange = resolveTVExchange(ticker, stock, csvRow);
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${exchange}:${ticker}`;
 
   const isNewFmt = stock?._format === 'new';
