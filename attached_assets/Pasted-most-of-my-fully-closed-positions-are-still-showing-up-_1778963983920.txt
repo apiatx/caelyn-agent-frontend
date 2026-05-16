@@ -1,0 +1,82 @@
+most of my fully closed positions are still showing up in active portfolio.....
+
+13 minutes ago
+
+Diagnosing portfolio data discrepancies
+Let me look at both the close and sell endpoints to find where the active holding removal happens:
+
+
+6 actions
+The close endpoint looks right. Let me check the sell endpoint and also look directly at the raw DB state:
+
+
+3 actions
+The problem is clear: 8 tickers (AEHR, MRVL, AMKR, VECO, AMPX, LWLG, P, VPG) exist in both active holdings and closed trades. FPLSF was closed today via the close endpoint and is correctly gone from active — so the endpoint itself works. The older ones were likely logged as closed trades without going through the close endpoint (direct POST to /api/portfolio/closed-trades), leaving them stranded in active.
+
+Let me check save_active_holdings for any silent-failure risk, then do a targeted cleanup:
+
+
+4 actions
+The save function is fine. The root cause: those 8 positions were logged as closed trades (directly via POST) without the close endpoint removing them from active holdings. I'll clean up the stale active records now:
+
+
+2 actions
+The is_full_close field came back as something unexpected — fully_closed_tickers ended up empty. Let me inspect the raw closed trade records directly:
+
+
+2 actions
+All returning False — even FPLSF which was saved with is_full_close=True. The bug is in the _row_to_dict boolean conversion. Let me check it:
+
+
+4 actions
+The INSERT looks correct. Let me check the raw DB value directly to see what PostgreSQL actually stored:
+
+
+2 actions
+Every record has is_full_close=False and trade_group_id=None in the DB — including FPLSF. That means all of these went through the manual POST /api/portfolio/closed-trades endpoint, not the close/sell endpoint, and that endpoint neither sets is_full_close nor removes the ticker from active holdings. Let me check it:
+
+
+2 actions
+I see the full picture now. Three things need to happen in parallel:
+
+Fix the POST /api/portfolio/closed-trades endpoint — it doesn't pass is_full_close, trade_group_id, or remove from active holdings
+Patch the 9 existing DB records — set is_full_close=True and assign trade_group_id
+Remove those 9 tickers from active holdings
+
+2 actions
+Now patch the existing 9 DB records and remove the stale active holdings at the same time:
+
+
+2 actions
+All 9 stale holdings removed. Let me verify the final state:
+
+
+2 actions
+Clean. Zero overlap, all 9 closed trades have is_full_close=True with proper group IDs, and active holdings is down to the correct 10 positions.
+
+Here's what was done and why it happened:
+
+Root cause: All 9 closed trades were added via the manual "add closed trade" form (POST /api/portfolio/closed-trades), which logged the record but never removed the ticker from active holdings — so positions lived in both lists simultaneously.
+
+Three fixes applied:
+
+Existing DB records patched — all 9 records updated to is_full_close=TRUE with fresh trade_group_id UUIDs
+
+Stale active holdings removed — AEHR, MRVL, AMKR, VECO, AMPX, LWLG, P, VPG all cleared from active portfolio (FPLSF was already absent)
+
+POST /api/portfolio/closed-trades fixed going forward — it now:
+
+Accepts is_full_close, sell_type, remaining_shares_after, trade_group_id, cost_method in the request body
+Infers is_full_close=True when remaining_shares_after=0
+Auto-generates a trade_group_id if one isn't provided
+Removes the ticker from active holdings whenever is_full_close=True
+Active portfolio is now 10 positions, closed trades is 9 — no duplicates.
+
+
+3 actions
+All done — your active portfolio is now clean. To recap what was fixed:
+
+10 active positions remain (SIVEF, PENG, IQEPF, SLOIF, TRT, NBIS, OUST, SLNH, NRGV, SILC)
+9 closed trades properly in the closed section only (AEHR, MRVL, AMKR, VECO, AMPX, LWLG, P, VPG, FPLSF) — all marked is_fully_closed: true with group IDs
+Zero overlap between the two lists
+Going forward, any trade logged via the "add closed trade" form will automatically be removed from active holdings when it's flagged as a full close, so this can't happen again.
