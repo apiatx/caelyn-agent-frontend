@@ -1,1 +1,322 @@
-[]
+[
+  {
+    "id": "jh1o2ur1b6t",
+    "ticker": "SIVEF",
+    "shares": 10996,
+    "avgCost": 1.279043,
+    "assetType": "stock",
+    "addedAt": "2026-04-09",
+    "date_added": "2026-04-09",
+    "entry_date": "2026-04-09"
+  },
+  {
+    "id": "781paao3dv5",
+    "ticker": "PENG",
+    "shares": 1266,
+    "avgCost": 35.313333,
+    "assetType": "stock",
+    "addedAt": "2026-05-05",
+    "date_added": "2026-05-05",
+    "entry_date": "2026-05-05"
+  },
+  {
+    "id": "zyan5wbg11",
+    "ticker": "IQEPF",
+    "shares": 19875,
+    "avgCost": 0.35,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "j94qf8h94x",
+    "ticker": "SLOIF",
+    "shares": 79,
+    "avgCost": 61,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "py02thy8x5m",
+    "ticker": "TRT",
+    "shares": 3480,
+    "avgCost": 6.356667,
+    "assetType": "stock",
+    "addedAt": "2026-04-07",
+    "date_added": "2026-04-07",
+    "entry_date": "2026-04-07"
+  },
+  {
+    "id": "an369m7rgwk",
+    "ticker": "NBIS",
+    "shares": 228,
+    "avgCost": 89.893333,
+    "assetType": "stock",
+    "addedAt": "2026-01-05",
+    "date_added": "2026-01-05",
+    "entry_date": "2026-01-05"
+  },
+  {
+    "id": "3bv5l7l1yfj",
+    "ticker": "OUST",
+    "shares": 302,
+    "avgCost": 26,
+    "assetType": "stock",
+    "addedAt": "2026-05-13",
+    "date_added": "2026-05-13",
+    "entry_date": "2026-05-13"
+  },
+  {
+    "id": "u6zpsn3u6i",
+    "ticker": "SLNH",
+    "shares": 29765,
+    "avgCost": 1.928272,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "dsli7udrarw",
+    "ticker": "NRGV",
+    "shares": 1969,
+    "avgCost": 5.17,
+    "assetType": "stock",
+    "addedAt": "2026-05-13",
+    "date_added": "2026-05-13",
+    "entry_date": "2026-05-13"
+  },
+  {
+    "id": "dknpnh0frap",
+    "ticker": "SILC",
+    "shares": 176,
+    "avgCost": 28.07,
+    "assetType": "stock",
+    "addedAt": "2026-05-13",
+    "date_added": "2026-05-13",
+    "entry_date": "2026-05-13"
+  },
+  {
+    "id": "ci7dy55tlmq",
+    "ticker": "BWEN",
+    "shares": 3024,
+    "avgCost": 3.9,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15",
+    "entry_date": "2026-05-15"
+  },
+  {
+    "id": "z3vfzohily",
+    "ticker": "FLNC",
+    "shares": 998,
+    "avgCost": 20.07,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15",
+    "entry_date": "2026-05-15"
+  },
+  {
+    "id": "ywfh8916r2i",
+    "ticker": "P",
+    "shares": 246,
+    "avgCost": 81.34,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "79hn9lssw5c",
+    "ticker": "ARM",
+    "shares": 168,
+    "avgCost": 214.16,
+    "assetType": "stock",
+    "addedAt": "2026-05-07",
+    "date_added": "2026-05-07",
+    "entry_date": "2026-05-07"
+  },
+  {
+    "id": "y9dpif1j3e",
+    "ticker": "HIMX",
+    "shares": 1634,
+    "avgCost": 12.2,
+    "assetType": "stock",
+    "addedAt": "2026-05-05",
+    "date_added": "2026-05-05",
+    "entry_date": "2026-05-05"
+  },
+  {
+    "id": "fo8wpou5wx7",
+    "ticker": "INTT",
+    "shares": 1044,
+    "avgCost": 19.025,
+    "assetType": "stock",
+    "addedAt": "2026-05-04",
+    "date_added": "2026-05-04",
+    "entry_date": "2026-05-04"
+  },
+  {
+    "id": "83lbyhwul0k",
+    "ticker": "LWLG",
+    "shares": 946,
+    "avgCost": 9.3963,
+    "assetType": "stock",
+    "addedAt": "2026-04-10",
+    "date_added": "2026-04-10",
+    "entry_date": "2026-04-10"
+  },
+  {
+    "id": "cqwgss3qgwp",
+    "ticker": "OPTX",
+    "shares": 2126,
+    "avgCost": 8.436731,
+    "assetType": "stock",
+    "addedAt": "2026-03-16",
+    "date_added": "2026-03-16",
+    "entry_date": "2026-03-16"
+  },
+  {
+    "id": "mlkx6qxqyz",
+    "ticker": "EOPSF",
+    "shares": 2142,
+    "avgCost": 7.01,
+    "assetType": "stock",
+    "addedAt": "2026-04-08",
+    "date_added": "2026-04-08",
+    "entry_date": "2026-04-08"
+  },
+  {
+    "id": "6yehdn99zbv",
+    "ticker": "UVXY",
+    "shares": 384,
+    "avgCost": 51.91,
+    "assetType": "stock",
+    "addedAt": "2026-04-01",
+    "date_added": "2026-04-01",
+    "entry_date": "2026-04-01"
+  },
+  {
+    "id": "aq7234iiroe",
+    "ticker": "TPET",
+    "shares": 4716,
+    "avgCost": 2.125,
+    "assetType": "stock",
+    "addedAt": "2026-03-09",
+    "date_added": "2026-03-09",
+    "entry_date": "2026-03-09"
+  },
+  {
+    "id": "t5rvtoqk96q",
+    "ticker": "AXTI",
+    "shares": 420,
+    "avgCost": 29.9,
+    "assetType": "stock",
+    "addedAt": "2026-02-24",
+    "date_added": "2026-02-24",
+    "entry_date": "2026-02-24"
+  },
+  {
+    "id": "zhh3mcpykvj",
+    "ticker": "UMAC",
+    "shares": 362,
+    "avgCost": 15.04,
+    "assetType": "stock",
+    "addedAt": "2026-01-09",
+    "date_added": "2026-01-09",
+    "entry_date": "2026-01-09"
+  },
+  {
+    "id": "pffk7wfloi",
+    "ticker": "ASTI",
+    "shares": 1338,
+    "avgCost": 4.438156,
+    "assetType": "stock",
+    "addedAt": "2026-01-06",
+    "date_added": "2026-01-06",
+    "entry_date": "2026-01-06"
+  },
+  {
+    "id": "sj7j7aue19i",
+    "ticker": "CCCX",
+    "shares": 462,
+    "avgCost": 17.21,
+    "assetType": "stock",
+    "addedAt": "2026-01-07",
+    "date_added": "2026-01-07",
+    "entry_date": "2026-01-07"
+  },
+  {
+    "id": "c13kb27twfw",
+    "ticker": "OSS",
+    "shares": 922,
+    "avgCost": 6.49,
+    "assetType": "stock",
+    "addedAt": "2026-01-06",
+    "date_added": "2026-01-06",
+    "entry_date": "2026-01-06"
+  },
+  {
+    "id": "z26j8vdfwfb",
+    "ticker": "ASPI",
+    "shares": 1414,
+    "avgCost": 6,
+    "assetType": "stock",
+    "addedAt": "2026-01-05",
+    "date_added": "2026-01-05",
+    "entry_date": "2026-01-05"
+  },
+  {
+    "id": "zgl8ovqxjce",
+    "ticker": "SPAI",
+    "shares": 1428,
+    "avgCost": 4.22,
+    "assetType": "stock",
+    "addedAt": "2026-01-05",
+    "date_added": "2026-01-05",
+    "entry_date": "2026-01-05"
+  },
+  {
+    "id": "3o8nq2n346e",
+    "ticker": "GEVO",
+    "shares": 2928,
+    "avgCost": 2.0468,
+    "assetType": "stock",
+    "addedAt": "2026-01-02",
+    "date_added": "2026-01-02",
+    "entry_date": "2026-01-02"
+  },
+  {
+    "id": "4d387te222s",
+    "ticker": "UPWK",
+    "shares": 236,
+    "avgCost": 21.3222,
+    "assetType": "stock",
+    "addedAt": "2025-12-16",
+    "date_added": "2025-12-16",
+    "entry_date": "2025-12-16"
+  },
+  {
+    "id": "1ve5471aque",
+    "ticker": "BYND",
+    "shares": 3786,
+    "avgCost": 1.3195,
+    "assetType": "stock",
+    "addedAt": "2025-12-02",
+    "date_added": "2025-12-02",
+    "entry_date": "2025-12-02"
+  },
+  {
+    "id": "yfm5k7a59",
+    "ticker": "PALL",
+    "shares": 52,
+    "avgCost": 131.04,
+    "assetType": "stock",
+    "addedAt": "2025-12-01",
+    "date_added": "2025-12-01",
+    "entry_date": "2025-12-01"
+  }
+]

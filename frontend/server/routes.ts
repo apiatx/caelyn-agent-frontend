@@ -526,22 +526,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const data = await upRes.json().catch(() => ({}));
 
-      // After a successful import, pull the freshly-created holdings from FastAPI
-      // and write them to stock-holdings.json so the Dashboard and Terminal stay in sync.
+      // After a successful import, pull the freshly-created holdings from FastAPI and write to
+      // stock-holdings.json. FastAPI processes the CSV asynchronously, so retry with backoff.
       if (isImport && data.success) {
-        try {
-          const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
-            headers: { 'X-API-Key': FA_KEY },
-            signal: AbortSignal.timeout(15_000),
-          });
-          if (holdRes.ok) {
-            const holdData = await holdRes.json().catch(() => ({}));
-            const faHoldings: any[] = Array.isArray(holdData)
-              ? holdData
-              : Array.isArray(holdData?.holdings)
-              ? holdData.holdings
-              : [];
-            if (faHoldings.length > 0) {
+        (async () => {
+          const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+          // Attempt up to 5 times: wait 1.5s, 1.5s, 2s, 2s, 3s between tries
+          const waits = [1500, 1500, 2000, 2000, 3000];
+          for (let attempt = 0; attempt < waits.length; attempt++) {
+            await delay(waits[attempt]);
+            try {
+              const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+                headers: { 'X-API-Key': FA_KEY },
+                signal: AbortSignal.timeout(10_000),
+              });
+              if (!holdRes.ok) continue;
+              const holdData = await holdRes.json().catch(() => ({}));
+              const faHoldings: any[] = Array.isArray(holdData)
+                ? holdData
+                : Array.isArray(holdData?.holdings)
+                ? holdData.holdings
+                : [];
+              if (faHoldings.length === 0) {
+                console.log(`[csv-import] Attempt ${attempt + 1}: FastAPI holdings still empty, retrying...`);
+                continue;
+              }
               const normalized: StockHolding[] = faHoldings.map((h: any) => ({
                 id: h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
                 ticker:    (h.ticker || h.symbol || '').toUpperCase(),
@@ -554,12 +563,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }));
               writeHoldings(normalized);
               caelynTerminalCache = null;
-              console.log(`[csv-import] Synced ${normalized.length} holdings to local file: ${normalized.map(h => h.ticker).join(', ')}`);
+              console.log(`[csv-import] Synced ${normalized.length} holdings to local file (attempt ${attempt + 1}): ${normalized.map((h: StockHolding) => h.ticker).join(', ')}`);
+              break;
+            } catch (syncErr: any) {
+              console.warn(`[csv-import] Attempt ${attempt + 1} failed:`, syncErr?.message);
             }
           }
-        } catch (syncErr: any) {
-          console.warn('[csv-import] Holdings sync after import failed:', syncErr?.message);
-        }
+        })();
       }
 
       return res.status(upRes.status).json(data);

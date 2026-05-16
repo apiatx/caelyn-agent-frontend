@@ -601,10 +601,20 @@ export default function StocksPortfolioPage() {
       if (!data.success) { setCsvError(data.error || 'Import failed.'); setCsvPhase('preview'); return; }
       setCsvImportResult(data);
       setCsvPhase('done');
-      await refetchHoldings();
-      syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-closed-trades'] });
+      // Poll for holdings — the server syncs from FastAPI asynchronously after import,
+      // so retry up to 8 times (every 2s) until the local file is populated.
+      const pollIntervals = [500, 1500, 2000, 2000, 2000, 2000, 2000, 2000];
+      for (const wait of pollIntervals) {
+        await new Promise(r => setTimeout(r, wait));
+        const result = await refetchHoldings();
+        const fetched: Holding[] = (result?.data ?? []) as Holding[];
+        if (fetched.length > 0) {
+          queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+          break;
+        }
+      }
     } catch (err: any) {
       setCsvError(err?.message || 'Network error.');
       setCsvPhase('preview');
