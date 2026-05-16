@@ -268,6 +268,7 @@ export default function StocksPortfolioPage() {
   const [editingClosedId, setEditingClosedId] = useState<string | null>(null);
   const [editClosedExitPrice, setEditClosedExitPrice] = useState('');
   const [editClosedExitDate, setEditClosedExitDate] = useState('');
+  const [editClosedEntryDate, setEditClosedEntryDate] = useState('');
   const [savingClosedEdit, setSavingClosedEdit] = useState(false);
 
   // Refetch by invalidating the shared query cache (used by both this page
@@ -596,8 +597,10 @@ export default function StocksPortfolioPage() {
     e.stopPropagation();
     setEditingClosedId(tradeId);
     setEditClosedExitPrice(String(t.exit_price ?? ''));
-    const rawDate = t.exit_date || '';
-    setEditClosedExitDate(rawDate ? rawDate.split('T')[0] : '');
+    const rawExit = t.exit_date || '';
+    setEditClosedExitDate(rawExit ? rawExit.split('T')[0] : '');
+    const rawEntry = t.entry_date || t.open_date || '';
+    setEditClosedEntryDate(rawEntry ? rawEntry.split('T')[0] : '');
   };
 
   const cancelClosedEdit = (e: React.MouseEvent) => {
@@ -605,6 +608,7 @@ export default function StocksPortfolioPage() {
     setEditingClosedId(null);
     setEditClosedExitPrice('');
     setEditClosedExitDate('');
+    setEditClosedEntryDate('');
   };
 
   const saveClosedEdit = async (e: React.MouseEvent) => {
@@ -618,11 +622,13 @@ export default function StocksPortfolioPage() {
         body: JSON.stringify({
           exit_price: editClosedExitPrice ? parseFloat(editClosedExitPrice) : undefined,
           exit_date: editClosedExitDate || undefined,
+          entry_date: editClosedEntryDate || undefined,
         }),
       });
       setEditingClosedId(null);
       setEditClosedExitPrice('');
       setEditClosedExitDate('');
+      setEditClosedEntryDate('');
       await refetchClosedTrades();
     } catch (err) {
       console.error('Failed to update closed trade:', err);
@@ -1884,17 +1890,29 @@ export default function StocksPortfolioPage() {
                                     </div>
                                   </div>
 
-                                  {/* Date edit row (only when editing) */}
+                                  {/* Date edit rows (only when editing) */}
                                   {isEditing && (
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <span style={{ color: '#64748b' }}>Exit Date:</span>
-                                      <input
-                                        type="date"
-                                        value={editClosedExitDate}
-                                        onChange={e => setEditClosedExitDate(e.target.value)}
-                                        className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
-                                        style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
-                                      />
+                                    <div className="flex flex-col gap-1.5 text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Open Date:</span>
+                                        <input
+                                          type="date"
+                                          value={editClosedEntryDate}
+                                          onChange={e => setEditClosedEntryDate(e.target.value)}
+                                          className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
+                                          style={{ borderColor: 'rgba(217,119,6,0.5)', colorScheme: 'dark' as any }}
+                                        />
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span style={{ color: '#64748b' }} className="w-16 flex-shrink-0">Exit Date:</span>
+                                        <input
+                                          type="date"
+                                          value={editClosedExitDate}
+                                          onChange={e => setEditClosedExitDate(e.target.value)}
+                                          className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
+                                          style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
+                                        />
+                                      </div>
                                     </div>
                                   )}
 
