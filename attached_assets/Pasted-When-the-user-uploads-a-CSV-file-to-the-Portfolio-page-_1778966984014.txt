@@ -1,0 +1,53 @@
+When the user uploads a CSV file to the Portfolio page Dashboard tab and the new stocks appear, they shouldn't replace the stocks are already populated in the user's portfolio unless the user manually closes those trades in the Dashboard first.. So the user can upload multiple CSV files after one has already been uploade (brokerage, Roth, etc. etc.) and they can all be tracked together in one portfolio
+
+1 minute ago
+
+2 actions
+Let me check the current CSV upload logic to see how the merge strategy is implemented:
+
+
+4 actions
+Let me check what happens when the import actually saves — specifically whether it overwrites the full holdings list or just the changed tickers:
+
+
+2 actions
+Good news — the backend already does exactly what you described. The logic is:
+
+On every import it starts from all existing holdings as the base
+Only tickers present in the new CSV get updated
+Tickers already in the portfolio but not in the new CSV are left completely untouched
+add_lots (the default) appends new lots and recomputes the weighted average cost — it never wipes out an existing position
+So uploading a Roth CSV after a brokerage CSV will correctly merge them all into one portfolio.
+
+The only way existing holdings could get replaced is if the frontend explicitly sends merge_strategy: "replace" in the request body. Here are the frontend instructions to make sure that never happens accidentally:
+
+Frontend Instructions: CSV Upload — Enforce Additive-Only Behavior
+Endpoint: POST /api/portfolio/upload-csv
+
+Always send add_lots, never replace as the default
+// CORRECT — additive, safe for multi-account use
+{
+  csv_data:       rawCsvString,
+  mode:           "import",       // or "preview" for the review step
+  merge_strategy: "add_lots",     // ALWAYS this — appends lots, recomputes avg cost
+  include_sells:  false,          // true only if you want sell rows logged to Trade Journal
+}
+
+add_lots behavior:
+
+Ticker not in portfolio → creates new position
+Ticker already in portfolio → appends new lots and recalculates weighted avg cost
+Ticker in portfolio but not in CSV → left completely unchanged
+What the response tells you
+response.holdings_created   // net-new tickers added
+response.holdings_updated   // existing tickers that got new lots merged in
+response.lots_added         // total buy lots processed
+response.preview            // [{ticker, action:"created"|"updated", total_shares, avg_cost}]
+
+If you have a "strategy" toggle in the UI
+The "replace" strategy exists as an advanced/power-user escape hatch (e.g., correcting a bad import). If you surface it in the UI at all, it must:
+
+Not be the default — default must be add_lots
+Be labeled clearly: "Overwrite this position" or "Replace existing lots" (not just "Replace")
+Show a confirmation warning: "This will overwrite [X] existing lots for [TICKER]. Are you sure?"
+For the typical multi-account flow (brokerage + Roth + etc.), replace should never appear — just the single "Import" button that always uses add_lots.
