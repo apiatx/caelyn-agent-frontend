@@ -1529,6 +1529,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
   const [lazyLoading, setLazyLoading] = useState(false);
   const [lazyError, setLazyError] = useState(false);
   const lazyAttempted = useRef(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Strict contract: rows always at .rows — no envelope guessing.
   const bundledFundRows: any[] = Array.isArray(bundledFundamental?.rows) ? bundledFundamental.rows : [];
@@ -1536,19 +1537,23 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   const fundamentalData = bundledFundIsUsable ? bundledFundamental : lazyFundamental;
 
-  // When user opens fundamentals tab and bundled is not usable, lazy-fetch once
+  // When user opens fundamentals tab and bundled is not usable, lazy-fetch.
+  // retryCount increments to allow re-fetch after failure.
   useEffect(() => {
     if (tab !== 'fundamental') return;
     if (bundledFundIsUsable) return;
     if (lazyAttempted.current) return;
     lazyAttempted.current = true;
     setLazyLoading(true);
-    fetch('/api/social/fundamental-screener')
+    setLazyError(false);
+    let cancelled = false;
+    fetch('/api/social/fundamental-screener', { credentials: 'include' })
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
-      .then(json => { setLazyFundamental(json); })
-      .catch(() => { setLazyError(true); })
-      .finally(() => { setLazyLoading(false); });
-  }, [tab, bundledFundIsUsable]);
+      .then(json => { if (!cancelled) setLazyFundamental(json); })
+      .catch(() => { if (!cancelled) setLazyError(true); })
+      .finally(() => { if (!cancelled) setLazyLoading(false); });
+    return () => { cancelled = true; };
+  }, [tab, bundledFundIsUsable, retryCount]);
 
   // Reset sort defaults when tab changes
   useEffect(() => {
@@ -1727,11 +1732,11 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     { key: 'theme',                     label: 'Theme',        align: 'left', render: r => <span style={{ color: C.subtle }}>{r.theme || DASH}</span> },
     { key: 'market_cap',                label: 'Market Cap',                  render: r => fmtCurrencyCompact(r.market_cap ?? r.marketCap ?? null) },
     { key: 'volume',                    label: 'Volume',                      render: r => r.volume_display || fmtCompact(r.volume ?? r.vol ?? null) },
-    { key: 'price_change_1d',           label: '1D',                          render: r => pctCell(r.price_change_1d ?? r.change1d ?? r.changesPercentage ?? null) },
-    { key: 'price_change_7d',           label: '7D',                          render: r => pctCell(r.price_change_7d ?? r.change7d ?? null) },
-    { key: 'price_change_30d',          label: '30D',                         render: r => pctCell(r.price_change_30d ?? r.change30d ?? null) },
-    { key: 'price_change_ytd',          label: 'YTD',                         render: r => pctCell(r.price_change_ytd ?? r.changeYtd ?? null) },
-    { key: 'price_change_1y',           label: '1Y',                          render: r => pctCell(r.price_change_1y ?? r.change1y ?? null) },
+    { key: 'price_change_1d',           label: '1D',                          render: r => pctCell(r.price_change_1d ?? r.change_percent_1d ?? r.change1d ?? r.changesPercentage ?? r.change_1d ?? null) },
+    { key: 'price_change_7d',           label: '7D',                          render: r => pctCell(r.price_change_7d ?? r.performance_7d ?? r.change7d ?? r.performance5d ?? null) },
+    { key: 'price_change_30d',          label: '30D',                         render: r => pctCell(r.price_change_30d ?? r.performance_30d ?? r.change30d ?? null) },
+    { key: 'price_change_ytd',          label: 'YTD',                         render: r => pctCell(r.price_change_ytd ?? r.performance_ytd ?? r.changeYtd ?? null) },
+    { key: 'price_change_1y',           label: '1Y',                          render: r => pctCell(r.price_change_1y ?? r.performance_1y ?? r.change1y ?? null) },
     { key: 'mentions_1d',               label: '1D Mentions',                 render: r => fmtInt(r.mentions_1d ?? r.mentions1d ?? null) },
     { key: 'mentions_7d',               label: '7D Mentions',                 render: r => fmtInt(r.mentions_7d ?? r.mentions7d ?? null) },
     { key: 'consensus_score',           label: 'Consensus',                   render: r => greenDot(inSection(sectionTickers?.consensus, r.symbol ?? r.ticker ?? '')) },
@@ -1764,12 +1769,18 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
     ? 'Social screener unavailable from latest run.'
     : null;
 
+  const retryFundamental = () => {
+    lazyAttempted.current = false;
+    setLazyError(false);
+    setRetryCount(c => c + 1);
+  };
+
   const fundEmptyMsg = (() => {
     if (tab !== 'fundamental') return null;
     if (fundRows.length > 0) return null;
     if (lazyLoading) return 'Loading fundamentals…';
-    if (lazyError) return 'Could not load fundamentals — please try again later.';
-    if (lazyAttempted.current) return 'Fundamental enrichment is unavailable or still warming up.';
+    if (lazyError) return null;  // handled inline with retry button
+    if (lazyAttempted.current) return 'Fundamental data is warming up — please retry in a moment.';
     return null;
   })();
 
@@ -1886,6 +1897,23 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
         {tab === 'social' && socialEmptyMsg ? (
           <div style={{ padding: '1.5rem', textAlign: 'center', color: C.dim, fontSize: '0.78rem', fontFamily: sansFont }}>
             {socialEmptyMsg}
+          </div>
+        ) : tab === 'fundamental' && lazyError ? (
+          <div style={{ padding: '2rem', textAlign: 'center', fontFamily: sansFont }}>
+            <div style={{ color: C.dim, fontSize: '0.78rem', marginBottom: '0.75rem' }}>
+              Could not load fundamentals — the data may still be warming up.
+            </div>
+            <button
+              onClick={retryFundamental}
+              style={{
+                padding: '6px 16px', borderRadius: 6, cursor: 'pointer',
+                background: 'rgba(92,200,240,0.1)', border: '1px solid rgba(92,200,240,0.3)',
+                color: C.accent, fontFamily: font, fontSize: '0.7rem', fontWeight: 700,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}
+            >
+              Retry
+            </button>
           </div>
         ) : tab === 'fundamental' && fundEmptyMsg ? (
           <div style={{ padding: '1.5rem', textAlign: 'center', color: C.dim, fontSize: '0.78rem', fontFamily: sansFont }}>
