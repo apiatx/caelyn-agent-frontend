@@ -1773,139 +1773,169 @@ export default function StocksPortfolioPage() {
                   </div>
                 )}
 
-                {/* Trade cards grid */}
-                {tradeHistory.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {tradeHistory.map((t: any, i: number) => {
-                      const tradeId   = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
-                      const isEditing = editingClosedId === tradeId;
-                      const ticker    = (t.symbol ?? t.ticker ?? '').toUpperCase();
-                      const avgEntry  = t.avg_entry_price ?? t.entry_price ?? 0;
-                      const shares    = t.shares ?? 0;
-                      const invested  = shares * avgEntry;
-                      const exitPrice = t.exit_price ?? 0;
-                      const pl        = t.realized_pnl ?? 0;
-                      const plPct     = t.realized_pnl_pct ?? 0;
-                      const isWin     = pl >= 0;
-                      const borderClr = isWin ? '#4ade80' : '#f87171';
-                      const plClr     = isWin ? '#4ade80' : '#f87171';
-                      const exitDisplay = t.exit_date ? t.exit_date.split('T')[0] : '—';
-                      const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
-                      const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
-                      return (
-                        <div
-                          key={tradeId}
-                          className="rounded-xl p-4 flex flex-col gap-3 transition-colors"
-                          style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}
-                        >
-                          {/* Header */}
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="text-xl font-bold text-white tracking-tight">{ticker}</div>
-                              {t.sell_type && t.sell_type !== 'full' && (
-                                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block" style={{ background: 'rgba(92,200,240,0.15)', color: '#5cc8f0' }}>trim</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              {isEditing ? (
-                                <>
-                                  <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
-                                    <Check className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}>
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
-                                  <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
+                {/* Trade cards grouped by month */}
+                {tradeHistory.length > 0 && (() => {
+                  const sorted = [...tradeHistory].sort((a: any, b: any) => {
+                    const da = a.exit_date ? new Date(a.exit_date).getTime() : 0;
+                    const db = b.exit_date ? new Date(b.exit_date).getTime() : 0;
+                    return db - da;
+                  });
+                  const groups: { monthKey: string; label: string; trades: any[] }[] = [];
+                  sorted.forEach((t: any) => {
+                    const d = t.exit_date ? new Date(t.exit_date) : null;
+                    const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : 'unknown';
+                    const label = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
+                    const last = groups[groups.length - 1];
+                    if (last && last.monthKey === monthKey) { last.trades.push(t); }
+                    else { groups.push({ monthKey, label, trades: [t] }); }
+                  });
+                  return (
+                    <div className="flex flex-col gap-6">
+                      {groups.map(({ monthKey, label, trades }) => (
+                        <div key={monthKey} className="flex flex-col gap-3">
+                          {/* Month header */}
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>{label}</span>
+                            <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
+                            <span className="text-xs" style={{ color: '#475569' }}>{trades.length} trade{trades.length !== 1 ? 's' : ''}</span>
                           </div>
+                          {/* Cards for this month */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {trades.map((t: any, i: number) => {
+                              const tradeId   = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
+                              const isEditing = editingClosedId === tradeId;
+                              const ticker    = (t.symbol ?? t.ticker ?? '').toUpperCase();
+                              const avgEntry  = t.avg_entry_price ?? t.entry_price ?? 0;
+                              const shares    = t.shares ?? 0;
+                              const invested  = shares * avgEntry;
+                              const exitPrice = t.exit_price ?? 0;
+                              const pl        = t.realized_pnl ?? 0;
+                              const plPct     = t.realized_pnl_pct ?? 0;
+                              const isWin     = pl >= 0;
+                              const borderClr = isWin ? '#4ade80' : '#f87171';
+                              const plClr     = isWin ? '#4ade80' : '#f87171';
+                              const exitDisplay = t.exit_date
+                                ? new Date(t.exit_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                : '—';
+                              const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
+                              const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+                              return (
+                                <div
+                                  key={tradeId}
+                                  className="rounded-xl p-4 flex flex-col gap-3 transition-colors"
+                                  style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}
+                                >
+                                  {/* Header: ticker + edit/delete */}
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <div className="text-xl font-bold text-white tracking-tight">{ticker}</div>
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        <span className="text-xs tracking-wide" style={{ color: '#d97706' }}>{exitDisplay}</span>
+                                        {t.sell_type && t.sell_type !== 'full' && (
+                                          <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(92,200,240,0.15)', color: '#5cc8f0' }}>trim</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                      {isEditing ? (
+                                        <>
+                                          <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
+                                            <Check className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}>
+                                            <Pencil className="w-3 h-3" />
+                                          </button>
+                                          <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
 
-                          {/* Entry → Exit price path */}
-                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div className="flex flex-col">
-                              <span style={{ color: '#64748b' }}>Entry</span>
-                              <span className="font-mono text-white">{fmtP(avgEntry)}</span>
-                            </div>
-                            <div className="flex-1 px-3 flex items-center">
-                              <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span style={{ color: '#64748b' }}>{isEditing ? 'New Exit' : 'Exit'}</span>
-                              {isEditing ? (
-                                <input
-                                  type="number"
-                                  value={editClosedExitPrice}
-                                  onChange={e => setEditClosedExitPrice(e.target.value)}
-                                  className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono"
-                                  style={{ borderColor: 'rgba(92,200,240,0.6)' }}
-                                />
-                              ) : (
-                                <span className="font-mono text-white">{fmtP(exitPrice)}</span>
-                              )}
-                            </div>
-                          </div>
+                                  {/* Entry → Exit price path */}
+                                  <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <div className="flex flex-col">
+                                      <span style={{ color: '#64748b' }}>Entry</span>
+                                      <span className="font-mono text-white">{fmtP(avgEntry)}</span>
+                                    </div>
+                                    <div className="flex-1 px-3 flex items-center">
+                                      <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                      <span style={{ color: '#64748b' }}>{isEditing ? 'New Exit' : 'Exit'}</span>
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          value={editClosedExitPrice}
+                                          onChange={e => setEditClosedExitPrice(e.target.value)}
+                                          className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono"
+                                          style={{ borderColor: 'rgba(92,200,240,0.6)' }}
+                                        />
+                                      ) : (
+                                        <span className="font-mono text-white">{fmtP(exitPrice)}</span>
+                                      )}
+                                    </div>
+                                  </div>
 
-                          {/* Date edit row (only when editing) */}
-                          {isEditing && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <span style={{ color: '#64748b' }}>Exit Date:</span>
-                              <input
-                                type="date"
-                                value={editClosedExitDate}
-                                onChange={e => setEditClosedExitDate(e.target.value)}
-                                className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
-                                style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
-                              />
-                            </div>
-                          )}
+                                  {/* Date edit row (only when editing) */}
+                                  {isEditing && (
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span style={{ color: '#64748b' }}>Exit Date:</span>
+                                      <input
+                                        type="date"
+                                        value={editClosedExitDate}
+                                        onChange={e => setEditClosedExitDate(e.target.value)}
+                                        className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
+                                        style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
+                                      />
+                                    </div>
+                                  )}
 
-                          {/* Metrics grid */}
-                          <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
-                            <div className="flex flex-col">
-                              <span style={{ color: '#64748b' }}>Shares</span>
-                              <span style={{ color: '#e2e8f0' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span style={{ color: '#64748b' }}>Invested</span>
-                              <span style={{ color: '#a78bfa' }}>{invested > 0 ? fmtM(invested) : '—'}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span style={{ color: '#64748b' }}>Hold Time</span>
-                              <span style={{ color: '#e2e8f0' }}>{(t.holding_period_days ?? 0) > 0 ? `${t.holding_period_days}d` : '< 1d'}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span style={{ color: '#64748b' }}>Exit Date</span>
-                              <span style={{ color: '#e2e8f0' }}>{exitDisplay}</span>
-                            </div>
-                          </div>
+                                  {/* Metrics grid */}
+                                  <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                                    <div className="flex flex-col">
+                                      <span style={{ color: '#64748b' }}>Shares</span>
+                                      <span style={{ color: '#e2e8f0' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span style={{ color: '#64748b' }}>Invested</span>
+                                      <span style={{ color: '#a78bfa' }}>{invested > 0 ? fmtM(invested) : '—'}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span style={{ color: '#64748b' }}>Hold Time</span>
+                                      <span style={{ color: '#e2e8f0' }}>{(t.holding_period_days ?? 0) > 0 ? `${t.holding_period_days}d` : '< 1d'}</span>
+                                    </div>
+                                  </div>
 
-                          {/* Divider */}
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+                                  {/* Divider */}
+                                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
 
-                          {/* P&L footer */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
-                              <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtM(pl)}</div>
-                            </div>
-                            <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>
-                              {isWin ? '+' : ''}{plPct.toFixed(1)}%
-                            </span>
+                                  {/* P&L footer */}
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                                      <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtM(pl)}</div>
+                                    </div>
+                                    <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>
+                                      {isWin ? '+' : ''}{plPct.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </GlassCard>
