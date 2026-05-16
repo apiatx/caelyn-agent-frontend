@@ -13,19 +13,20 @@ import {
 import { Card } from "@/components/ui/card";
 import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, BarChart2, X } from "lucide-react";
 
-type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio";
+type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio" | "fundamentals";
 
 const TAB_LABELS: Record<TabKey, string> = {
   thematic: "Thematic",
   social: "Social",
   bottlenecks: "Bottlenecks",
   watchlist_portfolio: "Watchlist + Portfolio",
+  fundamentals: "Fundamentals",
 };
 
 // ── Column definitions ─────────────────────────────────────────────────────────
 // Single unified column set used by ALL four tabs.
 
-type ColDef = { key: string; label: string; numeric?: boolean; aliases?: string[] };
+type ColDef = { key: string; label: string; numeric?: boolean; aliases?: string[]; tabs?: TabKey[] };
 
 const ALL_COLUMNS: ColDef[] = [
   { key: "symbol",                 label: "Symbol",       aliases: ["ticker", "stock"] },
@@ -35,7 +36,11 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "industry",               label: "Industry" },
   { key: "beta",                   label: "Beta",         numeric: true },
   { key: "price",                  label: "Price",        numeric: true,  aliases: ["last", "lastPrice"] },
-  { key: "change_1d",              label: "1D %",         numeric: true,  aliases: ["change_percent_1d", "changePercent1d", "oneDayChange", "pct_1d", "change_pct_1d", "day_change_pct"] },
+  { key: "change_1d",              label: "1D %",         numeric: true,  aliases: ["change_percent_1d", "changePercent1d", "oneDayChange", "pct_1d", "change_pct_1d", "day_change_pct", "1D", "1d"] },
+  { key: "change_7d",              label: "7D %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["7d", "7D", "5D", "5d", "price_change_7d", "change_5d", "week_change", "fiveday"] },
+  { key: "change_30d",             label: "30D %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["30d", "30D", "1M", "1m", "price_change_30d", "change_1m", "month_change"] },
+  { key: "change_ytd",             label: "YTD %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["ytd", "YTD", "price_change_ytd", "ytd_change", "ytdchange"] },
+  { key: "change_1y",              label: "1Y %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["1y", "1Y", "price_change_1y", "year_change", "change_1year", "oneYearChange"] },
   { key: "last_annual_dividend",   label: "Div/Yr",       numeric: true,  aliases: ["lastAnnualDividend", "annual_dividend", "dividend"] },
   { key: "volume",                 label: "Volume",       numeric: true,  aliases: ["vol"] },
   { key: "dollar_volume",          label: "$ Volume",     numeric: true,  aliases: ["dollarVolume", "dv"] },
@@ -48,6 +53,15 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity", "options_activity"] },
   { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"] },
   { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"] },
+  // Fundamentals-only columns
+  { key: "pe_ratio",        label: "P/E",        numeric: true, tabs: ["fundamentals"], aliases: ["pe", "priceEarnings", "price_to_earnings", "priceToEarningsRatio", "pe_ttm"] },
+  { key: "eps",             label: "EPS",        numeric: true, tabs: ["fundamentals"], aliases: ["eps_ttm", "earningsPerShare", "eps_diluted"] },
+  { key: "revenue",         label: "Revenue",    numeric: true, tabs: ["fundamentals"], aliases: ["revenue_ttm", "total_revenue", "totalRevenue", "annualRevenue"] },
+  { key: "gross_margin",    label: "Gross Mgn",  numeric: true, tabs: ["fundamentals"], aliases: ["grossMargin", "gross_profit_margin", "grossProfitMargin"] },
+  { key: "net_margin",      label: "Net Mgn",    numeric: true, tabs: ["fundamentals"], aliases: ["netProfitMargin", "profit_margin", "netMargin", "profitMargin", "net_profit_margin"] },
+  { key: "roe",             label: "ROE",        numeric: true, tabs: ["fundamentals"], aliases: ["returnOnEquity", "return_on_equity", "roeTTM"] },
+  { key: "debt_to_equity",  label: "D/E",        numeric: true, tabs: ["fundamentals"], aliases: ["debtToEquity", "de_ratio", "debtEquityRatio", "totalDebtToEquity"] },
+  { key: "revenue_growth",  label: "Rev Grwth",  numeric: true, tabs: ["fundamentals"], aliases: ["revenueGrowth", "revenue_growth_yoy", "revenue_growth_rate", "revenueGrowthYoy"] },
 ];
 
 // Signal toggles — identical set for every tab; gate the three optional columns.
@@ -359,14 +373,17 @@ export default function ScreenerHub() {
     return () => { cancelled = true; };
   }, [buildUrl, tab, theme, themes.length]);
 
-  // Visible columns: same base set for all tabs, filtered by signal toggles
+  // Visible columns: filtered by active tab and signal toggles
   const visibleColumns = useMemo(() => {
     return ALL_COLUMNS.filter((c) => {
+      // Tab-scoped columns only show for their designated tabs
+      if (c.tabs && !c.tabs.includes(tab)) return false;
+      // Signal toggle columns
       const sig = SIGNALS.find((s) => s.col === c.key);
       if (sig) return signals[sig.key];
       return true;
     });
-  }, [signals]);
+  }, [signals, tab]);
 
   const sortedRows = useMemo(() => {
     if (!rows.length) return rows;
@@ -471,7 +488,7 @@ export default function ScreenerHub() {
       return <span>{formatCurrency(v)}</span>;
     }
 
-    if (c.key === "change_1d") {
+    if (["change_1d", "change_7d", "change_30d", "change_ytd", "change_1y"].includes(c.key)) {
       const { text, positive, negative } = formatChangePercent(v);
       return (
         <span className={classNames(
@@ -631,6 +648,44 @@ export default function ScreenerHub() {
           {n.toFixed(0)}
         </span>
       );
+    }
+
+    if (c.key === "pe_ratio") {
+      const n = toNum(v);
+      if (n === null || n <= 0) return <span className="text-white/40">—</span>;
+      const high = n > 50;
+      return <span className={high ? "text-rose-300" : ""}>{n.toFixed(1)}x</span>;
+    }
+
+    if (c.key === "eps") {
+      const n = toNum(v);
+      if (n === null) return <span className="text-white/40">—</span>;
+      const sign = n < 0 ? "-" : "";
+      return <span className={n < 0 ? "text-rose-300" : ""}>{sign}${Math.abs(n).toFixed(2)}</span>;
+    }
+
+    if (c.key === "revenue") {
+      return <span>{formatCompactCurrency(v)}</span>;
+    }
+
+    if (["gross_margin", "net_margin", "roe", "revenue_growth"].includes(c.key)) {
+      const { text, positive, negative } = formatChangePercent(v);
+      return (
+        <span className={classNames(
+          positive && "text-emerald-300",
+          negative && "text-rose-300",
+          !positive && !negative && "text-white/40",
+        )}>
+          {text}
+        </span>
+      );
+    }
+
+    if (c.key === "debt_to_equity") {
+      const n = toNum(v);
+      if (n === null) return <span className="text-white/40">—</span>;
+      const high = n > 2;
+      return <span className={high ? "text-rose-300" : ""}>{n.toFixed(2)}</span>;
     }
 
     // Generic fallbacks

@@ -1,0 +1,89 @@
+on the "social" page in the "social screener" section, we need to get the screener working... Right now it is returning nothing for the "Volume, 1d, 7d, 30d, ytd, 1y columns. Where is this data supposed to be returned by (fmp, tradier, another api)? The "fundamentals" tab//toggle screener is also not working, I would like to see if we can get it to work without overwhelming our FMP API, but thinking while a cool feature it might be overkill for the "Social" page.
+
+14 minutes ago
+
+Show less
+
+Analyzing social screener API usage
+Let me find the social screener endpoints and understand what data they're supposed to return:
+
+
+6 actions
+Let me dig into the service to see how volume/price-change columns are supposed to be fetched and why they're coming back empty:
+
+
+3 actions
+Let me read the key sections to understand the full enrichment flow and where the data gaps are:
+
+
+4 actions
+Let me see the rest of the enrichment flow and hit the live endpoint to see the actual response:
+
+
+4 actions
+Let me hit the live endpoint and look at the fundamental screener route at the same time:
+
+
+4 actions
+Let me check the server logs and verify if the FMP API key is configured:
+
+
+2 actions
+Good — the fundamental screener is actually producing data (the FUND_DEBUG lines are complete). The empty columns are a social enrichment issue. Let me read the logs more carefully and check the Tradier key + the build_screeners function to pinpoint the exact cause:
+
+
+4 actions
+Now I have the full picture. The root cause is clear:
+
+Market is closed (Saturday) → code skips live Tradier batch call entirely → no volume/price/1d%
+FMP stock-price-change also skipped outside hours → no 7d/30d/ytd/1y
+LKG cache is cold after server restart → everything comes back null
+The fix: Tradier quotes are valid 24/7 (they return last-close prices), and FMP stock-price-change is pure EOD data that never changes intraday. Both should run regardless of market hours. The market-hours guard should only prevent redundant re-fetches, not cold-start blanks.
+
+Here are the two targeted changes:
+
+
+2 actions
+Now I have everything I need. Two precise edits:
+
+Fix 1: Remove the _mkt_open guard on the Tradier batch call — Tradier returns last-trade prices 24/7, so there's no reason to skip it outside hours.
+
+Fix 2: In the market-closed branch of enrich_social, fall back to a live _fetch_price_change call when the cache is cold — FMP's stock-price-change is pure EOD data computed from daily closes, equally valid at any time of day.
+
+
+2 actions
+Now the second fix — in the market-closed branch, add a live fallback for _fetch_price_change when the cache is cold:
+
+
+2 actions
+Now restart and verify both fixes work:
+
+
+4 actions
+The social screener is now working — 33/40 rows have volume, 35/40 have all price change columns. The 5 nulls are OTC/illiquid tickers that Tradier doesn't cover (expected).
+
+Now let me check the fundamental screener and understand how expensive it is before deciding how to approach it:
+
+
+10 actions
+Both screeners are fully working. Let me write the commit and give you a clear summary:
+
+
+3 actions
+Both fixes are deployed and verified. Here's a clear summary:
+
+Social Screener — Volume/1d/7d/30d/ytd/1y columns
+
+Root cause: A market-hours guard was blocking data fetches entirely outside NYSE hours (Mon–Fri 9:30–16:00 ET). On a fresh server restart with no cached data, all those columns came back null regardless of time.
+
+Two targeted fixes in social_screener_service.py:
+
+Tradier batch call now always runs — Tradier returns last-trade prices 24/7 (weekends, overnight, holidays). There's no reason to skip it outside hours. This restores volume, current price, and 1d% on any cold start.
+
+FMP stock-price-change now fetches live when cache is cold, even outside hours — This endpoint returns 7d/30d/ytd/1y changes computed from daily closes. It's EOD data that doesn't change intraday, so a Saturday cold-start should get the same numbers as a Tuesday at noon. After first fetch it caches for 30 minutes as before.
+
+Verified result (Saturday cold start): 33/40 volume, 35/40 price changes populated. The 5–7 nulls are OTC/obscure tickers that Tradier simply doesn't cover — that's expected and was happening before too.
+
+Fundamental Screener tab
+
+Turns out it's actually working — 40 rows returned, 33 complete, 3 partial, 4 missing (the 4 missing are the same tiny OTC tickers). The design is already very FMP-friendly: it makes ~50 ticker × 6 endpoint calls on the first cold load, then caches the entire compiled payload for 7 days. Every subsequent visit for a week costs zero FMP calls. I'd recommend keeping it — the API cost is essentially a one-time burst every week, not per-user. The first load after a server restart can take ~8–10 seconds while the background warmup runs, but after that it's instant.
