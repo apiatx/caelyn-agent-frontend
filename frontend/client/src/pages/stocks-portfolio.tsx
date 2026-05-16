@@ -67,6 +67,27 @@ const GlassCard = ({ children, className = "" }: { children: ReactNode; classNam
   </Card>
 );
 
+function WinRateDonut({ winRate }: { winRate: number }) {
+  const r = 68, sw = 13, circ = 2 * Math.PI * r;
+  const winDash = (winRate / 100) * circ;
+  const lossDash = circ - winDash;
+  return (
+    <div className="relative flex flex-col items-center justify-center" style={{ width: 170, height: 170 }}>
+      <svg className="w-full h-full" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 170 170">
+        <circle cx="85" cy="85" r={r} fill="none" stroke="#0d1623" strokeWidth={sw} />
+        <circle cx="85" cy="85" r={r} fill="none" stroke="#f87171" strokeWidth={sw}
+          strokeDasharray={`${lossDash} ${winDash}`} strokeLinecap="round" />
+        <circle cx="85" cy="85" r={r} fill="none" stroke="#4ade80" strokeWidth={sw}
+          strokeDasharray={`${winDash} ${lossDash}`} strokeDashoffset={-lossDash} strokeLinecap="round" />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center">
+        <span className="text-3xl font-bold" style={{ color: '#e2e8f0' }}>{winRate}%</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider mt-0.5" style={{ color: '#64748b' }}>Win Rate</span>
+      </div>
+    </div>
+  );
+}
+
 const SECTOR_COLORS: Record<string, string> = {
   'Technology': '#3b82f6',
   'Healthcare': '#22c55e',
@@ -1608,18 +1629,30 @@ export default function StocksPortfolioPage() {
           {holdings.length > 0 && totalPortfolioValue > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <GlassCard className="p-3 sm:p-4">
-                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 16 }}>Asset Allocation</h3>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={sectorData} cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} dataKey="value" nameKey="name" label={({ name, pct }) => `${name} ${pct}%`} labelLine={false}>
-                        {sectorData.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
+                <h3 style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1.1rem', marginBottom: 16 }}>Trade Performance</h3>
+                <div className="h-[280px] flex items-center justify-center">
+                  {tradeSummary ? (
+                    <div className="flex flex-col items-center gap-4 w-full">
+                      <WinRateDonut winRate={tradeSummary.win_rate} />
+                      <div className="grid grid-cols-3 gap-2 w-full">
+                        {[
+                          { label: 'Total Realized', value: `${(tradeSummary.total_realized_pnl ?? 0) >= 0 ? '+' : '-'}$${Math.abs(tradeSummary.total_realized_pnl ?? 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`, color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171' },
+                          { label: `${tradeSummary.total_trades} Trades`, value: tradeSummary.best_pnl_pct ? `Best: ${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(0)}%` : '—', color: '#a78bfa' },
+                          { label: 'Avg Hold', value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d', color: '#94a3b8' },
+                        ].map(s => (
+                          <div key={s.label} className="rounded-lg px-2 py-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</div>
+                            <div className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>{s.label}</div>
+                          </div>
                         ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, color: '#e2e8f0', fontSize: 12 }} itemStyle={{ color: '#e2e8f0' }} labelStyle={{ color: '#e2e8f0' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-sm" style={{ color: '#64748b' }}>No closed trades yet</div>
+                      <div className="text-xs mt-1" style={{ color: '#475569' }}>Win rate appears after your first closed position.</div>
+                    </div>
+                  )}
                 </div>
               </GlassCard>
 
@@ -1716,40 +1749,18 @@ export default function StocksPortfolioPage() {
             {closedPanelOpen && (
               <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
 
-                {/* Summary stats strip */}
+                {/* Wins / Losses pills */}
                 {tradeSummary && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-3">
-                    {[
-                      {
-                        label: 'Total Realized',
-                        value: tradeSummary.total_realized_pnl != null
-                          ? `${tradeSummary.total_realized_pnl >= 0 ? '+' : '-'}$${Math.abs(tradeSummary.total_realized_pnl).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
-                          : '—',
-                        color: (tradeSummary.total_realized_pnl ?? 0) >= 0 ? '#4ade80' : '#f87171',
-                      },
-                      {
-                        label: `Win Rate (${tradeSummary.total_trades} trades)`,
-                        value: `${tradeSummary.win_rate}%`,
-                        color: tradeSummary.win_rate >= 50 ? '#4ade80' : '#f87171',
-                      },
-                      {
-                        label: 'Best Trade',
-                        value: tradeSummary.best_pnl_pct
-                          ? `${tradeSummary.best_pnl_pct.symbol} +${tradeSummary.best_pnl_pct.realized_pnl_pct.toFixed(1)}%`
-                          : '—',
-                        color: '#4ade80',
-                      },
-                      {
-                        label: 'Avg Hold',
-                        value: tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d',
-                        color: '#94a3b8',
-                      },
-                    ].map(s => (
-                      <div key={s.label} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div className="text-xs font-semibold truncate" style={{ color: s.color }}>{s.value}</div>
-                        <div className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>{s.label}</div>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 pt-3 pb-2">
+                    <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#4ade80' }}></div>
+                      <span>{tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) > 0).length} Wins</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#f87171' }}></div>
+                      <span>{tradeHistory.filter((t: any) => (t.realized_pnl ?? 0) <= 0).length} Losses</span>
+                    </div>
+                    <span className="text-xs" style={{ color: '#475569' }}>Avg hold: {tradeSummary.avg_holding_period_days > 0 ? `${tradeSummary.avg_holding_period_days}d` : '< 1d'}</span>
                   </div>
                 )}
 
@@ -1762,137 +1773,137 @@ export default function StocksPortfolioPage() {
                   </div>
                 )}
 
-                {/* Trade history table */}
+                {/* Trade cards grid */}
                 {tradeHistory.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          {[
-                            { label: 'Ticker',         cls: 'text-left pr-3 pl-0' },
-                            { label: 'Shares',         cls: 'text-right px-2' },
-                            { label: 'Avg Price',      cls: 'text-right px-2' },
-                            { label: 'Invested',       cls: 'text-right px-2' },
-                            { label: 'Close Price',    cls: 'text-right px-2' },
-                            { label: 'Current Price',  cls: 'text-right px-2' },
-                            { label: 'Total P&L',      cls: 'text-right px-2' },
-                            { label: 'P&L %',          cls: 'text-right px-2' },
-                            { label: 'Days',           cls: 'text-right px-2' },
-                            { label: 'Exit Date',      cls: 'text-right px-2' },
-                            { label: '',               cls: 'text-right pl-2 w-12' },
-                          ].map(h => (
-                            <th key={h.label} className={`pb-2 text-[10px] font-semibold uppercase tracking-wider ${h.cls}`} style={{ color: '#64748b' }}>{h.label}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tradeHistory.map((t: any, i: number) => {
-                          const tradeId      = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
-                          const isEditing    = editingClosedId === tradeId;
-                          const ticker       = (t.symbol ?? t.ticker ?? '').toUpperCase();
-                          const avgEntry     = t.avg_entry_price ?? t.entry_price ?? 0;
-                          const shares       = t.shares ?? 0;
-                          const invested     = shares * avgEntry;
-                          const exitPrice    = t.exit_price ?? 0;
-                          const curPrice     = t.current_price ?? 0;
-                          const pl           = t.realized_pnl ?? 0;
-                          const plPct        = t.realized_pnl_pct ?? 0;
-                          const plClr        = pl >= 0 ? '#4ade80' : '#f87171';
-                          const curVsClose   = curPrice > 0 && exitPrice > 0 ? ((curPrice - exitPrice) / exitPrice) * 100 : null;
-                          const exitDisplay  = t.exit_date ? t.exit_date.split('T')[0] : '—';
-                          const rowBg        = isEditing ? 'rgba(92,200,240,0.04)' : 'transparent';
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {tradeHistory.map((t: any, i: number) => {
+                      const tradeId   = t.id ?? t.trade_id ?? String((t.symbol ?? '') + (t.exit_date ?? '') + i);
+                      const isEditing = editingClosedId === tradeId;
+                      const ticker    = (t.symbol ?? t.ticker ?? '').toUpperCase();
+                      const avgEntry  = t.avg_entry_price ?? t.entry_price ?? 0;
+                      const shares    = t.shares ?? 0;
+                      const invested  = shares * avgEntry;
+                      const exitPrice = t.exit_price ?? 0;
+                      const pl        = t.realized_pnl ?? 0;
+                      const plPct     = t.realized_pnl_pct ?? 0;
+                      const isWin     = pl >= 0;
+                      const borderClr = isWin ? '#4ade80' : '#f87171';
+                      const plClr     = isWin ? '#4ade80' : '#f87171';
+                      const exitDisplay = t.exit_date ? t.exit_date.split('T')[0] : '—';
+                      const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
+                      const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+                      return (
+                        <div
+                          key={tradeId}
+                          className="rounded-xl p-4 flex flex-col gap-3 transition-colors"
+                          style={{ background: isEditing ? 'rgba(92,200,240,0.04)' : '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}
+                        >
+                          {/* Header */}
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="text-xl font-bold text-white tracking-tight">{ticker}</div>
+                              {t.sell_type && t.sell_type !== 'full' && (
+                                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block" style={{ background: 'rgba(92,200,240,0.15)', color: '#5cc8f0' }}>trim</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {isEditing ? (
+                                <>
+                                  <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#5cc8f0' }}>
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
 
-                          return (
-                            <tr key={tradeId} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: rowBg }}>
-                              {/* Ticker */}
-                              <td className="py-2.5 pr-3 pl-0">
-                                <div className="font-bold text-white">{ticker}</div>
-                                {t.sell_type && t.sell_type !== 'full' && (
-                                  <div className="text-[9px] mt-0.5 font-medium uppercase tracking-wide" style={{ color: '#64748b' }}>trim</div>
-                                )}
-                              </td>
-                              {/* Shares */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</td>
-                              {/* Avg Price */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>${avgEntry.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}</td>
-                              {/* Invested */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#a78bfa' }}>
-                                {invested > 0 ? `$${invested.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—'}
-                              </td>
-                              {/* Close Price */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#94a3b8' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    value={editClosedExitPrice}
-                                    onChange={e => setEditClosedExitPrice(e.target.value)}
-                                    className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none"
-                                    style={{ borderColor: 'rgba(92,200,240,0.6)' }}
-                                  />
-                                ) : exitPrice > 0 ? `$${exitPrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}
-                              </td>
-                              {/* Current Price */}
-                              <td className="text-right py-2.5 px-2">
-                                {curPrice > 0 ? (
-                                  <div>
-                                    <div style={{ color: '#e2e8f0' }}>${curPrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}</div>
-                                    {curVsClose !== null && (
-                                      <div className="text-[9px]" style={{ color: curVsClose >= 0 ? '#4ade80' : '#f87171' }}>
-                                        {curVsClose >= 0 ? '+' : ''}{curVsClose.toFixed(1)}% vs close
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : <span style={{ color: '#475569' }}>—</span>}
-                              </td>
-                              {/* Total P&L */}
-                              <td className="text-right py-2.5 px-2 font-semibold" style={{ color: plClr }}>
-                                {pl >= 0 ? '+' : '-'}${Math.abs(pl).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
-                              </td>
-                              {/* P&L % */}
-                              <td className="text-right py-2.5 px-2 font-semibold" style={{ color: plClr }}>
-                                {plPct >= 0 ? '+' : ''}{plPct.toFixed(1)}%
-                              </td>
-                              {/* Days */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#64748b' }}>{(t.holding_period_days ?? 0)}d</td>
-                              {/* Exit Date */}
-                              <td className="text-right py-2.5 px-2" style={{ color: '#64748b' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="date"
-                                    value={editClosedExitDate}
-                                    onChange={e => setEditClosedExitDate(e.target.value)}
-                                    className="bg-transparent border-b text-white text-xs focus:outline-none"
-                                    style={{ borderColor: 'rgba(92,200,240,0.6)', colorScheme: 'dark' as any }}
-                                  />
-                                ) : exitDisplay}
-                              </td>
-                              {/* Actions */}
-                              <td className="text-right py-2.5 pl-2">
-                                {isEditing ? (
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button onClick={saveClosedEdit} disabled={savingClosedEdit} title="Save" className="p-1 rounded hover:bg-green-500/15 transition-all" style={{ color: '#4ade80', opacity: savingClosedEdit ? 0.4 : 1 }}>
-                                      <Check className="w-3 h-3" />
-                                    </button>
-                                    <button onClick={cancelClosedEdit} title="Cancel" className="p-1 rounded hover:bg-red-500/15 transition-all" style={{ color: '#f87171' }}>
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button onClick={e => startClosedEdit(t, tradeId, e)} title="Edit" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#5cc8f0' }}>
-                                      <Pencil className="w-2.5 h-2.5" />
-                                    </button>
-                                    <button onClick={e => deleteClosedTrade(tradeId, e)} title="Delete" className="opacity-30 hover:opacity-100 transition-all p-1" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                      <Trash2 className="w-2.5 h-2.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                          {/* Entry → Exit price path */}
+                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Entry</span>
+                              <span className="font-mono text-white">{fmtP(avgEntry)}</span>
+                            </div>
+                            <div className="flex-1 px-3 flex items-center">
+                              <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span style={{ color: '#64748b' }}>{isEditing ? 'New Exit' : 'Exit'}</span>
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={editClosedExitPrice}
+                                  onChange={e => setEditClosedExitPrice(e.target.value)}
+                                  className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono"
+                                  style={{ borderColor: 'rgba(92,200,240,0.6)' }}
+                                />
+                              ) : (
+                                <span className="font-mono text-white">{fmtP(exitPrice)}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Date edit row (only when editing) */}
+                          {isEditing && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <span style={{ color: '#64748b' }}>Exit Date:</span>
+                              <input
+                                type="date"
+                                value={editClosedExitDate}
+                                onChange={e => setEditClosedExitDate(e.target.value)}
+                                className="bg-transparent border-b text-white text-xs focus:outline-none flex-1"
+                                style={{ borderColor: 'rgba(92,200,240,0.4)', colorScheme: 'dark' as any }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Metrics grid */}
+                          <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Shares</span>
+                              <span style={{ color: '#e2e8f0' }}>{shares.toLocaleString(undefined,{maximumFractionDigits:4})}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Invested</span>
+                              <span style={{ color: '#a78bfa' }}>{invested > 0 ? fmtM(invested) : '—'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Hold Time</span>
+                              <span style={{ color: '#e2e8f0' }}>{(t.holding_period_days ?? 0) > 0 ? `${t.holding_period_days}d` : '< 1d'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Exit Date</span>
+                              <span style={{ color: '#e2e8f0' }}>{exitDisplay}</span>
+                            </div>
+                          </div>
+
+                          {/* Divider */}
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+
+                          {/* P&L footer */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                              <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtM(pl)}</div>
+                            </div>
+                            <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>
+                              {isWin ? '+' : ''}{plPct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
