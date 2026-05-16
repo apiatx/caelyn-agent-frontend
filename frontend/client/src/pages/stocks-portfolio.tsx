@@ -1334,11 +1334,7 @@ export default function StocksPortfolioPage() {
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingQuotes ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
-                  <button onClick={runAIReview} disabled={aiLoading} className="flex items-center gap-1.5 text-sm font-medium text-white transition-all disabled:opacity-50" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0, #80d8f8)', boxShadow: '0 0 20px rgba(32, 144, 208, 0.4), 0 0 40px rgba(92, 200, 240, 0.2)', borderRadius: 8, padding: '8px 18px' }}>
-                    <Bot className="w-4 h-4" />
-                    {aiLoading ? aiStage || 'Analyzing...' : 'AI Portfolio Review'}
-                  </button>
-                </>
+                  </>
               )}
             </div>
             {newTicker.trim() && INDEX_TO_ETF[newTicker.trim()] && (
@@ -1367,14 +1363,15 @@ export default function StocksPortfolioPage() {
                   <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#08090e' }}>
                       <th className="pb-2 pr-1 w-6"></th>
-                      <th className="text-left pb-2 pr-3"><SortHeader label="Ticker" keyName="ticker" /></th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Shares" keyName="shares" /></th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Avg Price" keyName="avgCost" /></th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Price" keyName="currentPrice" /></th>
-                      <th className="text-right pb-2 px-3" style={{color:'#94a3b8',fontSize:11}}>Invested</th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Daily P&L" keyName="dailyPL" /></th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Total P&L" keyName="totalPL" /></th>
-                      <th className="text-right pb-2 px-3"><SortHeader label="Weight%" keyName="weight" /></th>
+                      <th className="text-left pb-2 pl-1 pr-4 min-w-[110px]"><SortHeader label="Ticker" keyName="ticker" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[60px]"><SortHeader label="Shares" keyName="shares" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]"><SortHeader label="Avg Price" keyName="avgCost" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]"><SortHeader label="Price" keyName="currentPrice" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]" style={{color:'#94a3b8',fontSize:11}}>Invested</th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]" style={{color:'#94a3b8',fontSize:11}}>Value</th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]"><SortHeader label="Daily P&L" keyName="dailyPL" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[80px]"><SortHeader label="Total P&L" keyName="totalPL" /></th>
+                      <th className="text-right pb-2 px-3 min-w-[60px]"><SortHeader label="Weight%" keyName="weight" /></th>
                       <th className="text-right pb-2 pl-3 w-16"></th>
                     </tr>
                   </thead>
@@ -1461,6 +1458,10 @@ export default function StocksPortfolioPage() {
                                 {/* Invested — live preview when editing */}
                                 <td className="text-right py-2.5 px-3 font-medium" style={{ color: isEditing ? '#c4b5fd' : '#a78bfa' }}>
                                   {isEditing ? fmt(editedInvested) : fmt(h.avgCost * h.shares)}
+                                </td>
+                                {/* Value — current market value */}
+                                <td className="text-right py-2.5 px-3 font-medium" style={{ color: '#5cc8f0' }}>
+                                  {h.currentPrice > 0 ? fmt(h.currentPrice * h.shares) : <span className="text-crypto-silver/50">—</span>}
                                 </td>
                                 <td className={`text-right py-2.5 px-3 font-medium ${h.dailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                   {loadingQuotes && !h.currentPrice ? <span className="animate-pulse text-crypto-silver">...</span> : quotesError && !h.currentPrice ? <span className="text-yellow-500 text-xs">—</span> : h.currentPrice > 0 ? fmtPL(h.dailyPL) : <span className="text-crypto-silver/50">—</span>}
