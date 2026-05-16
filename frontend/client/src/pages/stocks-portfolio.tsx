@@ -696,6 +696,13 @@ export default function StocksPortfolioPage() {
     setSellError('');
   };
 
+  const deletePositionOnly = async () => {
+    if (!sellModal) return;
+    await fetch(`/api/stock-holdings/${sellModal.id}`, { method: 'DELETE' });
+    setHoldings(prev => prev.filter(h => h.id !== sellModal.id));
+    closeSellModal();
+  };
+
   const confirmSell = async () => {
     if (!sellModal || !sellExitPrice) { setSellError('Exit price is required.'); return; }
     const exitPrice = parseFloat(sellExitPrice);
@@ -1449,7 +1456,17 @@ export default function StocksPortfolioPage() {
               </div>
 
               {/* Footer */}
-              <div className="flex gap-3 px-5 pb-5">
+              <div className="flex items-center gap-3 px-5 pb-5">
+                <button
+                  onClick={deletePositionOnly}
+                  title="Delete position without recording a closed trade"
+                  className="p-2 rounded-lg transition-all hover:bg-red-950/40 group flex-shrink-0"
+                  style={{ border: '1px solid rgba(239,68,68,0.15)', color: '#475569' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
                 <button
                   onClick={closeSellModal}
                   className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
