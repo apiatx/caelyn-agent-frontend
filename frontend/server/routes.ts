@@ -3042,6 +3042,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!response.ok) { console.warn(`[caelyn-terminal-bg] FastAPI returned ${response.status}`); return; }
         const data = await response.json();
 
+        // When local holdings are empty, zero out FastAPI's stale portfolio data
+        if (localHoldings.length === 0) {
+          data.holdings        = [];
+          data.positions_count = 0;
+          data.is_placeholder  = true;
+          data._synced_from_local = true;
+          data.portfolio = { value: 0, change_today: 0, change_pct_today: 0, total_return_pct: 0, total_return_value: 0, sentiment: 'NEUTRAL', market_status: data.portfolio?.market_status || 'CLOSED' };
+          data.asset_allocation       = [];
+          data.asset_class_allocation = [];
+          data.sector_allocation      = [];
+          data.theme_allocation       = [];
+          data.volatility             = [];
+          data.risk_suggestions       = [];
+          data.top_movers             = [];
+          data.earnings_calendar      = [];
+          data.performance_chart      = [];
+          data.performance_charts     = [];
+          data.correlation_matrix     = [];
+          data.risk_metrics           = {};
+          data.portfolio_options      = [];
+          data.ticker_tape            = [];
+          data.news_ticker            = [];
+        }
+
         // Enrich allocation items, holdings (with Tradier vol_x), and earnings
         if (localHoldings.length > 0) {
           try {
@@ -3213,6 +3237,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map((h: any) => (h.ticker || h.symbol || '').toUpperCase())
         .filter(Boolean);
       console.log(`[portfolio-dashboard-source] {"dashboardCount":${localHoldings.length},"dashboardSymbols":${JSON.stringify(localHoldings.map(h=>h.ticker).sort())},"fastapiCanonicalCount":${fastapiCanonicalSymbols.length},"fastapiCanonicalSymbols":${JSON.stringify(fastapiCanonicalSymbols.slice().sort())},"source":"frontend/data/stock-holdings.json"}`);
+
+      // When local holdings are empty, zero out FastAPI's stale portfolio data
+      if (localHoldings.length === 0) {
+        data.holdings        = [];
+        data.positions_count = 0;
+        data.is_placeholder  = true;
+        data._synced_from_local = true;
+        data.portfolio = { value: 0, change_today: 0, change_pct_today: 0, total_return_pct: 0, total_return_value: 0, sentiment: 'NEUTRAL', market_status: data.portfolio?.market_status || 'CLOSED' };
+        data.asset_allocation       = [];
+        data.asset_class_allocation = [];
+        data.sector_allocation      = [];
+        data.theme_allocation       = [];
+        data.volatility             = [];
+        data.risk_suggestions       = [];
+        data.top_movers             = [];
+        data.earnings_calendar      = [];
+        data.performance_chart      = [];
+        data.performance_charts     = [];
+        data.correlation_matrix     = [];
+        data.risk_metrics           = {};
+        data.portfolio_options      = [];
+        data.ticker_tape            = [];
+        data.news_ticker            = [];
+      }
 
       if (localHoldings.length > 0) {
         const fastapiIsPlaceholder = data.is_placeholder === true || !data.holdings?.length;
