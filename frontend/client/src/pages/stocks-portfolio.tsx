@@ -1328,14 +1328,6 @@ export default function StocksPortfolioPage() {
                 <Plus className="w-4 h-4" />
                 Add
               </button>
-              {holdings.length > 0 && (
-                <>
-                  <button onClick={() => fetchQuotes(holdings)} disabled={loadingQuotes} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 transition-all disabled:opacity-50" style={{ background: 'rgba(32, 144, 208, 0.1)', border: '1px solid rgba(32, 144, 208, 0.3)' }}>
-                    <RefreshCw className={`w-3.5 h-3.5 ${loadingQuotes ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                  </>
-              )}
             </div>
             {newTicker.trim() && INDEX_TO_ETF[newTicker.trim()] && (
               <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
