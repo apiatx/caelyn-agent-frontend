@@ -873,7 +873,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
                           {t.name && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{t.name}</span>}
                           {t.conviction && <ConvictionBadge value={t.conviction} />}
                           {t.first_mentioned_by && (
-                            <a href={`https://x.com/${t.first_mentioned_by.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.textDecoration='underline')} onMouseLeave={e => (e.currentTarget.style.textDecoration='none')} onClick={e => e.stopPropagation()}>@{t.first_mentioned_by.replace(/^@/, '')}</a>
+                            <a href={`https://x.com/${String(t.first_mentioned_by).replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.textDecoration='underline')} onMouseLeave={e => (e.currentTarget.style.textDecoration='none')} onClick={e => e.stopPropagation()}>@{String(t.first_mentioned_by).replace(/^@/, '')}</a>
                           )}
                         </div>
                         {desc && (
