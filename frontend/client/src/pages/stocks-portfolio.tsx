@@ -850,11 +850,28 @@ export default function StocksPortfolioPage() {
 
   const deleteClosedTrade = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!window.confirm('Permanently delete this closed trade record? This cannot be undone.')) return;
     try {
       await fetch(`/api/portfolio/closed-trades/${encodeURIComponent(id)}`, { method: 'DELETE' });
       await refetchClosedTrades();
     } catch (err) {
       console.error('Failed to delete closed trade:', err);
+    }
+  };
+
+  const deleteTradeGroup = async (sellEvents: any[], ticker: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ids = sellEvents.map((ev: any) => ev.id ?? ev.trade_id).filter(Boolean);
+    if (ids.length === 0) return;
+    const label = ids.length === 1 ? 'this closed trade record' : `all ${ids.length} sell records for ${ticker}`;
+    if (!window.confirm(`Permanently delete ${label}? This cannot be undone.`)) return;
+    try {
+      await Promise.all(ids.map(id =>
+        fetch(`/api/portfolio/closed-trades/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      ));
+      await refetchClosedTrades();
+    } catch (err) {
+      console.error('Failed to delete trade group:', err);
     }
   };
 
@@ -2304,11 +2321,19 @@ export default function StocksPortfolioPage() {
                                       <Pencil className="w-3 h-3" />
                                     </button>
                                   )}
-                                  {singleEventId && (
-                                    <button onClick={e => deleteClosedTrade(singleEventId, e)} title="Delete" className="p-1 opacity-30 hover:opacity-100 transition-all" style={{ color: '#475569' }} onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')} onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  )}
+                                  <button
+                                    onClick={e => singleEventId
+                                      ? deleteClosedTrade(singleEventId, e)
+                                      : deleteTradeGroup(sellEvents, ticker, e)
+                                    }
+                                    title={sellEvents.length > 1 ? `Delete all ${sellEvents.length} sell records` : 'Delete closed trade'}
+                                    className="p-1 opacity-30 hover:opacity-100 transition-all"
+                                    style={{ color: '#475569' }}
+                                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                                    onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
                                 </>
                               )}
                             </div>
