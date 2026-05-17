@@ -532,7 +532,8 @@ function SmartOptionsTab() {
     retry: 1,
   });
 
-  const [soView, setSoView] = useState<'all' | 'calls' | 'puts'>('all');
+  const [soView,    setSoView]    = useState<'all' | 'calls' | 'puts'>('all');
+  const [tvTicker,  setTvTicker]  = useState<string | null>(null);
 
   const market = data?.market;
   const baseRows: any[] = (data?.rows ?? []).filter((r: any) => r.actual?.price != null);
@@ -678,8 +679,18 @@ function SmartOptionsTab() {
 
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-                  {/* Ticker */}
-                  <span style={{ color: C.bright, fontFamily: C.font, fontSize: 15, fontWeight: 700 }}>
+                  {/* Ticker — click to open TradingView chart */}
+                  <span
+                    onClick={() => setTvTicker(row.ticker)}
+                    style={{
+                      color: C.bright, fontFamily: C.font, fontSize: 15, fontWeight: 700,
+                      cursor: 'pointer', borderBottom: `1px dashed ${C.muted}`,
+                      transition: 'color 0.12s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = C.blue)}
+                    onMouseLeave={e => (e.currentTarget.style.color = C.bright)}
+                    title="Open TradingView chart"
+                  >
                     {row.ticker}
                   </span>
 
@@ -820,6 +831,73 @@ function SmartOptionsTab() {
         <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
           No actionable gaps found right now.
         </div>
+      )}
+
+      {/* ── TradingView chart modal ──────────────────────────────────── */}
+      {tvTicker && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setTvTicker(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)',
+              zIndex: 200, backdropFilter: 'blur(3px)',
+            }}
+          />
+          {/* Panel */}
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'min(900px, 92vw)', height: 'min(560px, 80vh)',
+            background: C.card, border: `1px solid ${C.border}`,
+            borderRadius: 12, zIndex: 201,
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+          }}>
+            {/* Modal header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
+              background: C.surface, flexShrink: 0,
+            }}>
+              <span style={{ color: C.bright, fontFamily: C.font, fontSize: 13, fontWeight: 700 }}>
+                {tvTicker}
+              </span>
+              <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>
+                TradingView Chart
+              </span>
+              <a
+                href={`https://www.tradingview.com/chart/?symbol=${tvTicker}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  marginLeft: 'auto', color: C.blue, fontFamily: C.font, fontSize: 10,
+                  textDecoration: 'none', border: `1px solid ${C.blue}40`,
+                  borderRadius: 4, padding: '3px 9px',
+                }}
+              >
+                Open full chart ↗
+              </a>
+              <button
+                onClick={() => setTvTicker(null)}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: C.dim, fontSize: 18, lineHeight: 1, padding: '0 2px',
+                }}
+              >
+                ×
+              </button>
+            </div>
+            {/* Chart iframe */}
+            <iframe
+              key={tvTicker}
+              src={`https://www.tradingview.com/widgetembed/?frameElementId=tv_so_${tvTicker}&symbol=${encodeURIComponent(tvTicker)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0f1628&theme=dark&style=1&timezone=America%2FNew_York&studies=%5B%5D&locale=en`}
+              style={{ flex: 1, border: 'none', width: '100%' }}
+              allowFullScreen
+              title={`TradingView chart — ${tvTicker}`}
+            />
+          </div>
+        </>
       )}
     </div>
   );
