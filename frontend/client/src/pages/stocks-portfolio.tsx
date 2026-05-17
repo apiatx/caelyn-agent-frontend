@@ -573,7 +573,7 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/portfolio/upload-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'preview', full_replace: true, ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
+        body: JSON.stringify({ csv_data: csvRawText, mode: 'preview', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
       });
       const data = await res.json();
       if (!data.success) { setCsvError(data.error || data.detail || 'Preview failed.'); return; }
@@ -599,7 +599,7 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/portfolio/upload-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'import', full_replace: true, ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
+        body: JSON.stringify({ csv_data: csvRawText, mode: 'import', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
       });
       const data = await res.json();
       if (!data.success) { setCsvError(data.error || data.detail || 'Import failed — check your CSV format and try again.'); setCsvPhase('preview'); return; }
