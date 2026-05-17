@@ -524,7 +524,7 @@ function soFmtM(v?: number | null): string {
 }
 
 function SmartOptionsTab() {
-  const { data, isLoading, error, refetch, isFetching } = useQuery<any>({
+  const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: ['smart-options'],
     queryFn: () => fetch('/api/strategy/smart-options').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
@@ -602,15 +602,6 @@ function SmartOptionsTab() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6,
-              padding: '5px 10px', color: C.dim, cursor: isFetching ? 'not-allowed' : 'pointer',
-              fontSize: 11, fontFamily: C.font, opacity: isFetching ? 0.5 : 1 }}
-          >
-            {isFetching ? '…' : '↻'}
-          </button>
         </div>
       )}
 
