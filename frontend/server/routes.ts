@@ -541,23 +541,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[csv-import] symbols_closed:', data.symbols_closed);
         console.log('[csv-import] closed_trades_created:', data.closed_trades_created);
 
-        // Prefer updated_holdings from response; fall back to a live fetch if absent
-        let faHoldings: any[] = Array.isArray(data.updated_holdings) ? data.updated_holdings : [];
-        if (faHoldings.length === 0 && !Array.isArray(data.updated_holdings)) {
-          // updated_holdings not present — fetch current holdings directly from FastAPI
-          try {
-            const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
-              headers: { 'X-API-Key': FA_KEY },
-              signal: AbortSignal.timeout(15_000),
-            });
-            const holdRaw = await holdRes.text().catch(() => '');
-            const holdData = holdRaw ? JSON.parse(holdRaw) : [];
-            faHoldings = Array.isArray(holdData) ? holdData
-              : Array.isArray(holdData?.holdings) ? holdData.holdings : [];
-            console.log(`[csv-import] Fetched ${faHoldings.length} holdings from FastAPI after full_replace import`);
-          } catch (e: any) {
-            console.warn('[csv-import] Follow-up holdings fetch failed:', e?.message);
-          }
+        // Always fetch the canonical open positions directly from FastAPI after import —
+        // full_replace returns updated_holdings as [] even when positions exist.
+        let faHoldings: any[] = [];
+        try {
+          const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+            headers: { 'X-API-Key': FA_KEY },
+            signal: AbortSignal.timeout(15_000),
+          });
+          const holdRaw = await holdRes.text().catch(() => '');
+          const holdData = holdRaw ? JSON.parse(holdRaw) : [];
+          faHoldings = Array.isArray(holdData) ? holdData
+            : Array.isArray(holdData?.holdings) ? holdData.holdings : [];
+          console.log(`[csv-import] Fetched ${faHoldings.length} open holdings from FastAPI: ${faHoldings.map((h: any) => (h.ticker || h.symbol || '').toUpperCase()).join(', ')}`);
+        } catch (e: any) {
+          // Fall back to whatever the import response returned
+          faHoldings = Array.isArray(data.updated_holdings) ? data.updated_holdings : [];
+          console.warn('[csv-import] Follow-up holdings fetch failed, falling back to response field:', e?.message);
         }
 
         if (faHoldings.length > 0) {
@@ -573,12 +573,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
           writeHoldings(normalized);
           caelynTerminalCache = null;
-          console.log(`[csv-import] Wrote ${normalized.length} open holdings to stock-holdings.json: ${normalized.map((h: StockHolding) => h.ticker).join(', ')}`);
+          console.log(`[csv-import] Wrote ${normalized.length} open holdings to stock-holdings.json`);
         } else {
-          // Genuinely zero open positions after import
           writeHoldings([]);
           caelynTerminalCache = null;
-          console.log('[csv-import] No open positions after import — cleared local holdings file.');
+          console.log('[csv-import] FastAPI confirmed zero open positions — cleared local holdings file.');
         }
       }
 
