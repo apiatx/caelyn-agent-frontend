@@ -848,7 +848,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
                     {freshAlpha.thesis && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.thesis}</div>}
                     {freshAlpha.reason && <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.65 }}>{freshAlpha.reason}</div>}
                     {freshAlpha.catalyst && <div style={{ color: C.gold, fontSize: '0.68rem', fontFamily: sansFont, marginTop: 4 }}>{freshAlpha.catalyst}</div>}
-                    {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: {freshAlpha.first_mentioned_by}</div>}
+                    {freshAlpha.first_mentioned_by && <div style={{ color: C.blue, fontSize: '0.62rem', fontFamily: font, marginTop: 4 }}>First by: <a href={`https://x.com/${freshAlpha.first_mentioned_by.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.textDecoration='underline')} onMouseLeave={e => (e.currentTarget.style.textDecoration='none')} onClick={e => e.stopPropagation()}>@{freshAlpha.first_mentioned_by.replace(/^@/, '')}</a></div>}
                   </div>
                 );
               })()}
@@ -873,7 +873,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
                           {t.name && <span style={{ color: C.dim, fontSize: '0.62rem', fontFamily: sansFont }}>{t.name}</span>}
                           {t.conviction && <ConvictionBadge value={t.conviction} />}
                           {t.first_mentioned_by && (
-                            <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font }}>@{t.first_mentioned_by}</span>
+                            <a href={`https://x.com/${t.first_mentioned_by.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.textDecoration='underline')} onMouseLeave={e => (e.currentTarget.style.textDecoration='none')} onClick={e => e.stopPropagation()}>@{t.first_mentioned_by.replace(/^@/, '')}</a>
                           )}
                         </div>
                         {desc && (
@@ -2024,7 +2024,7 @@ function SocialTickerPopup({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.67rem', fontWeight: 700, color: '#5cc8f0', fontFamily: "'JetBrains Mono', monospace" }}>@{m.handle}</span>
+                    <a href={`https://x.com/${String(m.handle).replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.67rem', fontWeight: 700, color: '#5cc8f0', fontFamily: "'JetBrains Mono', monospace", textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.textDecoration='underline')} onMouseLeave={e => (e.currentTarget.style.textDecoration='none')} onClick={e => e.stopPropagation()}>@{String(m.handle).replace(/^@/, '')}</a>
                     <span style={{
                       fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
                       padding: '1px 5px', borderRadius: 3,
