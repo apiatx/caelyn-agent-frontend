@@ -591,7 +591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? { ...clientData, preview: data.preview }
         : clientData;
 
-      return res.status(httpStatus).json(responseData);
+      // Always respond 200 to the browser — Vite dev proxy drops the body on 4xx/5xx,
+      // causing "Unexpected end of JSON input". The client checks data.success instead.
+      return res.status(200).json(responseData);
     } catch (err: any) {
       return res.status(502).json({ success: false, error: err?.message });
     }
