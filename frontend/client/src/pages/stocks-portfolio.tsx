@@ -311,6 +311,7 @@ export default function StocksPortfolioPage() {
   const [csvPhase, setCsvPhase] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload');
   const [csvRawText, setCsvRawText] = useState('');
   const [csvFileName, setCsvFileName] = useState('');
+  const [csvAccountId, setCsvAccountId] = useState('');
   const [csvPreview, setCsvPreview] = useState<any>(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvError, setCsvError] = useState('');
@@ -554,6 +555,7 @@ export default function StocksPortfolioPage() {
     setCsvPreview(null);
     setCsvError('');
     setCsvImportResult(null);
+    setCsvAccountId('');
   }
   function handleCsvFileChange(file: File) {
     const reader = new FileReader();
@@ -571,7 +573,7 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/portfolio/upload-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'preview' }),
+        body: JSON.stringify({ csv_data: csvRawText, mode: 'preview', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
       });
       const data = await res.json();
       if (!data.success) { setCsvError(data.error || data.detail || 'Preview failed.'); return; }
@@ -597,7 +599,7 @@ export default function StocksPortfolioPage() {
       const res = await fetch('/api/portfolio/upload-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'import', merge_strategy: 'add_lots' }),
+        body: JSON.stringify({ csv_data: csvRawText, mode: 'import', merge_strategy: 'add_lots', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
       });
       const data = await res.json();
       if (!data.success) { setCsvError(data.error || data.detail || 'Import failed — check your CSV format and try again.'); setCsvPhase('preview'); return; }
@@ -2674,6 +2676,23 @@ export default function StocksPortfolioPage() {
 
                   <div className="text-xs px-1" style={{ color: '#475569' }}>
                     <span className="font-medium" style={{ color: '#64748b' }}>Expected columns:</span> Date · Transaction Type · Symbol · Description · Quantity · Price · Amount
+                  </div>
+
+                  {/* Account label — keeps lots from different brokerages isolated */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium px-1" style={{ color: '#64748b' }}>
+                      Account name <span style={{ color: '#475569', fontWeight: 400 }}>(optional — used to keep accounts separate when uploading multiple CSVs)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={csvAccountId}
+                      onChange={e => setCsvAccountId(e.target.value)}
+                      placeholder="e.g. Roth IRA, Individual Brokerage, 401k…"
+                      className="w-full rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      onFocus={e => (e.target.style.borderColor = 'rgba(92,200,240,0.4)')}
+                      onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                    />
                   </div>
 
                   {csvError && (

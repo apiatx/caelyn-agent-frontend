@@ -1,0 +1,56 @@
+The JSON error is fixed and imports are working. The real bug left to fix is cross-account netting — when the Individual Brokerage CSV has Sell VPG, the import is treating it as a sell against ALL existing holdings (including Roth ones), zeroing out those positions. The fix is adding account_id support so each account's sells only net against that account's buys.
+
+Let me read the exact section and implement this:
+
+
+3 actions
+Let me read the body-parsing section and the "fully closed" / merge section so I can make all edits in parallel:
+
+
+3 actions
+Now I have everything I need. Making all changes in parallel — account_id parsing, lot tagging, account-isolated "close" detection, and account-scoped lot merge:
+
+
+2 actions
+Continuing — now implement the account-isolated "close" logic and lot tagging in the merge section:
+
+
+6 actions
+The account isolation logic is almost right — but the account_id isn't being preserved in the lots when loaded back from DB. Let me verify what's actually stored and trace the exact failure:
+
+
+3 actions
+The account_id is being stripped — it's not in the lot dict after saving. Let me check save_active_holdings and compute_lot_totals in parallel:
+
+
+3 actions
+Found it. _normalise_lot() in portfolio_store.py is a whitelist — it only keeps shares, price, date, notes, and silently drops everything else including account_id. Fix is one line:
+
+
+6 actions
+9/9 checks pass. Let me write the commit and then give you the instructions for the frontend agent:
+
+
+2 actions
+Everything is working. Here's what to tell your frontend agent, and what you need to do to fix the corrupted state:
+
+Your DB is currently clean (reset during testing). You're ready to re-import from scratch.
+
+Instructions for your frontend agent — one change needed:
+
+When calling POST /api/portfolio/upload-csv, add an account_id field to the JSON body to identify which brokerage account the CSV belongs to. Example:
+
+// Roth IRA upload
+{ "csv_data": "...", "mode": "import", "account_id": "roth_ira" }
+// Individual Brokerage upload  
+{ "csv_data": "...", "mode": "import", "account_id": "individual" }
+
+The account_id can be any string — it just needs to be different per account. The backend will tag each lot with this ID so that a sell in the Individual account never closes a position held in the Roth, even if it's the same ticker. If account_id is omitted, the old behavior applies (no isolation).
+
+What was actually wrong and what's now fixed:
+
+Three bugs in total across this conversation:
+
+Share count accumulation — re-importing doubled shares due to synthetic lot mismatch. Fixed.
+Duplicate closed trade records — 237 records from repeated retries. Fixed with dedup-by-key before save.
+Cross-account netting — Individual Brokerage sells were zeroing out Roth positions for the same ticker. Fixed with account_id tagging. Tested: MU held in Roth (50 shares) now correctly survives the Individual account closing its own MU position (200 shares bought+sold). Re-importing both CSVs a second time produces zero new closed trades and identical share counts — fully idempotent.
