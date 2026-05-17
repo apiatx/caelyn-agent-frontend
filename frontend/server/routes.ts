@@ -5279,6 +5279,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/strategy/smart-options', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 35_000);
+      const r = await fetch(`${PB_URL}/api/strategy/smart-options`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'smart-options failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy/smart-options] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── Canonical Themes Registry ────────────────────────────────────────
   app.get('/api/themes/relative-strength', async (req, res) => {
     try {

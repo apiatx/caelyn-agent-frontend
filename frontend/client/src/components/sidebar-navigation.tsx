@@ -120,7 +120,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
         },
         {
           id: 'strategy-screener',
-          label: 'Bottlenecks',
+          label: 'Strategy',
           icon: <ScrollText className="w-4 h-4" />,
           path: '/app/strategy-screener'
         },

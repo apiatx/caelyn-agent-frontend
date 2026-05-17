@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, type CSSProperties } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ArrowLeft, AlertCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
@@ -502,7 +502,290 @@ function SortableHeader({
 }
 
 /* ── Main page ──────────────────────────────────────────────────── */
-export default function StrategyScreenerPage() {
+/* ═══════════════════════════════════════════════════════════════════
+   Smart Options Tab
+   ═══════════════════════════════════════════════════════════════════ */
+
+function soFmt$(v?: number | null, dec = 2): string {
+  if (v == null) return '—';
+  return `$${v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
+}
+function soFmtPct(v?: number | null, showSign = true): string {
+  if (v == null) return '—';
+  const s = showSign && v > 0 ? '+' : '';
+  return `${s}${v.toFixed(2)}%`;
+}
+function soFmtM(v?: number | null): string {
+  if (v == null) return '—';
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+function SmartOptionsTab() {
+  const { data, isLoading, error, refetch, isFetching } = useQuery<any>({
+    queryKey: ['smart-options'],
+    queryFn: () => fetch('/api/strategy/smart-options').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    gcTime:    15 * 60_000,
+    retry: 1,
+  });
+
+  const market = data?.market;
+  const rows: any[] = (data?.rows ?? []).filter((r: any) => r.actual?.price != null);
+
+  const signalColor = (s: string) => s === 'call' ? C.green : s === 'put' ? C.red : C.dim;
+  const signalLabel = (s: string, str: string) => {
+    if (s === 'call') return str === 'strong' ? '▲ Strong Call' : str === 'moderate' ? '▲ Call' : '▲ Weak Call';
+    if (s === 'put')  return str === 'strong' ? '▼ Strong Put'  : str === 'moderate' ? '▼ Put'  : '▼ Weak Put';
+    return '— Neutral';
+  };
+  const strategyLabel = (s: string) => s === 'call' ? 'Buy Calls / Go Long' : s === 'put' ? 'Buy Puts / Go Short' : 'Monitor';
+
+  const marketStatusColor = (status?: string) => {
+    if (!status) return C.dim;
+    if (status === 'open') return C.green;
+    if (status === 'pre_market' || status === 'post_market') return C.amber;
+    return '#64748b';
+  };
+
+  return (
+    <div style={{ padding: '24px 0', minHeight: 400 }}>
+
+      {/* Market banner */}
+      {market && (
+        <div style={{
+          background: '#0c1120', border: `1px solid ${C.border}`, borderRadius: 10,
+          padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'flex-start',
+          gap: 14,
+        }}>
+          <div style={{
+            width: 9, height: 9, borderRadius: '50%', marginTop: 4, flexShrink: 0,
+            background: marketStatusColor(market.status),
+            boxShadow: `0 0 6px ${marketStatusColor(market.status)}`,
+          }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ color: C.text, fontSize: 13, fontFamily: C.sans, lineHeight: 1.5 }}>
+              {market.context}
+            </div>
+            <div style={{ marginTop: 6, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <span style={{ color: C.dim, fontSize: 11, fontFamily: C.font }}>
+                {market.et_time}
+              </span>
+              <span style={{ fontSize: 11, fontFamily: C.font, color: market.gap_meaningful ? C.green : C.amber }}>
+                {market.gap_meaningful ? '● Gaps actionable' : '○ Gaps may be stale'}
+              </span>
+              {data?.with_gap != null && (
+                <span style={{ color: C.dim, fontSize: 11, fontFamily: C.font }}>
+                  {data.with_gap} gaps · {data.total_hl_equities} HL equities tracked
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6,
+              padding: '5px 10px', color: C.dim, cursor: isFetching ? 'not-allowed' : 'pointer',
+              fontSize: 11, fontFamily: C.font, opacity: isFetching ? 0.5 : 1 }}
+          >
+            {isFetching ? '…' : '↻'}
+          </button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+          <div style={{ marginBottom: 12, fontSize: 20 }}>⏳</div>
+          Fetching Hyperliquid equity perp prices + market quotes…
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !isLoading && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: C.sans, fontSize: 13 }}>
+          Failed to load Smart Options data. <button onClick={() => refetch()} style={{ color: C.blue, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Retry</button>
+        </div>
+      )}
+
+      {/* Rows */}
+      {!isLoading && rows.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {rows.map((row: any) => {
+            const sig    = row.signal ?? 'neutral';
+            const sigStr = row.signal_strength ?? 'weak';
+            const gapPct = row.gap?.pct;
+            const gapAbs = row.gap?.abs;
+            const dir    = row.gap?.direction; // hl_discount | hl_premium
+            const col    = signalColor(sig);
+            const fundAnn = row.hl?.funding_rate_ann;
+
+            return (
+              <div key={row.ticker} style={{
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+                padding: '16px 20px', position: 'relative', overflow: 'hidden',
+              }}>
+                {/* Left accent bar */}
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                  background: col, borderRadius: '10px 0 0 10px',
+                }} />
+
+                {/* Header row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                  {/* Ticker */}
+                  <span style={{ color: C.bright, fontFamily: C.font, fontSize: 15, fontWeight: 700 }}>
+                    {row.ticker}
+                  </span>
+
+                  {/* Gap badge */}
+                  <span style={{
+                    color: col, fontFamily: C.font, fontSize: 14, fontWeight: 800,
+                    background: `${col}15`, border: `1px solid ${col}40`,
+                    borderRadius: 6, padding: '2px 10px',
+                  }}>
+                    {gapPct != null ? `${gapPct > 0 ? '+' : ''}${gapPct.toFixed(2)}%` : '—'}
+                  </span>
+
+                  {/* Signal label */}
+                  <span style={{
+                    color: col, fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.07em', textTransform: 'uppercase',
+                  }}>
+                    {signalLabel(sig, sigStr)}
+                  </span>
+
+                  {/* Strategy badge */}
+                  <span style={{
+                    marginLeft: 'auto', color: col, fontFamily: C.sans, fontSize: 10,
+                    fontWeight: 700, background: `${col}12`, border: `1px solid ${col}30`,
+                    borderRadius: 4, padding: '3px 9px', textTransform: 'uppercase',
+                    letterSpacing: '0.06em', whiteSpace: 'nowrap',
+                  }}>
+                    {strategyLabel(sig)}
+                  </span>
+                </div>
+
+                {/* Two-column data */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                  {/* HL column */}
+                  <div style={{
+                    background: '#07090f', border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
+                  }}>
+                    <div style={{ color: '#38bdf8', fontFamily: C.font, fontSize: 9, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                      Hyperliquid Perp
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Price</span>
+                        <span style={{ color: C.bright, fontFamily: C.font, fontSize: 12, fontWeight: 700 }}>
+                          {soFmt$(row.hl?.price)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>24h Chg</span>
+                        <span style={{ color: row.hl?.chg_24h_pct >= 0 ? C.green : C.red, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmtPct(row.hl?.chg_24h_pct)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>OI</span>
+                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmtM(row.hl?.oi_usd)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Funding (ann)</span>
+                        <span style={{
+                          fontFamily: C.font, fontSize: 10,
+                          color: fundAnn == null ? C.dim : fundAnn > 50 ? C.green : fundAnn < -50 ? C.red : C.text,
+                        }}>
+                          {fundAnn != null ? `${fundAnn > 0 ? '+' : ''}${fundAnn.toFixed(0)}%` : '—'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Vol 24h</span>
+                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmtM(row.hl?.volume_24h_usd)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actual column */}
+                  <div style={{
+                    background: '#07090f', border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
+                  }}>
+                    <div style={{ color: '#a78bfa', fontFamily: C.font, fontSize: 9, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                      Equity Market
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Last Price</span>
+                        <span style={{ color: C.bright, fontFamily: C.font, fontSize: 12, fontWeight: 700 }}>
+                          {soFmt$(row.actual?.price)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>24h Chg</span>
+                        <span style={{ color: (row.actual?.change_pct ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmtPct(row.actual?.change_pct)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Bid / Ask</span>
+                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmt$(row.actual?.bid)} / {soFmt$(row.actual?.ask)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Prev Close</span>
+                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                          {soFmt$(row.actual?.prevclose)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Eq. Volume</span>
+                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                          {row.actual?.volume != null ? row.actual.volume.toLocaleString() : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gap explanation */}
+                <div style={{ marginTop: 10, color: C.dim, fontFamily: C.sans, fontSize: 11, lineHeight: 1.5 }}>
+                  {dir === 'hl_discount'
+                    ? `HL prices ${row.ticker} at ${soFmt$(row.hl?.price)} — ${Math.abs(gapPct ?? 0).toFixed(2)}% below the equity close of ${soFmt$(row.actual?.price)}. Crypto market pricing in a move lower.`
+                    : dir === 'hl_premium'
+                    ? `HL prices ${row.ticker} at ${soFmt$(row.hl?.price)} — ${Math.abs(gapPct ?? 0).toFixed(2)}% above the equity close of ${soFmt$(row.actual?.price)}. Crypto market pricing in a move higher.`
+                    : `Gap: ${soFmt$(gapAbs)} (${soFmtPct(gapPct)})`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!isLoading && !error && rows.length === 0 && data && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+          No actionable gaps found right now.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Chain Reaction Screener (existing page — unchanged)
+   ═══════════════════════════════════════════════════════════════════ */
+function StrategyScreenerInner() {
   const [selectedEntry, setSelectedEntry] = useState<ScreenerEntry | null>(null);
   const [refreshMsg,    setRefreshMsg]    = useState<string>('');
   const [sortCol,       setSortCol]       = useState<SortCol>('#');
@@ -868,6 +1151,56 @@ export default function StrategyScreenerPage() {
             onClose={() => setSelectedEntry(null)}
           />
         </>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Strategy Page — two-tab wrapper
+   ═══════════════════════════════════════════════════════════════════ */
+export default function StrategyScreenerPage() {
+  const [tab, setTab] = useState<'screener' | 'smart-options'>('screener');
+
+  const tabStyle = (active: boolean): CSSProperties => ({
+    padding: '8px 20px',
+    fontFamily: C.font,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    border: 'none',
+    background: 'transparent',
+    color: active ? C.bright : C.dim,
+    borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+    transition: 'color 0.15s, border-color 0.15s',
+  });
+
+  return (
+    <div style={{ background: C.bg, minHeight: '100vh' }}>
+      {/* Tab bar */}
+      <div style={{
+        borderBottom: `1px solid ${C.border}`,
+        display: 'flex',
+        gap: 0,
+        padding: '0 24px',
+        background: C.surface,
+      }}>
+        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>
+          Chain Reaction
+        </button>
+        <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>
+          Smart Options
+        </button>
+      </div>
+
+      {/* Tab content */}
+      {tab === 'screener' && <StrategyScreenerInner />}
+      {tab === 'smart-options' && (
+        <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <SmartOptionsTab />
+        </div>
       )}
     </div>
   );
