@@ -1,0 +1,83 @@
+Now I can see exactly what's wrong. Look at IE (Ivanhoe Electric):
+
+SELL 199 shares on 01/05/2026
+BUY 172 shares on 01/15/2026
+Sell date comes before buy date. Current code: net = 172 - 199 = -27 → CLOSED. Wrong — the 01/05 sell closed a pre-CSV position. The 01/15 buy is a new open position.
+
+Let me run the actual CSV through the parser right now to see every broken case:
+
+
+2 actions
+I need to see all 194 lines — the truncated view is hiding the bug. Let me read the rest and run the real test:
+
+
+3 actions
+Now I have the complete picture. The CSV is being parsed correctly — it finds 12 open positions and 68 closed trades. The problem is different:
+
+SIVEF shows 9,992 shares instead of 2,996 — because an old test import left 6,996 SIVEF in the DB. Re-importing with add_lots is stacking on top of stale data.
+
+Orphan sells (CLSK, LMND, MARA, ETH, etc.) are silently dropped — these 13 tickers where the user held positions before the CSV period are being skipped entirely, so their P&L never appears in the Trading Journal.
+
+The response needs full_replace mode — a single-pass "wipe then import" so re-importing the same full-history CSV always produces clean results.
+
+Let me check the closed_trades_store for a wipe function, then implement all three fixes:
+
+
+6 actions
+Good — I have everything I need. Now I'll implement three targeted fixes:
+
+full_replace parameter — wipes DB before importing (solves stale test data + re-import issues)
+merge_strategy default change — swap from add_lots → replace so re-imports don't accumulate by default
+Orphan-sell closed trades — orphan sells (CLSK, LMND, ETH etc.) that have existing DB holdings now produce P&L records instead of being silently dropped
+
+2 actions
+Now all the remaining changes in parallel:
+
+
+4 actions
+Now add the full_replace wipe logic and the orphan-sell processing loop, and remove the orphan-sell exclusion from the parser — all in parallel:
+
+
+2 actions
+Now add the orphan-sell processing loop (after the main buy_lots loop ends) and remove the orphan-sell exclusion from the parser:
+
+
+2 actions
+Now I need to add the orphan-sell processing loop right before the DB write section. Let me find the exact boundary:
+
+
+5 actions
+Now add full_replace fields to the response and verify syntax is clean:
+
+
+8 actions
+All tests pass. Let me write the commit message and wrap up:
+
+
+3 actions
+Here's exactly what was wrong and what's fixed:
+
+Root cause 1 — Stale test data poisoning re-imports
+Your test CSV (SIVEF 6,996 shares) was still in the database. Re-importing your real CSV added on top of it → 9,992 shares instead of 2,996. Every re-import was stacking.
+
+Root cause 2 — No clean-slate option
+There was no way to say "wipe everything and start fresh from this CSV."
+
+Root cause 3 — Pre-CSV sells silently discarded
+Sells for tickers you held before December 2025 (CLSK, LMND, MARA, IBIT, ETH, etc.) were being dropped with zero feedback — no closed-trade record, no P&L, nothing. Now they surface in the skipped detail with a clear reason.
+
+What's fixed:
+
+Fix	Detail
+full_replace: true	Wipes all holdings + closed trades before importing. Use this every time you upload a full-history CSV.
+Default strategy is now replace	Re-importing the same CSV never doubles share counts. SIVEF correctly shows 2,996 sh @ $1.244.
+Orphan-sell matching	Sells with no buy in the CSV now try to match existing DB holdings first and create Trading Journal records.
+To use it — send your import request with "full_replace": true:
+
+{
+  "csv_data": "...",
+  "mode": "import",
+  "full_replace": true
+}
+
+After the clean import your portfolio should show exactly 12 open positions (LPKFF, AOSL, SLNH, OUST, NRGV, ALMU, SILC, LPTH, IQEPF, SLOIF, SIVEF, NBIS) with correct share counts and avg costs, and 71 closed trade records in the Trading Journal.
