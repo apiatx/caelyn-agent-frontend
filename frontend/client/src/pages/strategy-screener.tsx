@@ -882,7 +882,7 @@ function SmartOptionsTab() {
             {/* Chart iframe */}
             <iframe
               key={tvTicker}
-              src={`https://www.tradingview.com/widgetembed/?frameElementId=tv_so_${tvTicker}&symbol=${encodeURIComponent(tvTicker)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=0f1628&theme=dark&style=1&timezone=America%2FNew_York&studies=%5B%5D&locale=en`}
+              src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=America%2FNew_York&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvTicker)}`}
               style={{ flex: 1, border: 'none', width: '100%' }}
               allowFullScreen
               title={`TradingView chart — ${tvTicker}`}
