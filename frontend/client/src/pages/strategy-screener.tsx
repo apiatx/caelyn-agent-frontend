@@ -532,8 +532,26 @@ function SmartOptionsTab() {
     retry: 1,
   });
 
+  const [soView, setSoView] = useState<'all' | 'calls' | 'puts'>('all');
+
   const market = data?.market;
-  const rows: any[] = (data?.rows ?? []).filter((r: any) => r.actual?.price != null);
+  const baseRows: any[] = (data?.rows ?? []).filter((r: any) => r.actual?.price != null);
+
+  const rows: any[] = useMemo(() => {
+    if (soView === 'calls') {
+      return [...baseRows.filter((r: any) => r.signal === 'call')]
+        .sort((a, b) => (b.gap?.pct ?? 0) - (a.gap?.pct ?? 0));
+    }
+    if (soView === 'puts') {
+      return [...baseRows.filter((r: any) => r.signal === 'put')]
+        .sort((a, b) => (a.gap?.pct ?? 0) - (b.gap?.pct ?? 0));
+    }
+    // 'all': calls first (high→low), then puts (low→high by pct, i.e. most negative first), then neutral
+    const calls    = [...baseRows.filter((r: any) => r.signal === 'call')].sort((a, b) => (b.gap?.pct ?? 0) - (a.gap?.pct ?? 0));
+    const puts     = [...baseRows.filter((r: any) => r.signal === 'put')].sort((a, b) => (a.gap?.pct ?? 0) - (b.gap?.pct ?? 0));
+    const neutral  = baseRows.filter((r: any) => r.signal !== 'call' && r.signal !== 'put');
+    return [...calls, ...puts, ...neutral];
+  }, [baseRows, soView]);
 
   const signalColor = (s: string) => s === 'call' ? C.green : s === 'put' ? C.red : C.dim;
   const signalLabel = (s: string, str: string) => {
@@ -607,6 +625,31 @@ function SmartOptionsTab() {
       {error && !isLoading && (
         <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: C.sans, fontSize: 13 }}>
           Failed to load Smart Options data. <button onClick={() => refetch()} style={{ color: C.blue, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Retry</button>
+        </div>
+      )}
+
+      {/* Sort toggles */}
+      {!isLoading && !error && baseRows.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+          {(['all', 'calls', 'puts'] as const).map(v => {
+            const active = soView === v;
+            const col = v === 'calls' ? C.green : v === 'puts' ? C.red : C.indigo;
+            const count = v === 'all' ? baseRows.length : baseRows.filter(r => r.signal === v.slice(0, -1)).length;
+            const label = v === 'all' ? 'All' : v === 'calls' ? '▲ Top Calls' : '▼ Top Puts';
+            return (
+              <button key={v} onClick={() => setSoView(v)} style={{
+                padding: '5px 14px', borderRadius: 6, cursor: 'pointer',
+                fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                background: active ? `${col}18` : 'transparent',
+                color: active ? col : C.dim,
+                border: `1px solid ${active ? col + '50' : C.border}`,
+                transition: 'all 0.15s',
+              }}>
+                {label} <span style={{ opacity: 0.6, fontWeight: 400 }}>({count})</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
