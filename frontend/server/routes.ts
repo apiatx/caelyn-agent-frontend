@@ -525,9 +525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify(req.body),
         signal: AbortSignal.timeout(90_000),
       });
-      const data = await upRes.json().catch(() => ({}));
+      // Read as text first so a truncated body from FastAPI is handled gracefully
+      const rawText = await upRes.text().catch(() => '');
+      let data: any = {};
+      try { data = rawText ? JSON.parse(rawText) : {}; } catch { data = { success: false, error: `FastAPI returned unparseable response (status ${upRes.status}): ${rawText.slice(0, 200)}` }; }
+      const httpStatus = upRes.status === 204 ? 200 : upRes.status; // 204 forbids a body; normalise to 200
       console.log(`[csv-${req.body?.mode}] FastAPI status=${upRes.status} success=${data.success} error=${data.error ?? data.detail ?? 'none'}`);
-      if (!data.success) console.log(`[csv-${req.body?.mode}] Full response:`, JSON.stringify(data).slice(0, 800));
+      if (!data.success) console.log(`[csv-${req.body?.mode}] Full response:`, rawText.slice(0, 800));
 
       // After a successful import, write updated_holdings from the response directly to
       // stock-holdings.json — no separate GET needed, FastAPI returns the exact open positions.
@@ -548,7 +552,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           caelynTerminalCache = null;
           console.log(`[csv-import] Wrote ${normalized.length} open holdings from import response: ${normalized.map((h: StockHolding) => h.ticker).join(', ')}`);
         } else if (Array.isArray(data.updated_holdings)) {
-          // updated_holdings present but empty — all positions were closed
           writeHoldings([]);
           caelynTerminalCache = null;
           console.log('[csv-import] All positions closed — cleared local holdings file.');
@@ -558,7 +561,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[csv-import] closed_trades_created:', data.closed_trades_created);
       }
 
-      return res.status(upRes.status).json(data);
+      // Strip updated_holdings from the browser response — it can be very large (all lots for all
+      // positions) and causes stream truncation through Vite's dev proxy. The Express server already
+      // wrote it to stock-holdings.json above; the browser refetches via /api/stock-holdings.
+      const { updated_holdings: _stripped, preview: _previewStrip, ...clientData } = data;
+      // For preview mode keep the preview array (it's small), but still strip updated_holdings
+      const responseData = req.body?.mode === 'preview'
+        ? { ...clientData, preview: data.preview }
+        : clientData;
+
+      return res.status(httpStatus).json(responseData);
     } catch (err: any) {
       return res.status(502).json({ success: false, error: err?.message });
     }
