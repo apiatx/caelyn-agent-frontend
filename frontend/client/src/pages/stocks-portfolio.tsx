@@ -574,9 +574,11 @@ export default function StocksPortfolioPage() {
         body: JSON.stringify({ csv_data: csvRawText, mode: 'preview' }),
       });
       const data = await res.json();
-      if (!data.success) { setCsvError(data.error || 'Preview failed.'); return; }
-      if (!data.symbols_imported?.length) {
-        setCsvError("No Buy transactions found. Make sure your CSV has a Transaction Type column with 'Buy' entries, and Symbol, Quantity, Price columns.");
+      if (!data.success) { setCsvError(data.error || data.detail || 'Preview failed.'); return; }
+      const hasOpenPositions  = (data.symbols_imported?.length ?? 0) > 0;
+      const hasClosedPositions = (data.symbols_closed?.length ?? 0) > 0 || (data.sells_found ?? 0) > 0;
+      if (!hasOpenPositions && !hasClosedPositions) {
+        setCsvError("No transactions found. Make sure your CSV has a Transaction Type column with 'Buy' or 'Sell' entries, and Symbol, Quantity, Price columns.");
         return;
       }
       setCsvPreview(data);
@@ -598,7 +600,7 @@ export default function StocksPortfolioPage() {
         body: JSON.stringify({ csv_data: csvRawText, mode: 'import', merge_strategy: 'add_lots' }),
       });
       const data = await res.json();
-      if (!data.success) { setCsvError(data.error || 'Import failed.'); setCsvPhase('preview'); return; }
+      if (!data.success) { setCsvError(data.error || data.detail || 'Import failed — check your CSV format and try again.'); setCsvPhase('preview'); return; }
 
       console.log('[CSV Import] action_distribution:', data.action_distribution);
       console.log('[CSV Import] netting_summary:', data.netting_summary);
@@ -2700,25 +2702,25 @@ export default function StocksPortfolioPage() {
                     )}
                     {(csvPreview.options_skipped ?? 0) > 0 && (
                       <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(168,85,247,0.1)', color: '#c084fc' }}>
-                        {csvPreview.options_skipped} option{csvPreview.options_skipped !== 1 ? 's' : ''} skipped
+                        {csvPreview.options_skipped} option contract{csvPreview.options_skipped !== 1 ? 's' : ''} detected
                       </span>
                     )}
                     {(csvPreview.sells_found ?? 0) > 0 && (
-                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(148,163,184,0.08)', color: '#94a3b8' }}>
-                        {csvPreview.sells_found} sell{csvPreview.sells_found !== 1 ? 's' : ''} ignored
+                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0' }}>
+                        {csvPreview.sells_found} sell{csvPreview.sells_found !== 1 ? 's' : ''} → Trade Journal
                       </span>
                     )}
                   </div>
 
                   {(csvPreview.options_skipped ?? 0) > 0 && (
                     <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.18)', color: '#c084fc' }}>
-                      {csvPreview.options_skipped} options transaction{csvPreview.options_skipped !== 1 ? 's were' : ' was'} detected and skipped — only equity positions are tracked. Any underlying stock lots in the same CSV were imported normally.
+                      {csvPreview.options_skipped} options contract row{csvPreview.options_skipped !== 1 ? 's were' : ' was'} detected — contract rows are skipped; any underlying equity lots in the same CSV are imported normally.
                     </div>
                   )}
 
                   {(csvPreview.sells_found ?? 0) > 0 && (
-                    <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.15)', color: '#d97706' }}>
-                      {csvPreview.sells_found} sell transaction{csvPreview.sells_found !== 1 ? 's were' : ' was'} detected and will be skipped — sells must be logged manually via Close Position.
+                    <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(92,200,240,0.07)', border: '1px solid rgba(92,200,240,0.15)', color: '#5cc8f0' }}>
+                      {csvPreview.sells_found} sell transaction{csvPreview.sells_found !== 1 ? 's' : ''} detected — will be netted against buy lots to calculate your realized P&L and logged to the Trade Journal as closed positions.
                     </div>
                   )}
 
@@ -2737,8 +2739,11 @@ export default function StocksPortfolioPage() {
                           <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                             <td className="py-2 px-3 font-bold text-white">{row.ticker}</td>
                             <td className="py-2 px-3">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase" style={{ background: row.action === 'create' ? 'rgba(74,222,128,0.1)' : 'rgba(92,200,240,0.1)', color: row.action === 'create' ? '#4ade80' : '#5cc8f0' }}>
-                                {row.action === 'create' ? 'New' : 'Add lots'}
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase" style={{
+                                background: row.action === 'create' ? 'rgba(74,222,128,0.1)' : row.action === 'closed' ? 'rgba(248,113,113,0.1)' : 'rgba(92,200,240,0.1)',
+                                color:      row.action === 'create' ? '#4ade80'              : row.action === 'closed' ? '#f87171'              : '#5cc8f0',
+                              }}>
+                                {row.action === 'create' ? 'New' : row.action === 'closed' ? 'Closed' : 'Add lots'}
                               </span>
                             </td>
                             <td className="py-2 px-3" style={{ color: '#94a3b8' }}>{row.lots_added ?? row.lots ?? '—'}</td>

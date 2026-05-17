@@ -523,8 +523,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: 'POST',
         headers: { 'X-API-Key': FA_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(90_000),
       });
       const data = await upRes.json().catch(() => ({}));
+      console.log(`[csv-${req.body?.mode}] FastAPI status=${upRes.status} success=${data.success} error=${data.error ?? data.detail ?? 'none'}`);
+      if (!data.success) console.log(`[csv-${req.body?.mode}] Full response:`, JSON.stringify(data).slice(0, 800));
 
       // After a successful import, write updated_holdings from the response directly to
       // stock-holdings.json — no separate GET needed, FastAPI returns the exact open positions.
