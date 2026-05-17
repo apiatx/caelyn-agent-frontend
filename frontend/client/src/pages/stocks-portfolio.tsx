@@ -848,14 +848,29 @@ export default function StocksPortfolioPage() {
     }
   };
 
+  const optimisticRemoveTrades = (idSet: Set<string>) => {
+    queryClient.setQueryData(['portfolio-closed-trades'], (old: any) => {
+      if (!old) return old;
+      const keepTrade = (t: any) => !idSet.has(t.id) && !idSet.has(t.trade_id);
+      const keepEvent = (ev: any) => !idSet.has(ev.id) && !idSet.has(ev.trade_id);
+      const newClosedTrades = (old.closed_trades ?? []).filter(keepTrade);
+      const newTradeGroups = (old.trade_groups ?? [])
+        .map((g: any) => ({ ...g, sell_events: (g.sell_events ?? []).filter(keepEvent) }))
+        .filter((g: any) => (g.sell_events ?? []).length > 0);
+      return { ...old, closed_trades: newClosedTrades, trade_groups: newTradeGroups, count: newTradeGroups.length || newClosedTrades.length };
+    });
+  };
+
   const deleteClosedTrade = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm('Permanently delete this closed trade record? This cannot be undone.')) return;
+    optimisticRemoveTrades(new Set([id]));
     try {
       await fetch(`/api/portfolio/closed-trades/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      await refetchClosedTrades();
+      refetchClosedTrades();
     } catch (err) {
       console.error('Failed to delete closed trade:', err);
+      refetchClosedTrades();
     }
   };
 
@@ -865,13 +880,15 @@ export default function StocksPortfolioPage() {
     if (ids.length === 0) return;
     const label = ids.length === 1 ? 'this closed trade record' : `all ${ids.length} sell records for ${ticker}`;
     if (!window.confirm(`Permanently delete ${label}? This cannot be undone.`)) return;
+    optimisticRemoveTrades(new Set(ids));
     try {
       await Promise.all(ids.map(id =>
         fetch(`/api/portfolio/closed-trades/${encodeURIComponent(id)}`, { method: 'DELETE' })
       ));
-      await refetchClosedTrades();
+      refetchClosedTrades();
     } catch (err) {
       console.error('Failed to delete trade group:', err);
+      refetchClosedTrades();
     }
   };
 
