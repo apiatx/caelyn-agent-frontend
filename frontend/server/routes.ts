@@ -526,50 +526,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const data = await upRes.json().catch(() => ({}));
 
-      // After a successful import, pull the freshly-created holdings from FastAPI and write to
-      // stock-holdings.json. FastAPI processes the CSV asynchronously, so retry with backoff.
+      // After a successful import, write updated_holdings from the response directly to
+      // stock-holdings.json — no separate GET needed, FastAPI returns the exact open positions.
       if (isImport && data.success) {
-        (async () => {
-          const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-          // Attempt up to 5 times: wait 1.5s, 1.5s, 2s, 2s, 3s between tries
-          const waits = [1500, 1500, 2000, 2000, 3000];
-          for (let attempt = 0; attempt < waits.length; attempt++) {
-            await delay(waits[attempt]);
-            try {
-              const holdRes = await fetch(`${FA_URL}/api/portfolio/holdings`, {
-                headers: { 'X-API-Key': FA_KEY },
-                signal: AbortSignal.timeout(10_000),
-              });
-              if (!holdRes.ok) continue;
-              const holdData = await holdRes.json().catch(() => ({}));
-              const faHoldings: any[] = Array.isArray(holdData)
-                ? holdData
-                : Array.isArray(holdData?.holdings)
-                ? holdData.holdings
-                : [];
-              if (faHoldings.length === 0) {
-                console.log(`[csv-import] Attempt ${attempt + 1}: FastAPI holdings still empty, retrying...`);
-                continue;
-              }
-              const normalized: StockHolding[] = faHoldings.map((h: any) => ({
-                id: h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-                ticker:    (h.ticker || h.symbol || '').toUpperCase(),
-                shares:    Number(h.shares ?? 0),
-                avgCost:   Number(h.avg_cost || h.avgCost || h.avg_price || 0),
-                assetType: h.asset_type || h.assetType || 'stock',
-                addedAt:   h.date_added || h.addedAt || new Date().toISOString(),
-                date_added: h.date_added || h.addedAt || new Date().toISOString(),
-                entry_date: h.entry_date || h.date_added || h.addedAt || undefined,
-              }));
-              writeHoldings(normalized);
-              caelynTerminalCache = null;
-              console.log(`[csv-import] Synced ${normalized.length} holdings to local file (attempt ${attempt + 1}): ${normalized.map((h: StockHolding) => h.ticker).join(', ')}`);
-              break;
-            } catch (syncErr: any) {
-              console.warn(`[csv-import] Attempt ${attempt + 1} failed:`, syncErr?.message);
-            }
-          }
-        })();
+        const faHoldings: any[] = Array.isArray(data.updated_holdings) ? data.updated_holdings : [];
+        if (faHoldings.length > 0) {
+          const normalized: StockHolding[] = faHoldings.map((h: any) => ({
+            id:         h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            ticker:     (h.ticker || h.symbol || '').toUpperCase(),
+            shares:     Number(h.shares ?? 0),
+            avgCost:    Number(h.avg_cost || h.avgCost || h.avg_price || 0),
+            assetType:  h.asset_type || h.assetType || 'stock',
+            addedAt:    h.entry_date || h.date_added || h.addedAt || new Date().toISOString(),
+            date_added: h.entry_date || h.date_added || h.addedAt || new Date().toISOString(),
+            entry_date: h.entry_date || h.date_added || h.addedAt || undefined,
+          }));
+          writeHoldings(normalized);
+          caelynTerminalCache = null;
+          console.log(`[csv-import] Wrote ${normalized.length} open holdings from import response: ${normalized.map((h: StockHolding) => h.ticker).join(', ')}`);
+        } else if (Array.isArray(data.updated_holdings)) {
+          // updated_holdings present but empty — all positions were closed
+          writeHoldings([]);
+          caelynTerminalCache = null;
+          console.log('[csv-import] All positions closed — cleared local holdings file.');
+        }
+        console.log('[csv-import] action_distribution:', data.action_distribution);
+        console.log('[csv-import] symbols_closed:', data.symbols_closed);
+        console.log('[csv-import] closed_trades_created:', data.closed_trades_created);
       }
 
       return res.status(upRes.status).json(data);

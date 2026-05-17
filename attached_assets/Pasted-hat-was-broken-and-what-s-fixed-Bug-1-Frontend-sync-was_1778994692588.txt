@@ -1,0 +1,49 @@
+hat was broken and what's fixed
+Bug 1 — Frontend sync was overwriting the import (the real culprit)
+POST /api/portfolio/holdings stripped the lots array from every holding it saved. When the frontend called it after CSV import (syncing from its local stock-holdings.json which had 32 flat records with no lots), it replaced the correctly-netted result with the stale 32-position list. That's why all 32 showed as open, and why lots=0 for everything.
+
+Fixed: The endpoint now reads existing lots from DB before normalizing. If incoming data has no lots, it carries the existing ones over — a flat frontend sync can no longer wipe import data.
+
+Bug 2 — Zero visibility into what the CSV contained
+No way to tell if sells were present or if keywords matched.
+
+Fixed: The import response now includes three new fields:
+
+result.action_distribution  // ["Buy", "Sell"] — every unique action value in the CSV
+result.netting_summary       // per-ticker: buy_lots, sell_lots, total_bought, total_sold, net_shares, action
+result.updated_holdings      // the exact open-holdings list saved to DB — use this directly
+
+Frontend: what needs to change
+After CSV import — use updated_holdings directly
+The response now contains the exact holdings that were saved. Write these to stock-holdings.json immediately without a separate GET call:
+
+const result = await uploadCSV({ csv_data, mode: "import" })
+if (result.success) {
+  // Log diagnostics to console so we can see what the CSV contained
+  console.log('[CSV Import] action_distribution:', result.action_distribution)
+  console.log('[CSV Import] netting_summary:', result.netting_summary)
+  console.log('[CSV Import] symbols_closed:', result.symbols_closed)
+  console.log('[CSV Import] closed_trades_created:', result.closed_trades_created)
+  // Write the open holdings directly from the response — DO NOT call
+  // syncToFastAPI() or POST /api/portfolio/holdings after this
+  await writeHoldings(result.updated_holdings)
+  // Refresh Trade Journal if any positions were closed
+  if (result.symbols_closed.length > 0) {
+    await refetchClosedTrades()
+  }
+}
+
+Critical: never call syncToFastAPI() after a CSV import
+Any code that pushes local holdings back to FastAPI after import will now be harmless (lots are preserved), but the cleanest approach is to skip it entirely — result.updated_holdings is already correct.
+
+What to show the user after import
+The response now has everything needed for a confirmation card:
+
+// ✓ 10 open positions loaded
+// ✓ 22 positions closed & logged to Trade Journal
+//   → fully closed: 18
+//   → partial sells: 4
+// ⚠ 5 options transactions skipped (if > 0)
+// If sells weren't detected, action_distribution will reveal the keyword:
+// action_distribution: ["Buy", "Dividend", "Sell"] ← "Sell" is in our keywords ✓
+// action_distribution: ["BUY", "DIVIDEND", "SECTO"] ← "SECTO"? not matched → would show 0 closed

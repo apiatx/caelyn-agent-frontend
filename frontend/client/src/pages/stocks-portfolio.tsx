@@ -599,21 +599,23 @@ export default function StocksPortfolioPage() {
       });
       const data = await res.json();
       if (!data.success) { setCsvError(data.error || 'Import failed.'); setCsvPhase('preview'); return; }
+
+      console.log('[CSV Import] action_distribution:', data.action_distribution);
+      console.log('[CSV Import] netting_summary:', data.netting_summary);
+      console.log('[CSV Import] symbols_closed:', data.symbols_closed);
+      console.log('[CSV Import] closed_trades_created:', data.closed_trades_created);
+
       setCsvImportResult(data);
       setCsvPhase('done');
+
+      // The server already wrote updated_holdings to stock-holdings.json synchronously.
+      // Just refetch so the UI reflects the new state — no syncToFastAPI() after a CSV import.
+      await refetchHoldings();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
-      queryClient.invalidateQueries({ queryKey: ['portfolio-closed-trades'] });
-      // Poll for holdings — the server syncs from FastAPI asynchronously after import,
-      // so retry up to 8 times (every 2s) until the local file is populated.
-      const pollIntervals = [500, 1500, 2000, 2000, 2000, 2000, 2000, 2000];
-      for (const wait of pollIntervals) {
-        await new Promise(r => setTimeout(r, wait));
-        const result = await refetchHoldings();
-        const fetched: Holding[] = (result?.data ?? []) as Holding[];
-        if (fetched.length > 0) {
-          queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
-          break;
-        }
+
+      // Refresh Trade Journal if any positions were closed
+      if ((data.symbols_closed?.length ?? 0) > 0) {
+        await refetchClosedTrades();
       }
     } catch (err: any) {
       setCsvError(err?.message || 'Network error.');
@@ -2772,18 +2774,43 @@ export default function StocksPortfolioPage() {
                   <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(74,222,128,0.12)' }}>
                     <Check className="w-7 h-7" style={{ color: '#4ade80' }} />
                   </div>
-                  <div>
+                  <div className="w-full px-2">
                     <div className="text-base font-semibold text-white">Import complete</div>
-                    <div className="text-sm mt-1" style={{ color: '#94a3b8' }}>
-                      {csvImportResult.holdings_created ?? 0} position{csvImportResult.holdings_created !== 1 ? 's' : ''} created
-                      {(csvImportResult.holdings_updated ?? 0) > 0 && ` · ${csvImportResult.holdings_updated} updated`}
-                      {' '}· {csvImportResult.lots_added ?? 0} total lots
-                    </div>
-                    {(csvImportResult.options_skipped ?? 0) > 0 && (
-                      <div className="text-xs mt-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.18)', color: '#c084fc' }}>
-                        {csvImportResult.options_skipped} options transaction{csvImportResult.options_skipped !== 1 ? 's' : ''} skipped — only equity positions are tracked
+                    <div className="flex flex-col gap-1.5 mt-3">
+                      {/* Open positions */}
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.15)' }}>
+                        <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#4ade80' }} />
+                        <span className="text-xs" style={{ color: '#94a3b8' }}>
+                          <span className="text-white font-medium">
+                            {(csvImportResult.updated_holdings ?? csvImportResult.symbols_imported ?? []).length} open position{((csvImportResult.updated_holdings ?? csvImportResult.symbols_imported ?? []).length) !== 1 ? 's' : ''}
+                          </span>
+                          {' '}loaded into your portfolio
+                        </span>
                       </div>
-                    )}
+                      {/* Closed positions */}
+                      {(csvImportResult.symbols_closed?.length ?? 0) > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(92,200,240,0.07)', border: '1px solid rgba(92,200,240,0.15)' }}>
+                          <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#5cc8f0' }} />
+                          <span className="text-xs" style={{ color: '#94a3b8' }}>
+                            <span className="text-white font-medium">{csvImportResult.symbols_closed.length} position{csvImportResult.symbols_closed.length !== 1 ? 's' : ''} closed</span>
+                            {' '}→ logged to Trade Journal
+                            {(csvImportResult.closed_trades_created ?? 0) > 0 && (
+                              <span style={{ color: '#64748b' }}> ({csvImportResult.closed_trades_created} trade record{csvImportResult.closed_trades_created !== 1 ? 's' : ''})</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {/* Options skipped */}
+                      {(csvImportResult.options_skipped ?? 0) > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.15)' }}>
+                          <span className="text-xs font-medium" style={{ color: '#c084fc' }}>⚠</span>
+                          <span className="text-xs" style={{ color: '#94a3b8' }}>
+                            <span style={{ color: '#c084fc' }}>{csvImportResult.options_skipped} options transaction{csvImportResult.options_skipped !== 1 ? 's' : ''} skipped</span>
+                            {' '}— only equity positions are tracked
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

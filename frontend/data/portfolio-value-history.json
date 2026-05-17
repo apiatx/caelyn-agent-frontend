@@ -445,5 +445,44 @@
       "NRGV",
       "SILC"
     ]
+  },
+  {
+    "timestamp": "2026-05-17T03:56:06.238Z",
+    "total_value": 468155.33280399995,
+    "holdings_count": 32,
+    "symbols": [
+      "SIVEF",
+      "PENG",
+      "IQEPF",
+      "SLOIF",
+      "TRT",
+      "NBIS",
+      "OUST",
+      "SLNH",
+      "NRGV",
+      "SILC",
+      "BWEN",
+      "FLNC",
+      "P",
+      "ARM",
+      "HIMX",
+      "INTT",
+      "LWLG",
+      "OPTX",
+      "EOPSF",
+      "UVXY",
+      "TPET",
+      "AXTI",
+      "UMAC",
+      "ASTI",
+      "CCCX",
+      "OSS",
+      "ASPI",
+      "SPAI",
+      "GEVO",
+      "UPWK",
+      "BYND",
+      "PALL"
+    ]
   }
 ]
