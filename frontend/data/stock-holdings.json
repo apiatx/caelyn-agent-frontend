@@ -1,1 +1,122 @@
-[]
+[
+  {
+    "id": "mpa80dfmwqkj",
+    "ticker": "LPKFF",
+    "shares": 387,
+    "avgCost": 25.62,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15",
+    "entry_date": "2026-05-15"
+  },
+  {
+    "id": "mpa80dfm084e",
+    "ticker": "AOSL",
+    "shares": 259,
+    "avgCost": 38.555,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15",
+    "entry_date": "2026-05-15"
+  },
+  {
+    "id": "mpa80dfmdcng",
+    "ticker": "SLNH",
+    "shares": 18957,
+    "avgCost": 2.1099,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15",
+    "entry_date": "2026-05-15"
+  },
+  {
+    "id": "mpa80dfmnbe6",
+    "ticker": "OUST",
+    "shares": 302,
+    "avgCost": 26.5092,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "mpa80dfms7g1",
+    "ticker": "NRGV",
+    "shares": 1969,
+    "avgCost": 5.0799,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12",
+    "entry_date": "2026-05-12"
+  },
+  {
+    "id": "mpa80dfmhalg",
+    "ticker": "ALMU",
+    "shares": 439,
+    "avgCost": 18.1284,
+    "assetType": "stock",
+    "addedAt": "2026-04-22",
+    "date_added": "2026-04-22",
+    "entry_date": "2026-04-22"
+  },
+  {
+    "id": "mpa80dfm44kv",
+    "ticker": "SILC",
+    "shares": 176,
+    "avgCost": 28.3702,
+    "assetType": "stock",
+    "addedAt": "2026-04-17",
+    "date_added": "2026-04-17",
+    "entry_date": "2026-04-17"
+  },
+  {
+    "id": "mpa80dfmi2qu",
+    "ticker": "LPTH",
+    "shares": 503,
+    "avgCost": 11.923549,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25",
+    "entry_date": "2026-03-25"
+  },
+  {
+    "id": "mpa80dfmlldv",
+    "ticker": "IQEPF",
+    "shares": 19875,
+    "avgCost": 0.399851,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25",
+    "entry_date": "2026-03-25"
+  },
+  {
+    "id": "mpa80dfm9now",
+    "ticker": "SLOIF",
+    "shares": 79,
+    "avgCost": 63.55,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25",
+    "entry_date": "2026-03-25"
+  },
+  {
+    "id": "mpa80dfmz1wn",
+    "ticker": "SIVEF",
+    "shares": 2996,
+    "avgCost": 1.244,
+    "assetType": "stock",
+    "addedAt": "2026-03-23",
+    "date_added": "2026-03-23",
+    "entry_date": "2026-03-23"
+  },
+  {
+    "id": "mpa80dfmyubp",
+    "ticker": "NBIS",
+    "shares": 76,
+    "avgCost": 91.6425,
+    "assetType": "stock",
+    "addedAt": "2026-01-05",
+    "date_added": "2026-01-05",
+    "entry_date": "2026-01-05"
+  }
+]

@@ -2541,9 +2541,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Stock Portfolio Holdings (JSON file storage) ===
-  app.get('/api/stock-holdings', (req, res) => {
+  app.get('/api/stock-holdings', async (req, res) => {
     try {
-      const holdings = readHoldings();
+      let holdings = readHoldings();
+
+      // Self-heal: if local file is empty, pull the canonical list from FastAPI
+      if (holdings.length === 0) {
+        try {
+          const faRes  = await fetch(`${FA_URL}/api/portfolio/holdings`, {
+            headers: { 'X-API-Key': FA_KEY },
+            signal:  AbortSignal.timeout(15_000),
+          });
+          const faRaw  = await faRes.text().catch(() => '');
+          const faData = faRaw ? JSON.parse(faRaw) : [];
+          const faList: any[] = Array.isArray(faData) ? faData
+            : Array.isArray(faData?.holdings) ? faData.holdings : [];
+          if (faList.length > 0) {
+            const normalized: StockHolding[] = faList.map((h: any) => ({
+              id:         Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+              ticker:     (h.ticker || h.symbol || '').toUpperCase(),
+              shares:     Number(h.shares ?? 0),
+              avgCost:    Number(h.avg_cost || h.avgCost || h.avg_price || 0),
+              assetType:  h.asset_type || h.assetType || 'stock',
+              addedAt:    h.entry_date || h.date_added || new Date().toISOString(),
+              date_added: h.entry_date || h.date_added || new Date().toISOString(),
+              entry_date: h.entry_date || h.date_added || undefined,
+            }));
+            writeHoldings(normalized);
+            caelynTerminalCache = null;
+            holdings = normalized;
+            console.log(`[stock-holdings] Self-healed from FastAPI: wrote ${normalized.length} holdings`);
+          }
+        } catch (e: any) {
+          console.warn('[stock-holdings] Self-heal fetch failed:', e?.message);
+        }
+      }
+
       res.json(holdings);
       // Write a daily cost-basis snapshot if not yet done today (non-blocking)
       try {
