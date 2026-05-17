@@ -1,0 +1,355 @@
+Let me start with the audit — searching for all existing stage analysis / breakout logic in the backend simultaneously:
+
+
+3 actions
+Let me restart the app and do the audit search in parallel, excluding the cache directory:
+
+
+6 actions
+Good — the audit identified the key files. Let me read the most relevant ones simultaneously:
+
+
+5 actions
+Good — now I have a complete audit picture. Let me read the end of the _build_theme_row return dict and a bit more context before writing the full implementation:
+
+
+3 actions
+I have a complete audit picture. Now let me build everything — the new module and integration — in one pass.
+
+Audit findings:
+
+ta_signal_engine.py: stock-level daily TA signals only — uses SMA50/200, not 30w MA, not reusable
+agent/prompts.py: Weinstein references are LLM prompt text only — zero deterministic computation
+screener_definitions.py: binary filter presets (above_sma50, breakout_52w_high) — not computation
+Decision: Build new services/stage_analysis.py from scratch — no existing logic is reusable for weekly theme-level classification
+Now building the full implementation:
+
+
+2 actions
+Now integrate stage analysis into _build_theme_row. The stage fields get computed using the already-fetched histories — no new API calls:
+
+
+3 actions
+Now I'll add the stage computation block before the return statement, and add the stage fields to the dict. Two edits to theme_rs_service.py:
+
+
+2 actions
+Now add the stage fields to the return dict:
+
+
+2 actions
+Server is up. Now delete any stale LKG cache and force-refresh with the new stage analysis code:
+
+
+4 actions
+Stage fields are empty — the stage computation is silently failing. Let me check the logs for errors:
+
+
+3 actions
+The module works fine standalone — the issue is the server didn't pick up the new code. Let me restart and check the logs:
+
+
+2 actions
+Server is back up. Let me clear cache files, force-refresh, and spot-check a single theme simultaneously to see if stage fields appear:
+
+
+3 actions
+Code is confirmed in the file. Now force-refresh the endpoint to get live stage analysis data:
+
+
+2 actions
+Let me check logs and retry the refresh simultaneously:
+
+
+2 actions
+The force-refresh is too slow for a synchronous curl. Let me check if the background refresh already ran and saved results:
+
+
+3 actions
+The background refresh already ran and saved 58/60 themes with stage data. Let me run all the validation scenarios the task requires:
+
+
+3 actions
+58/60 themes have stage data — excellent. The 2 without stage are memory_storage (DRAM ETF insufficient history) and pre_ipo (VCX private fund). Let me verify the live API returns stage fields now, then run a deeper check on those 2 edge cases:
+
+
+3 actions
+Live endpoint is working with stage fields. Two edge cases remain:
+
+memory_storage — DRAM proxy has insufficient weekly bars (fallback needed to SMH/SOXX)
+pre_ipo — VCX private fund (no public price data — acceptable "Unknown" fallback)
+Let me fix the basket fallback to try each proxy in order:
+
+
+6 actions
+Fix the basket/hybrid/etf fallback to try each proxy in order until one has enough weekly bars:
+
+
+2 actions
+Good, let me restart to pick up the basket fallback fix, then run the complete validation:
+
+
+2 actions
+Server is running. Clear cache and trigger the background refresh while also running a local validation with the updated code:
+
+
+3 actions
+Strong results. The declining scenarios are correctly classified. Let me now check the actual live data for all 5 custom themes and confirm the final validation:
+
+
+3 actions
+All validation passes. Let me now write the commit message:
+
+Validation summary:
+
+✅ 59/60 themes have stage data (only pre_ipo with private VCX fund returns "Unknown" — honest, not fake)
+✅ All 5 validation scenarios correct: photonics_lasers (S2, +102% above MA), crypto_equities (S1→2 watch), healthcare (S3→4 danger), software (S4, below falling MA), power_cooling custom basket (S2 synthetic basket with breadth metrics)
+✅ All stage fields present on every row in live API
+✅ Zero new API calls — reuses histories dict from existing RS compute
+✅ Cache unchanged — stage data baked into existing LKG cache
+
+3 actions
+Here's a full summary of everything built and validated.
+
+Audit Results
+File	Finding
+core/ta_signal_engine.py	Stock-level daily TA signals (SMA50/200, 20-day pivots). Not 30-week MA, not reusable for themes.
+agent/prompts.py	Weinstein stage references are LLM instructions only — no deterministic computation anywhere
+screener_definitions.py	stage2_breakouts is just binary screener filters (above_sma50, breakout_52w_high)
+Decision	Option B — built services/stage_analysis.py from scratch
+What Was Built
+New file: backend/services/stage_analysis.py
+
+weekly_bars_from_daily() — aggregates daily → ISO weekly bars (no external calls)
+_build_synthetic_basket() — equal-weight rebased price index from multi-symbol baskets
+_classify_stage() — deterministic 6-label Weinstein classifier using price vs 30w MA, MA slope, prior 26-week trend, RS, and consistency
+_compute_stage_score() — continuous 0–100 score (position 35%, trend 30%, consistency 15%, RS 20%)
+analyze_symbol_stage() — full analysis from weekly bars
+analyze_theme_stage() — dispatches correctly by proxy_type: etf/basket/hybrid → first proxy with sufficient weekly history; custom → equal-weight synthetic basket + member breadth
+Changed: backend/services/theme_rs_service.py
+
+Stage computation added at the end of _build_theme_row(), reusing the already-fetched histories dict
+Zero new API calls — pure math from cached daily bars
+New Fields on Every Theme Row
+{
+  "stage": 2,
+  "stage_label": "Stage 2 Advance",
+  "stage_score": 100.0,
+  "stage_confidence": "high",
+  "stage_reason": "Price +46.8% above a rising 30-week MA (8/8 recent weeks above MA). RS vs SPY: rising.",
+  "stage_signals": {
+    "price_vs_30w_ma_pct": 46.75,
+    "ma_30w_slope_pct": 9.17,
+    "rs_vs_spy_trend": "rising",
+    "rs_vs_spy_8w_pct": 26.26,
+    "volume_ratio": null,
+    "weeks_above_30w_ma_of_8": 8,
+    "prior_26w_trend_pct": 94.54,
+    "breakout_watch": false,
+    "danger_zone": false,
+    "breadth_above_30w_ma_pct": 100.0,
+    "breadth_rising_30w_ma_pct": 100.0
+  },
+  "stage_updated_at": "2026-05-15T04:40:47Z",
+  "stage_source": "synthetic_basket"
+}
+
+Validation (Real Market Data)
+Scenario	Theme	Result
+1. Strong uptrend	photonics_lasers	Stage 2 — +102% above rising MA, score=100, conf=high
+2. Basing/sideways	crypto_equities	Stage 1→2 Breakout Watch — MA falling, RS rising, bw=true
+3. Topping	healthcare	Stage 3→4 Danger — broke below MA, falling RS, danger_zone=true
+4. Declining	software	Stage 4 Decline — -4% below falling MA, 0/8 weeks above MA
+5. Custom basket	power_cooling	Stage 2 — synthetic basket, +47% above MA, breadth=100%
+59/60 themes have stage data. Only pre_ipo (VCX = private Fundrise fund, no public price data) returns "Unknown" — an honest fallback rather than fake hardcoded data. No existing consumers are broken — stage fields are purely additive.
+
+
+Checkpoint made
+3 days ago
+
+Worked for 15 minutes
+
+Planning new "Smart Options" tab (4 seconds)
+Let me explore the existing page structure and available data sources in parallel:
+
+
+20 actions
+Let me gather the key data I need in parallel:
+
+
+4 actions
+I have everything I need. Let me now build the service and endpoint:
+
+
+4 actions
+Let me check the master screener LKG structure and the options cache key quickly:
+
+
+7 actions
+Good — I have all the structure I need. Let me now check how the providers are accessed so I wire the endpoint correctly:
+
+
+6 actions
+Now let me find the HL state access pattern and a good insertion point for the new endpoint:
+
+
+4 actions
+Good — I have all the context I need. Let me look at the HL state and find the exact insertion point, then build everything in parallel:
+
+
+4 actions
+Let me check ScreenerAsset fields and find the right insertion point in main.py:
+
+
+7 actions
+I have everything I need. Now I'll create the service file and add the endpoint:
+
+
+2 actions
+Now I'll add the endpoint to main.py at the very end:
+
+
+2 actions
+Good, the server is running. Let me restart to pick up the new service file, then verify the endpoint responds correctly:
+
+
+4 actions
+Response returned but with no data — let me check the actual raw JSON and logs in parallel:
+
+
+3 actions
+Clear fix — cache needs to be referenced via the module it's imported from. Let me check the exact import pattern:
+
+
+4 actions
+cache is imported locally inside functions throughout main.py — not at module level. Quick fix:
+
+
+2 actions
+The server is running but won't auto-reload — I need to restart to pick up the cache fix:
+
+
+4 actions
+Zero rows returned means the HL equity tickers aren't matching. Let me check what coin names are actually in the live state:
+
+
+4 actions
+The issue is clear: HIP-3 equity perps use display_name (e.g. TSLA), not coin (e.g. kTSLA:TSLA). Let me verify and fix the service:
+
+
+6 actions
+Got it — equity perps are HIP-3 DEX coins with coin = "kTSLA:TSLA" format; the display_name is the clean ticker. My service needs to use display_name when the coin contains :. Let me also verify what's actually in the HIP-3 cache:
+
+
+7 actions
+Now I understand the exact format. The coin is xyz:TSLA and display_name is TSLA. My service was checking a.coin but needs to check a.display_name. Let me fix the service:
+
+
+3 actions
+Now I see the full picture. Multiple DEXes trade the same equity (e.g., xyz:TSLA, flx:TSLA, km:TSLA). I need to match by display_name, use the equity tag, and aggregate across DEXes. Let me rewrite the core of the service:
+
+
+2 actions
+Since the service is imported lazily inside the endpoint function, Python hasn't loaded it yet — the rewrite will be picked up on the first call without a restart. Let me test now:
+
+
+2 actions
+The HL state shows 0 equity perps — the live state likely doesn't have HIP-3 assets loaded yet, or tags aren't populated. Let me dig into what the state actually contains:
+
+
+3 actions
+Let me read the boot.py preload section and check exactly how HIP-3 assets are stored in the state:
+
+
+7 actions
+The issue is clear: scored_assets() returns lkg_assets (630 crypto perps) but HIP-3 equity assets live separately in state.assets. My service should fall back to all_assets() which includes everything, or directly read the HIP-3 disk cache. The cleanest fix: use all_assets() and also try the disk cache as a fallback:
+
+
+2 actions
+Now I need to add the disk-cache fallback function. I also need to clear the module from Python's import cache so the running server picks up the rewrite without a restart:
+
+
+2 actions
+The running server has the old service cached in memory — need a restart to pick up both changes:
+
+
+4 actions
+65 equities loaded — the disk cache fallback is working. The format error is just my test script. Let me check properly:
+
+
+2 actions
+It's working. 65 equities loading from the disk cache, 24 with a gap. But there are some false-positive rows: GOLD ($4552 on HL vs $38 Barrick Gold equity), WTI, JPY — these are commodity/FX perps where the same ticker happens to match an unrelated Tradier security. I need to add a price-ratio sanity filter to exclude these mismatches:
+
+
+2 actions
+Now apply the blocklist and price-ratio check inside the row-building loop:
+
+
+2 actions
+The server is running but still has the old service in memory. Restart and test:
+
+
+4 actions
+All rows showing "no_data" — the Tradier batch quote call must be failing after the restart. Let me debug that in parallel with checking logs:
+
+
+3 actions
+Tradier works fine individually — the issue is in the batch call. Let me debug directly:
+
+
+3 actions
+The logs reference an old run. Let me check fresh logs and test a quick endpoint call in parallel:
+
+
+2 actions
+Found it — [SmartOptions] Tradier batch-quote error: — the Tradier rate limiter was at 100/100 calls when my batch hit, causing the 10-second timeout to fire. The fix is to raise the timeout to 35 seconds (the limiter throttles ~20s max) and also try individual cached quotes as a fallback:
+
+
+2 actions
+The server needs a restart to pick up the updated service timeout, but this time I'll also make the service invalidate its own module cache on reload:
+
+
+7 actions
+The exception is being caught with empty str(exc). Let me improve the error logging to see what's actually happening, and also check for the real exception type:
+
+
+2 actions
+The server has been restarted. Let me test the endpoint and check the new log at the same time:
+
+
+3 actions
+The endpoint is working. 39 tickers with real prices, 18 meaningful gaps showing real arbitrage signals:
+
+BIRD: HL=$4.20 → actual=$4.41 → -4.84% PUT
+CRCL: HL=$110 → actual=$114 → -3.22% PUT
+MSTR: HL=$173 → actual=$177 → -2.36% PUT
+GME: HL=$22.0 → actual=$21.6 → +1.76% CALL
+DRAM: HL=$52.0 → actual=$51.1 → +1.65% CALL
+The backend is complete and clean. Now let me write the frontend instructions:
+
+
+2 actions
+The backend is complete and verified. Let me write the commit message and mark done:
+
+
+3 actions
+The backend is done and verified live. Here's a summary of what was built and the instructions your frontend agent needs:
+
+What was built (backend)
+New file: backend/services/smart_options_service.py
+New endpoint: GET /api/strategy/smart-options
+
+The endpoint is fully isolated — zero changes to any existing bottleneck/serenity/chain-reaction logic. It:
+
+Pulls all Hyperliquid HIP-3 equity perps from the live screener state (these are coins with format xyz:TSLA → display name TSLA)
+Falls back to the disk cache (hyperliquid_hip3_cache.json) on cold starts so data is always available
+Batch-fetches Tradier quotes for all matched US equity tickers in parallel
+Filters out ticker collisions (e.g. HL's GOLD = ~$4,500/oz spot gold vs Tradier's GOLD = Barrick Mining stock) using both a blocklist and a 12× price-ratio sanity check
+Aggregates OI across all DEXes trading the same ticker (e.g. xyz:TSLA + flx:TSLA + km:TSLA)
+Computes the gap and signals, sorted by biggest opportunity first
+Live data right now (weekend): 65 HL equity tickers tracked, 39 with Tradier prices, 18 with meaningful gaps — including MSTR −2.4% (put), GME +1.8% (call), RKLB +1.6% (call), COIN −1.9% (put).
+
+Frontend instructions for the CaelynAI agent
+Tell your frontend agent:
+
+"Rename the Bottlenecks/Serenity/Chain Reaction page to Strategy. Add a two-tab layout: Tab #1 wraps the existing page content unchanged, Tab #2 is a new Smart Options tab. For Tab #2, call GET /api/strategy/smart-options on tab mount. The response has a market banner object (show it at the top — it explains whether markets are open/closed and if the gaps are actionable), a rows array sorted by gap size, and each row has ticker, signal (call/put/neutral), signal_strength (strong/moderate/weak), an hl block with HL price + OI + 24h change + funding rate, and an actual block with Tradier price + options OI + volume. Show two columns per row: HL (left) and Actual (right), with the gap % in bold green (CALL) or red (PUT) and a recommended strategy badge. Skip or dim no_data rows. Full detailed spec is at .local/FRONTEND_SMART_OPTIONS_INSTRUCTIONS.md in the backend repo."
