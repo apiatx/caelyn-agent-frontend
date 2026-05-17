@@ -484,5 +484,26 @@
       "BYND",
       "PALL"
     ]
+  },
+  {
+    "timestamp": "2026-05-17T21:15:10.319Z",
+    "total_value": 156866.21477299999,
+    "holdings_count": 14,
+    "symbols": [
+      "LPKFF",
+      "AOSL",
+      "SLNH",
+      "OUST",
+      "NRGV",
+      "ALMU",
+      "SILC",
+      "LPTH",
+      "IQEPF",
+      "SLOIF",
+      "BWEN",
+      "FLNC",
+      "PENG",
+      "TRT"
+    ]
   }
 ]

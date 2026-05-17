@@ -1,52 +1,128 @@
 [
   {
-    "id": "mpa88bd818vd",
+    "id": "mpa9xindn4jq",
+    "ticker": "LPKFF",
+    "shares": 387,
+    "avgCost": 25.62,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15"
+  },
+  {
+    "id": "mpa9xindj1s7",
+    "ticker": "AOSL",
+    "shares": 259,
+    "avgCost": 38.555,
+    "assetType": "stock",
+    "addedAt": "2026-05-15",
+    "date_added": "2026-05-15"
+  },
+  {
+    "id": "mpa9xindifta",
+    "ticker": "SLNH",
+    "shares": 24361,
+    "avgCost": 1.998941,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12"
+  },
+  {
+    "id": "mpa9xind7zxy",
+    "ticker": "OUST",
+    "shares": 302,
+    "avgCost": 26.5092,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12"
+  },
+  {
+    "id": "mpa9xindarm0",
+    "ticker": "NRGV",
+    "shares": 1969,
+    "avgCost": 5.0799,
+    "assetType": "stock",
+    "addedAt": "2026-05-12",
+    "date_added": "2026-05-12"
+  },
+  {
+    "id": "mpa9xindsxuc",
+    "ticker": "ALMU",
+    "shares": 439,
+    "avgCost": 18.1284,
+    "assetType": "stock",
+    "addedAt": "2026-04-22",
+    "date_added": "2026-04-22"
+  },
+  {
+    "id": "mpa9xindo5ms",
+    "ticker": "SILC",
+    "shares": 176,
+    "avgCost": 28.3702,
+    "assetType": "stock",
+    "addedAt": "2026-04-17",
+    "date_added": "2026-04-17"
+  },
+  {
+    "id": "mpa9xindz5wh",
+    "ticker": "LPTH",
+    "shares": 503,
+    "avgCost": 11.923549,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25"
+  },
+  {
+    "id": "mpa9xindiux4",
+    "ticker": "IQEPF",
+    "shares": 19875,
+    "avgCost": 0.399851,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25"
+  },
+  {
+    "id": "mpa9xindtk5o",
+    "ticker": "SLOIF",
+    "shares": 79,
+    "avgCost": 63.55,
+    "assetType": "stock",
+    "addedAt": "2026-03-25",
+    "date_added": "2026-03-25"
+  },
+  {
+    "id": "mpa9xindi8zy",
     "ticker": "BWEN",
     "shares": 1512,
     "avgCost": 3.9,
     "assetType": "stock",
     "addedAt": "2026-05-15",
-    "date_added": "2026-05-15",
-    "entry_date": "2026-05-15"
+    "date_added": "2026-05-15"
   },
   {
-    "id": "mpa88bd8sxvc",
+    "id": "mpa9xindvbcw",
     "ticker": "FLNC",
     "shares": 499,
     "avgCost": 20.07,
     "assetType": "stock",
     "addedAt": "2026-05-15",
-    "date_added": "2026-05-15",
-    "entry_date": "2026-05-15"
+    "date_added": "2026-05-15"
   },
   {
-    "id": "mpa88bd8aprn",
-    "ticker": "SLNH",
-    "shares": 5404,
-    "avgCost": 1.6097,
-    "assetType": "stock",
-    "addedAt": "2026-05-12",
-    "date_added": "2026-05-12",
-    "entry_date": "2026-05-12"
-  },
-  {
-    "id": "mpa88bd89jbn",
+    "id": "mpa9xindpzpd",
     "ticker": "PENG",
     "shares": 422,
     "avgCost": 35.47,
     "assetType": "stock",
     "addedAt": "2026-05-05",
-    "date_added": "2026-05-05",
-    "entry_date": "2026-05-05"
+    "date_added": "2026-05-05"
   },
   {
-    "id": "mpa88bd8eimf",
+    "id": "mpa9xinds9b6",
     "ticker": "TRT",
     "shares": 1160,
     "avgCost": 6.435,
     "assetType": "stock",
     "addedAt": "2026-04-07",
-    "date_added": "2026-04-07",
-    "entry_date": "2026-04-07"
+    "date_added": "2026-04-07"
   }
 ]
