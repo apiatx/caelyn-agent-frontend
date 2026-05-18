@@ -1,0 +1,90 @@
+FRONTEND REPLIT AGENT — Add Risk column to Portfolio Terminal Options table
+
+Backend is adding portfolio-only options pullback-risk fields to /api/caelyn-terminal portfolio_options.
+
+This is only for:
+Portfolio page → Terminal tab → Options section
+
+Do NOT:
+- change the Options Flow page
+- change the global Options Screener page
+- calculate risk in frontend
+- add new provider calls
+- call Tradier/options directly
+- hardcode tickers
+- break existing Options table fields
+
+Current Portfolio Terminal Options table columns:
+TICKER | SCORE | P/C | IV | EM | VOL | SIGNAL
+
+New columns:
+TICKER | SCORE | P/C | IV | EM | VOL | SIGNAL | RISK
+
+Backend fields expected per row:
+- risk_score
+- risk_level
+- risk_signal
+- risk_reasons
+- risk_confidence
+- risk_source
+
+Task:
+1. Locate Portfolio Terminal Options table rendering.
+2. Add a new Risk column after Signal.
+3. Render:
+   - row.risk_signal or row.risk_level
+   - fallback "—" if missing
+4. Add tooltip/title using:
+   - risk_reasons joined
+   - risk_score
+   - risk_confidence
+5. Style consistently:
+   - HIGH: red/danger
+   - ELEVATED: orange/warn
+   - WATCH: yellow/amber
+   - LOW: muted/green/blue consistent with app style
+   - UNKNOWN: muted/gray
+6. Keep existing row layout compact.
+7. Do not affect market-wide Options Flow page.
+
+If table width gets tight:
+- Keep Risk short: HIGH / ELEV / WATCH / LOW
+- Use tooltip for details.
+
+Validation:
+Use current live portfolio.
+
+Confirm:
+1. Portfolio Terminal Options table has Risk column.
+2. Rows show risk level from backend.
+3. Hover/title shows risk reasons.
+4. Existing columns still render:
+   - ticker
+   - score
+   - P/C
+   - IV
+   - EM
+   - VOL
+   - signal
+5. Options Flow page is unchanged.
+6. No new frontend options provider calls.
+7. Hard refresh still works.
+
+Diagnostics:
+Add:
+[portfolio-options-risk-ui] {
+  rows,
+  high,
+  elevated,
+  watch,
+  low,
+  unknown,
+  firstRows,
+  backendFieldsSeen
+}
+
+Return:
+- files changed
+- backend fields consumed
+- screenshot/log validation
+- confirmation Options Flow page untouched

@@ -46,6 +46,13 @@ interface CTOptionsRow {
   data_available?: boolean | null;
   unavailable_reason?: string | null;
   source?: string | null;
+  // Portfolio-only pullback risk fields (not present on Options Flow page)
+  risk_score?: N;
+  risk_level?: string | null;
+  risk_signal?: string | null;
+  risk_reasons?: string[] | null;
+  risk_confidence?: N;
+  risk_source?: string | null;
 }
 interface CaelynTerminalData {
   is_placeholder?: boolean;
@@ -1347,6 +1354,7 @@ export default function CaelynTerminalPage() {
                 case 'EM':     return numCmp(a.em ?? a.expected_move, b.em ?? b.expected_move);
                 case 'VOL':    return numCmp(a.vol ?? a.volume, b.vol ?? b.volume);
                 case 'SIGNAL': return dir * (a.signal || '').localeCompare(b.signal || '');
+                case 'RISK':   return dir * (a.risk_level || a.risk_signal || '').localeCompare(b.risk_level || b.risk_signal || '');
                 default: return 0;
               }
             });
@@ -1362,19 +1370,31 @@ export default function CaelynTerminalPage() {
               unavailableCount: unavailableRows.length,
               unavailableReasons: Object.fromEntries(unavailableRows.map(r => [r.ticker, r.unavailable_reason ?? null])),
             }));
+            // Risk column diagnostics
+            const riskLevels = backendRows.map(r => (r.risk_level || r.risk_signal || '').toUpperCase());
+            console.log('[portfolio-options-risk-ui]', {
+              rows:            backendRows.length,
+              high:            riskLevels.filter(l => l === 'HIGH').length,
+              elevated:        riskLevels.filter(l => l === 'ELEVATED').length,
+              watch:           riskLevels.filter(l => l === 'WATCH').length,
+              low:             riskLevels.filter(l => l === 'LOW').length,
+              unknown:         riskLevels.filter(l => !l || l === 'UNKNOWN').length,
+              firstRows:       backendRows.slice(0, 3).map(r => ({ ticker: r.ticker, risk_level: r.risk_level, risk_signal: r.risk_signal, risk_score: r.risk_score })),
+              backendFieldsSeen: fieldsSeen,
+            });
             const mkSort = (col: string) => () => setOptSort(s => ({ col, dir: s.col === col ? (s.dir === 'asc' ? 'desc' : 'asc') : (col === 'TICKER' ? 'asc' : 'desc') }));
             const thO = (col: string) => ({ padding:'5px 6px', color: optSort.col === col ? C.teal : C.dim, fontWeight:700, textAlign:(col==='TICKER'||col==='SIGNAL'?'left':'right') as 'left'|'right', fontSize:9, letterSpacing:0.5, cursor:'pointer', userSelect:'none' as const, whiteSpace:'nowrap' as const });
             const arrO = (col: string) => optSort.col === col ? (optSort.dir === 'asc' ? '▲' : '▼') : '';
             if (ph) return <div style={{ padding:'20px', textAlign:'center', fontSize:11, color:C.text }}>Awaiting data...</div>;
             return (
               <div style={{ overflow:'auto', flex:1 }}>
-                <table style={{ width:'100%', minWidth:560, borderCollapse:'collapse', fontSize:10, tableLayout:'fixed' }}>
+                <table style={{ width:'100%', minWidth:600, borderCollapse:'collapse', fontSize:10, tableLayout:'fixed' }}>
                   <colgroup>
-                    <col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'36%', minWidth:160 }} />
+                    <col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'26%', minWidth:120 }} /><col style={{ width:'16%', minWidth:62 }} />
                   </colgroup>
                   <thead>
                     <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
-                      {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL'] as const).map(h => (
+                      {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL','RISK'] as const).map(h => (
                         <th key={h} style={thO(h)} onClick={mkSort(h)}>{h} <span style={{ fontSize:7, opacity:0.7 }}>{arrO(h)}</span></th>
                       ))}
                     </tr>
@@ -1408,6 +1428,22 @@ export default function CaelynTerminalPage() {
                           <td style={{ padding:'5px 6px', color: unavailable ? C.dim : sigColor, fontSize:9, fontWeight:700, textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.unavailable_reason ?? undefined}>
                             {unavailable ? (t.unavailable_reason ?? 'unavailable') : (sig || '—')}
                           </td>
+                          {(() => {
+                            const rl = (t.risk_level || t.risk_signal || '').toUpperCase();
+                            const rClr = rl === 'HIGH' ? C.red : rl === 'ELEVATED' ? C.amber : rl === 'WATCH' ? '#eab308' : rl === 'LOW' ? C.green : C.dimLow;
+                            const rLabel = rl === 'HIGH' ? 'HIGH' : rl === 'ELEVATED' ? 'ELEV' : rl === 'WATCH' ? 'WATCH' : rl === 'LOW' ? 'LOW' : (rl ? rl.slice(0,5) : '—');
+                            const reasons = t.risk_reasons ?? [];
+                            const rTitle = [
+                              reasons.length > 0 ? reasons.join(' · ') : null,
+                              t.risk_score != null ? `Score: ${t.risk_score}` : null,
+                              t.risk_confidence != null ? `Confidence: ${t.risk_confidence}` : null,
+                            ].filter(Boolean).join(' | ') || undefined;
+                            return (
+                              <td style={{ padding:'5px 6px', textAlign:'right', fontSize:9, fontWeight:700, letterSpacing:0.3, color: rl ? rClr : C.dimLow, background: rl && rl !== 'LOW' && rl !== 'UNKNOWN' ? `${rClr}12` : 'transparent' }} title={rTitle}>
+                                {rLabel}
+                              </td>
+                            );
+                          })()}
                         </tr>
                       );
                     })}
