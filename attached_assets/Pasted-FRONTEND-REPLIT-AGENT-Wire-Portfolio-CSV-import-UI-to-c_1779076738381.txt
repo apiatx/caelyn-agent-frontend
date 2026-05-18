@@ -1,0 +1,204 @@
+FRONTEND REPLIT AGENT — Wire Portfolio CSV import UI to corrected backend ledger classification
+
+Backend has fixed the Portfolio CSV import accounting/classification engine.
+
+Important backend validation now passing:
+- NBIS = open, NOT partial
+- OPTX = fully_closed, NOT partial
+- SIVEF = open + partially_closed, 2996 shares remaining
+- OUST = open only after buy-close-reopen
+- ALMU = open only after buy-close-reopen
+- Exactly 1 partially closed position in the tested CSV: SIVEF only
+- Fees & Comm is now parsed correctly
+- -$ amount format is now parsed correctly
+- dust/rounding tolerances are now applied
+- zero-quantity SELL rows no longer create false partials
+- import response includes symbol_diagnostics and tolerance_config
+
+Frontend task:
+Update the Portfolio Dashboard CSV import display and category rendering to use the corrected backend classification fields.
+
+Do NOT:
+- use the old /api/portfolio/upload-csv path
+- classify positions in frontend from raw rows
+- categorize from is_full_close alone
+- render every closed trade event as a Partially Closed card
+- hardcode ticker-specific fixes
+- preserve stale localStorage import categories
+- create local-only accounting logic
+- break Portfolio Terminal
+
+Use only:
+POST /api/portfolio/transactions/import-csv
+
+After import, refetch:
+- GET /api/portfolio/holdings
+- GET /api/portfolio/closed-trades
+- /api/caelyn-terminal
+- any Portfolio Dashboard summary queries
+
+Expected backend fields:
+Active holdings may include:
+- classification
+- basis_source
+- import_batch_id
+- source_file
+
+Closed trades may include:
+- final_symbol_status
+- basis_source
+- is_full_close
+- remaining_shares_after
+- sell_type
+- source
+- import_batch_id
+
+Import response includes:
+- symbol_diagnostics
+- tolerance_config
+- import_accuracy_status
+- needs_basis_review_symbols
+- basis_warning
+- open_positions
+- partially_closed_positions
+- fully_closed_positions
+- closed_trades
+
+Correct frontend routing rules:
+
+1. Open Positions
+Render active holdings from GET /api/portfolio/holdings.
+Include holdings where:
+- classification === "open"
+- classification === "partially_closed_open"
+
+Expected examples:
+- SIVEF appears here
+- NBIS appears here
+- OUST appears here
+- ALMU appears here
+
+2. Partially Closed Positions
+Use backend aggregate classification, not raw closed trade cards.
+
+Render one card per ticker where:
+- classification === "partially_closed_open"
+or backend partially_closed_positions contains that ticker.
+
+Do NOT infer this from is_full_close.
+Do NOT render one card per sell event.
+
+Expected examples:
+- SIVEF appears here exactly once.
+- NBIS does NOT appear here.
+- OPTX does NOT appear here.
+- OUST does NOT appear here.
+- ALMU does NOT appear here.
+
+3. Fully Closed Positions
+Render tickers where:
+- final_symbol_status === "fully_closed"
+or backend fully_closed_positions contains that ticker.
+
+Expected examples:
+- OPTX appears here.
+- SNDK / CRDO / CCCX / AEHR should appear here only if backend says final_symbol_status=fully_closed.
+- SIVEF does NOT appear here.
+- NBIS does NOT appear here.
+- OUST does NOT appear here if final status is open.
+- ALMU does NOT appear here if final status is open.
+
+4. Monthly Closed Activity / Trade Journal
+This section may render raw closed trade events.
+
+Use event labels:
+- Partial Sell: is_full_close=false
+- Lot Closed: is_full_close=true but final_symbol_status is open or partially_closed_open
+- Ticker Closed: is_full_close=true and final_symbol_status=fully_closed
+
+Important:
+A historical Lot Closed event for OUST/ALMU may appear in monthly activity, but it must not make the current ticker show as Partially Closed or Fully Closed.
+
+5. CSV Import Warning
+If import_accuracy_status === "partial_missing_basis":
+Show an amber warning, not a red failure.
+
+Use backend:
+- basis_warning
+- needs_basis_review_symbols
+- symbol_diagnostics
+
+Copy example:
+“Import completed, but some sell transactions need cost basis review. Upload an earlier CSV or enter starting basis for these symbols to calculate realized P&L accurately.”
+
+Do not show this warning for correctly classified symbols like SIVEF/NBIS/OPTX unless backend includes them in needs_basis_review_symbols.
+
+6. Diagnostics
+Add:
+
+[portfolio-csv-import-ui] {
+  endpoint,
+  importAccuracyStatus,
+  openSymbols,
+  partialSymbols,
+  fullyClosedSymbols,
+  needsBasisReviewSymbols,
+  symbolDiagnosticsForWatchlist: {
+    SIVEF,
+    NBIS,
+    OPTX,
+    OUST,
+    ALMU
+  },
+  toleranceConfig,
+  refetchedActive,
+  refetchedClosed,
+  refetchedTerminal
+}
+
+[portfolio-category-ui] {
+  openSymbols,
+  partialSymbols,
+  fullyClosedSymbols,
+  partialCardsCount,
+  usingBackendClassification,
+  rawClosedTradesCount,
+  miscategorizedSymbols
+}
+
+Validation with actual CSV:
+1. Confirm upload calls /api/portfolio/transactions/import-csv only.
+2. Confirm old /api/portfolio/upload-csv is not called.
+3. Confirm frontend refetches holdings, closed trades, and Terminal after import.
+4. Confirm Open Positions includes:
+   - SIVEF
+   - NBIS
+   - OUST
+   - ALMU
+5. Confirm Partially Closed contains:
+   - SIVEF only among the known examples
+6. Confirm Partially Closed does NOT contain:
+   - NBIS
+   - OPTX
+   - OUST
+   - ALMU
+7. Confirm Fully Closed contains:
+   - OPTX
+   - and any other ticker backend says final_symbol_status=fully_closed
+8. Confirm Fully Closed does NOT contain:
+   - SIVEF
+   - NBIS
+   - OUST
+   - ALMU
+9. Confirm SIVEF appears as one aggregate partial card, not multiple sell-event cards.
+10. Confirm NBIS is not partial.
+11. Confirm OPTX is fully closed.
+12. Confirm hard refresh preserves the same categories.
+13. Confirm Portfolio Terminal updates after import.
+
+Return:
+- files changed
+- old upload path references removed
+- backend fields consumed
+- final UI category table for SIVEF, NBIS, OPTX, OUST, ALMU
+- screenshot/log validation

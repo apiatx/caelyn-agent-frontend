@@ -630,16 +630,38 @@ export default function StocksPortfolioPage() {
         return;
       }
 
-      const diag = data.import_diagnostics ?? {};
+      const diag           = data.import_diagnostics ?? {};
+      const symDiag        = data.symbol_diagnostics ?? {};
+      const toleranceCfg   = data.tolerance_config ?? {};
+      const accuracyStatus = data.import_accuracy_status ?? null;
+      const basisWarning   = data.basis_warning ?? null;
+      const needsBasis     = data.needs_basis_review_symbols ?? [];
+      const openPositions  = (data.open_positions ?? []).map((p: any) => (p.ticker ?? p.symbol ?? p).toUpperCase?.() ?? p);
+      const partialPos     = (data.partially_closed_positions ?? []).map((p: any) => (p.ticker ?? p.symbol ?? p).toUpperCase?.() ?? p);
+      const fullyClosedPos = (data.fully_closed_positions ?? []).map((p: any) => (p.ticker ?? p.symbol ?? p).toUpperCase?.() ?? p);
+
+      const watchlistSymbols = ['SIVEF', 'NBIS', 'OPTX', 'OUST', 'ALMU'];
       console.log('[portfolio-csv-import-ui]', {
         endpoint: '/api/portfolio/transactions/import-csv',
         files_count: csvFiles.length,
         filenames: csvFiles.map(f => f.name),
         full_replace: true,
-        response_open_count: diag.open_count,
-        response_partially_closed_count: diag.partially_closed_count,
-        response_fully_closed_count: diag.fully_closed_count,
-        response_closed_trades_count: diag.closed_trades_count,
+        importAccuracyStatus: accuracyStatus,
+        openSymbols: openPositions,
+        partialSymbols: partialPos,
+        fullyClosedSymbols: fullyClosedPos,
+        needsBasisReviewSymbols: needsBasis,
+        symbolDiagnosticsForWatchlist: Object.fromEntries(
+          watchlistSymbols.map(s => [s, symDiag[s] ?? symDiag[s.toLowerCase()] ?? null])
+        ),
+        toleranceConfig: toleranceCfg,
+        // raw diag fields
+        rows_total: diag.rows_total,
+        normalized_transactions: diag.normalized_transactions,
+        open_count: diag.open_count,
+        partially_closed_count: diag.partially_closed_count,
+        fully_closed_count: diag.fully_closed_count,
+        closed_trades_count: diag.closed_trades_count,
         duplicate_transactions: diag.duplicate_transactions,
         ignored_rows: diag.ignored_rows,
         accounting_errors: diag.accounting_errors,
@@ -663,9 +685,9 @@ export default function StocksPortfolioPage() {
       }});
 
       console.log('[portfolio-csv-import-ui]', {
-        refetched_active: true,
-        refetched_closed: true,
-        refetched_terminal: true,
+        refetchedActive: true,
+        refetchedClosed: true,
+        refetchedTerminal: true,
       });
     } catch (err: any) {
       setCsvError(err?.message || 'Network error.');
@@ -2302,25 +2324,35 @@ export default function StocksPortfolioPage() {
 
                   if (tradeGroups.length > 0) {
                     // ── Grouped rendering (new backend format) ──────────────────
-                    // Use final_symbol_status for category routing.
-                    // is_full_close is a per-event flag (did this sell fully close that lot?)
-                    // and must NOT be used to determine the ticker's current dashboard status.
+                    // Use final_symbol_status exclusively for ticker-level routing.
+                    // is_full_close is a per-event flag only — never use it for dashboard section routing.
+                    // Fallback (legacy data): if final_symbol_status absent, treat as 'open' unless
+                    // is_fully_closed boolean is explicitly true on the group itself.
                     const getSymbolStatus = (g: any): string =>
                       g.final_symbol_status
-                        ?? (g.is_fully_closed === true ? 'fully_closed'
-                            : g.is_fully_closed === false ? 'partially_closed_open'
-                            : g.is_full_close === true ? 'fully_closed'
-                            : 'partially_closed_open');
+                        ?? (g.is_fully_closed === true ? 'fully_closed' : 'open');
                     const groupExitDate = (g: any) => g.exit_date ?? g.final_exit_date ?? null;
 
-                    // Partially Closed: ticker still has open shares (final_symbol_status=partially_closed_open)
+                    // Partially Closed: final_symbol_status=partially_closed_open
                     const partials = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'partially_closed_open');
-                    // Fully Closed: ticker is completely exited (final_symbol_status=fully_closed)
+                    // Fully Closed: final_symbol_status=fully_closed
                     const fullyClosed = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'fully_closed');
-                    // Open-status closes: historical lot closes on tickers that were later reopened
-                    // (e.g. OUST/ALMU buy-close-reopen). These appear ONLY in monthly activity, not
-                    // in "Partially Closed" or "Fully Closed" sections.
+                    // Open-status closes: final_symbol_status=open (historical lot closes for tickers that
+                    // were later re-bought, e.g. OUST/ALMU). Appear ONLY in monthly activity, not in
+                    // "Partially Closed" or "Fully Closed" sections.
                     const openStatusCloses = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'open');
+
+                    console.log('[portfolio-category-ui]', {
+                      openSymbols:             openStatusCloses.map((g: any) => (g.ticker ?? '').toUpperCase()),
+                      partialSymbols:          partials.map((g: any) => (g.ticker ?? '').toUpperCase()),
+                      fullyClosedSymbols:      fullyClosed.map((g: any) => (g.ticker ?? '').toUpperCase()),
+                      partialCardsCount:       partials.length,
+                      usingBackendClassification: tradeGroups.every((g: any) => g.final_symbol_status != null),
+                      rawClosedTradesCount:    tradeGroups.length,
+                      miscategorizedSymbols:   tradeGroups
+                        .filter((g: any) => !g.final_symbol_status)
+                        .map((g: any) => (g.ticker ?? '').toUpperCase()),
+                    });
 
                     // Monthly activity includes both fully-closed trades and open-status historical closes.
                     // Sorted newest-first, then bucketed by exit month.
@@ -2814,34 +2846,75 @@ export default function StocksPortfolioPage() {
 
               {/* Phase: done */}
               {csvPhase === 'done' && csvImportResult && (() => {
-                const diag = csvImportResult.import_diagnostics ?? {};
-                const report = csvImportResult.named_symbol_report ?? {};
-                const hasErrors = (diag.accounting_errors ?? 0) > 0;
-                const hasDupes = (diag.duplicate_transactions ?? 0) > 0;
+                const diag           = csvImportResult.import_diagnostics ?? {};
+                // symbol_diagnostics is the new field; fall back to named_symbol_report for legacy responses
+                const symDiag: Record<string, any> = csvImportResult.symbol_diagnostics ?? csvImportResult.named_symbol_report ?? {};
+                const toleranceCfg   = csvImportResult.tolerance_config ?? {};
+                const accuracyStatus = csvImportResult.import_accuracy_status ?? null;
+                const basisWarning   = csvImportResult.basis_warning ?? null;
+                const needsBasis: string[] = csvImportResult.needs_basis_review_symbols ?? [];
+                const hasDupes       = (diag.duplicate_transactions ?? 0) > 0;
+                const hasErrors      = (diag.accounting_errors ?? 0) > 0;
+                const isMissingBasis = accuracyStatus === 'partial_missing_basis';
+
+                // Watchlist symbols to audit
+                const auditSymbols = ['SIVEF', 'NBIS', 'OPTX', 'OUST', 'ALMU'];
+                // Include a symbol in audit if backend has a diagnostic entry for it (any casing)
+                const auditEntries = auditSymbols.map(sym => {
+                  const r = symDiag[sym] ?? symDiag[sym.toLowerCase()] ?? null;
+                  return r ? { sym, r } : null;
+                }).filter(Boolean) as { sym: string; r: any }[];
+                // Also include any other symbols backend provides diagnostics for
+                const extraEntries = Object.entries(symDiag)
+                  .filter(([k]) => !auditSymbols.map(s => s.toLowerCase()).includes(k.toLowerCase()))
+                  .map(([sym, r]) => ({ sym: sym.toUpperCase(), r }));
+                const allAuditEntries = [...auditEntries, ...extraEntries];
+
                 return (
                   <div className="flex flex-col gap-4">
                     {/* Success header */}
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(74,222,128,0.12)' }}>
-                        <Check className="w-5 h-5" style={{ color: '#4ade80' }} />
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: isMissingBasis ? 'rgba(245,158,11,0.12)' : 'rgba(74,222,128,0.12)' }}>
+                        <Check className="w-5 h-5" style={{ color: isMissingBasis ? '#f59e0b' : '#4ade80' }} />
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-white">Import complete</div>
-                        <div className="text-xs" style={{ color: '#64748b' }}>{csvFiles.length} file{csvFiles.length !== 1 ? 's' : ''} · full replace · ledger accounting</div>
+                        <div className="text-sm font-semibold text-white">
+                          {isMissingBasis ? 'Import complete — basis review needed' : 'Import complete'}
+                        </div>
+                        <div className="text-xs" style={{ color: '#64748b' }}>
+                          {csvFiles.length} file{csvFiles.length !== 1 ? 's' : ''} · full replace · ledger accounting
+                        </div>
                       </div>
                     </div>
+
+                    {/* Amber basis warning — only when import_accuracy_status === "partial_missing_basis" */}
+                    {isMissingBasis && (
+                      <div className="px-3 py-2.5 rounded-lg text-xs flex flex-col gap-1" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>
+                        <span className="font-semibold">⚠ Cost basis review needed</span>
+                        <span style={{ color: '#d97706' }}>
+                          {basisWarning ?? 'Import completed, but some sell transactions need cost basis review. Upload an earlier CSV or enter starting basis for these symbols to calculate realized P&L accurately.'}
+                        </span>
+                        {needsBasis.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {needsBasis.map(s => (
+                              <span key={s} className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>{s.toUpperCase()}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Diagnostics grid */}
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: 'Total rows',          val: diag.rows_total,                color: '#94a3b8' },
-                        { label: 'Transactions',        val: diag.normalized_transactions,   color: '#e2e8f0' },
-                        { label: 'Open positions',      val: diag.open_count,                color: '#4ade80' },
-                        { label: 'Partially closed',    val: diag.partially_closed_count,    color: '#5cc8f0' },
-                        { label: 'Fully closed',        val: diag.fully_closed_count,        color: '#a78bfa' },
-                        { label: 'Closed trade records',val: diag.closed_trades_count,       color: '#a78bfa' },
-                        { label: 'Duplicates skipped',  val: diag.duplicate_transactions,    color: hasDupes ? '#f59e0b' : '#475569' },
-                        { label: 'Ignored rows',        val: diag.ignored_rows,              color: '#475569' },
+                        { label: 'Total rows',           val: diag.rows_total,               color: '#94a3b8' },
+                        { label: 'Transactions',         val: diag.normalized_transactions,  color: '#e2e8f0' },
+                        { label: 'Open positions',       val: diag.open_count,               color: '#4ade80' },
+                        { label: 'Partially closed',     val: diag.partially_closed_count,   color: '#f59e0b' },
+                        { label: 'Fully closed',         val: diag.fully_closed_count,       color: '#a78bfa' },
+                        { label: 'Closed trade records', val: diag.closed_trades_count,      color: '#a78bfa' },
+                        { label: 'Duplicates skipped',   val: diag.duplicate_transactions,   color: hasDupes ? '#f59e0b' : '#475569' },
+                        { label: 'Ignored rows',         val: diag.ignored_rows,             color: '#475569' },
                       ].map(({ label, val, color }) => (
                         <div key={label} className="flex justify-between items-center px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                           <span className="text-xs" style={{ color: '#64748b' }}>{label}</span>
@@ -2850,8 +2923,8 @@ export default function StocksPortfolioPage() {
                       ))}
                     </div>
 
-                    {/* Accounting errors warning */}
-                    {hasErrors && (
+                    {/* Accounting errors warning — red, only for genuine accounting failures */}
+                    {hasErrors && !isMissingBasis && (
                       <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171' }}>
                         ⚠ {diag.accounting_errors} accounting error{diag.accounting_errors !== 1 ? 's' : ''} detected — some positions may have incorrect cost basis. Check your CSV for missing buy records.
                       </div>
@@ -2864,28 +2937,48 @@ export default function StocksPortfolioPage() {
                       </div>
                     )}
 
-                    {/* Named symbol audit (SIVEF / OUST / ALMU) */}
-                    {Object.entries(report).some(([, v]: any) => v?.found_in_csv) && (
-                      <details className="text-xs">
+                    {/* Symbol audit — SIVEF / NBIS / OPTX / OUST / ALMU + any extras */}
+                    {allAuditEntries.length > 0 && (
+                      <details className="text-xs" open={isMissingBasis}>
                         <summary className="cursor-pointer select-none py-1 font-medium" style={{ color: '#94a3b8' }}>
-                          Symbol audit (SIVEF · OUST · ALMU)
+                          Symbol audit ({auditSymbols.join(' · ')})
                         </summary>
                         <div className="mt-2 flex flex-col gap-1.5">
-                          {Object.entries(report).map(([sym, r]: any) => !r.found_in_csv ? null : (
+                          {allAuditEntries.map(({ sym, r }) => (
                             <div key={sym} className="flex flex-wrap gap-2 px-3 py-2 rounded-lg items-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                               <span className="font-bold text-white w-14">{sym}</span>
                               {[
-                                { label: 'Open',           val: r.is_open,           yes: '#4ade80', no: '#475569' },
-                                { label: 'Partial',        val: r.is_partially_closed, yes: '#5cc8f0', no: '#475569' },
-                                { label: 'Fully Closed',   val: r.is_fully_closed,   yes: '#a78bfa', no: '#475569' },
+                                { label: 'Open',         val: r.is_open ?? r.final_symbol_status === 'open',                         yes: '#4ade80', no: '#475569' },
+                                { label: 'Partial',      val: r.is_partially_closed ?? r.final_symbol_status === 'partially_closed_open', yes: '#f59e0b', no: '#475569' },
+                                { label: 'Fully Closed', val: r.is_fully_closed ?? r.final_symbol_status === 'fully_closed',          yes: '#a78bfa', no: '#475569' },
                               ].map(({ label, val, yes, no }) => (
                                 <span key={label} className="px-2 py-0.5 rounded text-[10px] font-semibold" style={{ background: val ? `${yes}18` : 'rgba(255,255,255,0.03)', color: val ? yes : no, border: `1px solid ${val ? yes + '40' : 'rgba(255,255,255,0.06)'}` }}>
                                   {val ? '✓' : '✗'} {label}
                                 </span>
                               ))}
-                              {r.shares_remaining != null && (
-                                <span className="text-[10px]" style={{ color: '#64748b' }}>{r.shares_remaining} shares remaining</span>
+                              {(r.shares_remaining ?? r.remaining_shares_after) != null && (
+                                <span className="text-[10px]" style={{ color: '#64748b' }}>{r.shares_remaining ?? r.remaining_shares_after} shares remaining</span>
                               )}
+                              {needsBasis.map(s => s.toUpperCase()).includes(sym) && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>needs basis</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {/* Tolerance config (collapsed by default) */}
+                    {Object.keys(toleranceCfg).length > 0 && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer select-none py-1 font-medium" style={{ color: '#475569' }}>
+                          Tolerance config
+                        </summary>
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          {Object.entries(toleranceCfg).map(([k, v]) => (
+                            <div key={k} className="flex justify-between items-center px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <span style={{ color: '#475569' }}>{k}</span>
+                              <span className="font-mono" style={{ color: '#64748b' }}>{String(v)}</span>
                             </div>
                           ))}
                         </div>
