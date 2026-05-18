@@ -1,0 +1,85 @@
+FRONTEND REPLIT AGENT — Wire Portfolio CSV import categories using final_symbol_status
+
+Backend fixed the CSV transaction import and classification.
+
+Important:
+Do not categorize dashboard sections using is_full_close alone.
+
+Backend now distinguishes:
+- is_full_close = this specific sell event fully closed that lot
+- final_symbol_status = the ticker’s final/current status after the full ledger is processed
+
+Use final_symbol_status for Portfolio Dashboard category routing.
+
+Backend fields now available:
+Active holdings:
+- classification
+- basis_source
+- import_batch_id
+- source_file
+
+Closed trades:
+- source
+- import_batch_id
+- source_file
+- final_symbol_status
+- basis_source
+- is_full_close
+- remaining_shares_after
+
+Correct frontend rules:
+
+Open Positions:
+- render active holdings from GET /api/portfolio/holdings
+- includes classification=open
+- includes classification=partially_closed_open
+- SIVEF should appear here
+- OUST should appear here
+- ALMU should appear here
+
+Partially Closed Positions:
+- include symbols/holdings where final status is partially_closed_open
+- or active holding classification=partially_closed_open
+- SIVEF should appear here
+- OUST should NOT appear here
+- ALMU should NOT appear here
+
+Fully Closed Positions:
+- include only tickers whose final_symbol_status=fully_closed
+- do NOT include a ticker just because an individual closed trade has is_full_close=true
+- OUST should NOT appear here if final_symbol_status=open
+- ALMU should NOT appear here if final_symbol_status=open
+- SIVEF should NOT appear here if final_symbol_status=partially_closed_open
+
+Monthly closed activity:
+- may show sell events by exit month
+- but label them by event type:
+  - partial sell
+  - lot fully closed
+  - ticker fully closed
+- For buy-close-reopen tickers like OUST/ALMU, a historical lot close can appear in monthly closed activity, but the ticker’s current dashboard status remains open.
+
+CSV upload:
+- Use only POST /api/portfolio/transactions/import-csv
+- Do not use old /api/portfolio/upload-csv
+- After import, refetch:
+  - GET /api/portfolio/holdings
+  - GET /api/portfolio/closed-trades
+  - /api/caelyn-terminal
+
+Validation:
+Use actual CSV import result.
+
+Confirm:
+1. SIVEF appears in Open Positions.
+2. SIVEF appears in Partially Closed Positions.
+3. SIVEF does NOT appear in Fully Closed Positions.
+4. OUST appears in Open Positions.
+5. OUST does NOT appear in Partially Closed Positions.
+6. OUST does NOT appear in Fully Closed Positions.
+7. ALMU appears in Open Positions.
+8. ALMU does NOT appear in Partially Closed Positions.
+9. ALMU does NOT appear in Fully Closed Positions.
+10. Monthly closed activity can show historical OUST/ALMU closed lots, but not as current fully closed positions.
+11. full_replace import removes stale csv_import records but preserves manual closed trades.
+12. Terminal updates after import.

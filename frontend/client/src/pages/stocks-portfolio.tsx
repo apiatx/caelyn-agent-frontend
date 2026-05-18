@@ -26,6 +26,7 @@ interface Holding {
   assetType?: string;
   entry_date?: string;
   lots?: Lot[];
+  classification?: string;
 }
 
 interface QuoteData {
@@ -229,6 +230,29 @@ export default function StocksPortfolioPage() {
   const tradeGroups: any[] = closedTradesData?.trade_groups ?? [];
   // portfolio_performance is pre-computed by the backend (per-position win rate, best/worst trade etc.)
   const perf: any = closedTradesData?.portfolio_performance ?? null;
+
+  // Supplementary FA holdings query — provides classification field (open / partially_closed_open)
+  // used to badge partially-closed tickers in the active holdings table.
+  const { data: faHoldingsData, refetch: refetchFaHoldings } = useQuery<{holdings?: any[]} | any[]>({
+    queryKey: ['portfolio-holdings-fa'],
+    queryFn: async () => {
+      const res = await fetch('/api/portfolio/holdings');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+  const classificationMap = useMemo<Record<string, string>>(() => {
+    const arr: any[] = Array.isArray(faHoldingsData)
+      ? faHoldingsData
+      : Array.isArray((faHoldingsData as any)?.holdings) ? (faHoldingsData as any).holdings : [];
+    const map: Record<string, string> = {};
+    arr.forEach(h => {
+      const sym = (h.symbol || h.ticker || '').toUpperCase();
+      if (sym && h.classification) map[sym] = h.classification;
+    });
+    return map;
+  }, [faHoldingsData]);
 
   // tradeSummary: prefer backend perf object; fall back to client-side compute from flat list
   const tradeSummary = useMemo(() => {
@@ -627,8 +651,10 @@ export default function StocksPortfolioPage() {
       // Refetch all portfolio-related data
       await refetchHoldings();
       await refetchClosedTrades();
+      await refetchFaHoldings();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-closed-trades'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
       queryClient.invalidateQueries({ predicate: q => {
         const k = q.queryKey;
         return Array.isArray(k) && (
@@ -1699,6 +1725,11 @@ export default function StocksPortfolioPage() {
                                             {lotsData[h.ticker].length} buys
                                           </span>
                                         )}
+                                        {classificationMap[h.ticker] === 'partially_closed_open' && (
+                                          <span style={{ fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(217,119,6,0.12)', color: '#d97706', border: '1px solid rgba(217,119,6,0.25)', whiteSpace: 'nowrap' }}>
+                                            partial
+                                          </span>
+                                        )}
                                       </div>
                                       {isEditing ? (
                                         <input
@@ -2271,14 +2302,35 @@ export default function StocksPortfolioPage() {
 
                   if (tradeGroups.length > 0) {
                     // ── Grouped rendering (new backend format) ──────────────────
-                    const isFullyClosed = (g: any) => g.is_fully_closed ?? g.is_full_close ?? false;
+                    // Use final_symbol_status for category routing.
+                    // is_full_close is a per-event flag (did this sell fully close that lot?)
+                    // and must NOT be used to determine the ticker's current dashboard status.
+                    const getSymbolStatus = (g: any): string =>
+                      g.final_symbol_status
+                        ?? (g.is_fully_closed === true ? 'fully_closed'
+                            : g.is_fully_closed === false ? 'partially_closed_open'
+                            : g.is_full_close === true ? 'fully_closed'
+                            : 'partially_closed_open');
                     const groupExitDate = (g: any) => g.exit_date ?? g.final_exit_date ?? null;
-                    const partials    = tradeGroups.filter((g: any) => !isFullyClosed(g));
-                    const fullyClosed = tradeGroups.filter((g: any) => isFullyClosed(g));
 
-                    // Group fully-closed by month of exit_date / final_exit_date
+                    // Partially Closed: ticker still has open shares (final_symbol_status=partially_closed_open)
+                    const partials = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'partially_closed_open');
+                    // Fully Closed: ticker is completely exited (final_symbol_status=fully_closed)
+                    const fullyClosed = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'fully_closed');
+                    // Open-status closes: historical lot closes on tickers that were later reopened
+                    // (e.g. OUST/ALMU buy-close-reopen). These appear ONLY in monthly activity, not
+                    // in "Partially Closed" or "Fully Closed" sections.
+                    const openStatusCloses = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'open');
+
+                    // Monthly activity includes both fully-closed trades and open-status historical closes.
+                    // Sorted newest-first, then bucketed by exit month.
+                    const allMonthlyGroups = [...fullyClosed, ...openStatusCloses].sort((a, b) => {
+                      const da = groupExitDate(a) ? new Date(groupExitDate(a)).getTime() : 0;
+                      const db = groupExitDate(b) ? new Date(groupExitDate(b)).getTime() : 0;
+                      return db - da;
+                    });
                     const monthBuckets: { monthKey: string; label: string; groups: any[] }[] = [];
-                    fullyClosed.forEach((g: any) => {
+                    allMonthlyGroups.forEach((g: any) => {
                       const d = groupExitDate(g) ? new Date(groupExitDate(g)) : null;
                       const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
                       const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
@@ -2297,9 +2349,11 @@ export default function StocksPortfolioPage() {
                       const costBasis   = g.total_cost_basis ?? (sharesSold * avgEntry);
                       const pl          = g.realized_pnl   ?? g.total_realized_pnl     ?? 0;
                       const plPct       = g.realized_pnl_pct ?? g.total_realized_pnl_pct ?? 0;
-                      const isFully     = g.is_fully_closed ?? g.is_full_close ?? false;
+                      const isFully     = getSymbolStatus(g) === 'fully_closed';
+                      const isPartial   = getSymbolStatus(g) === 'partially_closed_open';
+                      const isOpenStatus = getSymbolStatus(g) === 'open';
                       const isWin       = pl >= 0;
-                      const borderClr   = isFully ? (isWin ? '#4ade80' : '#f87171') : '#d97706';
+                      const borderClr   = isFully ? (isWin ? '#4ade80' : '#f87171') : isOpenStatus ? 'rgba(92,200,240,0.4)' : '#d97706';
                       const plClr       = isWin ? '#4ade80' : '#f87171';
                       const exitDate    = g.exit_date ?? g.final_exit_date ?? null;
                       const exitDisplay = exitDate
@@ -2323,10 +2377,13 @@ export default function StocksPortfolioPage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xl font-bold text-white tracking-tight">{ticker}</span>
-                                {!g.is_fully_closed && (
+                                {isPartial && (
                                   <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(217,119,6,0.15)', color: '#d97706', border: '1px solid rgba(217,119,6,0.3)' }}>Partial</span>
                                 )}
-                                {g.is_fully_closed && sellEvents.length > 1 && (
+                                {isOpenStatus && (
+                                  <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.25)' }}>Historical</span>
+                                )}
+                                {isFully && sellEvents.length > 1 && (
                                   <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)' }}>{sellEvents.length} sells</span>
                                 )}
                               </div>
@@ -2390,7 +2447,7 @@ export default function StocksPortfolioPage() {
                               <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
                             </div>
                             <div className="flex flex-col items-end">
-                              <span style={{ color: '#64748b' }}>{g.is_fully_closed ? 'Avg Exit' : 'Last Exit'}</span>
+                              <span style={{ color: '#64748b' }}>{isFully ? 'Avg Exit' : 'Last Exit'}</span>
                               {isEditing ? (
                                 <input type="number" value={editClosedExitPrice} onChange={e => setEditClosedExitPrice(e.target.value)} className="w-20 bg-transparent border-b text-white text-right text-xs focus:outline-none font-mono" style={{ borderColor: 'rgba(92,200,240,0.6)' }} />
                               ) : (
@@ -2437,10 +2494,11 @@ export default function StocksPortfolioPage() {
                                 <thead>
                                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                                     <th className="text-left py-1 pr-2 font-medium" style={{ color: '#64748b' }}>Date</th>
+                                    <th className="text-left py-1 px-2 font-medium" style={{ color: '#64748b' }}>Event</th>
                                     <th className="text-right py-1 px-2 font-medium" style={{ color: '#64748b' }}>Shares</th>
                                     <th className="text-right py-1 px-2 font-medium" style={{ color: '#64748b' }}>Exit $</th>
                                     <th className="text-right py-1 pl-2 font-medium" style={{ color: '#64748b' }}>P&L</th>
-                                    <th className="w-12"></th>
+                                    <th className="w-8"></th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -2448,9 +2506,21 @@ export default function StocksPortfolioPage() {
                                     const evId   = ev.id ?? ev.trade_id ?? String(ei);
                                     const evIsEd = editingClosedId === evId;
                                     const evPl   = ev.realized_pnl ?? 0;
+                                    // Event type label using is_full_close (per-event) + final_symbol_status (ticker-level)
+                                    const evIsFullClose = ev.is_full_close === true;
+                                    const evTypeLabel = evIsFullClose && isFully
+                                      ? { text: 'Ticker Closed', clr: '#4ade80', bg: 'rgba(74,222,128,0.08)' }
+                                      : evIsFullClose
+                                      ? { text: 'Lot Closed',    clr: '#5cc8f0', bg: 'rgba(92,200,240,0.08)' }
+                                      : { text: 'Partial Sell',  clr: '#d97706', bg: 'rgba(217,119,6,0.08)' };
                                     return (
                                       <tr key={evId} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                         <td className="py-1 pr-2" style={{ color: '#94a3b8' }}>{ev.exit_date ? new Date(ev.exit_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</td>
+                                        <td className="py-1 px-2">
+                                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: evTypeLabel.bg, color: evTypeLabel.clr }}>
+                                            {evTypeLabel.text}
+                                          </span>
+                                        </td>
                                         <td className="text-right py-1 px-2 text-white">{(ev.shares ?? 0).toLocaleString(undefined,{maximumFractionDigits:4})}</td>
                                         <td className="text-right py-1 px-2" style={{ color: '#5cc8f0' }}>{fmtP(ev.exit_price ?? 0)}</td>
                                         <td className="text-right py-1 pl-2 font-semibold" style={{ color: evPl >= 0 ? '#4ade80' : '#f87171' }}>{evPl >= 0 ? '+' : '-'}{fmtM(evPl)}</td>
