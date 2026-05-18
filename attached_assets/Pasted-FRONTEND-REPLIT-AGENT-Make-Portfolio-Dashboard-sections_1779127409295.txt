@@ -1,0 +1,156 @@
+FRONTEND REPLIT AGENT — Make Portfolio Dashboard sections render instantly from aggregate holdings response
+
+The Portfolio Dashboard tab is too slow.
+
+Current user-visible bug:
+- Fully Closed positions show first.
+- Performance Scorecard and Partially Closed positions take forever or may never appear.
+- The UI shows “No closed positions yet / Sell or trim a position...” where Partially Closed positions should be, even though Fully Closed positions below are already showing.
+- This is wrong because backend now returns aggregate category lists directly from GET /api/portfolio/holdings.
+
+Backend source of truth:
+GET /api/portfolio/holdings returns:
+- holdings
+- open_positions
+- partially_closed_positions
+- fully_closed_positions
+- option_open_positions
+- option_partially_closed_positions
+- option_fully_closed_positions
+- option_closed_trades
+
+Goal:
+Render Portfolio Dashboard category sections immediately from GET /api/portfolio/holdings, without waiting on slower closed-trades grouping, terminal analytics, scorecard computations, or other derived queries.
+
+Do NOT:
+- change backend accounting logic
+- re-infer categories from raw closed trades
+- wait for /api/caelyn-terminal before rendering dashboard categories
+- show “No closed positions yet” if partially_closed_positions or fully_closed_positions exist
+- use stale localStorage category data
+- hardcode tickers
+- break CSV import flow
+- break Portfolio Terminal
+
+Audit first:
+1. Locate Portfolio Dashboard data queries:
+   - /api/portfolio/holdings
+   - /api/portfolio/closed-trades
+   - /api/caelyn-terminal
+   - any scorecard/trade journal derived query
+2. Identify render dependencies for:
+   - Partially Closed section
+   - Fully Closed section
+   - Trade Journal / Closed positions
+   - Performance Scorecard
+3. Find why Fully Closed renders before Partially Closed.
+4. Find why Partially Closed shows empty placeholder even when aggregate partials exist.
+5. Find whether the UI is gated on tradeGroups.length, closedTrades loading, or scorecard loading instead of aggregate lists.
+
+Required behavior:
+
+1. Single fast source for main dashboard categories
+Use GET /api/portfolio/holdings as the first paint source.
+
+Immediately render:
+- Open Positions from open_positions / holdings
+- Partially Closed from partially_closed_positions
+- Fully Closed from fully_closed_positions
+- Options sections from option_* fields if Options toggle selected
+
+These should render as soon as /api/portfolio/holdings returns.
+
+2. Do not gate Partially Closed on closed_trades
+Partially Closed section must render from:
+faHoldingsData.partially_closed_positions
+
+Do not wait for:
+- grouped trade journal
+- closedTrades query
+- /api/caelyn-terminal
+- scorecard query
+
+3. Correct empty states
+Only show “No closed positions yet” if all relevant backend lists are actually empty:
+- partially_closed_positions.length === 0
+- fully_closed_positions.length === 0
+- closed_trades.length === 0
+
+For the Partially Closed section specifically:
+Show “No partially closed positions yet” only if partially_closed_positions.length === 0.
+
+Do not show “No closed positions yet” above Fully Closed positions that already exist.
+
+4. Loading states
+Use section-specific loading:
+- If /api/portfolio/holdings is loading: show compact skeleton for Open / Partial / Fully Closed.
+- Once /api/portfolio/holdings returns: render category lists immediately.
+- If scorecard is still computing: show scorecard skeleton only in Scorecard area.
+- If raw trade journal is still loading: show loading only in Trade Journal area.
+
+5. Performance Scorecard
+The scorecard should not block the category sections.
+
+If scorecard currently derives from slow grouped closed trades:
+- first render a lightweight scorecard from aggregate lists if possible:
+  - closed trade count
+  - partial count
+  - fully closed count
+  - realized P&L totals if aggregate lists include realized_pnl
+- then hydrate richer scorecard when closed_trades/grouped data arrives.
+Or:
+- keep scorecard loading independently, but do not block Partial/Closed sections.
+
+6. Query/cache cleanup
+Make sure the Portfolio Dashboard uses React Query or existing cache correctly:
+- /api/portfolio/holdings should be enabled immediately on page load.
+- Avoid duplicate repeated calls to slow endpoints before rendering categories.
+- Use staleTime/cacheTime sensibly so navigating back to Dashboard is instant.
+- After CSV import, add/edit/sell/close:
+  - invalidate /api/portfolio/holdings
+  - invalidate /api/portfolio/closed-trades
+  - invalidate /api/caelyn-terminal
+  - but still render from the first response that returns.
+
+7. Diagnostics
+Add a timing log:
+
+[portfolio-dashboard-load-timing] {
+  holdingsQueryMs,
+  closedTradesQueryMs,
+  terminalQueryMs,
+  openCount,
+  partialCount,
+  fullyClosedCount,
+  closedTradesCount,
+  renderedOpenAtMs,
+  renderedPartialAtMs,
+  renderedFullyClosedAtMs,
+  renderedScorecardAtMs,
+  partialSource,
+  fullyClosedSource,
+  scorecardSource,
+  placeholderShownIncorrectly
+}
+
+8. Validation
+Use existing imported CSV/backend data.
+
+Required validation:
+1. Hard refresh Portfolio Dashboard.
+2. Confirm /api/portfolio/holdings fires immediately.
+3. Confirm Partially Closed renders from partially_closed_positions as soon as holdings response returns.
+4. Confirm Fully Closed renders from fully_closed_positions as soon as holdings response returns.
+5. Confirm Performance Scorecard does not block either section.
+6. Confirm “No closed positions yet” does not appear when fully closed or partially closed data exists.
+7. Confirm SIVEF appears in Partially Closed if backend returns it there.
+8. Confirm Fully Closed positions still render.
+9. Confirm hard refresh and tab switch remain fast.
+10. Confirm Portfolio Terminal still works.
+
+Return:
+- exact root cause of slow/empty Partial section
+- files changed
+- which endpoint each section now uses
+- timing logs before/after
+- screenshot/log validation

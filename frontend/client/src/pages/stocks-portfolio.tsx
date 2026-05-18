@@ -195,6 +195,7 @@ type SortKey = 'ticker' | 'shares' | 'avgCost' | 'currentPrice' | 'dailyPL' | 't
 
 export default function StocksPortfolioPage() {
   const queryClient = useQueryClient();
+  const _dashLoadStart = useRef(Date.now());
   usePortfolioMigration();
   // Share the same React Query cache key as caelyn-terminal-page's dashboardHoldings
   // so the two callers collapse to a single /api/stock-holdings request per load.
@@ -217,7 +218,7 @@ export default function StocksPortfolioPage() {
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
   const [portfolioView, setPortfolioView] = useState<'all' | 'trades' | 'options'>('all');
-  const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
+  const { data: closedTradesData, isLoading: closedTradesLoading, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
       const res = await fetch('/api/portfolio/closed-trades');
@@ -234,7 +235,7 @@ export default function StocksPortfolioPage() {
 
   // Supplementary FA holdings query — provides classification field (open / partially_closed_open)
   // used to badge partially-closed tickers in the active holdings table.
-  const { data: faHoldingsData, refetch: refetchFaHoldings } = useQuery<{holdings?: any[]} | any[]>({
+  const { data: faHoldingsData, isLoading: faHoldingsLoading, refetch: refetchFaHoldings } = useQuery<{holdings?: any[]} | any[]>({
     queryKey: ['portfolio-holdings-fa'],
     queryFn: async () => {
       const res = await fetch('/api/portfolio/holdings');
@@ -334,6 +335,29 @@ export default function StocksPortfolioPage() {
       recent_trades: [], open_partial_trades: 0,
     };
   }, [perf, tradeGroups, tradeHistory]);
+
+  // Portfolio Dashboard load-timing diagnostic — fires each time data arrives
+  useEffect(() => {
+    if (faHoldingsData == null && closedTradesData == null) return;
+    const elapsed = Date.now() - _dashLoadStart.current;
+    const placeholderShownIncorrectly =
+      (tradeGroups.length === 0 && tradeHistory.length === 0) &&
+      (partiallyClosedPositions.length > 0 || fullyClosedPositions.length > 0);
+    console.log('[portfolio-dashboard-load-timing]', {
+      holdingsQueryMs:     faHoldingsData   != null ? elapsed : null,
+      closedTradesQueryMs: closedTradesData != null ? elapsed : null,
+      terminalQueryMs:     null,
+      openCount:           openPositions.length,
+      partialCount:        partiallyClosedPositions.length,
+      fullyClosedCount:    fullyClosedPositions.length,
+      closedTradesCount:   tradeGroups.length,
+      partialSource:       partiallyClosedPositions.length > 0 ? 'aggregate' : tradeGroups.length > 0 ? 'tradeGroups-fallback' : 'none',
+      fullyClosedSource:   fullyClosedPositions.length  > 0 ? 'aggregate' : tradeGroups.length > 0 ? 'tradeGroups-fallback' : 'none',
+      scorecardSource:     perf ? 'backend-perf' : tradeSummary ? 'client-computed' : 'none',
+      placeholderShownIncorrectly,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [faHoldingsData, closedTradesData]);
 
   // current_price is now returned inline by GET /api/portfolio/closed-trades
   // (enriched server-side via the shared Tradier per-ticker cache, yfinance fallback for OTC)
@@ -2332,9 +2356,9 @@ export default function StocksPortfolioPage() {
             >
               <TrendingDown className="w-4 h-4 flex-shrink-0" style={{ color: '#64748b' }} />
               <span className="text-sm font-semibold text-white">Trading Journal</span>
-              {(tradeGroups.length || tradeHistory.length) > 0 && (
+              {(tradeGroups.length > 0 || tradeHistory.length > 0 || partiallyClosedPositions.length > 0 || fullyClosedPositions.length > 0) && (
                 <span className="text-xs ml-1" style={{ color: '#64748b' }}>
-                  {(tradeGroups.length || tradeHistory.length)} position{(tradeGroups.length || tradeHistory.length) !== 1 ? 's' : ''}
+                  {(() => { const n = tradeGroups.length || (partiallyClosedPositions.length + fullyClosedPositions.length); return `${n} position${n !== 1 ? 's' : ''}`; })()}
                 </span>
               )}
               {tradeSummary && (
@@ -2367,6 +2391,11 @@ export default function StocksPortfolioPage() {
                 {/* ── Stock / Equity sections (hidden in Options view) ── */}
                 {portfolioView !== 'options' && <>
 
+                {/* Loading skeleton while both data sources are still resolving */}
+                {faHoldingsLoading && closedTradesLoading && (
+                  <div className="py-4 text-center text-xs" style={{ color: '#475569' }}>Loading position history…</div>
+                )}
+
                 {/* Wins / Losses pills */}
                 {tradeSummary && (() => {
                   const g = tradeGroups.length ? tradeGroups : tradeHistory;
@@ -2389,7 +2418,7 @@ export default function StocksPortfolioPage() {
                 })()}
 
                 {/* Empty state */}
-                {tradeGroups.length === 0 && tradeHistory.length === 0 && (
+                {!faHoldingsLoading && !closedTradesLoading && tradeGroups.length === 0 && tradeHistory.length === 0 && partiallyClosedPositions.length === 0 && fullyClosedPositions.length === 0 && (
                   <div className="py-10 text-center">
                     <TrendingDown className="w-8 h-8 mx-auto mb-3 opacity-20" style={{ color: '#64748b' }} />
                     <div className="text-sm text-slate-500">No closed positions yet</div>
@@ -2864,6 +2893,12 @@ export default function StocksPortfolioPage() {
                       <div className="flex flex-col gap-6">
 
                         {/* ── Partially Closed — aggregate from GET /api/portfolio/holdings ── */}
+                        {faHoldingsLoading && partialsToRender.length === 0 && (
+                          <div className="flex items-center gap-2 py-1">
+                            <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>Partially Closed</span>
+                            <span className="text-[10px] animate-pulse" style={{ color: '#475569' }}>loading…</span>
+                          </div>
+                        )}
                         {partialsToRender.length > 0 && (
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-3">
