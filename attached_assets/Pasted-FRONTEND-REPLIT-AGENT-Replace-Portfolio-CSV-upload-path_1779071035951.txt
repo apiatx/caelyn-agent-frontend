@@ -1,0 +1,206 @@
+FRONTEND REPLIT AGENT — Replace Portfolio CSV upload path with new ledger import endpoint
+
+Backend built the correct portfolio transaction ledger engine.
+
+Old endpoint:
+POST /api/portfolio/upload-csv
+
+New endpoint:
+POST /api/portfolio/transactions/import-csv
+
+The old endpoint is wrong for brokerage transaction accounting because it aggregates buys/sells per ticker instead of replaying the full time-ordered ledger. It caused bugs like:
+- SIVEF showing as fully closed even though it is still open.
+- OUST and ALMU showing as partially closed even though they have not been sold.
+- stale bad closed-trade records surviving after bad imports.
+
+Frontend task:
+Update the Portfolio Dashboard CSV upload flow so it ONLY uses the new ledger endpoint and never uses the old upload path again.
+
+Do NOT:
+- call /api/portfolio/upload-csv anywhere
+- keep a fallback to the old endpoint
+- parse/sort/classify brokerage transactions in frontend
+- hardcode ticker fixes for SIVEF, OUST, ALMU
+- create local-only portfolio state
+- preserve stale closed-trade records after a full replace import
+- break Watchlist CSV upload; this change is Portfolio CSV upload only
+
+Audit first:
+1. Locate Portfolio Dashboard CSV upload UI.
+2. Locate every frontend call to:
+   - /api/portfolio/upload-csv
+   - upload-csv
+   - portfolio CSV import/upload
+3. Confirm whether there is an Express route/proxy for the old endpoint.
+4. Replace all Portfolio CSV upload calls with:
+   POST /api/portfolio/transactions/import-csv
+5. Delete or disable any frontend/Express route that proxies /api/portfolio/upload-csv for Portfolio.
+6. Keep Watchlist CSV upload untouched.
+
+New request payload:
+Send:
+
+{
+  "csv_data": "<raw CSV text>",
+  "full_replace": true
+}
+
+Optional validation mode:
+For dev/testing only, support:
+{
+  "csv_data": "<raw CSV text>",
+  "full_replace": true,
+  "validate": true
+}
+
+Important:
+Default Portfolio CSV import should use full_replace=true unless there is already a deliberate append mode UI. The purpose is to rebuild the portfolio from the uploaded transaction ledger and prevent stale bad records from old imports.
+
+Multiple CSV uploads:
+The user needs to upload multiple brokerage transaction CSVs.
+
+If the backend endpoint currently accepts one CSV string:
+- Update the UI to accept multiple files.
+- Read each CSV file as text.
+- Combine them into one CSV import safely OR call the endpoint in a way backend supports.
+- Best option if backend supports only csv_data string:
+  - concatenate all rows after normalizing headers only if headers match
+  - or send one combined csv_data string with all transaction rows
+- Preserve source filenames if backend supports them. If not, do not invent fragile client accounting.
+- If headers differ across files, show a clear error or send files one-by-one only if backend dedupe/full_replace behavior is safe.
+- Ask backend only if the endpoint cannot support multiple files cleanly.
+
+Critical behavior:
+The frontend should let backend own:
+- normalization
+- deduplication
+- date sorting
+- average-cost accounting
+- classification into open / partially closed / fully closed
+- monthly closed positions
+- closed trade creation
+- realized P&L math
+
+Frontend only:
+- reads CSV file(s)
+- sends raw CSV data to new endpoint
+- displays backend result/diagnostics
+- refetches active holdings, closed trades, and Terminal
+
+Response handling:
+The new endpoint returns accounting results. Display a useful import summary after upload:
+
+- total rows
+- normalized transactions
+- duplicate transactions skipped
+- ignored rows
+- accounting errors
+- open positions count
+- partially closed count
+- fully closed count
+- closed trades count
+
+If backend returns examples/classification:
+Show specific symbol audit rows for:
+- SIVEF
+- OUST
+- ALMU
+if present in response.
+
+Expected classification from correct backend:
+- SIVEF, if net shares remain after sells:
+  - Open: yes
+  - Partially Closed: yes
+  - Fully Closed: no
+- OUST, if only buys/no sells:
+  - Open: yes
+  - Partially Closed: no
+  - Fully Closed: no
+- ALMU, if only buys/no sells:
+  - Open: yes
+  - Partially Closed: no
+  - Fully Closed: no
+
+After successful import:
+Invalidate/refetch:
+- active holdings
+- closed trades
+- Portfolio Dashboard summary
+- /api/caelyn-terminal
+- any Portfolio Terminal query/cache
+- Portfolio vs S&P chart
+- risk/performance sections if separately cached
+
+Also clear any stale frontend local portfolio import state that could preserve old bad classifications.
+
+UI behavior:
+1. Portfolio Dashboard CSV upload should say this is a “Brokerage Transactions CSV Import,” not a simple ticker upload.
+2. Add copy like:
+   “Imports transactions, rebuilds open positions and closed trades using average-cost accounting.”
+3. If multiple files are supported, allow selecting multiple CSV files in one upload.
+4. Show import results summary.
+5. Show warning if accounting_errors > 0.
+6. Show duplicate count so the user knows overlapping CSVs did not double-count.
+
+Old path removal:
+- Remove old Portfolio CSV upload references to /api/portfolio/upload-csv.
+- Remove any old Express proxy for Portfolio CSV upload if it only exists for the broken endpoint.
+- If code cannot be deleted safely, make it unreachable and add a comment:
+  “Deprecated: do not use for Portfolio transaction import. Use /api/portfolio/transactions/import-csv.”
+
+Validation:
+Use backend validate mode first:
+POST /api/portfolio/transactions/import-csv
+{
+  "csv_data": "",
+  "full_replace": true,
+  "validate": true
+}
+
+Confirm backend validation returns all test cases passing.
+
+Then test actual UI:
+1. Upload one brokerage CSV.
+2. Confirm it calls /api/portfolio/transactions/import-csv, not /api/portfolio/upload-csv.
+3. Upload multiple brokerage CSVs.
+4. Confirm duplicate rows are skipped, not double-counted.
+5. Confirm active holdings update.
+6. Confirm Closed Positions update.
+7. Confirm Partially Closed section updates.
+8. Confirm Fully Closed section updates.
+9. Confirm SIVEF is:
+   - in Open Positions if shares remain
+   - in Partially Closed if it has sell records
+   - not in Fully Closed if shares remain
+10. Confirm OUST and ALMU are not in Partially Closed unless the CSV contains actual sells.
+11. Confirm Portfolio Terminal refreshes and uses the newly imported active holdings/closed trades.
+12. Confirm Portfolio vs S&P 500 reflects the imported transaction dates.
+13. Hard refresh and confirm data persists from backend/Neon.
+
+Diagnostics:
+Add frontend log:
+
+[portfolio-csv-import-ui] {
+  endpoint,
+  files_count,
+  filenames,
+  full_replace,
+  response_open_count,
+  response_partially_closed_count,
+  response_fully_closed_count,
+  response_closed_trades_count,
+  duplicate_transactions,
+  ignored_rows,
+  accounting_errors,
+  refetched_active,
+  refetched_closed,
+  refetched_terminal
+}
+
+Return:
+- exact files changed
+- old endpoint references removed
+- new endpoint used
+- multiple-file handling approach
+- validation output
+- screenshots/logs proving SIVEF, OUST, ALMU classify correctly

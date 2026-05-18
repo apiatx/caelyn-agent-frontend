@@ -513,7 +513,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/portfolio/upload-csv — parse brokerage CSV and preview / import holdings
+  // POST /api/portfolio/transactions/import-csv — ledger-based brokerage transaction import
+  // This is the canonical portfolio CSV import endpoint.  It replays the full time-ordered
+  // ledger using average-cost accounting and correctly handles partial closes, full closes,
+  // and deduplication.
+  app.post('/api/portfolio/transactions/import-csv', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/transactions/import-csv`, {
+        method: 'POST',
+        headers: { 'X-API-Key': FA_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(90_000),
+      });
+      const rawText = await upRes.text().catch(() => '');
+      let data: any = {};
+      try { data = rawText ? JSON.parse(rawText) : {}; } catch { data = { success: false, error: `FastAPI returned unparseable response (status ${upRes.status}): ${rawText.slice(0, 200)}` }; }
+      console.log(`[ledger-import] FastAPI status=${upRes.status} success=${data.success} open=${data.import_diagnostics?.open_count ?? '?'} error=${data.error ?? data.detail ?? 'none'}`);
+      if (!data.success) console.log('[ledger-import] Full response:', rawText.slice(0, 800));
+
+      if (data.success && !req.body?.validate) {
+        // Sync open_positions → stock-holdings.json and clear terminal cache
+        const faPositions: any[] = Array.isArray(data.open_positions) ? data.open_positions : [];
+        if (faPositions.length > 0) {
+          const normalized: StockHolding[] = faPositions.map((h: any) => ({
+            id:         h.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            ticker:     (h.symbol || h.ticker || '').toUpperCase(),
+            shares:     Number(h.shares ?? 0),
+            avgCost:    Number(h.avg_cost || h.avgCost || 0),
+            assetType:  h.asset_type || h.assetType || 'stock',
+            addedAt:    h.entry_date || h.date_added || new Date().toISOString(),
+            date_added: h.entry_date || h.date_added || new Date().toISOString(),
+            entry_date: h.entry_date || h.date_added || undefined,
+          }));
+          writeHoldings(normalized);
+          caelynTerminalCache = null;
+          console.log(`[ledger-import] Wrote ${normalized.length} open positions to stock-holdings.json: ${normalized.map(h => h.ticker).join(', ')}`);
+        } else {
+          writeHoldings([]);
+          caelynTerminalCache = null;
+          console.log('[ledger-import] No open positions — cleared local holdings file.');
+        }
+      }
+
+      // Strip large arrays from browser response to avoid Vite proxy stream truncation
+      const { open_positions: _op, partially_closed_positions: _pc, fully_closed_positions: _fc, closed_trade_records: _ct, monthly_closed_positions: _mc, symbol_audit: _sa, ...clientData } = data;
+      return res.status(200).json(clientData);
+    } catch (err: any) {
+      return res.status(502).json({ success: false, error: err?.message });
+    }
+  });
+
+  // POST /api/portfolio/upload-csv — DEPRECATED: do not use for Portfolio transaction import.
+  // Use /api/portfolio/transactions/import-csv instead. This old endpoint aggregates buys/sells
+  // per ticker instead of replaying the full ledger, causing incorrect partial-close accounting.
   app.post('/api/portfolio/upload-csv', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';

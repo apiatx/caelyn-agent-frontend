@@ -308,11 +308,8 @@ export default function StocksPortfolioPage() {
   // CSV import state
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
-  const [csvPhase, setCsvPhase] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload');
-  const [csvRawText, setCsvRawText] = useState('');
-  const [csvFileName, setCsvFileName] = useState('');
-  const [csvAccountId, setCsvAccountId] = useState('');
-  const [csvPreview, setCsvPreview] = useState<any>(null);
+  const [csvPhase, setCsvPhase] = useState<'upload' | 'importing' | 'done'>('upload');
+  const [csvFiles, setCsvFiles] = useState<{name: string; text: string}[]>([]);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvError, setCsvError] = useState('');
   const [csvImportResult, setCsvImportResult] = useState<any>(null);
@@ -541,89 +538,112 @@ export default function StocksPortfolioPage() {
   function openCsvModal() {
     setCsvModalOpen(true);
     setCsvPhase('upload');
-    setCsvRawText('');
-    setCsvFileName('');
-    setCsvPreview(null);
+    setCsvFiles([]);
     setCsvError('');
     setCsvImportResult(null);
   }
   function closeCsvModal() {
     setCsvModalOpen(false);
     setCsvPhase('upload');
-    setCsvRawText('');
-    setCsvFileName('');
-    setCsvPreview(null);
+    setCsvFiles([]);
     setCsvError('');
     setCsvImportResult(null);
-    setCsvAccountId('');
   }
-  function handleCsvFileChange(file: File) {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const text = ev.target?.result as string;
-      if (text) { setCsvRawText(text); setCsvFileName(file.name); setCsvError(''); }
-    };
-    reader.readAsText(file);
-  }
-  async function runCsvPreview() {
-    if (!csvRawText) { setCsvError('Please select a CSV file first.'); return; }
-    setCsvLoading(true);
+  function handleCsvFilesChange(files: FileList) {
+    const pending = Array.from(files);
+    const results: {name: string; text: string}[] = [];
+    let done = 0;
     setCsvError('');
-    try {
-      const res = await fetch('/api/portfolio/upload-csv', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'preview', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
-      });
-      const data = await res.json();
-      if (!data.success) { setCsvError(data.error || data.detail || 'Preview failed.'); return; }
-      const hasOpenPositions  = (data.symbols_imported?.length ?? 0) > 0;
-      const hasClosedPositions = (data.symbols_closed?.length ?? 0) > 0 || (data.sells_found ?? 0) > 0;
-      if (!hasOpenPositions && !hasClosedPositions) {
-        setCsvError("No transactions found. Make sure your CSV has a Transaction Type column with 'Buy' or 'Sell' entries, and Symbol, Quantity, Price columns.");
-        return;
+    pending.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        results.push({ name: file.name, text: (ev.target?.result as string) || '' });
+        done++;
+        if (done === pending.length) {
+          setCsvFiles(prev => {
+            const existing = new Set(prev.map(f => f.name));
+            const added = results.filter(r => !existing.has(r.name));
+            return [...prev, ...added];
+          });
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+  function combineCsvFiles(files: {name: string; text: string}[]): {combined: string; error: string | null} {
+    if (files.length === 0) return { combined: '', error: 'No files selected.' };
+    if (files.length === 1) return { combined: files[0].text.trim(), error: null };
+    const firstLines = files[0].text.trim().split('\n');
+    const header = firstLines[0];
+    let rows = firstLines.slice(1);
+    for (let i = 1; i < files.length; i++) {
+      const lines = files[i].text.trim().split('\n');
+      const fileHeader = lines[0];
+      // Normalise headers for comparison (trim, lowercase)
+      if (fileHeader.trim().toLowerCase() !== header.trim().toLowerCase()) {
+        return { combined: '', error: `File "${files[i].name}" has a different column layout than "${files[0].name}". Make sure all CSVs are from the same brokerage format.` };
       }
-      setCsvPreview(data);
-      setCsvPhase('preview');
-    } catch (err: any) {
-      setCsvError(err?.message || 'Network error.');
-    } finally {
-      setCsvLoading(false);
+      rows = [...rows, ...lines.slice(1)];
     }
+    return { combined: [header, ...rows].join('\n'), error: null };
   }
   async function runCsvImport() {
-    if (!csvRawText) return;
+    if (csvFiles.length === 0) { setCsvError('Please select at least one CSV file.'); return; }
+    const { combined, error: combineError } = combineCsvFiles(csvFiles);
+    if (combineError) { setCsvError(combineError); return; }
     setCsvPhase('importing');
     setCsvError('');
     try {
-      const res = await fetch('/api/portfolio/upload-csv', {
+      const res = await fetch('/api/portfolio/transactions/import-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv_data: csvRawText, mode: 'import', ...(csvAccountId.trim() ? { account_id: csvAccountId.trim() } : {}) }),
+        body: JSON.stringify({ csv_data: combined, full_replace: true }),
       });
       const data = await res.json();
-      if (!data.success) { setCsvError(data.error || data.detail || 'Import failed — check your CSV format and try again.'); setCsvPhase('preview'); return; }
+      if (!data.success) {
+        setCsvError(data.error || data.detail || 'Import failed — check your CSV format and try again.');
+        setCsvPhase('upload');
+        return;
+      }
 
-      console.log('[CSV Import] action_distribution:', data.action_distribution);
-      console.log('[CSV Import] netting_summary:', data.netting_summary);
-      console.log('[CSV Import] symbols_closed:', data.symbols_closed);
-      console.log('[CSV Import] closed_trades_created:', data.closed_trades_created);
+      const diag = data.import_diagnostics ?? {};
+      console.log('[portfolio-csv-import-ui]', {
+        endpoint: '/api/portfolio/transactions/import-csv',
+        files_count: csvFiles.length,
+        filenames: csvFiles.map(f => f.name),
+        full_replace: true,
+        response_open_count: diag.open_count,
+        response_partially_closed_count: diag.partially_closed_count,
+        response_fully_closed_count: diag.fully_closed_count,
+        response_closed_trades_count: diag.closed_trades_count,
+        duplicate_transactions: diag.duplicate_transactions,
+        ignored_rows: diag.ignored_rows,
+        accounting_errors: diag.accounting_errors,
+      });
 
       setCsvImportResult(data);
       setCsvPhase('done');
 
-      // The server already wrote updated_holdings to stock-holdings.json synchronously.
-      // Just refetch so the UI reflects the new state — no syncToFastAPI() after a CSV import.
+      // Refetch all portfolio-related data
       await refetchHoldings();
+      await refetchClosedTrades();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-closed-trades'] });
+      queryClient.invalidateQueries({ predicate: q => {
+        const k = q.queryKey;
+        return Array.isArray(k) && (
+          k.includes('portfolio') || k.includes('holdings') || k.includes('caelyn-terminal')
+        );
+      }});
 
-      // Refresh Trade Journal if any positions were closed
-      if ((data.symbols_closed?.length ?? 0) > 0) {
-        await refetchClosedTrades();
-      }
+      console.log('[portfolio-csv-import-ui]', {
+        refetched_active: true,
+        refetched_closed: true,
+        refetched_terminal: true,
+      });
     } catch (err: any) {
       setCsvError(err?.message || 'Network error.');
-      setCsvPhase('preview');
+      setCsvPhase('upload');
     }
   }
 
@@ -2641,8 +2661,8 @@ export default function StocksPortfolioPage() {
                 <FileText className="w-4 h-4" style={{ color: '#5cc8f0' }} />
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">Import Portfolio from CSV</div>
-                <div className="text-xs" style={{ color: '#64748b' }}>Schwab · Fidelity · TD Ameritrade · IBKR · Robinhood · Webull · E*Trade · and most standard brokerage exports</div>
+                <div className="text-sm font-semibold text-white">Brokerage Transactions CSV Import</div>
+                <div className="text-xs" style={{ color: '#64748b' }}>Imports transactions, rebuilds open positions and closed trades using average-cost accounting</div>
               </div>
               <button onClick={closeCsvModal} className="ml-auto p-1.5 rounded-lg hover:bg-white/[0.06] transition-all" style={{ color: '#64748b' }}>
                 <X className="w-4 h-4" />
@@ -2653,7 +2673,7 @@ export default function StocksPortfolioPage() {
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
 
               {/* Phase: upload */}
-              {(csvPhase === 'upload') && (
+              {csvPhase === 'upload' && (
                 <>
                   {/* Drop zone */}
                   <div
@@ -2661,162 +2681,49 @@ export default function StocksPortfolioPage() {
                     style={{ border: '2px dashed rgba(92,200,240,0.25)', background: 'rgba(92,200,240,0.03)' }}
                     onClick={() => csvInputRef.current?.click()}
                     onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleCsvFileChange(f); }}
+                    onDrop={e => { e.preventDefault(); if (e.dataTransfer.files.length) handleCsvFilesChange(e.dataTransfer.files); }}
                   >
                     <Upload className="w-8 h-8" style={{ color: '#5cc8f0', opacity: 0.7 }} />
-                    <div className="text-sm font-medium text-white">Drop your brokerage CSV here</div>
-                    <div className="text-xs" style={{ color: '#64748b' }}>or click to browse — .csv files only</div>
-                    {csvFileName && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0' }}>
-                        <FileText className="w-3.5 h-3.5" />
-                        {csvFileName}
-                      </div>
-                    )}
+                    <div className="text-sm font-medium text-white">Drop brokerage CSV files here</div>
+                    <div className="text-xs" style={{ color: '#64748b' }}>or click to browse — multiple files supported · .csv only</div>
+                    <div className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(92,200,240,0.08)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.2)' }}>
+                      Schwab · Fidelity · TD Ameritrade · IBKR · Robinhood · Webull · E*Trade
+                    </div>
                   </div>
+
+                  {/* File list */}
+                  {csvFiles.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-xs font-medium px-1" style={{ color: '#64748b' }}>
+                        {csvFiles.length} file{csvFiles.length !== 1 ? 's' : ''} selected
+                      </div>
+                      {csvFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(92,200,240,0.06)', border: '1px solid rgba(92,200,240,0.15)' }}>
+                          <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#5cc8f0' }} />
+                          <span className="text-xs text-white truncate flex-1">{f.name}</span>
+                          <button
+                            onClick={() => setCsvFiles(prev => prev.filter((_, j) => j !== i))}
+                            className="p-0.5 rounded hover:bg-white/10 transition-all flex-shrink-0"
+                            style={{ color: '#475569' }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => csvInputRef.current?.click()}
+                        className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-white/[0.04] self-start"
+                        style={{ color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.2)' }}
+                      >
+                        + Add more files
+                      </button>
+                    </div>
+                  )}
 
                   <div className="text-xs px-1" style={{ color: '#475569' }}>
                     <span className="font-medium" style={{ color: '#64748b' }}>Expected columns:</span> Date · Transaction Type · Symbol · Description · Quantity · Price · Amount
+                    <span className="ml-2" style={{ color: '#334155' }}>· Full replace — rebuilds portfolio from the uploaded ledger</span>
                   </div>
-
-                  {/* Account label — keeps lots from different brokerages isolated */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium px-1" style={{ color: '#64748b' }}>
-                      Account name <span style={{ color: '#475569', fontWeight: 400 }}>(optional — used to keep accounts separate when uploading multiple CSVs)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={csvAccountId}
-                      onChange={e => setCsvAccountId(e.target.value)}
-                      placeholder="e.g. Roth IRA, Individual Brokerage, 401k…"
-                      className="w-full rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-all"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-                      onFocus={e => (e.target.style.borderColor = 'rgba(92,200,240,0.4)')}
-                      onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
-                    />
-                  </div>
-
-                  {csvError && (
-                    <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171' }}>
-                      {csvError}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Phase: preview */}
-              {csvPhase === 'preview' && csvPreview && (
-                <>
-                  {/* Stats bar */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0' }}>
-                      {csvPreview.symbols_imported?.length ?? 0} symbol{csvPreview.symbols_imported?.length !== 1 ? 's' : ''}
-                    </span>
-                    <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(74,222,128,0.08)', color: '#4ade80' }}>
-                      {csvPreview.lots_added ?? 0} lots
-                    </span>
-                    {(csvPreview.rows_skipped ?? 0) > 0 && (
-                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(217,119,6,0.1)', color: '#d97706' }}>
-                        {csvPreview.rows_skipped} row{csvPreview.rows_skipped !== 1 ? 's' : ''} skipped
-                      </span>
-                    )}
-                    {(csvPreview.options_skipped ?? 0) > 0 && (
-                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(168,85,247,0.1)', color: '#c084fc' }}>
-                        {csvPreview.options_skipped} option contract{csvPreview.options_skipped !== 1 ? 's' : ''} detected
-                      </span>
-                    )}
-                    {(csvPreview.sells_found ?? 0) > 0 && (
-                      <span className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0' }}>
-                        {csvPreview.sells_found} sell{csvPreview.sells_found !== 1 ? 's' : ''} → Trade Journal
-                      </span>
-                    )}
-                  </div>
-
-                  {(csvPreview.options_skipped ?? 0) > 0 && (
-                    <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.18)', color: '#c084fc' }}>
-                      {csvPreview.options_skipped} options contract row{csvPreview.options_skipped !== 1 ? 's were' : ' was'} detected — contract rows are skipped; any underlying equity lots in the same CSV are imported normally.
-                    </div>
-                  )}
-
-                  {(csvPreview.sells_found ?? 0) > 0 && (
-                    <div className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(92,200,240,0.07)', border: '1px solid rgba(92,200,240,0.15)', color: '#5cc8f0' }}>
-                      {csvPreview.sells_found} sell transaction{csvPreview.sells_found !== 1 ? 's' : ''} detected — will be netted against buy lots to calculate your realized P&L and logged to the Trade Journal as closed positions.
-                    </div>
-                  )}
-
-                  {/* Preview table */}
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          {['Ticker','Action','Lots','Shares','Avg Cost','Entry Date'].map(h => (
-                            <th key={h} className="text-left py-2.5 px-3 font-medium" style={{ color: '#64748b' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(csvPreview.preview ?? []).map((row: any, i: number) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                            <td className="py-2 px-3 font-bold text-white">{row.ticker}</td>
-                            <td className="py-2 px-3">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase" style={{
-                                background: row.action === 'create' ? 'rgba(74,222,128,0.1)' : row.action === 'closed' ? 'rgba(248,113,113,0.1)' : 'rgba(92,200,240,0.1)',
-                                color:      row.action === 'create' ? '#4ade80'              : row.action === 'closed' ? '#f87171'              : '#5cc8f0',
-                              }}>
-                                {row.action === 'create' ? 'New' : row.action === 'closed' ? 'Closed' : 'Add lots'}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3" style={{ color: '#94a3b8' }}>{row.lots_added ?? row.lots ?? '—'}</td>
-                            <td className="py-2 px-3" style={{ color: '#e2e8f0' }}>{(row.total_shares ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
-                            <td className="py-2 px-3 font-mono" style={{ color: '#a78bfa' }}>${(row.avg_cost ?? 0).toFixed(2)}</td>
-                            <td className="py-2 px-3" style={{ color: '#64748b' }}>{row.entry_date ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Skipped detail */}
-                  {(csvPreview.rows_skipped ?? 0) > 0 && csvPreview.skipped_detail?.length > 0 && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer select-none py-1" style={{ color: '#d97706' }}>
-                        {csvPreview.rows_skipped} skipped row{csvPreview.rows_skipped !== 1 ? 's' : ''} — click to expand
-                      </summary>
-                      <div className="mt-2 flex flex-col gap-1 pl-2">
-                        {csvPreview.skipped_detail.slice(0, 20).map((s: any, i: number) => (
-                          <span key={i} style={{ color: '#64748b' }}>{s.reason ?? JSON.stringify(s)}</span>
-                        ))}
-                      </div>
-                    </details>
-                  )}
-
-                  {/* Options detail */}
-                  {(csvPreview.options_skipped ?? 0) > 0 && csvPreview.options_detail?.length > 0 && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer select-none py-1" style={{ color: '#c084fc' }}>
-                        {csvPreview.options_skipped} options transaction{csvPreview.options_skipped !== 1 ? 's' : ''} skipped — click to expand
-                      </summary>
-                      <div className="mt-2 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(168,85,247,0.12)' }}>
-                        <table className="w-full text-[11px]">
-                          <thead>
-                            <tr style={{ background: 'rgba(168,85,247,0.06)', borderBottom: '1px solid rgba(168,85,247,0.12)' }}>
-                              {['Ticker', 'Action', 'Detected As'].map(h => (
-                                <th key={h} className="text-left py-1.5 px-3 font-medium" style={{ color: '#94a3b8' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {csvPreview.options_detail.slice(0, 20).map((o: any, i: number) => (
-                              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                <td className="py-1.5 px-3 font-bold" style={{ color: '#c084fc' }}>{o.ticker ?? '—'}</td>
-                                <td className="py-1.5 px-3" style={{ color: '#94a3b8' }}>{o.action ?? '—'}</td>
-                                <td className="py-1.5 px-3" style={{ color: '#64748b' }}>{o.reason ?? '—'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </details>
-                  )}
 
                   {csvError && (
                     <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171' }}>
@@ -2830,56 +2737,93 @@ export default function StocksPortfolioPage() {
               {csvPhase === 'importing' && (
                 <div className="flex flex-col items-center gap-4 py-12">
                   <RefreshCw className="w-8 h-8 animate-spin" style={{ color: '#5cc8f0' }} />
-                  <div className="text-sm" style={{ color: '#94a3b8' }}>Importing positions…</div>
+                  <div className="text-sm font-medium text-white">Rebuilding portfolio from transaction ledger…</div>
+                  <div className="text-xs" style={{ color: '#64748b' }}>Replaying transactions · average-cost accounting · deduplication</div>
                 </div>
               )}
 
               {/* Phase: done */}
-              {csvPhase === 'done' && csvImportResult && (
-                <div className="flex flex-col items-center gap-4 py-8 text-center">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(74,222,128,0.12)' }}>
-                    <Check className="w-7 h-7" style={{ color: '#4ade80' }} />
-                  </div>
-                  <div className="w-full px-2">
-                    <div className="text-base font-semibold text-white">Import complete</div>
-                    <div className="flex flex-col gap-1.5 mt-3">
-                      {/* Open positions */}
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.15)' }}>
-                        <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#4ade80' }} />
-                        <span className="text-xs" style={{ color: '#94a3b8' }}>
-                          <span className="text-white font-medium">
-                            {(csvImportResult.updated_holdings ?? csvImportResult.symbols_imported ?? []).length} open position{((csvImportResult.updated_holdings ?? csvImportResult.symbols_imported ?? []).length) !== 1 ? 's' : ''}
-                          </span>
-                          {' '}loaded into your portfolio
-                        </span>
+              {csvPhase === 'done' && csvImportResult && (() => {
+                const diag = csvImportResult.import_diagnostics ?? {};
+                const report = csvImportResult.named_symbol_report ?? {};
+                const hasErrors = (diag.accounting_errors ?? 0) > 0;
+                const hasDupes = (diag.duplicate_transactions ?? 0) > 0;
+                return (
+                  <div className="flex flex-col gap-4">
+                    {/* Success header */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(74,222,128,0.12)' }}>
+                        <Check className="w-5 h-5" style={{ color: '#4ade80' }} />
                       </div>
-                      {/* Closed positions */}
-                      {(csvImportResult.symbols_closed?.length ?? 0) > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(92,200,240,0.07)', border: '1px solid rgba(92,200,240,0.15)' }}>
-                          <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#5cc8f0' }} />
-                          <span className="text-xs" style={{ color: '#94a3b8' }}>
-                            <span className="text-white font-medium">{csvImportResult.symbols_closed.length} position{csvImportResult.symbols_closed.length !== 1 ? 's' : ''} closed</span>
-                            {' '}→ logged to Trade Journal
-                            {(csvImportResult.closed_trades_created ?? 0) > 0 && (
-                              <span style={{ color: '#64748b' }}> ({csvImportResult.closed_trades_created} trade record{csvImportResult.closed_trades_created !== 1 ? 's' : ''})</span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {/* Options skipped */}
-                      {(csvImportResult.options_skipped ?? 0) > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.15)' }}>
-                          <span className="text-xs font-medium" style={{ color: '#c084fc' }}>⚠</span>
-                          <span className="text-xs" style={{ color: '#94a3b8' }}>
-                            <span style={{ color: '#c084fc' }}>{csvImportResult.options_skipped} options transaction{csvImportResult.options_skipped !== 1 ? 's' : ''} skipped</span>
-                            {' '}— only equity positions are tracked
-                          </span>
-                        </div>
-                      )}
+                      <div>
+                        <div className="text-sm font-semibold text-white">Import complete</div>
+                        <div className="text-xs" style={{ color: '#64748b' }}>{csvFiles.length} file{csvFiles.length !== 1 ? 's' : ''} · full replace · ledger accounting</div>
+                      </div>
                     </div>
+
+                    {/* Diagnostics grid */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Total rows',          val: diag.rows_total,                color: '#94a3b8' },
+                        { label: 'Transactions',        val: diag.normalized_transactions,   color: '#e2e8f0' },
+                        { label: 'Open positions',      val: diag.open_count,                color: '#4ade80' },
+                        { label: 'Partially closed',    val: diag.partially_closed_count,    color: '#5cc8f0' },
+                        { label: 'Fully closed',        val: diag.fully_closed_count,        color: '#a78bfa' },
+                        { label: 'Closed trade records',val: diag.closed_trades_count,       color: '#a78bfa' },
+                        { label: 'Duplicates skipped',  val: diag.duplicate_transactions,    color: hasDupes ? '#f59e0b' : '#475569' },
+                        { label: 'Ignored rows',        val: diag.ignored_rows,              color: '#475569' },
+                      ].map(({ label, val, color }) => (
+                        <div key={label} className="flex justify-between items-center px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span className="text-xs" style={{ color: '#64748b' }}>{label}</span>
+                          <span className="text-xs font-semibold font-mono" style={{ color }}>{val ?? '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Accounting errors warning */}
+                    {hasErrors && (
+                      <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171' }}>
+                        ⚠ {diag.accounting_errors} accounting error{diag.accounting_errors !== 1 ? 's' : ''} detected — some positions may have incorrect cost basis. Check your CSV for missing buy records.
+                      </div>
+                    )}
+
+                    {/* Duplicates note */}
+                    {hasDupes && (
+                      <div className="px-3 py-2.5 rounded-lg text-xs" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b' }}>
+                        {diag.duplicate_transactions} duplicate transaction{diag.duplicate_transactions !== 1 ? 's were' : ' was'} detected and skipped — overlapping CSVs did not double-count.
+                      </div>
+                    )}
+
+                    {/* Named symbol audit (SIVEF / OUST / ALMU) */}
+                    {Object.entries(report).some(([, v]: any) => v?.found_in_csv) && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer select-none py-1 font-medium" style={{ color: '#94a3b8' }}>
+                          Symbol audit (SIVEF · OUST · ALMU)
+                        </summary>
+                        <div className="mt-2 flex flex-col gap-1.5">
+                          {Object.entries(report).map(([sym, r]: any) => !r.found_in_csv ? null : (
+                            <div key={sym} className="flex flex-wrap gap-2 px-3 py-2 rounded-lg items-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <span className="font-bold text-white w-14">{sym}</span>
+                              {[
+                                { label: 'Open',           val: r.is_open,           yes: '#4ade80', no: '#475569' },
+                                { label: 'Partial',        val: r.is_partially_closed, yes: '#5cc8f0', no: '#475569' },
+                                { label: 'Fully Closed',   val: r.is_fully_closed,   yes: '#a78bfa', no: '#475569' },
+                              ].map(({ label, val, yes, no }) => (
+                                <span key={label} className="px-2 py-0.5 rounded text-[10px] font-semibold" style={{ background: val ? `${yes}18` : 'rgba(255,255,255,0.03)', color: val ? yes : no, border: `1px solid ${val ? yes + '40' : 'rgba(255,255,255,0.06)'}` }}>
+                                  {val ? '✓' : '✗'} {label}
+                                </span>
+                              ))}
+                              {r.shares_remaining != null && (
+                                <span className="text-[10px]" style={{ color: '#64748b' }}>{r.shares_remaining} shares remaining</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
             </div>
 
@@ -2889,29 +2833,13 @@ export default function StocksPortfolioPage() {
                 <>
                   <button onClick={closeCsvModal} className="px-4 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white/[0.06]" style={{ color: '#64748b' }}>Cancel</button>
                   <button
-                    onClick={runCsvPreview}
-                    disabled={csvLoading || !csvRawText}
-                    className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:opacity-40"
-                    style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)' }}
-                  >
-                    {csvLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-                    {csvLoading ? 'Parsing…' : 'Preview Import'}
-                  </button>
-                </>
-              )}
-              {csvPhase === 'preview' && (
-                <>
-                  <button onClick={() => { setCsvPhase('upload'); setCsvPreview(null); setCsvError(''); }} className="px-4 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white/[0.06]" style={{ color: '#64748b' }}>
-                    ← Re-upload
-                  </button>
-                  <button onClick={closeCsvModal} className="px-4 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white/[0.06]" style={{ color: '#64748b' }}>Cancel</button>
-                  <button
                     onClick={runCsvImport}
-                    className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all"
-                    style={{ background: 'linear-gradient(135deg, #166534, #4ade80)', boxShadow: '0 0 12px rgba(74,222,128,0.2)' }}
+                    disabled={csvFiles.length === 0}
+                    className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg, #166534, #4ade80)', boxShadow: csvFiles.length > 0 ? '0 0 12px rgba(74,222,128,0.2)' : 'none' }}
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Confirm Import
+                    Import {csvFiles.length > 0 ? `${csvFiles.length} file${csvFiles.length !== 1 ? 's' : ''}` : ''}
                   </button>
                 </>
               )}
@@ -2925,13 +2853,14 @@ export default function StocksPortfolioPage() {
         </div>
       )}
 
-      {/* Hidden file input for CSV */}
+      {/* Hidden file input for CSV — multiple files supported */}
       <input
         ref={csvInputRef}
         type="file"
         accept=".csv"
+        multiple
         className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleCsvFileChange(f); e.target.value = ''; }}
+        onChange={e => { if (e.target.files?.length) handleCsvFilesChange(e.target.files); e.target.value = ''; }}
       />
     </div>
   );
