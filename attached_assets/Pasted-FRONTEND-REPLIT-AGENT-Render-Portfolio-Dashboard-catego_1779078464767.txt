@@ -1,0 +1,251 @@
+FRONTEND REPLIT AGENT — Render Portfolio Dashboard categories from backend aggregate lists, not inferred closed trades
+
+Backend has completed the universal classification fix. Do not hardcode ticker rules.
+
+Important backend changes:
+GET /api/portfolio/holdings now returns:
+- holdings
+- open_positions
+- partially_closed_positions
+- fully_closed_positions
+
+Backend also fixed closed-trade groups so each group includes:
+- final_symbol_status
+- classification
+
+Backend validation passed:
+- SIVEF: open=true, partial=true, fully_closed=false, final_symbol_status=partially_closed_open
+- AEHR: fully_closed=true
+- SNDK: fully_closed=true
+- CRDO: fully_closed=true
+- CCCX: fully_closed=true
+- OPTX: fully_closed=true
+- NBIS: open=true, partial=false, fully_closed=false
+- OUST: open=true, partial=false, fully_closed=false
+- ALMU: open=true, partial=false, fully_closed=false
+
+Critical:
+These tickers are validation examples only. Do not write ticker-specific logic. The UI must work for any future uploaded brokerage CSV and any ticker.
+
+Goal:
+Update Portfolio Dashboard category rendering so it consumes backend aggregate category lists directly.
+
+Do NOT:
+- hardcode SIVEF, OPTX, NBIS, AEHR, SNDK, CRDO, CCCX, OUST, ALMU, or any ticker
+- infer Partially Closed from raw closed_trade sell events
+- infer Fully Closed from is_full_close alone
+- use “Historical” as a replacement for Fully Closed
+- create local-only classification state
+- use old /api/portfolio/upload-csv
+- preserve stale localStorage category data
+- rebuild accounting logic in frontend
+
+Correct data sources:
+
+1. Open Positions section
+Use:
+GET /api/portfolio/holdings → open_positions
+
+If open_positions is not available for legacy responses only, fallback to holdings where:
+classification === "open" OR classification === "partially_closed_open"
+
+Do not derive this from closed trades.
+
+2. Partially Closed section
+Use:
+GET /api/portfolio/holdings → partially_closed_positions
+
+Render one aggregate glasscard per ticker.
+
+Do NOT render raw closed trade rows as partial cards.
+
+Each partial card should show backend fields where available:
+- symbol / ticker
+- shares_bought
+- shares_sold
+- shares_remaining
+- percent_closed
+- percent_remaining
+- avg_entry_price
+- cost_basis_sold
+- cost_basis_remaining
+- realized_pnl
+- realized_pnl_pct
+- last_exit_price
+- first_entry_date
+- last_exit_date
+- sell_events_count
+- final_symbol_status
+- classification
+- basis_source
+
+UX requirement:
+Partially Closed card should clearly show:
+- amount / % sold
+- amount / % still open
+- realized P&L on sold portion
+- remaining shares / remaining cost basis
+
+3. Fully Closed section
+Use:
+GET /api/portfolio/holdings → fully_closed_positions
+
+Render one aggregate card per fully closed ticker.
+
+Do NOT label these as “Historical.”
+Do NOT exclude them because they also have raw closed trade events.
+
+Fields to show where available:
+- symbol / ticker
+- total shares bought/sold or shares_sold
+- avg_entry_price
+- last_exit_price
+- realized_pnl
+- realized_pnl_pct
+- first_entry_date
+- last_exit_date / final_exit_date
+- holding_period_days
+- final_symbol_status
+- classification
+- basis_source
+
+4. Monthly Closed Activity / Trade Journal
+This section may still use raw closed_trades/grouped closed trades.
+
+Use:
+- is_full_close only for individual sell-event labels
+- final_symbol_status/classification for ticker status context
+
+Event labels:
+- Partial Sell: is_full_close=false
+- Lot Closed: is_full_close=true but final_symbol_status is open or partially_closed_open
+- Ticker Closed: is_full_close=true and final_symbol_status=fully_closed
+
+This section can show historical lot closes, but those events must not control the main Open / Partial / Fully Closed category sections.
+
+5. CSV import flow
+Portfolio CSV upload must use only:
+POST /api/portfolio/transactions/import-csv
+
+Do not call:
+POST /api/portfolio/upload-csv
+
+After import, refetch:
+- GET /api/portfolio/holdings
+- GET /api/portfolio/closed-trades
+- /api/caelyn-terminal
+- any Portfolio Dashboard summary queries
+
+The import result may include:
+- symbol_classification_report
+- symbol_diagnostics
+- tolerance_config
+- import_accuracy_status
+- basis_warning
+- needs_basis_review_symbols
+
+Use those for diagnostics/warnings, not for replacing the aggregate lists from GET /api/portfolio/holdings after refetch.
+
+6. Remove confusing “Historical” category
+Do not use “Historical” as a main dashboard category.
+
+Allowed:
+- “Historical lot close” or “Lot Closed” inside Monthly Activity / Trade Journal only.
+
+Not allowed:
+- putting fully closed tickers under “Historical” instead of Fully Closed
+- putting open/reopened tickers in Fully Closed because one old lot closed
+
+7. Fallback rules for legacy data only
+If the backend aggregate lists are absent, use conservative fallback:
+- open: active holdings classification open or partially_closed_open
+- partial: groups with final_symbol_status === partially_closed_open
+- fully closed: groups with final_symbol_status === fully_closed
+
+Never use:
+is_full_close alone as the dashboard category source.
+
+Validation with actual CSV:
+1. Upload actual CSV using /api/portfolio/transactions/import-csv.
+2. Confirm /api/portfolio/upload-csv is never called.
+3. Confirm GET /api/portfolio/holdings returns open_positions, partially_closed_positions, fully_closed_positions.
+4. Confirm Open Positions includes:
+   - SIVEF
+   - NBIS
+   - OUST
+   - ALMU
+5. Confirm Partially Closed includes:
+   - SIVEF exactly once
+6. Confirm Partially Closed does NOT include:
+   - NBIS
+   - OPTX
+   - AEHR
+   - SNDK
+   - CRDO
+   - CCCX
+   - OUST
+   - ALMU
+7. Confirm Fully Closed includes:
+   - OPTX
+   - AEHR
+   - SNDK
+   - CRDO
+   - CCCX
+   if backend fully_closed_positions includes them.
+8. Confirm Fully Closed does NOT include:
+   - SIVEF
+   - NBIS
+   - OUST
+   - ALMU
+9. Confirm Monthly Activity / Trade Journal can show raw sell events with correct labels:
+   - Partial Sell
+   - Lot Closed
+   - Ticker Closed
+10. Confirm hard refresh preserves the same category routing.
+11. Confirm Portfolio Terminal updates after import.
+
+Diagnostics:
+Add/update frontend logs:
+
+[portfolio-category-ui] {
+  source: "GET /api/portfolio/holdings aggregate lists",
+  openSymbols,
+  partialSymbols,
+  fullyClosedSymbols,
+  rawClosedTradeSymbols,
+  usingAggregateOpenPositions,
+  usingAggregatePartialPositions,
+  usingAggregateFullyClosedPositions,
+  symbolDiagnostics: {
+    SIVEF,
+    AEHR,
+    SNDK,
+    CRDO,
+    CCCX,
+    OPTX,
+    NBIS,
+    OUST,
+    ALMU
+  },
+  miscategorizedSymbols
+}
+
+[portfolio-csv-import-ui] {
+  endpoint,
+  importAccuracyStatus,
+  openCount,
+  partialCount,
+  fullyClosedCount,
+  closedTradesCount,
+  needsBasisReviewSymbols,
+  refetchedHoldings,
+  refetchedClosedTrades,
+  refetchedTerminal
+}
+
+Return:
+- exact files changed
+- old endpoint references removed or confirmed unused
+- backend fields consumed
+- screenshots/logs showing Open / Partial / Fully Closed sections
+- final category validation table for SIVEF, AEHR, SNDK, CRDO, CCCX, OPTX, NBIS, OUST, ALMU

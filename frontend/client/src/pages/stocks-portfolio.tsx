@@ -254,6 +254,26 @@ export default function StocksPortfolioPage() {
     return map;
   }, [faHoldingsData]);
 
+  // Aggregate position lists from GET /api/portfolio/holdings (new backend format).
+  // These drive the Partially Closed and Fully Closed dashboard sections directly.
+  const partiallyClosedPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.partially_closed_positions) ? d.partially_closed_positions : [];
+  }, [faHoldingsData]);
+
+  const fullyClosedPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.fully_closed_positions) ? d.fully_closed_positions : [];
+  }, [faHoldingsData]);
+
+  const openPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    if (Array.isArray(d?.open_positions)) return d.open_positions;
+    // Fallback: filter active holdings by classification
+    const arr: any[] = Array.isArray(d) ? d : Array.isArray(d?.holdings) ? d.holdings : [];
+    return arr.filter((h: any) => h.classification === 'open' || h.classification === 'partially_closed_open');
+  }, [faHoldingsData]);
+
   // tradeSummary: prefer backend perf object; fall back to client-side compute from flat list
   const tradeSummary = useMemo(() => {
     if (perf) {
@@ -685,9 +705,16 @@ export default function StocksPortfolioPage() {
       }});
 
       console.log('[portfolio-csv-import-ui]', {
-        refetchedActive: true,
-        refetchedClosed: true,
-        refetchedTerminal: true,
+        endpoint: '/api/portfolio/transactions/import-csv',
+        importAccuracyStatus: accuracyStatus,
+        openCount:        openPositions.length || diag.open_count,
+        partialCount:     partialPos.length    || diag.partially_closed_count,
+        fullyClosedCount: fullyClosedPos.length || diag.fully_closed_count,
+        closedTradesCount: diag.closed_trades_count,
+        needsBasisReviewSymbols: needsBasis,
+        refetchedHoldings:     true,
+        refetchedClosedTrades: true,
+        refetchedTerminal:     true,
       });
     } catch (err: any) {
       setCsvError(err?.message || 'Network error.');
@@ -2317,59 +2344,251 @@ export default function StocksPortfolioPage() {
                   </div>
                 )}
 
-                {/* Trade cards — grouped view when trade_groups available, flat fallback */}
-                {(tradeGroups.length > 0 || tradeHistory.length > 0) && (() => {
+                {/* Trade cards — aggregate sections (Partial / Fully Closed) + Monthly Activity */}
+                {(tradeGroups.length > 0 || tradeHistory.length > 0 || partiallyClosedPositions.length > 0 || fullyClosedPositions.length > 0) && (() => {
                   const fmtP = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
                   const fmtM = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
 
-                  if (tradeGroups.length > 0) {
-                    // ── Grouped rendering (new backend format) ──────────────────
-                    // Use final_symbol_status exclusively for ticker-level routing.
-                    // is_full_close is a per-event flag only — never use it for dashboard section routing.
-                    // Fallback (legacy data): if final_symbol_status absent, treat as 'open' unless
-                    // is_fully_closed boolean is explicitly true on the group itself.
+                  if (tradeGroups.length > 0 || partiallyClosedPositions.length > 0 || fullyClosedPositions.length > 0) {
+                    // ── Grouped rendering ────────────────────────────────────────
+                    // PRIMARY SOURCE: aggregate lists from GET /api/portfolio/holdings
+                    //   partiallyClosedPositions → Partially Closed section
+                    //   fullyClosedPositions     → Fully Closed section (by month)
+                    // FALLBACK (legacy): derive from tradeGroups.final_symbol_status
+                    // MONTHLY ACTIVITY: ALL tradeGroups as raw sell events (labels only from is_full_close)
+
+                    const usingAggregatePartial     = partiallyClosedPositions.length > 0;
+                    const usingAggregateFullyClosed = fullyClosedPositions.length > 0;
+
+                    // Per-event status helper — used for sell event labels and fallback category routing
                     const getSymbolStatus = (g: any): string =>
-                      g.final_symbol_status
-                        ?? (g.is_fully_closed === true ? 'fully_closed' : 'open');
+                      g.final_symbol_status ?? (g.is_fully_closed === true ? 'fully_closed' : 'open');
                     const groupExitDate = (g: any) => g.exit_date ?? g.final_exit_date ?? null;
 
-                    // Partially Closed: final_symbol_status=partially_closed_open
-                    const partials = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'partially_closed_open');
-                    // Fully Closed: final_symbol_status=fully_closed
-                    const fullyClosed = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'fully_closed');
-                    // Open-status closes: final_symbol_status=open (historical lot closes for tickers that
-                    // were later re-bought, e.g. OUST/ALMU). Appear ONLY in monthly activity, not in
-                    // "Partially Closed" or "Fully Closed" sections.
-                    const openStatusCloses = tradeGroups.filter((g: any) => getSymbolStatus(g) === 'open');
+                    // Category routing — prefer aggregate, fall back to tradeGroup filtering
+                    const partialsToRender: any[] = usingAggregatePartial
+                      ? partiallyClosedPositions
+                      : tradeGroups.filter((g: any) => getSymbolStatus(g) === 'partially_closed_open');
 
+                    const fullyClosedToRender: any[] = usingAggregateFullyClosed
+                      ? fullyClosedPositions
+                      : tradeGroups.filter((g: any) => getSymbolStatus(g) === 'fully_closed');
+
+                    // Monthly Activity — ALL raw tradeGroups when aggregate present;
+                    // only open-status closes when falling back (fully_closed handled in month buckets above)
+                    const monthlyActivityGroups = (usingAggregatePartial || usingAggregateFullyClosed)
+                      ? [...tradeGroups].sort((a, b) => {
+                          const da = groupExitDate(a) ? new Date(groupExitDate(a)).getTime() : 0;
+                          const db = groupExitDate(b) ? new Date(groupExitDate(b)).getTime() : 0;
+                          return db - da;
+                        })
+                      : tradeGroups
+                          .filter((g: any) => getSymbolStatus(g) === 'open')
+                          .sort((a: any, b: any) => {
+                            const da = groupExitDate(a) ? new Date(groupExitDate(a)).getTime() : 0;
+                            const db = groupExitDate(b) ? new Date(groupExitDate(b)).getTime() : 0;
+                            return db - da;
+                          });
+
+                    // Diagnostics
+                    const _watchlistSyms = ['SIVEF','AEHR','SNDK','CRDO','CCCX','OPTX','NBIS','OUST','ALMU'];
+                    const _faData = faHoldingsData as any;
+                    const _symDiagFromHoldings = _faData?.symbol_diagnostics ?? {};
                     console.log('[portfolio-category-ui]', {
-                      openSymbols:             openStatusCloses.map((g: any) => (g.ticker ?? '').toUpperCase()),
-                      partialSymbols:          partials.map((g: any) => (g.ticker ?? '').toUpperCase()),
-                      fullyClosedSymbols:      fullyClosed.map((g: any) => (g.ticker ?? '').toUpperCase()),
-                      partialCardsCount:       partials.length,
-                      usingBackendClassification: tradeGroups.every((g: any) => g.final_symbol_status != null),
-                      rawClosedTradesCount:    tradeGroups.length,
-                      miscategorizedSymbols:   tradeGroups
+                      source: 'GET /api/portfolio/holdings aggregate lists',
+                      openSymbols:        openPositions.map((p: any) => (p.ticker ?? p.symbol ?? '').toString().toUpperCase()),
+                      partialSymbols:     partialsToRender.map((p: any) => (p.ticker ?? p.symbol ?? '').toString().toUpperCase()),
+                      fullyClosedSymbols: fullyClosedToRender.map((p: any) => (p.ticker ?? p.symbol ?? '').toString().toUpperCase()),
+                      rawClosedTradeSymbols: tradeGroups.map((g: any) => (g.ticker ?? '').toUpperCase()),
+                      usingAggregateOpenPositions:       openPositions.length > 0,
+                      usingAggregatePartialPositions:    usingAggregatePartial,
+                      usingAggregateFullyClosedPositions: usingAggregateFullyClosed,
+                      symbolDiagnostics: Object.fromEntries(_watchlistSyms.map(s => {
+                        const r = _symDiagFromHoldings[s] ?? _symDiagFromHoldings[s.toLowerCase()];
+                        if (r) return [s, r];
+                        return [s, {
+                          inOpen:        openPositions.some((p: any) => (p.ticker ?? p.symbol ?? '').toUpperCase() === s),
+                          inPartial:     partialsToRender.some((p: any) => (p.ticker ?? p.symbol ?? '').toUpperCase() === s),
+                          inFullyClosed: fullyClosedToRender.some((p: any) => (p.ticker ?? p.symbol ?? '').toUpperCase() === s),
+                        }];
+                      })),
+                      miscategorizedSymbols: tradeGroups
                         .filter((g: any) => !g.final_symbol_status)
                         .map((g: any) => (g.ticker ?? '').toUpperCase()),
                     });
 
-                    // Monthly activity includes both fully-closed trades and open-status historical closes.
-                    // Sorted newest-first, then bucketed by exit month.
-                    const allMonthlyGroups = [...fullyClosed, ...openStatusCloses].sort((a, b) => {
-                      const da = groupExitDate(a) ? new Date(groupExitDate(a)).getTime() : 0;
-                      const db = groupExitDate(b) ? new Date(groupExitDate(b)).getTime() : 0;
+                    // ── Month-bucket helper ───────────────────────────────────────
+                    function bucketByMonth<T>(items: T[], getDate: (item: T) => string | null) {
+                      const buckets: { monthKey: string; label: string; items: T[] }[] = [];
+                      items.forEach(item => {
+                        const dateStr = getDate(item);
+                        const d = dateStr ? new Date(dateStr) : null;
+                        const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
+                        const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
+                        const last = buckets[buckets.length - 1];
+                        if (last && last.monthKey === monthKey) last.items.push(item);
+                        else buckets.push({ monthKey, label, items: [item] });
+                      });
+                      return buckets;
+                    }
+
+                    // Fully closed — sorted newest-first, then bucketed by exit month
+                    const sortedFullyClosed = [...fullyClosedToRender].sort((a, b) => {
+                      const da = (a.last_exit_date ?? a.final_exit_date ?? a.exit_date)
+                        ? new Date(a.last_exit_date ?? a.final_exit_date ?? a.exit_date).getTime() : 0;
+                      const db = (b.last_exit_date ?? b.final_exit_date ?? b.exit_date)
+                        ? new Date(b.last_exit_date ?? b.final_exit_date ?? b.exit_date).getTime() : 0;
                       return db - da;
                     });
-                    const monthBuckets: { monthKey: string; label: string; groups: any[] }[] = [];
-                    allMonthlyGroups.forEach((g: any) => {
-                      const d = groupExitDate(g) ? new Date(groupExitDate(g)) : null;
-                      const monthKey = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : 'unknown';
-                      const label    = d ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown Date';
-                      const last = monthBuckets[monthBuckets.length - 1];
-                      if (last && last.monthKey === monthKey) { last.groups.push(g); }
-                      else { monthBuckets.push({ monthKey, label, groups: [g] }); }
-                    });
+                    const fullyClosedMonthBuckets = bucketByMonth(
+                      sortedFullyClosed,
+                      (p: any) => p.last_exit_date ?? p.final_exit_date ?? p.exit_date ?? null
+                    );
+
+                    // Monthly Activity — bucketed by event exit date
+                    const activityMonthBuckets = bucketByMonth(
+                      monthlyActivityGroups,
+                      (g: any) => groupExitDate(g)
+                    );
+
+                    // ── Aggregate partial card (one per ticker) ──────────────────
+                    const renderPartialCard = (p: any) => {
+                      const ticker       = (p.ticker ?? p.symbol ?? '').toUpperCase();
+                      const sharesBought = p.shares_bought ?? 0;
+                      const sharesSold   = p.shares_sold ?? p.total_shares_sold ?? 0;
+                      const sharesRem    = p.shares_remaining ?? (sharesBought - sharesSold);
+                      const pctClosed    = p.percent_closed ?? (sharesBought > 0 ? (sharesSold / sharesBought) * 100 : 0);
+                      const pctRem       = p.percent_remaining ?? (100 - pctClosed);
+                      const avgEntry     = p.avg_entry_price ?? p.entry_price ?? 0;
+                      const lastExit     = p.last_exit_price ?? p.exit_price ?? 0;
+                      const cbSold       = p.cost_basis_sold ?? 0;
+                      const cbRem        = p.cost_basis_remaining ?? (sharesRem * avgEntry);
+                      const pl           = p.realized_pnl ?? p.total_realized_pnl ?? 0;
+                      const plPct        = p.realized_pnl_pct ?? p.total_realized_pnl_pct ?? 0;
+                      const isWin        = pl >= 0;
+                      const plClr        = isWin ? '#4ade80' : '#f87171';
+                      const firstEntry   = p.first_entry_date ?? p.entry_date ?? null;
+                      const lastExitDate = p.last_exit_date ?? p.exit_date ?? null;
+                      const sellCount    = p.sell_events_count ?? 1;
+                      const basisSrc     = p.basis_source ?? null;
+                      return (
+                        <div key={ticker} className="rounded-xl p-4 flex flex-col gap-3"
+                          style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: '4px solid #d97706' }}>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl font-bold text-white tracking-tight">{ticker}</span>
+                                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(217,119,6,0.15)', color: '#d97706', border: '1px solid rgba(217,119,6,0.3)' }}>Partial</span>
+                                {sellCount > 1 && <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(100,116,139,0.12)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.2)' }}>{sellCount} sells</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {lastExitDate && <span className="text-xs tracking-wide" style={{ color: '#d97706' }}>Last exit {new Date(lastExitDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>}
+                                {firstEntry && <span className="text-[10px]" style={{ color: '#475569' }}>· opened {firstEntry}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Avg Entry</span>
+                              <span className="font-mono text-white">{avgEntry > 0 ? `$${avgEntry.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}</span>
+                            </div>
+                            <div className="flex-1 px-3 flex items-center">
+                              <div className="h-px w-full" style={{ background: 'rgba(217,119,6,0.4)' }}></div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span style={{ color: '#64748b' }}>Last Exit</span>
+                              <span className="font-mono text-white">{lastExit > 0 ? `$${lastExit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex flex-col gap-1 px-3 py-2 rounded-lg" style={{ background: 'rgba(248,113,113,0.04)', border: '1px solid rgba(248,113,113,0.1)' }}>
+                              <span style={{ color: '#64748b' }}>Sold ({pctClosed.toFixed(0)}%)</span>
+                              <span className="font-semibold" style={{ color: '#e2e8f0' }}>{sharesSold.toLocaleString(undefined,{maximumFractionDigits:4})} sh</span>
+                              {cbSold > 0 && <span style={{ color: '#94a3b8' }}>${cbSold.toLocaleString(undefined,{maximumFractionDigits:0})} basis</span>}
+                            </div>
+                            <div className="flex flex-col gap-1 px-3 py-2 rounded-lg" style={{ background: 'rgba(74,222,128,0.04)', border: '1px solid rgba(74,222,128,0.1)' }}>
+                              <span style={{ color: '#64748b' }}>Remaining ({pctRem.toFixed(0)}%)</span>
+                              <span className="font-semibold" style={{ color: '#e2e8f0' }}>{sharesRem.toLocaleString(undefined,{maximumFractionDigits:4})} sh</span>
+                              {cbRem > 0 && <span style={{ color: '#94a3b8' }}>${cbRem.toLocaleString(undefined,{maximumFractionDigits:0})} basis</span>}
+                            </div>
+                          </div>
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L (sold portion)</div>
+                              <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}${Math.abs(pl).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>{isWin ? '+' : ''}{plPct.toFixed(1)}%</span>
+                              {basisSrc && <span className="text-[9px]" style={{ color: '#475569' }}>{basisSrc}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    // ── Aggregate fully-closed card (one per ticker) ─────────────
+                    const renderFullyClosedCard = (p: any) => {
+                      const ticker       = (p.ticker ?? p.symbol ?? '').toUpperCase();
+                      const sharesSold   = p.shares_sold ?? p.total_shares_sold ?? p.shares ?? 0;
+                      const avgEntry     = p.avg_entry_price ?? p.entry_price ?? 0;
+                      const lastExit     = p.last_exit_price ?? p.avg_exit_price ?? p.exit_price ?? 0;
+                      const pl           = p.realized_pnl ?? p.total_realized_pnl ?? 0;
+                      const plPct        = p.realized_pnl_pct ?? p.total_realized_pnl_pct ?? 0;
+                      const isWin        = pl >= 0;
+                      const plClr        = isWin ? '#4ade80' : '#f87171';
+                      const borderClr    = isWin ? '#4ade80' : '#f87171';
+                      const firstEntry   = p.first_entry_date ?? p.entry_date ?? null;
+                      const lastExitDate = p.last_exit_date ?? p.final_exit_date ?? p.exit_date ?? null;
+                      const holdDays     = p.holding_period_days ?? null;
+                      const basisSrc     = p.basis_source ?? null;
+                      const exitDisplay  = lastExitDate
+                        ? new Date(lastExitDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+                        : '—';
+                      return (
+                        <div key={ticker} className="rounded-xl p-4 flex flex-col gap-3"
+                          style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl font-bold text-white tracking-tight">{ticker}</span>
+                                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.08)', color: isWin ? '#4ade80' : '#f87171', border: `1px solid ${isWin ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.2)'}` }}>Closed</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs tracking-wide" style={{ color: '#d97706' }}>{exitDisplay}</span>
+                                {firstEntry && <span className="text-[10px]" style={{ color: '#475569' }}>· opened {firstEntry}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Avg Entry</span>
+                              <span className="font-mono text-white">{avgEntry > 0 ? `$${avgEntry.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}</span>
+                            </div>
+                            <div className="flex-1 px-3 flex items-center">
+                              <div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span style={{ color: '#64748b' }}>Exit</span>
+                              <span className="font-mono text-white">{lastExit > 0 ? `$${lastExit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—'}</span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                            {sharesSold > 0 && <div className="flex flex-col"><span style={{ color: '#64748b' }}>Shares</span><span style={{ color: '#e2e8f0' }}>{sharesSold.toLocaleString(undefined,{maximumFractionDigits:4})}</span></div>}
+                            {holdDays != null && holdDays > 0 && <div className="flex flex-col"><span style={{ color: '#64748b' }}>Hold Time</span><span style={{ color: '#e2e8f0' }}>{holdDays}d</span></div>}
+                            {basisSrc && <div className="flex flex-col col-span-2"><span style={{ color: '#64748b' }}>Basis</span><span style={{ color: '#475569' }}>{basisSrc}</span></div>}
+                          </div>
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                              <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}${Math.abs(pl).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+                            </div>
+                            <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>{isWin ? '+' : ''}{plPct.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      );
+                    };
 
                     const renderGroupCard = (g: any) => {
                       const groupId     = g.trade_group_id ?? g.ticker;
@@ -2590,32 +2809,76 @@ export default function StocksPortfolioPage() {
 
                     return (
                       <div className="flex flex-col gap-6">
-                        {/* Partially closed section */}
-                        {partials.length > 0 && (
+
+                        {/* ── Partially Closed — aggregate from GET /api/portfolio/holdings ── */}
+                        {partialsToRender.length > 0 && (
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>Partially Closed</span>
                               <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
-                              <span className="text-xs" style={{ color: '#475569' }}>{partials.length} position{partials.length !== 1 ? 's' : ''}</span>
+                              <span className="text-xs" style={{ color: '#475569' }}>{partialsToRender.length} position{partialsToRender.length !== 1 ? 's' : ''}</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                              {partials.map(renderGroupCard)}
+                              {partialsToRender.map(usingAggregatePartial ? renderPartialCard : renderGroupCard)}
                             </div>
                           </div>
                         )}
-                        {/* Fully closed — grouped by month */}
-                        {monthBuckets.map(({ monthKey, label, groups }) => (
+
+                        {/* ── Fully Closed — aggregate from GET /api/portfolio/holdings, by month ── */}
+                        {fullyClosedMonthBuckets.map(({ monthKey, label, items }) => (
                           <div key={monthKey} className="flex flex-col gap-3">
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>{label}</span>
                               <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
-                              <span className="text-xs" style={{ color: '#475569' }}>{groups.length} position{groups.length !== 1 ? 's' : ''}</span>
+                              <span className="text-xs" style={{ color: '#475569' }}>{items.length} position{items.length !== 1 ? 's' : ''}</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                              {groups.map(renderGroupCard)}
+                              {items.map(usingAggregateFullyClosed ? renderFullyClosedCard : renderGroupCard)}
                             </div>
                           </div>
                         ))}
+
+                        {/* ── Monthly Activity — raw sell events from trade_groups ── */}
+                        {/* Shown when aggregate is available; collapsed by default to avoid redundancy */}
+                        {(usingAggregatePartial || usingAggregateFullyClosed) && activityMonthBuckets.length > 0 && (
+                          <details>
+                            <summary className="cursor-pointer select-none py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#475569', listStyle: 'none' }}>
+                              <span className="flex items-center gap-2">
+                                <ChevronRight className="w-3 h-3" />
+                                Sell History · {tradeGroups.length} event{tradeGroups.length !== 1 ? 's' : ''}
+                              </span>
+                            </summary>
+                            <div className="flex flex-col gap-6 mt-4">
+                              {activityMonthBuckets.map(({ monthKey, label, items }) => (
+                                <div key={monthKey} className="flex flex-col gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs font-semibold tracking-wide" style={{ color: '#64748b' }}>{label}</span>
+                                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }}></div>
+                                    <span className="text-[10px]" style={{ color: '#475569' }}>{items.length} event{items.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                                    {items.map(renderGroupCard)}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+
+                        {/* ── Fallback: raw month-bucketed activity (no aggregate available) ── */}
+                        {!usingAggregatePartial && !usingAggregateFullyClosed && activityMonthBuckets.map(({ monthKey, label, items }) => (
+                          <div key={monthKey} className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold tracking-wide" style={{ color: '#d97706' }}>{label}</span>
+                              <div className="flex-1 h-px" style={{ background: 'rgba(217,119,6,0.2)' }}></div>
+                              <span className="text-xs" style={{ color: '#475569' }}>{items.length} position{items.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                              {items.map(renderGroupCard)}
+                            </div>
+                          </div>
+                        ))}
+
                       </div>
                     );
                   }
