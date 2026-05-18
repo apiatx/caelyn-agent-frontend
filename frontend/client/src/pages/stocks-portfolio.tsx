@@ -216,6 +216,7 @@ export default function StocksPortfolioPage() {
   const [newShares, setNewShares] = useState('');
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
+  const [portfolioView, setPortfolioView] = useState<'all' | 'trades' | 'options'>('all');
   const { data: closedTradesData, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
@@ -272,6 +273,28 @@ export default function StocksPortfolioPage() {
     // Fallback: filter active holdings by classification
     const arr: any[] = Array.isArray(d) ? d : Array.isArray(d?.holdings) ? d.holdings : [];
     return arr.filter((h: any) => h.classification === 'open' || h.classification === 'partially_closed_open');
+  }, [faHoldingsData]);
+
+  // Option position lists from GET /api/portfolio/holdings (separate from stock positions).
+  // Never mixed into stock Open / Partially Closed / Fully Closed sections.
+  const optionOpenPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.option_open_positions) ? d.option_open_positions : [];
+  }, [faHoldingsData]);
+
+  const optionPartiallyClosedPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.option_partially_closed_positions) ? d.option_partially_closed_positions : [];
+  }, [faHoldingsData]);
+
+  const optionFullyClosedPositions = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.option_fully_closed_positions) ? d.option_fully_closed_positions : [];
+  }, [faHoldingsData]);
+
+  const optionClosedTrades = useMemo<any[]>(() => {
+    const d = faHoldingsData as any;
+    return Array.isArray(d?.option_closed_trades) ? d.option_closed_trades : [];
   }, [faHoldingsData]);
 
   // tradeSummary: prefer backend perf object; fall back to client-side compute from flat list
@@ -660,6 +683,7 @@ export default function StocksPortfolioPage() {
       const partialPos     = (data.partially_closed_positions ?? []).map((p: any) => (p.ticker ?? p.symbol ?? p).toUpperCase?.() ?? p);
       const fullyClosedPos = (data.fully_closed_positions ?? []).map((p: any) => (p.ticker ?? p.symbol ?? p).toUpperCase?.() ?? p);
 
+      const optDiag        = data.option_import_diagnostics ?? {};
       const watchlistSymbols = ['SIVEF', 'NBIS', 'OPTX', 'OUST', 'ALMU'];
       console.log('[portfolio-csv-import-ui]', {
         endpoint: '/api/portfolio/transactions/import-csv',
@@ -675,7 +699,7 @@ export default function StocksPortfolioPage() {
           watchlistSymbols.map(s => [s, symDiag[s] ?? symDiag[s.toLowerCase()] ?? null])
         ),
         toleranceConfig: toleranceCfg,
-        // raw diag fields
+        // raw stock diag fields
         rows_total: diag.rows_total,
         normalized_transactions: diag.normalized_transactions,
         open_count: diag.open_count,
@@ -685,6 +709,18 @@ export default function StocksPortfolioPage() {
         duplicate_transactions: diag.duplicate_transactions,
         ignored_rows: diag.ignored_rows,
         accounting_errors: diag.accounting_errors,
+      });
+      console.log('[portfolio-options-import-ui]', {
+        selectedView:                  'all',
+        optionRowsDetected:            optDiag.option_rows_detected ?? 0,
+        optionTransactionsNormalized:  optDiag.option_transactions_normalized,
+        optionOpenCount:               optDiag.option_open_count,
+        optionPartialCount:            optDiag.option_partially_closed_count,
+        optionFullyClosedCount:        optDiag.option_fully_closed_count,
+        optionClosedTradesCount:       optDiag.option_closed_trades_count,
+        optionParseErrors:             optDiag.option_parse_errors ?? 0,
+        optionErrors:                  optDiag.option_errors ?? [],
+        renderedOptionContracts:       (data.option_open_positions ?? []).reduce((acc: number, p: any) => acc + (p.contracts_open ?? p.contracts ?? 0), 0),
       });
 
       setCsvImportResult(data);
@@ -2314,6 +2350,23 @@ export default function StocksPortfolioPage() {
             {closedPanelOpen && (
               <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
 
+                {/* ── View toggle: All | Trades | Options ── */}
+                <div className="flex items-center gap-1 pt-3 pb-1">
+                  {(['all', 'trades', 'options'] as const).map(v => (
+                    <button key={v} onClick={() => setPortfolioView(v)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                      style={{
+                        background: portfolioView === v ? 'rgba(92,200,240,0.15)' : 'transparent',
+                        color: portfolioView === v ? '#5cc8f0' : '#64748b',
+                        border: `1px solid ${portfolioView === v ? 'rgba(92,200,240,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      }}
+                    >{v === 'all' ? 'All' : v === 'trades' ? 'Trades' : 'Options'}</button>
+                  ))}
+                </div>
+
+                {/* ── Stock / Equity sections (hidden in Options view) ── */}
+                {portfolioView !== 'options' && <>
+
                 {/* Wins / Losses pills */}
                 {tradeSummary && (() => {
                   const g = tradeGroups.length ? tradeGroups : tradeHistory;
@@ -2418,8 +2471,8 @@ export default function StocksPortfolioPage() {
                     });
 
                     // ── Month-bucket helper ───────────────────────────────────────
-                    function bucketByMonth<T>(items: T[], getDate: (item: T) => string | null) {
-                      const buckets: { monthKey: string; label: string; items: T[] }[] = [];
+                    const bucketByMonth = <U extends object>(items: U[], getDate: (item: U) => string | null) => {
+                      const buckets: { monthKey: string; label: string; items: U[] }[] = [];
                       items.forEach(item => {
                         const dateStr = getDate(item);
                         const d = dateStr ? new Date(dateStr) : null;
@@ -2430,7 +2483,7 @@ export default function StocksPortfolioPage() {
                         else buckets.push({ monthKey, label, items: [item] });
                       });
                       return buckets;
-                    }
+                    };
 
                     // Fully closed — sorted newest-first, then bucketed by exit month
                     const sortedFullyClosed = [...fullyClosedToRender].sort((a, b) => {
@@ -2984,6 +3037,297 @@ export default function StocksPortfolioPage() {
                     </div>
                   );
                 })()}
+
+                </>}
+
+                {/* ── Options sections (hidden in Trades view) ── */}
+                {portfolioView !== 'trades' && (() => {
+                  const optTotalOpen        = optionOpenPositions.length;
+                  const optTotalPartial     = optionPartiallyClosedPositions.length;
+                  const optTotalFullyClosed = optionFullyClosedPositions.length;
+                  const optTotalClosed      = optionClosedTrades.length;
+                  const hasAnyOptions       = optTotalOpen + optTotalPartial + optTotalFullyClosed + optTotalClosed > 0;
+
+                  console.log('[portfolio-dashboard-view-toggle]', {
+                    selectedView:          portfolioView,
+                    stockOpenCount:        openPositions.length,
+                    stockPartialCount:     partiallyClosedPositions.length,
+                    stockFullyClosedCount: fullyClosedPositions.length,
+                    optionOpenCount:        optTotalOpen,
+                    optionPartialCount:     optTotalPartial,
+                    optionFullyClosedCount: optTotalFullyClosed,
+                  });
+
+                  if (!hasAnyOptions) return (
+                    <div className="py-8 text-center" style={{ marginTop: portfolioView === 'options' ? 12 : 8 }}>
+                      <div className="text-sm text-slate-500">No option positions found</div>
+                      <div className="text-xs text-slate-600 mt-1">Import a brokerage CSV containing option transactions to see positions here.</div>
+                    </div>
+                  );
+
+                  const fmtPrem   = (v: number) => v > 0 ? `$${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}` : '—';
+                  const fmtDollar = (v: number) => `$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+
+                  const statusBadge = (status: string | null | undefined) => {
+                    const s = (status ?? '').toLowerCase();
+                    if (s === 'open' || s === 'buy_open') return { text: 'Open',        clr: '#4ade80', bg: 'rgba(74,222,128,0.1)',   border: 'rgba(74,222,128,0.25)' };
+                    if (s.includes('partial'))             return { text: 'Partial',     clr: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.3)' };
+                    if (s === 'fully_closed' || s === 'sell_to_close') return { text: 'Closed', clr: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)' };
+                    if (s === 'expired' || s.includes('expired'))      return { text: 'Expired', clr: '#f87171', bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)' };
+                    if (s.includes('orphan') || s.includes('needs_basis') || s.includes('unresolved')) return { text: 'Needs Basis', clr: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' };
+                    return { text: status ?? '—', clr: '#64748b', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)' };
+                  };
+
+                  const optTypeClr = (t: string | null | undefined) =>
+                    ((t ?? '').toUpperCase() === 'C' || (t ?? '').toUpperCase() === 'CALL') ? '#4ade80' : '#f87171';
+
+                  const fmtOptionDisplay = (p: any) => {
+                    const und      = (p.underlying ?? p.ticker ?? '').toUpperCase();
+                    const exp      = p.expiration_date ?? p.expiration ?? null;
+                    const expFmt   = exp ? new Date(exp).toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}) : null;
+                    const strike   = p.strike != null ? `$${Number(p.strike).toFixed(2)}` : null;
+                    const ot       = (p.option_type ?? p.call_put ?? '').toUpperCase();
+                    const typeLabel = ot === 'C' ? 'Call' : ot === 'P' ? 'Put' : ot || null;
+                    return [und, expFmt, strike, typeLabel].filter(Boolean).join(' ');
+                  };
+
+                  const renderOptionOpenCard = (p: any) => {
+                    const key        = p.occ_key ?? p.option_symbol ?? p.display_symbol ?? (p.underlying + (p.expiration_date ?? ''));
+                    const displayStr = fmtOptionDisplay(p);
+                    const und        = (p.underlying ?? p.ticker ?? '').toUpperCase();
+                    const ot         = (p.option_type ?? p.call_put ?? '').toUpperCase();
+                    const typeClr    = optTypeClr(ot);
+                    const typeLabel  = ot === 'C' ? 'CALL' : ot === 'P' ? 'PUT' : ot || '—';
+                    const contracts  = p.contracts_open ?? p.contracts ?? 0;
+                    const avgPrem    = p.avg_premium ?? p.avg_entry_premium ?? 0;
+                    const costBasis  = p.cost_basis ?? (contracts * avgPrem * 100);
+                    const entryDate  = p.entry_date ?? p.first_entry_date ?? null;
+                    const lastTrade  = p.last_trade_date ?? null;
+                    const sbadge     = statusBadge(p.final_option_status ?? p.status);
+                    return (
+                      <div key={key} className="rounded-xl p-4 flex flex-col gap-3"
+                        style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${typeClr}` }}>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xl font-bold text-white tracking-tight">{und}</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                            <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: sbadge.bg, color: sbadge.clr, border: `1px solid ${sbadge.border}` }}>{sbadge.text}</span>
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: '#64748b' }}>{displayStr}</div>
+                          {(entryDate || lastTrade) && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {entryDate  && <span className="text-[10px]" style={{ color: '#475569' }}>opened {entryDate}</span>}
+                              {lastTrade && lastTrade !== entryDate && <span className="text-[10px]" style={{ color: '#475569' }}>· last trade {lastTrade}</span>}
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          {[
+                            { label: 'Contracts',    val: String(contracts) },
+                            { label: 'Avg Premium',  val: fmtPrem(avgPrem),                           mono: true },
+                            { label: 'Cost Basis',   val: costBasis > 0 ? fmtDollar(costBasis) : '—', mono: true, clr: '#a78bfa' },
+                          ].map(({ label, val, mono, clr }) => (
+                            <div key={label} className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <span className="text-[10px]" style={{ color: '#64748b' }}>{label}</span>
+                              <span className={mono ? 'font-mono' : 'font-semibold'} style={{ color: clr ?? '#e2e8f0' }}>{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  const renderOptionClosedCard = (p: any, isPartial: boolean) => {
+                    const key           = (p.occ_key ?? p.option_symbol ?? (p.underlying + (p.expiration_date ?? ''))) + (isPartial ? '_p' : '_f');
+                    const displayStr    = fmtOptionDisplay(p);
+                    const und           = (p.underlying ?? p.ticker ?? '').toUpperCase();
+                    const ot            = (p.option_type ?? p.call_put ?? '').toUpperCase();
+                    const typeClr       = optTypeClr(ot);
+                    const typeLabel     = ot === 'C' ? 'CALL' : ot === 'P' ? 'PUT' : ot || '—';
+                    const contractsClosed = p.contracts_closed ?? p.contracts_sold ?? p.contracts ?? 0;
+                    const contractsRem  = p.contracts_remaining_after ?? p.contracts_remaining ?? null;
+                    const avgEntry      = p.avg_premium ?? p.avg_entry_premium ?? 0;
+                    const exitPrem      = p.exit_premium ?? p.avg_exit_premium ?? 0;
+                    const pl            = p.realized_pnl ?? 0;
+                    const plPct         = p.realized_pnl_pct ?? 0;
+                    const isWin         = pl >= 0;
+                    const plClr         = isWin ? '#4ade80' : '#f87171';
+                    const entryDate     = p.entry_date ?? p.first_entry_date ?? null;
+                    const exitDate      = p.exit_date ?? p.last_exit_date ?? null;
+                    const exitDisplay   = exitDate ? new Date(exitDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+                    const sbadge        = statusBadge(p.final_option_status ?? p.status);
+                    const isOrphan      = sbadge.text === 'Needs Basis' || (p.final_option_status ?? '').includes('orphan');
+                    const borderClr     = isOrphan ? '#f59e0b' : (isWin ? '#4ade80' : '#f87171');
+                    return (
+                      <div key={key} className="rounded-xl p-4 flex flex-col gap-3"
+                        style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xl font-bold text-white tracking-tight">{und}</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                            <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: sbadge.bg, color: sbadge.clr, border: `1px solid ${sbadge.border}` }}>{sbadge.text}</span>
+                            {isPartial && contractsRem != null && (
+                              <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: 'rgba(100,116,139,0.12)', color: '#94a3b8', border: '1px solid rgba(100,116,139,0.2)' }}>{contractsRem} remaining</span>
+                            )}
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: '#64748b' }}>{displayStr}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px]" style={{ color: '#d97706' }}>{exitDisplay}</span>
+                            {entryDate && <span className="text-[10px]" style={{ color: '#475569' }}>· opened {entryDate}</span>}
+                          </div>
+                        </div>
+                        {!isOrphan && (
+                          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div className="flex flex-col">
+                              <span style={{ color: '#64748b' }}>Avg Entry</span>
+                              <span className="font-mono text-white">{fmtPrem(avgEntry)}</span>
+                            </div>
+                            <div className="flex-1 px-3"><div className="h-px w-full" style={{ background: isWin ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)' }}></div></div>
+                            <div className="flex flex-col items-end">
+                              <span style={{ color: '#64748b' }}>Exit Premium</span>
+                              <span className="font-mono text-white">{fmtPrem(exitPrem)}</span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                          <div className="flex flex-col"><span style={{ color: '#64748b' }}>Contracts Closed</span><span style={{ color: '#e2e8f0' }}>{contractsClosed}</span></div>
+                          {isOrphan && (
+                            <div className="flex flex-col col-span-2">
+                              <span style={{ color: '#f59e0b' }} className="text-[10px]">⚠ No matching buy found — enter cost basis to calculate P&L</span>
+                            </div>
+                          )}
+                        </div>
+                        {!isOrphan && (
+                          <>
+                            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                                <div className="text-lg font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtDollar(pl)}</div>
+                              </div>
+                              <span className="text-sm font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>{isWin ? '+' : ''}{plPct.toFixed(1)}%</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  const renderOptionTradeCard = (t: any) => {
+                    const key        = t.id ?? t.trade_id ?? ((t.option_symbol ?? '') + (t.exit_date ?? ''));
+                    const displayStr = fmtOptionDisplay(t);
+                    const und        = (t.underlying ?? t.ticker ?? '').toUpperCase();
+                    const ot         = (t.option_type ?? t.call_put ?? '').toUpperCase();
+                    const typeClr    = optTypeClr(ot);
+                    const typeLabel  = ot === 'C' ? 'CALL' : ot === 'P' ? 'PUT' : ot || '—';
+                    const actionRaw  = (t.action ?? t.transaction_type ?? t.final_option_status ?? '').toLowerCase();
+                    const isExpired  = actionRaw.includes('expir');
+                    const isOrphan   = actionRaw.includes('orphan') || actionRaw.includes('needs_basis');
+                    let eventLabel   = 'Close';
+                    if      (actionRaw.includes('sell_to_close') || actionRaw.includes('sell to close')) eventLabel = 'Sell to Close';
+                    else if (isExpired)                                                                  eventLabel = 'Expired';
+                    else if (actionRaw.includes('buy_to_close')  || actionRaw.includes('buy to close'))  eventLabel = 'Buy to Close';
+                    else if (isOrphan)                                                                   eventLabel = 'Needs Basis';
+                    const pl         = t.realized_pnl ?? 0;
+                    const plPct      = t.realized_pnl_pct ?? 0;
+                    const isWin      = pl >= 0;
+                    const plClr      = isWin ? '#4ade80' : '#f87171';
+                    const exitDate   = t.exit_date ?? t.last_trade_date ?? null;
+                    const exitDisplay = exitDate ? new Date(exitDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+                    const contracts  = t.contracts_closed ?? t.contracts ?? 0;
+                    const exitPrem   = t.exit_premium ?? 0;
+                    const borderClr  = isOrphan ? '#f59e0b' : isExpired ? '#94a3b8' : (isWin ? '#4ade80' : '#f87171');
+                    return (
+                      <div key={key} className="rounded-xl p-4 flex flex-col gap-3"
+                        style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${borderClr}` }}>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-lg font-bold text-white tracking-tight">{und}</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                              <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                style={{ background: isOrphan ? 'rgba(245,158,11,0.1)' : isExpired ? 'rgba(148,163,184,0.1)' : 'rgba(100,116,139,0.1)', color: isOrphan ? '#f59e0b' : isExpired ? '#94a3b8' : '#64748b', border: `1px solid ${isOrphan ? 'rgba(245,158,11,0.3)' : 'rgba(100,116,139,0.15)'}` }}>{eventLabel}</span>
+                            </div>
+                            <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>{displayStr}</div>
+                            <div className="text-[10px] mt-0.5" style={{ color: '#d97706' }}>{exitDisplay}</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
+                          <div className="flex flex-col"><span style={{ color: '#64748b' }}>Contracts</span><span style={{ color: '#e2e8f0' }}>{contracts}</span></div>
+                          {exitPrem > 0 && <div className="flex flex-col"><span style={{ color: '#64748b' }}>Exit Premium</span><span className="font-mono text-white">{fmtPrem(exitPrem)}</span></div>}
+                        </div>
+                        {!isOrphan && !isExpired && pl !== 0 && (
+                          <>
+                            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }}></div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-[10px] mb-0.5" style={{ color: '#64748b' }}>Realized P&L</div>
+                                <div className="text-base font-bold" style={{ color: plClr }}>{isWin ? '+' : '-'}{fmtDollar(pl)}</div>
+                              </div>
+                              <span className="text-xs font-semibold px-2 py-1 rounded" style={{ background: isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', color: plClr }}>{isWin ? '+' : ''}{plPct.toFixed(1)}%</span>
+                            </div>
+                          </>
+                        )}
+                        {isOrphan && (
+                          <div className="text-[10px] px-2 py-1.5 rounded" style={{ background: 'rgba(245,158,11,0.08)', color: '#d97706', border: '1px solid rgba(245,158,11,0.2)' }}>
+                            ⚠ No matching BUY found in CSV — P&L cannot be calculated.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  const sectionHeader = (label: string, count: number, clr = '#d97706') => (
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-semibold tracking-wide" style={{ color: clr }}>{label}</span>
+                      <div className="flex-1 h-px" style={{ background: `${clr}33` }}></div>
+                      <span className="text-xs" style={{ color: '#475569' }}>{count} position{count !== 1 ? 's' : ''}</span>
+                    </div>
+                  );
+
+                  return (
+                    <div className="flex flex-col gap-6" style={{ marginTop: 12 }}>
+                      {optionOpenPositions.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          {sectionHeader('Open Options', optionOpenPositions.length, '#4ade80')}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {optionOpenPositions.map(renderOptionOpenCard)}
+                          </div>
+                        </div>
+                      )}
+                      {optionPartiallyClosedPositions.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          {sectionHeader('Partially Closed Options', optionPartiallyClosedPositions.length, '#f59e0b')}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {optionPartiallyClosedPositions.map(p => renderOptionClosedCard(p, true))}
+                          </div>
+                        </div>
+                      )}
+                      {optionFullyClosedPositions.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          {sectionHeader('Fully Closed Options', optionFullyClosedPositions.length, '#a78bfa')}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {optionFullyClosedPositions.map(p => renderOptionClosedCard(p, false))}
+                          </div>
+                        </div>
+                      )}
+                      {optionClosedTrades.length > 0 && (
+                        <details>
+                          <summary className="cursor-pointer select-none py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#475569', listStyle: 'none' }}>
+                            <span className="flex items-center gap-2">
+                              <ChevronRight className="w-3 h-3" />
+                              Options Trade History · {optionClosedTrades.length} event{optionClosedTrades.length !== 1 ? 's' : ''}
+                            </span>
+                          </summary>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-3">
+                            {optionClosedTrades.map(renderOptionTradeCard)}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  );
+                })()}
+
               </div>
             )}
           </GlassCard>
@@ -3230,6 +3574,51 @@ export default function StocksPortfolioPage() {
                         </div>
                       </details>
                     )}
+
+                    {/* Options import diagnostics */}
+                    {(() => {
+                      const optD      = csvImportResult.option_import_diagnostics ?? {};
+                      const optRows   = optD.option_rows_detected ?? 0;
+                      const optErrors = optD.option_parse_errors ?? 0;
+                      if (optRows === 0 && !Object.keys(optD).length) return null;
+                      return (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }}></div>
+                            <span className="text-[10px] uppercase tracking-widest font-medium px-2" style={{ color: '#475569' }}>Options</span>
+                            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }}></div>
+                          </div>
+                          <div className="text-[11px] px-1" style={{ color: '#475569' }}>
+                            Options were imported separately from stock trades using contract-level accounting.
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { label: 'Option rows detected',    val: optD.option_rows_detected,              color: '#94a3b8' },
+                              { label: 'Normalized transactions', val: optD.option_transactions_normalized,    color: '#e2e8f0' },
+                              { label: 'Open contracts',          val: optD.option_open_count,                color: '#4ade80' },
+                              { label: 'Partially closed',        val: optD.option_partially_closed_count,    color: '#f59e0b' },
+                              { label: 'Fully closed',            val: optD.option_fully_closed_count,        color: '#a78bfa' },
+                              { label: 'Closed trade events',     val: optD.option_closed_trades_count,       color: '#a78bfa' },
+                            ].filter(row => row.val != null).map(({ label, val, color }) => (
+                              <div key={label} className="flex justify-between items-center px-3 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                <span className="text-xs" style={{ color: '#475569' }}>{label}</span>
+                                <span className="text-xs font-semibold font-mono" style={{ color }}>{val ?? '—'}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {optErrors > 0 && (
+                            <div className="px-3 py-2.5 rounded-lg text-xs flex flex-col gap-1" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b' }}>
+                              <span>⚠ {optErrors} option parse error{optErrors !== 1 ? 's' : ''} — some option rows could not be parsed.</span>
+                              {(optD.option_errors ?? []).length > 0 && (
+                                <span style={{ color: '#d97706' }} className="text-[10px]">
+                                  {(optD.option_errors as string[]).slice(0, 3).join(' · ')}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Tolerance config (collapsed by default) */}
                     {Object.keys(toleranceCfg).length > 0 && (

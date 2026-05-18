@@ -1,0 +1,280 @@
+FRONTEND REPLIT AGENT — Add Portfolio Dashboard All / Trades / Options toggle and render imported options ledger
+
+Backend has added options transaction support to the Portfolio CSV import.
+
+Use the backend outputs. Do not build options accounting in frontend.
+
+Backend changes now available:
+- POST /api/portfolio/transactions/import-csv now returns:
+  - option_open_positions
+  - option_partially_closed_positions
+  - option_fully_closed_positions
+  - option_closed_trades
+  - option_import_diagnostics
+- GET /api/portfolio/holdings now also returns:
+  - option_open_positions
+  - option_partially_closed_positions
+  - option_fully_closed_positions
+  - option_closed_trades
+- New endpoints:
+  - GET /api/portfolio/options-positions
+  - GET /api/portfolio/options-trades
+
+Backend validation passed:
+- BWEN 07/17/2026 2.50 C parsed as BUY_OPEN, 18 contracts, cost basis $2,981.91
+- VIVO 07/17/2026 2.50 C parsed as BUY_OPEN across 2 lots, 80 contracts, cost basis $17,585.95
+- ETHA Expired row parsed as orphan_expired because no prior BUY exists in CSV
+- BWEN/VIVO/ETHA do NOT appear in stock outputs
+- SIVEF still appears in stock partially_closed_positions
+- NBIS still appears in stock open_positions
+- OPTX still appears in stock fully_closed_positions
+- option_rows_detected = 4
+- option_parse_errors = 0
+
+Goal:
+Update Portfolio Dashboard so imported options trades are visible and usable without mixing them into stock/equity sections.
+
+Add a Portfolio Dashboard view toggle:
+- All
+- Trades
+- Options
+
+Definitions:
+- All = show stock/equity sections and options sections
+- Trades = show only stock/equity portfolio sections
+- Options = show only options sections
+
+Do NOT:
+- parse option contracts in frontend
+- calculate option P&L in frontend
+- call Tradier/options providers from frontend
+- hardcode option symbols
+- put options in stock Open / Partially Closed / Fully Closed sections
+- use old /api/portfolio/upload-csv
+- break stock CSV categorization that now works
+- break Portfolio Terminal
+
+Data sources:
+Use backend data from:
+- GET /api/portfolio/holdings
+and import result from:
+- POST /api/portfolio/transactions/import-csv
+
+Option fields may include:
+- underlying
+- option_symbol / display_symbol
+- occ_key
+- expiration_date
+- strike
+- option_type
+- contracts_open
+- contracts_closed
+- avg_premium
+- cost_basis
+- entry_date
+- last_trade_date
+- exit_date
+- exit_premium
+- realized_pnl
+- realized_pnl_pct
+- contracts_remaining_after
+- final_option_status
+- status
+- source
+- import_batch_id
+- source_file
+
+Part 1 — Add view toggle
+
+Add a toggle near the Portfolio Dashboard positions/trade journal area:
+
+All | Trades | Options
+
+Behavior:
+- All: show current stock sections and options sections
+- Trades: show current stock sections only
+- Options: show options sections only
+
+Persisting the selected toggle in local component state is fine. No need for backend persistence.
+
+Part 2 — Keep stock/equity sections unchanged
+
+Trades view should continue using the corrected backend aggregate stock fields:
+- open_positions
+- partially_closed_positions
+- fully_closed_positions
+- closed_trades
+
+Do not regress:
+- SIVEF = Open + Partially Closed
+- NBIS = Open only
+- OPTX = Fully Closed
+- OUST/ALMU = Open only if backend says open
+
+Part 3 — Add Options sections
+
+In Options view, render:
+
+1. Open Options
+Use:
+- option_open_positions
+
+Each card/row should show:
+- underlying
+- option display symbol
+- expiration
+- strike
+- call/put
+- contracts open
+- avg premium
+- cost basis
+- entry date / last trade date
+- final status
+
+Example display:
+BWEN 07/17/2026 $2.50 Call
+18 contracts · avg premium $1.6566 · cost basis $2,981.91
+
+2. Partially Closed Options
+Use:
+- option_partially_closed_positions
+
+Each card/row should show:
+- underlying
+- option contract
+- contracts sold/closed
+- contracts remaining
+- percent closed / remaining if backend provides it
+- realized P&L
+- realized P&L %
+- avg entry premium
+- exit premium
+- entry/exit dates
+
+3. Fully Closed Options
+Use:
+- option_fully_closed_positions
+
+Each card/row should show:
+- underlying
+- option contract
+- contracts closed
+- avg entry premium
+- exit premium
+- realized P&L
+- realized P&L %
+- entry date
+- exit date
+- status, including expired if applicable
+
+4. Options Trade History
+Use:
+- option_closed_trades
+
+Show raw option close events:
+- Sell to Close
+- Expired
+- Buy to Close if backend returns it
+- short-option statuses if backend returns them
+
+For orphan/unsupported statuses:
+- show a clear status like “Needs basis / orphan expired” or backend-provided reason
+- do not treat these as normal realized P&L if backend flags them as unresolved
+
+Part 4 — CSV import done screen
+
+After import, show option import diagnostics alongside stock diagnostics.
+
+Use:
+- option_import_diagnostics
+
+Display:
+- option_rows_detected
+- option_transactions_normalized
+- option_open_count
+- option_partially_closed_count
+- option_fully_closed_count
+- option_closed_trades_count
+- option_parse_errors
+- option_errors if present
+
+Add copy:
+“Options were imported separately from stock trades using contract-level accounting.”
+
+If option_parse_errors > 0, show amber warning with details.
+
+Part 5 — Refetch after import
+
+After successful CSV import:
+Refetch:
+- GET /api/portfolio/holdings
+- GET /api/portfolio/closed-trades
+- GET /api/portfolio/options-positions if used separately
+- GET /api/portfolio/options-trades if used separately
+- /api/caelyn-terminal
+
+But prefer GET /api/portfolio/holdings if it already includes all option lists.
+
+Part 6 — Styling
+
+Keep style consistent with existing Portfolio Dashboard glasscards.
+
+Options card badge examples:
+- CALL / PUT
+- Open
+- Partially Closed
+- Fully Closed
+- Expired
+- Needs Basis
+
+Use clear labels:
+- “Contracts” not “Shares”
+- “Premium” not “Price”
+- “Cost Basis” based on contracts × premium × 100 + fees
+
+Part 7 — Validation
+
+Use the uploaded brokerage CSV.
+
+Confirm:
+1. Toggle exists: All | Trades | Options
+2. Trades view still shows stock sections correctly.
+3. Options view shows BWEN open call.
+4. Options view shows VIVO open call.
+5. ETHA expired/orphan row appears only if backend returns it, with correct unresolved/orphan status.
+6. BWEN/VIVO/ETHA do not appear in stock Open / Partially Closed / Fully Closed sections.
+7. All view shows both stock sections and options sections.
+8. CSV import done screen shows option diagnostics.
+9. Hard refresh preserves options data from backend/Neon.
+10. Portfolio Terminal still works.
+
+Diagnostics:
+Add:
+
+[portfolio-options-import-ui] {
+  selectedView,
+  optionOpenCount,
+  optionPartialCount,
+  optionFullyClosedCount,
+  optionClosedTradesCount,
+  optionRowsDetected,
+  optionParseErrors,
+  renderedOptionContracts
+}
+
+[portfolio-dashboard-view-toggle] {
+  selectedView,
+  stockOpenCount,
+  stockPartialCount,
+  stockFullyClosedCount,
+  optionOpenCount,
+  optionPartialCount,
+  optionFullyClosedCount
+}
+
+Return:
+- files changed
+- backend fields consumed
+- screenshots/logs showing All, Trades, and Options views
+- validation showing BWEN/VIVO option contracts render correctly
+- validation showing stock categories still work

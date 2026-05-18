@@ -513,6 +513,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/portfolio/options-positions — option open/partial/fully-closed positions
+  app.get('/api/portfolio/options-positions', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/options-positions`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
+  // GET /api/portfolio/options-trades — option closed trade events
+  app.get('/api/portfolio/options-trades', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/options-trades`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
   // POST /api/portfolio/transactions/import-csv — ledger-based brokerage transaction import
   // This is the canonical portfolio CSV import endpoint.  It replays the full time-ordered
   // ledger using average-cost accounting and correctly handles partial closes, full closes,
