@@ -1,0 +1,211 @@
+FRONTEND REPLIT AGENT — Add Open Options section and include options value in Portfolio total
+
+Backend is ready.
+
+GET /api/portfolio/holdings now returns open option positions with live Tradier valuation and a portfolio_summary object.
+
+Backend fields now available per open option:
+- tradier_symbol
+- mark_price
+- mark_bid
+- mark_ask
+- mark_last
+- mark_source
+- market_value
+- unrealized_pnl
+- unrealized_pnl_pct
+- contracts_open
+- avg_premium
+- cost_basis
+- underlying
+- display_symbol / option_symbol
+- expiration_date
+- strike
+- option_type
+- entry_date
+
+Backend portfolio_summary includes:
+- stock_cost_basis
+- option_cost_basis
+- option_market_value
+- option_unrealized_pnl
+- option_unrealized_pnl_pct
+- option_positions_count
+- options_valuation_available_count
+- options_valuation_missing_count
+- options_value_method
+
+Backend validation:
+- All 5 open option positions valued from Tradier:
+  - BWEN
+  - FCEL
+  - GSIT
+  - SKYT
+  - VIVO
+- option_market_value = 25,635.00
+- option_cost_basis = 24,017.12
+- option_unrealized_pnl = 1,617.88
+- options_value_method = "tradier_mark"
+
+Goal:
+Update Portfolio Dashboard so open options are shown as active portfolio positions and included in the Portfolio total.
+
+Do NOT:
+- call Tradier from frontend
+- calculate option marks in frontend
+- hardcode option symbols
+- show open options inside Trade Journal / Closed Positions
+- treat open options as closed trades
+- break stock Open / Partially Closed / Fully Closed sections
+- break Portfolio Terminal
+- replace existing live stock market value with stock_cost_basis
+
+Part 1 — New Open Options section
+
+Add a new section directly below normal Open Positions and above the Performance Scorecard:
+
+Open Options
+
+Use:
+GET /api/portfolio/holdings → option_open_positions
+
+Render in list/table/row format similar to Open stock positions.
+
+Columns:
+- Contract
+- Type
+- Expiration
+- Strike
+- Contracts
+- Avg Premium
+- Cost Basis
+- Mark
+- Market Value
+- Unrealized P&L
+- Unrealized %
+- Opened
+
+Example display:
+BWEN 07/17/2026 $2.50 CALL
+Contracts: 18
+Avg Premium: $1.6566
+Cost Basis: $2,982
+Mark: backend mark_price
+Market Value: backend market_value
+Unrealized P&L: backend unrealized_pnl / unrealized_pnl_pct
+
+If mark_source is unavailable:
+- show —
+- tooltip or muted text with quote_unavailable_reason if backend returns one
+
+Part 2 — Portfolio total
+
+The top Portfolio total should include active open options.
+
+Important:
+Do NOT replace the existing stock portfolio live value with portfolio_summary.stock_cost_basis.
+
+Use:
+existing live stock/spot portfolio value
++
+portfolio_summary.option_market_value
+
+If option_market_value is unavailable or null:
+- do not double-count
+- show options valuation note if useful
+
+If backend provides options_value_method:
+- if "tradier_mark", no warning needed
+- if "cost_basis_fallback" or "partial", show subtle note
+
+Also display option unrealized P&L somewhere useful if it fits:
+- option_unrealized_pnl
+- option_unrealized_pnl_pct
+
+Part 3 — Toggle behavior
+
+Keep the dashboard toggle:
+All | Trades | Options
+
+All:
+- show Open stock positions
+- show Open Options
+- show stock closed/partial/fully closed
+- show option closed/partial history if present
+
+Trades:
+- show stock/equity sections only
+- hide Open Options
+- hide option history
+
+Options:
+- show Open Options
+- show option partial/closed/history
+- hide stock/equity trade sections
+
+Part 4 — Trade Journal / Closed Positions
+
+Do NOT show option_open_positions in Trade Journal.
+
+Trade Journal / Options history should only show:
+- option_partially_closed_positions
+- option_fully_closed_positions
+- option_closed_trades
+
+Open options belong only in the new Open Options section.
+
+Part 5 — CSV import and refresh
+
+After CSV import:
+Refetch:
+- GET /api/portfolio/holdings
+- GET /api/portfolio/closed-trades
+- /api/caelyn-terminal
+
+Open Options should render from /api/portfolio/holdings immediately after refetch.
+
+Part 6 — Validation
+
+Use current imported CSV/backend data.
+
+Confirm:
+1. New Open Options section appears below Open Positions and above Performance Scorecard.
+2. BWEN, FCEL, GSIT, SKYT, VIVO appear in Open Options.
+3. Each option shows contracts, avg premium, cost basis, mark, market value, unrealized P&L.
+4. Open options do not appear in Trade Journal / Closed Positions.
+5. Portfolio total includes existing stock live value plus option_market_value.
+6. Option valuation does not double-count.
+7. All / Trades / Options toggle works:
+   - All shows stocks + options
+   - Trades hides options
+   - Options shows options
+8. Hard refresh keeps options visible.
+9. Existing stock categories still work.
+10. Portfolio Terminal still works.
+
+Diagnostics:
+Add:
+
+[portfolio-open-options-ui] {
+  selectedView,
+  optionOpenCount,
+  renderedOpenOptionContracts,
+  optionMarketValue,
+  optionCostBasis,
+  optionUnrealizedPnl,
+  optionsValueMethod,
+  openOptionsRenderedAboveScorecard
+}
+
+[portfolio-total-options-ui] {
+  existingStockPortfolioValue,
+  optionMarketValue,
+  displayedTotalPortfolioValue,
+  optionsIncludedInTotal,
+  optionsValueMethod
+}
+
+Return:
+- exact files changed
+- backend fields consumed
+- validation screenshots/logs

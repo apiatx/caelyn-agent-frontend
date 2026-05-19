@@ -298,6 +298,11 @@ export default function StocksPortfolioPage() {
     return Array.isArray(d?.option_closed_trades) ? d.option_closed_trades : [];
   }, [faHoldingsData]);
 
+  const portfolioSummary = useMemo(() => {
+    const d = faHoldingsData as any;
+    return (d?.portfolio_summary && typeof d.portfolio_summary === 'object') ? d.portfolio_summary : null;
+  }, [faHoldingsData]);
+
   // tradeSummary: prefer backend perf object; fall back to client-side compute from flat list
   const tradeSummary = useMemo(() => {
     if (perf) {
@@ -2175,7 +2180,10 @@ export default function StocksPortfolioPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Total Balance</div>
-                  <div className="text-base font-bold" style={{ color: '#5cc8f0', textShadow: '0 0 8px rgba(92, 200, 240, 0.2)' }}>{fmt(totalPortfolioValue)}</div>
+                  <div className="text-base font-bold" style={{ color: '#5cc8f0', textShadow: '0 0 8px rgba(92, 200, 240, 0.2)' }}>{fmt(totalPortfolioValue + (portfolioSummary?.option_market_value ?? 0))}</div>
+                  {portfolioSummary?.option_market_value != null && portfolioSummary.option_market_value > 0 && (
+                    <div className="text-[9px] mt-0.5" style={{ color: '#475569' }}>incl. {fmt(portfolioSummary.option_market_value)} options</div>
+                  )}
                 </div>
                 <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Total Invested</div>
@@ -2195,6 +2203,134 @@ export default function StocksPortfolioPage() {
               </div>
             </GlassCard>
           )}
+
+          {/* ── Open Options — live Tradier valuation, shown above Performance Scorecard ── */}
+          {portfolioView !== 'trades' && optionOpenPositions.length > 0 && (() => {
+            const optMV      = portfolioSummary?.option_market_value      ?? null;
+            const optCB      = portfolioSummary?.option_cost_basis         ?? null;
+            const optPnl     = portfolioSummary?.option_unrealized_pnl     ?? null;
+            const optPct     = portfolioSummary?.option_unrealized_pnl_pct ?? null;
+            const valMeth    = portfolioSummary?.options_value_method       ?? null;
+            const isPartialVal = valMeth === 'cost_basis_fallback' || valMeth === 'partial';
+            const totalContracts = optionOpenPositions.reduce((s: number, p: any) => s + (p.contracts_open ?? p.contracts ?? 0), 0);
+            console.log('[portfolio-open-options-ui]', {
+              selectedView:                  portfolioView,
+              optionOpenCount:               optionOpenPositions.length,
+              renderedOpenOptionContracts:   totalContracts,
+              optionMarketValue:             optMV,
+              optionCostBasis:               optCB,
+              optionUnrealizedPnl:           optPnl,
+              optionsValueMethod:            valMeth,
+              openOptionsRenderedAboveScorecard: true,
+            });
+            console.log('[portfolio-total-options-ui]', {
+              existingStockPortfolioValue:  totalPortfolioValue,
+              optionMarketValue:            optMV,
+              displayedTotalPortfolioValue: totalPortfolioValue + (optMV ?? 0),
+              optionsIncludedInTotal:       optMV != null && optMV > 0,
+              optionsValueMethod:           valMeth,
+            });
+            return (
+              <GlassCard className="p-3 sm:p-4">
+                {/* Header row */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded" style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)' }}>Live</span>
+                  <h3 className="text-sm font-semibold text-white">Open Options</h3>
+                  <span className="text-xs" style={{ color: '#475569' }}>{optionOpenPositions.length} position{optionOpenPositions.length !== 1 ? 's' : ''} · {totalContracts} contract{totalContracts !== 1 ? 's' : ''}</span>
+                  {optMV != null && (
+                    <span className="ml-auto text-xs font-bold" style={{ color: '#5cc8f0' }}>{fmt(optMV)}</span>
+                  )}
+                  {optPnl != null && (
+                    <span className="text-xs font-semibold" style={{ color: optPnl >= 0 ? '#4ade80' : '#f87171' }}>
+                      {optPnl >= 0 ? '+' : ''}{fmt(optPnl)}{optPct != null ? ` (${optPct >= 0 ? '+' : ''}${(optPct as number).toFixed(1)}%)` : ''}
+                    </span>
+                  )}
+                </div>
+                {/* Partial-valuation warning */}
+                {isPartialVal && (
+                  <div className="mb-3 text-[10px] px-2 py-1.5 rounded" style={{ color: '#d97706', background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)' }}>
+                    ⚠ Options valuation is partial or estimated — some positions use cost basis as fallback.
+                  </div>
+                )}
+                {/* Option cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {optionOpenPositions.map((p: any) => {
+                    const occKey     = p.occ_key ?? p.option_symbol ?? p.display_symbol ?? ((p.underlying ?? p.ticker ?? '') + (p.expiration_date ?? ''));
+                    const und        = (p.underlying ?? p.ticker ?? '').toUpperCase();
+                    const ot         = (p.option_type ?? p.call_put ?? '').toUpperCase();
+                    const typeClr    = (ot === 'C' || ot === 'CALL') ? '#4ade80' : '#f87171';
+                    const typeLabel  = ot === 'C' || ot === 'CALL' ? 'CALL' : ot === 'P' || ot === 'PUT' ? 'PUT' : ot || '—';
+                    const exp        = p.expiration_date ?? p.expiration ?? null;
+                    const expFmt     = exp ? new Date(exp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : null;
+                    const strike     = p.strike != null ? `$${Number(p.strike).toFixed(2)}` : null;
+                    const displayStr = [und, expFmt, strike, typeLabel === 'CALL' ? 'Call' : typeLabel === 'PUT' ? 'Put' : null].filter(Boolean).join(' ');
+                    const contracts  = p.contracts_open ?? p.contracts ?? 0;
+                    const avgPrem    = p.avg_premium ?? p.avg_entry_premium ?? 0;
+                    const costBasis  = p.cost_basis ?? (contracts * avgPrem * 100);
+                    const markPrice  = p.mark_price ?? p.mark ?? null;
+                    const markSrc    = p.mark_source ?? null;
+                    const markUnavail = markSrc === 'unavailable' || p.quote_unavailable_reason != null;
+                    const markDisplay = markUnavail || markPrice == null ? '—' : `$${Number(markPrice).toFixed(4)}`;
+                    const mktVal     = p.market_value ?? null;
+                    const uPnl       = p.unrealized_pnl ?? null;
+                    const uPct       = p.unrealized_pnl_pct ?? null;
+                    const isWin      = uPnl != null && (uPnl as number) >= 0;
+                    const pnlClr     = isWin ? '#4ade80' : '#f87171';
+                    const entryDate  = p.entry_date ?? p.first_entry_date ?? null;
+                    const unavailReason = p.quote_unavailable_reason ?? null;
+                    return (
+                      <div key={occKey} className="rounded-xl p-4 flex flex-col gap-3"
+                        style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${typeClr}` }}>
+                        {/* Contract header */}
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xl font-bold text-white tracking-tight">{und}</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: '#64748b' }}>{displayStr}</div>
+                          {entryDate && <div className="text-[10px] mt-0.5" style={{ color: '#475569' }}>opened {entryDate}</div>}
+                        </div>
+                        {/* Position stats */}
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          {([
+                            { label: 'Contracts',   val: String(contracts),                                                     clr: '#e2e8f0' },
+                            { label: 'Avg Premium', val: avgPrem > 0 ? `$${Number(avgPrem).toFixed(4)}` : '—',                  clr: '#e2e8f0', mono: true },
+                            { label: 'Cost Basis',  val: costBasis > 0 ? `$${Math.round(costBasis as number).toLocaleString()}` : '—', clr: '#a78bfa', mono: true },
+                          ] as { label: string; val: string; clr: string; mono?: boolean }[]).map(({ label, val, clr, mono }) => (
+                            <div key={label} className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <span className="text-[10px]" style={{ color: '#64748b' }}>{label}</span>
+                              <span className={`text-xs ${mono ? 'font-mono' : 'font-semibold'}`} style={{ color: clr }}>{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Live valuation row */}
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="text-[10px]" style={{ color: '#64748b' }}>Mark</span>
+                            <span className="font-mono text-xs" style={{ color: markUnavail ? '#475569' : '#5cc8f0' }} title={unavailReason ?? undefined}>{markDisplay}</span>
+                          </div>
+                          <div className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="text-[10px]" style={{ color: '#64748b' }}>Mkt Value</span>
+                            <span className="font-mono text-xs" style={{ color: mktVal != null ? '#5cc8f0' : '#475569' }}>
+                              {mktVal != null ? `$${Math.round(mktVal as number).toLocaleString()}` : '—'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col px-2 py-1.5 rounded-lg"
+                            style={{ background: uPnl != null ? (isWin ? 'rgba(74,222,128,0.05)' : 'rgba(248,113,113,0.05)') : 'rgba(255,255,255,0.03)', border: `1px solid ${uPnl != null ? (isWin ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)') : 'rgba(255,255,255,0.04)'}` }}>
+                            <span className="text-[10px]" style={{ color: '#64748b' }}>Unrealized</span>
+                            <span className="font-mono text-xs font-semibold" style={{ color: uPnl != null ? pnlClr : '#475569' }}>
+                              {uPnl != null ? `${isWin ? '+' : '-'}$${Math.abs(Math.round(uPnl as number)).toLocaleString()}` : '—'}
+                              {uPct != null && <span className="text-[9px] ml-1 opacity-80">{(uPct as number) >= 0 ? '+' : ''}{(uPct as number).toFixed(1)}%</span>}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            );
+          })()}
 
           {/* Section 2: Portfolio Visualization */}
           {holdings.length > 0 && totalPortfolioValue > 0 && (
@@ -3077,26 +3213,25 @@ export default function StocksPortfolioPage() {
 
                 {/* ── Options sections (hidden in Trades view) ── */}
                 {portfolioView !== 'trades' && (() => {
-                  const optTotalOpen        = optionOpenPositions.length;
                   const optTotalPartial     = optionPartiallyClosedPositions.length;
                   const optTotalFullyClosed = optionFullyClosedPositions.length;
                   const optTotalClosed      = optionClosedTrades.length;
-                  const hasAnyOptions       = optTotalOpen + optTotalPartial + optTotalFullyClosed + optTotalClosed > 0;
+                  const hasAnyOptions       = optTotalPartial + optTotalFullyClosed + optTotalClosed > 0;
 
                   console.log('[portfolio-dashboard-view-toggle]', {
                     selectedView:          portfolioView,
                     stockOpenCount:        openPositions.length,
                     stockPartialCount:     partiallyClosedPositions.length,
                     stockFullyClosedCount: fullyClosedPositions.length,
-                    optionOpenCount:        optTotalOpen,
+                    optionOpenCount:        optionOpenPositions.length,
                     optionPartialCount:     optTotalPartial,
                     optionFullyClosedCount: optTotalFullyClosed,
                   });
 
                   if (!hasAnyOptions) return (
                     <div className="py-8 text-center" style={{ marginTop: portfolioView === 'options' ? 12 : 8 }}>
-                      <div className="text-sm text-slate-500">No option positions found</div>
-                      <div className="text-xs text-slate-600 mt-1">Import a brokerage CSV containing option transactions to see positions here.</div>
+                      <div className="text-sm text-slate-500">No closed option positions yet</div>
+                      <div className="text-xs text-slate-600 mt-1">Closed, expired, and partially closed options appear here.</div>
                     </div>
                   );
 
@@ -3322,14 +3457,6 @@ export default function StocksPortfolioPage() {
 
                   return (
                     <div className="flex flex-col gap-6" style={{ marginTop: 12 }}>
-                      {optionOpenPositions.length > 0 && (
-                        <div className="flex flex-col gap-3">
-                          {sectionHeader('Open Options', optionOpenPositions.length, '#4ade80')}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                            {optionOpenPositions.map(renderOptionOpenCard)}
-                          </div>
-                        </div>
-                      )}
                       {optionPartiallyClosedPositions.length > 0 && (
                         <div className="flex flex-col gap-3">
                           {sectionHeader('Partially Closed Options', optionPartiallyClosedPositions.length, '#f59e0b')}
