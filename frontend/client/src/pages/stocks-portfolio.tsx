@@ -1782,10 +1782,7 @@ export default function StocksPortfolioPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Total Balance</div>
-                  <div className="text-sm font-bold" style={{ color: '#5cc8f0' }}>{fmt(totalPortfolioValue + (portfolioSummary?.option_market_value ?? 0))}</div>
-                  {portfolioSummary?.option_market_value != null && portfolioSummary.option_market_value > 0 && (
-                    <div className="text-[9px]" style={{ color: '#475569' }}>incl. {fmt(portfolioSummary.option_market_value)} opts</div>
-                  )}
+                  <div className="text-sm font-bold" style={{ color: '#5cc8f0' }}>{fmt(totalPortfolioValue)}</div>
                 </div>
                 <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Invested</div>
