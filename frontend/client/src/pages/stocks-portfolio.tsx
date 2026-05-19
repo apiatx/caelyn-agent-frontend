@@ -672,6 +672,7 @@ export default function StocksPortfolioPage() {
         await refetchHoldings();
         syncToFastAPI();
         queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+        queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
         // Invalidate Calendar Earnings for portfolio scope so next visit refetches
         queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
         if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-add', invalidatedKeys: ['earnings+portfolio'] });
@@ -815,6 +816,7 @@ export default function StocksPortfolioPage() {
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-closed-trades'] });
       queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
       queryClient.invalidateQueries({ predicate: q => {
         const k = q.queryKey;
         return Array.isArray(k) && (
@@ -846,6 +848,7 @@ export default function StocksPortfolioPage() {
       await refetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
       // Invalidate Calendar Earnings for portfolio scope so next visit refetches
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
       if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-delete', invalidatedKeys: ['earnings+portfolio'] });
@@ -898,6 +901,7 @@ export default function StocksPortfolioPage() {
       await refetchHoldings();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
       if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'portfolio-edit', invalidatedKeys: ['earnings+portfolio'] });
     } catch (err) {
@@ -974,6 +978,7 @@ export default function StocksPortfolioPage() {
       await refetchFaHoldings();
       queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
     } catch (e: any) {
       setOptEditError(e?.message ?? 'Request failed');
     } finally {
@@ -1037,6 +1042,7 @@ export default function StocksPortfolioPage() {
       await refetchFaHoldings();
       queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
       setTimeout(() => closeOptionSellModal(), 1800);
     } catch (e: any) {
       setOptSellError(e?.message ?? 'Request failed');
@@ -1133,6 +1139,7 @@ export default function StocksPortfolioPage() {
       await refetchClosedTrades();
       syncToFastAPI();
       queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('portfolio') });
     } catch (err: any) {
       setSellError(err?.message ?? 'Unexpected error');

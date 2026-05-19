@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment, useCallback } from 'react';
 import { Maximize2, X, RotateCcw } from 'lucide-react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import StocksPortfolioPage from './stocks-portfolio';
+import PortfolioFundamentalsView from '@/components/portfolio-fundamentals-view';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, Tooltip as RCTooltip, ResponsiveContainer,
@@ -241,7 +242,7 @@ export default function CaelynTerminalPage() {
   const [aiReviewData, setAiReviewData] = useState<any | null>(() => {
     try { const s = sessionStorage.getItem('ai_portfolio_review_data'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
-  const [view, setView] = useState<'terminal'|'dashboard'>('terminal');
+  const [view, setView] = useState<'terminal'|'dashboard'|'fundamentals'>('terminal');
   const [allocTab, setAllocTab] = useState<'asset'|'sectors'|'themes'|'assets'>('themes');
   type SortDir = 'asc'|'desc';
   const [holdSort, setHoldSort] = useState<{ col: string; dir: SortDir }>({ col: 'VOL_MC', dir: 'desc' });
@@ -572,10 +573,10 @@ export default function CaelynTerminalPage() {
           <div style={{ fontSize:14, fontWeight:900, letterSpacing:2, color:C.text }}>PORTFOLIO</div>
           {/* ── View Toggle ── */}
           <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:4 }}>
-            {(['TERMINAL','DASHBOARD'] as const).map(v => {
+            {(['TERMINAL','DASHBOARD','FUNDAMENTALS'] as const).map(v => {
               const isActive = view === v.toLowerCase();
               return (
-                <button key={v} onClick={() => setView(v.toLowerCase() as 'terminal'|'dashboard')} style={{ fontSize:9, fontWeight:800, padding:'3px 12px', borderRadius:4, cursor:'pointer', border:'none', background: isActive ? C.teal : 'transparent', color: isActive ? '#fff' : C.dim, letterSpacing:1, transition:'all 0.15s' }}>{v}</button>
+                <button key={v} onClick={() => setView(v.toLowerCase() as 'terminal'|'dashboard'|'fundamentals')} style={{ fontSize:9, fontWeight:800, padding:'3px 12px', borderRadius:4, cursor:'pointer', border:'none', background: isActive ? C.teal : 'transparent', color: isActive ? '#fff' : C.dim, letterSpacing:1, transition:'all 0.15s' }}>{v}</button>
               );
             })}
           </div>
@@ -1773,6 +1774,13 @@ export default function CaelynTerminalPage() {
       {view === 'dashboard' && (
         <div style={{ flex:1, overflow:'auto', background:'#050608' }}>
           <StocksPortfolioPage />
+        </div>
+      )}
+
+      {/* ── FUNDAMENTALS VIEW ────────────────────────────────────────── */}
+      {view === 'fundamentals' && (
+        <div style={{ flex:1, overflow:'auto', background:'#050608' }}>
+          <PortfolioFundamentalsView />
         </div>
       )}
 

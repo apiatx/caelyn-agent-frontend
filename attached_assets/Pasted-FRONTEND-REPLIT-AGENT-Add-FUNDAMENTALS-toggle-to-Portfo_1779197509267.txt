@@ -1,0 +1,159 @@
+FRONTEND REPLIT AGENT — Add FUNDAMENTALS toggle to Portfolio page using backend portfolio fundamentals endpoint
+
+Backend is adding:
+
+GET /api/portfolio/fundamentals
+
+Goal:
+Add a new top-level Portfolio page toggle next to the existing:
+
+TERMINAL | DASHBOARD
+
+New toggle should be:
+
+TERMINAL | DASHBOARD | FUNDAMENTALS
+
+The Fundamentals view should show a table/list of fundamental data for every current open holding in the user’s portfolio.
+
+Important:
+Use backend data only.
+Do not call FMP directly from frontend.
+Do not scrape or recompute fundamentals in frontend.
+Do not hardcode columns if backend returns a known schema from Social Screener.
+Do not affect Portfolio Terminal/Dashboard.
+Do not affect Social page.
+Do not show closed positions.
+Do not show fully closed positions.
+
+Data source:
+GET /api/portfolio/fundamentals
+
+Expected response:
+{
+  holdings_count,
+  symbols,
+  rows,
+  cache,
+  unavailable
+}
+
+Rows should use the same fields as Social page → Social Screener → Fundamental toggle.
+
+Task 1 — Add top-level toggle
+
+Update Portfolio page toggle bar:
+
+TERMINAL | DASHBOARD | FUNDAMENTALS
+
+Behavior:
+- TERMINAL renders existing Portfolio Terminal.
+- DASHBOARD renders existing Portfolio Dashboard.
+- FUNDAMENTALS renders new Portfolio Fundamentals view.
+
+Do not disturb existing routing/state for Terminal/Dashboard.
+
+Task 2 — Reuse Social Screener Fundamental table style
+
+Audit the Social page → Social Screener → Fundamental toggle UI.
+
+Reuse:
+- same columns
+- same formatting
+- same visual style
+- same color conventions
+- same sorting behavior if easy/reusable
+- same compact table density
+
+Do not copy/paste a huge component if there is a reusable component already.
+Prefer reusing/extracting existing component patterns if practical.
+
+Task 3 — Portfolio Fundamentals view
+
+Render:
+- header: “Portfolio Fundamentals”
+- subtext: “Fundamentals for current open portfolio holdings”
+- cache freshness if backend provides it
+- table with rows from backend
+
+Include:
+- loading skeleton
+- empty state:
+  “No open portfolio holdings found.”
+- unavailable state per symbol if backend returns unavailable list
+- refresh button if consistent with page style
+
+Task 4 — Columns
+
+Use the same columns as Social Screener Fundamental toggle.
+
+If backend rows include more fields than can fit:
+- match Social Screener first
+- keep the table horizontally scrollable if needed
+- do not overload the UI
+
+Task 5 — Query/cache
+
+Use React Query or existing project pattern.
+
+Query key:
+['portfolio-fundamentals']
+
+Fetch:
+GET /api/portfolio/fundamentals
+
+Refetch/invalidate when:
+- user adds holding
+- user deletes holding
+- user fully closes holding
+- CSV import full_replace completes
+- user switches to FUNDAMENTALS view if stale
+
+Do not block Terminal/Dashboard rendering.
+
+Task 6 — Backend cache display
+
+If backend returns cache info, show subtle status:
+- Cached
+- Fresh
+- Mixed
+- Last updated
+- unavailable count
+
+Do not make this loud unless there are many unavailable symbols.
+
+Task 7 — Validation
+
+Use current portfolio.
+
+Confirm:
+1. FUNDAMENTALS toggle appears next to TERMINAL and DASHBOARD.
+2. Clicking FUNDAMENTALS loads GET /api/portfolio/fundamentals.
+3. Rows match current open portfolio holdings.
+4. Closed/fully closed tickers do not appear.
+5. Columns/style match Social Screener Fundamental toggle.
+6. Refresh/hard refresh works.
+7. Terminal and Dashboard toggles still work.
+8. Adding/deleting/fully closing a holding invalidates/refetches fundamentals.
+9. No frontend FMP/provider calls are added.
+10. Social page remains unchanged.
+
+Diagnostics:
+Add:
+
+[portfolio-fundamentals-ui] {
+  rows,
+  symbols,
+  unavailable,
+  cacheSource,
+  cacheHits,
+  cacheMisses,
+  selectedView,
+  columnsRendered,
+  responseMs
+}
+
+Return:
+- files changed
+- reused component/style source
+- endpoint consumed
+- validation screenshots/logs
