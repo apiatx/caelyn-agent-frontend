@@ -545,6 +545,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/portfolio/options-position-detail/:underlying — per-underlying option popup detail
+  app.get('/api/portfolio/options-position-detail/:underlying', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { underlying } = req.params;
+    try {
+      const upRes = await fetch(`${FA_URL}/api/portfolio/options-position-detail/${encodeURIComponent(underlying)}`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const data = await upRes.json().catch(() => ({}));
+      return res.status(upRes.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message });
+    }
+  });
+
   // POST /api/portfolio/transactions/import-csv — ledger-based brokerage transaction import
   // This is the canonical portfolio CSV import endpoint.  It replays the full time-ordered
   // ledger using average-cost accounting and correctly handles partial closes, full closes,

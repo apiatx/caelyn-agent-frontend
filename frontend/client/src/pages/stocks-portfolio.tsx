@@ -251,9 +251,21 @@ export default function StocksPortfolioPage() {
   const { data: optionDetailData, isLoading: optionDetailLoading, error: optionDetailError } = useQuery<any>({
     queryKey: ['portfolio-option-position-detail', optionDetailUnderlying],
     queryFn: async () => {
-      const res = await fetch(`/api/portfolio/options-position-detail/${encodeURIComponent(optionDetailUnderlying!)}`);
-      if (res.status === 404) throw Object.assign(new Error('404'), { status: 404 });
-      if (!res.ok) throw new Error('Failed to load option detail');
+      const requestUrl = `/api/portfolio/options-position-detail/${encodeURIComponent(optionDetailUnderlying!)}`;
+      const res = await fetch(requestUrl);
+      if (!res.ok) {
+        const responseText = await res.text().catch(() => '');
+        console.error('[portfolio-option-popup-ui-error]', {
+          underlying: optionDetailUnderlying,
+          requestUrl,
+          status: res.status,
+          responseText: responseText.slice(0, 500),
+          rowClicked: optionDetailUnderlying,
+          endpointUsed: requestUrl,
+        });
+        const err = Object.assign(new Error(res.status === 404 ? '404' : `HTTP ${res.status}`), { status: res.status });
+        throw err;
+      }
       return res.json();
     },
     enabled: !!optionDetailUnderlying,

@@ -1,0 +1,100 @@
+FRONTEND REPLIT AGENT — Debug failed Open Options popup detail fetch
+
+The Open Options popup opens, but it shows:
+“Failed to load option position detail.”
+
+Backend says this endpoint is live and validated:
+GET /api/portfolio/options-position-detail/{underlying}
+
+Validated underlyings:
+BWEN, FCEL, GSIT, SKYT, VIVO
+
+Do not rewrite the popup.
+Do not add frontend Tradier calls.
+Do not hardcode the option symbols.
+Do not change backend logic.
+Do not touch the Options Flow page.
+
+Task:
+Find the exact failure.
+
+Audit:
+1. Open browser Network when clicking FCEL/BWEN/VIVO.
+2. Capture the exact request URL being called.
+3. Capture status code and response body.
+4. Capture the value passed into setOptionDetailUnderlying.
+5. Confirm the value is the underlying only:
+   - FCEL
+   - BWEN
+   - GSIT
+   - SKYT
+   - VIVO
+
+It must NOT be:
+- FCELCALL
+- FCEL 06/25/2026 $17.00 CALL
+- FCEL260626C00017000
+- undefined
+- null
+
+Expected frontend request:
+GET /api/portfolio/options-position-detail/FCEL
+
+or if using backend base URL:
+GET {BACKEND_URL}/api/portfolio/options-position-detail/FCEL
+
+Most likely issue:
+The frontend Express server may not proxy this new route to FastAPI. If Network shows 404/500 from the frontend server, add or fix the Express proxy route for:
+
+GET /api/portfolio/options-position-detail/:underlying
+
+It should forward directly to FastAPI:
+GET /api/portfolio/options-position-detail/{underlying}
+
+Do not create a new data service. Just proxy the backend endpoint.
+
+If the request URL is wrong:
+Fix the row click handler so it passes row.underlying only.
+
+Example:
+onClick={() => setOptionDetailUnderlying(row.underlying)}
+
+Not:
+row.display_symbol
+row.option_symbol
+row.tradier_symbol
+row.underlying + row.option_type
+
+If backend response has portfolio_options_signal=null or portfolio_options_risk=null:
+That is not a failure. Popup should still render open_option_positions and summary.
+
+Error handling:
+Replace generic failure with useful details in console:
+
+[portfolio-option-popup-ui-error] {
+  underlying,
+  requestUrl,
+  status,
+  responseText,
+  rowClicked,
+  endpointUsed
+}
+
+Validation:
+1. Click FCEL row.
+2. Confirm request URL is /api/portfolio/options-position-detail/FCEL.
+3. Confirm response status 200.
+4. Confirm popup renders:
+   - chart
+   - open option position details
+   - mark/market value/unrealized P&L
+   - signal/risk if present
+5. Click VIVO and confirm popup still renders even if signal is null/risk UNKNOWN.
+6. Confirm no frontend Tradier calls.
+7. Confirm Core/Open Positions popup still works.
+
+Return:
+- exact root cause
+- exact request URL before/after
+- files changed
+- screenshot/log validation
