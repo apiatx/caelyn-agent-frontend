@@ -1,0 +1,231 @@
+FRONTEND REPLIT AGENT — Add edit / partial close / full close UI for Open Options positions
+
+Backend is ready.
+
+New backend endpoints:
+
+PATCH /api/portfolio/options-positions/{occ_key}
+
+POST /api/portfolio/options-positions/{occ_key}/sell
+
+Backend behavior:
+- PATCH edits open option position fields.
+- POST sell supports:
+  - sell_type="contracts"
+  - sell_type="dollars"
+  - sell_type="percent"
+  - sell_type="full"
+- Partial close:
+  - keeps remaining contracts in option_open_positions
+  - creates option_closed_trades record
+  - appears in option_partially_closed_positions
+- Full close:
+  - marks position final_status=fully_closed and contracts_open=0
+  - creates option_closed_trades record
+  - appears in option_fully_closed_positions
+  - disappears from active Open Options
+- portfolio_summary recalculates after sell.
+- Stock/core position logic is unchanged.
+- Global Options Flow page is untouched.
+
+Do not:
+- calculate final options accounting in frontend
+- call Tradier from frontend
+- hardcode option symbols
+- mix options into stock/core sections
+- break stock edit/sell flow
+- put open options into Trade Journal
+- change global Options Flow page
+
+Task 1 — Add controls to Open Options rows
+
+In Portfolio Dashboard → Open Options section, add action controls similar to core positions:
+
+- Edit
+- Sell / Close
+
+Keep the existing row click popup behavior.
+Important:
+Action button clicks must not open the popup.
+Use event.stopPropagation() on Edit / Sell buttons.
+
+Task 2 — Edit option modal
+
+When user clicks Edit, open a modal/form.
+
+Fields:
+- contracts_open
+- avg_premium
+- cost_basis
+- entry_date
+- expiration_date
+- strike
+- option_type
+- notes if supported
+
+Submit:
+PATCH /api/portfolio/options-positions/{occ_key}
+
+Payload example:
+{
+  "contracts_open": 8,
+  "avg_premium": 2.50,
+  "entry_date": "2026-01-15",
+  "expiration_date": "2027-01-17",
+  "strike": 10.0,
+  "option_type": "CALL",
+  "notes": "adjusted entry"
+}
+
+Backend recomputes cost_basis if contracts_open or avg_premium changes and cost_basis is omitted.
+
+After success, refetch:
+- GET /api/portfolio/holdings
+- GET /api/portfolio/options-positions if used separately
+- /api/caelyn-terminal if the page currently invalidates it after portfolio changes
+
+Task 3 — Sell / Close option modal
+
+When user clicks Sell / Close, open an option-specific sell modal.
+
+Show:
+- contract display symbol
+- contracts currently open
+- avg premium
+- current mark if available
+- cost basis
+- current market value if available
+
+Fields:
+- sell_type:
+  - Sell contracts
+  - Sell dollar amount
+  - Sell percent
+  - Close full position
+- contracts_closed OR dollar_amount OR percent_closed depending sell_type
+- exit_premium, default to mark_price if available
+- exit_date, default today
+- fees, optional
+- close_reason, optional
+
+Submit:
+POST /api/portfolio/options-positions/{occ_key}/sell
+
+Payload examples:
+
+Partial by contracts:
+{
+  "sell_type": "contracts",
+  "contracts_closed": 4,
+  "exit_premium": 3.00,
+  "exit_date": "2026-05-19",
+  "fees": 0,
+  "close_reason": "trim"
+}
+
+Full close:
+{
+  "sell_type": "full",
+  "exit_premium": 4.00,
+  "exit_date": "2026-05-19",
+  "fees": 5,
+  "close_reason": "close"
+}
+
+Frontend preview:
+You may show estimated proceeds / contracts remaining / P&L for UX only.
+Backend response is source of truth.
+
+After success, use backend response fields:
+- contracts_before
+- contracts_closed
+- contracts_remaining
+- proceeds
+- cost_basis_closed
+- realized_pnl
+- realized_pnl_pct
+- is_full_close
+- final_option_status
+- closed_trade
+- open_option_position
+- portfolio_summary
+
+Then refetch:
+- GET /api/portfolio/holdings
+- option positions/trades if separately queried
+- /api/caelyn-terminal if needed
+
+Task 4 — Rendering after close
+
+Partial close:
+- Remaining contracts stay in Open Options.
+- Sold portion appears under Options Trade Journal / Partially Closed Options.
+- Portfolio total updates.
+
+Full close:
+- Contract disappears from Open Options.
+- Contract appears under Fully Closed Options / Options Trade Journal.
+- Portfolio total updates.
+
+Task 5 — Options toggle / Trade Journal
+
+Under Options toggle:
+- Open Options remains above Performance Scorecard.
+- Options Trade Journal should show:
+  - option_partially_closed_positions
+  - option_fully_closed_positions
+  - option_closed_trades
+- Do not show active open options in Trade Journal closed history.
+
+Task 6 — Error handling
+
+Show clear messages for:
+- trying to close more contracts than owned
+- missing exit premium
+- bad sell type
+- already closed position
+- backend 404
+
+Do not crash the page.
+
+Task 7 — Validation
+
+Use a test option position if available.
+
+Validate:
+1. Edit open option contracts/avg premium.
+2. Confirm Open Options updates after save.
+3. Partially close option by contracts.
+4. Confirm remaining contracts stay open.
+5. Confirm partial close appears in Options Trade Journal.
+6. Full close remaining contracts.
+7. Confirm option disappears from Open Options.
+8. Confirm full close appears in Fully Closed Options / Options Trade Journal.
+9. Confirm Portfolio total updates after partial/full close.
+10. Confirm hard refresh persists all changes.
+11. Confirm core stock edit/sell flow still works.
+12. Confirm option detail popup still works.
+13. Confirm no frontend Tradier calls.
+
+Diagnostics:
+Add:
+
+[portfolio-option-management-ui] {
+  action: "edit" | "sell" | "full_close",
+  occKey,
+  underlying,
+  sellType,
+  contractsBefore,
+  contractsClosed,
+  contractsRemaining,
+  exitPremium,
+  realizedPnl,
+  realizedPnlPct,
+  refetchedHoldings,
+  refetchedOptionTrades
+}
+
+Return:
+- files changed
+- endpoints consumed
+- validation screenshots/logs

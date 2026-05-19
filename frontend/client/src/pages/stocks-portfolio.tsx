@@ -220,6 +220,31 @@ export default function StocksPortfolioPage() {
   const [portfolioView, setPortfolioView] = useState<'all' | 'trades' | 'options'>('all');
   const [optionDetailUnderlying, setOptionDetailUnderlying] = useState<string | null>(null);
   const [optionChartInterval, setOptionChartInterval] = useState('D');
+  // Option edit modal state
+  const [optionEditModal, setOptionEditModal] = useState<any | null>(null);
+  const [optEditContracts, setOptEditContracts] = useState('');
+  const [optEditAvgPrem, setOptEditAvgPrem] = useState('');
+  const [optEditCostBasis, setOptEditCostBasis] = useState('');
+  const [optEditEntryDate, setOptEditEntryDate] = useState('');
+  const [optEditExpDate, setOptEditExpDate] = useState('');
+  const [optEditStrike, setOptEditStrike] = useState('');
+  const [optEditOptionType, setOptEditOptionType] = useState('');
+  const [optEditNotes, setOptEditNotes] = useState('');
+  const [optEditInProgress, setOptEditInProgress] = useState(false);
+  const [optEditError, setOptEditError] = useState('');
+  // Option sell/close modal state
+  const [optionSellModal, setOptionSellModal] = useState<any | null>(null);
+  const [optSellType, setOptSellType] = useState<'contracts' | 'dollars' | 'percent' | 'full'>('contracts');
+  const [optSellContracts, setOptSellContracts] = useState('');
+  const [optSellDollars, setOptSellDollars] = useState('');
+  const [optSellPercent, setOptSellPercent] = useState('');
+  const [optSellExitPremium, setOptSellExitPremium] = useState('');
+  const [optSellExitDate, setOptSellExitDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [optSellFees, setOptSellFees] = useState('');
+  const [optSellCloseReason, setOptSellCloseReason] = useState('');
+  const [optSellInProgress, setOptSellInProgress] = useState(false);
+  const [optSellError, setOptSellError] = useState('');
+  const [optSellResult, setOptSellResult] = useState<any>(null);
   const { data: closedTradesData, isLoading: closedTradesLoading, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
@@ -898,6 +923,126 @@ export default function StocksPortfolioPage() {
   const closeSellModal = () => {
     setSellModal(null);
     setSellError('');
+  };
+
+  // ── Option edit handlers ─────────────────────────────────────────
+  const openOptionEditModal = (p: any) => {
+    setOptionEditModal(p);
+    setOptEditContracts(String(p.contracts_open ?? p.contracts ?? ''));
+    setOptEditAvgPrem(String(p.avg_premium ?? p.avg_entry_premium ?? ''));
+    setOptEditCostBasis(String(p.cost_basis ?? ''));
+    setOptEditEntryDate(p.entry_date ?? p.first_entry_date ?? '');
+    setOptEditExpDate(p.expiration_date ?? p.expiration ?? '');
+    setOptEditStrike(String(p.strike ?? ''));
+    setOptEditOptionType((p.option_type ?? '').toUpperCase());
+    setOptEditNotes(p.notes ?? '');
+    setOptEditError('');
+  };
+  const closeOptionEditModal = () => {
+    setOptionEditModal(null);
+    setOptEditInProgress(false);
+    setOptEditError('');
+  };
+  const submitOptionEdit = async () => {
+    if (!optionEditModal) return;
+    const occKey = optionEditModal.occ_key ?? optionEditModal.option_symbol ?? optionEditModal.display_symbol;
+    if (!occKey) { setOptEditError('Cannot identify position key.'); return; }
+    setOptEditInProgress(true);
+    setOptEditError('');
+    try {
+      const payload: any = {};
+      if (optEditContracts !== '') payload.contracts_open = Number(optEditContracts);
+      if (optEditAvgPrem !== '') payload.avg_premium = Number(optEditAvgPrem);
+      if (optEditCostBasis !== '') payload.cost_basis = Number(optEditCostBasis);
+      if (optEditEntryDate !== '') payload.entry_date = optEditEntryDate;
+      if (optEditExpDate !== '') payload.expiration_date = optEditExpDate;
+      if (optEditStrike !== '') payload.strike = Number(optEditStrike);
+      if (optEditOptionType !== '') payload.option_type = optEditOptionType;
+      if (optEditNotes !== '') payload.notes = optEditNotes;
+      const res = await fetch(`/api/portfolio/options-positions/${encodeURIComponent(occKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setOptEditError(err?.detail ?? err?.error ?? `Error ${res.status}`);
+        return;
+      }
+      console.log('[portfolio-option-management-ui]', { action: 'edit', occKey, underlying: optionEditModal.underlying ?? optionEditModal.ticker ?? '', sellType: null, contractsBefore: optionEditModal.contracts_open ?? optionEditModal.contracts, contractsClosed: null, contractsRemaining: Number(optEditContracts) || null, exitPremium: null, realizedPnl: null, realizedPnlPct: null, refetchedHoldings: true, refetchedOptionTrades: false });
+      closeOptionEditModal();
+      await refetchFaHoldings();
+      queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+    } catch (e: any) {
+      setOptEditError(e?.message ?? 'Request failed');
+    } finally {
+      setOptEditInProgress(false);
+    }
+  };
+
+  // ── Option sell/close handlers ───────────────────────────────────
+  const openOptionSellModal = (p: any) => {
+    setOptionSellModal(p);
+    setOptSellType('contracts');
+    setOptSellContracts('');
+    setOptSellDollars('');
+    setOptSellPercent('');
+    const mark = p.mark_price ?? p.mark ?? null;
+    setOptSellExitPremium(mark != null ? String(Number(mark).toFixed(4)) : '');
+    setOptSellExitDate(new Date().toISOString().split('T')[0]);
+    setOptSellFees('');
+    setOptSellCloseReason('');
+    setOptSellError('');
+    setOptSellResult(null);
+  };
+  const closeOptionSellModal = () => {
+    setOptionSellModal(null);
+    setOptSellInProgress(false);
+    setOptSellError('');
+    setOptSellResult(null);
+  };
+  const submitOptionSell = async () => {
+    if (!optionSellModal) return;
+    const occKey = optionSellModal.occ_key ?? optionSellModal.option_symbol ?? optionSellModal.display_symbol;
+    if (!occKey) { setOptSellError('Cannot identify position key.'); return; }
+    if (!optSellExitPremium) { setOptSellError('Exit premium is required.'); return; }
+    const exitP = Number(optSellExitPremium);
+    if (!exitP || exitP < 0) { setOptSellError('Enter a valid exit premium.'); return; }
+    if (optSellType === 'contracts' && (!optSellContracts || Number(optSellContracts) <= 0)) { setOptSellError('Enter contracts to sell.'); return; }
+    if (optSellType === 'dollars' && (!optSellDollars || Number(optSellDollars) <= 0)) { setOptSellError('Enter a dollar amount.'); return; }
+    if (optSellType === 'percent' && (!optSellPercent || Number(optSellPercent) <= 0)) { setOptSellError('Enter a percentage.'); return; }
+    setOptSellInProgress(true);
+    setOptSellError('');
+    try {
+      const payload: any = { sell_type: optSellType, exit_premium: exitP, exit_date: optSellExitDate };
+      if (optSellType === 'contracts') payload.contracts_closed = Number(optSellContracts);
+      if (optSellType === 'dollars') payload.dollar_amount = Number(optSellDollars);
+      if (optSellType === 'percent') payload.percent_closed = Number(optSellPercent);
+      if (optSellFees) payload.fees = Number(optSellFees);
+      if (optSellCloseReason) payload.close_reason = optSellCloseReason;
+      const res = await fetch(`/api/portfolio/options-positions/${encodeURIComponent(occKey)}/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setOptSellError(err?.detail ?? err?.error ?? `Error ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      setOptSellResult(data);
+      console.log('[portfolio-option-management-ui]', { action: data.is_full_close ? 'full_close' : 'sell', occKey, underlying: optionSellModal.underlying ?? optionSellModal.ticker ?? '', sellType: optSellType, contractsBefore: data.contracts_before, contractsClosed: data.contracts_closed, contractsRemaining: data.contracts_remaining, exitPremium: exitP, realizedPnl: data.realized_pnl, realizedPnlPct: data.realized_pnl_pct, refetchedHoldings: true, refetchedOptionTrades: true });
+      await refetchFaHoldings();
+      queryClient.invalidateQueries({ queryKey: ['portfolio-holdings-fa'] });
+      queryClient.invalidateQueries({ queryKey: ['caelyn-terminal'] });
+      setTimeout(() => closeOptionSellModal(), 1800);
+    } catch (e: any) {
+      setOptSellError(e?.message ?? 'Request failed');
+    } finally {
+      setOptSellInProgress(false);
+    }
   };
 
   const deletePositionOnly = async () => {
@@ -1726,6 +1871,246 @@ export default function StocksPortfolioPage() {
         );
       })()}
       {/* ─────────────────────────────────────────────────────────────── */}
+
+      {/* ── Option Edit Modal ───────────────────────────────────────── */}
+      {optionEditModal && (() => {
+        const p = optionEditModal;
+        const und = (p.underlying ?? p.ticker ?? '').toUpperCase();
+        const ot = (p.option_type ?? '').toUpperCase();
+        const typeClr = (ot === 'C' || ot === 'CALL') ? '#4ade80' : '#f87171';
+        const typeLabel = ot === 'C' || ot === 'CALL' ? 'CALL' : ot === 'P' || ot === 'PUT' ? 'PUT' : ot || '?';
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.75)' }} onClick={closeOptionEditModal}>
+            <div className="rounded-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-4" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.08)', borderTop: `3px solid ${typeClr}` }} onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-white">{und}</span>
+                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                  <span className="text-xs font-semibold" style={{ color: '#5cc8f0' }}>Edit Position</span>
+                </div>
+                <button onClick={closeOptionEditModal} className="text-slate-500 hover:text-white transition-colors text-lg leading-none">✕</button>
+              </div>
+              {/* Fields grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Contracts Open', val: optEditContracts, set: setOptEditContracts, type: 'number', placeholder: '8' },
+                  { label: 'Avg Premium', val: optEditAvgPrem, set: setOptEditAvgPrem, type: 'number', placeholder: '2.50' },
+                  { label: 'Cost Basis ($)', val: optEditCostBasis, set: setOptEditCostBasis, type: 'number', placeholder: 'auto' },
+                  { label: 'Strike', val: optEditStrike, set: setOptEditStrike, type: 'number', placeholder: '10.00' },
+                  { label: 'Entry Date', val: optEditEntryDate, set: setOptEditEntryDate, type: 'date', placeholder: '' },
+                  { label: 'Expiration Date', val: optEditExpDate, set: setOptEditExpDate, type: 'date', placeholder: '' },
+                ].map(f => (
+                  <div key={f.label}>
+                    <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>{f.label}</label>
+                    <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                      className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Option Type</label>
+                  <select value={optEditOptionType} onChange={e => setOptEditOptionType(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <option value="CALL">CALL</option>
+                    <option value="PUT">PUT</option>
+                    <option value="C">C</option>
+                    <option value="P">P</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Notes</label>
+                  <input type="text" value={optEditNotes} onChange={e => setOptEditNotes(e.target.value)} placeholder="optional"
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+              </div>
+              {optEditError && <div className="text-xs rounded-lg px-3 py-2" style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>{optEditError}</div>}
+              <div className="flex gap-2 pt-1">
+                <button onClick={closeOptionEditModal} className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b' }}>Cancel</button>
+                <button onClick={submitOptionEdit} disabled={optEditInProgress}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{ background: optEditInProgress ? 'rgba(92,200,240,0.1)' : 'rgba(92,200,240,0.18)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.3)', opacity: optEditInProgress ? 0.7 : 1 }}>
+                  {optEditInProgress ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Option Sell / Close Modal ────────────────────────────────── */}
+      {optionSellModal && (() => {
+        const p = optionSellModal;
+        const und = (p.underlying ?? p.ticker ?? '').toUpperCase();
+        const ot = (p.option_type ?? '').toUpperCase();
+        const typeClr = (ot === 'C' || ot === 'CALL') ? '#4ade80' : '#f87171';
+        const typeLabel = ot === 'C' || ot === 'CALL' ? 'CALL' : ot === 'P' || ot === 'PUT' ? 'PUT' : ot || '?';
+        const contracts = p.contracts_open ?? p.contracts ?? 0;
+        const avgPrem = p.avg_premium ?? p.avg_entry_premium ?? null;
+        const mark = p.mark_price ?? p.mark ?? null;
+        const costBasis = p.cost_basis ?? null;
+        const mktVal = p.market_value ?? null;
+        const exp = p.expiration_date ?? p.expiration ?? null;
+        const expFmt = exp ? new Date(exp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : null;
+        const strikeStr = p.strike != null ? `$${Number(p.strike).toFixed(2)}` : null;
+        // Estimated preview
+        const exitP = Number(optSellExitPremium) || 0;
+        const cToSell = optSellType === 'contracts' ? (Number(optSellContracts) || 0)
+          : optSellType === 'full' ? contracts
+          : optSellType === 'percent' ? Math.floor((Number(optSellPercent) / 100) * contracts)
+          : optSellType === 'dollars' ? Math.floor((Number(optSellDollars)) / (exitP * 100) || 0)
+          : 0;
+        const estProceeds = cToSell * exitP * 100;
+        const cRemaining = Math.max(0, contracts - cToSell);
+        return (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.78)' }} onClick={closeOptionSellModal}>
+            <div className="rounded-2xl p-6 w-full max-w-lg mx-4 flex flex-col gap-4" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.08)', borderTop: `3px solid #f87171` }} onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-lg font-bold text-white">{und}</span>
+                  <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                  <span className="text-xs font-semibold" style={{ color: '#f87171' }}>Sell / Close</span>
+                </div>
+                <button onClick={closeOptionSellModal} className="text-slate-500 hover:text-white transition-colors text-lg leading-none">✕</button>
+              </div>
+              {/* Position summary strip */}
+              <div className="grid grid-cols-4 gap-2 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {[
+                  { label: 'Contracts', val: contracts },
+                  { label: 'Avg Prem', val: avgPrem != null ? `$${Number(avgPrem).toFixed(4)}` : '—' },
+                  { label: 'Mark', val: mark != null ? `$${Number(mark).toFixed(4)}` : '—' },
+                  { label: 'Cost Basis', val: costBasis != null ? `$${Math.round(Number(costBasis)).toLocaleString()}` : '—' },
+                ].map(item => (
+                  <div key={item.label} className="text-center">
+                    <div className="text-[10px]" style={{ color: '#475569' }}>{item.label}</div>
+                    <div className="text-xs font-semibold text-white">{item.val}</div>
+                  </div>
+                ))}
+              </div>
+              {expFmt && strikeStr && <div className="text-[11px]" style={{ color: '#475569' }}>Exp {expFmt} · {strikeStr} · {[mktVal != null ? `MV $${Math.round(Number(mktVal)).toLocaleString()}` : null].filter(Boolean).join(' · ')}</div>}
+              {/* Sell type tabs */}
+              <div>
+                <label className="block text-[10px] font-semibold mb-2" style={{ color: '#64748b' }}>Sell Type</label>
+                <div className="flex gap-1 flex-wrap">
+                  {([['contracts', 'By Contracts'], ['dollars', 'By Dollars'], ['percent', 'By Percent'], ['full', 'Full Close']] as const).map(([v, label]) => (
+                    <button key={v} onClick={() => setOptSellType(v)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                      style={{ background: optSellType === v ? 'rgba(248,113,113,0.15)' : 'rgba(255,255,255,0.04)', color: optSellType === v ? '#f87171' : '#64748b', border: `1px solid ${optSellType === v ? 'rgba(248,113,113,0.3)' : 'rgba(255,255,255,0.06)'}` }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Amount field */}
+              {optSellType !== 'full' && (
+                <div className="grid grid-cols-2 gap-3">
+                  {optSellType === 'contracts' && (
+                    <div>
+                      <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Contracts to Sell</label>
+                      <input type="number" value={optSellContracts} onChange={e => setOptSellContracts(e.target.value)} placeholder={`max ${contracts}`}
+                        className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    </div>
+                  )}
+                  {optSellType === 'dollars' && (
+                    <div>
+                      <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Dollar Amount ($)</label>
+                      <input type="number" value={optSellDollars} onChange={e => setOptSellDollars(e.target.value)} placeholder="0.00"
+                        className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    </div>
+                  )}
+                  {optSellType === 'percent' && (
+                    <div>
+                      <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Percent to Close (%)</label>
+                      <input type="number" value={optSellPercent} onChange={e => setOptSellPercent(e.target.value)} placeholder="50"
+                        className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Exit Date</label>
+                    <input type="date" value={optSellExitDate} onChange={e => setOptSellExitDate(e.target.value)}
+                      className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  </div>
+                </div>
+              )}
+              {optSellType === 'full' && (
+                <div>
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Exit Date</label>
+                  <input type="date" value={optSellExitDate} onChange={e => setOptSellExitDate(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Exit Premium <span style={{ color: '#f87171' }}>*</span></label>
+                  <input type="number" value={optSellExitPremium} onChange={e => setOptSellExitPremium(e.target.value)} placeholder={mark != null ? String(Number(mark).toFixed(4)) : '0.0000'}
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Fees (optional)</label>
+                  <input type="number" value={optSellFees} onChange={e => setOptSellFees(e.target.value)} placeholder="0"
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[10px] font-semibold mb-1" style={{ color: '#64748b' }}>Close Reason (optional)</label>
+                  <input type="text" value={optSellCloseReason} onChange={e => setOptSellCloseReason(e.target.value)} placeholder="e.g. trim, target hit, expired"
+                    className="w-full rounded-lg px-3 py-2 text-xs text-white outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+              </div>
+              {/* Preview */}
+              {exitP > 0 && cToSell > 0 && (
+                <div className="rounded-xl p-3 grid grid-cols-3 gap-2 text-center" style={{ background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
+                  <div>
+                    <div className="text-[10px]" style={{ color: '#475569' }}>Selling</div>
+                    <div className="text-sm font-bold" style={{ color: '#f87171' }}>{cToSell} contract{cToSell !== 1 ? 's' : ''}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px]" style={{ color: '#475569' }}>Est. Proceeds</div>
+                    <div className="text-sm font-bold text-white">${Math.round(estProceeds).toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px]" style={{ color: '#475569' }}>Remaining</div>
+                    <div className="text-sm font-bold" style={{ color: cRemaining === 0 ? '#a78bfa' : '#4ade80' }}>{cRemaining} contract{cRemaining !== 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+              )}
+              {/* Success result */}
+              {optSellResult && (
+                <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)' }}>
+                  <div className="text-xs font-semibold" style={{ color: '#4ade80' }}>
+                    {optSellResult.is_full_close ? 'Position fully closed' : `${optSellResult.contracts_closed} contract${optSellResult.contracts_closed !== 1 ? 's' : ''} closed · ${optSellResult.contracts_remaining} remaining`}
+                  </div>
+                  {optSellResult.realized_pnl != null && (
+                    <div className="text-sm font-bold mt-1" style={{ color: Number(optSellResult.realized_pnl) >= 0 ? '#4ade80' : '#f87171' }}>
+                      {Number(optSellResult.realized_pnl) >= 0 ? '+' : ''}${Number(optSellResult.realized_pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} realized
+                      {optSellResult.realized_pnl_pct != null && ` (${Number(optSellResult.realized_pnl_pct) >= 0 ? '+' : ''}${Number(optSellResult.realized_pnl_pct).toFixed(1)}%)`}
+                    </div>
+                  )}
+                </div>
+              )}
+              {optSellError && <div className="text-xs rounded-lg px-3 py-2" style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>{optSellError}</div>}
+              <div className="flex gap-2 pt-1">
+                <button onClick={closeOptionSellModal} className="flex-1 py-2 rounded-lg text-xs font-semibold" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b' }}>Cancel</button>
+                <button onClick={submitOptionSell} disabled={optSellInProgress || !!optSellResult}
+                  className="flex-2 px-6 py-2 rounded-lg text-xs font-semibold transition-all"
+                  style={{ background: optSellInProgress ? 'rgba(248,113,113,0.1)' : 'rgba(248,113,113,0.18)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)', opacity: (optSellInProgress || !!optSellResult) ? 0.7 : 1 }}>
+                  {optSellInProgress ? 'Processing…' : optSellResult ? 'Done ✓' : optSellType === 'full' ? 'Close Full Position' : 'Confirm Sell'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Option Position Detail Popup ─────────────────────────────── */}
       {optionDetailUnderlying && (() => {
@@ -2578,6 +2963,7 @@ export default function StocksPortfolioPage() {
                         <th className="text-right pb-2 px-3 min-w-[70px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Mark</th>
                         <th className="text-right pb-2 px-3 min-w-[80px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Mkt Value</th>
                         <th className="text-right pb-2 pl-3 min-w-[100px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Unrealized</th>
+                        <th className="pb-2 pl-3 pr-1 min-w-[80px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2652,6 +3038,23 @@ export default function StocksPortfolioPage() {
                                   )}
                                 </>
                               ) : '—'}
+                            </td>
+                            {/* Actions */}
+                            <td className="py-2 pl-2 pr-1" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center gap-1 justify-end">
+                                <button
+                                  onClick={e => { e.stopPropagation(); openOptionEditModal(p); }}
+                                  className="px-2 py-1 rounded text-[10px] font-semibold transition-all"
+                                  style={{ background: 'rgba(92,200,240,0.1)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.25)' }}
+                                  title="Edit position"
+                                >Edit</button>
+                                <button
+                                  onClick={e => { e.stopPropagation(); openOptionSellModal(p); }}
+                                  className="px-2 py-1 rounded text-[10px] font-semibold transition-all"
+                                  style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}
+                                  title="Sell / Close position"
+                                >Sell</button>
+                              </div>
                             </td>
                           </tr>
                         );
