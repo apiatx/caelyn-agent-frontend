@@ -1,0 +1,225 @@
+FRONTEND REPLIT AGENT — Add clickable option-position popup to Portfolio Dashboard Open Options section
+
+Backend is ready.
+
+New backend endpoint:
+GET /api/portfolio/options-position-detail/{underlying}
+
+Example:
+GET /api/portfolio/options-position-detail/BWEN
+
+Purpose:
+When a user clicks an open option position in the Portfolio Dashboard Open Options section, open a TradingView-style popup for the underlying stock and show the option position details, live Tradier mark/valuation, portfolio-scoped options signal, and portfolio risk score.
+
+Important:
+This popup is only for Portfolio Dashboard open options positions.
+Do not change the global Options Flow page.
+Do not call Tradier directly from frontend.
+Do not calculate options signal/risk in frontend.
+Do not hardcode BWEN, FCEL, GSIT, SKYT, VIVO, or any ticker.
+Do not break the existing Core/Open Positions TradingView popup.
+Do not put open options back into Trade Journal.
+
+Backend validation:
+- BWEN detail works
+- FCEL detail works
+- GSIT detail works
+- SKYT detail works
+- VIVO detail works
+- LPKFF returns 404 because it has no open options
+- No ticker-specific hardcoding
+- Global Options Flow logic untouched
+
+Expected backend response shape:
+{
+  "underlying": "BWEN",
+  "tradingview_symbol": "BWEN",
+  "chart_symbol": "BWEN",
+  "company_name": "...",
+  "underlying_price": number,
+  "asset_type": "stock",
+  "open_option_positions": [...],
+  "portfolio_options_signal": {...} | null,
+  "portfolio_options_risk": {...} | null,
+  "summary": {...},
+  "cache": {...}
+}
+
+open_option_positions fields:
+- display_symbol
+- option_symbol
+- tradier_symbol
+- expiration_date
+- strike
+- option_type
+- contracts_open
+- avg_premium
+- cost_basis
+- entry_date
+- mark_price
+- mark_bid
+- mark_ask
+- mark_last
+- mark_source
+- market_value
+- unrealized_pnl
+- unrealized_pnl_pct
+- quote_unavailable_reason
+
+portfolio_options_signal fields:
+- ticker
+- score
+- p_c / put_call
+- iv
+- em / expected_move
+- vol / volume
+- signal
+- source
+
+portfolio_options_risk fields:
+- risk_score
+- risk_level
+- risk_signal
+- risk_reasons
+- risk_confidence
+- risk_source
+
+summary fields:
+- contracts_total
+- cost_basis_total
+- market_value_total
+- unrealized_pnl_total
+- unrealized_pnl_pct
+- valuation_available
+
+Task:
+1. Locate existing Core/Open Positions TradingView popup/modal implementation.
+2. Reuse the existing popup/modal pattern and chart component if possible.
+3. Make each row in the Open Options section clickable.
+4. On click:
+   - open popup/modal
+   - fetch GET /api/portfolio/options-position-detail/{underlying}
+   - show loading state
+   - render popup content once loaded
+5. Use chart_symbol or tradingview_symbol for the chart.
+6. The chart should be for the underlying stock, not the option contract.
+7. Render option-specific data in the popup details panel.
+
+Popup layout:
+
+Header:
+- underlying ticker
+- company name if available
+- underlying price if available
+
+Chart:
+- TradingView chart using chart_symbol/tradingview_symbol
+
+Open Option Position section:
+If multiple open contracts exist for the same underlying, render all of them.
+
+For each contract show:
+- display symbol
+- expiration
+- strike
+- call/put
+- contracts open
+- avg premium
+- cost basis
+- mark
+- bid / ask / last if available
+- market value
+- unrealized P&L
+- unrealized P&L %
+- opened date
+- mark source
+
+Signal section:
+Render portfolio_options_signal if present:
+- Score
+- P/C
+- IV
+- EM
+- Volume
+- Signal
+
+If null:
+Show “Options signal unavailable” but keep the popup usable.
+
+Risk section:
+Render portfolio_options_risk if present:
+- Risk level
+- Risk score
+- Confidence
+- Risk reasons
+
+Risk styling:
+- HIGH = red
+- ELEVATED = orange
+- WATCH = amber/yellow
+- LOW = green/blue/muted
+- UNKNOWN = gray
+
+If null:
+Show “Risk signal unavailable.”
+
+Error behavior:
+- If endpoint returns 404, show “No open option position found for this underlying.”
+- If quote fields are unavailable, show — and quote_unavailable_reason if present.
+- Do not crash if signal/risk is null.
+
+Caching:
+Use existing React Query pattern if available.
+Query key:
+['portfolio-option-position-detail', underlying]
+Use a short staleTime if consistent with the rest of the page.
+Do not refetch repeatedly while popup is open unless existing pattern does.
+
+Validation:
+Use current open options:
+- BWEN
+- FCEL
+- GSIT
+- SKYT
+- VIVO
+
+Confirm:
+1. Each Open Options row is clickable.
+2. Clicking BWEN opens the popup.
+3. Popup shows TradingView chart for BWEN.
+4. Popup shows BWEN option contract details:
+   - contracts
+   - avg premium
+   - cost basis
+   - mark
+   - market value
+   - unrealized P&L
+5. Popup shows signal/risk when backend returns it.
+6. VIVO still renders option position even if signal is null / risk UNKNOWN.
+7. LPKFF or a ticker with no open options shows clean 404/empty state if tested.
+8. No frontend Tradier calls were added.
+9. Open options remain outside Trade Journal.
+10. Existing Core/Open Positions popup still works.
+11. Portfolio Terminal still works.
+
+Diagnostics:
+Add:
+[portfolio-option-popup-ui] {
+  underlying,
+  opened,
+  detailLoaded,
+  contracts,
+  hasChartSymbol,
+  hasSignal,
+  hasRisk,
+  quoteAvailable,
+  renderedFields,
+  error
+}
+
+Return:
+- files changed
+- endpoint consumed
+- validation screenshot/log for BWEN popup
+- validation that VIVO handles null signal/UNKNOWN risk
+- confirmation existing Core popup unchanged

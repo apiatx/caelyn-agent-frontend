@@ -218,6 +218,8 @@ export default function StocksPortfolioPage() {
   const [newAvgCost, setNewAvgCost] = useState('');
   const [newDateAdded, setNewDateAdded] = useState(() => new Date().toISOString().split('T')[0]);
   const [portfolioView, setPortfolioView] = useState<'all' | 'trades' | 'options'>('all');
+  const [optionDetailUnderlying, setOptionDetailUnderlying] = useState<string | null>(null);
+  const [optionChartInterval, setOptionChartInterval] = useState('D');
   const { data: closedTradesData, isLoading: closedTradesLoading, refetch: refetchClosedTrades } = useQuery<{ closed_trades: any[]; trade_groups: any[]; portfolio_performance: any; count: number }>({
     queryKey: ['portfolio-closed-trades'],
     queryFn: async () => {
@@ -243,6 +245,20 @@ export default function StocksPortfolioPage() {
       return res.json();
     },
     staleTime: 60_000,
+  });
+
+  // Option position detail — fetched on demand when a row is clicked
+  const { data: optionDetailData, isLoading: optionDetailLoading, error: optionDetailError } = useQuery<any>({
+    queryKey: ['portfolio-option-position-detail', optionDetailUnderlying],
+    queryFn: async () => {
+      const res = await fetch(`/api/portfolio/options-position-detail/${encodeURIComponent(optionDetailUnderlying!)}`);
+      if (res.status === 404) throw Object.assign(new Error('404'), { status: 404 });
+      if (!res.ok) throw new Error('Failed to load option detail');
+      return res.json();
+    },
+    enabled: !!optionDetailUnderlying,
+    staleTime: 30_000,
+    retry: false,
   });
   const classificationMap = useMemo<Record<string, string>>(() => {
     const arr: any[] = Array.isArray(faHoldingsData)
@@ -1699,6 +1715,280 @@ export default function StocksPortfolioPage() {
       })()}
       {/* ─────────────────────────────────────────────────────────────── */}
 
+      {/* ── Option Position Detail Popup ─────────────────────────────── */}
+      {optionDetailUnderlying && (() => {
+        const od = optionDetailData;
+        const is404 = optionDetailError && (optionDetailError as any)?.status === 404;
+        const positions: any[] = od?.open_option_positions ?? [];
+        const sig = od?.portfolio_options_signal ?? null;
+        const risk = od?.portfolio_options_risk ?? null;
+        const chartSym = od?.chart_symbol ?? od?.tradingview_symbol ?? optionDetailUnderlying;
+        const underlyingPrice = od?.underlying_price ?? null;
+        const companyName = od?.company_name ?? null;
+        const riskLevel: string = (risk?.risk_level ?? '').toUpperCase();
+        const riskColor = riskLevel === 'HIGH' ? '#ef4444' : riskLevel === 'ELEVATED' ? '#f97316' : riskLevel === 'WATCH' ? '#f59e0b' : riskLevel === 'LOW' ? '#4ade80' : '#64748b';
+
+        // Diagnostic log
+        if (od) {
+          console.log('[portfolio-option-popup-ui]', {
+            underlying: optionDetailUnderlying,
+            opened: true,
+            detailLoaded: !!od,
+            contracts: od?.summary?.contracts_total ?? 0,
+            hasChartSymbol: !!chartSym,
+            hasSignal: !!sig,
+            hasRisk: !!risk,
+            quoteAvailable: od?.summary?.valuation_available ?? false,
+            renderedFields: positions.length > 0 ? Object.keys(positions[0]).filter(k => positions[0][k] != null) : [],
+            error: null,
+          });
+        }
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(5,6,8,0.85)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setOptionDetailUnderlying(null)}
+          >
+            <div
+              className="w-full max-w-4xl max-h-[90vh] rounded-xl flex flex-col overflow-hidden"
+              style={{ background: '#0a0e1a', border: '1px solid #1a2540', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4 flex-shrink-0" style={{ borderBottom: '1px solid #1a2540' }}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest mb-0.5" style={{ color: '#5cc8f0' }}>Options Position</div>
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-xl font-black text-white">{optionDetailUnderlying}</span>
+                    {companyName && <span className="text-sm truncate" style={{ color: '#64748b' }}>{companyName}</span>}
+                    {underlyingPrice != null && (
+                      <span className="text-sm font-semibold font-mono" style={{ color: '#5cc8f0' }}>${Number(underlyingPrice).toFixed(2)}</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setOptionDetailUnderlying(null)}
+                  className="p-1.5 rounded hover:bg-white/5 transition-colors flex-shrink-0"
+                  style={{ color: '#64748b' }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Loading */}
+                {optionDetailLoading && (
+                  <div className="flex items-center justify-center py-16 gap-3" style={{ color: '#475569' }}>
+                    <div className="w-4 h-4 rounded-full border-2 border-sky-400 border-t-transparent animate-spin" />
+                    <span className="text-sm">Loading position data…</span>
+                  </div>
+                )}
+
+                {/* 404 */}
+                {is404 && !optionDetailLoading && (
+                  <div className="flex items-center justify-center py-16 text-sm" style={{ color: '#64748b' }}>
+                    No open option position found for {optionDetailUnderlying}.
+                  </div>
+                )}
+
+                {/* Other errors */}
+                {optionDetailError && !is404 && !optionDetailLoading && (
+                  <div className="flex items-center justify-center py-16 text-sm" style={{ color: '#f87171' }}>
+                    Failed to load option position detail.
+                  </div>
+                )}
+
+                {/* Loaded content */}
+                {od && !optionDetailLoading && (
+                  <div className="flex flex-col gap-4 p-5">
+                    {/* Chart + interval selector */}
+                    <div>
+                      <div className="flex gap-1 mb-2">
+                        {[{l:'1H',v:'60'},{l:'4H',v:'240'},{l:'1D',v:'D'},{l:'1W',v:'W'},{l:'1M',v:'M'}].map(iv => (
+                          <button key={iv.v}
+                            onClick={() => setOptionChartInterval(iv.v)}
+                            className="text-[9px] font-semibold px-2 py-0.5 rounded transition-colors"
+                            style={{ background: optionChartInterval === iv.v ? 'rgba(92,200,240,0.12)' : 'transparent', color: optionChartInterval === iv.v ? '#5cc8f0' : '#64748b', border: `1px solid ${optionChartInterval === iv.v ? 'rgba(92,200,240,0.25)' : 'rgba(255,255,255,0.06)'}` }}
+                          >{iv.l}</button>
+                        ))}
+                        <span className="ml-auto text-[10px] self-center" style={{ color: '#475569' }}>Underlying stock chart</span>
+                      </div>
+                      <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(56,78,119,0.2)' }}>
+                        <iframe
+                          src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=360&interval=${optionChartInterval}&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=Etc%2FUTC&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(chartSym)}`}
+                          style={{ width: '100%', height: 360, border: 'none', display: 'block' }}
+                          title={`${optionDetailUnderlying} chart`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Open Option Positions */}
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>Open Positions</div>
+                      <div className="flex flex-col gap-3">
+                        {positions.map((pos: any, i: number) => {
+                          const pOt = (pos.option_type ?? '').toUpperCase();
+                          const pTypeClr = (pOt === 'C' || pOt === 'CALL') ? '#4ade80' : '#f87171';
+                          const pTypeLabel = (pOt === 'C' || pOt === 'CALL') ? 'CALL' : (pOt === 'P' || pOt === 'PUT') ? 'PUT' : pOt || '—';
+                          const pExp = pos.expiration_date ?? pos.expiration ?? null;
+                          const pExpFmt = pExp ? new Date(pExp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : null;
+                          const pStrike = pos.strike != null ? `$${Number(pos.strike).toFixed(2)}` : null;
+                          const pContracts = pos.contracts_open ?? pos.contracts ?? 0;
+                          const pAvgPrem = pos.avg_premium ?? 0;
+                          const pCostBasis = pos.cost_basis ?? 0;
+                          const pMark = pos.mark_price ?? null;
+                          const pMarkUnavail = pos.mark_source === 'unavailable' || pos.quote_unavailable_reason != null;
+                          const pMktVal = pos.market_value ?? null;
+                          const pUPnl = pos.unrealized_pnl ?? null;
+                          const pUPct = pos.unrealized_pnl_pct ?? null;
+                          const pIsWin = pUPnl != null && (pUPnl as number) >= 0;
+                          const pPnlClr = pIsWin ? '#4ade80' : '#f87171';
+                          return (
+                            <div key={i} className="rounded-xl p-3" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${pTypeClr}` }}>
+                              {/* Contract line */}
+                              <div className="flex items-center gap-2 flex-wrap mb-2">
+                                <span className="font-bold text-white text-sm">{pos.display_symbol ?? optionDetailUnderlying}</span>
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: `${pTypeClr}18`, color: pTypeClr, border: `1px solid ${pTypeClr}40` }}>{pTypeLabel}</span>
+                                {pExpFmt && <span className="text-[10px]" style={{ color: '#64748b' }}>exp {pExpFmt}</span>}
+                                {pStrike && <span className="text-[10px] font-mono" style={{ color: '#94a3b8' }}>@ {pStrike}</span>}
+                                {pos.entry_date && <span className="text-[10px]" style={{ color: '#475569' }}>opened {pos.entry_date}</span>}
+                              </div>
+                              {/* Stats grid */}
+                              <div className="grid grid-cols-4 gap-2 text-xs">
+                                {[
+                                  { label: 'Contracts', val: String(pContracts), clr: '#e2e8f0' },
+                                  { label: 'Avg Premium', val: pAvgPrem > 0 ? `$${Number(pAvgPrem).toFixed(4)}` : '—', clr: '#e2e8f0', mono: true },
+                                  { label: 'Cost Basis', val: pCostBasis > 0 ? `$${Math.round(pCostBasis).toLocaleString()}` : '—', clr: '#a78bfa', mono: true },
+                                  { label: 'Mark', val: pMarkUnavail || pMark == null ? '—' : `$${Number(pMark).toFixed(4)}`, clr: pMarkUnavail ? '#475569' : '#5cc8f0', mono: true, title: pos.quote_unavailable_reason ?? undefined },
+                                ].map(({ label, val, clr, mono, title }) => (
+                                  <div key={label} className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>{label}</div>
+                                    <div className={`text-xs ${mono ? 'font-mono' : 'font-semibold'}`} style={{ color: clr }} title={title}>{val}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+                                {pos.mark_bid != null && <div className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}><div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Bid</div><div className="font-mono text-xs" style={{ color: '#94a3b8' }}>${Number(pos.mark_bid).toFixed(4)}</div></div>}
+                                {pos.mark_ask != null && <div className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}><div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Ask</div><div className="font-mono text-xs" style={{ color: '#94a3b8' }}>${Number(pos.mark_ask).toFixed(4)}</div></div>}
+                                {pos.mark_last != null && <div className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}><div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Last</div><div className="font-mono text-xs" style={{ color: '#94a3b8' }}>${Number(pos.mark_last).toFixed(4)}</div></div>}
+                                <div className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}><div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Mkt Value</div><div className="font-mono text-xs" style={{ color: pMktVal != null ? '#5cc8f0' : '#475569' }}>{pMktVal != null ? `$${Math.round(pMktVal).toLocaleString()}` : '—'}</div></div>
+                                <div className="rounded-lg px-2 py-1.5 col-span-2" style={{ background: pUPnl != null ? (pIsWin ? 'rgba(74,222,128,0.05)' : 'rgba(248,113,113,0.05)') : 'rgba(255,255,255,0.03)', border: `1px solid ${pUPnl != null ? (pIsWin ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)') : 'rgba(255,255,255,0.04)'}` }}>
+                                  <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Unrealized P&L</div>
+                                  <div className="font-mono text-xs font-semibold" style={{ color: pUPnl != null ? pPnlClr : '#475569' }}>
+                                    {pUPnl != null ? `${pIsWin ? '+' : '-'}$${Math.abs(Math.round(pUPnl)).toLocaleString()}` : '—'}
+                                    {pUPct != null && <span className="text-[10px] ml-1 opacity-80">{(pUPct as number) >= 0 ? '+' : ''}{(pUPct as number).toFixed(1)}%</span>}
+                                  </div>
+                                </div>
+                                {pos.mark_source && <div className="rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}><div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>Mark Source</div><div className="text-[10px]" style={{ color: '#475569' }}>{pos.mark_source}</div></div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Signal + Risk side-by-side */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Signal */}
+                      <div className="rounded-xl p-3" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>Options Signal</div>
+                        {sig ? (
+                          <div className="flex flex-col gap-1.5">
+                            {sig.signal && (
+                              <div className="text-sm font-bold mb-1" style={{ color: '#5cc8f0' }}>{sig.signal}</div>
+                            )}
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { label: 'Score', val: sig.score != null ? String(sig.score) : '—' },
+                                { label: 'P/C', val: sig.p_c ?? sig.put_call ?? '—' },
+                                { label: 'IV', val: sig.iv != null ? `${(Number(sig.iv) * 100).toFixed(1)}%` : '—' },
+                                { label: 'Exp Move', val: sig.em ?? sig.expected_move ?? '—' },
+                                { label: 'Volume', val: sig.vol ?? sig.volume != null ? String(sig.vol ?? sig.volume) : '—' },
+                                { label: 'Source', val: sig.source ?? '—' },
+                              ].map(({ label, val }) => (
+                                <div key={label} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                  <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>{label}</div>
+                                  <div className="text-xs font-mono" style={{ color: '#e2e8f0' }}>{val}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs" style={{ color: '#475569' }}>Options signal unavailable.</div>
+                        )}
+                      </div>
+
+                      {/* Risk */}
+                      <div className="rounded-xl p-3" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>Risk Assessment</div>
+                        {risk ? (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold" style={{ color: riskColor }}>{risk.risk_level ?? 'UNKNOWN'}</span>
+                              {risk.risk_score != null && (
+                                <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: `${riskColor}18`, color: riskColor, border: `1px solid ${riskColor}40` }}>
+                                  {risk.risk_score}
+                                </span>
+                              )}
+                              {risk.risk_confidence && (
+                                <span className="text-[10px] ml-auto" style={{ color: '#475569' }}>confidence: {risk.risk_confidence}</span>
+                              )}
+                            </div>
+                            {risk.risk_signal && (
+                              <div className="text-xs" style={{ color: '#94a3b8' }}>{risk.risk_signal}</div>
+                            )}
+                            {Array.isArray(risk.risk_reasons) && risk.risk_reasons.length > 0 && (
+                              <ul className="flex flex-col gap-1 mt-1">
+                                {(risk.risk_reasons as string[]).map((r: string, idx: number) => (
+                                  <li key={idx} className="flex items-start gap-1.5 text-[11px]" style={{ color: '#64748b' }}>
+                                    <span style={{ color: riskColor, flexShrink: 0 }}>›</span>{r}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs" style={{ color: '#475569' }}>Risk signal unavailable.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderTop: '1px solid #1a2540' }}>
+                {od?.summary && (
+                  <div className="flex gap-4 text-xs">
+                    <span style={{ color: '#475569' }}>Contracts: <span className="text-white font-medium">{od.summary.contracts_total ?? '—'}</span></span>
+                    {od.summary.cost_basis_total != null && <span style={{ color: '#475569' }}>Cost: <span className="font-mono" style={{ color: '#a78bfa' }}>${Math.round(od.summary.cost_basis_total).toLocaleString()}</span></span>}
+                    {od.summary.market_value_total != null && <span style={{ color: '#475569' }}>Mkt: <span className="font-mono" style={{ color: '#5cc8f0' }}>${Math.round(od.summary.market_value_total).toLocaleString()}</span></span>}
+                    {od.summary.unrealized_pnl_total != null && (() => {
+                      const pnl = od.summary.unrealized_pnl_total as number;
+                      const pct = od.summary.unrealized_pnl_pct as number | null;
+                      const win = pnl >= 0;
+                      return (
+                        <span style={{ color: '#475569' }}>P&L: <span className="font-mono font-semibold" style={{ color: win ? '#4ade80' : '#f87171' }}>
+                          {win ? '+' : '-'}${Math.abs(Math.round(pnl)).toLocaleString()}
+                          {pct != null && ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`}
+                        </span></span>
+                      );
+                    })()}
+                  </div>
+                )}
+                <button
+                  onClick={() => setOptionDetailUnderlying(null)}
+                  className="ml-auto px-4 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white/[0.06]"
+                  style={{ color: '#64748b' }}
+                >Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4">
         <div className="space-y-4 lg:space-y-6">
 
@@ -2303,8 +2593,9 @@ export default function StocksPortfolioPage() {
                         const entryDate   = p.entry_date ?? p.first_entry_date ?? null;
                         const unavailReason = p.quote_unavailable_reason ?? null;
                         return (
-                          <tr key={occKey} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                            className="hover:bg-white/[0.02] transition-colors">
+                          <tr key={occKey} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}
+                            className="hover:bg-white/[0.04] transition-colors"
+                            onClick={() => setOptionDetailUnderlying(und)}>
                             {/* Contract — ticker + type badge + expiry + strike */}
                             <td className="py-2.5 pl-1 pr-4">
                               <div className="flex items-center gap-1.5">
