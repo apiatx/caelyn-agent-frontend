@@ -1806,8 +1806,24 @@ export default function StocksPortfolioPage() {
             </GlassCard>
           )}
 
-          {holdings.length > 0 && (
+          {/* ── Open Positions: Core + Options ── */}
+          <div className="space-y-3">
+            {(holdings.length > 0 || (portfolioView !== 'trades' && optionOpenPositions.length > 0)) && (
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#475569', letterSpacing: '0.14em' }}>Open Positions</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+              </div>
+            )}
+            {holdings.length > 0 && (
             <GlassCard className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded" style={{ background: 'rgba(92,200,240,0.12)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.25)' }}>Live</span>
+                <h3 className="text-sm font-semibold text-white">Core</h3>
+                <span className="text-xs" style={{ color: '#475569' }}>{holdings.length} position{holdings.length !== 1 ? 's' : ''}</span>
+                {totalPortfolioValue > 0 && (
+                  <span className="ml-auto text-xs font-bold" style={{ color: '#5cc8f0' }}>{fmt(totalPortfolioValue)}</span>
+                )}
+              </div>
               <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' }}>
                 <table className="w-full text-sm">
                   <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
@@ -2197,11 +2213,10 @@ export default function StocksPortfolioPage() {
                 </table>
               </div>
             </GlassCard>
-          )}
+            )}
 
-
-          {/* ── Open Options — live Tradier valuation, shown above Performance Scorecard ── */}
-          {portfolioView !== 'trades' && optionOpenPositions.length > 0 && (() => {
+            {/* Options — open option positions */}
+            {portfolioView !== 'trades' && optionOpenPositions.length > 0 && (() => {
             const optMV      = portfolioSummary?.option_market_value      ?? null;
             const optCB      = portfolioSummary?.option_cost_basis         ?? null;
             const optPnl     = portfolioSummary?.option_unrealized_pnl     ?? null;
@@ -2231,7 +2246,7 @@ export default function StocksPortfolioPage() {
                 {/* Header row */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded" style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)' }}>Live</span>
-                  <h3 className="text-sm font-semibold text-white">Open Options</h3>
+                  <h3 className="text-sm font-semibold text-white">Options</h3>
                   <span className="text-xs" style={{ color: '#475569' }}>{optionOpenPositions.length} position{optionOpenPositions.length !== 1 ? 's' : ''} · {totalContracts} contract{totalContracts !== 1 ? 's' : ''}</span>
                   {optMV != null && (
                     <span className="ml-auto text-xs font-bold" style={{ color: '#5cc8f0' }}>{fmt(optMV)}</span>
@@ -2326,7 +2341,8 @@ export default function StocksPortfolioPage() {
                 </div>
               </GlassCard>
             );
-          })()}
+            })()}
+          </div>
 
           {/* Section 2: Portfolio Visualization */}
           {holdings.length > 0 && totalPortfolioValue > 0 && (
