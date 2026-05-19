@@ -1727,33 +1727,33 @@ export default function StocksPortfolioPage() {
           })()}
 
           {/* Section 1: Portfolio Input */}
-          <GlassCard className="p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row gap-2 flex-wrap items-center">
-              <div className="flex items-center gap-1.5 flex-shrink-0 mr-3">
-                <Plus className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-semibold text-white whitespace-nowrap">Add Position</span>
+          <GlassCard className="p-2">
+            <div className="flex flex-col sm:flex-row gap-1.5 flex-wrap items-center">
+              <div className="flex items-center gap-1 flex-shrink-0 mr-2">
+                <Plus className="w-3 h-3 text-green-400" />
+                <span className="text-xs font-semibold text-white whitespace-nowrap">Add Position</span>
               </div>
-              <input type="text" placeholder="Ticker (e.g. NVDA)" value={newTicker} onChange={e => setNewTicker(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-36" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
-              <select value={selectedAssetType} onChange={e => setSelectedAssetType(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-32 appearance-none cursor-pointer" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
+              <input type="text" placeholder="Ticker (e.g. NVDA)" value={newTicker} onChange={e => setNewTicker(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-md px-2 py-1 text-xs text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-24" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <select value={selectedAssetType} onChange={e => setSelectedAssetType(e.target.value)} className="rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-20 appearance-none cursor-pointer" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}>
                 <option value="stock" style={{ background: 'rgba(255,255,255,0.02)' }}>Stock</option>
                 <option value="etf" style={{ background: 'rgba(255,255,255,0.02)' }}>ETF</option>
                 <option value="crypto" style={{ background: 'rgba(255,255,255,0.02)' }}>Crypto</option>
                 <option value="commodity" style={{ background: 'rgba(255,255,255,0.02)' }}>Commodity</option>
               </select>
-              <input type="number" placeholder={SHARES_LABEL[selectedAssetType] || 'Shares'} value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-28" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
-              <input type="number" placeholder="Avg Price ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-lg px-3 py-2 text-sm text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-32" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
-              <input type="date" value={newDateAdded} onChange={e => setNewDateAdded(e.target.value)} className="rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-36" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', colorScheme: 'dark' as any }} title="Date Added (entry date)" />
-              <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-40" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 12px rgba(32, 144, 208, 0.3)' }}>
-                <Plus className="w-4 h-4" />
+              <input type="number" placeholder={SHARES_LABEL[selectedAssetType] || 'Shares'} value={newShares} onChange={e => setNewShares(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-md px-2 py-1 text-xs text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-20" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <input type="number" placeholder="Avg Price ($)" value={newAvgCost} onChange={e => setNewAvgCost(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHolding()} className="rounded-md px-2 py-1 text-xs text-white placeholder-crypto-silver/50 focus:outline-none focus:border-cyan-500/50 w-full sm:w-24" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <input type="date" value={newDateAdded} onChange={e => setNewDateAdded(e.target.value)} className="rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500/50 w-full sm:w-28" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', colorScheme: 'dark' as any }} title="Date Added (entry date)" />
+              <button onClick={addHolding} disabled={addingHolding || !newTicker.trim() || !newShares || !newAvgCost} className="flex items-center justify-center gap-1 px-3 py-1 rounded-md text-xs font-medium text-white transition-all disabled:opacity-40" style={{ background: 'linear-gradient(135deg, #2090d0, #5cc8f0)', boxShadow: '0 0 10px rgba(32, 144, 208, 0.25)' }}>
+                <Plus className="w-3 h-3" />
                 Add
               </button>
               <div className="flex-shrink-0 ml-auto pl-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
                 <button
                   onClick={openCsvModal}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white/[0.06]"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all hover:bg-white/[0.06]"
                   style={{ color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.25)' }}
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Upload className="w-3 h-3" />
                   Import CSV
                 </button>
               </div>
@@ -1777,6 +1777,35 @@ export default function StocksPortfolioPage() {
           </GlassCard>
 
           {/* Holdings Table */}
+          {holdings.length > 0 && totalPortfolioValue > 0 && (
+            <GlassCard className="p-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Total Balance</div>
+                  <div className="text-sm font-bold" style={{ color: '#5cc8f0' }}>{fmt(totalPortfolioValue + (portfolioSummary?.option_market_value ?? 0))}</div>
+                  {portfolioSummary?.option_market_value != null && portfolioSummary.option_market_value > 0 && (
+                    <div className="text-[9px]" style={{ color: '#475569' }}>incl. {fmt(portfolioSummary.option_market_value)} opts</div>
+                  )}
+                </div>
+                <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Invested</div>
+                  <div className="text-sm font-bold" style={{ color: '#a78bfa' }}>{fmt(totalCostBasis)}</div>
+                </div>
+                <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Daily P&L</div>
+                  <div className={`text-sm font-bold ${totalDailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPL(totalDailyPL)}</div>
+                </div>
+                <div className="rounded-md px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="text-[9px] text-crypto-silver uppercase tracking-wider mb-0.5">Total P&L</div>
+                  <div className={`text-sm font-bold ${totalOverallPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{fmtPL(totalOverallPL)}</span>
+                    <span className="text-[9px] ml-1 opacity-60">{totalCostBasis > 0 ? `(${totalOverallPL >= 0 ? '+' : ''}${((totalOverallPL / totalCostBasis) * 100).toFixed(1)}%)` : ''}</span>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
           {holdings.length > 0 && (
             <GlassCard className="p-3 sm:p-4">
               <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' }}>
@@ -2170,39 +2199,6 @@ export default function StocksPortfolioPage() {
             </GlassCard>
           )}
 
-          {/* Portfolio Totals */}
-          {holdings.length > 0 && totalPortfolioValue > 0 && (
-            <GlassCard className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Briefcase className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-sm font-semibold text-white">Portfolio Totals</h3>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Total Balance</div>
-                  <div className="text-base font-bold" style={{ color: '#5cc8f0', textShadow: '0 0 8px rgba(92, 200, 240, 0.2)' }}>{fmt(totalPortfolioValue + (portfolioSummary?.option_market_value ?? 0))}</div>
-                  {portfolioSummary?.option_market_value != null && portfolioSummary.option_market_value > 0 && (
-                    <div className="text-[9px] mt-0.5" style={{ color: '#475569' }}>incl. {fmt(portfolioSummary.option_market_value)} options</div>
-                  )}
-                </div>
-                <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Total Invested</div>
-                  <div className="text-base font-bold" style={{ color: '#a78bfa' }}>{fmt(totalCostBasis)}</div>
-                </div>
-                <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Daily P&L</div>
-                  <div className={`text-base font-bold ${totalDailyPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtPL(totalDailyPL)}</div>
-                </div>
-                <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="text-[10px] text-crypto-silver uppercase tracking-wider mb-1">Total P&L</div>
-                  <div className={`text-base font-bold ${totalOverallPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    <span>{fmtPL(totalOverallPL)}</span>
-                    <span className="text-[10px] ml-1 opacity-70">{totalCostBasis > 0 ? `(${totalOverallPL >= 0 ? '+' : ''}${((totalOverallPL / totalCostBasis) * 100).toFixed(1)}%)` : ''}</span>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-          )}
 
           {/* ── Open Options — live Tradier valuation, shown above Performance Scorecard ── */}
           {portfolioView !== 'trades' && optionOpenPositions.length > 0 && (() => {
@@ -2494,7 +2490,7 @@ export default function StocksPortfolioPage() {
               <span className="text-sm font-semibold text-white">Trading Journal</span>
               {(tradeGroups.length > 0 || tradeHistory.length > 0 || partiallyClosedPositions.length > 0 || fullyClosedPositions.length > 0) && (
                 <span className="text-xs ml-1" style={{ color: '#64748b' }}>
-                  {(() => { const n = tradeGroups.length || (partiallyClosedPositions.length + fullyClosedPositions.length); return `${n} position${n !== 1 ? 's' : ''}`; })()}
+                  {(() => { const n = tradeGroups.length || (partiallyClosedPositions.length + fullyClosedPositions.length); return `${n} closed position${n !== 1 ? 's' : ''}`; })()}
                 </span>
               )}
               {tradeSummary && (

@@ -573,7 +573,7 @@ export default function CaelynTerminalPage() {
         {view === 'terminal' ? (
           <div style={{ display:'flex', alignItems:'center', gap:24 }}>
             <div style={{ textAlign:'center', flexShrink:0 }}>
-              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
+              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(coerce(p.value) + ((d as any)?.portfolio_summary?.option_market_value ?? 0))}</div>
               <div style={{ fontSize:10, color: ph ? C.dim : pctClr(p.change_today) }}>
                 {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
               </div>
@@ -607,7 +607,7 @@ export default function CaelynTerminalPage() {
         ) : (
           <div style={{ display:'flex', alignItems:'center', gap:24 }}>
             <div style={{ textAlign:'center', flexShrink:0 }}>
-              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(p.value)}</div>
+              <div style={{ fontSize:16, fontWeight:900, color:C.text }}>{ph ? '—' : fmt$(coerce(p.value) + ((d as any)?.portfolio_summary?.option_market_value ?? 0))}</div>
               <div style={{ fontSize:10, color: ph ? C.dim : pctClr(p.change_today) }}>
                 {ph ? '— today' : `${sign(p.change_today)}${fmt$(p.change_today)} today`}
               </div>
