@@ -2263,81 +2263,98 @@ export default function StocksPortfolioPage() {
                     ⚠ Options valuation is partial or estimated — some positions use cost basis as fallback.
                   </div>
                 )}
-                {/* Option cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {optionOpenPositions.map((p: any) => {
-                    const occKey     = p.occ_key ?? p.option_symbol ?? p.display_symbol ?? ((p.underlying ?? p.ticker ?? '') + (p.expiration_date ?? ''));
-                    const und        = (p.underlying ?? p.ticker ?? '').toUpperCase();
-                    const ot         = (p.option_type ?? p.call_put ?? '').toUpperCase();
-                    const typeClr    = (ot === 'C' || ot === 'CALL') ? '#4ade80' : '#f87171';
-                    const typeLabel  = ot === 'C' || ot === 'CALL' ? 'CALL' : ot === 'P' || ot === 'PUT' ? 'PUT' : ot || '—';
-                    const exp        = p.expiration_date ?? p.expiration ?? null;
-                    const expFmt     = exp ? new Date(exp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : null;
-                    const strike     = p.strike != null ? `$${Number(p.strike).toFixed(2)}` : null;
-                    const displayStr = [und, expFmt, strike, typeLabel === 'CALL' ? 'Call' : typeLabel === 'PUT' ? 'Put' : null].filter(Boolean).join(' ');
-                    const contracts  = p.contracts_open ?? p.contracts ?? 0;
-                    const avgPrem    = p.avg_premium ?? p.avg_entry_premium ?? 0;
-                    const costBasis  = p.cost_basis ?? (contracts * avgPrem * 100);
-                    const markPrice  = p.mark_price ?? p.mark ?? null;
-                    const markSrc    = p.mark_source ?? null;
-                    const markUnavail = markSrc === 'unavailable' || p.quote_unavailable_reason != null;
-                    const markDisplay = markUnavail || markPrice == null ? '—' : `$${Number(markPrice).toFixed(4)}`;
-                    const mktVal     = p.market_value ?? null;
-                    const uPnl       = p.unrealized_pnl ?? null;
-                    const uPct       = p.unrealized_pnl_pct ?? null;
-                    const isWin      = uPnl != null && (uPnl as number) >= 0;
-                    const pnlClr     = isWin ? '#4ade80' : '#f87171';
-                    const entryDate  = p.entry_date ?? p.first_entry_date ?? null;
-                    const unavailReason = p.quote_unavailable_reason ?? null;
-                    return (
-                      <div key={occKey} className="rounded-xl p-4 flex flex-col gap-3"
-                        style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${typeClr}` }}>
-                        {/* Contract header */}
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xl font-bold text-white tracking-tight">{und}</span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
-                          </div>
-                          <div className="text-xs mt-1" style={{ color: '#64748b' }}>{displayStr}</div>
-                          {entryDate && <div className="text-[10px] mt-0.5" style={{ color: '#475569' }}>opened {entryDate}</div>}
-                        </div>
-                        {/* Position stats */}
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          {([
-                            { label: 'Contracts',   val: String(contracts),                                                     clr: '#e2e8f0' },
-                            { label: 'Avg Premium', val: avgPrem > 0 ? `$${Number(avgPrem).toFixed(4)}` : '—',                  clr: '#e2e8f0', mono: true },
-                            { label: 'Cost Basis',  val: costBasis > 0 ? `$${Math.round(costBasis as number).toLocaleString()}` : '—', clr: '#a78bfa', mono: true },
-                          ] as { label: string; val: string; clr: string; mono?: boolean }[]).map(({ label, val, clr, mono }) => (
-                            <div key={label} className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                              <span className="text-[10px]" style={{ color: '#64748b' }}>{label}</span>
-                              <span className={`text-xs ${mono ? 'font-mono' : 'font-semibold'}`} style={{ color: clr }}>{val}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {/* Live valuation row */}
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <span className="text-[10px]" style={{ color: '#64748b' }}>Mark</span>
-                            <span className="font-mono text-xs" style={{ color: markUnavail ? '#475569' : '#5cc8f0' }} title={unavailReason ?? undefined}>{markDisplay}</span>
-                          </div>
-                          <div className="flex flex-col px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <span className="text-[10px]" style={{ color: '#64748b' }}>Mkt Value</span>
-                            <span className="font-mono text-xs" style={{ color: mktVal != null ? '#5cc8f0' : '#475569' }}>
+                {/* Options list table */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="w-full text-sm">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#08090e' }}>
+                        <th className="text-left pb-2 pl-1 pr-4 min-w-[160px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Contract</th>
+                        <th className="text-left pb-2 px-3 min-w-[90px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Opened</th>
+                        <th className="text-right pb-2 px-3 min-w-[60px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Contracts</th>
+                        <th className="text-right pb-2 px-3 min-w-[80px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Avg Prem</th>
+                        <th className="text-right pb-2 px-3 min-w-[80px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Cost Basis</th>
+                        <th className="text-right pb-2 px-3 min-w-[70px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Mark</th>
+                        <th className="text-right pb-2 px-3 min-w-[80px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Mkt Value</th>
+                        <th className="text-right pb-2 pl-3 min-w-[100px]" style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600 }}>Unrealized</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {optionOpenPositions.map((p: any) => {
+                        const occKey      = p.occ_key ?? p.option_symbol ?? p.display_symbol ?? ((p.underlying ?? p.ticker ?? '') + (p.expiration_date ?? ''));
+                        const und         = (p.underlying ?? p.ticker ?? '').toUpperCase();
+                        const ot          = (p.option_type ?? p.call_put ?? '').toUpperCase();
+                        const typeClr     = (ot === 'C' || ot === 'CALL') ? '#4ade80' : '#f87171';
+                        const typeLabel   = ot === 'C' || ot === 'CALL' ? 'Call' : ot === 'P' || ot === 'PUT' ? 'Put' : ot || '—';
+                        const exp         = p.expiration_date ?? p.expiration ?? null;
+                        const expFmt      = exp ? new Date(exp).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : null;
+                        const strike      = p.strike != null ? `$${Number(p.strike).toFixed(2)}` : null;
+                        const contracts   = p.contracts_open ?? p.contracts ?? 0;
+                        const avgPrem     = p.avg_premium ?? p.avg_entry_premium ?? 0;
+                        const costBasis   = p.cost_basis ?? (contracts * avgPrem * 100);
+                        const markPrice   = p.mark_price ?? p.mark ?? null;
+                        const markSrc     = p.mark_source ?? null;
+                        const markUnavail = markSrc === 'unavailable' || p.quote_unavailable_reason != null;
+                        const markDisplay = markUnavail || markPrice == null ? '—' : `$${Number(markPrice).toFixed(4)}`;
+                        const mktVal      = p.market_value ?? null;
+                        const uPnl        = p.unrealized_pnl ?? null;
+                        const uPct        = p.unrealized_pnl_pct ?? null;
+                        const isWin       = uPnl != null && (uPnl as number) >= 0;
+                        const pnlClr      = isWin ? '#4ade80' : '#f87171';
+                        const entryDate   = p.entry_date ?? p.first_entry_date ?? null;
+                        const unavailReason = p.quote_unavailable_reason ?? null;
+                        return (
+                          <tr key={occKey} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                            className="hover:bg-white/[0.02] transition-colors">
+                            {/* Contract — ticker + type badge + expiry + strike */}
+                            <td className="py-2.5 pl-1 pr-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-white" style={{ borderLeft: `2px solid ${typeClr}`, paddingLeft: 6 }}>{und}</span>
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: `${typeClr}18`, color: typeClr, border: `1px solid ${typeClr}40` }}>{typeLabel}</span>
+                              </div>
+                              <div className="text-[10px] mt-0.5" style={{ color: '#64748b', paddingLeft: 8 }}>
+                                {[expFmt, strike].filter(Boolean).join(' · ')}
+                              </div>
+                            </td>
+                            {/* Opened */}
+                            <td className="py-2.5 px-3 text-[11px]" style={{ color: '#475569' }}>
+                              {entryDate ?? '—'}
+                            </td>
+                            {/* Contracts */}
+                            <td className="text-right py-2.5 px-3 font-medium text-white">
+                              {contracts}
+                            </td>
+                            {/* Avg Premium */}
+                            <td className="text-right py-2.5 px-3 font-mono text-xs" style={{ color: '#e2e8f0' }}>
+                              {avgPrem > 0 ? `$${Number(avgPrem).toFixed(4)}` : '—'}
+                            </td>
+                            {/* Cost Basis */}
+                            <td className="text-right py-2.5 px-3 font-mono text-xs" style={{ color: '#a78bfa' }}>
+                              {costBasis > 0 ? `$${Math.round(costBasis as number).toLocaleString()}` : '—'}
+                            </td>
+                            {/* Mark */}
+                            <td className="text-right py-2.5 px-3 font-mono text-xs" style={{ color: markUnavail ? '#475569' : '#5cc8f0' }} title={unavailReason ?? undefined}>
+                              {markDisplay}
+                            </td>
+                            {/* Mkt Value */}
+                            <td className="text-right py-2.5 px-3 font-mono text-xs" style={{ color: mktVal != null ? '#5cc8f0' : '#475569' }}>
                               {mktVal != null ? `$${Math.round(mktVal as number).toLocaleString()}` : '—'}
-                            </span>
-                          </div>
-                          <div className="flex flex-col px-2 py-1.5 rounded-lg"
-                            style={{ background: uPnl != null ? (isWin ? 'rgba(74,222,128,0.05)' : 'rgba(248,113,113,0.05)') : 'rgba(255,255,255,0.03)', border: `1px solid ${uPnl != null ? (isWin ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)') : 'rgba(255,255,255,0.04)'}` }}>
-                            <span className="text-[10px]" style={{ color: '#64748b' }}>Unrealized</span>
-                            <span className="font-mono text-xs font-semibold" style={{ color: uPnl != null ? pnlClr : '#475569' }}>
-                              {uPnl != null ? `${isWin ? '+' : '-'}$${Math.abs(Math.round(uPnl as number)).toLocaleString()}` : '—'}
-                              {uPct != null && <span className="text-[9px] ml-1 opacity-80">{(uPct as number) >= 0 ? '+' : ''}{(uPct as number).toFixed(1)}%</span>}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                            </td>
+                            {/* Unrealized P&L */}
+                            <td className="text-right py-2.5 pl-3 font-mono text-xs font-semibold" style={{ color: uPnl != null ? pnlClr : '#475569' }}>
+                              {uPnl != null ? (
+                                <>
+                                  <div>{isWin ? '+' : '-'}${Math.abs(Math.round(uPnl as number)).toLocaleString()}</div>
+                                  {uPct != null && (
+                                    <div className="text-[10px] opacity-70">{(uPct as number) >= 0 ? '+' : ''}{(uPct as number).toFixed(1)}%</div>
+                                  )}
+                                </>
+                              ) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </GlassCard>
             );
