@@ -1,0 +1,150 @@
+Social X displayed on my frontend says updated 4 days ago. Remember, this should update(new Grok/XAI request and apply custom logic and sort to display on the frontend caelynai ui) every day at 10 am central time (except saturdays). This should be refreshed every day besides saturday.
+
+13 hours ago
+
+Show less
+
+Scheduling daily Social X data refresh
+Let me find the Social X / Grok/XAI code to understand the current update mechanism.
+
+
+6 actions
+Now I have a clear picture. The scheduler currently runs the Social X/Grok scan at midnight ET, Mon–Fri only. The user wants it at 10 AM Central = 11 AM Eastern, every day except Saturday (so Sun–Fri).
+
+Let me check the x_consensus_cache to confirm it's the right refresh path, and make the scheduler fix simultaneously.
+
+
+3 actions
+Good — the cache module already guards XAI calls to the 08:00–20:00 Chicago window, so running the scheduler trigger at 10 AM Central is perfect. Current schedule fires at midnight ET Mon–Fri. I need to:
+
+Add a _not_saturday predicate (covers Sun + Mon–Fri = every day except Sat)
+Move social_scan → 11:00 AM ET (= 10:00 AM Central)
+Move social_warm → 11:45 AM ET
+
+4 actions
+Now update the _SLOTS list to use the new predicate and 11:00/11:45 AM ET times.
+
+
+2 actions
+Good. Now let me verify the final state of the slots and restart the app, and also check if there's a manual trigger endpoint for an immediate refresh.
+
+
+3 actions
+Let me check if there's a manual social refresh endpoint in main.py, then restart to pick up the scheduler change.
+
+
+3 actions
+There's already a manual refresh endpoint at POST /api/social/x-dashboard/refresh. Let me restart to pick up the scheduler change, then trigger an immediate refresh to fix the stale data right now.
+
+
+4 actions
+The refresh is accepted and running in the background right now (confirmed accepted: true, refresh_in_progress: true). The stale data from May 14 will be updated shortly.
+
+Let me write the commit message.
+
+
+3 actions
+Done. Here's what changed and why:
+
+Root cause: The Social X refresh was only scheduled to run Monday–Friday at midnight ET — not daily and not at 10 AM Central.
+
+What was fixed in screener_hub_scheduler.py:
+
+Before	After
+Days	Mon–Fri only	Every day except Saturday (Sun–Fri)
+Time	12:00 AM Eastern	11:00 AM Eastern = 10:00 AM Central
+The scheduler now uses a _not_saturday predicate so Sunday is included. The fundamentals warm-up that follows the scan also moves to 11:45 AM ET.
+
+Right now: A manual refresh was triggered immediately — the stale May 14 snapshot is being replaced with a fresh Grok/XAI call in the background. The Social X page should reflect today's data within a few minutes.
+
+Going forward, the scan runs automatically every morning at 10 AM Central, skipping only Saturdays.
+
+
+Checkpoint made
+13 hours ago
+
+Worked for 2 minutes
+now i want to make sure the time it automatically refreshes/requests the grok/xai request and sorts the data is the same time the cache updats too (maybe 5 minutes later). I want these aligned because I want the fresh results right when they're available.
+
+13 hours ago
+
+Show less
+
+Planning cache update timing (6 seconds)
+Let me look at how the cache refresh and the _run_social_scan are connected — specifically whether the x_consensus_cache has its own timer that could be out of sync with the scheduler.
+
+
+3 actions
+Let me read the key parts — the _run_refresh function and how rebuild_universe("social") connects to the cache.
+
+
+3 actions
+Let me read the _run_refresh function and rebuild_universe for social to understand exactly where the disconnect is.
+
+
+4 actions
+Now I understand the problem clearly. _run_social_scan only rebuilds the social universe list from the existing cached snapshot — it never actually calls Grok/XAI. The real Grok/XAI call (_run_refresh) is demand-driven (triggers when the cache goes stale on a request). So the two are completely decoupled.
+
+The fix: make _run_social_scan first await the Grok/XAI refresh (_run_refresh), then immediately rebuild the universe from the fresh data. Let me check how data_service is accessed from the scheduler context.
+
+
+3 actions
+data_service is a module-level global in main.py. Let me see how the scheduler loop is started and how I can pass data_service into _run_social_scan.
+
+
+5 actions
+I need to see what's happening at line 178-219 in main.py — there's already a call to _run_refresh there that might be the background loop. Then I'll have the full picture.
+
+
+2 actions
+Now I have the complete picture. There are two separate loops running independently:
+
+_x_consensus_loop in main.py — fires the actual Grok/XAI call (_run_refresh) at noon Chicago every day (except Saturday)
+_run_social_scan in the screener scheduler — fires rebuild_universe("social") at 10 AM CT — but this only reads the existing disk cache to build the social universe list; it doesn't call Grok
+So right now: Grok fires at noon, social universe rebuild fires at 10 AM using yesterday's stale cache. They're 2 hours apart and backwards.
+
+The fix:
+
+Move _x_consensus_loop from noon → 10:00 AM CT
+Move _run_social_scan to 10:10 AM CT (11:10 AM ET) — 10 minutes after Grok fires, so it always uses the freshly written cache
+
+2 actions
+Now update the scheduler to offset social_scan to 11:10 AM ET (10:10 AM CT) — 10 minutes after Grok fires — and update the startup comment in main.py.
+
+
+4 actions
+Now update the startup comment in main.py to match the new schedule, then restart.
+
+
+6 actions
+The log file is stale — it's showing output from before the restart. Let me refresh the logs to get the current state.
+
+
+2 actions
+Let me check the actual log file for the new startup messages.
+
+
+2 actions
+The logs confirm it's working correctly:
+
+[X_CONSENSUS_LOOP] Started — scheduled once daily at 10:00 AM America/Chicago
+[X_CONSENSUS_LOOP] Next refresh: 2026-05-19T10:00:00-05:00 (sleeping 10.3h)
+
+
+3 actions
+Done. Here's what was actually happening and what changed:
+
+The problem — two loops running independently and out of sync:
+
+Loop	What it does	Old time
+_x_consensus_loop (main.py)	Makes the actual Grok/XAI call and writes the fresh cache	Noon CT
+_run_social_scan (scheduler)	Rebuilds the social universe list from the cache	10:00 AM CT
+The social universe rebuild was firing 2 hours before the Grok call, meaning it always read yesterday's stale data. The fresh Grok cache at noon had no follow-up rebuild to use it.
+
+The fix — both loops now work in sequence:
+
+Time (CT)	What fires
+10:00 AM	Grok/XAI call — batches all accounts, writes fresh cache to disk
+10:10 AM	Social universe rebuild — reads the freshly written cache (10 min gap gives Grok time to finish its ~5-7 min call)
+10:45 AM	Social fundamentals warm — runs on the fresh universe
+Saturday is skipped on both. The 10-minute offset is intentional — it's enough buffer for the Grok batch calls to complete before the rebuild reads the cache.

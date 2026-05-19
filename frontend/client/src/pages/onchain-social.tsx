@@ -2073,10 +2073,15 @@ export default function OnchainSocialPage() {
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
     queryKey: ['/api/social/x-dashboard'],
     queryFn: () => fetch('/api/social/x-dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    // staleTime: 0 — always fetch fresh data on page visit so enriched
-    // market data (market_cap, volume, price_change_*) is never stale.
+    // staleTime: 0 — always fetch fresh on mount/focus so users never see stale data.
+    // gcTime: short so in-memory cache is discarded quickly and won't be served stale
+    // when the user returns to the page after the backend's 10 AM CT refresh.
+    // refetchInterval: 15 min — auto-polls so fresh Grok/XAI data surfaces within
+    // 15 minutes of the daily 10 AM CT backend refresh, even when page stays open.
     staleTime: 0,
-    gcTime: 30 * 60_000,
+    gcTime: 5 * 60_000,
+    refetchInterval: 15 * 60_000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 
