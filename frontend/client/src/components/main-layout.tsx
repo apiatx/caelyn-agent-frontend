@@ -25,7 +25,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStateRef = useRef<{ startX: number; startW: number; hasDragged: boolean } | null>(null);
+  const dragStateRef = useRef<{ startX: number; startW: number; hasDragged: boolean; lastX: number } | null>(null);
 
   const isCollapsed = width < SNAP_THRESHOLD;
 
@@ -51,7 +51,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const beginDrag = useCallback((clientX: number) => {
-    dragStateRef.current = { startX: clientX, startW: width, hasDragged: false };
+    dragStateRef.current = { startX: clientX, startW: width, hasDragged: false, lastX: clientX };
     setIsDragging(true);
   }, [width]);
 
@@ -63,6 +63,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       if (!s) return;
       const delta = Math.abs(e.clientX - s.startX);
       if (delta > DRAG_THRESHOLD) s.hasDragged = true;
+      s.lastX = e.clientX;
       if (s.hasDragged) {
         const next = Math.max(MIN_DRAG, Math.min(MAX_DRAG, s.startW + (e.clientX - s.startX)));
         setWidth(next);
@@ -73,16 +74,21 @@ export function MainLayout({ children }: MainLayoutProps) {
       const s = dragStateRef.current;
       setIsDragging(false);
       dragStateRef.current = null;
-      if (s && !s.hasDragged) {
+      if (!s) return;
+      if (!s.hasDragged) {
         // Pure click on the drag handle → toggle
-        setWidth(prev => {
-          const next = prev < SNAP_THRESHOLD ? EXPANDED_W : COLLAPSED_W;
+        setWidth(() => {
+          const next = s.startW < SNAP_THRESHOLD ? EXPANDED_W : COLLAPSED_W;
           try { localStorage.setItem('sidebar_width', String(next)); } catch {}
           return next;
         });
       } else {
-        // Real drag → snap to nearest
-        setWidth(prev => snapWidth(prev));
+        // Real drag → snap based on direction of movement, not final position.
+        // Any leftward movement collapses; any rightward movement expands.
+        const direction = s.lastX - s.startX;
+        const next = direction < 0 ? COLLAPSED_W : EXPANDED_W;
+        try { localStorage.setItem('sidebar_width', String(next)); } catch {}
+        setWidth(next);
       }
     };
 
