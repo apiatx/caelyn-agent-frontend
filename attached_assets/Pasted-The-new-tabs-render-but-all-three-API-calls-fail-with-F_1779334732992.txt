@@ -1,0 +1,60 @@
+The new tabs render, but all three API calls fail with:
+
+Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+This means the frontend is receiving HTML instead of JSON. Do not change the UI yet. Debug the proxy/API path first.
+
+Need you to verify the Express proxy routes are actually returning JSON.
+
+Check these from the frontend Replit shell, not the browser:
+
+curl -i http://localhost:<frontend-port>/api/strategy/vix-risk-regime
+curl -i http://localhost:<frontend-port>/api/strategy/weekly-price-movements
+curl -i http://localhost:<frontend-port>/api/strategy/ten-year-spx
+
+For each one, confirm:
+- HTTP status
+- content-type
+- first 200 characters of response body
+- whether it is JSON or HTML
+
+Then check the backend directly:
+
+curl -i <AGENT_BACKEND_URL>/api/strategy/vix-risk-regime
+curl -i <AGENT_BACKEND_URL>/api/strategy/weekly-price-movements
+curl -i <AGENT_BACKEND_URL>/api/strategy/ten-year-spx
+
+If backend direct returns JSON but frontend proxy returns HTML, fix routes.ts proxy registration.
+
+Likely fix areas:
+1. The new Express routes may have been added after the Vite fallback/static handler, so they never execute.
+2. The frontend fetch path may not match the Express route exactly.
+3. The route may need to be added in the same section/pattern as existing /api/strategy/smart-options.
+4. The proxy may be forwarding to the wrong backend base URL.
+5. The proxy may be swallowing backend errors and returning the frontend index.html.
+
+Do not parse response.json() blindly. Add defensive fetch handling:
+- read response.text()
+- if !response.ok, throw an error with status and first 200 chars
+- check content-type includes application/json before JSON.parse
+- if HTML is returned, show a useful proxy error instead of crashing JSON parsing
+
+Expected frontend routes:
+GET /api/strategy/vix-risk-regime
+GET /api/strategy/weekly-price-movements
+GET /api/strategy/ten-year-spx
+
+Expected backend routes:
+GET ${AGENT_BACKEND_URL}/api/strategy/vix-risk-regime
+GET ${AGENT_BACKEND_URL}/api/strategy/weekly-price-movements
+GET ${AGENT_BACKEND_URL}/api/strategy/ten-year-spx
+
+Do not touch backend unless direct backend curl fails.
+
+Final report must include:
+- direct backend curl result for each endpoint
+- frontend proxy curl result for each endpoint
+- exact reason HTML was returned
+- exact file/line fixed
+- confirmation all three tabs now receive application/json
+- browser console confirmation
