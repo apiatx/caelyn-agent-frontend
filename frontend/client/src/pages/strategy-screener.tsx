@@ -5,6 +5,12 @@ import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screene
 import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ThematicSection } from '@/components/ui/ticker-thematic';
+import {
+  ComposedChart, LineChart, BarChart,
+  Line, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
+  ReferenceLine, Cell,
+} from 'recharts';
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -1269,10 +1275,30 @@ function StrategyScreenerInner() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Shared helpers for the three new strategy tabs
+   Shared constants + helpers for the three new strategy tabs
    ═══════════════════════════════════════════════════════════════════ */
 const STRAT_BACKEND = 'https://fast-api-server-aidanpilon.replit.app';
 const STRAT_KEY     = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+const CC = {
+  spx:   '#22c55e',
+  vix:   '#f87171',
+  yield: '#fbbf24',
+  c7:    '#38bdf8',
+  c30:   '#a78bfa',
+  c63:   '#fb923c',
+};
+
+const TF_ROWS: Record<string, number> = { '7D': 10, '90D': 66, '1Y': 252, '5Y': 9999 };
+
+const TT: CSSProperties = {
+  background: '#07090f',
+  border: '1px solid #1c2a45',
+  borderRadius: 6,
+  fontFamily: 'monospace',
+  fontSize: 10,
+  color: '#e2e8f0',
+};
 
 const WEEKLY_PROMPT =
   'Analyze the Weekly Price Movements scorecard. Compare 5-year, 1-year, past-quarter, and 7-day behavior. ' +
@@ -1286,11 +1312,19 @@ const SCENARIO_LABELS: Record<string, { label: string; icon: string; color: stri
   green_monday_to_friday: { label: 'Up Monday → Friday',   icon: '▲', color: C.green },
 };
 
+const SCENARIO_SHORT: Record<string, string> = {
+  red_friday_to_monday:   'Dn Fri→Mon',
+  green_friday_to_monday: 'Up Fri→Mon',
+  red_monday_to_friday:   'Dn Mon→Fri',
+  green_monday_to_friday: 'Up Mon→Fri',
+};
+
+/* ── Pure helpers ────────────────────────────────────────────────── */
 function sgn(v?: number | null): string {
   return v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 }
 function sgnBps(v?: number | null): string {
-  return v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)} bps`;
+  return v == null ? '—' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(1)} bps`;
 }
 function fmtCorr(v?: number | null): string {
   return v == null ? '—' : v.toFixed(3);
@@ -1300,10 +1334,10 @@ function fmtPrice2(v?: number | null): string {
   return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 function fmtNum2(v?: number | null): string {
-  return v == null ? '—' : v.toFixed(2);
+  return v == null ? '—' : Number(v).toFixed(2);
 }
 function fmtYield(v?: number | null): string {
-  return v == null ? '—' : `${v.toFixed(3)}%`;
+  return v == null ? '—' : `${Number(v).toFixed(3)}%`;
 }
 function fmtTs2(d?: string | null): string {
   if (!d) return '—';
@@ -1333,7 +1367,7 @@ function regimeColor(key?: string): string {
   if (key === 'yields_rising_spx_falling')  return C.red;
   if (key === 'yields_falling_spx_rising')  return C.blue;
   if (key === 'yields_falling_spx_falling') return C.amber;
-  return C.dim;
+  return C.muted;
 }
 function confColor(label?: string): string {
   const l = (label ?? '').toLowerCase();
@@ -1341,7 +1375,28 @@ function confColor(label?: string): string {
   if (l.includes('medium')) return C.amber;
   return C.dim;
 }
+function fmtProb(v?: number | null): string {
+  if (v == null) return '—';
+  let n = Number(v);
+  if (n > 100 && n <= 10000) n = n / 100;
+  return `${n.toFixed(1)}%`;
+}
+function fmtProbNum(v?: number | null): number | null {
+  if (v == null) return null;
+  let n = Number(v);
+  if (n > 100 && n <= 10000) n = n / 100;
+  return n;
+}
+function fmtChartDate(d: string, numRows: number): string {
+  if (!d || d.length < 10) return d ?? '';
+  const [y, m, day] = d.split('-');
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon = MONTHS[parseInt(m) - 1] ?? m;
+  if (numRows > 200) return `${mon} '${y.slice(2)}`;
+  return `${mon} ${day}`;
+}
 
+/* ── UI sub-components ───────────────────────────────────────────── */
 function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: `1px solid ${C.borderFaint}` }}>
@@ -1350,7 +1405,6 @@ function StatRow({ label, value, color }: { label: string; value: string; color?
     </div>
   );
 }
-
 function MetricPair({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ padding: '4px 0' }}>
@@ -1359,7 +1413,6 @@ function MetricPair({ label, value, color }: { label: string; value: string; col
     </div>
   );
 }
-
 function SCard({ title, accent, children }: { title: string; accent?: string; children: ReactNode }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', position: 'relative', overflow: 'hidden', marginBottom: 16 }}>
@@ -1371,17 +1424,15 @@ function SCard({ title, accent, children }: { title: string; accent?: string; ch
     </div>
   );
 }
-
 function FreshWarn({ warning }: { warning?: string | null }) {
   if (!warning) return null;
   return (
-    <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
       <AlertCircle size={13} style={{ color: C.amber, flexShrink: 0 }} />
       <span style={{ fontFamily: C.sans, fontSize: 12, color: C.amber }}>{warning}</span>
     </div>
   );
 }
-
 function SrcFooter({ generatedAt, cacheTtl, sources }: { generatedAt?: string; cacheTtl?: number; sources?: Record<string, unknown> }) {
   if (!generatedAt && !sources) return null;
   return (
@@ -1400,65 +1451,265 @@ function SrcFooter({ generatedAt, cacheTtl, sources }: { generatedAt?: string; c
   );
 }
 
+function HeroStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div style={{ flex: '1 1 auto', minWidth: 100 }}>
+      <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: C.font, fontSize: 18, fontWeight: 700, color: color ?? C.bright, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontFamily: C.font, fontSize: 10, color: C.dim, marginTop: 3 }}>{sub}</div>}
+    </div>
+  );
+}
+function HeroStrip({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 22px', marginBottom: 16 }}>
+      {children}
+    </div>
+  );
+}
+function ChartBox({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', marginBottom: 14 }}>
+      <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: subtitle ? 2 : 10 }}>
+        {title}
+      </div>
+      {subtitle && <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, marginBottom: 10 }}>{subtitle}</div>}
+      {children}
+    </div>
+  );
+}
+function TfBtn({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const opts = ['7D', '90D', '1Y', '5Y'] as const;
+  return (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+      {opts.map(t => {
+        const active = value === t;
+        return (
+          <button key={t} onClick={() => onChange(t)} style={{
+            padding: '4px 13px', borderRadius: 5, cursor: 'pointer',
+            fontFamily: C.font, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+            background: active ? `${C.indigo}1a` : 'transparent',
+            color: active ? C.indigoFg : C.dim,
+            border: `1px solid ${active ? `${C.indigo}55` : C.border}`,
+            transition: 'all 0.12s',
+          }}>
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+function CorrelationEmptyMsg() {
+  return (
+    <div style={{ textAlign: 'center', padding: '32px 0', color: C.dim, fontFamily: C.sans, fontSize: 12 }}>
+      Not enough data for rolling correlation in this window.
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════
-   Tab: VIX Risk Regime
+   Tab 1: VIX Risk Regime
    ═══════════════════════════════════════════════════════════════════ */
 function VixRiskRegimeTab() {
+  const [tf, setTf] = useState<string>('1Y');
+
   const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: ['strategy-vix-risk-regime'],
-    queryFn:  () => fetch('/api/strategy/vix-risk-regime').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    queryFn: () => fetch('/api/strategy/vix-risk-regime').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
-    gcTime:    15 * 60_000,
+    gcTime: 15 * 60_000,
     retry: 1,
   });
 
+  const allTs: any[] = data?.chart_data?.vix_spx_timeseries ?? [];
+  const nRows = tf === '5Y' ? allTs.length : TF_ROWS[tf] ?? 252;
+  const ts = allTs.slice(-nRows);
+  const corrTs = ts.filter((r: any) => r.rolling_corr_7d != null || r.rolling_corr_30d != null || r.rolling_corr_63d != null);
+  const last30 = ts.slice(-30);
+
+  const snap    = data?.current_market_snapshot ?? {};
+  const sig     = data?.vix_regime_signal ?? {};
+  const corr    = data?.vix_spx_correlation ?? {};
+  const windows = data?.historical_windows ?? {};
+  const sources = data?.data_sources ?? {};
+  const warnClr = warnLevelColor(sig.warning_level);
+
   useSetPageContext(
     data
-      ? `[Page: VIX Risk Regime]\nvix_zone: ${data.vix_zone ?? ''}\nrisk_regime: ${data.risk_regime ?? ''}\n` +
-        JSON.stringify({ signal: data.vix_regime_signal, snapshot: data.current_market_snapshot })
+      ? `[Page: VIX Risk Regime | TF: ${tf}]\nvix: ${snap.vix} | zone: ${data.vix_zone} | regime: ${data.risk_regime}\n` +
+        `signal: ${sig.signal_title} | 30D corr: ${corr.rolling_corr_30d}\n` +
+        `rows visible: ${ts.length} (${ts[0]?.date ?? ''} → ${ts[ts.length - 1]?.date ?? ''})\n` +
+        JSON.stringify({ signal: sig, snapshot: snap, correlation: corr })
       : null,
-    [data],
+    [data, tf],
   );
 
   if (isLoading && !data) return <LoadingState />;
   if (error && !data) return <ErrorState message={`Could not load VIX Risk Regime: ${(error as Error).message}`} onRetry={() => refetch()} />;
   if (!data) return null;
 
-  const snap    = data.current_market_snapshot ?? {};
-  const sig     = data.vix_regime_signal ?? {};
-  const corr    = data.vix_spx_correlation ?? {};
-  const windows = data.historical_windows ?? {};
-  const sources = data.data_sources ?? {};
-  const warnClr = warnLevelColor(sig.warning_level);
-  const spxClr  = (snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red;
-  const vixClr  = (snap.vix_change_pct ?? 0) >= 0 ? C.red   : C.green;
-
   return (
-    <div style={{ padding: '28px 0', minHeight: 400 }}>
+    <div style={{ padding: '24px 0', minHeight: 400 }}>
       <FreshWarn warning={sources.freshness_warning as string} />
 
-      {/* Current Market Snapshot */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 4 }}>
-        <SCard title="S&P 500" accent={spxClr}>
-          <StatRow label="Price"      value={fmtPrice2(snap.spx_price)} />
-          <StatRow label="Change"     value={sgn(snap.spx_change_pct)} color={spxClr} />
-          {snap.vix_signal && <StatRow label="VIX Signal" value={snap.vix_signal} />}
-        </SCard>
-        <SCard title="VIX" accent={vixClr}>
-          <StatRow label="VIX"    value={fmtNum2(snap.vix)} />
-          <StatRow label="Change" value={sgn(snap.vix_change_pct)} color={vixClr} />
-          <StatRow label="Zone"   value={data.vix_zone ?? '—'} />
-        </SCard>
-        <SCard title="Macro" accent={C.blue}>
-          <StatRow label="10Y Yield" value={fmtYield(snap.us_10y)} />
-          <StatRow label="DXY"       value={fmtNum2(snap.dxy)} />
-          <StatRow label="DXY Chg"   value={sgn(snap.dxy_change_pct)} color={(snap.dxy_change_pct ?? 0) >= 0 ? C.green : C.red} />
-        </SCard>
-      </div>
+      {/* Hero strip */}
+      <HeroStrip>
+        <HeroStat
+          label="VIX"
+          value={fmtNum2(snap.vix)}
+          sub={sgn(snap.vix_change_pct) + ' today'}
+          color={(snap.vix ?? 0) >= 30 ? C.red : (snap.vix ?? 0) >= 20 ? C.amber : C.green}
+        />
+        <HeroStat label="VIX Zone" value={data.vix_zone ?? '—'} color={warnClr} />
+        <HeroStat label="Risk Regime" value={data.risk_regime ?? '—'} color={warnClr} />
+        <HeroStat
+          label="S&P 500"
+          value={fmtPrice2(snap.spx_price)}
+          sub={sgn(snap.spx_change_pct) + ' today'}
+          color={(snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red}
+        />
+        <HeroStat
+          label="30D Corr"
+          value={fmtCorr(corr.rolling_corr_30d)}
+          sub={(corr.rolling_corr_30d ?? 0) < 0 ? 'Inverse relationship' : 'Same-direction'}
+          color={(corr.rolling_corr_30d ?? 0) < 0 ? C.amber : C.green}
+        />
+        {sig.signal_title && (
+          <div style={{ padding: '3px 10px', background: `${warnClr}14`, border: `1px solid ${warnClr}40`, borderRadius: 5, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase', alignSelf: 'center', letterSpacing: '0.07em' }}>
+            {sig.signal_title}
+          </div>
+        )}
+      </HeroStrip>
 
-      {/* Signal Block */}
+      {/* Timeframe toggle */}
+      <TfBtn value={tf} onChange={setTf} />
+
+      {/* VIX vs SPX dual-axis chart */}
+      <ChartBox title="VIX vs S&P 500" subtitle="Left axis: SPX price · Right axis: VIX level · Horizontal lines at 20, 30, 40">
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={ts} margin={{ top: 4, right: 52, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              tickFormatter={d => fmtChartDate(d, ts.length)}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              yAxisId="spx"
+              orientation="left"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              width={52}
+              domain={['auto', 'auto']}
+              tickFormatter={v => `$${Number(v).toFixed(0)}`}
+            />
+            <YAxis
+              yAxisId="vix"
+              orientation="right"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              width={30}
+              domain={[0, 55]}
+              tickFormatter={v => Number(v).toFixed(0)}
+            />
+            <Tooltip
+              contentStyle={TT}
+              formatter={(v: any, name: string) =>
+                name === 'SPX' ? [`$${Number(v).toFixed(2)}`, 'SPX'] : [Number(v).toFixed(2), name]
+              }
+              labelFormatter={l => `Date: ${l}`}
+            />
+            <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+            <Line yAxisId="spx" dataKey="spx_close" stroke={CC.spx} dot={false} name="SPX" strokeWidth={1.5} isAnimationActive={false} connectNulls />
+            <Line yAxisId="vix" dataKey="vix_close" stroke={CC.vix} dot={false} name="VIX" strokeWidth={1.5} isAnimationActive={false} connectNulls />
+            <ReferenceLine yAxisId="vix" y={20} stroke={C.amber} strokeDasharray="4 2" strokeOpacity={0.55}
+              label={{ value: '20', position: 'insideRight', fill: C.amber, fontSize: 8, fontFamily: 'monospace' }} />
+            <ReferenceLine yAxisId="vix" y={30} stroke={C.red} strokeDasharray="4 2" strokeOpacity={0.55}
+              label={{ value: '30', position: 'insideRight', fill: C.red, fontSize: 8, fontFamily: 'monospace' }} />
+            <ReferenceLine yAxisId="vix" y={40} stroke={C.red} strokeDasharray="2 2" strokeOpacity={0.8}
+              label={{ value: '40', position: 'insideRight', fill: C.red, fontSize: 8, fontFamily: 'monospace' }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartBox>
+
+      {/* Rolling correlation chart */}
+      <ChartBox
+        title="Rolling Correlation — VIX % vs SPX Return"
+        subtitle="Negative = VIX rises when SPX falls (inverse, expected). Near –1.0 = strong inverse. Reference line at 0."
+      >
+        {corrTs.length > 2 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={corrTs} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                tickFormatter={d => fmtChartDate(d, corrTs.length)}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                domain={[-1, 1]}
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={30}
+                tickFormatter={v => Number(v).toFixed(1)}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => v != null ? [Number(v).toFixed(3), name] : ['—', name]}
+                labelFormatter={l => `Date: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+              <ReferenceLine y={0} stroke={C.dim} strokeDasharray="3 3"
+                label={{ value: '0', position: 'insideRight', fill: C.dim, fontSize: 8, fontFamily: 'monospace' }} />
+              <Line dataKey="rolling_corr_7d"  stroke={CC.c7}  dot={false} name="7D"  strokeWidth={1}   isAnimationActive={false} connectNulls={false} />
+              <Line dataKey="rolling_corr_30d" stroke={CC.c30} dot={false} name="30D" strokeWidth={1.5} isAnimationActive={false} connectNulls={false} />
+              <Line dataKey="rolling_corr_63d" stroke={CC.c63} dot={false} name="63D" strokeWidth={1.5} isAnimationActive={false} connectNulls={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : <CorrelationEmptyMsg />}
+      </ChartBox>
+
+      {/* Daily moves bar chart */}
+      {last30.some((r: any) => r.spx_return_pct != null) && (
+        <ChartBox title={`Daily Moves — Last ${last30.length} Sessions`} subtitle="SPX % return vs VIX % change side by side">
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={last30} margin={{ top: 4, right: 12, left: 0, bottom: 0 }} barSize={4} barGap={1} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                tickFormatter={d => fmtChartDate(d, 30)}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={36}
+                tickFormatter={v => `${Number(v).toFixed(1)}%`}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => v != null ? [`${Number(v).toFixed(2)}%`, name] : ['—', name]}
+                labelFormatter={l => `Date: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+              <ReferenceLine y={0} stroke={C.dim} />
+              <Bar dataKey="spx_return_pct" name="SPX %" fill={CC.spx} isAnimationActive={false} />
+              <Bar dataKey="vix_change_pct"  name="VIX %" fill={CC.vix} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      )}
+
+      {/* Signal block */}
       {sig.signal_title && (
-        <div style={{ background: `${warnClr}0a`, border: `1px solid ${warnClr}40`, borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+        <div style={{ background: `${warnClr}0a`, border: `1px solid ${warnClr}40`, borderRadius: 10, padding: '16px 20px', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: warnClr }}>
               {sig.signal_title}
@@ -1468,20 +1719,12 @@ function VixRiskRegimeTab() {
                 {sig.warning_level}
               </span>
             )}
-            {sig.current_vix != null && (
-              <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>VIX {sig.current_vix.toFixed(2)}</span>
-            )}
-            {sig.current_zone && (
-              <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>· {sig.current_zone}</span>
-            )}
           </div>
-          {sig.signal_summary && (
-            <p style={{ fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.7, margin: '0 0 10px' }}>{sig.signal_summary}</p>
-          )}
+          {sig.signal_summary && <p style={{ fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.7, margin: '0 0 10px' }}>{sig.signal_summary}</p>}
           {Array.isArray(sig.rules_used) && sig.rules_used.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {(sig.rules_used as string[]).map((r, i) => (
-                <span key={i} style={{ padding: '2px 7px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: C.font, fontSize: 9, color: C.dim }}>
+                <span key={i} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: C.font, fontSize: 9, color: C.dim }}>
                   {r}
                 </span>
               ))}
@@ -1490,63 +1733,45 @@ function VixRiskRegimeTab() {
         </div>
       )}
 
-      {/* Risk Regime badge */}
-      {data.risk_regime && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Risk Regime:</span>
-          <span style={{ padding: '4px 12px', background: `${warnClr}12`, border: `1px solid ${warnClr}35`, borderRadius: 6, fontFamily: C.font, fontSize: 11, fontWeight: 700, color: warnClr }}>
-            {data.risk_regime}
-          </span>
-        </div>
-      )}
-
-      {/* VIX / SPX Correlation */}
+      {/* Correlation summary strip */}
       {Object.keys(corr).length > 0 && (
-        <SCard title="VIX / SPX Correlation" accent={C.blue}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
-            {([['7-Day', corr.rolling_corr_7d], ['30-Day', corr.rolling_corr_30d], ['63-Day', corr.rolling_corr_63d]] as [string, number][]).map(([label, v]) => (
-              <div key={label} style={{ textAlign: 'center', padding: '6px 0' }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 18px', marginBottom: 14 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>VIX / SPX Correlation</div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 8 }}>
+            {([['7D', corr.rolling_corr_7d], ['30D', corr.rolling_corr_30d], ['63D', corr.rolling_corr_63d]] as [string, number][]).map(([lbl, v]) => (
+              <div key={lbl} style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{label}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
-            <StatRow label="VIX 1D" value={sgn(corr.vix_1d_pct)} color={(corr.vix_1d_pct ?? 0) >= 0 ? C.red : C.green} />
-            <StatRow label="SPX 1D" value={sgn(corr.spx_1d_pct)} color={(corr.spx_1d_pct ?? 0) >= 0 ? C.green : C.red} />
-          </div>
           {corr.interpretation && (
-            <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '8px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 8 }}>
+            <p style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, lineHeight: 1.65, margin: '6px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 6 }}>
               {corr.interpretation}
             </p>
           )}
-          <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginTop: 6 }}>
-            {[corr.correlation_basis, corr.sample_size != null && `n=${corr.sample_size}`, corr.last_updated].filter(Boolean).join(' · ')}
-          </div>
-        </SCard>
+        </div>
       )}
 
-      {/* Historical Windows */}
+      {/* Historical windows */}
       {Object.keys(windows).length > 0 && (
-        <div style={{ marginTop: 4 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-            Historical Windows
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
             {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
               const w = windows[key];
               if (!w) return null;
-              const ret = w.spx_return_pct as number | undefined;
+              const ret = w.spx_return_pct as number;
               return (
-                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
-                    {key === 'quarter' ? '90D' : key.toUpperCase()}
+                    {key === 'quarter' ? '90D' : key.toUpperCase()} <span style={{ fontWeight: 400, color: C.muted }}>· {w.window}</span>
                   </div>
-                  <StatRow label="VIX Min"    value={fmtNum2(w.vix_min)} />
-                  <StatRow label="VIX Max"    value={fmtNum2(w.vix_max)} />
-                  <StatRow label="VIX Avg"    value={fmtNum2(w.vix_avg)} />
-                  <StatRow label="SPX Return" value={sgn(ret)} color={ret != null ? (ret >= 0 ? C.green : C.red) : undefined} />
-                  {w.data_points != null && <StatRow label="Bars" value={String(w.data_points)} />}
+                  <StatRow label="VIX Min" value={fmtNum2(w.vix_min)} />
+                  <StatRow label="VIX Max" value={fmtNum2(w.vix_max)} />
+                  <StatRow label="VIX Avg" value={fmtNum2(w.vix_avg)} />
+                  <StatRow label="SPX Return" value={sgn(ret)} color={ret >= 0 ? C.green : C.red} />
                 </div>
               );
             })}
@@ -1560,339 +1785,536 @@ function VixRiskRegimeTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Tab: Weekly Price Movements
+   Tab 2: Weekly Price Movements
    ═══════════════════════════════════════════════════════════════════ */
 function WeeklyPriceMovementsTab() {
+  const [wKey, setWKey] = useState<string>('1y');
+  const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [aiText, setAiText]   = useState('');
+
   const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: ['strategy-weekly-price-movements'],
-    queryFn:  () => fetch('/api/strategy/weekly-price-movements').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    staleTime: 10 * 60_000,
-    gcTime:    30 * 60_000,
+    queryFn: () => fetch('/api/strategy/weekly-price-movements').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 60 * 60_000,
+    gcTime: 90 * 60_000,
     retry: 1,
   });
 
-  const [wKey,     setWKey]     = useState<'5y' | '1y' | 'quarter' | '7d'>('1y');
-  const [aiState,  setAiState]  = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [aiText,   setAiText]   = useState('');
+  const win: any        = data?.windows?.[wKey] ?? {};
+  const ctx: any        = data?.current_week_context ?? {};
 
-  useSetPageContext(
-    data
-      ? `[Page: Weekly Price Movements]\ncomputation: ${data.computation ?? ''}\n` +
-        JSON.stringify({ current_week_context: data.current_week_context, windows: data.windows })
-      : null,
-    [data],
-  );
+  // window_summaries is an object with numeric string keys (0–15)
+  const allSummaries: any[] = Object.values(data?.chart_data?.window_summaries ?? {});
+  const selSummaries = allSummaries.filter((s: any) => s.window_key === wKey);
 
-  const askCaelyn = async () => {
-    if (!data || aiState === 'loading') return;
+  const SCENARIO_KEYS = [
+    'red_friday_to_monday',
+    'green_friday_to_monday',
+    'red_monday_to_friday',
+    'green_monday_to_friday',
+  ];
+
+  // Probability chart data
+  const probChartData = selSummaries.map((s: any) => ({
+    name: SCENARIO_SHORT[s.scenario_key] ?? s.scenario_key,
+    Green: fmtProbNum(s.green_probability),
+    Red:   fmtProbNum(s.red_probability),
+    insuf: s.insufficient_sample,
+  }));
+
+  // Average return chart data
+  const avgRetData = selSummaries.map((s: any) => ({
+    name: SCENARIO_SHORT[s.scenario_key] ?? s.scenario_key,
+    avg:  s.average_return_pct,
+    n:    s.sample_count,
+  }));
+
+  const askCaelyn = useCallback(async () => {
+    if (!data) return;
     setAiState('loading');
     setAiText('');
     try {
-      const r = await fetch(`${STRAT_BACKEND}/api/query`, {
+      const res = await fetch(`${STRAT_BACKEND}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': STRAT_KEY },
         body: JSON.stringify({
-          query: WEEKLY_PROMPT,
-          screen_context: JSON.stringify({ page: 'Weekly Price Movements', ...data }),
+          message: WEEKLY_PROMPT,
+          screen_context: `[Weekly Price Movements | window: ${wKey}]\n${JSON.stringify({ windows: data.windows, current_week_context: ctx, selected_window_key: wKey })}`,
         }),
       });
-      if (!r.ok) throw new Error(`Query returned ${r.status}`);
-      const d = await r.json();
-      setAiText(d.response || d.answer || d.content || d.text || JSON.stringify(d));
+      if (!res.ok) throw new Error(`${res.status}`);
+      const j = await res.json();
+      setAiText(j.response ?? j.message ?? JSON.stringify(j));
       setAiState('done');
     } catch (e: any) {
-      setAiText(e.message ?? 'Unknown error');
+      setAiText(e?.message ?? 'Error contacting Caelyn.');
       setAiState('error');
     }
-  };
+  }, [data, wKey]);
+
+  useSetPageContext(
+    data
+      ? `[Page: Weekly Price Movements | window: ${wKey}]\n` +
+        JSON.stringify({ window: win, context: ctx, selected_window_key: wKey })
+      : null,
+    [data, wKey],
+  );
 
   if (isLoading && !data) return <LoadingState />;
   if (error && !data) return <ErrorState message={`Could not load Weekly Price Movements: ${(error as Error).message}`} onRetry={() => refetch()} />;
   if (!data) return null;
 
-  const ctx     = data.current_week_context ?? {};
-  const windows = data.windows ?? {};
-  const win     = windows[wKey] ?? {};
-  const SCENARIOS = ['red_friday_to_monday', 'green_friday_to_monday', 'red_monday_to_friday', 'green_monday_to_friday'];
-
   return (
-    <div style={{ padding: '28px 0', minHeight: 400 }}>
-      <FreshWarn warning={data.freshness_warning} />
+    <div style={{ padding: '24px 0', minHeight: 400 }}>
+      <FreshWarn warning={data.freshness_warning as string} />
 
-      {/* Current Week Context */}
-      {ctx.available !== false && (
-        <SCard title="Current Week Context" accent={C.blue}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <StatRow label="Today"          value={ctx.today_weekday ?? '—'} />
-            <StatRow label="Last Bar Date"  value={ctx.last_bar_date ?? '—'} />
-            <StatRow label="SPX Last Close" value={fmtPrice2(ctx.spx_last_close)} />
-            <StatRow label="SPX 52W High"   value={fmtPrice2(ctx.spx_52w_high)} />
-            <StatRow label="SPX 52W Low"    value={fmtPrice2(ctx.spx_52w_low)} />
-          </div>
-          {(ctx.last_friday || ctx.last_monday) && (
-            <div style={{ display: 'flex', gap: 20, marginTop: 10, flexWrap: 'wrap' }}>
-              {ctx.last_friday && (
-                <span style={{ fontFamily: C.font, fontSize: 11, color: ctx.last_friday.direction === 'up' ? C.green : C.red }}>
-                  Last Fri: {ctx.last_friday.direction === 'up' ? '▲' : '▼'} {sgn(ctx.last_friday.change_pct)}
-                </span>
-              )}
-              {ctx.last_monday && (
-                <span style={{ fontFamily: C.font, fontSize: 11, color: ctx.last_monday.direction === 'up' ? C.green : C.red }}>
-                  Last Mon: {ctx.last_monday.direction === 'up' ? '▲' : '▼'} {sgn(ctx.last_monday.change_pct)}
-                </span>
-              )}
-            </div>
-          )}
-        </SCard>
-      )}
+      {/* Hero strip */}
+      <HeroStrip>
+        <HeroStat label="Last Bar" value={ctx.last_bar_date ?? '—'} sub={ctx.today_weekday} />
+        <HeroStat label="SPX Last Close" value={fmtPrice2(ctx.spx_last_close ?? ctx.last_close)} />
+        <HeroStat label="52W High" value={fmtPrice2(ctx.spx_52w_high)} color={C.green} />
+        <HeroStat label="52W Low"  value={fmtPrice2(ctx.spx_52w_low)}  color={C.red}   />
+        {ctx.last_friday && (
+          <HeroStat
+            label={`Fri ${ctx.last_friday.date ?? ''}`}
+            value={sgn(ctx.last_friday.change_pct)}
+            sub={ctx.last_friday.direction === 'green' || ctx.last_friday.direction === 'up' ? '▲ Up day' : '▼ Down day'}
+            color={(ctx.last_friday.direction === 'green' || ctx.last_friday.direction === 'up') ? C.green : C.red}
+          />
+        )}
+        {ctx.last_monday && (
+          <HeroStat
+            label={`Mon ${ctx.last_monday.date ?? ''}`}
+            value={sgn(ctx.last_monday.change_pct)}
+            sub={ctx.last_monday.direction === 'green' || ctx.last_monday.direction === 'up' ? '▲ Up day' : '▼ Down day'}
+            color={(ctx.last_monday.direction === 'green' || ctx.last_monday.direction === 'up') ? C.green : C.red}
+          />
+        )}
+      </HeroStrip>
 
       {/* Window selector */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-        {([['5y', '5 Year'], ['1y', '1 Year'], ['quarter', '90 Days'], ['7d', '7 Days']] as [string, string][]).map(([key, label]) => {
-          const active  = wKey === key;
-          const winData = windows[key] ?? {};
+      <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+        {([['5y', '5Y'], ['1y', '1Y'], ['quarter', '90D'], ['7d', '7D']] as [string, string][]).map(([k, lbl]) => {
+          const active = wKey === k;
           return (
-            <button key={key} onClick={() => setWKey(key as typeof wKey)} style={{
-              padding: '5px 14px', borderRadius: 6, cursor: 'pointer',
-              fontFamily: C.font, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-              background: active ? `${C.indigo}18` : 'transparent',
+            <button key={k} onClick={() => setWKey(k)} style={{
+              padding: '4px 14px', borderRadius: 5, cursor: 'pointer',
+              fontFamily: C.font, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+              background: active ? `${C.indigo}1a` : 'transparent',
               color: active ? C.indigoFg : C.dim,
-              border: `1px solid ${active ? C.indigo + '50' : C.border}`,
-              transition: 'all 0.15s',
+              border: `1px solid ${active ? `${C.indigo}55` : C.border}`,
+              transition: 'all 0.12s',
             }}>
-              {label}
-              {winData.window_bars != null && (
-                <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 4 }}>({winData.window_bars}w)</span>
-              )}
+              {lbl}
             </button>
           );
         })}
       </div>
 
-      {/* Scenario cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-        {SCENARIOS.map(key => {
-          const sc   = win[key];
-          if (!sc) return null;
-          const meta  = SCENARIO_LABELS[key] ?? { label: key, icon: '·', color: C.dim };
-          const insuf = !!sc.insufficient_sample;
-          const col   = meta.color;
-          const gPct  = sc.green_probability as number | undefined;
-          const rPct  = sc.red_probability as number | undefined;
+      {/* Probability comparison chart */}
+      {probChartData.length > 0 && (
+        <ChartBox
+          title="Scenario Probabilities — Up vs Down"
+          subtitle={`${wKey === 'quarter' ? '90D' : wKey.toUpperCase()} lookback · Green = SPX up · Red = SPX down`}
+        >
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={probChartData} margin={{ top: 4, right: 20, left: 0, bottom: 38 }} barSize={20} barCategoryGap="30%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                interval={0} angle={-20} textAnchor="end"
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={30}
+                tickFormatter={v => `${v}%`}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => [`${Number(v).toFixed(1)}%`, name]}
+                labelFormatter={l => `Scenario: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+              <ReferenceLine y={50} stroke={C.dim} strokeDasharray="3 3" />
+              <Bar dataKey="Green" fill={CC.spx} name="Up prob"   isAnimationActive={false} />
+              <Bar dataKey="Red"   fill={CC.vix} name="Down prob" isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      )}
+
+      {/* Average return chart */}
+      {avgRetData.length > 0 && (
+        <ChartBox
+          title="Average Return by Scenario"
+          subtitle="Based on historical occurrences · Sample count shown near bar"
+        >
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={avgRetData} margin={{ top: 4, right: 20, left: 0, bottom: 38 }} barSize={28} barCategoryGap="35%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                interval={0} angle={-20} textAnchor="end"
+              />
+              <YAxis
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={40}
+                tickFormatter={v => `${Number(v).toFixed(2)}%`}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => [`${Number(v).toFixed(3)}%`, name]}
+                labelFormatter={l => `Scenario: ${l}`}
+              />
+              <ReferenceLine y={0} stroke={C.dim} />
+              <Bar dataKey="avg" name="Avg Return" isAnimationActive={false}>
+                {avgRetData.map((entry: any, i: number) => (
+                  <Cell key={i} fill={(entry.avg ?? 0) >= 0 ? CC.spx : CC.vix} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      )}
+
+      {/* Scenario detail cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        {SCENARIO_KEYS.map(key => {
+          const sc = win[key];
+          if (!sc || typeof sc !== 'object') return null;
+          const meta   = SCENARIO_LABELS[key] ?? { label: key, icon: '·', color: C.dim };
+          const insuf  = !!sc.insufficient_sample;
+          const col    = meta.color;
           return (
-            <div key={key} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', opacity: insuf ? 0.75 : 1, position: 'relative', overflow: 'hidden' }}>
+            <div key={key} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 16px', opacity: insuf ? 0.72 : 1, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: col, borderRadius: '10px 0 0 10px' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: col }}>{meta.icon} {meta.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: col }}>
+                  {meta.icon} {meta.label}
+                </span>
                 {insuf && (
                   <span style={{ padding: '2px 7px', background: `${C.amber}12`, border: `1px solid ${C.amber}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase' }}>
                     Insufficient Sample
                   </span>
                 )}
-                {sc.confidence_label && !insuf && (
+                {!insuf && sc.confidence_label && (
                   <span style={{ padding: '2px 7px', background: `${confColor(sc.confidence_label)}12`, border: `1px solid ${confColor(sc.confidence_label)}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: confColor(sc.confidence_label), textTransform: 'uppercase' }}>
-                    {sc.confidence_label}
+                    {sc.confidence_label} confidence
                   </span>
                 )}
                 <span style={{ marginLeft: 'auto', fontFamily: C.font, fontSize: 10, color: C.muted }}>n = {sc.sample_count ?? '—'}</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
-                <MetricPair label="Green Prob"    value={gPct != null ? `${(gPct * 100).toFixed(1)}%` : '—'} color={insuf ? C.dim : C.green} />
-                <MetricPair label="Red Prob"      value={rPct != null ? `${(rPct * 100).toFixed(1)}%` : '—'} color={insuf ? C.dim : C.red} />
-                <MetricPair label="Avg Return"    value={sgn(sc.average_return_pct)} color={insuf ? C.dim : (sc.average_return_pct ?? 0) >= 0 ? C.green : C.red} />
-                <MetricPair label="Median Return" value={sgn(sc.median_return_pct)}  color={insuf ? C.dim : (sc.median_return_pct ?? 0) >= 0 ? C.green : C.red} />
-                <MetricPair label="Best"          value={sgn(sc.best_return_pct)}  color={insuf ? C.dim : C.green} />
-                <MetricPair label="Worst"         value={sgn(sc.worst_return_pct)} color={insuf ? C.dim : C.red} />
-                <MetricPair label="Std Dev"       value={sc.std_dev_pct != null ? `${(sc.std_dev_pct as number).toFixed(2)}%` : '—'} />
-                <MetricPair label="Green / Red"   value={`${sc.green_count ?? 0} / ${sc.red_count ?? 0}`} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 6 }}>
+                <MetricPair label="Up Prob"    value={fmtProb(sc.green_probability)} color={insuf ? C.dim : C.green} />
+                <MetricPair label="Down Prob"  value={fmtProb(sc.red_probability)}   color={insuf ? C.dim : C.red}   />
+                <MetricPair label="Avg Return" value={sgn(sc.average_return_pct)}    color={insuf ? C.dim : (sc.average_return_pct ?? 0) >= 0 ? C.green : C.red} />
+                <MetricPair label="Median"     value={sgn(sc.median_return_pct)}     color={insuf ? C.dim : (sc.median_return_pct ?? 0) >= 0 ? C.green : C.red} />
+                <MetricPair label="Best"       value={sgn(sc.best_return_pct)}       color={insuf ? C.dim : C.green} />
+                <MetricPair label="Worst"      value={sgn(sc.worst_return_pct)}      color={insuf ? C.dim : C.red}   />
+                {sc.std_dev_pct != null && <MetricPair label="Std Dev" value={`${Number(sc.std_dev_pct).toFixed(3)}%`} />}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Ask Caelyn block */}
+      {/* Ask Caelyn */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', marginBottom: 8 }}>
-        <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-          Ask Caelyn
-        </div>
-        <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.6, margin: '0 0 12px', fontStyle: 'italic' }}>
-          "{WEEKLY_PROMPT}"
-        </p>
+        <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ask Caelyn</div>
+        <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '0 0 12px', fontStyle: 'italic' }}>"{WEEKLY_PROMPT}"</p>
         <button
           onClick={askCaelyn}
           disabled={aiState === 'loading'}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px',
-            background: aiState === 'loading' ? C.indigoSub : C.indigo,
-            border: `1px solid ${C.indigo}`, borderRadius: 6,
-            color: C.bright, fontFamily: C.font, fontSize: 10, fontWeight: 700,
-            cursor: aiState === 'loading' ? 'not-allowed' : 'pointer',
-            opacity: aiState === 'loading' ? 0.7 : 1,
-            transition: 'all 0.15s', textTransform: 'uppercase', letterSpacing: '0.06em',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 18px', borderRadius: 6, cursor: aiState === 'loading' ? 'not-allowed' : 'pointer',
+            fontFamily: C.font, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: `${C.indigo}20`, color: C.indigoFg,
+            border: `1px solid ${C.indigo}50`, opacity: aiState === 'loading' ? 0.7 : 1,
           }}
         >
           {aiState === 'loading' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
-          {aiState === 'loading' ? 'Thinking…' : 'Ask Caelyn'}
+          {aiState === 'loading' ? 'Thinking…' : '⚡ Ask Caelyn'}
         </button>
         {aiState === 'error' && (
-          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, fontFamily: C.sans, fontSize: 12, color: C.red }}>
+          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontFamily: C.sans, fontSize: 12, color: C.red }}>
             {aiText}
           </div>
         )}
         {aiState === 'done' && aiText && (
-          <div style={{ marginTop: 12, padding: '14px 16px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+          <div style={{ marginTop: 12, padding: '14px 16px', background: `${C.indigo}0a`, border: `1px solid ${C.indigo}30`, borderRadius: 8, fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
             {aiText}
           </div>
         )}
       </div>
 
-      <SrcFooter
-        generatedAt={data.generated_at}
-        cacheTtl={data.cache_ttl_seconds}
-        sources={{ data_source: data.data_source, durable_cache: data.durable_cache, total_bars: data.total_bars_loaded, spx_proxy: data.spx_proxy }}
-      />
+      <SrcFooter generatedAt={data.generated_at} cacheTtl={data.cache_ttl_seconds} sources={{ data_source: data.data_source }} />
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Tab: 10Y Yield vs S&P 500
+   Tab 3: 10Y Yield vs S&P 500
    ═══════════════════════════════════════════════════════════════════ */
 function TenYearSpxTab() {
+  const [tf, setTf] = useState<string>('1Y');
+
   const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: ['strategy-ten-year-spx'],
-    queryFn:  () => fetch('/api/strategy/ten-year-spx').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    queryFn: () => fetch('/api/strategy/ten-year-spx').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
-    gcTime:    15 * 60_000,
+    gcTime: 15 * 60_000,
     retry: 1,
   });
 
+  const allTs: any[] = data?.chart_data?.ten_y_spx_timeseries ?? [];
+  const nRows = tf === '5Y' ? allTs.length : TF_ROWS[tf] ?? 252;
+  const ts = allTs.slice(-nRows);
+  const corrTs = ts.filter((r: any) => r.rolling_corr_7d != null || r.rolling_corr_30d != null || r.rolling_corr_63d != null);
+  const last30 = ts.slice(-30);
+  const regimeStrip = last30.filter((r: any) => r.regime_label);
+
+  const snap    = data?.current_market_snapshot ?? {};
+  const tracker = data?.ten_year_spx_tracker ?? {};
+  const corr    = data?.rolling_correlation ?? {};
+  const regimes = data?.regime_labels ?? {};
+  const windows = data?.historical_windows ?? {};
+  const sources = data?.data_sources ?? {};
+
   useSetPageContext(
     data
-      ? `[Page: 10Y Yield vs S&P 500]\n` +
-        JSON.stringify({ snapshot: data.current_market_snapshot, tracker: data.ten_year_spx_tracker, correlation: data.rolling_correlation, regimes: data.regime_labels })
+      ? `[Page: 10Y Yield vs SPX | TF: ${tf}]\n10Y: ${tracker.us_10y_current}% | SPX: ${snap.spx_price}\n` +
+        `7D regime: ${regimes['7d']} | 30D corr: ${corr.rolling_corr_30d}\n` +
+        `rows visible: ${ts.length} (${ts[0]?.date ?? ''} → ${ts[ts.length - 1]?.date ?? ''})\n` +
+        JSON.stringify({ tracker, correlation: corr, regime_labels: regimes })
       : null,
-    [data],
+    [data, tf],
   );
 
   if (isLoading && !data) return <LoadingState />;
-  if (error && !data) return <ErrorState message={`Could not load 10Y Yield vs S&P 500: ${(error as Error).message}`} onRetry={() => refetch()} />;
+  if (error && !data) return <ErrorState message={`Could not load 10Y vs SPX: ${(error as Error).message}`} onRetry={() => refetch()} />;
   if (!data) return null;
 
-  const snap    = data.current_market_snapshot ?? {};
-  const tracker = data.ten_year_spx_tracker ?? {};
-  const corr    = data.rolling_correlation ?? {};
-  const regimes = data.regime_labels ?? {};
-  const windows = data.historical_windows ?? {};
-  const sources = data.data_sources ?? {};
-  const spxClr  = (snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red;
-
   return (
-    <div style={{ padding: '28px 0', minHeight: 400 }}>
+    <div style={{ padding: '24px 0', minHeight: 400 }}>
       <FreshWarn warning={sources.freshness_warning as string} />
 
-      {/* Current Snapshot */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginBottom: 4 }}>
-        <SCard title="S&P 500" accent={spxClr}>
-          <StatRow label="Price"  value={fmtPrice2(snap.spx_price)} />
-          <StatRow label="Change" value={sgn(snap.spx_change_pct)} color={spxClr} />
-          <StatRow label="VIX"    value={fmtNum2(snap.vix)} />
-        </SCard>
-        <SCard title="Treasuries" accent={C.amber}>
-          <StatRow label="10Y Yield"     value={fmtYield(snap.us_10y)} />
-          <StatRow label="2Y Yield"      value={fmtYield(snap.us_2y)} />
-          <StatRow label="2s/10s Spread" value={snap.spread_2s10s != null ? `${(snap.spread_2s10s as number).toFixed(2)}%` : '—'} color={(snap.spread_2s10s ?? 0) >= 0 ? C.green : C.red} />
-        </SCard>
-        <SCard title="Dollar" accent={C.blue}>
-          <StatRow label="DXY" value={fmtNum2(snap.dxy)} />
-        </SCard>
-      </div>
+      {/* Hero strip */}
+      <HeroStrip>
+        <HeroStat
+          label="10Y Yield"
+          value={fmtYield(tracker.us_10y_current)}
+          sub={sgnBps(tracker.us_10y_1d_bps) + ' today'}
+          color={C.amber}
+        />
+        <HeroStat
+          label="10Y — 7D Change"
+          value={sgnBps(tracker.us_10y_7d_change_bps)}
+          color={(tracker.us_10y_7d_change_bps ?? 0) >= 0 ? C.red : C.green}
+        />
+        <HeroStat
+          label="S&P 500"
+          value={fmtPrice2(snap.spx_price)}
+          sub={sgn(snap.spx_change_pct) + ' today'}
+          color={(snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red}
+        />
+        <HeroStat
+          label="30D Correlation"
+          value={fmtCorr(corr.rolling_corr_30d)}
+          sub={(corr.rolling_corr_30d ?? 0) < 0 ? 'Inverse relationship' : 'Same-direction'}
+          color={(corr.rolling_corr_30d ?? 0) < 0 ? C.amber : C.green}
+        />
+        <HeroStat
+          label="7D Regime"
+          value={regimeLabelText(regimes['7d'])}
+          color={regimeColor(regimes['7d'])}
+        />
+      </HeroStrip>
 
-      {/* Tracker */}
-      {Object.keys(tracker).length > 0 && (
-        <SCard title="10Y Yield & SPX Tracker" accent={C.amber}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <StatRow label="10Y Current"   value={fmtYield(tracker.us_10y_current)} />
-            <StatRow label="10Y 1D Chg"    value={sgnBps(tracker.us_10y_1d_bps)} color={(tracker.us_10y_1d_bps ?? 0) >= 0 ? C.red : C.green} />
-            <StatRow label="10Y 7D Chg"    value={sgnBps(tracker.us_10y_7d_change_bps)} color={(tracker.us_10y_7d_change_bps ?? 0) >= 0 ? C.red : C.green} />
-            <StatRow label="SPX Current"   value={fmtPrice2(tracker.spx_current)} />
-            <StatRow label="SPX 1D"        value={sgn(tracker.spx_1d_change_pct)} color={(tracker.spx_1d_change_pct ?? 0) >= 0 ? C.green : C.red} />
-            <StatRow label="SPX 7D"        value={sgn(tracker.spx_7d_change_pct)} color={(tracker.spx_7d_change_pct ?? 0) >= 0 ? C.green : C.red} />
-            <StatRow label="DXY Current"   value={fmtNum2(tracker.dxy_current)} />
-            <StatRow label="DXY Change"    value={sgn(tracker.dxy_change_pct)} color={(tracker.dxy_change_pct ?? 0) >= 0 ? C.green : C.red} />
-          </div>
-        </SCard>
+      {/* Timeframe toggle */}
+      <TfBtn value={tf} onChange={setTf} />
+
+      {/* 10Y vs SPX dual-axis chart */}
+      <ChartBox title="10Y Yield vs S&P 500" subtitle="Left axis: SPX price · Right axis: 10Y yield %">
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={ts} margin={{ top: 4, right: 52, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              tickFormatter={d => fmtChartDate(d, ts.length)}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              yAxisId="spx"
+              orientation="left"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              width={52}
+              domain={['auto', 'auto']}
+              tickFormatter={v => `$${Number(v).toFixed(0)}`}
+            />
+            <YAxis
+              yAxisId="yield"
+              orientation="right"
+              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tickLine={false} axisLine={false}
+              width={38}
+              domain={[0.5, 6]}
+              tickFormatter={v => `${Number(v).toFixed(2)}%`}
+            />
+            <Tooltip
+              contentStyle={TT}
+              formatter={(v: any, name: string) =>
+                name === 'SPX' ? [`$${Number(v).toFixed(2)}`, 'SPX'] : [`${Number(v).toFixed(3)}%`, name]
+              }
+              labelFormatter={l => `Date: ${l}`}
+            />
+            <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+            <Line yAxisId="spx"   dataKey="spx_close"  stroke={CC.spx}   dot={false} name="SPX"      strokeWidth={1.5} isAnimationActive={false} connectNulls />
+            <Line yAxisId="yield" dataKey="ten_yield"   stroke={CC.yield} dot={false} name="10Y Yield" strokeWidth={1.5} isAnimationActive={false} connectNulls />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartBox>
+
+      {/* Rolling correlation chart */}
+      <ChartBox
+        title="Rolling Correlation — 10Y bps vs SPX Return"
+        subtitle={corr.correlation_basis ?? 'US 10Y daily bps change vs S&P 500 daily % return'}
+      >
+        {corrTs.length > 2 ? (
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={corrTs} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                tickFormatter={d => fmtChartDate(d, corrTs.length)}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                domain={[-1, 1]}
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={30}
+                tickFormatter={v => Number(v).toFixed(1)}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => v != null ? [Number(v).toFixed(3), name] : ['—', name]}
+                labelFormatter={l => `Date: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+              <ReferenceLine y={0} stroke={C.dim} strokeDasharray="3 3"
+                label={{ value: '0', position: 'insideRight', fill: C.dim, fontSize: 8, fontFamily: 'monospace' }} />
+              <Line dataKey="rolling_corr_7d"  stroke={CC.c7}  dot={false} name="7D"  strokeWidth={1}   isAnimationActive={false} connectNulls={false} />
+              <Line dataKey="rolling_corr_30d" stroke={CC.c30} dot={false} name="30D" strokeWidth={1.5} isAnimationActive={false} connectNulls={false} />
+              <Line dataKey="rolling_corr_63d" stroke={CC.c63} dot={false} name="63D" strokeWidth={1.5} isAnimationActive={false} connectNulls={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : <CorrelationEmptyMsg />}
+      </ChartBox>
+
+      {/* Daily move comparison chart */}
+      {last30.some((r: any) => r.spx_return_pct != null) && (
+        <ChartBox title={`Daily Moves — Last ${last30.length} Sessions`} subtitle="SPX % return vs 10Y basis point change">
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={last30} margin={{ top: 4, right: 12, left: 0, bottom: 0 }} barSize={4} barGap={1} barCategoryGap="25%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                tickFormatter={d => fmtChartDate(d, 30)}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tickLine={false} axisLine={false}
+                width={36}
+              />
+              <Tooltip
+                contentStyle={TT}
+                formatter={(v: any, name: string) => {
+                  if (v == null) return ['—', name];
+                  return name === '10Y bps' ? [`${Number(v).toFixed(1)} bps`, name] : [`${Number(v).toFixed(2)}%`, name];
+                }}
+                labelFormatter={l => `Date: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontFamily: 'monospace', fontSize: 9, color: C.dim }} />
+              <ReferenceLine y={0} stroke={C.dim} />
+              <Bar dataKey="spx_return_pct"  name="SPX %"   fill={CC.spx}   isAnimationActive={false} />
+              <Bar dataKey="ten_y_change_bps" name="10Y bps" fill={CC.yield} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartBox>
       )}
 
-      {/* Regime Labels */}
-      {Object.keys(regimes).length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-            Regime Labels
+      {/* Regime timeline strip */}
+      {regimeStrip.length > 0 && (
+        <ChartBox title={`Recent Regime — Last ${regimeStrip.length} Sessions`} subtitle="Hover each bar for date and regime label">
+          <div style={{ display: 'flex', gap: 2, overflowX: 'auto', padding: '2px 0 6px' }}>
+            {regimeStrip.map((r: any, i: number) => (
+              <div
+                key={i}
+                title={`${r.date}: ${regimeLabelText(r.regime_label)}`}
+                style={{ flexShrink: 0, width: 14, height: 30, borderRadius: 2, background: regimeColor(r.regime_label), opacity: 0.85, cursor: 'default' }}
+              />
+            ))}
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(['7d', '30d', '63d'] as string[]).map(key => {
-              const rk = regimes[key] as string | undefined;
-              if (!rk) return null;
-              const rc = regimeColor(rk);
-              return (
-                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 16px', minWidth: 150 }}>
-                  <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>{key.toUpperCase()}</div>
-                  <div style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: rc }}>{regimeLabelText(rk)}</div>
-                </div>
-              );
-            })}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
+            {(['yields_rising_spx_rising', 'yields_rising_spx_falling', 'yields_falling_spx_rising', 'yields_falling_spx_falling', 'mixed_flat'] as string[]).map(k => (
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: regimeColor(k) }} />
+                <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{regimeLabelText(k)}</span>
+              </div>
+            ))}
+          </div>
+        </ChartBox>
+      )}
+
+      {/* Correlation summary numbers */}
+      {Object.keys(corr).length > 0 && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 18px', marginBottom: 14 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Correlation Summary</div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 8 }}>
+            {([['7D', corr.rolling_corr_7d], ['30D', corr.rolling_corr_30d], ['63D', corr.rolling_corr_63d]] as [string, number][]).map(([lbl, v]) => (
+              <div key={lbl} style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Rolling Correlation */}
-      {Object.keys(corr).length > 0 && (
-        <SCard title="Rolling Correlation (10Y vs SPX)" accent={C.blue}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
-            {([['7-Day', corr.rolling_corr_7d], ['30-Day', corr.rolling_corr_30d], ['63-Day', corr.rolling_corr_63d]] as [string, number][]).map(([label, v]) => (
-              <div key={label} style={{ textAlign: 'center', padding: '6px 0' }}>
-                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{label}</div>
-              </div>
-            ))}
-          </div>
-          {corr.interpretation && (
-            <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '8px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 8 }}>
-              {corr.interpretation}
-            </p>
-          )}
-          <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginTop: 6 }}>
-            {[corr.correlation_basis, corr.sample_size != null && `n=${corr.sample_size}`, corr.last_updated].filter(Boolean).join(' · ')}
-          </div>
-        </SCard>
-      )}
-
-      {/* Historical Windows */}
+      {/* Historical windows */}
       {Object.keys(windows).length > 0 && (
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-            Historical Windows
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
             {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
               const w = windows[key];
               if (!w) return null;
-              const ret = w.spx_return_pct as number | undefined;
-              const bps = w.ten_y_change_bps as number | undefined;
+              const ret = w.spx_return_pct as number;
               return (
-                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
                   <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
                     {key === 'quarter' ? '90D' : key.toUpperCase()}
                   </div>
-                  <StatRow label="10Y Start"  value={fmtYield(w.ten_y_start)} />
-                  <StatRow label="10Y End"    value={fmtYield(w.ten_y_end)} />
-                  <StatRow label="10Y Chg"    value={sgnBps(bps)} color={bps != null ? (bps >= 0 ? C.red : C.green) : undefined} />
-                  <StatRow label="SPX Start"  value={fmtPrice2(w.spx_start)} />
-                  <StatRow label="SPX End"    value={fmtPrice2(w.spx_end)} />
-                  <StatRow label="SPX Return" value={sgn(ret)} color={ret != null ? (ret >= 0 ? C.green : C.red) : undefined} />
-                  {w.data_points != null && <StatRow label="Bars" value={String(w.data_points)} />}
+                  <StatRow label="10Y Start" value={w.ten_y_first != null ? fmtYield(w.ten_y_first) : '—'} />
+                  <StatRow label="10Y End"   value={w.ten_y_last  != null ? fmtYield(w.ten_y_last)  : '—'} />
+                  <StatRow label="SPX Return" value={sgn(ret)} color={ret >= 0 ? C.green : C.red} />
                 </div>
               );
             })}
@@ -1928,32 +2350,14 @@ export default function StrategyScreenerPage() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
-      {/* Tab bar */}
-      <div style={{
-        borderBottom: `1px solid ${C.border}`,
-        display: 'flex',
-        gap: 0,
-        padding: '0 24px',
-        background: C.surface,
-      }}>
-        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>
-          Chain Reaction
-        </button>
-        <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>
-          Smart Options
-        </button>
-        <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>
-          VIX Risk Regime
-        </button>
-        <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>
-          Weekly Movements
-        </button>
-        <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>
-          10Y Yield vs SPX
-        </button>
+      <div style={{ borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 0, padding: '0 24px', background: C.surface }}>
+        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>Chain Reaction</button>
+        <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>Smart Options</button>
+        <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>VIX Risk Regime</button>
+        <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>Weekly Movements</button>
+        <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>10Y Yield vs SPX</button>
       </div>
 
-      {/* Tab content */}
       {tab === 'screener' && <StrategyScreenerInner />}
       {tab === 'smart-options' && (
         <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
@@ -1978,3 +2382,4 @@ export default function StrategyScreenerPage() {
     </div>
   );
 }
+

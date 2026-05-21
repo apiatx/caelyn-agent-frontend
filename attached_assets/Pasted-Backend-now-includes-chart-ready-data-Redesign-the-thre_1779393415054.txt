@@ -1,0 +1,317 @@
+Backend now includes chart-ready data. Redesign the three new Strategy tabs around visual correlation charts.
+
+Do not change backend.
+Do not call providers directly.
+Do not create new API routes unless the existing frontend proxy paths are still needed.
+Use the existing endpoints:
+
+GET /api/strategy/vix-risk-regime
+GET /api/strategy/weekly-price-movements
+GET /api/strategy/ten-year-spx
+
+Important:
+The current UI is too number-heavy and ugly. The user needs to visually understand correlation/regime at a glance. Charts must appear before stat cards.
+
+Use the charting library already available in the frontend. Prefer Recharts if available. If there are existing shared chart components in the app, reuse them. Do not introduce a new heavy dependency unless absolutely necessary.
+
+================================
+GLOBAL UX REQUIREMENTS
+================================
+
+1. Visual-first layout:
+- Hero summary row
+- Main relationship chart
+- Rolling correlation chart
+- Supporting stats/cards below
+
+2. Add timeframe toggles consistently:
+- 7D
+- 90D
+- 1Y
+- 5Y
+
+3. Correlation formatting:
+- show rolling correlations as decimals from -1.00 to +1.00
+- include a zero reference line
+- label negative correlation as inverse relationship
+- label positive correlation as same-direction relationship
+- do not make the user infer everything from raw numbers
+
+4. Probability formatting:
+Fix the bug where probabilities display as 7368.0%.
+Backend returns percent values like 61.17, so display 61.17%, not 6117% or 7368%.
+Add a defensive formatter:
+- if value > 100 and <= 10000, divide by 100
+- otherwise display as-is with percent sign
+
+5. Missing data:
+- Rolling correlations are null until enough samples exist. Do not crash.
+- Hide null points or show gaps gracefully.
+
+6. Existing tabs:
+Do not break existing Chain Reaction or Smart Options tabs.
+
+7. Screen context:
+Make sure the selected tab’s summarized visual data and payload are still injected into Caelyn screen context.
+
+================================
+TAB 1: VIX Risk Regime
+================================
+
+Endpoint:
+GET /api/strategy/vix-risk-regime
+
+Use:
+data.chart_data.vix_spx_timeseries
+
+Each row has:
+- date
+- spx_close
+- vix_close
+- spx_return_pct
+- vix_change_pct
+- rolling_corr_7d
+- rolling_corr_30d
+- rolling_corr_63d
+
+Also use:
+- data.chart_data.regime_bands
+- data.current_market_snapshot
+- data.vix_regime_signal
+- data.vix_spx_correlation
+- data.historical_windows
+- data.data_sources
+
+Layout:
+
+A) Hero summary row
+Show compact cards:
+- Current VIX: current_market_snapshot.vix
+- VIX Zone: vix_zone
+- Signal: vix_regime_signal.signal_title
+- SPX: current_market_snapshot.spx_price and current_market_snapshot.spx_change_pct
+- 30D Correlation: vix_spx_correlation.rolling_corr_30d
+
+B) Main visual: VIX vs SPX overlay chart
+Create a dual-axis line chart:
+- X-axis: date
+- left Y-axis: SPX close
+- right Y-axis: VIX close
+- Line 1: spx_close
+- Line 2: vix_close
+
+Add horizontal VIX reference lines:
+- 20
+- 30
+- 40
+
+Add timeframe toggle:
+- 7D uses last roughly 10 rows
+- 90D uses last roughly 66 rows
+- 1Y uses last roughly 252 rows
+- 5Y uses all rows
+
+C) Rolling correlation chart
+Create line chart:
+- rolling_corr_7d
+- rolling_corr_30d
+- rolling_corr_63d
+- Y-axis fixed from -1 to +1
+- Reference line at 0
+- Tooltip should explain:
+  negative = VIX tends to rise when SPX falls
+  positive = same-direction movement
+
+D) Daily move comparison chart
+Create bar chart for latest 30 visible rows:
+- spx_return_pct
+- vix_change_pct
+Purpose: visually show daily inverse/same-direction behavior.
+
+E) Supporting details
+Below charts, keep compact:
+- signal_summary
+- rules_used pills
+- historical window cards
+- data freshness/source badge
+- stale warning if data_sources.freshness_warning exists
+
+================================
+TAB 2: Weekly Price Movements
+================================
+
+Endpoint:
+GET /api/strategy/weekly-price-movements
+
+Use:
+data.chart_data.window_summaries
+data.windows
+data.current_week_context
+
+A) Hero summary row
+Show:
+- current_week_context.last_bar_date
+- current_week_context.spx_last_close
+- current_week_context.spx_52w_high
+- current_week_context.spx_52w_low
+- last_friday.direction and change_pct
+- last_monday.direction and change_pct
+
+B) Window selector
+Use:
+- 5Y
+- 1Y
+- 90D
+- 7D
+
+Map to backend keys:
+- 5Y -> "5y"
+- 1Y -> "1y"
+- 90D -> "quarter"
+- 7D -> "7d"
+
+C) Probability comparison chart
+For selected window, create a horizontal stacked bar chart or grouped bar chart for all four scenarios:
+- red_friday_to_monday
+- green_friday_to_monday
+- red_monday_to_friday
+- green_monday_to_friday
+
+Each scenario shows:
+- green_probability
+- red_probability
+
+Use readable labels:
+- Down Friday → Monday
+- Up Friday → Monday
+- Down Monday → Friday
+- Up Monday → Friday
+
+D) Average return chart
+For selected window, render bar chart:
+- x-axis: scenario
+- y-axis: average_return_pct
+- label sample_count on or near each bar
+
+E) Scenario cards below charts
+Keep compact cards showing:
+- green_probability
+- red_probability
+- average_return_pct
+- median_return_pct
+- best_return_pct
+- worst_return_pct
+- sample_count
+- confidence_label
+- insufficient_sample badge
+
+Important:
+If insufficient_sample is true, visually dim the card and show “Insufficient Sample.” Do not make the probability look authoritative.
+
+F) Ask Caelyn
+Keep the Ask Caelyn button.
+Do not auto-run AI.
+Send the endpoint payload + selected window as screen context.
+
+================================
+TAB 3: 10Y Yield vs S&P 500
+================================
+
+Endpoint:
+GET /api/strategy/ten-year-spx
+
+Use:
+data.chart_data.ten_y_spx_timeseries
+
+Each row has:
+- date
+- spx_close
+- ten_yield
+- spx_return_pct
+- ten_y_change_bps
+- rolling_corr_7d
+- rolling_corr_30d
+- rolling_corr_63d
+- regime_label
+
+Also use:
+- current_market_snapshot
+- ten_year_spx_tracker
+- rolling_correlation
+- regime_labels
+- historical_windows
+- data_sources
+
+A) Hero summary row
+Show:
+- current 10Y yield: ten_year_spx_tracker.us_10y_current
+- 10Y 1D bps: ten_year_spx_tracker.us_10y_1d_bps
+- 10Y 7D bps: ten_year_spx_tracker.us_10y_7d_change_bps
+- SPX: current_market_snapshot.spx_price and current_market_snapshot.spx_change_pct
+- 30D correlation: rolling_correlation.rolling_corr_30d
+- current 7D regime: regime_labels["7d"]
+
+B) Main visual: 10Y Yield vs SPX overlay chart
+Create dual-axis line chart:
+- X-axis: date
+- left Y-axis: SPX close
+- right Y-axis: 10Y yield
+- Line 1: spx_close
+- Line 2: ten_yield
+
+Use same timeframe toggle:
+- 7D
+- 90D
+- 1Y
+- 5Y
+
+C) Rolling correlation chart
+Create line chart:
+- rolling_corr_7d
+- rolling_corr_30d
+- rolling_corr_63d
+- Y-axis fixed from -1 to +1
+- Reference line at 0
+- Tooltip should include correlation_basis:
+  “US 10Y daily bps change vs S&P 500 daily percent return”
+
+D) Daily move comparison chart
+Create latest 30-row bar chart:
+- spx_return_pct
+- ten_y_change_bps
+
+E) Regime timeline
+Create a compact recent regime strip using regime_label over the latest visible period.
+Readable labels:
+- yields_rising_spx_rising -> Yields ↑ / SPX ↑
+- yields_rising_spx_falling -> Yields ↑ / SPX ↓
+- yields_falling_spx_rising -> Yields ↓ / SPX ↑
+- yields_falling_spx_falling -> Yields ↓ / SPX ↓
+- mixed_flat -> Mixed / Flat
+
+F) Supporting details
+Below charts:
+- historical window cards
+- data source/freshness
+- stale warning if data_sources.freshness_warning exists
+
+================================
+VALIDATION
+================================
+
+After implementation, report:
+
+1. Files changed
+2. Chart library/components used
+3. Confirmation that these arrays are being used:
+   - chart_data.vix_spx_timeseries
+   - chart_data.window_summaries
+   - chart_data.ten_y_spx_timeseries
+4. Confirmation probability formatting is fixed
+5. Confirmation all three tabs visually render charts
+6. Confirmation existing Strategy tabs still work
+7. Confirmation Ask Caelyn still works for Weekly Movements
+8. TypeScript/build result
+9. Browser console result
+
+Do not claim success based only on HMR. Actually verify the tabs render chart data.
