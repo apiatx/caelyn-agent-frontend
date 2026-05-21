@@ -3814,6 +3814,7 @@ function CatalystSnapshotTab({
   identityMap = {},
   onFetchIdentity = () => {},
   rightSlot,
+  defaultMode = "week",
 }: {
   tabKey: string;
   scope: string;
@@ -3821,8 +3822,9 @@ function CatalystSnapshotTab({
   identityMap?: Record<string, IdentityData>;
   onFetchIdentity?: (tickers: string[]) => void;
   rightSlot?: React.ReactNode;
+  defaultMode?: SnapshotMode;
 }) {
-  const [mode, setMode] = useState<SnapshotMode>("week");
+  const [mode, setMode] = useState<SnapshotMode>(defaultMode);
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
 
   // Snapshot fetch — long staleTime, no polling/refetch on window focus.
@@ -7308,6 +7310,7 @@ export default function StocksEarningsCalendarPage() {
               search={search}
               identityMap={identityMap}
               onFetchIdentity={fetchIdentity}
+              defaultMode={isIpoTab ? "recent" : "week"}
               rightSlot={isIpoTab ? (
                 <div className="flex rounded-lg border border-white/[0.08] overflow-hidden text-[11px] font-semibold">
                   <button
