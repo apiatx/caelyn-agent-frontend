@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, type CSSProperties } from 'react';
+import { useState, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ArrowLeft, AlertCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
@@ -1269,10 +1269,647 @@ function StrategyScreenerInner() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Strategy Page — two-tab wrapper
+   Shared helpers for the three new strategy tabs
+   ═══════════════════════════════════════════════════════════════════ */
+const STRAT_BACKEND = 'https://fast-api-server-aidanpilon.replit.app';
+const STRAT_KEY     = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+const WEEKLY_PROMPT =
+  'Analyze the Weekly Price Movements scorecard. Compare 5-year, 1-year, past-quarter, and 7-day behavior. ' +
+  'Explain which scenarios have meaningful sample size, whether recent behavior is diverging from long-term averages, ' +
+  'and what risk regime this suggests. Do not give hard financial advice.';
+
+const SCENARIO_LABELS: Record<string, { label: string; icon: string; color: string }> = {
+  red_friday_to_monday:   { label: 'Down Friday → Monday', icon: '▼', color: C.red   },
+  green_friday_to_monday: { label: 'Up Friday → Monday',   icon: '▲', color: C.green },
+  red_monday_to_friday:   { label: 'Down Monday → Friday', icon: '▼', color: C.red   },
+  green_monday_to_friday: { label: 'Up Monday → Friday',   icon: '▲', color: C.green },
+};
+
+function sgn(v?: number | null): string {
+  return v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+}
+function sgnBps(v?: number | null): string {
+  return v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)} bps`;
+}
+function fmtCorr(v?: number | null): string {
+  return v == null ? '—' : v.toFixed(3);
+}
+function fmtPrice2(v?: number | null): string {
+  if (v == null) return '—';
+  return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+function fmtNum2(v?: number | null): string {
+  return v == null ? '—' : v.toFixed(2);
+}
+function fmtYield(v?: number | null): string {
+  return v == null ? '—' : `${v.toFixed(3)}%`;
+}
+function fmtTs2(d?: string | null): string {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  catch { return d; }
+}
+function warnLevelColor(level?: string): string {
+  if (!level) return C.dim;
+  const l = level.toLowerCase();
+  if (l.includes('extreme') || l.includes('critical')) return C.red;
+  if (l.includes('high') || l.includes('elevated'))    return '#f97316';
+  if (l.includes('caution') || l.includes('moderate')) return C.amber;
+  if (l.includes('low') || l.includes('calm'))         return C.green;
+  return C.dim;
+}
+function regimeLabelText(key?: string): string {
+  return ({
+    yields_rising_spx_rising:   'Yields ↑ · SPX ↑',
+    yields_rising_spx_falling:  'Yields ↑ · SPX ↓',
+    yields_falling_spx_rising:  'Yields ↓ · SPX ↑',
+    yields_falling_spx_falling: 'Yields ↓ · SPX ↓',
+    mixed_flat:                 'Mixed / Flat',
+  } as Record<string, string>)[key ?? ''] ?? (key ?? '—');
+}
+function regimeColor(key?: string): string {
+  if (key === 'yields_rising_spx_rising')   return C.green;
+  if (key === 'yields_rising_spx_falling')  return C.red;
+  if (key === 'yields_falling_spx_rising')  return C.blue;
+  if (key === 'yields_falling_spx_falling') return C.amber;
+  return C.dim;
+}
+function confColor(label?: string): string {
+  const l = (label ?? '').toLowerCase();
+  if (l.includes('high'))   return C.green;
+  if (l.includes('medium')) return C.amber;
+  return C.dim;
+}
+
+function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: `1px solid ${C.borderFaint}` }}>
+      <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{label}</span>
+      <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: color ?? C.bright }}>{value}</span>
+    </div>
+  );
+}
+
+function MetricPair({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ padding: '4px 0' }}>
+      <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: color ?? C.bright }}>{value}</div>
+    </div>
+  );
+}
+
+function SCard({ title, accent, children }: { title: string; accent?: string; children: ReactNode }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', position: 'relative', overflow: 'hidden', marginBottom: 16 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: accent ?? C.indigo, borderRadius: '10px 0 0 10px' }} />
+      <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: accent ?? C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function FreshWarn({ warning }: { warning?: string | null }) {
+  if (!warning) return null;
+  return (
+    <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <AlertCircle size={13} style={{ color: C.amber, flexShrink: 0 }} />
+      <span style={{ fontFamily: C.sans, fontSize: 12, color: C.amber }}>{warning}</span>
+    </div>
+  );
+}
+
+function SrcFooter({ generatedAt, cacheTtl, sources }: { generatedAt?: string; cacheTtl?: number; sources?: Record<string, unknown> }) {
+  if (!generatedAt && !sources) return null;
+  return (
+    <div style={{ marginTop: 20, paddingTop: 12, borderTop: `1px solid ${C.borderFaint}`, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+      {generatedAt && (
+        <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>
+          Generated {fmtTs2(generatedAt)}{cacheTtl ? ` · TTL ${Math.round(cacheTtl / 60)}m` : ''}
+        </span>
+      )}
+      {sources && Object.entries(sources).filter(([k]) => k !== 'freshness_warning').map(([k, v]) => (
+        <span key={k} style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>
+          {k}: <span style={{ color: C.dim }}>{String(v)}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tab: VIX Risk Regime
+   ═══════════════════════════════════════════════════════════════════ */
+function VixRiskRegimeTab() {
+  const { data, isLoading, error, refetch } = useQuery<any>({
+    queryKey: ['strategy-vix-risk-regime'],
+    queryFn:  () => fetch('/api/strategy/vix-risk-regime').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    gcTime:    15 * 60_000,
+    retry: 1,
+  });
+
+  useSetPageContext(
+    data
+      ? `[Page: VIX Risk Regime]\nvix_zone: ${data.vix_zone ?? ''}\nrisk_regime: ${data.risk_regime ?? ''}\n` +
+        JSON.stringify({ signal: data.vix_regime_signal, snapshot: data.current_market_snapshot })
+      : null,
+    [data],
+  );
+
+  if (isLoading && !data) return <LoadingState />;
+  if (error && !data) return <ErrorState message={`Could not load VIX Risk Regime: ${(error as Error).message}`} onRetry={() => refetch()} />;
+  if (!data) return null;
+
+  const snap    = data.current_market_snapshot ?? {};
+  const sig     = data.vix_regime_signal ?? {};
+  const corr    = data.vix_spx_correlation ?? {};
+  const windows = data.historical_windows ?? {};
+  const sources = data.data_sources ?? {};
+  const warnClr = warnLevelColor(sig.warning_level);
+  const spxClr  = (snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red;
+  const vixClr  = (snap.vix_change_pct ?? 0) >= 0 ? C.red   : C.green;
+
+  return (
+    <div style={{ padding: '28px 0', minHeight: 400 }}>
+      <FreshWarn warning={sources.freshness_warning as string} />
+
+      {/* Current Market Snapshot */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 4 }}>
+        <SCard title="S&P 500" accent={spxClr}>
+          <StatRow label="Price"      value={fmtPrice2(snap.spx_price)} />
+          <StatRow label="Change"     value={sgn(snap.spx_change_pct)} color={spxClr} />
+          {snap.vix_signal && <StatRow label="VIX Signal" value={snap.vix_signal} />}
+        </SCard>
+        <SCard title="VIX" accent={vixClr}>
+          <StatRow label="VIX"    value={fmtNum2(snap.vix)} />
+          <StatRow label="Change" value={sgn(snap.vix_change_pct)} color={vixClr} />
+          <StatRow label="Zone"   value={data.vix_zone ?? '—'} />
+        </SCard>
+        <SCard title="Macro" accent={C.blue}>
+          <StatRow label="10Y Yield" value={fmtYield(snap.us_10y)} />
+          <StatRow label="DXY"       value={fmtNum2(snap.dxy)} />
+          <StatRow label="DXY Chg"   value={sgn(snap.dxy_change_pct)} color={(snap.dxy_change_pct ?? 0) >= 0 ? C.green : C.red} />
+        </SCard>
+      </div>
+
+      {/* Signal Block */}
+      {sig.signal_title && (
+        <div style={{ background: `${warnClr}0a`, border: `1px solid ${warnClr}40`, borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: warnClr }}>
+              {sig.signal_title}
+            </span>
+            {sig.warning_level && (
+              <span style={{ padding: '2px 8px', background: `${warnClr}18`, border: `1px solid ${warnClr}40`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase' }}>
+                {sig.warning_level}
+              </span>
+            )}
+            {sig.current_vix != null && (
+              <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>VIX {sig.current_vix.toFixed(2)}</span>
+            )}
+            {sig.current_zone && (
+              <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>· {sig.current_zone}</span>
+            )}
+          </div>
+          {sig.signal_summary && (
+            <p style={{ fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.7, margin: '0 0 10px' }}>{sig.signal_summary}</p>
+          )}
+          {Array.isArray(sig.rules_used) && sig.rules_used.length > 0 && (
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {(sig.rules_used as string[]).map((r, i) => (
+                <span key={i} style={{ padding: '2px 7px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: C.font, fontSize: 9, color: C.dim }}>
+                  {r}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Risk Regime badge */}
+      {data.risk_regime && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Risk Regime:</span>
+          <span style={{ padding: '4px 12px', background: `${warnClr}12`, border: `1px solid ${warnClr}35`, borderRadius: 6, fontFamily: C.font, fontSize: 11, fontWeight: 700, color: warnClr }}>
+            {data.risk_regime}
+          </span>
+        </div>
+      )}
+
+      {/* VIX / SPX Correlation */}
+      {Object.keys(corr).length > 0 && (
+        <SCard title="VIX / SPX Correlation" accent={C.blue}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+            {([['7-Day', corr.rolling_corr_7d], ['30-Day', corr.rolling_corr_30d], ['63-Day', corr.rolling_corr_63d]] as [string, number][]).map(([label, v]) => (
+              <div key={label} style={{ textAlign: 'center', padding: '6px 0' }}>
+                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
+            <StatRow label="VIX 1D" value={sgn(corr.vix_1d_pct)} color={(corr.vix_1d_pct ?? 0) >= 0 ? C.red : C.green} />
+            <StatRow label="SPX 1D" value={sgn(corr.spx_1d_pct)} color={(corr.spx_1d_pct ?? 0) >= 0 ? C.green : C.red} />
+          </div>
+          {corr.interpretation && (
+            <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '8px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 8 }}>
+              {corr.interpretation}
+            </p>
+          )}
+          <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginTop: 6 }}>
+            {[corr.correlation_basis, corr.sample_size != null && `n=${corr.sample_size}`, corr.last_updated].filter(Boolean).join(' · ')}
+          </div>
+        </SCard>
+      )}
+
+      {/* Historical Windows */}
+      {Object.keys(windows).length > 0 && (
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+            Historical Windows
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
+              const w = windows[key];
+              if (!w) return null;
+              const ret = w.spx_return_pct as number | undefined;
+              return (
+                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                  <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
+                    {key === 'quarter' ? '90D' : key.toUpperCase()}
+                  </div>
+                  <StatRow label="VIX Min"    value={fmtNum2(w.vix_min)} />
+                  <StatRow label="VIX Max"    value={fmtNum2(w.vix_max)} />
+                  <StatRow label="VIX Avg"    value={fmtNum2(w.vix_avg)} />
+                  <StatRow label="SPX Return" value={sgn(ret)} color={ret != null ? (ret >= 0 ? C.green : C.red) : undefined} />
+                  {w.data_points != null && <StatRow label="Bars" value={String(w.data_points)} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <SrcFooter generatedAt={data.generated_at} cacheTtl={data.cache_ttl_seconds} sources={sources} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tab: Weekly Price Movements
+   ═══════════════════════════════════════════════════════════════════ */
+function WeeklyPriceMovementsTab() {
+  const { data, isLoading, error, refetch } = useQuery<any>({
+    queryKey: ['strategy-weekly-price-movements'],
+    queryFn:  () => fetch('/api/strategy/weekly-price-movements').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 10 * 60_000,
+    gcTime:    30 * 60_000,
+    retry: 1,
+  });
+
+  const [wKey,     setWKey]     = useState<'5y' | '1y' | 'quarter' | '7d'>('1y');
+  const [aiState,  setAiState]  = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [aiText,   setAiText]   = useState('');
+
+  useSetPageContext(
+    data
+      ? `[Page: Weekly Price Movements]\ncomputation: ${data.computation ?? ''}\n` +
+        JSON.stringify({ current_week_context: data.current_week_context, windows: data.windows })
+      : null,
+    [data],
+  );
+
+  const askCaelyn = async () => {
+    if (!data || aiState === 'loading') return;
+    setAiState('loading');
+    setAiText('');
+    try {
+      const r = await fetch(`${STRAT_BACKEND}/api/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': STRAT_KEY },
+        body: JSON.stringify({
+          query: WEEKLY_PROMPT,
+          screen_context: JSON.stringify({ page: 'Weekly Price Movements', ...data }),
+        }),
+      });
+      if (!r.ok) throw new Error(`Query returned ${r.status}`);
+      const d = await r.json();
+      setAiText(d.response || d.answer || d.content || d.text || JSON.stringify(d));
+      setAiState('done');
+    } catch (e: any) {
+      setAiText(e.message ?? 'Unknown error');
+      setAiState('error');
+    }
+  };
+
+  if (isLoading && !data) return <LoadingState />;
+  if (error && !data) return <ErrorState message={`Could not load Weekly Price Movements: ${(error as Error).message}`} onRetry={() => refetch()} />;
+  if (!data) return null;
+
+  const ctx     = data.current_week_context ?? {};
+  const windows = data.windows ?? {};
+  const win     = windows[wKey] ?? {};
+  const SCENARIOS = ['red_friday_to_monday', 'green_friday_to_monday', 'red_monday_to_friday', 'green_monday_to_friday'];
+
+  return (
+    <div style={{ padding: '28px 0', minHeight: 400 }}>
+      <FreshWarn warning={data.freshness_warning} />
+
+      {/* Current Week Context */}
+      {ctx.available !== false && (
+        <SCard title="Current Week Context" accent={C.blue}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <StatRow label="Today"          value={ctx.today_weekday ?? '—'} />
+            <StatRow label="Last Bar Date"  value={ctx.last_bar_date ?? '—'} />
+            <StatRow label="SPX Last Close" value={fmtPrice2(ctx.spx_last_close)} />
+            <StatRow label="SPX 52W High"   value={fmtPrice2(ctx.spx_52w_high)} />
+            <StatRow label="SPX 52W Low"    value={fmtPrice2(ctx.spx_52w_low)} />
+          </div>
+          {(ctx.last_friday || ctx.last_monday) && (
+            <div style={{ display: 'flex', gap: 20, marginTop: 10, flexWrap: 'wrap' }}>
+              {ctx.last_friday && (
+                <span style={{ fontFamily: C.font, fontSize: 11, color: ctx.last_friday.direction === 'up' ? C.green : C.red }}>
+                  Last Fri: {ctx.last_friday.direction === 'up' ? '▲' : '▼'} {sgn(ctx.last_friday.change_pct)}
+                </span>
+              )}
+              {ctx.last_monday && (
+                <span style={{ fontFamily: C.font, fontSize: 11, color: ctx.last_monday.direction === 'up' ? C.green : C.red }}>
+                  Last Mon: {ctx.last_monday.direction === 'up' ? '▲' : '▼'} {sgn(ctx.last_monday.change_pct)}
+                </span>
+              )}
+            </div>
+          )}
+        </SCard>
+      )}
+
+      {/* Window selector */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        {([['5y', '5 Year'], ['1y', '1 Year'], ['quarter', '90 Days'], ['7d', '7 Days']] as [string, string][]).map(([key, label]) => {
+          const active  = wKey === key;
+          const winData = windows[key] ?? {};
+          return (
+            <button key={key} onClick={() => setWKey(key as typeof wKey)} style={{
+              padding: '5px 14px', borderRadius: 6, cursor: 'pointer',
+              fontFamily: C.font, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+              background: active ? `${C.indigo}18` : 'transparent',
+              color: active ? C.indigoFg : C.dim,
+              border: `1px solid ${active ? C.indigo + '50' : C.border}`,
+              transition: 'all 0.15s',
+            }}>
+              {label}
+              {winData.window_bars != null && (
+                <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 4 }}>({winData.window_bars}w)</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Scenario cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+        {SCENARIOS.map(key => {
+          const sc   = win[key];
+          if (!sc) return null;
+          const meta  = SCENARIO_LABELS[key] ?? { label: key, icon: '·', color: C.dim };
+          const insuf = !!sc.insufficient_sample;
+          const col   = meta.color;
+          const gPct  = sc.green_probability as number | undefined;
+          const rPct  = sc.red_probability as number | undefined;
+          return (
+            <div key={key} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', opacity: insuf ? 0.75 : 1, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: col, borderRadius: '10px 0 0 10px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: col }}>{meta.icon} {meta.label}</span>
+                {insuf && (
+                  <span style={{ padding: '2px 7px', background: `${C.amber}12`, border: `1px solid ${C.amber}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase' }}>
+                    Insufficient Sample
+                  </span>
+                )}
+                {sc.confidence_label && !insuf && (
+                  <span style={{ padding: '2px 7px', background: `${confColor(sc.confidence_label)}12`, border: `1px solid ${confColor(sc.confidence_label)}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: confColor(sc.confidence_label), textTransform: 'uppercase' }}>
+                    {sc.confidence_label}
+                  </span>
+                )}
+                <span style={{ marginLeft: 'auto', fontFamily: C.font, fontSize: 10, color: C.muted }}>n = {sc.sample_count ?? '—'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
+                <MetricPair label="Green Prob"    value={gPct != null ? `${(gPct * 100).toFixed(1)}%` : '—'} color={insuf ? C.dim : C.green} />
+                <MetricPair label="Red Prob"      value={rPct != null ? `${(rPct * 100).toFixed(1)}%` : '—'} color={insuf ? C.dim : C.red} />
+                <MetricPair label="Avg Return"    value={sgn(sc.average_return_pct)} color={insuf ? C.dim : (sc.average_return_pct ?? 0) >= 0 ? C.green : C.red} />
+                <MetricPair label="Median Return" value={sgn(sc.median_return_pct)}  color={insuf ? C.dim : (sc.median_return_pct ?? 0) >= 0 ? C.green : C.red} />
+                <MetricPair label="Best"          value={sgn(sc.best_return_pct)}  color={insuf ? C.dim : C.green} />
+                <MetricPair label="Worst"         value={sgn(sc.worst_return_pct)} color={insuf ? C.dim : C.red} />
+                <MetricPair label="Std Dev"       value={sc.std_dev_pct != null ? `${(sc.std_dev_pct as number).toFixed(2)}%` : '—'} />
+                <MetricPair label="Green / Red"   value={`${sc.green_count ?? 0} / ${sc.red_count ?? 0}`} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ask Caelyn block */}
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', marginBottom: 8 }}>
+        <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          Ask Caelyn
+        </div>
+        <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.6, margin: '0 0 12px', fontStyle: 'italic' }}>
+          "{WEEKLY_PROMPT}"
+        </p>
+        <button
+          onClick={askCaelyn}
+          disabled={aiState === 'loading'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 18px',
+            background: aiState === 'loading' ? C.indigoSub : C.indigo,
+            border: `1px solid ${C.indigo}`, borderRadius: 6,
+            color: C.bright, fontFamily: C.font, fontSize: 10, fontWeight: 700,
+            cursor: aiState === 'loading' ? 'not-allowed' : 'pointer',
+            opacity: aiState === 'loading' ? 0.7 : 1,
+            transition: 'all 0.15s', textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}
+        >
+          {aiState === 'loading' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
+          {aiState === 'loading' ? 'Thinking…' : 'Ask Caelyn'}
+        </button>
+        {aiState === 'error' && (
+          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, fontFamily: C.sans, fontSize: 12, color: C.red }}>
+            {aiText}
+          </div>
+        )}
+        {aiState === 'done' && aiText && (
+          <div style={{ marginTop: 12, padding: '14px 16px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+            {aiText}
+          </div>
+        )}
+      </div>
+
+      <SrcFooter
+        generatedAt={data.generated_at}
+        cacheTtl={data.cache_ttl_seconds}
+        sources={{ data_source: data.data_source, durable_cache: data.durable_cache, total_bars: data.total_bars_loaded, spx_proxy: data.spx_proxy }}
+      />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tab: 10Y Yield vs S&P 500
+   ═══════════════════════════════════════════════════════════════════ */
+function TenYearSpxTab() {
+  const { data, isLoading, error, refetch } = useQuery<any>({
+    queryKey: ['strategy-ten-year-spx'],
+    queryFn:  () => fetch('/api/strategy/ten-year-spx').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    gcTime:    15 * 60_000,
+    retry: 1,
+  });
+
+  useSetPageContext(
+    data
+      ? `[Page: 10Y Yield vs S&P 500]\n` +
+        JSON.stringify({ snapshot: data.current_market_snapshot, tracker: data.ten_year_spx_tracker, correlation: data.rolling_correlation, regimes: data.regime_labels })
+      : null,
+    [data],
+  );
+
+  if (isLoading && !data) return <LoadingState />;
+  if (error && !data) return <ErrorState message={`Could not load 10Y Yield vs S&P 500: ${(error as Error).message}`} onRetry={() => refetch()} />;
+  if (!data) return null;
+
+  const snap    = data.current_market_snapshot ?? {};
+  const tracker = data.ten_year_spx_tracker ?? {};
+  const corr    = data.rolling_correlation ?? {};
+  const regimes = data.regime_labels ?? {};
+  const windows = data.historical_windows ?? {};
+  const sources = data.data_sources ?? {};
+  const spxClr  = (snap.spx_change_pct ?? 0) >= 0 ? C.green : C.red;
+
+  return (
+    <div style={{ padding: '28px 0', minHeight: 400 }}>
+      <FreshWarn warning={sources.freshness_warning as string} />
+
+      {/* Current Snapshot */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginBottom: 4 }}>
+        <SCard title="S&P 500" accent={spxClr}>
+          <StatRow label="Price"  value={fmtPrice2(snap.spx_price)} />
+          <StatRow label="Change" value={sgn(snap.spx_change_pct)} color={spxClr} />
+          <StatRow label="VIX"    value={fmtNum2(snap.vix)} />
+        </SCard>
+        <SCard title="Treasuries" accent={C.amber}>
+          <StatRow label="10Y Yield"     value={fmtYield(snap.us_10y)} />
+          <StatRow label="2Y Yield"      value={fmtYield(snap.us_2y)} />
+          <StatRow label="2s/10s Spread" value={snap.spread_2s10s != null ? `${(snap.spread_2s10s as number).toFixed(2)}%` : '—'} color={(snap.spread_2s10s ?? 0) >= 0 ? C.green : C.red} />
+        </SCard>
+        <SCard title="Dollar" accent={C.blue}>
+          <StatRow label="DXY" value={fmtNum2(snap.dxy)} />
+        </SCard>
+      </div>
+
+      {/* Tracker */}
+      {Object.keys(tracker).length > 0 && (
+        <SCard title="10Y Yield & SPX Tracker" accent={C.amber}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <StatRow label="10Y Current"   value={fmtYield(tracker.us_10y_current)} />
+            <StatRow label="10Y 1D Chg"    value={sgnBps(tracker.us_10y_1d_bps)} color={(tracker.us_10y_1d_bps ?? 0) >= 0 ? C.red : C.green} />
+            <StatRow label="10Y 7D Chg"    value={sgnBps(tracker.us_10y_7d_change_bps)} color={(tracker.us_10y_7d_change_bps ?? 0) >= 0 ? C.red : C.green} />
+            <StatRow label="SPX Current"   value={fmtPrice2(tracker.spx_current)} />
+            <StatRow label="SPX 1D"        value={sgn(tracker.spx_1d_change_pct)} color={(tracker.spx_1d_change_pct ?? 0) >= 0 ? C.green : C.red} />
+            <StatRow label="SPX 7D"        value={sgn(tracker.spx_7d_change_pct)} color={(tracker.spx_7d_change_pct ?? 0) >= 0 ? C.green : C.red} />
+            <StatRow label="DXY Current"   value={fmtNum2(tracker.dxy_current)} />
+            <StatRow label="DXY Change"    value={sgn(tracker.dxy_change_pct)} color={(tracker.dxy_change_pct ?? 0) >= 0 ? C.green : C.red} />
+          </div>
+        </SCard>
+      )}
+
+      {/* Regime Labels */}
+      {Object.keys(regimes).length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+            Regime Labels
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {(['7d', '30d', '63d'] as string[]).map(key => {
+              const rk = regimes[key] as string | undefined;
+              if (!rk) return null;
+              const rc = regimeColor(rk);
+              return (
+                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 16px', minWidth: 150 }}>
+                  <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginBottom: 6 }}>{key.toUpperCase()}</div>
+                  <div style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: rc }}>{regimeLabelText(rk)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Rolling Correlation */}
+      {Object.keys(corr).length > 0 && (
+        <SCard title="Rolling Correlation (10Y vs SPX)" accent={C.blue}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+            {([['7-Day', corr.rolling_corr_7d], ['30-Day', corr.rolling_corr_30d], ['63-Day', corr.rolling_corr_63d]] as [string, number][]).map(([label, v]) => (
+              <div key={label} style={{ textAlign: 'center', padding: '6px 0' }}>
+                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
+                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          {corr.interpretation && (
+            <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '8px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 8 }}>
+              {corr.interpretation}
+            </p>
+          )}
+          <div style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginTop: 6 }}>
+            {[corr.correlation_basis, corr.sample_size != null && `n=${corr.sample_size}`, corr.last_updated].filter(Boolean).join(' · ')}
+          </div>
+        </SCard>
+      )}
+
+      {/* Historical Windows */}
+      {Object.keys(windows).length > 0 && (
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+            Historical Windows
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
+              const w = windows[key];
+              if (!w) return null;
+              const ret = w.spx_return_pct as number | undefined;
+              const bps = w.ten_y_change_bps as number | undefined;
+              return (
+                <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                  <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
+                    {key === 'quarter' ? '90D' : key.toUpperCase()}
+                  </div>
+                  <StatRow label="10Y Start"  value={fmtYield(w.ten_y_start)} />
+                  <StatRow label="10Y End"    value={fmtYield(w.ten_y_end)} />
+                  <StatRow label="10Y Chg"    value={sgnBps(bps)} color={bps != null ? (bps >= 0 ? C.red : C.green) : undefined} />
+                  <StatRow label="SPX Start"  value={fmtPrice2(w.spx_start)} />
+                  <StatRow label="SPX End"    value={fmtPrice2(w.spx_end)} />
+                  <StatRow label="SPX Return" value={sgn(ret)} color={ret != null ? (ret >= 0 ? C.green : C.red) : undefined} />
+                  {w.data_points != null && <StatRow label="Bars" value={String(w.data_points)} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <SrcFooter generatedAt={data.generated_at} cacheTtl={data.cache_ttl_seconds} sources={sources} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Strategy Page — five-tab wrapper
    ═══════════════════════════════════════════════════════════════════ */
 export default function StrategyScreenerPage() {
-  const [tab, setTab] = useState<'screener' | 'smart-options'>('screener');
+  const [tab, setTab] = useState<'screener' | 'smart-options' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('screener');
 
   const tabStyle = (active: boolean): CSSProperties => ({
     padding: '8px 20px',
@@ -1305,6 +1942,15 @@ export default function StrategyScreenerPage() {
         <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>
           Smart Options
         </button>
+        <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>
+          VIX Risk Regime
+        </button>
+        <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>
+          Weekly Movements
+        </button>
+        <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>
+          10Y Yield vs SPX
+        </button>
       </div>
 
       {/* Tab content */}
@@ -1312,6 +1958,21 @@ export default function StrategyScreenerPage() {
       {tab === 'smart-options' && (
         <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
           <SmartOptionsTab />
+        </div>
+      )}
+      {tab === 'vix-risk-regime' && (
+        <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <VixRiskRegimeTab />
+        </div>
+      )}
+      {tab === 'weekly-price-movements' && (
+        <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <WeeklyPriceMovementsTab />
+        </div>
+      )}
+      {tab === 'ten-year-spx' && (
+        <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
+          <TenYearSpxTab />
         </div>
       )}
     </div>

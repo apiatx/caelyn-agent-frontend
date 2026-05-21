@@ -1,0 +1,278 @@
+Backend is complete. Add three separate tabs to the Strategy page.
+
+Tabs:
+1. VIX Risk Regime
+2. Weekly Price Movements
+3. 10Y Yield vs S&P 500
+
+Use these exact endpoints:
+GET /api/strategy/vix-risk-regime
+GET /api/strategy/weekly-price-movements
+GET /api/strategy/ten-year-spx
+
+Do not call FMP, FRED, yfinance, Tradier, Yahoo, or any market data provider directly from frontend.
+Do not create new market snapshot calls.
+Backend already handles Home Market Snapshot reuse, memory cache, Neon durable snapshots, and provider fallback.
+
+First audit the existing Strategy page:
+- current tab architecture
+- route/API helper pattern
+- existing loading/error states
+- existing card/table/badge styles
+- existing screen context mechanism for Caelyn
+
+Preserve existing Strategy page architecture. Do not refactor existing Strategy tabs.
+
+========================
+TAB 1: VIX Risk Regime
+========================
+
+Endpoint:
+GET /api/strategy/vix-risk-regime
+
+Use these exact fields:
+
+Top-level:
+- generated_at
+- cache_ttl_seconds
+- vix_zone
+- risk_regime
+- current_market_snapshot
+- vix_regime_signal
+- vix_spx_correlation
+- historical_windows
+- data_sources
+
+Display current snapshot:
+- current_market_snapshot.spx_price
+- current_market_snapshot.spx_change_pct
+- current_market_snapshot.vix
+- current_market_snapshot.vix_change_pct
+- current_market_snapshot.vix_signal
+- current_market_snapshot.us_10y
+- current_market_snapshot.dxy
+- current_market_snapshot.dxy_change_pct
+
+Display signal block:
+- vix_regime_signal.current_vix
+- vix_regime_signal.current_zone
+- vix_regime_signal.warning_level
+- vix_regime_signal.signal_title
+- vix_regime_signal.signal_summary
+- vix_regime_signal.rules_used
+
+Display correlation block:
+- vix_spx_correlation.vix_1d_pct
+- vix_spx_correlation.spx_1d_pct
+- vix_spx_correlation.rolling_corr_7d
+- vix_spx_correlation.rolling_corr_30d
+- vix_spx_correlation.rolling_corr_63d
+- vix_spx_correlation.sample_size
+- vix_spx_correlation.correlation_basis
+- vix_spx_correlation.interpretation
+- vix_spx_correlation.last_updated
+
+Display historical windows:
+- historical_windows["7d"]
+- historical_windows["quarter"]
+- historical_windows["1y"]
+- historical_windows["5y"]
+
+Each historical window may include:
+- window
+- vix_min
+- vix_max
+- vix_avg
+- spx_first
+- spx_last
+- spx_return_pct
+- data_points
+
+Display source/freshness:
+- data_sources.current_snapshot
+- data_sources.vix_history
+- data_sources.spx_history
+- data_sources.durable_cache
+- data_sources.freshness_warning if present
+
+UX:
+Use warning/signal language only. Do not render hard buy/sell advice.
+
+==============================
+TAB 2: Weekly Price Movements
+==============================
+
+Endpoint:
+GET /api/strategy/weekly-price-movements
+
+Use `windows`, not `intraweek_scenarios`.
+
+Top-level fields:
+- generated_at
+- cache_ttl_seconds
+- data_source
+- durable_cache
+- freshness_warning if present
+- total_bars_loaded
+- spx_proxy
+- computation
+- current_week_context
+- windows
+
+Display current_week_context:
+- current_week_context.available
+- current_week_context.today_weekday
+- current_week_context.last_bar_date
+- current_week_context.spx_last_close
+- current_week_context.spx_52w_high
+- current_week_context.spx_52w_low
+- current_week_context.last_friday.direction
+- current_week_context.last_friday.change_pct
+- current_week_context.last_monday.direction
+- current_week_context.last_monday.change_pct
+
+Display four windows:
+- windows["5y"]
+- windows["1y"]
+- windows["quarter"]
+- windows["7d"]
+
+For each window, display:
+- window
+- window_bars
+
+For each window, display these exact scenario keys:
+- red_friday_to_monday
+- green_friday_to_monday
+- red_monday_to_friday
+- green_monday_to_friday
+
+Each scenario has:
+- scenario
+- sample_count
+- green_count
+- red_count
+- green_probability
+- red_probability
+- average_return_pct
+- median_return_pct
+- best_return_pct
+- worst_return_pct
+- std_dev_pct
+- confidence_label
+- insufficient_sample
+
+For insufficient_sample=true, show a clear “insufficient sample” badge and avoid overemphasizing probabilities.
+
+Add an “Ask Caelyn” button:
+- Do not auto-run AI on page load.
+- Use the existing AI/query flow.
+- Send the Weekly Price Movements endpoint payload as screen context.
+- Suggested prompt:
+“Analyze the Weekly Price Movements scorecard. Compare 5-year, 1-year, past-quarter, and 7-day behavior. Explain which scenarios have meaningful sample size, whether recent behavior is diverging from long-term averages, and what risk regime this suggests. Do not give hard financial advice.”
+
+===============================
+TAB 3: 10Y Yield vs S&P 500
+===============================
+
+Endpoint:
+GET /api/strategy/ten-year-spx
+
+Top-level fields:
+- generated_at
+- cache_ttl_seconds
+- current_market_snapshot
+- ten_year_spx_tracker
+- rolling_correlation
+- regime_labels
+- historical_windows
+- data_sources
+
+Display current snapshot:
+- current_market_snapshot.spx_price
+- current_market_snapshot.spx_change_pct
+- current_market_snapshot.vix
+- current_market_snapshot.us_10y
+- current_market_snapshot.us_2y
+- current_market_snapshot.spread_2s10s
+- current_market_snapshot.dxy
+
+Display tracker:
+- ten_year_spx_tracker.us_10y_current
+- ten_year_spx_tracker.us_10y_1d_bps
+- ten_year_spx_tracker.us_10y_7d_change_bps
+- ten_year_spx_tracker.spx_current
+- ten_year_spx_tracker.spx_1d_change_pct
+- ten_year_spx_tracker.spx_7d_change_pct
+- ten_year_spx_tracker.dxy_current
+- ten_year_spx_tracker.dxy_change_pct
+
+Display rolling correlations:
+- rolling_correlation.rolling_corr_7d
+- rolling_correlation.rolling_corr_30d
+- rolling_correlation.rolling_corr_63d
+- rolling_correlation.sample_size
+- rolling_correlation.correlation_basis
+- rolling_correlation.interpretation
+- rolling_correlation.last_updated
+
+Display regime labels:
+- regime_labels["7d"]
+- regime_labels["30d"]
+- regime_labels["63d"]
+
+Possible regime values:
+- yields_rising_spx_rising
+- yields_rising_spx_falling
+- yields_falling_spx_rising
+- yields_falling_spx_falling
+- mixed_flat
+
+Display historical windows:
+- historical_windows["7d"]
+- historical_windows["quarter"]
+- historical_windows["1y"]
+- historical_windows["5y"]
+
+Each historical window may include:
+- window
+- data_points
+- ten_y_start
+- ten_y_end
+- ten_y_change_bps
+- spx_start
+- spx_end
+- spx_return_pct
+
+Display source/freshness:
+- data_sources.current_snapshot
+- data_sources.ten_y_history
+- data_sources.spx_history
+- data_sources.durable_cache
+- data_sources.freshness_warning if present
+
+================
+Shared UX rules
+================
+
+Each tab must have:
+- loading state
+- error state with retry
+- graceful missing-field handling
+- freshness/cache/source badge
+- stale data warning if data_sources.freshness_warning exists
+- no blank Strategy page if one endpoint fails
+
+Screen context:
+Make sure each new Strategy tab injects its loaded endpoint payload into the existing screen context mechanism so Caelyn can reason from the visible data.
+
+Validation report:
+After implementation, report:
+- files changed
+- exact endpoint paths used
+- whether all three tabs load
+- whether existing Strategy tabs still work
+- whether Ask Caelyn uses existing AI flow
+- whether screen context receives each tab’s endpoint payload
+- TypeScript result
+- browser console warnings/errors

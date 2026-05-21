@@ -5449,6 +5449,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/strategy/vix-risk-regime', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 35_000);
+      const r = await fetch(`${PB_URL}/api/strategy/vix-risk-regime`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'vix-risk-regime failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy/vix-risk-regime] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/strategy/weekly-price-movements', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 35_000);
+      const r = await fetch(`${PB_URL}/api/strategy/weekly-price-movements`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'weekly-price-movements failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy/weekly-price-movements] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/strategy/ten-year-spx', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 35_000);
+      const r = await fetch(`${PB_URL}/api/strategy/ten-year-spx`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'ten-year-spx failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy/ten-year-spx] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── Canonical Themes Registry ────────────────────────────────────────
   app.get('/api/themes/relative-strength', async (req, res) => {
     try {
