@@ -5377,7 +5377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/strategy-screener/latest', async (req, res) => {
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 15000);
+      setTimeout(() => ctrl.abort(), 90000);
       const qs = new URLSearchParams(req.query as Record<string, string>).toString();
       const url = `${PB_URL}/api/strategy-screener/latest${qs ? `?${qs}` : ''}`;
       console.log('[strategy-screener/latest] → proxying to:', url);

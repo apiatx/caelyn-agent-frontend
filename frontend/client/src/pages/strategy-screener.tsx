@@ -914,7 +914,7 @@ function StrategyScreenerInner() {
     queryKey: ['strategy-screener-latest'],
     queryFn:  () => fetchLatestSnapshot(),
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: 0,
   });
 
   const refreshMut = useMutation({

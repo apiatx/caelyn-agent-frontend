@@ -1,0 +1,168 @@
+Before touching anything else, restore and protect the original Chain Reaction/Bottlenecks Strategy tab.
+
+Important context:
+The Chain Reaction/Bottlenecks tab was the original Strategy page and was working perfectly before the last round of changes. The new VIX / Weekly / 10Y tabs should be additive only. They must not break or refactor the original Chain Reaction/Bottlenecks functionality.
+
+Current visible error:
+Could not load data: /api/strategy-screener/latest failed: 500 — {"error":"This operation was aborted"}
+
+That endpoint belongs to the original Chain Reaction/Bottlenecks tab. It should still work, but even if it fails, it must not freeze the entire Strategy page or block the other tabs.
+
+Your task:
+Fix the Strategy page architecture and restore Chain Reaction/Bottlenecks.
+
+Do not redesign the Chain Reaction/Bottlenecks tab.
+Do not rewrite its data model.
+Do not remove existing sections.
+Do not change backend unless direct backend curl proves the backend endpoint is broken.
+Preserve the old working behavior and layout as much as possible.
+
+Required architecture:
+
+Strategy page shell renders immediately.
+
+Tabs are independent mini-pages:
+
+- Chain Reaction / Bottlenecks tab:
+  GET /api/strategy-screener/latest
+
+- Smart Options tab:
+  GET /api/strategy/smart-options
+
+- VIX Risk Regime tab:
+  GET /api/strategy/vix-risk-regime
+
+- Weekly Price Movements tab:
+  GET /api/strategy/weekly-price-movements
+
+- 10Y Yield vs S&P 500 tab:
+  GET /api/strategy/ten-year-spx
+
+No tab should share one global loading state, one global error state, or one global data dependency.
+
+The current bug:
+If /api/strategy-screener/latest aborts, the whole Strategy page appears to load endlessly. That is wrong.
+
+Correct behavior:
+If /api/strategy-screener/latest fails:
+- Chain Reaction/Bottlenecks tab shows an isolated error with Retry.
+- Smart Options still works.
+- VIX Risk Regime still works.
+- Weekly Price Movements still works.
+- 10Y Yield vs S&P 500 still works.
+- Tab bar and Strategy page shell still render.
+
+Step 1 — Audit before coding:
+Compare the current Chain Reaction/Bottlenecks implementation against the previous working structure in strategy-screener.tsx.
+
+Find:
+- original Chain Reaction component/render block
+- original fetch for /api/strategy-screener/latest
+- original loading/error states
+- original tab key
+- any changes from the latest chart-tab edit that accidentally wrapped the whole Strategy page in Chain Reaction loading
+- any duplicate/deleted blocks from the previous replacement
+
+Step 2 — Validate the Chain Reaction endpoint:
+From frontend Replit shell:
+
+curl -i http://localhost:<frontend-port>/api/strategy-screener/latest
+
+Then backend direct:
+
+curl -i <AGENT_BACKEND_URL>/api/strategy-screener/latest
+
+Report:
+- frontend proxy status
+- backend direct status
+- response time
+- whether abort is happening in frontend proxy or backend
+- first 300 chars of response
+
+If backend direct works but frontend proxy aborts, fix the frontend proxy route.
+If backend direct aborts, report clearly and do not hide it with frontend changes.
+
+Step 3 — Fix loading architecture:
+Remove any global page-level loading gate that waits for /api/strategy-screener/latest.
+
+Bad:
+Strategy page mounts → waits for /api/strategy-screener/latest → endpoint aborts → whole page stuck
+
+Good:
+Strategy page mounts → tab bar renders immediately → active tab fetches only its own endpoint → tab-level error if that endpoint fails
+
+Step 4 — Make Chain Reaction/Bottlenecks isolated:
+The Chain Reaction/Bottlenecks tab should own:
+- its own loading state
+- its own error state
+- its own data state
+- its own retry button
+- its own fetch timeout/controller
+
+It should not control the Strategy page shell loading state.
+
+Every fetch must use finally:
+
+try {
+  setLoading(true)
+  setError(null)
+  const res = await fetch(...)
+  const text = await res.text()
+
+  if (!res.ok) {
+    throw new Error(`${url} failed: ${res.status} — ${text.slice(0, 300)}`)
+  }
+
+  if (!text.trim().startsWith("{") && !text.trim().startsWith("[")) {
+    throw new Error(`${url} returned non-JSON: ${text.slice(0, 300)}`)
+  }
+
+  const json = JSON.parse(text)
+  setData(json)
+} catch (err) {
+  setError(err instanceof Error ? err.message : String(err))
+} finally {
+  setLoading(false)
+}
+
+Step 5 — Lazy-load all tabs:
+Do not fetch every Strategy tab endpoint on page mount.
+
+Fetch only when selected:
+- Chain Reaction fetches /api/strategy-screener/latest only when Chain Reaction tab is active.
+- Smart Options fetches its own endpoint only when active.
+- VIX fetches its own endpoint only when active.
+- Weekly fetches its own endpoint only when active.
+- 10Y fetches its own endpoint only when active.
+
+Cache successful tab payloads in component state so switching tabs does not repeatedly refetch.
+
+Step 6 — Preserve the visual chart work:
+Keep the chart-first design for the three new tabs, but only after the loading architecture is fixed.
+
+Also keep the probability formatting fix:
+Backend returns percent values like 61.17, so display 61.17%, not 6117% or 7368%.
+
+Step 7 — Actual validation required:
+Do not claim success from HMR, TypeScript, or curl alone.
+
+You must validate in the actual authenticated app.
+
+Report:
+1. Root cause of why the Strategy page was loading endlessly
+2. Whether /api/strategy-screener/latest failed in frontend proxy or backend
+3. Exact files/lines changed
+4. Confirmation Chain Reaction/Bottlenecks tab is restored and renders like before
+5. Confirmation Chain Reaction/Bottlenecks failure is isolated to that tab
+6. Confirmation Smart Options still works
+7. Confirmation VIX Risk Regime tab renders charts
+8. Confirmation Weekly Price Movements tab renders charts
+9. Confirmation 10Y Yield vs S&P 500 tab renders charts
+10. Confirmation tab shell renders immediately
+11. Confirmation no infinite loading
+12. Browser console result
+13. Network tab result
+14. TypeScript/build result
+
+Non-negotiable:
+The original Chain Reaction/Bottlenecks tab was working before. Restore it first. The new strategy tabs are additive and must not break existing Strategy page functionality.

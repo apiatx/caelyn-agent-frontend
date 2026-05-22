@@ -1,0 +1,132 @@
+The Strategy page is now loading endlessly in the real app after your chart redesign.
+
+Do not add new features. Debug and fix the endless loading first.
+
+Your prior validation was insufficient because you hit the login wall and did not actually verify the authenticated Strategy page rendering. HMR success and endpoint 200s do not prove the UI works.
+
+Goal:
+Make the Strategy page render normally again, with existing tabs and the three new chart tabs working.
+
+Immediate debugging steps:
+
+1. Reproduce the real issue
+- Open the actual Strategy page route in the running frontend app.
+- Authenticate if needed, or use whatever existing local auth flow/test token the app uses.
+- Do not stop at the login wall.
+- Confirm whether the whole Strategy page is loading forever or only the new tab content is loading forever.
+
+2. Inspect the browser console and Network tab
+Report:
+- console errors
+- failed requests
+- pending requests
+- response status for:
+  - /api/strategy/vix-risk-regime
+  - /api/strategy/weekly-price-movements
+  - /api/strategy/ten-year-spx
+- whether those requests are browser requests or only shell curl requests
+- whether any request remains pending forever
+
+3. Audit loading state logic in strategy-screener.tsx
+Check every new tab component/useEffect/fetch helper.
+
+Every fetch path must:
+- set loading true before request
+- set data on success
+- set error on failure
+- set loading false in a finally block
+- never leave loading true if JSON parsing fails
+- never leave loading true if chart_data is missing/malformed
+- never block the entire Strategy page because one new endpoint fails
+
+Example required pattern:
+
+try {
+  setLoading(true)
+  setError(null)
+  const res = await fetch(...)
+  const text = await res.text()
+  if (!res.ok) throw new Error(...)
+  if (!text.trim().startsWith("{")) throw new Error(...)
+  const json = JSON.parse(text)
+  setData(json)
+} catch (err) {
+  setError(...)
+} finally {
+  setLoading(false)
+}
+
+4. Do not fetch all three new endpoints globally if only one tab is active
+If the current implementation fetches all three new strategy endpoints on Strategy page mount, change it.
+
+Preferred:
+- Fetch per tab when that tab is selected.
+- Cache the result in component state after first successful fetch.
+- Existing Chain Reaction and Smart Options tabs should not wait for VIX/Weekly/10Y endpoints.
+
+The Strategy page shell and tab bar must render immediately.
+
+5. Add request timeout protection
+Wrap each fetch with AbortController timeout.
+
+Use 35s max because the proxy routes use 35s timeout, but the UI should fail gracefully:
+- show “Request timed out — retry”
+- do not spin forever
+
+6. Validate chart_data shape defensively
+For VIX:
+- Array.isArray(data?.chart_data?.vix_spx_timeseries)
+If false, show a tab-level error and stop loading.
+
+For Weekly:
+- window_summaries may come back as an object with numeric string keys.
+Use Object.values safely:
+const summaries = Array.isArray(raw) ? raw : Object.values(raw || {})
+
+For 10Y:
+- Array.isArray(data?.chart_data?.ten_y_spx_timeseries)
+If false, show a tab-level error and stop loading.
+
+7. Check active tab wiring
+Make sure adding the three new tabs did not break the active tab enum/string logic.
+
+Confirm the tab keys exactly match the render switch:
+- "chain-reaction" or existing key
+- "smart-options" or existing key
+- "vix-risk-regime"
+- "weekly-price-movements"
+- "ten-year-spx"
+
+If the selected tab key has no matching render case, do not show a permanent loading state.
+
+8. Check for accidental duplicate component state
+You said there were two full copies of the new section and then you deleted the duplicate. Re-check that:
+- only one set of components exists
+- only one StrategyScreener export exists
+- no old loading overlay from the removed block remains
+- no duplicate useEffect is still firing
+
+9. Fix probability formatting
+The previous screenshot showed impossible values like 7368.0%.
+Backend returns percent values like 61.17.
+Display 61.17%, not 6117% or 7368%.
+
+Do this without breaking loading.
+
+10. Actual validation required
+After the fix, provide real validation from the authenticated Strategy page, not just shell curl.
+
+Report:
+- Strategy page initial render works
+- Existing Chain Reaction tab works
+- Existing Smart Options tab works
+- VIX Risk Regime tab renders charts
+- Weekly Price Movements tab renders charts
+- 10Y Yield vs S&P 500 tab renders charts
+- no infinite loading
+- no browser console errors
+- all three browser network requests return JSON
+- loading state clears on success
+- loading state clears on forced failure or timeout
+
+Do not claim success based only on HMR, TypeScript, or curl.
