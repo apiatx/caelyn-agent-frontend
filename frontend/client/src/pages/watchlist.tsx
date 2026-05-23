@@ -666,11 +666,12 @@ export default function WatchlistPage() {
     queryKey: ['/api/watchlist/list'],
     queryFn: async () => {
       const r = await fetch('/api/watchlist/list');
-      if (!r.ok) return [];
+      if (!r.ok) throw new Error(`watchlist list: ${r.status}`);
       return r.json();
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
+    retry: 2,
   });
 
   /* ── auto-select first on load ───────────────────────────────────── */
@@ -686,10 +687,11 @@ export default function WatchlistPage() {
     queryFn: async () => {
       if (!activeId) return null;
       const r = await fetch(`/api/watchlist/${activeId}`);
-      if (!r.ok) return null;
+      if (!r.ok) throw new Error(`watchlist ${activeId}: ${r.status}`);
       return r.json();
     },
     enabled: !!activeId,
+    retry: 2,
     staleTime: 60_000,
     // Poll while agent analysis is running in background on the server
     refetchInterval: refreshStatus === 'running' ? 20_000 : false,

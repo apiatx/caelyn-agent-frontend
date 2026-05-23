@@ -4988,11 +4988,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/watchlist/list', async (req, res) => {
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 10000);
+      setTimeout(() => ctrl.abort(), 30000);
       const r = await fetch(`${WL_URL}/api/watchlist/list`, { headers: wlHdr(), signal: ctrl.signal });
-      if (!r.ok) return res.json([]);
+      if (!r.ok) return res.status(r.status).json({ error: 'watchlist/list failed' });
       res.json(await r.json());
-    } catch { res.json([]); }
+    } catch (e: any) {
+      res.status(502).json({ error: e.message || 'watchlist/list error' });
+    }
   });
 
   app.get('/api/watchlist/news', async (req, res) => {
@@ -5172,11 +5174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (['news','list','debug'].includes(wid)) return next();
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 10000);
+      setTimeout(() => ctrl.abort(), 30000);
       const r = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl.signal });
-      if (!r.ok) return res.json({ empty: true });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist/${wid} failed` });
       res.json(await r.json());
-    } catch { res.json({ empty: true }); }
+    } catch (e: any) {
+      res.status(502).json({ error: e.message || `watchlist/${wid} error` });
+    }
   });
 
   // Delete specific watchlist
