@@ -3202,7 +3202,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const mode = req.query.mode === 'day' ? 'day' : 'swing';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      // Reduced from 20s → 8s: this endpoint consistently times out; a shorter
+      // timeout means the Home "Should I Trade?" widget shows its — fallback
+      // in 8s instead of holding the connection open for 20s on every failure.
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const response = await fetch(`${AGENT_URL}/api/trading-dashboard?mode=${mode}`, {
         headers: { 'X-API-Key': AGENT_KEY },
         signal: controller.signal,
@@ -4333,18 +4336,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const srHdr  = () => ({ 'X-API-Key': SR_KEY, 'Content-Type': 'application/json' });
 
   // === Home dashboard (SINGLE composed aggregator) ===
-  // Rules (strict):
-  //   - The Home page makes exactly ONE network request: this route.
-  //   - This route returns backend /api/home/dashboard payload PLUS the two
-  //     bits that used to live in separate Home queries: news articles
-  //     (already on 5-min NEWS_CACHE) and crypto fear/greed (already on the
-  //     MarketOverviewService cache). Both are read from in-process caches
-  //     that other routes already keep warm — this route does NOT add net-new
-  //     third-party API traffic; upstream cache TTLs are reused as-is.
-  //   - Upstream failures are soft: news/crypto are best-effort and never
-  //     break the primary dashboard payload.
+  // Express-level stale-while-revalidate cache. The FastAPI backend can take
+  // 20-30s on a cold/uncached request. This cache serves the last good payload
+  // instantly (< 5ms) and lets the TTL expiry trigger a fresh fetch naturally.
+  const _homeDashCache: { data: any; at: number } = { data: null, at: 0 };
+  const HOME_DASH_TTL_MS = 90_000; // 90 seconds
+
   app.get('/api/home/dashboard', async (req, res) => {
-    const qs = req.query.force === 'true' ? '?force=true' : '';
+    const force = req.query.force === 'true';
+    const qs = force ? '?force=true' : '';
+    const _reqStart = Date.now();
+
+    // ── Cache check (stale-while-revalidate) ─────────────────────────────
+    const _cacheAge = _reqStart - _homeDashCache.at;
+    if (!force && _homeDashCache.data && _cacheAge < HOME_DASH_TTL_MS) {
+      console.log(`[HOME_UI_PERF] /api/home/dashboard cache HIT (age=${_cacheAge}ms)`);
+      return res.json({ ..._homeDashCache.data, _express_cache_age_ms: _cacheAge });
+    }
+    console.log(`[HOME_UI_PERF] /api/home/dashboard cache MISS — fetching (force=${force})`);
+    // ─────────────────────────────────────────────────────────────────────
 
     // Fire the three sources in parallel. Each is independently guarded so a
     // failure in one never blocks the others.
@@ -4477,7 +4487,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })();
 
     try {
+      const _t0 = Date.now();
       const [backend, news, cryptoFg, portfolioSnap] = await Promise.all([backendP, newsP, cryptoFgP, portfolioSnapP]);
+      console.log(`[HOME_UI_PERF] /api/home/dashboard all promises resolved in ${Date.now() - _t0}ms (total=${Date.now() - _reqStart}ms)`);
 
       // Attach composed fields on top of the backend payload. Backend's
       // `fear_greed.crypto` is always null (see home_service._extract_fear_greed);
@@ -4501,6 +4513,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           portfolio_snapshot: (portfolioSnap && portfolioSnap.length > 0) ? 'ok' : (backend.section_status?.portfolio_snapshot || 'unavailable'),
         },
       };
+
+      // Populate Express cache (skip forced refreshes — those are admin/push ops)
+      if (!force) {
+        _homeDashCache.data = composed;
+        _homeDashCache.at = Date.now();
+        console.log(`[HOME_UI_PERF] /api/home/dashboard cache STORED (total=${Date.now() - _reqStart}ms)`);
+      }
+
       res.json(composed);
 
       // If options flows are still pending, fire a background force-refresh so the

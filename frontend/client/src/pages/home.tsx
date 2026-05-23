@@ -1120,12 +1120,14 @@ export default function HomePage() {
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
     queryKey: ["/api/home/dashboard"],
     staleTime: 60_000,
-    // Poll every 30 s while options flows haven't appeared yet
+    // Poll every 30 s while options flows haven't appeared yet.
+    // Hard cap at 3 background polls to avoid hammering the slow FastAPI backend
+    // indefinitely when options flows data is unavailable (no_data_yet state).
     refetchInterval: (query) => {
       const d = query.state.data as HomeDashboardPayload | undefined;
+      if ((query.state.dataUpdateCount ?? 0) >= 3) return false;
       const flowStatus = d?.section_status?.unusual_options_flows;
       const dataState  = d?.unusual_options_meta?.data_state;
-      // Poll every 30s while the home fast cache hasn't produced results yet.
       const notReady = !d?.unusual_options_flows?.length ||
         flowStatus === "precompute_pending" || flowStatus === "no_data_yet" ||
         dataState === "no_data_yet" || dataState === "none";

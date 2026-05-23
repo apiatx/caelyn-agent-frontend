@@ -1,0 +1,67 @@
+URGENT FRONTEND PERFORMANCE AUDIT: Home page now takes 5+ minutes to load all sections. Do not redesign the page. Do not remove sections. Preserve current UI and API contracts.
+
+Goal:
+Find whether the frontend is blocking rendering until all Home sections finish, over-fetching, retry-looping, or repeatedly triggering expensive backend calls.
+
+Step 1 — Identify all Home page requests:
+Audit the Home page component and hooks. List every API request fired on initial load, including:
+- direct fetch calls
+- React Query hooks
+- useEffect calls
+- child components that fetch on mount
+- duplicate calls caused by parent and child both fetching same data
+
+Step 2 — Add frontend timing logs:
+Add temporary console timing logs:
+[HOME_UI_PERF] request=/api/whatever start
+[HOME_UI_PERF] request=/api/whatever total_ms=...
+[HOME_UI_PERF] section=whatever render_wait_ms=...
+
+Do not log secrets or user data.
+
+Step 3 — Make sections render independently:
+The Home page must not wait for every request to finish before showing anything.
+Each section should have its own loading/skeleton/error state.
+If one section is slow, the rest of the Home page should still render.
+
+Bad:
+await Promise.all([...all homepage requests...]) before render
+
+Better:
+independent hooks/components per section, or Promise.allSettled with partial rendering
+
+Step 4 — Check duplicate/refetch loops:
+Look for:
+- useEffect dependencies that change every render
+- object/array literals in dependency arrays
+- React Query keys that include unstable objects
+- refetchInterval too aggressive
+- refetchOnWindowFocus causing reload storms
+- child components fetching the same endpoint repeatedly
+- frontend proxy causing fan-out repeatedly
+
+Fix duplicate calls surgically.
+
+Step 5 — Add request timeout / abort behavior:
+Any frontend request should fail gracefully and not hang forever.
+Use existing fetch wrapper if present. If not, add timeout behavior carefully without breaking API shape.
+
+Step 6 — Preserve stale data:
+If the backend returns stale/LKG/cache_status data, display it instead of keeping the section in endless loading.
+Do not treat stale cache as failure.
+
+Step 7 — Validate:
+Use Chrome Network tab or console logs and report:
+- every endpoint called on Home initial load
+- how many times each endpoint is called
+- slowest request
+- whether rendering is blocked by a single request
+- any duplicate call loops found
+- changes made
+
+Success criteria:
+- Home page shell renders quickly.
+- Fast sections appear independently.
+- Slow/failing sections show their own loading/error/fallback state.
+- No endpoint is called repeatedly without user action.
+- No full-page spinner while waiting for every section.
