@@ -776,50 +776,45 @@ export default function ScreenerHub() {
       <div className="p-4 sm:p-5 lg:p-6 space-y-4">
 
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold tracking-tight bg-gradient-to-r from-purple-300 to-fuchsia-300 bg-clip-text text-transparent">
-              Caelyn Screener
-            </h2>
-            <p className="text-xs text-white/50 mt-1">
-              Hidden-gem discovery — volume, accumulation, and options signals across all tabs.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-white/50" data-testid="screener-hub-meta">
-            {meta.generated_at && (
-              <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                Updated {new Date(meta.generated_at).toLocaleTimeString()}
-              </span>
-            )}
-            {meta.fundamentals_cache_status && (
-              <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                Fund: {meta.fundamentals_cache_status}
-              </span>
-            )}
-            {meta.quote_cache_status && (
-              <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                Quote: {meta.quote_cache_status}
-              </span>
-            )}
-          </div>
-        </div>
+        <h2 className="text-lg sm:text-xl font-semibold tracking-tight bg-gradient-to-r from-purple-300 to-fuchsia-300 bg-clip-text text-transparent">
+          Caelyn Screener
+        </h2>
 
         <Tabs value={tab} onValueChange={(v) => switchTab(v as TabKey)}>
-          <TabsList
-            className="bg-black/40 border border-purple-500/20 h-auto p-1 flex-wrap"
-            data-testid="screener-hub-tabs"
-          >
-            {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
-              <TabsTrigger
-                key={k}
-                value={k}
-                data-testid={`screener-hub-tab-${k}`}
-                className="data-[state=active]:bg-purple-600/30 data-[state=active]:text-white text-white/70"
-              >
-                {TAB_LABELS[k]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <TabsList
+              className="bg-black/40 border border-purple-500/20 h-auto p-1 flex-wrap"
+              data-testid="screener-hub-tabs"
+            >
+              {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
+                <TabsTrigger
+                  key={k}
+                  value={k}
+                  data-testid={`screener-hub-tab-${k}`}
+                  className="data-[state=active]:bg-purple-600/30 data-[state=active]:text-white text-white/70"
+                >
+                  {TAB_LABELS[k]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <div className="flex items-center gap-2 text-[11px] text-white/50" data-testid="screener-hub-meta">
+              {meta.generated_at && (
+                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                  Updated {new Date(meta.generated_at).toLocaleTimeString()}
+                </span>
+              )}
+              {meta.fundamentals_cache_status && (
+                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                  Fund: {meta.fundamentals_cache_status}
+                </span>
+              )}
+              {meta.quote_cache_status && (
+                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                  Quote: {meta.quote_cache_status}
+                </span>
+              )}
+            </div>
+          </div>
 
           {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
             <TabsContent key={k} value={k} className="mt-4 space-y-4">
@@ -834,7 +829,7 @@ export default function ScreenerHub() {
               >
                 <div className="max-h-[640px] overflow-auto">
                   <table className="w-full text-xs">
-                    <thead className="bg-purple-950/40 sticky top-0 z-10">
+                    <thead className="bg-purple-950 sticky top-0 z-10">
                       <tr>
                         {visibleColumns.map((c) => {
                           const isSorted = sortKey === c.key;
