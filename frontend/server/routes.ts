@@ -4441,8 +4441,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }));
 
-        // ── 2. Tradier relative volume (existing helper) ─────────────────────
-        const tradierP = fetchTradierRelVolume(tickers).catch(() => new Map<string, any>());
+        // ── 2. Tradier relative volume — single batch call to FastAPI LKG endpoint ─
+        //    Replaces N individual /api/tradier/quote/:ticker calls (each 15s timeout)
+        //    with one GET /api/portfolio/relative-volume?tickers=... that returns in
+        //    ~6ms (warm cache) / ~202ms (LKG fallback) / ~850ms (live) — never hangs.
+        //    Price + change_1d_pct not in batch response; Yahoo fills those below.
+        const tradierP = (async (): Promise<Map<string, {
+          volume: number; avg_volume: number; vol_x: number | null;
+          price: null; change_1d_pct: null;
+        }>> => {
+          try {
+            const batchUrl = `${AGENT_URL}/api/portfolio/relative-volume?tickers=${encodeURIComponent(tickers.join(','))}`;
+            const r = await fetch(batchUrl, {
+              headers: { 'X-API-Key': AGENT_KEY },
+              signal: AbortSignal.timeout(5_000),
+            });
+            if (!r.ok) { console.warn(`[tradier-relvol-batch] FastAPI returned ${r.status}`); return new Map(); }
+            const body = await r.json() as any;
+            const tickerMap: Record<string, any> = body?.tickers ?? {};
+            const out = new Map<string, { volume: number; avg_volume: number; vol_x: number | null; price: null; change_1d_pct: null }>();
+            for (const [sym, q] of Object.entries(tickerMap)) {
+              out.set(sym.toUpperCase(), {
+                volume:       (q as any).volume     ?? 0,
+                avg_volume:   (q as any).avg_volume ?? 0,
+                vol_x:        (q as any).vol_x      ?? null,
+                price:        null, // not in batch response; Yahoo fallback used below
+                change_1d_pct: null,
+              });
+            }
+            console.log(`[tradier-relvol-batch] ${out.size}/${tickers.length} tickers status=${body?.data_status ?? 'unknown'} from_cache=${body?.from_cache}`);
+            return out;
+          } catch (e) {
+            console.warn('[tradier-relvol-batch] batch fetch failed:', (e as any)?.message);
+            return new Map();
+          }
+        })();
 
         // ── 3. Options signal — sourced directly from caelynTerminalCache.portfolio_options
         //       The Portfolio Terminal already fetched and cached this data (same Tradier-based
