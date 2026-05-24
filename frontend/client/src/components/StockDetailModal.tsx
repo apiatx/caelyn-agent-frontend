@@ -72,6 +72,7 @@ interface StockDetailModalProps {
   analysis: any;
   csvData?: any[];
   newsItems: NewsItem[];
+  earningsEntry?: any;
   onClose: () => void;
 }
 
@@ -106,7 +107,7 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
 /* ═══════════════════════════════════════════════════════════════════
    STOCK DETAIL MODAL
    ═══════════════════════════════════════════════════════════════════ */
-export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose }: StockDetailModalProps) {
+export function StockDetailModal({ ticker, analysis, csvData, newsItems, earningsEntry, onClose }: StockDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [deepDive, setDeepDive] = useState<any>(null);
   const [deepDiveLoading, setDeepDiveLoading] = useState(false);
@@ -292,7 +293,7 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, onClose
 
         {/* ── Tab Content ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} />}
+          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} />}
           {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
           {activeTab === 'news' && <NewsTab ticker={ticker} items={newsItems} />}
           {activeTab === 'deep-dive' && (
@@ -336,7 +337,7 @@ function resolveTVExchange(ticker: string, stock: any, csvRow: any): string {
   return 'NYSE';
 }
 
-function OverviewTab({ stock, ticker, csvRow }: { stock: any; ticker: string; csvRow?: any }) {
+function OverviewTab({ stock, ticker, csvRow, earningsEntry }: { stock: any; ticker: string; csvRow?: any; earningsEntry?: any }) {
   const exchange = resolveTVExchange(ticker, stock, csvRow);
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${exchange}:${ticker}`;
 
@@ -353,6 +354,37 @@ function OverviewTab({ stock, ticker, csvRow }: { stock: any; ticker: string; cs
           title={`${ticker} chart`}
         />
       </div>
+
+      {/* Upcoming Earnings */}
+      {earningsEntry?.next_date && (
+        <div>
+          <SectionLabel>Upcoming Earnings</SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
+            <MetricBox label="Date" value={earningsEntry.next_date} raw />
+            <MetricBox
+              label="Est EPS"
+              value={earningsEntry.est_eps != null
+                ? (Number(earningsEntry.est_eps) >= 0 ? '+' : '') + '$' + Math.abs(Number(earningsEntry.est_eps)).toFixed(2)
+                : '—'}
+              raw
+              colored={earningsEntry.est_eps != null ? (Number(earningsEntry.est_eps) >= 0 ? 'green' : 'red') : undefined}
+            />
+            <MetricBox
+              label="Last EPS"
+              value={earningsEntry.last_eps != null
+                ? (Number(earningsEntry.last_eps) >= 0 ? '+' : '') + '$' + Math.abs(Number(earningsEntry.last_eps)).toFixed(2)
+                : '—'}
+              raw
+              colored={earningsEntry.last_eps != null ? (Number(earningsEntry.last_eps) >= 0 ? 'green' : 'red') : undefined}
+            />
+            <MetricBox
+              label="Rev Est"
+              value={earningsEntry.revenue_estimated != null ? fmtNumber(earningsEntry.revenue_estimated) : '—'}
+              raw
+            />
+          </div>
+        </div>
+      )}
 
       {/* New format overview */}
       {isNewFmt && (
