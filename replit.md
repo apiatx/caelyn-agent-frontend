@@ -68,6 +68,29 @@ Token stored as `caelyn_jwt` in localStorage/sessionStorage.
 - `caelyn-terminal-page.tsx` Holdings table renders company logo to the left of each ticker.
 - Source: `useQuery(['company-identity', sortedTickerCsv])` → `/api/fmp/company-identity?symbols=…` (server-cached 24h in `routes.ts` `_identityCache`). Same endpoint the earnings page calls via `onFetchIdentity` on Portfolio toggle — shared backend cache, no duplicate FMP fetches.
 
+## Home Dashboard Performance Architecture (LOCKED — do not change without explicit instruction)
+
+### Validated timings (as of 2026-05-24)
+- First uncached request (Tradier healthy): ~3.2s
+- Express cache HIT: ~6ms
+- Natural post-TTL refresh (FastAPI warm cache): ~455ms
+- Relvol LKG/cache path: sub-500ms
+
+### Locked decisions
+1. **Batch relvol endpoint**: `portfolioSnapP` inside `app.get('/api/home/dashboard')` (routes.ts) calls `GET ${AGENT_URL}/api/portfolio/relative-volume?tickers=...` as a single batch request with a 5s timeout. Do NOT revert to `fetchTradierRelVolume()` (N individual per-ticker calls with 15s timeouts each).
+2. **LKG-first**: Home page never waits on live Tradier if LKG/cache data is available. The batch endpoint on FastAPI returns instantly from LKG when Tradier is saturated or degraded.
+3. **Express cache**: `_homeDashCache` in-memory cache (90s TTL, stale-while-revalidate) stays in place on the Express `/api/home/dashboard` route. Cache HITs return in <10ms with `_express_cache_age_ms` in the response body.
+4. **FastAPI section-level timeouts + LKG fallbacks**: FastAPI `/api/home/dashboard` has per-section timeouts and LKG fallbacks. Do not remove them.
+5. **`?force=true` is admin-only**: The normal Home page flow never passes `?force=true`. Force-refresh is allowed only for explicit admin/debug/manual cache flush. The `?force=true` path can take 15–20s because it forces a full live re-fetch from all upstream sources — this is expected.
+6. **Metadata fields**: Preserve `data_status`, `from_cache`, `lkg_age_seconds`, `quote_source`, `quote_is_stale`, and `quote_fallback_reason` wherever the backend returns them. Do not label LKG data as live.
+7. **GlobalPrefetch key alignment**: `GlobalDataContext.tsx` prefetch key for the investor overview is `["/api/predict/investor/overview"]` — must match Home page `useQuery` key exactly so the prefetch deduplicates correctly.
+8. **Polling cap**: `home.tsx` caps background `refetchInterval` polling at 3 refreshes via `(query.state.dataUpdateCount ?? 0) >= 3` guard.
+
+### Key files
+- `frontend/server/routes.ts` — Express proxy; home dashboard cache at `_homeDashCache`; `portfolioSnapP` batch relvol call; `fetchTradierRelVolume` (used by other routes, not by home dashboard)
+- `frontend/client/src/pages/home.tsx` — polling cap; 8 `useQuery` hooks
+- `frontend/client/src/contexts/GlobalDataContext.tsx` — GlobalPrefetch; key `["/api/predict/investor/overview"]`
+
 ## Dev Notes
 - Vite config requires `server.allowedHosts: 'all'` for Replit preview
 - Backend API key in `AGENT_API_KEY` constant across various pages
