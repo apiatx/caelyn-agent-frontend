@@ -114,8 +114,9 @@ export function GlobalPrefetch() {
       },
       staleTime: 90_000,
     });
-    pre(["predict-signal-changes"],  "/api/predict/signal-changes",  undefined, 90_000);
-    pre(["predict-investor-overview"],"/api/predict/investor/overview", undefined, 5 * 60_000);
+    pre(["predict-signal-changes"],        "/api/predict/signal-changes",         undefined, 90_000);
+    // Key aligned with Home page useQuery key so the prefetch deduplicates correctly
+    pre(["/api/predict/investor/overview"], "/api/predict/investor/overview",      undefined, 5 * 60_000);
 
   }, [isAuthenticated, qc]); // re-run only if auth state changes
 
