@@ -113,6 +113,12 @@ function extractAllStocks(analysis: any): any[] {
             sentiment: t.sentiment,
             action_note: t.action_note,
             key_insight: t.key_insight,
+            vol_mc_pct: t.vol_mc_pct ?? null,
+            vol_mc_ratio: t.vol_mc_ratio ?? null,
+            vol_mc_label: t.vol_mc_label ?? null,
+            vol_mc_unavailable_reason: t.vol_mc_unavailable_reason ?? null,
+            market_cap: t.market_cap ?? null,
+            dollar_volume: t.dollar_volume ?? null,
             section_id: section.id,
             section_title: section.title,
             canonical_theme_name: section.canonical_theme_name || section.title,
@@ -215,6 +221,36 @@ function formatVolume(v: any): string {
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
   return String(Math.round(n));
+}
+
+function formatVolMcPct(pct: any): string {
+  if (pct == null || !Number.isFinite(Number(pct))) return DASH;
+  return `${Number(pct).toFixed(2)}%`;
+}
+
+function volMcLabelColor(label: string | null | undefined, C: Record<string, string>): string {
+  if (!label) return C.text;
+  switch (label.toLowerCase()) {
+    case 'low':      return C.dim;
+    case 'normal':   return C.teal;
+    case 'elevated': return C.amber;
+    case 'high':     return C.red;
+    default:         return C.text;
+  }
+}
+
+function formatEpsVal(v: any): string {
+  if (v == null || !Number.isFinite(Number(v))) return DASH;
+  const n = Number(v);
+  return (n >= 0 ? '+' : '') + `$${Math.abs(n).toFixed(2)}`;
+}
+
+function formatRevEst(v: any): string {
+  if (v == null || !Number.isFinite(Number(v))) return DASH;
+  const n = Number(v);
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`;
+  return `$${Math.round(n)}`;
 }
 
 function formatRelVol(volume: any, averageVolume: any, preComputed?: any): string {
@@ -643,8 +679,10 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [earnSortCol, setEarnSortCol] = useState<'ticker' | 'date' | 'est' | 'last' | 'rev'>('date');
+  const [earnSortDir, setEarnSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -771,6 +809,21 @@ export default function WatchlistPage() {
     staleTime: 60_000,
     refetchInterval: 5 * 60 * 1000,
     enabled: !!activeId && !!watchlist?.analysis,
+  });
+
+  /* ── watchlist earnings ──────────────────────────────────────────── */
+  const { data: earningsResp, isLoading: earningsLoading, isError: earningsIsError } = useQuery<{
+    earnings: any[]; meta?: any;
+  }>({
+    queryKey: ['earnings', 'watchlist', activeId],
+    queryFn: async () => {
+      const r = await fetch('/api/watchlist/earnings');
+      if (!r.ok) throw new Error(`watchlist/earnings: ${r.status}`);
+      return r.json();
+    },
+    enabled: !!activeId,
+    staleTime: 5 * 60_000,
+    retry: 1,
   });
 
   /* ── delete specific watchlist ───────────────────────────────────── */
@@ -1051,6 +1104,10 @@ export default function WatchlistPage() {
         const av = Number(stock.average_volume);
         if (!Number.isFinite(v) || !Number.isFinite(av) || av === 0) return { v: 0, missing: true };
         return { v: v / av, missing: false };
+      }
+      case 'volMc': {
+        const n = Number(stock.vol_mc_pct ?? stock.vol_mc_ratio);
+        return { v: n, missing: !Number.isFinite(n) || n <= 0 };
       }
     }
   }
@@ -1543,7 +1600,7 @@ export default function WatchlistPage() {
 
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = () => {
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 62px';
     const tickerColumns: { key: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -1552,6 +1609,7 @@ export default function WatchlistPage() {
       { key: 'chg', label: 'Chg %' },
       { key: 'volume', label: 'Volume' },
       { key: 'relVol', label: 'Rel Vol' },
+      { key: 'volMc', label: 'Vol/MC' },
     ];
     return (
       <div style={{
@@ -1682,6 +1740,15 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
                   </span>
+                  <span
+                    style={{
+                      fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const,
+                      color: volMcLabelColor(stock.vol_mc_label, C),
+                    }}
+                    title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}
+                  >
+                    {formatVolMcPct(stock.vol_mc_pct)}
+                  </span>
                 </div>
               );
             })}
@@ -1773,6 +1840,142 @@ export default function WatchlistPage() {
       </div>
     </div>
   );
+
+  /* ── watchlist earnings section ──────────────────────────────────── */
+  const renderEarningsSection = () => {
+    const EARN_GRID = '72px 64px 56px 72px 72px';
+    const earnings: any[] = earningsResp?.earnings ?? [];
+
+    const sorted = [...earnings].sort((a, b) => {
+      const dir = earnSortDir === 'asc' ? 1 : -1;
+      if (earnSortCol === 'ticker') return dir * (a.ticker || '').localeCompare(b.ticker || '');
+      if (earnSortCol === 'date') {
+        const ai = a.date_raw || '', bi = b.date_raw || '';
+        if (!ai && !bi) return 0; if (!ai) return dir; if (!bi) return -dir;
+        return dir * (ai < bi ? -1 : ai > bi ? 1 : 0);
+      }
+      if (earnSortCol === 'est') {
+        const an = Number(a.est_eps), bn = Number(b.est_eps);
+        const am = !Number.isFinite(an), bm = !Number.isFinite(bn);
+        if (am && bm) return 0; if (am) return 1; if (bm) return -1;
+        return dir * (an - bn);
+      }
+      if (earnSortCol === 'last') {
+        const an = Number(a.last_eps), bn = Number(b.last_eps);
+        const am = !Number.isFinite(an), bm = !Number.isFinite(bn);
+        if (am && bm) return 0; if (am) return 1; if (bm) return -1;
+        return dir * (an - bn);
+      }
+      if (earnSortCol === 'rev') {
+        const an = Number(a.revenue_estimated), bn = Number(b.revenue_estimated);
+        const am = !Number.isFinite(an), bm = !Number.isFinite(bn);
+        if (am && bm) return 0; if (am) return 1; if (bm) return -1;
+        return dir * (an - bn);
+      }
+      return 0;
+    });
+
+    const thClick = (col: typeof earnSortCol) => {
+      if (earnSortCol === col) setEarnSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      else { setEarnSortCol(col); setEarnSortDir('asc'); }
+    };
+    const arr = (col: typeof earnSortCol) =>
+      earnSortCol === col ? (earnSortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+    const thStyle = (col: typeof earnSortCol): React.CSSProperties => ({
+      fontSize: 8, fontWeight: 700, color: earnSortCol === col ? C.teal : C.dim,
+      textTransform: 'uppercase', letterSpacing: '0.08em',
+      cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
+      padding: '6px 0',
+    });
+
+    return (
+      <div style={{ padding: '0 20px 16px' }}>
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+              EARNINGS
+            </span>
+            {earningsResp?.meta && (
+              <span style={{ fontSize: 9, color: C.dim }}>
+                {earningsResp.meta.events_count ?? sorted.length} upcoming · {earningsResp.meta.symbols_count ?? 0} symbols
+              </span>
+            )}
+            {earningsLoading && (
+              <div className="wl-spin" style={{ width: 10, height: 10, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
+            )}
+          </div>
+
+          {/* Body */}
+          <div style={{ overflowX: 'auto' }} className="wl-scrollbar">
+            {earningsIsError ? (
+              <div style={{ padding: '14px 16px', fontSize: 11, color: C.dim }}>
+                Could not load earnings data.
+              </div>
+            ) : earningsLoading && !earningsResp ? (
+              <div style={{ padding: '14px 16px', fontSize: 11, color: C.dim }}>Loading earnings…</div>
+            ) : sorted.length === 0 ? (
+              <div style={{ padding: '14px 16px', fontSize: 11, color: C.dim }}>
+                No upcoming earnings found for your watchlist.
+              </div>
+            ) : (
+              <div style={{ minWidth: 380 }}>
+                {/* Table header */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: EARN_GRID,
+                  padding: '0 14px', borderBottom: `1px solid ${C.border}`,
+                  position: 'sticky', top: 0, background: C.card, zIndex: 1,
+                  gap: 8,
+                }}>
+                  <span style={thStyle('ticker')} onClick={() => thClick('ticker')}>Ticker{arr('ticker')}</span>
+                  <span style={{ ...thStyle('date'), textAlign: 'right' }} onClick={() => thClick('date')}>Date{arr('date')}</span>
+                  <span style={{ ...thStyle('est'), textAlign: 'right' }} onClick={() => thClick('est')}>Est EPS{arr('est')}</span>
+                  <span style={{ ...thStyle('last'), textAlign: 'right' }} onClick={() => thClick('last')}>Last EPS{arr('last')}</span>
+                  <span style={{ ...thStyle('rev'), textAlign: 'right' }} onClick={() => thClick('rev')}>Rev Est{arr('rev')}</span>
+                </div>
+                {/* Rows */}
+                {sorted.map((e, i) => (
+                  <div
+                    key={`earn-${e.ticker}-${i}`}
+                    style={{
+                      display: 'grid', gridTemplateColumns: EARN_GRID,
+                      padding: '6px 14px', gap: 8,
+                      borderBottom: `1px solid ${C.border}`,
+                      background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 800, color: C.teal, fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {e.ticker}
+                    </span>
+                    <span style={{ fontSize: 10, color: C.amber, fontFamily: C.font, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {e.next_date || DASH}
+                    </span>
+                    <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {formatEpsVal(e.est_eps)}
+                    </span>
+                    <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {formatEpsVal(e.last_eps)}
+                    </span>
+                    <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {formatRevEst(e.revenue_estimated)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   /* ── loading state ───────────────────────────────────────────────── */
   if (wlLoading && !wlMetas?.length) {
@@ -2107,6 +2310,9 @@ export default function WatchlistPage() {
                 ) : null}
               </div>
             )}
+
+            {/* ── Watchlist Earnings ── */}
+            {renderEarningsSection()}
 
             {/* ── Canonical theme section cards ── */}
             <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>

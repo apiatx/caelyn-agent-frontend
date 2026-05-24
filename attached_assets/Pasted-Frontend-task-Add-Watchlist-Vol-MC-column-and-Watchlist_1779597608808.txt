@@ -1,0 +1,98 @@
+Frontend task: Add Watchlist Vol/MC column and Watchlist Earnings section using the confirmed backend contract.
+
+Backend contract confirmed:
+1) For Watchlist ticker rows, use:
+   GET /api/watchlist/{watchlist_id}
+
+   Do NOT use raw:
+   GET /api/watchlist
+
+   Reason:
+   - GET /api/watchlist is raw store and does not include Vol/MC fields.
+   - GET /api/watchlist/{watchlist_id} is the enriched load path and already includes Vol/MC fields.
+
+2) Vol/MC fields are present on:
+   analysis.sections[].tickers[]
+
+Available row fields:
+- vol_mc_ratio: float | null
+- vol_mc_pct: float | null
+- vol_mc_label: "low" | "normal" | "elevated" | "high" | null
+- vol_mc_unavailable_reason: string | null
+- market_cap: float | null
+- dollar_volume: float | null
+
+Task 1 — Add Vol/MC column to Watchlist tickers section:
+- Find the Watchlist page table/section that renders tickers from GET /api/watchlist/{watchlist_id}.
+- Add a new column named “Vol/MC” or “Vol/MC Ratio”.
+- Read the value from each ticker row:
+  - Prefer displaying vol_mc_pct as a percent.
+  - Example: 7.8954 should display as 7.90%.
+  - If vol_mc_pct is null, show a dash.
+- Optionally show/use vol_mc_label if the table already uses badges/chips:
+  - low
+  - normal
+  - elevated
+  - high
+- Do not show undefined, NaN, null, or raw ugly values.
+- Do not add any direct FMP/Tradier calls from frontend.
+- Do not calculate Vol/MC on frontend unless absolutely necessary. Backend already returns it.
+- Do not change Watchlist save/upload/delete behavior.
+
+Task 2 — Add Watchlist Earnings section:
+- Add an Earnings section to the Watchlist page.
+- Display it the same way as the Portfolio page Terminal tab earnings section.
+- Reuse/extract existing Portfolio Terminal earnings UI/component if practical.
+- Use backend endpoint:
+  GET /api/watchlist/earnings
+
+Optional params if the existing UI already uses date windows:
+  ?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD
+
+Expected response:
+{
+  earnings: [...],
+  meta: {
+    universe: "watchlist",
+    cache_status,
+    symbols_count,
+    events_count,
+    from_date,
+    to_date,
+    elapsed_ms
+  }
+}
+
+Requirements:
+- Earnings must be scoped to the user’s saved watchlist tickers.
+- Do not show portfolio holdings earnings here.
+- Do not fetch earnings one ticker at a time.
+- Use one backend call.
+- Match Portfolio Terminal earnings visual style:
+  - title/header
+  - loading state
+  - empty state
+  - error state
+  - ticker/date/EPS/revenue/time fields where available
+- Empty state:
+  “No upcoming earnings found for your watchlist.”
+
+Audit first:
+1) Find the Watchlist page/component.
+2) Find where GET /api/watchlist/{watchlist_id} is called.
+3) Confirm the tickers table receives rows from analysis.sections[].tickers[].
+4) Find the Portfolio Terminal earnings component/rendering logic.
+5) Reuse that pattern rather than creating a separate-looking section.
+
+Validation:
+1) Watchlist page loads normally.
+2) Tickers table still renders all current tickers.
+3) Vol/MC column appears.
+4) Rows with vol_mc_pct show formatted percent.
+5) Rows with null Vol/MC show dash.
+6) Earnings section loads from GET /api/watchlist/earnings.
+7) Earnings are watchlist-scoped.
+8) Empty/no earnings state does not crash.
+9) Portfolio Terminal still renders unchanged.
+10) Browser console has no TypeScript/runtime errors.
+11) Network tab does not show per-symbol earnings calls.

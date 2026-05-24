@@ -5220,11 +5220,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Watchlist earnings (must be before /:wid to avoid param capture)
+  app.get('/api/watchlist/earnings', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 20_000);
+      const qs = req.query.from_date || req.query.to_date
+        ? `?${new URLSearchParams(req.query as Record<string,string>).toString()}`
+        : '';
+      const r = await fetch(`${WL_URL}/api/watchlist/earnings${qs}`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist/earnings failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'watchlist/earnings error') });
+    }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;
     // Don't intercept these — they have their own routes
-    if (['news','list','debug'].includes(wid)) return next();
+    if (['news','list','debug','earnings'].includes(wid)) return next();
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 30000);
