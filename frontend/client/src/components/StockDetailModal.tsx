@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square } from 'lucide-react';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
@@ -132,6 +133,20 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, earning
     const t = r.ticker || r.Ticker || r.TICKER || r.symbol || r.Symbol;
     return t?.toUpperCase() === ticker.toUpperCase();
   });
+
+  /* ── company identity → exchange for TradingView ─────────────────── */
+  const { data: identityData } = useQuery<Record<string, any>>({
+    queryKey: ['company-identity', ticker.toUpperCase()],
+    queryFn: async () => {
+      const r = await fetch(`/api/fmp/company-identity?symbols=${encodeURIComponent(ticker)}`);
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: 1,
+    enabled: !!ticker,
+  });
+  const fmpExchange: string | null = identityData?.[ticker.toUpperCase()]?.exchange ?? null;
 
   /* ── generate AI deep dive ──────────────────────────────────────── */
   const generateDeepDive = () => {
@@ -293,7 +308,7 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, earning
 
         {/* ── Tab Content ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} />}
+          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} />}
           {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
           {activeTab === 'news' && <NewsTab ticker={ticker} items={newsItems} />}
           {activeTab === 'deep-dive' && (
@@ -316,30 +331,81 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, earning
 }
 
 /* ═══ Overview Tab ═══════════════════════════════════════════════════ */
-function resolveTVExchange(ticker: string, stock: any, csvRow: any): string {
-  const t = ticker.toUpperCase();
-  // Crypto — detect common base currencies or exchange-prefixed symbols
-  const cryptoBases = ['BTC','ETH','SOL','BNB','ADA','XRP','DOT','AVAX','MATIC','LINK','UNI','DOGE','SHIB','LTC','ATOM'];
-  if (cryptoBases.some(b => t.startsWith(b))) return 'BINANCE';
 
-  // Use exchange field from stock analysis data or CSV row (FMP uses exchangeShortName)
-  const raw: string = (
+/** Map FMP/broker exchange short-names → TradingView exchange prefix */
+function tvExchangeFromFmp(raw: string): string {
+  const r = (raw || '').toUpperCase().trim();
+  if (r === 'NASDAQ') return 'NASDAQ';
+  if (r === 'NYSE' || r === 'NYQ' || r === 'NYS') return 'NYSE';
+  if (r === 'AMEX' || r === 'NYSEARCA' || r === 'NYSE ARCA' || r === 'BATS') return 'AMEX';
+  if (r === 'OTC' || r === 'OTCBB' || r === 'PINK' || r === 'OTCMKTS') return 'OTC';
+  if (r === 'CBOE') return 'CBOE';
+  if (r === 'ASX') return 'ASX';
+  if (r === 'LSE' || r === 'AIM') return 'LSE';
+  if (r === 'EURONEXT' || r === 'AMS' || r === 'EPA' || r === 'EBR' || r === 'BIT') return 'EURONEXT';
+  if (r === 'TSX' || r === 'TSXV') return 'TSX';
+  if (r === 'HKEX' || r === 'HKG') return 'HKEX';
+  if (r === 'KRX' || r === 'KSE') return 'KRX';
+  if (r === 'TSE' || r === 'JPX' || r === 'TYO') return 'TSE';
+  return '';
+}
+
+/**
+ * Returns the full TradingView symbol string (e.g. "NASDAQ:NVDA", "ASX:EOS", "NVDA").
+ * Handles:
+ *   1. Tickers that already contain an exchange prefix  (e.g. "ASX:EOS", "AIM:IQE")
+ *   2. Crypto base assets                               (e.g. "BTC" → "BINANCE:BTCUSDT")
+ *   3. FMP exchangeShortName (most accurate – from API)
+ *   4. Exchange embedded in analysis/CSV data
+ *   5. Unknown → bare ticker (TradingView auto-resolves; better than a wrong prefix)
+ */
+function resolveTVSymbol(
+  ticker: string, stock: any, csvRow: any, fmpExchange?: string | null
+): string {
+  const t = ticker.toUpperCase().trim();
+
+  // Already has exchange prefix (e.g. "ASX:EOS", "AIM:IQE", "AMS:BESI")
+  if (t.includes(':')) {
+    const colonIdx = t.indexOf(':');
+    const prefix = t.slice(0, colonIdx);
+    const sym    = t.slice(colonIdx + 1);
+    const map: Record<string, string> = {
+      AIM: 'LSE', AMS: 'EURONEXT', EPA: 'EURONEXT',
+      EBR: 'EURONEXT', BIT: 'EURONEXT',
+      ASX: 'ASX', TSX: 'TSX', TSXV: 'TSX',
+      LSE: 'LSE', HKG: 'HKEX', TYO: 'TSE', KSE: 'KRX',
+    };
+    return `${map[prefix] ?? prefix}:${sym}`;
+  }
+
+  // Crypto detection
+  const cryptoBases = ['BTC','ETH','SOL','BNB','ADA','XRP','DOT','AVAX','MATIC','LINK',
+                       'UNI','DOGE','SHIB','LTC','ATOM','TAO','RENDER','FET','ARB','OP'];
+  for (const b of cryptoBases) {
+    if (t === b || t === `${b}USD` || t === `${b}USDT`) return `BINANCE:${b}USDT`;
+  }
+
+  // FMP exchange (fetched from company-identity API — most accurate)
+  const fmpEx = tvExchangeFromFmp(fmpExchange || '');
+  if (fmpEx) return `${fmpEx}:${t}`;
+
+  // Exchange embedded in analysis data or CSV row
+  const rawEx = (
     stock?.exchangeShortName || stock?.exchange ||
     csvRow?.exchangeShortName || csvRow?.exchange || csvRow?.Exchange || ''
   ).toUpperCase().trim();
+  const staticEx = tvExchangeFromFmp(rawEx);
+  if (staticEx) return `${staticEx}:${t}`;
 
-  if (raw === 'NASDAQ') return 'NASDAQ';
-  if (raw === 'NYSE' || raw === 'NYQ' || raw === 'NYS') return 'NYSE';
-  if (raw === 'AMEX' || raw === 'NYSEARCA' || raw === 'NYSE ARCA' || raw === 'BATS') return 'AMEX';
-  if (raw === 'OTC' || raw === 'OTCBB' || raw === 'PINK' || raw === 'OTCMKTS') return 'OTC';
-
-  // Fallback: NYSE is far more common than NASDAQ for unknown US equities
-  return 'NYSE';
+  // Unknown — bare ticker lets TradingView auto-resolve (far better than a wrong prefix)
+  return t;
 }
 
-function OverviewTab({ stock, ticker, csvRow, earningsEntry }: { stock: any; ticker: string; csvRow?: any; earningsEntry?: any }) {
-  const exchange = resolveTVExchange(ticker, stock, csvRow);
-  const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${exchange}:${ticker}`;
+function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
+  stock: any; ticker: string; csvRow?: any; earningsEntry?: any; fmpExchange?: string | null;
+}) {
+  const tvSymbol = resolveTVSymbol(ticker, stock, csvRow, fmpExchange);
+  const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
 
   const isNewFmt = stock?._format === 'new';
 
@@ -348,7 +414,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry }: { stock: any; tic
       {/* TradingView Chart */}
       <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
         <iframe
-          key={ticker}
+          key={tvSymbol}
           src={tvUrl}
           style={{ width: '100%', height: 520, border: 'none', display: 'block' }}
           title={`${ticker} chart`}
