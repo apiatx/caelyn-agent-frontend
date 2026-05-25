@@ -1,0 +1,145 @@
+Build the Home page frontend for the new Daily Alpha Board.
+
+Backend endpoint is already live:
+
+GET /api/home/daily-alpha-board?limit=10&asset_type=all&scope=all
+
+Important:
+This frontend component must call only this one endpoint.
+Do not call Watchlist, Portfolio, Themes, Hyperliquid, Social, Options, Strategy, Catalyst, or any provider endpoints directly.
+The backend aggregator is cache-only and already handles collection/ranking.
+
+Create an isolated component:
+
+src/components/home/DailyAlphaBoard.tsx
+
+or the closest existing Home page component folder.
+
+Add it near the top of the Home page:
+- Below the main market summary / hero market overview
+- Above lower-priority widgets
+
+Component title:
+
+Daily Alpha Board
+
+Subtitle:
+
+The 10 best cross-market trade ideas today
+
+Required UI:
+1. Header row:
+- Last updated / generated_at
+- Regime label
+- Cache age if returned
+- mode: cache_only if returned
+- external_api_calls: 0 if returned
+- Refresh button
+
+2. Filter buttons:
+- All
+- Stocks
+- Crypto
+- Watchlist
+- Portfolio
+
+Filter behavior:
+- All calls asset_type=all&scope=all
+- Stocks calls asset_type=stocks&scope=all
+- Crypto calls asset_type=crypto&scope=all
+- Watchlist calls asset_type=all&scope=watchlist
+- Portfolio calls asset_type=all&scope=portfolio
+
+3. Render ideas[] as ranked compact premium cards.
+
+Each card should show:
+- Rank number
+- Symbol
+- Name if available
+- Asset type badge
+- Direction badge
+- Score out of 100
+- Confidence
+- Setup type
+- Status
+- Theme / sector if available
+- Summary
+- Top 3 evidence bullets
+- Trigger if available
+- Invalidation if available
+- Risks, max 2 visible by default
+- Source page badges
+- Updated timestamp if available
+- has_timing_signal if returned, shown subtly as “Timing confirmed” or “Watch only”
+
+4. Visual scoring:
+- score >= 85: high conviction styling
+- score 70–84.99: medium conviction styling
+- score below 70: muted/watch styling
+- confidence high/medium/low should be visible
+- long/short/watch should have distinct badge styling
+
+5. Add a Regime Context panel:
+Show:
+- regime.label
+- regime.summary
+- regime.drivers
+- counts.candidates_seen
+- counts.candidates_qualified
+- counts.stocks_scored
+- counts.crypto_scored
+- counts.watch_only_in_top if present
+- source_health
+
+6. Add a Data Integrity / Cache-only footer or small diagnostic strip:
+Show:
+- mode
+- external_api_calls
+- provider_calls_blocked
+- cache.hit
+- cache.age_seconds
+- cache.ttl_seconds
+- stale_served if returned
+
+This should be compact and reassuring, not ugly.
+
+7. Loading behavior:
+- Use skeleton cards
+- Keep previous data visible while refreshing if possible
+- Do not blank the Home page on error
+- If stale LKG is returned, show a subtle “Showing last known board” note
+- If no ideas are available, show:
+  “No high-quality setups found yet. Waiting for stronger signal confirmation.”
+
+8. TypeScript:
+Add interfaces for the backend response:
+- DailyAlphaBoardResponse
+- DailyAlphaIdea
+- DailyAlphaSignals
+- DailyAlphaRegime
+- SourceHealth
+- CacheInfo
+- Counts
+
+Score is now 0–100. Do not multiply by 100 on the frontend.
+score_raw may exist but should not be displayed except maybe in dev diagnostics.
+
+9. Design:
+Make this look like a premium trading command center:
+- Dense but readable
+- Card/list hybrid
+- Not a giant spreadsheet
+- Dark-mode friendly
+- Mobile responsive
+- Expandable details if the card gets too tall
+
+10. Refresh button:
+The refresh button should only re-call:
+GET /api/home/daily-alpha-board?...&refresh=true
+
+It must not trigger any provider refresh.
+
+11. Do not modify unrelated Home modules.
+Do not introduce new provider calls.
+Do not create frontend fan-out.
+Do not make this component depend on page-specific frontend state.

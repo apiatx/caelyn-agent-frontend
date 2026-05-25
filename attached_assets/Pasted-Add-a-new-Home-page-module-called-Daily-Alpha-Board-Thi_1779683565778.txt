@@ -1,0 +1,98 @@
+Add a new Home page module called Daily Alpha Board.
+
+This module must call only one backend endpoint:
+
+GET /api/home/daily-alpha-board?limit=10&asset_type=all&scope=all
+
+Do not call individual page endpoints from the frontend.
+Do not call Watchlist, Portfolio, Themes, Hyperliquid, Social, Options, Strategy, or Catalyst endpoints directly from this component.
+
+The backend aggregator is responsible for collecting cached data. The frontend only renders the result.
+
+Create isolated component:
+
+src/components/home/DailyAlphaBoard.tsx
+
+or the closest existing Home component folder.
+
+Render near the top of the Home page, below the main market summary and above lower-priority widgets.
+
+Header:
+Daily Alpha Board
+The 10 best cross-market trade ideas today
+
+Show:
+- Last updated
+- Regime label
+- Cache age
+- mode: cache_only if returned
+- Refresh button
+- Filter buttons:
+  - All
+  - Stocks
+  - Crypto
+  - Watchlist
+  - Portfolio
+
+Important:
+The Refresh button may only refresh the Daily Alpha Board aggregator result. It must not trigger provider refreshes.
+
+Render the ideas array as ranked cards.
+
+Each card should show:
+- Rank number
+- Symbol
+- Asset type badge
+- Direction badge
+- Score
+- Confidence
+- Setup type
+- Theme/sector if available
+- Summary
+- Top 3 evidence bullets
+- Trigger
+- Invalidation
+- Risk notes
+- Source page badges
+- Updated timestamp or data age if available
+
+Visual priority:
+- Score 85+ = high conviction styling
+- Score 70–84 = medium conviction
+- Below 70 = watch only / muted
+- Long, short, and watch directions should have distinct badge styles
+
+Add a Regime Context panel showing:
+- Regime label
+- Regime summary
+- Regime drivers
+- Candidate counts
+- Source health
+- Cache status
+- external_api_calls if returned
+
+Loading behavior:
+- Use skeleton cards
+- Do not blank the page if loading fails
+- If backend returns stale LKG, show a subtle “showing last known board” note
+- Show a soft error only if there are no ideas at all
+
+Empty state:
+No high-quality setups found yet. Waiting for stronger signal confirmation.
+
+Add TypeScript interfaces matching the backend response schema.
+
+Add a small diagnostic/dev-only row if NODE_ENV/development:
+- mode
+- external_api_calls
+- source_health
+- cache age
+
+Design:
+Premium, compact, Bloomberg/TradingView-style command center.
+Avoid a giant spreadsheet.
+Use cards or a dense ranked list with expandable details.
+
+Do not modify unrelated Home page modules.
+Do not introduce new provider calls.
+Do not make this component depend on page-specific frontend state.

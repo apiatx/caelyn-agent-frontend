@@ -42,6 +42,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
+import { DailyAlphaBoard } from "@/components/home/DailyAlphaBoard";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -1442,6 +1443,11 @@ export default function HomePage() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Daily Alpha Board — below macro hero, above draggable sections */}
+        <div className="mb-6">
+          <DailyAlphaBoard />
+        </div>
 
         <DndContext sensors={homeSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
           <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>

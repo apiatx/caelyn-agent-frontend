@@ -4747,6 +4747,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/home/daily-alpha-board', async (req, res) => {
+    try {
+      const { limit, asset_type, scope, refresh } = req.query;
+      const params = new URLSearchParams();
+      if (limit)      params.set('limit',      String(limit));
+      if (asset_type) params.set('asset_type', String(asset_type));
+      if (scope)      params.set('scope',       String(scope));
+      if (refresh)    params.set('refresh',     String(refresh));
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const r = await fetch(`${SR_URL}/api/home/daily-alpha-board${qs}`, {
+        headers: srHdr(),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!r.ok) {
+        const txt = await r.text();
+        return res.status(r.status).json({ error: `Backend ${r.status}`, detail: txt.slice(0, 200) });
+      }
+      const raw = await r.json();
+      res.json(raw);
+    } catch (error: any) {
+      console.error('[home/daily-alpha-board] error:', error);
+      res.status(500).json({ error: error?.name === 'AbortError' ? 'Request timed out' : 'Failed to fetch daily alpha board' });
+    }
+  });
+
   app.get('/api/sector-rotation/dashboard', async (req, res) => {
     try {
       const controller = new AbortController();
