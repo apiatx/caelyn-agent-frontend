@@ -16,8 +16,8 @@ import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
-  bg: '#000000', card: '#0a0a0a', card2: '#060606',
-  border: '#1c1c1e', text: '#e2e8f0', dim: '#64748b',
+  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
+  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
   teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
   amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
   font: "'JetBrains Mono','Fira Code',monospace",
@@ -561,62 +561,44 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
     return (
       <div key={key} style={{
         background: C.card,
-        borderTop: `1px solid ${accent}30`,
-        borderRight: `1px solid ${accent}30`,
-        borderBottom: `1px solid ${accent}30`,
-        borderLeft: `4px solid ${accent}`,
-        borderRadius: 8,
+        border: `1px solid ${C.border}`,
+        borderLeft: `3px solid ${accent}`,
+        borderRadius: 6,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: `0 4px 24px rgba(0,0,0,0.5)`,
       }}>
-        <div style={{
-          padding: '12px 16px',
-          background: '#ffffff',
-          borderBottom: `2px solid ${accent}`,
-        }}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-              <span style={{
-                display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-                background: accent, flexShrink: 0,
-                boxShadow: `0 0 6px ${accent}`,
-              }} />
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#000000', fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
-                {displayTitle}
-              </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+              {displayTitle}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {hasAvg && (
               <span style={{
-                fontSize: 9, fontWeight: 700, fontFamily: C.font,
-                color: '#555', background: '#f0f0f0',
+                fontSize: 11, fontWeight: 800, fontFamily: C.font,
+                color: avg1dColor,
+                background: avg1dColor + '18',
                 padding: '2px 7px', borderRadius: 4,
-                letterSpacing: '0.04em',
+                flexShrink: 0,
+                letterSpacing: '0.02em',
               }}>
-                {tickers.length} {tickers.length === 1 ? 'STOCK' : 'STOCKS'}
+                {avg1d > 0 ? '+' : ''}{avg1d.toFixed(2)}%
               </span>
-              {hasAvg && (
-                <span style={{
-                  fontSize: 11, fontWeight: 800, fontFamily: C.font,
-                  color: avg1dColor === C.green ? '#15803d' : avg1dColor === C.red ? '#b91c1c' : '#555',
-                  background: avg1dColor === C.green ? '#dcfce7' : avg1dColor === C.red ? '#fee2e2' : '#f5f5f5',
-                  padding: '2px 8px', borderRadius: 4,
-                  letterSpacing: '0.02em',
-                  border: `1px solid ${avg1dColor === C.green ? '#86efac' : avg1dColor === C.red ? '#fca5a5' : '#e5e5e5'}`,
-                }}>
-                  {avg1d > 0 ? '+' : ''}{avg1d.toFixed(2)}%
-                </span>
-              )}
-            </div>
+            )}
           </div>
+          {/* Show legacy title dimmed if canonical name overrides it */}
+          {section.canonical_theme_name && section.title && section.canonical_theme_name !== section.title && (
+            <div style={{ fontSize: 8, color: C.dim, marginTop: 2, fontFamily: C.font, letterSpacing: '0.02em' }}>
+              id: {section.canonical_theme_id || section.id}
+            </div>
+          )}
           {section.subtitle && (
-            <div style={{ fontSize: 9, color: '#666', marginTop: 4, fontFamily: C.sansFont, lineHeight: 1.4, paddingLeft: 16 }}>
+            <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: C.sansFont, lineHeight: 1.4 }}>
               {section.subtitle}
             </div>
           )}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', maxHeight: 360 }} className="wl-scrollbar">
+        <div style={{ flex: 1, overflowY: 'auto', maxHeight: 340 }} className="wl-scrollbar">
           {tickers.map((stock: any, i: number) => renderStockRow(stock, i, tickers.length, accent))}
           {tickers.length === 0 && (
             <div style={{ padding: 14, fontSize: 10, color: C.dim, textAlign: 'center' }}>No tickers</div>
@@ -638,30 +620,19 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
       {/* Pending analysis card — tickers in watchlist not yet analyzed */}
       {pendingSymbols.length > 0 && (
         <div style={{
-          background: C.card,
-          borderTop: `1px solid ${C.amber}40`,
-          borderRight: `1px solid ${C.amber}40`,
-          borderBottom: `1px solid ${C.amber}40`,
-          borderLeft: `4px solid ${C.amber}`,
-          borderRadius: 8,
-          overflow: 'hidden',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+          background: C.card, border: `1px solid ${C.amber}30`,
+          borderLeft: `3px solid ${C.amber}`,
+          borderRadius: 6, padding: '12px 16px',
         }}>
-          <div style={{
-            padding: '12px 16px',
-            background: '#ffffff',
-            borderBottom: `2px solid ${C.amber}`,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>⏳</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#000000', fontFamily: C.sansFont }}>
-              {pendingSymbols.length} Tickers Pending Analysis
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, fontFamily: C.sansFont }}>
+              ⏳ {pendingSymbols.length} Tickers Pending Analysis
             </span>
-            <span style={{ fontSize: 9, color: '#666', fontFamily: C.sansFont }}>
+            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>
               Hit Refresh to analyze all tickers in batches
             </span>
           </div>
-          <div style={{ padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {pendingSymbols.slice(0, 60).map(sym => (
               <span key={sym} style={{
                 fontSize: 9, fontWeight: 700, fontFamily: C.font,
@@ -1655,21 +1626,18 @@ export default function WatchlistPage() {
     ];
     return (
       <div style={{
-        background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         height: '100%', minHeight: 0,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
       }}>
         <div style={{
-          padding: '11px 16px',
-          background: '#ffffff',
-          borderBottom: `2px solid ${C.teal}`,
+          padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
         }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: '#000000', letterSpacing: '0.12em', fontFamily: C.font }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
             TICKERS
           </span>
-          <span style={{ fontSize: 9, color: '#666', fontFamily: C.sansFont }}>
+          <span style={{ fontSize: 9, color: C.dim }}>
             {pendingCount > 0
               ? `${analyzedCount} analyzed · ${pendingCount} pending`
               : `${mergedTickers.length} total`}
@@ -1678,11 +1646,11 @@ export default function WatchlistPage() {
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: C.font,
               padding: '2px 6px', borderRadius: 3,
-              color: '#92400e', background: '#fef3c7',
-              border: `1px solid #fcd34d`,
+              color: C.amber, background: C.amber + '18',
+              border: `1px solid ${C.amber}30`,
               textTransform: 'uppercase' as const, letterSpacing: '0.04em',
             }}>
-              {pendingCount} PENDING
+              {pendingCount} PENDING ANALYSIS
             </span>
           )}
         </div>
@@ -1820,21 +1788,18 @@ export default function WatchlistPage() {
   /* ── legacy ticker table ─────────────────────────────────────────── */
   const renderLegacyTickerTable = () => (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       height: '100%', minHeight: 0,
-      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
     }}>
       <div style={{
-        padding: '11px 16px',
-        background: '#ffffff',
-        borderBottom: `2px solid ${C.teal}`,
+        padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: '#000000', letterSpacing: '0.12em', fontFamily: C.font }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
           TICKERS
         </span>
-        <span style={{ fontSize: 9, color: '#666', fontFamily: C.sansFont }}>({allStocks.length})</span>
+        <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
       </div>
 
       <div style={{
@@ -2139,21 +2104,18 @@ export default function WatchlistPage() {
 
               {/* ── Live News (narrower) ── */}
               <div style={{
-                background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 height: '100%', minHeight: 0,
-                boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
               }}>
                 <div style={{
-                  padding: '11px 16px',
-                  background: '#ffffff',
-                  borderBottom: `2px solid ${C.purple}`,
+                  padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
                   display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#000000', letterSpacing: '0.12em', fontFamily: C.font }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
                     LIVE NEWS
                   </span>
-                  <span style={{ fontSize: 9, color: '#666', fontFamily: C.sansFont }}>({allNews.length})</span>
+                  <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
