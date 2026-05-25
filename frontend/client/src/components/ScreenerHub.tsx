@@ -775,11 +775,6 @@ export default function ScreenerHub() {
     >
       <div className="p-4 sm:p-5 lg:p-6 space-y-4">
 
-        {/* Header */}
-        <h2 className="text-lg sm:text-xl font-semibold tracking-tight bg-gradient-to-r from-purple-300 to-fuchsia-300 bg-clip-text text-transparent">
-          Caelyn Screener
-        </h2>
-
         <Tabs value={tab} onValueChange={(v) => switchTab(v as TabKey)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <TabsList
