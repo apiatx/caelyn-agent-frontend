@@ -16,8 +16,8 @@ import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
-  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
-  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
+  bg: '#000000', card: '#0a0a0a', card2: '#060606',
+  border: '#1c1c1e', text: '#e2e8f0', dim: '#64748b',
   teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
   amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
   font: "'JetBrains Mono','Fira Code',monospace",
