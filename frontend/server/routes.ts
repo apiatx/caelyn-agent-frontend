@@ -1538,6 +1538,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const AGENT_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const AGENT_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
 
+  // ── FastAPI keepalive — pings every 4 min so the server never cold-starts ────
+  const _pingFastAPI = () => {
+    fetch(`${AGENT_URL}/api/health`, {
+      headers: { 'X-API-Key': AGENT_KEY },
+      signal: AbortSignal.timeout(8000),
+    }).catch(() => {});
+  };
+  _pingFastAPI(); // immediate ping on Express startup
+  setInterval(_pingFastAPI, 4 * 60 * 1000);
+
   // Fire-and-forget: keeps FastAPI canonical holdings in sync after every local CRUD op.
   const _syncHoldingsToFastAPI = (holdings: StockHolding[]) => {
     const payload = holdings.map(h => ({
