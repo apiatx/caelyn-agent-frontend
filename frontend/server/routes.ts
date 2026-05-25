@@ -1629,6 +1629,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // ─── Per-user MultiCharts persistence ────────────────────────────────────────
+  const MULTICHARTS_DATA_DIR = path.join(process.cwd(), 'server', 'data');
+  if (!fs.existsSync(MULTICHARTS_DATA_DIR)) {
+    fs.mkdirSync(MULTICHARTS_DATA_DIR, { recursive: true });
+  }
+
+  function multichartsFilePath(username: string): string {
+    const safe = username.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return path.join(MULTICHARTS_DATA_DIR, `multicharts-${safe}.json`);
+  }
+
+  function requireLocalAuth(req: any): string | null {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) return null;
+    const payload = verifyLocalToken(token);
+    return payload?.user_id ?? null;
+  }
+
+  app.get('/api/user/multicharts', (req, res) => {
+    const userId = requireLocalAuth(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const filePath = multichartsFilePath(userId);
+    if (!fs.existsSync(filePath)) return res.json({ views: null });
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return res.json({ views: JSON.parse(raw) });
+    } catch {
+      return res.json({ views: null });
+    }
+  });
+
+  app.put('/api/user/multicharts', (req, res) => {
+    const userId = requireLocalAuth(req);
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { views } = req.body || {};
+    if (!Array.isArray(views)) return res.status(400).json({ error: 'views must be an array' });
+    try {
+      fs.writeFileSync(multichartsFilePath(userId), JSON.stringify(views), 'utf8');
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ error: 'Failed to save', detail: e?.message });
+    }
+  });
+
   // Dev-only: check if the caller is the platform owner (used to gate the QA panel)
   // Supports both locally-issued JWTs and FastAPI-issued JWTs.
   app.get('/api/dev/owner-check', async (req, res) => {

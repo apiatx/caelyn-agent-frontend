@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
-import { Plus, Trash2, LayoutGrid, Pencil, Check, X, GripVertical } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, Pencil, Check, X, GripVertical, Cloud, CloudOff } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -38,6 +38,7 @@ interface MultiChartsView {
 const STORAGE_KEY = "caelyn_multicharts_views_v1";
 const MAX_CHARTS = 25;
 const COLS_OPTIONS: Array<1 | 2 | 3 | 4> = [1, 2, 3, 4];
+const SAVE_DEBOUNCE_MS = 1200;
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ function defaultViews(): MultiChartsView[] {
   ];
 }
 
-function loadViews(): MultiChartsView[] {
+function loadLocalViews(): MultiChartsView[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultViews();
@@ -67,10 +68,48 @@ function loadViews(): MultiChartsView[] {
   }
 }
 
-function saveViews(views: MultiChartsView[]): void {
+function saveLocalViews(views: MultiChartsView[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(views));
   } catch {}
+}
+
+function getToken(): string {
+  return localStorage.getItem("caelyn_jwt") || sessionStorage.getItem("caelyn_jwt") || "";
+}
+
+async function fetchServerViews(): Promise<MultiChartsView[] | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const r = await fetch("/api/user/multicharts", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (Array.isArray(data.views) && data.views.length > 0) return data.views as MultiChartsView[];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveServerViews(views: MultiChartsView[]): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const r = await fetch("/api/user/multicharts", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ views }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
 }
 
 function buildTvUrl(symbol: string, _chartId: string): string {
@@ -213,7 +252,7 @@ function ChartCard({ slot, autoFocus, isDraggingAny, dragHandleProps, onSymbolCh
               className="absolute inset-0 w-full h-full border-0"
               style={{ background: "#0d1623" }}
             />
-            {/* Transparent overlay while dragging — prevents iframe from stealing pointer events */}
+            {/* Transparent overlay while dragging */}
             {isDraggingAny && (
               <div className="absolute inset-0 z-20" style={{ cursor: "grabbing" }} />
             )}
@@ -231,7 +270,7 @@ function ChartCard({ slot, autoFocus, isDraggingAny, dragHandleProps, onSymbolCh
   );
 }
 
-// ── SortableChartCard — wraps ChartCard with dnd-kit sortable behaviour ─────────
+// ── SortableChartCard ──────────────────────────────────────────────────────────
 
 interface SortableChartCardProps extends ChartCardProps {}
 
@@ -266,13 +305,16 @@ function SortableChartCard(props: SortableChartCardProps) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function MultiChartsPage({ isActive = true }: { isActive?: boolean }) {
-  const [views, setViews] = useState<MultiChartsView[]>(() => loadViews());
-  const [activeId, setActiveId] = useState<string>(() => loadViews()[0]?.id ?? "");
+  const [views, setViews] = useState<MultiChartsView[]>(() => loadLocalViews());
+  const [activeId, setActiveId] = useState<string>(() => loadLocalViews()[0]?.id ?? "");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [focusChartId, setFocusChartId] = useState<string | null>(null);
   const [draggingChartId, setDraggingChartId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const renameRef = useRef<HTMLInputElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoadDone = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -280,14 +322,43 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
     })
   );
 
+  // On mount: try to load from server; server wins over localStorage
+  useEffect(() => {
+    fetchServerViews().then((serverViews) => {
+      if (serverViews) {
+        setViews(serverViews);
+        setActiveId((prev) => {
+          const exists = serverViews.find((v) => v.id === prev);
+          return exists ? prev : serverViews[0]?.id ?? prev;
+        });
+        saveLocalViews(serverViews);
+        setSyncStatus("saved");
+      }
+      initialLoadDone.current = true;
+    });
+  }, []);
+
+  // Keep active tab in bounds
   useEffect(() => {
     if (!views.find((v) => v.id === activeId) && views.length > 0) {
       setActiveId(views[0].id);
     }
   }, [views, activeId]);
 
+  // Save to localStorage immediately + debounce server save
   useEffect(() => {
-    saveViews(views);
+    if (!initialLoadDone.current) return;
+    saveLocalViews(views);
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSyncStatus("saving");
+    saveTimerRef.current = setTimeout(async () => {
+      const ok = await saveServerViews(views);
+      setSyncStatus(ok ? "saved" : "offline");
+      if (ok) {
+        setTimeout(() => setSyncStatus("idle"), 2000);
+      }
+    }, SAVE_DEBOUNCE_MS);
   }, [views]);
 
   const activeView = views.find((v) => v.id === activeId) ?? views[0];
@@ -502,6 +573,25 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
             </div>
 
             <div className="flex-1" />
+
+            {/* Sync status indicator */}
+            <div className="flex items-center gap-1 text-xs">
+              {syncStatus === "saving" && (
+                <span className="text-white/30 flex items-center gap-1">
+                  <Cloud className="w-3 h-3 animate-pulse" /> saving…
+                </span>
+              )}
+              {syncStatus === "saved" && (
+                <span className="text-emerald-500/70 flex items-center gap-1">
+                  <Cloud className="w-3 h-3" /> saved
+                </span>
+              )}
+              {syncStatus === "offline" && (
+                <span className="text-amber-500/70 flex items-center gap-1" title="Server unreachable — saved locally only">
+                  <CloudOff className="w-3 h-3" /> local only
+                </span>
+              )}
+            </div>
 
             {/* Columns selector */}
             <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5" style={{ background: "#0a1020" }}>
