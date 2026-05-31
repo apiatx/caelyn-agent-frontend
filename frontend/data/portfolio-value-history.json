@@ -618,5 +618,51 @@
       "PENG",
       "TRT"
     ]
+  },
+  {
+    "timestamp": "2026-05-29T15:38:11.165Z",
+    "total_value": 167525.589789,
+    "holdings_count": 16,
+    "symbols": [
+      "LPKFF",
+      "AOSL",
+      "SLNH",
+      "SIVEF",
+      "OUST",
+      "NRGV",
+      "ALMU",
+      "SILC",
+      "LPTH",
+      "IQEPF",
+      "SLOIF",
+      "NBIS",
+      "BWEN",
+      "FLNC",
+      "PENG",
+      "TRT"
+    ]
+  },
+  {
+    "timestamp": "2026-05-31T03:27:42.354Z",
+    "total_value": 167525.589789,
+    "holdings_count": 16,
+    "symbols": [
+      "LPKFF",
+      "AOSL",
+      "SLNH",
+      "SIVEF",
+      "OUST",
+      "NRGV",
+      "ALMU",
+      "SILC",
+      "LPTH",
+      "IQEPF",
+      "SLOIF",
+      "NBIS",
+      "BWEN",
+      "FLNC",
+      "PENG",
+      "TRT"
+    ]
   }
 ]

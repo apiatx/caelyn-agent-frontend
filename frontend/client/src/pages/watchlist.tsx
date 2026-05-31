@@ -1610,6 +1610,124 @@ export default function WatchlistPage() {
     );
   };
 
+  /* ── upcoming earnings section ──────────────────────────────────── */
+  const renderEarningsSection = () => {
+    const events = earningsResp?.earnings ?? [];
+    if (!events.length && !earningsLoading) return null;
+    return (
+      <div style={{ padding: '0 20px 4px' }}>
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+              UPCOMING EARNINGS
+            </span>
+            {earningsLoading ? (
+              <div className="wl-spin" style={{ width: 10, height: 10, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
+            ) : (
+              <span style={{ fontSize: 9, color: C.dim }}>({events.length} in watchlist)</span>
+            )}
+            {earningsIsError && (
+              <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
+            )}
+          </div>
+
+          {events.length > 0 && (
+            <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }} className="wl-chip-strip">
+              {events.map((ev: any, i: number) => {
+                const importance = ev.importance as string | undefined;
+                const importanceColor = importance === 'high' ? C.amber : importance === 'medium' ? C.teal : C.dim;
+                const epsDir = (ev.est_eps != null && ev.last_eps != null)
+                  ? ev.est_eps > ev.last_eps ? 'up' : ev.est_eps < ev.last_eps ? 'down' : 'flat'
+                  : null;
+                return (
+                  <div
+                    key={`earn-${ev.ticker}-${i}`}
+                    onClick={() => handleTickerClick(ev.ticker)}
+                    style={{
+                      flexShrink: 0, cursor: 'pointer',
+                      padding: '10px 16px',
+                      borderRight: `1px solid ${C.border}`,
+                      display: 'flex', flexDirection: 'column', gap: 5,
+                      minWidth: 148,
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {/* ticker + importance badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      {ev.logo && (
+                        <img
+                          src={ev.logo}
+                          alt={ev.ticker}
+                          style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font }}>{ev.ticker}</span>
+                      {importance && (
+                        <span style={{
+                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                          padding: '1px 5px', borderRadius: 3,
+                          color: importanceColor, background: importanceColor + '20',
+                          textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+                        }}>
+                          {importance}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* date + pre/post market */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: C.font }}>
+                        {ev.next_date || DASH}
+                      </span>
+                      {ev.time && (
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>
+                          {ev.time === 'bmo' ? 'pre-mkt' : ev.time === 'amc' ? 'post-mkt' : ev.time}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* EPS est + revenue */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+                      {ev.est_eps != null && (
+                        <div style={{ fontSize: 9, fontFamily: C.font }}>
+                          <span style={{ color: C.dim }}>EPS </span>
+                          <span style={{ color: C.text, fontWeight: 700 }}>${ev.est_eps.toFixed(2)}</span>
+                          {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
+                          {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
+                        </div>
+                      )}
+                      {ev.revenue_estimated != null && (
+                        <div style={{ fontSize: 9, fontFamily: C.font }}>
+                          <span style={{ color: C.dim }}>Rev </span>
+                          <span style={{ color: C.text, fontWeight: 700 }}>
+                            {ev.revenue_estimated >= 1e9
+                              ? '$' + (ev.revenue_estimated / 1e9).toFixed(1) + 'B'
+                              : ev.revenue_estimated >= 1e6
+                                ? '$' + (ev.revenue_estimated / 1e6).toFixed(0) + 'M'
+                                : '$' + ev.revenue_estimated.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = () => {
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 62px 68px';
@@ -2179,6 +2297,9 @@ export default function WatchlistPage() {
 
             {/* ── Signal Summary Strip (ticker chips) ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
+            {/* ── Upcoming Earnings ── */}
+            {renderEarningsSection()}
 
             {/* ── Strategy Score Panel ── */}
             {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
