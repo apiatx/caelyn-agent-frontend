@@ -175,16 +175,68 @@ function GoldStyleTag() {
   return null;
 }
 
+// ── TradingView chart modal ────────────────────────────────────────────────────
+
+function TradingViewChartModal({ symbol, assetType, onClose }: {
+  symbol: string | null; assetType?: string; onClose: () => void;
+}) {
+  const tvSymbol = (() => {
+    if (!symbol) return '';
+    const s = symbol.toUpperCase();
+    if (assetType === 'crypto' && !s.includes(':') && !s.endsWith('USD') && !s.endsWith('USDT')) {
+      return `${s}USD`;
+    }
+    return s;
+  })();
+
+  const iframeSrc = tvSymbol
+    ? `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&locale=en&timezone=exchange&allow_symbol_change=1&hide_side_toolbar=0&withdateranges=1`
+    : '';
+
+  return (
+    <Dialog open={!!symbol} onOpenChange={open => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl w-[96vw] h-[82vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col" aria-describedby={undefined}>
+        <VisuallyHidden.Root><DialogTitle>Chart — {symbol}</DialogTitle></VisuallyHidden.Root>
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.07] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-white/90 tracking-wide">{symbol}</span>
+            {assetType && (
+              <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold border ${assetBadge(assetType)}`}>{assetType}</span>
+            )}
+            <span className="text-[10px] text-white/25">TradingView</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/[0.08] text-white/30 hover:text-white/70 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {iframeSrc && (
+          <iframe
+            key={tvSymbol}
+            src={iframeSrc}
+            className="flex-1 w-full border-0"
+            title={`${symbol} TradingView chart`}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Mini idea row (teaser) ────────────────────────────────────────────────────
 
-function MiniIdeaRow({ idea, rank }: { idea: DailyAlphaIdea; rank: number }) {
+function MiniIdeaRow({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: number; onChartOpen: (sym: string, at?: string) => void }) {
   const ss = scoreStyle(idea.score);
   const ds = directionStyle(idea.direction);
   return (
     <div className="flex items-center gap-2.5 py-1.5 border-b border-white/[0.04] last:border-0">
       <span className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold ${ss.rank}`}>{rank}</span>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="text-[12px] font-bold text-white/90 tracking-wide">{idea.symbol}</span>
+        <button
+          onClick={e => { e.stopPropagation(); onChartOpen(idea.symbol, idea.asset_type); }}
+          className="text-[12px] font-bold text-white/90 tracking-wide hover:text-white hover:underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-0 p-0"
+        >
+          {idea.symbol}
+        </button>
         {idea.name && <span className="text-[10px] text-white/35 truncate hidden sm:block">{idea.name}</span>}
       </div>
       <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${ds.bg}`}>
@@ -200,7 +252,7 @@ function MiniIdeaRow({ idea, rank }: { idea: DailyAlphaIdea; rank: number }) {
 
 // ── Full idea card (modal) ────────────────────────────────────────────────────
 
-function IdeaCard({ idea, rank }: { idea: DailyAlphaIdea; rank: number }) {
+function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: number; onChartOpen: (sym: string, at?: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const ss = scoreStyle(idea.score);
   const ds = directionStyle(idea.direction);
@@ -216,7 +268,12 @@ function IdeaCard({ idea, rank }: { idea: DailyAlphaIdea; rank: number }) {
           <div className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold ${ss.rank}`}>{rank}</div>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-bold text-white/95 tracking-wide">{idea.symbol}</span>
+              <button
+                onClick={() => onChartOpen(idea.symbol, idea.asset_type)}
+                className="text-sm font-bold text-white/95 tracking-wide hover:text-white hover:underline underline-offset-2 transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              >
+                {idea.symbol}
+              </button>
               {idea.name && <span className="text-[11px] text-white/40 truncate max-w-[140px]">{idea.name}</span>}
               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${assetBadge(idea.asset_type)}`}>{idea.asset_type}</span>
               <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${ds.bg}`}>{ds.icon}{idea.direction}</span>
@@ -421,11 +478,12 @@ function CacheDiagStrip({ data }: { data: DailyAlphaBoardResponse }) {
 // ── Full modal content ────────────────────────────────────────────────────────
 
 function AlphaBoardModalContent({
-  data, isLoading, isFetching, isError, filter, setFilter, onRefresh,
+  data, isLoading, isFetching, isError, filter, setFilter, onRefresh, onChartOpen,
 }: {
   data: DailyAlphaBoardResponse | undefined;
   isLoading: boolean; isFetching: boolean; isError: boolean;
   filter: FilterKey; setFilter: (f: FilterKey) => void; onRefresh: () => void;
+  onChartOpen: (sym: string, at?: string) => void;
 }) {
   const ideas = data?.ideas ?? [];
   const isEmpty = !isLoading && ideas.length === 0;
@@ -500,7 +558,7 @@ function AlphaBoardModalContent({
             <p className="text-[11px] text-white/20 mt-1">Waiting for stronger signal confirmation.</p>
           </div>
         ) : (
-          ideas.map((idea, i) => <IdeaCard key={`${idea.symbol}-${i}`} idea={idea} rank={i + 1} />)
+          ideas.map((idea, i) => <IdeaCard key={`${idea.symbol}-${i}`} idea={idea} rank={i + 1} onChartOpen={onChartOpen} />)
         )}
         {isFetching && !!data && (
           <div className="text-center py-1">
@@ -529,6 +587,14 @@ export function DailyAlphaBoard() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [refreshKey, setRefreshKey] = useState(0);
   const [fresh, setFresh] = useState(false);
+  const [chartSymbol, setChartSymbol] = useState<string | null>(null);
+  const [chartAssetType, setChartAssetType] = useState<string | undefined>(undefined);
+
+  const handleChartOpen = useCallback((sym: string, at?: string) => {
+    setChartSymbol(sym);
+    setChartAssetType(at);
+  }, []);
+  const handleChartClose = useCallback(() => setChartSymbol(null), []);
 
   const filterParams = FILTERS.find(f => f.key === filter)?.params ?? FILTERS[0].params;
 
@@ -621,7 +687,7 @@ export function DailyAlphaBoard() {
             <TeaserSkeleton />
           ) : preview.length > 0 ? (
             <div className="mt-1">
-              {preview.map((idea, i) => <MiniIdeaRow key={idea.symbol} idea={idea} rank={i + 1} />)}
+              {preview.map((idea, i) => <MiniIdeaRow key={idea.symbol} idea={idea} rank={i + 1} onChartOpen={handleChartOpen} />)}
             </div>
           ) : isError ? (
             <p className="text-[11px] text-white/25 py-2">Unable to load — tap to retry.</p>
@@ -647,6 +713,9 @@ export function DailyAlphaBoard() {
         </div>
       </button>
 
+      {/* ── TradingView chart popup ── */}
+      <TradingViewChartModal symbol={chartSymbol} assetType={chartAssetType} onClose={handleChartClose} />
+
       {/* ── Full board modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl w-[95vw] h-[88vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col">
@@ -659,6 +728,7 @@ export function DailyAlphaBoard() {
             filter={filter}
             setFilter={setFilter}
             onRefresh={handleRefresh}
+            onChartOpen={handleChartOpen}
           />
         </DialogContent>
       </Dialog>
