@@ -1,0 +1,108 @@
+Task: Render relative-volume movement indicators in the Watchlist page ticker table.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change the existing layout/style beyond adding a small indicator.
+Do NOT change category logic.
+Do NOT add frontend-side Tradier/FMP calls.
+Do NOT calculate rank movement on frontend.
+Do NOT change Portfolio Terminal.
+Backend owns the rel-vol momentum calculation.
+
+Backend endpoint:
+GET /api/watchlist/{watchlist_id}
+
+Ticker rows are located at:
+analysis.sections[].tickers[]
+
+Backend now adds these additive fields to each ticker row:
+- rel_vol_rank: number | null
+- rel_vol_prev_rank: number | null
+- rel_vol_rank_delta: number | null
+- rel_vol_trend: "up" | "down" | "flat" | "unknown"
+- rel_vol_value_delta: number | null
+- rel_vol_prev_value: number | null
+- rel_vol_momentum_label: "surging" | "rising" | "flat" | "fading" | "falling" | "unknown"
+
+Definition:
+- rel_vol_rank = current rank by relative_volume, with 1 being highest.
+- rel_vol_rank_delta = previous rank minus current rank.
+  - Positive means moved up the list.
+  - Negative means moved down the list.
+- rel_vol_trend tells frontend what to render:
+  - "up" = green up arrow
+  - "down" = red down arrow
+  - "flat" = no arrow or subtle neutral indicator
+  - "unknown" = no arrow
+
+Important behavior:
+- Do NOT color every ticker with relative_volume > 1 green.
+- This is about relative-volume momentum/rank movement versus the previous backend snapshot.
+- Only use backend rel_vol_trend / rel_vol_rank_delta.
+
+UI placement:
+Preferred:
+- Put the arrow inside or next to the Rel Vol column.
+
+Alternative:
+- Put a small arrow next to the ticker symbol if that fits the existing table better.
+
+Rendering rules:
+If row.rel_vol_trend === "up":
+- show a small green upward arrow
+- optional tooltip/title:
+  "Rel vol rising"
+  or
+  "Moved up {rel_vol_rank_delta} spots"
+
+If row.rel_vol_trend === "down":
+- show a small red downward arrow
+- optional tooltip/title:
+  "Rel vol fading"
+  or
+  "Moved down {Math.abs(rel_vol_rank_delta)} spots"
+
+If row.rel_vol_trend === "flat":
+- show no arrow, or a very subtle neutral indicator only if the table already has similar styling
+
+If row.rel_vol_trend === "unknown":
+- show no arrow
+
+Formatting:
+- Keep it subtle.
+- Use existing icon/color patterns if available.
+- Do not create giant badges.
+- Do not clutter the ticker table.
+- Missing/null values should still render dash.
+- Never render NaN, undefined, null, or raw objects.
+
+Also preserve existing ticker table fields:
+- Ch% uses row.change_pct_1d
+- Volume uses row.volume
+- Rel Vol uses row.relative_volume
+- Vol/MC uses row.vol_mc_pct
+
+Validation:
+1) Watchlist page still renders 302 rows.
+2) Rows with rel_vol_trend = "up" show green up arrow.
+3) Rows with rel_vol_trend = "down" show red down arrow.
+4) Rows with rel_vol_trend = "flat" or "unknown" do not show noisy indicators.
+5) Rel Vol values still display correctly.
+6) Ch%, Volume, Vol/MC still display correctly.
+7) Foreign unsupported rows show dash/no arrow.
+8) No browser console errors.
+9) No frontend provider calls.
+10) Portfolio Terminal unchanged.
+
+If live data only shows flat/unknown during testing:
+- That is expected if quotes have not changed since the previous backend snapshot.
+- Validate rendering logic by inspecting the network response.
+- If needed, temporarily mock one row in local component state only during development to verify the green/red arrows, then remove the mock before finalizing.
+
+Return:
+- Files/components changed
+- Exact place the arrow is rendered
+- Exact fields used
+- Confirmation 302 rows still render
+- Confirmation Ch%, Volume, Rel Vol, Vol/MC still render
+- Confirmation no Portfolio Terminal regression

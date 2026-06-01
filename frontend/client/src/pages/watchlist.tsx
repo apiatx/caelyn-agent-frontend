@@ -123,6 +123,8 @@ function extractAllStocks(analysis: any): any[] {
             section_title: section.title,
             canonical_theme_name: section.canonical_theme_name || section.title,
             canonical_theme_id: section.canonical_theme_id || section.id,
+            rel_vol_trend: t.rel_vol_trend ?? null,
+            rel_vol_rank_delta: t.rel_vol_rank_delta ?? null,
           });
         }
       }
@@ -1862,8 +1864,20 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatVolume(stock.volume)}
                   </span>
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
                     {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
+                    {stock.rel_vol_trend === 'up' && (
+                      <span
+                        style={{ color: '#22c55e', fontSize: 9, lineHeight: 1 }}
+                        title={stock.rel_vol_rank_delta != null ? `Moved up ${stock.rel_vol_rank_delta} spots` : 'Rel vol rising'}
+                      >▲</span>
+                    )}
+                    {stock.rel_vol_trend === 'down' && (
+                      <span
+                        style={{ color: '#ef4444', fontSize: 9, lineHeight: 1 }}
+                        title={stock.rel_vol_rank_delta != null ? `Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots` : 'Rel vol fading'}
+                      >▼</span>
+                    )}
                   </span>
                   <span
                     style={{
