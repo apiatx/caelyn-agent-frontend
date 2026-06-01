@@ -2218,7 +2218,8 @@ export default function WatchlistPage() {
               className="wl-top-split"
             >
               {/* ── Ticker Table (wider) ── */}
-              {newFmt ? renderNewFormatTickerTable() : renderLegacyTickerTable()}
+              {/* Show new-format table whenever we have saved symbols — covers pending state (no sections yet) */}
+              {(newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()}
 
               {/* ── Live News (narrower) ── */}
               <div style={{

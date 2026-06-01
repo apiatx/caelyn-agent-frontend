@@ -1,0 +1,164 @@
+Task: Wire the Watchlist page to the now-stable backend contract and verify 302-ticker rendering, Vol/MC, category sections, and Earnings.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change the visual style.
+Do NOT remove existing sections.
+Do NOT change upload/save/delete behavior.
+Do NOT add frontend-side provider calls.
+Do NOT add frontend-side category classification logic.
+Do NOT hardcode Solar/Clean Energy/category aliases on the frontend.
+Do NOT change Portfolio Terminal.
+
+Backend owns classification. Frontend should only display backend sections/rows.
+
+Backend FastAPI contract is confirmed stable:
+Use:
+GET /api/watchlist/{watchlist_id}
+
+Do NOT use raw:
+GET /api/watchlist
+for the ticker table.
+
+Ticker rows are located at:
+analysis.sections[].tickers[]
+
+Confirmed backend validation on the active 302-symbol watchlist:
+- saved symbols: 302
+- returned ticker rows: 302
+- unique ticker symbols: 302
+- duplicate symbols: 0
+- missing symbols: 0
+- NaN values: 0
+- Uncategorized reduced from 214 to 6
+- Solar section merged into Clean Energy
+- Clean Energy now includes solar-industry tickers
+- Backend response shape is unchanged
+
+Important exact field names:
+- Use row.symbol, not row.ticker
+- Use row.name, not row.company
+- Use section.title for section display name, fallback to section.name
+- analysis._analysis_pending may exist at parent analysis level
+- section._analysis_pending may exist in skeleton mode
+- Do not expect _analysis_pending on individual rows
+- Optional analysis meta fields are safe to ignore:
+  - analysis._missing_symbols_appended_count
+  - analysis._duplicate_symbols_removed
+  - analysis._not_in_saved_removed
+  - analysis._classification_stats
+
+Ticker row fields may include:
+- symbol
+- name
+- price
+- change_pct_1d
+- volume
+- relative_volume
+- market_cap
+- dollar_volume
+- vol_mc_ratio
+- vol_mc_pct
+- vol_mc_label
+- vol_mc_unavailable_reason
+- catalyst
+- sentiment
+- action_note
+- risk_level
+- key_insight
+- technical_setup
+- canonical_theme_name
+- canonical_theme_id
+- theme_source
+
+Task 1 — Fix ticker table showing 0 / “No stocks”
+- Find the Watchlist page ticker table.
+- Confirm it reads from GET /api/watchlist/{watchlist_id}.
+- Flatten/read rows from analysis.sections[].tickers[].
+- Render a row as long as it has row.symbol.
+- Do not require row.ticker.
+- Do not require row.company.
+- Do not require catalyst/sentiment/action_note before rendering.
+- Do not show “No stocks” while saved symbols exist and analysis is pending.
+- If analysis._analysis_pending or section._analysis_pending is true, keep the existing “Agent analysis running…” treatment if present.
+- Do not redesign the table.
+
+Task 2 — Display backend category sections correctly
+- Display sections using section.title, fallback section.name.
+- Do not recategorize on frontend.
+- Do not manually merge Solar/Clean Energy on frontend. Backend already does this.
+- Confirm Clean Energy appears with solar companies included.
+- Confirm Other / Uncategorized is much smaller than before.
+- Keep existing Watchlist section UI style.
+
+Task 3 — Add Vol/MC column
+- Add a new column named “Vol/MC”.
+- Use row.vol_mc_pct.
+- Format as a percent:
+  Example: 7.8954 renders as 7.90%.
+- If vol_mc_pct is null/missing, show a dash.
+- Never show undefined, null, NaN, or raw objects.
+- If table badges already exist, optionally show/use row.vol_mc_label.
+- Do not calculate Vol/MC on frontend unless absolutely necessary. Backend already returns it.
+
+Task 4 — Add Watchlist Earnings section
+Use:
+GET /api/watchlist/earnings
+
+Expected response:
+{
+  earnings: [...],
+  meta: {
+    universe: "watchlist",
+    cache_status,
+    symbols_count,
+    events_count,
+    from_date,
+    to_date,
+    elapsed_ms
+  }
+}
+
+Requirements:
+- One backend call only.
+- No per-symbol earnings calls.
+- Reuse the Portfolio Terminal earnings visual pattern/component if practical.
+- Earnings must be scoped to saved watchlist tickers, not portfolio holdings.
+- Earnings section must not block ticker table rendering.
+- Empty state:
+  “No upcoming earnings found for your watchlist.”
+
+Task 5 — Pending/skeleton state
+When analysis._analysis_pending === true or section._analysis_pending === true:
+- Still render rows from analysis.sections[].tickers[].
+- Do not show “No stocks.”
+- Do not require LLM fields.
+- Missing catalyst/sentiment/action_note should render as dash/empty, not crash.
+
+Validation:
+1) Open the active 302-symbol watchlist.
+2) Top tab still shows 302.
+3) Tickers section no longer shows 0 / “No stocks.”
+4) Ticker table renders 302 rows from analysis.sections[].tickers[].
+5) Rows render using symbol/name, not ticker/company.
+6) Sections render from backend section.title/name.
+7) Clean Energy includes solar companies.
+8) Other / Uncategorized is small, around 6 names.
+9) Vol/MC displays clean percent where available.
+10) Missing Vol/MC displays dash.
+11) Earnings section loads from GET /api/watchlist/earnings.
+12) Live News still works.
+13) No browser console errors.
+14) Network tab does not show per-symbol earnings calls.
+15) Portfolio Terminal remains unchanged.
+
+Return:
+- Files/components changed
+- Endpoint used for ticker table
+- Exact path used for ticker rows
+- Before/after ticker row count on 302-watchlist
+- Confirmation section titles render correctly
+- Confirmation Clean Energy/Solar consolidation displays correctly
+- Confirmation Vol/MC renders
+- Confirmation earnings renders
+- Confirmation no Portfolio Terminal regression
