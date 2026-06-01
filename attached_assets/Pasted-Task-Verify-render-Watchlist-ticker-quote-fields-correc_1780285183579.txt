@@ -1,0 +1,112 @@
+Task: Verify/render Watchlist ticker quote fields correctly after backend quote coverage fix, and handle earnings via the dedicated earnings endpoint.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change layout/style.
+Do NOT change category logic.
+Do NOT add frontend-side Tradier/FMP calls.
+Do NOT calculate backend-owned fields on frontend.
+Do NOT change Portfolio Terminal.
+
+Backend FastAPI contract:
+Use:
+GET /api/watchlist/{watchlist_id}
+
+Ticker rows are at:
+analysis.sections[].tickers[]
+
+Backend fixed quote coverage for the active 302-symbol watchlist:
+- price: 302 / 302
+- change_pct_1d: 248 / 302
+- volume: 248 / 302
+- vol_mc_pct: 247 / 302
+- remaining 54 quote gaps are foreign-exchange tickers unsupported by Tradier
+- unsupported rows may have vol_mc_unavailable_reason = "foreign_exchange_ticker_unsupported"
+- no NaN values
+
+Task 1 — Confirm ticker table uses exact backend fields
+Use:
+- Ch% column: row.change_pct_1d
+- Volume column: row.volume
+- Rel Vol column: row.relative_volume
+- Vol/MC column: row.vol_mc_pct
+
+Do not use alternate field names unless confirmed in the raw network response.
+
+Formatting:
+- change_pct_1d: percent format, with sign if existing table style supports it
+- volume: compact format, e.g. 1.2M
+- relative_volume: x format, e.g. 2.4x
+- vol_mc_pct: percent format, e.g. 7.90%
+- null/missing: dash
+- never render undefined, null, NaN, or raw objects
+
+Task 2 — Handle unsupported foreign tickers cleanly
+For rows where quote-driven fields are null/missing:
+- Render dash
+- Do not hide the row
+- Do not show scary errors
+- Do not attempt frontend fallback provider calls
+- If the UI already has tooltips or subtle metadata display, optionally use row.vol_mc_unavailable_reason, but do not redesign around it
+
+Task 3 — Earnings
+Do NOT expect earnings_date on ticker rows.
+Backend confirmed Watchlist earnings follows Portfolio Terminal pattern:
+Use dedicated endpoint:
+GET /api/watchlist/earnings
+
+Expected response:
+{
+  earnings: [...],
+  meta: {
+    universe: "watchlist",
+    cache_status,
+    symbols_count,
+    events_count,
+    from_date,
+    to_date,
+    elapsed_ms
+  }
+}
+
+Add/render the Watchlist Earnings section from this endpoint.
+Do not create one earnings call per ticker.
+Do not leave an Earnings column blank because ticker rows do not contain earnings_date.
+If the existing Watchlist ticker table currently has an Earnings column, either:
+1) remove/hide that ticker-table Earnings column if it was newly added and not part of the intended design, or
+2) only populate it if backend later provides row-level earnings fields.
+
+Preferred behavior:
+- Earnings should be a dedicated Watchlist Earnings section, matching Portfolio Terminal style.
+- Empty state:
+  “No upcoming earnings found for your watchlist.”
+
+Task 4 — Validate using network response
+Open the active 302-symbol watchlist and inspect the raw GET /api/watchlist/{watchlist_id} response.
+
+For at least 5 rows that display blanks:
+- confirm whether backend value is actually null/missing
+- if backend has value but UI is blank, fix the frontend field key/formatter
+- if backend is null/missing, render dash
+
+Validation:
+1) Watchlist page renders 302 rows.
+2) Ch% displays for rows with row.change_pct_1d.
+3) Volume displays for rows with row.volume.
+4) Rel Vol displays for rows with row.relative_volume.
+5) Vol/MC displays for rows with row.vol_mc_pct.
+6) Unsupported/missing rows show dash, not blank/NaN/undefined.
+7) Watchlist Earnings section loads from GET /api/watchlist/earnings.
+8) No per-symbol frontend provider calls.
+9) Live News still works.
+10) Category sections still render from backend.
+11) Portfolio Terminal unchanged.
+12) Browser console has no errors.
+
+Return:
+- Files/components changed
+- Exact endpoint used for ticker table
+- Exact row fields used for Ch%, Volume, Rel Vol, Vol/MC
+- Whether blank cells were backend-null or frontend key/format issues
+- Confirmation earnings is rendered from /api/watchlist/earnings
+- Confirmation no Portfolio Terminal regression

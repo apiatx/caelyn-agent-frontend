@@ -98,7 +98,7 @@ function extractAllStocks(analysis: any): any[] {
             ticker: t.symbol || t.ticker,
             company: t.name || t.company,
             price: t.price,
-            change_pct: t.change_pct ?? t.change_pct_1d,
+            change_pct: t.change_pct_1d ?? t.change_pct,
             volume: t.volume,
             average_volume: t.average_volume ?? t.avg_volume,
             relative_volume: t.relative_volume ?? t.rel_vol ?? t.volx,
@@ -679,7 +679,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'earnDate'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => { ensureBlinkStyle(); }, []);
@@ -1115,11 +1115,6 @@ export default function WatchlistPage() {
       case 'volMc': {
         const n = Number(stock.vol_mc_pct ?? stock.vol_mc_ratio);
         return { v: n, missing: !Number.isFinite(n) || n <= 0 };
-      }
-      case 'earnDate': {
-        const e = earningsMap[stock.ticker?.toUpperCase() ?? ''];
-        const raw = e?.date_raw ?? '';
-        return { v: raw ? parseInt(raw.replace(/-/g, ''), 10) : 99999999, missing: !raw };
       }
     }
   }
@@ -1730,7 +1725,7 @@ export default function WatchlistPage() {
 
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = () => {
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 62px 68px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 62px';
     const tickerColumns: { key: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -1740,7 +1735,6 @@ export default function WatchlistPage() {
       { key: 'volume', label: 'Volume' },
       { key: 'relVol', label: 'Rel Vol' },
       { key: 'volMc', label: 'Vol/MC' },
-      { key: 'earnDate', label: 'Earn' },
     ];
     return (
       <div style={{
@@ -1880,17 +1874,6 @@ export default function WatchlistPage() {
                   >
                     {formatVolMcPct(stock.vol_mc_pct)}
                   </span>
-                  {(() => {
-                    const ed = earningsMap[stock.ticker?.toUpperCase() ?? ''];
-                    return (
-                      <span
-                        style={{ fontSize: 10, color: ed?.next_date ? C.amber : C.dim, fontFamily: C.font, whiteSpace: 'nowrap' as const }}
-                        title={ed?.next_date ? `Next earnings: ${ed.next_date}` : 'No upcoming earnings'}
-                      >
-                        {ed?.next_date ?? DASH}
-                      </span>
-                    );
-                  })()}
                 </div>
               );
             })}
