@@ -1,0 +1,87 @@
+Task: Fix Watchlist ticker table columns. The previous implementation replaced key metric columns with movement indicators. That is wrong.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change category logic.
+Do NOT add frontend-side provider calls.
+Do NOT calculate backend-owned metrics if backend already returns them.
+Do NOT change Portfolio Terminal.
+This is a table-column correction only.
+
+Problem:
+In the Watchlist page Tickers section:
+- The Rel Vol column should show the actual relative volume value, e.g. 20.0x.
+- The Vol/MC column should show the actual volume / market cap percentage, e.g. 7.90%.
+- The increase/decrease arrows or rank movement indicators should be in NEW separate columns.
+- They must not replace Rel Vol or Vol/MC.
+
+Required columns:
+Keep/restore:
+1) Rel Vol
+   - use row.relative_volume
+   - format as x multiple, e.g. 20.0x, 2.4x
+   - null/missing = dash
+
+2) Vol/MC
+   - use row.vol_mc_pct
+   - format as percent, e.g. 7.90%
+   - null/missing = dash
+
+Add new columns:
+3) Rel Vol Δ
+   - use backend rel-vol momentum fields:
+     - row.rel_vol_trend
+     - row.rel_vol_rank_delta
+     - row.rel_vol_value_delta
+     - row.rel_vol_momentum_label
+   - if row.rel_vol_trend === "up": green up arrow
+   - if row.rel_vol_trend === "down": red down arrow
+   - if "flat" or "unknown": dash or subtle neutral
+   - display should be compact, e.g. ↑ 8, ↓ 3, or dash
+   - tooltip/title can say:
+     "Moved up 8 spots by relative volume"
+     or
+     "Moved down 3 spots by relative volume"
+
+4) Vol/MC Δ
+   - use backend Vol/MC momentum fields if present.
+   - Expected possible fields after backend adds them:
+     - row.vol_mc_trend
+     - row.vol_mc_pct_delta
+     - row.vol_mc_prev_pct
+     - row.vol_mc_momentum_label
+   - If these fields are not present yet, render dash.
+   - Do NOT reuse rel_vol_trend for Vol/MC.
+   - Do NOT replace actual Vol/MC with an arrow.
+
+Column behavior:
+- Rel Vol = raw current metric
+- Rel Vol Δ = movement/change indicator
+- Vol/MC = raw current metric
+- Vol/MC Δ = movement/change indicator
+
+Do not merge these into one cell unless the existing table is too tight. If responsive/mobile layout requires combining, the primary metric must still be visible first:
+Example acceptable mobile combined cell:
+20.0x  ↑ 8
+But desktop should show separate columns if possible.
+
+Validation:
+1) Open Watchlist page.
+2) Tickers section still renders 302 rows.
+3) Rel Vol column shows actual row.relative_volume values like 20.0x, not only arrows/deltas.
+4) Vol/MC column shows actual row.vol_mc_pct percent values, not only arrows/deltas.
+5) Rel Vol Δ column shows green/red movement using rel_vol_trend.
+6) Vol/MC Δ column shows dash if backend has not provided Vol/MC momentum fields yet.
+7) Missing values show dash, not undefined/NaN/null.
+8) Ch%, Volume, and other columns still work.
+9) No browser console errors.
+10) Portfolio Terminal unchanged.
+
+Return:
+- Files/components changed
+- Final ticker table column list/order
+- Exact fields used for Rel Vol
+- Exact fields used for Rel Vol Δ
+- Exact fields used for Vol/MC
+- Exact fields used for Vol/MC Δ
+- Confirmation no Portfolio Terminal regression

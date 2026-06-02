@@ -162,6 +162,12 @@ function extractAllStocks(analysis: any): any[] {
             canonical_theme_id: section.canonical_theme_id || section.id,
             rel_vol_trend: t.rel_vol_trend ?? null,
             rel_vol_rank_delta: t.rel_vol_rank_delta ?? null,
+            rel_vol_value_delta: t.rel_vol_value_delta ?? null,
+            rel_vol_momentum_label: t.rel_vol_momentum_label ?? null,
+            vol_mc_trend: t.vol_mc_trend ?? null,
+            vol_mc_pct_delta: t.vol_mc_pct_delta ?? null,
+            vol_mc_prev_pct: t.vol_mc_prev_pct ?? null,
+            vol_mc_momentum_label: t.vol_mc_momentum_label ?? null,
           });
         }
       }
@@ -1781,8 +1787,8 @@ export default function WatchlistPage() {
 
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = () => {
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 62px';
-    const tickerColumns: { key: NonNullable<typeof sortKey>; label: string }[] = [
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 44px 62px 44px';
+    const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
       { key: 'theme', label: 'Theme' },
@@ -1790,7 +1796,9 @@ export default function WatchlistPage() {
       { key: 'chg', label: 'Chg %' },
       { key: 'volume', label: 'Volume' },
       { key: 'relVol', label: 'Rel Vol' },
+      { label: 'Rel Vol Δ' },
       { key: 'volMc', label: 'Vol/MC' },
+      { label: 'Vol/MC Δ' },
     ];
     return (
       <div style={{
@@ -1825,7 +1833,7 @@ export default function WatchlistPage() {
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
-          <div style={{ minWidth: 720 }}>
+          <div style={{ minWidth: 840 }}>
             {/* table header */}
             <div style={{
               display: 'grid',
@@ -1839,24 +1847,27 @@ export default function WatchlistPage() {
               gap: 6,
             }}>
               {tickerColumns.map(col => {
-                const active = sortKey === col.key;
+                const sortable = col.key != null;
+                const active = sortable && sortKey === col.key;
                 return (
                   <span
-                    key={col.key}
-                    onClick={() => handleSortClick(col.key)}
+                    key={col.key ?? col.label}
+                    onClick={() => { if (col.key) handleSortClick(col.key); }}
                     style={{
-                      cursor: 'pointer',
+                      cursor: sortable ? 'pointer' : 'default',
                       color: active ? C.teal : C.dim,
                       userSelect: 'none' as const,
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       overflow: 'hidden', whiteSpace: 'nowrap' as const,
                     }}
-                    title={`Sort by ${col.label}`}
+                    title={sortable ? `Sort by ${col.label}` : col.label}
                   >
                     {col.label}
-                    <span style={{ fontSize: 8, opacity: active ? 1 : 0.3 }}>
-                      {active ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
-                    </span>
+                    {sortable && (
+                      <span style={{ fontSize: 8, opacity: active ? 1 : 0.3 }}>
+                        {active ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                      </span>
+                    )}
                   </span>
                 );
               })}
@@ -1918,21 +1929,33 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatVolume(stock.volume)}
                   </span>
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                  {/* Rel Vol — raw value only */}
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
-                    {stock.rel_vol_trend === 'up' && (
+                  </span>
+                  {/* Rel Vol Δ — movement indicator */}
+                  <span style={{ fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                    {stock.rel_vol_trend === 'up' ? (
                       <span
-                        style={{ color: '#22c55e', fontSize: 9, lineHeight: 1 }}
-                        title={stock.rel_vol_rank_delta != null ? `Moved up ${stock.rel_vol_rank_delta} spots` : 'Rel vol rising'}
-                      >▲</span>
-                    )}
-                    {stock.rel_vol_trend === 'down' && (
+                        style={{ color: '#22c55e', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
+                        title={stock.rel_vol_rank_delta != null ? `Moved up ${stock.rel_vol_rank_delta} spots by relative volume` : 'Rel vol rising'}
+                      >
+                        <span>↑</span>
+                        {stock.rel_vol_rank_delta != null && <span style={{ fontSize: 9 }}>{stock.rel_vol_rank_delta}</span>}
+                      </span>
+                    ) : stock.rel_vol_trend === 'down' ? (
                       <span
-                        style={{ color: '#ef4444', fontSize: 9, lineHeight: 1 }}
-                        title={stock.rel_vol_rank_delta != null ? `Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots` : 'Rel vol fading'}
-                      >▼</span>
+                        style={{ color: '#ef4444', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
+                        title={stock.rel_vol_rank_delta != null ? `Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots by relative volume` : 'Rel vol fading'}
+                      >
+                        <span>↓</span>
+                        {stock.rel_vol_rank_delta != null && <span style={{ fontSize: 9 }}>{Math.abs(stock.rel_vol_rank_delta)}</span>}
+                      </span>
+                    ) : (
+                      <span style={{ color: C.dim, fontSize: 10 }}>—</span>
                     )}
                   </span>
+                  {/* Vol/MC — raw value only */}
                   <span
                     style={{
                       fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const,
@@ -1941,6 +1964,28 @@ export default function WatchlistPage() {
                     title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}
                   >
                     {formatVolMcPct(stock.vol_mc_pct)}
+                  </span>
+                  {/* Vol/MC Δ — movement indicator (renders dash until backend provides fields) */}
+                  <span style={{ fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                    {stock.vol_mc_trend === 'up' ? (
+                      <span
+                        style={{ color: '#22c55e', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
+                        title={stock.vol_mc_pct_delta != null ? `Vol/MC up ${stock.vol_mc_pct_delta > 0 ? '+' : ''}${stock.vol_mc_pct_delta.toFixed(2)}%` : 'Vol/MC rising'}
+                      >
+                        <span>↑</span>
+                        {stock.vol_mc_pct_delta != null && <span style={{ fontSize: 9 }}>{Math.abs(stock.vol_mc_pct_delta).toFixed(1)}%</span>}
+                      </span>
+                    ) : stock.vol_mc_trend === 'down' ? (
+                      <span
+                        style={{ color: '#ef4444', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
+                        title={stock.vol_mc_pct_delta != null ? `Vol/MC down ${stock.vol_mc_pct_delta.toFixed(2)}%` : 'Vol/MC fading'}
+                      >
+                        <span>↓</span>
+                        {stock.vol_mc_pct_delta != null && <span style={{ fontSize: 9 }}>{Math.abs(stock.vol_mc_pct_delta).toFixed(1)}%</span>}
+                      </span>
+                    ) : (
+                      <span style={{ color: C.dim, fontSize: 10 }}>—</span>
+                    )}
                   </span>
                 </div>
               );
