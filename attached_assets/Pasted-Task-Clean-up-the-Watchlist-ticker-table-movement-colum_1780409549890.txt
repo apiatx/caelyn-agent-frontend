@@ -1,0 +1,78 @@
+Task: Clean up the Watchlist ticker table movement columns.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change backend calculations.
+Do NOT add frontend-side provider calls.
+Do NOT change Portfolio Terminal.
+This is a small UX/table-label cleanup only.
+
+Current issue:
+The Rel Vol column is now correctly showing actual relative volume values like 3.7x.
+The separate Rel Vol Δ column shows values like ↑ 12 or ↓ 6.
+
+Clarification:
+↑ 12 means the ticker moved up 12 rank spots by relative volume versus the previous backend snapshot.
+It is NOT a percent.
+
+Required changes:
+1) Rename the column from:
+   REL VOL Δ
+   to one of:
+   RV MOVE
+   or
+   RELVOL MOVE
+
+Preferred: RV MOVE
+
+2) Keep the cell rendering:
+   - rel_vol_trend === "up" → green ↑ plus absolute rel_vol_rank_delta
+   - rel_vol_trend === "down" → red ↓ plus absolute rel_vol_rank_delta
+   - flat/unknown/null → dash
+
+3) Add or update tooltip/title:
+   - For up:
+     "Moved up 12 spots by relative-volume rank"
+   - For down:
+     "Moved down 6 spots by relative-volume rank"
+   - For flat:
+     "No meaningful relative-volume rank change"
+   - For unknown:
+     "No prior relative-volume snapshot"
+
+4) Keep Rel Vol column unchanged:
+   - It must show row.relative_volume as x multiple, e.g. 3.7x.
+   - Do not replace it with arrows.
+
+5) Keep Vol/MC column unchanged:
+   - It must show row.vol_mc_pct as a percentage.
+
+6) Remove or hide the Vol/MC Δ column for now.
+   Reason:
+   - Backend is not republished yet, so it shows dash.
+   - It adds clutter.
+   - Vol/MC current percentage is the core signal.
+   - We can add Vol/MC movement later if it proves useful.
+
+If you prefer not to remove it entirely, gate it behind actual backend data:
+- Only show Vol/MC Δ column if at least one row has row.vol_mc_trend === "up" or "down" or row.vol_mc_pct_delta is numeric.
+- Otherwise hide the column.
+
+Validation:
+1) Watchlist table still renders 302 rows.
+2) Rel Vol shows actual x values.
+3) RV MOVE shows rank movement like ↑ 12 / ↓ 6.
+4) Tooltip clarifies this is rank movement, not percent.
+5) Vol/MC shows actual percentage.
+6) Vol/MC Δ is hidden unless backend data exists.
+7) No NaN/undefined/null display.
+8) No browser console errors.
+9) Portfolio Terminal unchanged.
+
+Return:
+- Files changed
+- Final ticker table column list/order
+- Confirmation Rel Vol raw value still displays
+- Confirmation RV MOVE tooltip explains rank movement
+- Confirmation Vol/MC raw percentage still displays
+- Confirmation Vol/MC Δ hidden or gated
