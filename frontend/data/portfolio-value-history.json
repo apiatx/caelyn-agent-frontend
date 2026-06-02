@@ -664,5 +664,28 @@
       "PENG",
       "TRT"
     ]
+  },
+  {
+    "timestamp": "2026-06-02T03:37:14.999Z",
+    "total_value": 167525.589789,
+    "holdings_count": 16,
+    "symbols": [
+      "LPKFF",
+      "AOSL",
+      "SLNH",
+      "SIVEF",
+      "OUST",
+      "NRGV",
+      "ALMU",
+      "SILC",
+      "LPTH",
+      "IQEPF",
+      "SLOIF",
+      "NBIS",
+      "BWEN",
+      "FLNC",
+      "PENG",
+      "TRT"
+    ]
   }
 ]

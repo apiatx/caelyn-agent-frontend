@@ -231,12 +231,15 @@ function MiniIdeaRow({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: 
     <div className="flex items-center gap-2.5 py-1.5 border-b border-white/[0.04] last:border-0">
       <span className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold ${ss.rank}`}>{rank}</span>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <button
+        <span
+          role="button"
+          tabIndex={0}
           onClick={e => { e.stopPropagation(); onChartOpen(idea.symbol, idea.asset_type); }}
-          className="text-[12px] font-bold text-white/90 tracking-wide hover:text-white hover:underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-0 p-0"
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChartOpen(idea.symbol, idea.asset_type); } }}
+          className="text-[12px] font-bold text-white/90 tracking-wide hover:text-white hover:underline underline-offset-2 transition-colors cursor-pointer"
         >
           {idea.symbol}
-        </button>
+        </span>
         {idea.name && <span className="text-[10px] text-white/35 truncate hidden sm:block">{idea.name}</span>}
       </div>
       <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border ${ds.bg}`}>
@@ -718,7 +721,7 @@ export function DailyAlphaBoard() {
 
       {/* ── Full board modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl w-[95vw] h-[88vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl w-[95vw] h-[88vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col" aria-describedby={undefined}>
           <VisuallyHidden.Root><DialogTitle>Daily Alpha Board</DialogTitle></VisuallyHidden.Root>
           <AlphaBoardModalContent
             data={data}
