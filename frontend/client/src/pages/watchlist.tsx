@@ -724,7 +724,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => { ensureBlinkStyle(); }, []);
@@ -1177,6 +1177,13 @@ export default function WatchlistPage() {
       case 'volMc': {
         const n = Number(stock.vol_mc_pct ?? stock.vol_mc_ratio);
         return { v: n, missing: !Number.isFinite(n) || n <= 0 };
+      }
+      case 'rvRankMove': {
+        const trend = stock.rel_vol_trend;
+        if (trend === 'flat') return { v: 0, missing: false };
+        const delta = stock.rel_vol_rank_delta;
+        if (delta == null || !Number.isFinite(Number(delta))) return { v: 0, missing: true };
+        return { v: Number(delta), missing: false };
       }
     }
   }
@@ -1796,7 +1803,7 @@ export default function WatchlistPage() {
       { key: 'chg', label: 'Chg %' },
       { key: 'volume', label: 'Volume' },
       { key: 'relVol', label: 'Rel Vol' },
-      { label: 'RV MOVE' },
+      { key: 'rvRankMove', label: 'REL VOL RANK MOVE' },
       { key: 'volMc', label: 'Vol/MC' },
     ];
     return (
@@ -1932,28 +1939,28 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
                     {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
                   </span>
-                  {/* RV MOVE — rank movement indicator */}
-                  <span style={{ fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                    {stock.rel_vol_trend === 'up' ? (
+                  {/* REL VOL RANK MOVE — rank position change since last snapshot */}
+                  <span style={{ fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                    {stock.rel_vol_trend === 'up' && stock.rel_vol_rank_delta != null ? (
                       <span
-                        style={{ color: '#22c55e', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
-                        title={stock.rel_vol_rank_delta != null ? `Moved up ${stock.rel_vol_rank_delta} spots by relative-volume rank` : 'Rel vol rising'}
+                        style={{ color: '#22c55e', fontWeight: 600 }}
+                        title={`Moved up ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}
                       >
-                        <span>↑</span>
-                        {stock.rel_vol_rank_delta != null && <span style={{ fontSize: 9 }}>{stock.rel_vol_rank_delta}</span>}
+                        +{Math.abs(stock.rel_vol_rank_delta)} ranks
                       </span>
-                    ) : stock.rel_vol_trend === 'down' ? (
+                    ) : stock.rel_vol_trend === 'down' && stock.rel_vol_rank_delta != null ? (
                       <span
-                        style={{ color: '#ef4444', fontSize: 10, lineHeight: 1, display: 'inline-flex', alignItems: 'center', gap: 2 }}
-                        title={stock.rel_vol_rank_delta != null ? `Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots by relative-volume rank` : 'Rel vol fading'}
+                        style={{ color: '#ef4444', fontWeight: 600 }}
+                        title={`Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}
                       >
-                        <span>↓</span>
-                        {stock.rel_vol_rank_delta != null && <span style={{ fontSize: 9 }}>{Math.abs(stock.rel_vol_rank_delta)}</span>}
+                        -{Math.abs(stock.rel_vol_rank_delta)} ranks
                       </span>
+                    ) : stock.rel_vol_trend === 'flat' ? (
+                      <span style={{ color: C.dim }} title="No meaningful change in relative-volume rank">Flat</span>
                     ) : stock.rel_vol_trend === 'unknown' ? (
-                      <span style={{ color: C.dim, fontSize: 10 }} title="No prior relative-volume snapshot">—</span>
+                      <span style={{ color: C.dim }} title="No prior relative-volume snapshot yet">New</span>
                     ) : (
-                      <span style={{ color: C.dim, fontSize: 10 }} title="No meaningful relative-volume rank change">—</span>
+                      <span style={{ color: C.dim }}>—</span>
                     )}
                   </span>
                   {/* Vol/MC — raw value only */}

@@ -1,0 +1,167 @@
+Task: Fix the Watchlist ticker table relative-volume movement column so it is clear, useful, and sortable.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change backend calculations.
+Do NOT add frontend-side Tradier/FMP/news/provider calls.
+Do NOT change category logic.
+Do NOT change Portfolio Terminal.
+This is a Watchlist ticker table UI/sorting fix only.
+
+Current issue:
+The Watchlist ticker table has a movement column showing values like:
+↑ 1
+↓ 12
+
+This is unclear. The user does not know what the number means.
+
+Meaning:
+These values are NOT percentages.
+They mean rank movement in the relative-volume leaderboard since the previous backend snapshot.
+
+Example:
+- ↑ 12 means the ticker moved up 12 places in relative-volume rank.
+- ↓ 6 means the ticker moved down 6 places in relative-volume rank.
+
+Required final columns:
+Keep these raw metric columns unchanged:
+1) Rel Vol
+   - use row.relative_volume
+   - show actual relative volume as an x multiple, e.g. 3.7x, 20.0x
+   - null/missing = dash
+
+2) Vol/MC
+   - use row.vol_mc_pct
+   - show actual volume / market cap percentage, e.g. 7.90%
+   - null/missing = dash
+
+Fix movement column:
+3) Rename movement column to:
+   REL VOL RANK MOVE
+
+If too wide, use:
+   RV RANK MOVE
+
+Preferred:
+   REL VOL RANK MOVE
+
+Do NOT use:
+- RV MOVE
+- REL VOL Δ
+- arrows-only values
+
+Display format:
+Replace:
+↑ 12
+↓ 6
+
+With:
++12 ranks
+-6 ranks
+Flat
+New
+
+Rendering logic:
+- If row.rel_vol_trend === "up" and row.rel_vol_rank_delta is numeric:
+  display `+{Math.abs(row.rel_vol_rank_delta)} ranks`
+  color green
+
+- If row.rel_vol_trend === "down" and row.rel_vol_rank_delta is numeric:
+  display `-{Math.abs(row.rel_vol_rank_delta)} ranks`
+  color red
+
+- If row.rel_vol_trend === "flat":
+  display `Flat`
+  muted color
+
+- If row.rel_vol_trend === "unknown":
+  display `New` if row.rel_vol_rank exists but row.rel_vol_prev_rank is missing.
+  Otherwise display dash.
+
+Tooltip/title:
+- Up:
+  "Moved up 12 spots in relative-volume rank since the previous snapshot"
+
+- Down:
+  "Moved down 6 spots in relative-volume rank since the previous snapshot"
+
+- Flat:
+  "No meaningful change in relative-volume rank"
+
+- New:
+  "No prior relative-volume snapshot yet"
+
+Sorting requirement:
+The REL VOL RANK MOVE / RV RANK MOVE column must be sortable.
+
+Sort behavior:
+- Sort by row.rel_vol_rank_delta.
+- Positive values should rank higher than negative values when sorting descending.
+  Example descending:
+  +40 ranks
+  +12 ranks
+  +1 rank
+  Flat / 0
+  -1 rank
+  -8 ranks
+  -30 ranks
+  New / unknown / missing last
+
+- Ascending should reverse that:
+  -30 ranks
+  -8 ranks
+  -1 rank
+  Flat / 0
+  +1 rank
+  +12 ranks
+  +40 ranks
+  New / unknown / missing last
+
+Important sorting details:
+- Treat "flat" as 0.
+- Treat unknown/missing/null as always last, regardless of ascending or descending.
+- Do not sort by the rendered string.
+- Sort by numeric rel_vol_rank_delta.
+- If rel_vol_rank_delta is missing but rel_vol_trend === "flat", use 0.
+- If rel_vol_rank_delta is missing and trend is unknown, sort last.
+
+Column sorting UI:
+- Add the normal sortable header indicator to this column.
+- Make it behave like the other sortable columns.
+- Do not show a sort indicator if the current table pattern does not support it, but the column must still be clickable/sortable if other metric columns are.
+
+Vol/MC movement:
+- Hide/remove the Vol/MC Δ column for now unless it already has real backend data and is useful.
+- The user does not need this clutter right now.
+- Keep Vol/MC raw percentage visible and sortable.
+- Do NOT replace Vol/MC with movement.
+
+Validation:
+1) Watchlist table still renders 302 rows.
+2) Rel Vol column shows actual x values like 3.7x or 20.0x.
+3) Vol/MC column shows actual percentages like 7.90%.
+4) Movement column label is REL VOL RANK MOVE or RV RANK MOVE.
+5) Movement column displays clear values like:
+   +12 ranks
+   -6 ranks
+   Flat
+   New
+6) No raw arrows-only values like ↑ 1 or ↓ 12 remain.
+7) Tooltip explains rank movement clearly.
+8) Movement column is sortable.
+9) Descending sort puts biggest positive movers first and unknown/missing last.
+10) Ascending sort puts biggest negative movers first and unknown/missing last.
+11) Flat sorts as 0.
+12) Missing/null/unknown never renders NaN/undefined/null.
+13) Ch%, Volume, Rel Vol, Vol/MC sorting still works.
+14) Browser console has no errors.
+15) Portfolio Terminal unchanged.
+
+Return:
+- Files changed
+- Final ticker table column list/order
+- Final display examples
+- Exact field used for sorting REL VOL RANK MOVE
+- Confirmation unknown/missing sorts last
+- Confirmation raw Rel Vol and Vol/MC still display correctly
+- Confirmation no Portfolio Terminal regression

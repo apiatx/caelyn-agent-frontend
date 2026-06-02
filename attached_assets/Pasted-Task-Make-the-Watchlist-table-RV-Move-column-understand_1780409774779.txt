@@ -1,0 +1,111 @@
+Task: Make the Watchlist table “RV Move” column understandable.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT change backend calculations.
+Do NOT add frontend-side provider calls.
+Do NOT change Portfolio Terminal.
+This is a small UI copy/formatting fix only.
+
+Current issue:
+The Watchlist ticker table has a column showing values like:
+↑ 1
+↓ 12
+
+This is unclear. The user does not know what the number means.
+
+Meaning:
+These values are NOT percentages.
+They mean rank movement in the relative-volume leaderboard since the previous backend snapshot.
+
+Example:
+↑ 12 means the ticker moved up 12 places in relative-volume rank.
+↓ 6 means it moved down 6 places in relative-volume rank.
+
+Required changes:
+1) Rename the column from:
+   RV MOVE
+   or REL VOL Δ
+   to:
+   REL VOL RANK MOVE
+
+If that is too wide, use:
+   RV RANK MOVE
+
+Preferred:
+   REL VOL RANK MOVE
+
+2) Replace the display format:
+Current bad format:
+   ↑ 12
+   ↓ 6
+
+New format:
+   +12 ranks
+   -6 ranks
+   Flat
+   New
+
+Rendering logic:
+- If row.rel_vol_trend === "up" and row.rel_vol_rank_delta is numeric:
+  display `+{abs(row.rel_vol_rank_delta)} ranks`
+  color green
+
+- If row.rel_vol_trend === "down" and row.rel_vol_rank_delta is numeric:
+  display `-{abs(row.rel_vol_rank_delta)} ranks`
+  color red
+
+- If row.rel_vol_trend === "flat":
+  display `Flat`
+  muted color
+
+- If row.rel_vol_trend === "unknown":
+  display `New` or dash.
+  Preferred: `New` if row.rel_vol_rank exists but row.rel_vol_prev_rank is missing.
+  Otherwise dash.
+
+3) Add clear tooltip/title:
+For up:
+   "Moved up 12 spots in relative-volume rank since the previous snapshot"
+
+For down:
+   "Moved down 6 spots in relative-volume rank since the previous snapshot"
+
+For flat:
+   "No meaningful change in relative-volume rank"
+
+For new:
+   "No prior relative-volume snapshot yet"
+
+4) Keep the actual Rel Vol column unchanged:
+- Rel Vol must still show row.relative_volume as an x multiple, e.g. 3.7x, 20.0x.
+- Do not replace it with movement values.
+
+5) Keep Vol/MC unchanged:
+- Vol/MC must still show row.vol_mc_pct as percent.
+
+6) Keep/hide Vol/MC movement column based on prior instruction:
+- Prefer hidden unless useful backend data exists.
+- Do not clutter the table with another unclear delta column.
+
+Validation:
+1) Watchlist table still renders 302 rows.
+2) Rel Vol column shows actual values like 3.7x.
+3) Rel Vol Rank Move column shows clear text like:
+   +12 ranks
+   -6 ranks
+   Flat
+   New
+4) No raw arrows-only values like ↑ 1 or ↓ 12 remain.
+5) Tooltip explains that the value is rank movement.
+6) Vol/MC still shows actual percent.
+7) No NaN/undefined/null display.
+8) No browser console errors.
+9) Portfolio Terminal unchanged.
+
+Return:
+- Files changed
+- Final column label
+- Final display examples
+- Confirmation raw Rel Vol value still displays
+- Confirmation no arrows-only values remain
