@@ -76,6 +76,43 @@ interface NewsResponse {
   [ticker: string]: NewsItem[];
 }
 
+interface MajorNewsItem {
+  title: string;
+  summary?: string;
+  url: string;
+  published_at?: string;
+  source?: string;
+  is_major_development?: boolean;
+  is_top_major_development?: boolean;
+  major_news_score?: number;
+  major_news_label?: string;
+  catalyst_type?: string;
+  signal_strength?: string;
+  bull_bear_impact?: string;
+  why_it_matters?: string;
+  matched_entities?: string[];
+  matched_keywords?: string[];
+  related_watchlist_symbols?: string[];
+  source_quality?: string;
+  surface_priority?: number;
+  major_news_rank?: number;
+  duplicate_cluster_key?: string;
+}
+
+interface MajorNewsResponse {
+  major_developments: MajorNewsItem[];
+  major_developments_count: number;
+  high_signal_count?: number;
+  by_catalyst_type?: Record<string, number>;
+  news_signal_meta?: {
+    total_articles?: number;
+    total_major_developments?: number;
+    total_top_major?: number;
+    duplicate_clusters_removed?: number;
+    unique_clusters?: number;
+  };
+}
+
 interface WatchlistMeta {
   id: string;
   name: string;
@@ -811,6 +848,22 @@ export default function WatchlistPage() {
     enabled: !!activeId && !!watchlist?.analysis,
   });
 
+  /* ── major developments for active watchlist ─────────────────────── */
+  const { data: majorNewsData } = useQuery<MajorNewsResponse>({
+    queryKey: ['/api/watchlist/news/major', activeId],
+    queryFn: async () => {
+      if (!activeId) return { major_developments: [], major_developments_count: 0 };
+      try {
+        const r = await fetch(`/api/watchlist/${activeId}/news/major`);
+        if (!r.ok) return { major_developments: [], major_developments_count: 0 };
+        return r.json();
+      } catch { return { major_developments: [], major_developments_count: 0 }; }
+    },
+    staleTime: 5 * 60_000,
+    refetchInterval: 10 * 60 * 1000,
+    enabled: !!activeId && !!watchlist?.analysis,
+  });
+
   /* ── watchlist earnings ──────────────────────────────────────────── */
   const { data: earningsResp, isLoading: earningsLoading, isError: earningsIsError } = useQuery<{
     earnings: any[]; meta?: any;
@@ -1045,6 +1098,7 @@ export default function WatchlistPage() {
     : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
   const allStocks = extractAllStocks(analysis);
   const allNews = flattenNews(newsData);
+  const majorNews: MajorNewsItem[] = (majorNewsData?.major_developments ?? []).slice(0, 20);
   const marketThemes: string[] = newFmt ? (analysis?.market_themes || []) : [];
   const lastUpdated: string | undefined = newFmt ? analysis?.last_updated : watchlist?.saved_at;
 
@@ -2235,6 +2289,145 @@ export default function WatchlistPage() {
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
+                  {/* ── Major Developments ── */}
+                  {majorNews.length > 0 && (() => {
+                    const impactColor = (impact?: string) => {
+                      if (impact === 'bullish')  return '#22c55e';
+                      if (impact === 'bearish')  return '#ef4444';
+                      if (impact === 'mixed')    return '#f59e0b';
+                      return C.dim;
+                    };
+                    return (
+                      <>
+                        <div style={{
+                          padding: '7px 14px 6px',
+                          borderBottom: `1px solid ${C.border}`,
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          background: '#ffffff05',
+                        }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: C.amber, letterSpacing: '0.12em' }}>
+                            MAJOR DEVELOPMENTS
+                          </span>
+                          <span style={{ fontSize: 9, color: C.dim }}>({majorNews.length})</span>
+                        </div>
+                        {majorNews.map((item, i) => {
+                          const col = impactColor(item.bull_bear_impact);
+                          const symbols = item.related_watchlist_symbols ?? [];
+                          return (
+                            <a
+                              key={`major-${i}`}
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'block',
+                                padding: '9px 14px',
+                                borderBottom: `1px solid ${C.border}`,
+                                textDecoration: 'none',
+                                cursor: 'pointer',
+                                transition: 'background 0.1s',
+                                borderLeft: `2px solid ${col}40`,
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = `${col}06`}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              {/* badges row */}
+                              <div style={{ display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 4, marginBottom: 5 }}>
+                                {item.major_news_label && (
+                                  <span style={{
+                                    fontSize: 8, fontWeight: 700, fontFamily: C.font,
+                                    padding: '2px 6px', borderRadius: 3,
+                                    color: col, background: col + '18',
+                                    border: `1px solid ${col}30`,
+                                    textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+                                  }}>
+                                    {item.major_news_label}
+                                  </span>
+                                )}
+                                {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && (
+                                  <span style={{
+                                    fontSize: 8, fontWeight: 600, fontFamily: C.font,
+                                    padding: '2px 5px', borderRadius: 3,
+                                    color: col, background: col + '10',
+                                    border: `1px solid ${col}20`,
+                                    textTransform: 'capitalize' as const,
+                                  }}>
+                                    {item.bull_bear_impact}
+                                  </span>
+                                )}
+                                {symbols.slice(0, 4).map(sym => (
+                                  <span key={sym} style={{
+                                    fontSize: 8, fontWeight: 700, fontFamily: C.font,
+                                    padding: '2px 5px', borderRadius: 3,
+                                    color: C.teal, background: C.teal + '15',
+                                    border: `1px solid ${C.teal}25`,
+                                    textTransform: 'uppercase' as const,
+                                  }}>
+                                    {sym}
+                                  </span>
+                                ))}
+                                {symbols.length > 4 && (
+                                  <span style={{ fontSize: 8, color: C.dim }}>+{symbols.length - 4}</span>
+                                )}
+                                <ExternalLink style={{ width: 9, height: 9, color: C.dim, marginLeft: 'auto' }} />
+                              </div>
+                              {/* title */}
+                              <div style={{
+                                fontSize: 11, color: C.text, fontFamily: C.font,
+                                lineHeight: 1.4, marginBottom: 4,
+                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                              }}>
+                                {item.title}
+                              </div>
+                              {/* why it matters */}
+                              {item.why_it_matters && (
+                                <div style={{
+                                  fontSize: 10, color: C.dim, fontFamily: C.font,
+                                  lineHeight: 1.35, marginBottom: 4,
+                                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                                  fontStyle: 'italic',
+                                }}>
+                                  {item.why_it_matters}
+                                </div>
+                              )}
+                              {/* matched entities */}
+                              {item.matched_entities && item.matched_entities.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
+                                  {item.matched_entities.slice(0, 3).map((ent, ei) => (
+                                    <span key={ei} style={{ fontSize: 8, color: C.dim, background: '#ffffff08', border: `1px solid ${C.border}`, borderRadius: 2, padding: '1px 4px', fontFamily: C.font }}>
+                                      {ent}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {/* source + date */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {item.source && <span style={{ fontSize: 9, color: C.dim }}>{item.source}</span>}
+                                {item.published_at && <span style={{ fontSize: 9, color: C.dim }}>{timeAgo(item.published_at)}</span>}
+                              </div>
+                            </a>
+                          );
+                        })}
+                        {/* divider before normal feed */}
+                        <div style={{
+                          padding: '6px 14px 5px',
+                          borderBottom: `1px solid ${C.border}`,
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          background: '#ffffff03',
+                        }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.1em' }}>
+                            ALL NEWS
+                          </span>
+                          <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  {majorNews.length === 0 && majorNewsData && allNews.length === 0 && (
+                    <div style={{ padding: '6px 14px', fontSize: 10, color: C.dim, borderBottom: `1px solid ${C.border}` }}>
+                      No major developments detected in recent watchlist news.
+                    </div>
+                  )}
                   {allNews.map((item, i) => {
                     const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === (item.ticker || '').toUpperCase());
                     const col = newFmt

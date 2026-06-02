@@ -5372,6 +5372,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Major developments for specific watchlist — proxied directly to FastAPI
+  app.get('/api/watchlist/:wid/news/major', async (req, res) => {
+    try {
+      const { wid } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 12000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${wid}/news/major`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.json({ major_developments: [], major_developments_count: 0, high_signal_count: 0 });
+      res.json(await r.json());
+    } catch { res.json({ major_developments: [], major_developments_count: 0, high_signal_count: 0 }); }
+  });
+
   // News for specific watchlist — get tickers from that watchlist, then use Express RSS proxy
   app.get('/api/watchlist/:wid/news', async (req, res) => {
     try {

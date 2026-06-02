@@ -1,0 +1,135 @@
+Task: Add a “Major Developments” section to the Watchlist page News area using the backend-provided major news endpoint.
+
+Important:
+Do NOT redesign the Watchlist page.
+Do NOT remove the existing news feed.
+Do NOT create frontend-side news scoring/classification logic.
+Do NOT add frontend-side news/provider calls.
+Do NOT change Portfolio Terminal.
+Backend owns news scoring. Frontend only displays returned fields.
+
+Backend FastAPI contract:
+
+Normal full news feed:
+Use the existing Watchlist news endpoint currently powering the Watchlist page News section.
+It still returns:
+{ TICKER: [articles] }
+
+Major developments endpoint:
+GET /api/watchlist/{watchlist_id}/news/major
+
+Response shape:
+{
+  "major_developments": [...top 20 articles...],
+  "major_developments_count": 20,
+  "high_signal_count": number,
+  "by_catalyst_type": { ... },
+  "news_signal_meta": {
+    "total_articles": number,
+    "total_major_developments": number,
+    "total_top_major": number,
+    "duplicate_clusters_removed": number,
+    "unique_clusters": number
+  }
+}
+
+Article fields may include:
+- title
+- summary
+- url
+- published_at
+- source
+- is_major_development
+- is_top_major_development
+- major_news_score
+- major_news_label
+- catalyst_type
+- signal_strength
+- bull_bear_impact
+- why_it_matters
+- matched_entities
+- matched_keywords
+- related_watchlist_symbols
+- source_quality
+- surface_priority
+- major_news_rank
+- duplicate_cluster_key
+
+Feature:
+Add a “Major Developments” subsection at the top of the Watchlist News section.
+
+Behavior:
+1) Fetch GET /api/watchlist/{watchlist_id}/news/major.
+2) Render major_developments at the top of the News section.
+3) Keep the normal full news feed below exactly as it is.
+4) Do not show hundreds of “major” cards. Use only backend major_developments, max 20.
+5) Sort by backend order or surface_priority / major_news_rank.
+6) If /news/major fails, do not break the page. Fall back to the existing normal news feed.
+
+Major Development card should show:
+- title
+- related_watchlist_symbols
+- source/date
+- major_news_label badge
+- bull_bear_impact badge or subtle color
+- why_it_matters
+- matched_entities if available
+- link to article
+
+Badge examples:
+- Hyperscaler Deal
+- Government / Defense
+- Major Contract
+- Strategic Partnership
+- Technical Breakthrough
+- Earnings Shock
+- Financing / Dilution
+- M&A
+
+Color guidance:
+- bullish: green accent
+- bearish: red accent
+- mixed: amber/yellow accent
+- neutral/unknown: muted
+- high signal: stronger badge
+Keep styling subtle and consistent with existing CaelynAI design.
+
+Important:
+Do not classify on frontend.
+Do not treat every ticker mention as major.
+Do not use is_major_development alone for the top rail unless /news/major is unavailable.
+Preferred source for top rail is backend major_developments.
+Routine articles in the normal feed can show a small badge only if already marked major, but do not over-highlight them.
+
+Empty state:
+If major_developments is empty:
+- Do not show a scary error.
+- Just show the normal news feed.
+- Optional subtle line:
+  “No major developments detected in recent watchlist news.”
+
+Loading behavior:
+- News loading should be scoped to the News section.
+- Do not block the whole Watchlist page while news loads.
+- If major news loads slower than normal feed, show normal feed and let major section populate when ready.
+
+Validation:
+1) Watchlist page loads.
+2) Existing normal News feed still works.
+3) Major Developments section appears above normal feed when /news/major returns items.
+4) Major Developments renders max 20 items.
+5) Cards show title, symbols, source/date, label, impact, why_it_matters.
+6) Routine news is not over-highlighted.
+7) No frontend-side provider/news calls.
+8) No browser console errors.
+9) Portfolio Terminal unchanged.
+10) If /news/major errors, normal news feed still renders.
+
+Return:
+- Files/components changed
+- Endpoint used for Major Developments
+- Endpoint used for normal news feed
+- Exact fields rendered
+- Major Developments count rendered
+- Confirmation full feed still works
+- Confirmation no Portfolio Terminal regression
