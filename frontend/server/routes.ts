@@ -4093,6 +4093,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })();
 
+  app.get('/api/hyperliquid/screener/trade-radar', async (req, res) => {
+    try {
+      const r = await fetch(`${HL_URL}/api/hyperliquid/screener/trade-radar`, {
+        headers: hlHdr(),
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!r.ok) { res.status(r.status).json({ error: `FastAPI ${r.status}` }); return; }
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message ?? 'trade-radar failed' });
+    }
+  });
+
   app.get('/api/hyperliquid/screener', async (req, res) => {
     const market_type = String(req.query.market_type ?? 'all');
     const limit       = String(req.query.limit ?? '200');

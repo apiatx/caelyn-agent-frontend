@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Activity, Search, RefreshCw, Bot, X, ChevronDown, ChevronUp,
-  ChevronsUpDown, AlertTriangle, Pin, BarChart2,
+  ChevronsUpDown, AlertTriangle, Pin, BarChart2, Target,
   TrendingUp, TrendingDown, Eye, ShieldAlert, Zap,
 } from 'lucide-react';
 
@@ -967,6 +967,50 @@ interface TsmomMeta {
 interface TsmomResult {
   signals: TsmomSignal[];
   meta:    TsmomMeta;
+}
+
+// ─── Trade Radar Types ────────────────────────────────────────────────────────
+interface TradeRadarCard {
+  coin:          string | null;
+  direction:     string | null;
+  setup_type:    string | null;
+  confidence:    number | null;
+  thesis:        string | null;
+  entry_trigger: string | null;
+  confirmation:  string | null;
+  invalidation:  string | null;
+  bias:          string | null;
+  score:         number | null;
+}
+interface TradeRadarSetup {
+  coin:          string;
+  direction:     string;
+  setup_type:    string | null;
+  confidence:    number | null;
+  score:         number | null;
+  thesis:        string | null;
+  entry_trigger: string | null;
+  confirmation:  string | null;
+  invalidation:  string | null;
+}
+interface TradeRadarData {
+  trade_radar: {
+    market_regime:     string | null;
+    cards: {
+      best_long:      TradeRadarCard | null;
+      best_short:     TradeRadarCard | null;
+      squeeze_watch:  TradeRadarCard | null;
+      pullback_buy:   TradeRadarCard | null;
+      crowded_avoid:  TradeRadarCard | null;
+    };
+    top_setups:        TradeRadarSetup[];
+    selected_defaults: { top_ticker: string | null } | null;
+  };
+  meta: {
+    assets_scanned: number;
+    elapsed_ms:     number;
+    generated_at:   string;
+  };
 }
 
 // ─── Advanced Signal Types ───────────────────────────────────────────────────
@@ -2555,6 +2599,207 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
   );
 }
 
+// ─── Trade Radar: Setup Explanation Panel ────────────────────────────────────
+function SetupExplanationPanel({ card, label, color, onClose }: {
+  card: TradeRadarCard; label: string; color: string; onClose: () => void;
+}) {
+  const dirMap: Record<string, string> = { long:'LONG', short:'SHORT', watch:'WATCH', avoid:'AVOID', neutral:'WATCH' };
+  const dirColor: Record<string, string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
+  const dir  = (card.direction ?? '').toLowerCase();
+  const dCol = dirColor[dir] ?? C.dim;
+  const dLbl = dirMap[dir]  ?? (card.direction ?? '—').toUpperCase();
+  return (
+    <div style={{ background:'#050d1c', border:`1px solid ${color}44`, borderTop:`2px solid ${color}`, borderRadius:6, margin:'0 14px 12px', padding:'12px 16px', position:'relative' }}>
+      <button onClick={onClose} style={{ position:'absolute', top:8, right:10, background:'none', border:'none', cursor:'pointer', color:C.dim, lineHeight:1 }}>
+        <X style={{ width:12, height:12 }} />
+      </button>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+        <span style={{ fontSize:14, fontWeight:800, color, fontFamily:C.font }}>{card.coin ?? '—'}</span>
+        <span style={{ fontSize:8, fontWeight:800, color:dCol, background:`${dCol}18`, border:`1px solid ${dCol}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>{dLbl}</span>
+        {card.setup_type && card.setup_type === 'TRADE_NOW' && (
+          <span style={{ fontSize:8, fontWeight:800, color:C.green, background:`${C.green}18`, border:`1px solid ${C.green}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>TRADE NOW</span>
+        )}
+        {card.confidence != null && (
+          <span style={{ fontSize:8, color:C.dim, marginLeft:'auto' }}>Confidence: <span style={{ color:C.text, fontFamily:C.font }}>{(card.confidence * 100).toFixed(0)}%</span></span>
+        )}
+        {card.score != null && (
+          <span style={{ fontSize:8, color:C.dim }}>Score: <span style={{ color:C.purple, fontFamily:C.font }}>{card.score.toFixed(2)}</span></span>
+        )}
+      </div>
+      {card.thesis && (
+        <div style={{ fontSize:10, color:'#c8d8e8', lineHeight:1.65, marginBottom:10, fontStyle:'italic' }}>{card.thesis}</div>
+      )}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:'8px 16px' }}>
+        {card.bias && (
+          <div>
+            <div style={{ fontSize:7.5, color:C.teal, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Bias</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.bias}</div>
+          </div>
+        )}
+        {card.entry_trigger && (
+          <div>
+            <div style={{ fontSize:7.5, color:C.teal, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Entry Trigger</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.entry_trigger}</div>
+          </div>
+        )}
+        {card.confirmation && (
+          <div>
+            <div style={{ fontSize:7.5, color:C.amber, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Confirmation</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.confirmation}</div>
+          </div>
+        )}
+        {card.invalidation && (
+          <div>
+            <div style={{ fontSize:7.5, color:C.red, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Invalidation</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.invalidation}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Trade Radar: Command Center ─────────────────────────────────────────────
+const RADAR_CARDS_META: Array<{
+  key: keyof TradeRadarData['trade_radar']['cards'];
+  label: string;
+  color: string;
+}> = [
+  { key: 'best_long',     label: 'Best Long',     color: C.green  },
+  { key: 'best_short',    label: 'Best Short',    color: C.red    },
+  { key: 'squeeze_watch', label: 'Squeeze Watch', color: C.amber  },
+  { key: 'pullback_buy',  label: 'Pullback Buy',  color: C.teal   },
+  { key: 'crowded_avoid', label: 'Crowded/Avoid', color: '#f97316' },
+];
+
+function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup }: {
+  data: TradeRadarData | null;
+  isLoading: boolean;
+  isError: boolean;
+  selectedSetup: { card: TradeRadarCard; label: string; color: string } | null;
+  onSelectSetup: (s: { card: TradeRadarCard; label: string; color: string } | null) => void;
+}) {
+  const radar  = data?.trade_radar;
+  const meta   = data?.meta;
+  const regime = radar?.market_regime ?? null;
+
+  if (isLoading && !data) {
+    return (
+      <div style={{ padding:'24px 14px', display:'flex', alignItems:'center', gap:8, color:C.dim, fontSize:10 }}>
+        <div style={{ width:14, height:14, border:`2px solid ${C.border}`, borderTopColor:C.teal, borderRadius:'50%', animation:'spin 0.9s linear infinite' }} />
+        Loading Trade Radar…
+      </div>
+    );
+  }
+  if (isError && !data) {
+    return (
+      <div style={{ padding:'12px 14px', display:'flex', alignItems:'center', gap:7, color:C.amber, fontSize:9.5 }}>
+        <AlertTriangle style={{ width:12, height:12 }} />
+        Trade Radar unavailable — Market Matrix and TSMOM unaffected.
+      </div>
+    );
+  }
+  if (!radar) return null;
+
+  return (
+    <div style={{ borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+      {/* ── Regime + Meta strip ── */}
+      <div style={{ padding:'6px 14px', background:'#050c17', borderBottom:`1px solid ${C.dimLow}`, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <Target style={{ width:10, height:10, color:C.teal }} />
+          <span style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>Market Regime</span>
+          <span style={{ fontSize:10, fontWeight:700, color:regime?C.text:C.dimLow }}>{regime ?? '—'}</span>
+        </div>
+        {meta && (
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginLeft:'auto' }}>
+            <span style={{ fontSize:8, color:C.dimLow }}>{meta.assets_scanned} assets scanned</span>
+            <span style={{ fontSize:8, color:C.dimLow }}>{meta.elapsed_ms}ms</span>
+            {meta.generated_at && <span style={{ fontSize:8, color:C.dimLow }}>{new Date(meta.generated_at).toLocaleTimeString()}</span>}
+          </div>
+        )}
+      </div>
+
+      {/* ── 5 Radar Cards ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:0, borderBottom:`1px solid ${C.dimLow}` }}>
+        {RADAR_CARDS_META.map(({ key, label, color }) => {
+          const card = radar.cards?.[key] ?? null;
+          const isSelected = selectedSetup?.label === label;
+          const dirMap: Record<string,string> = { long:'LONG', short:'SHORT', watch:'WATCH', avoid:'AVOID', neutral:'WATCH' };
+          const dirColorMap: Record<string,string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
+          const dir   = (card?.direction ?? '').toLowerCase();
+          const dCol  = dirColorMap[dir]  ?? C.dim;
+          const dLbl  = dirMap[dir]       ?? (card?.direction ?? '—').toUpperCase();
+          return (
+            <div key={key}
+              onClick={() => card ? onSelectSetup(isSelected ? null : { card, label, color }) : undefined}
+              style={{
+                padding:'10px 12px', borderRight:`1px solid ${C.dimLow}`, cursor:card?'pointer':'default',
+                background: isSelected ? `${color}15` : 'transparent',
+                borderTop: isSelected ? `2px solid ${color}` : '2px solid transparent',
+                transition:'background 0.12s',
+              }}
+              onMouseEnter={e => { if (card && !isSelected) (e.currentTarget as HTMLElement).style.background=`${color}0a`; }}
+              onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background='transparent'; }}>
+              <div style={{ fontSize:7.5, color, letterSpacing:1.5, textTransform:'uppercase', fontWeight:800, marginBottom:4 }}>{label}</div>
+              {card ? (
+                <>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
+                    <span style={{ fontSize:12, fontWeight:800, color, fontFamily:C.font }}>{card.coin ?? '—'}</span>
+                    <span style={{ fontSize:7.5, fontWeight:700, color:dCol, background:`${dCol}18`, border:`1px solid ${dCol}44`, borderRadius:3, padding:'1px 5px' }}>{dLbl}</span>
+                    {card.setup_type === 'TRADE_NOW' && (
+                      <span style={{ fontSize:7, fontWeight:800, color:C.green, background:`${C.green}18`, border:`1px solid ${C.green}44`, borderRadius:3, padding:'1px 4px' }}>NOW</span>
+                    )}
+                  </div>
+                  {card.thesis && <div style={{ fontSize:8.5, color:C.dim, lineHeight:1.5, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{card.thesis}</div>}
+                  {card.confidence != null && (
+                    <div style={{ marginTop:4, display:'flex', alignItems:'center', gap:4 }}>
+                      <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
+                        <div style={{ width:`${(card.confidence*100).toFixed(0)}%`, height:'100%', background:color, borderRadius:2 }} />
+                      </div>
+                      <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{(card.confidence*100).toFixed(0)}%</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize:8.5, color:C.dimLow }}>No setup</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Top Setups table ── */}
+      {(radar.top_setups?.length ?? 0) > 0 && (
+        <div style={{ padding:'8px 14px' }}>
+          <div style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase', fontWeight:800, marginBottom:6 }}>Top Setups</div>
+          <div style={{ display:'grid', gridTemplateColumns:'20px 60px 58px 60px 80px 1fr', gap:0, padding:'3px 8px', background:'#060b14', borderBottom:`1px solid ${C.border}`, borderRadius:'4px 4px 0 0' }}>
+            {['#','COIN','DIR','SETUP','CONF','THESIS'].map(h => (
+              <span key={h} style={{ fontSize:7.5, color:C.dimLow, fontWeight:700, letterSpacing:1 }}>{h}</span>
+            ))}
+          </div>
+          {radar.top_setups.slice(0, 8).map((s, i) => {
+            const dirColorMap: Record<string,string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
+            const dir = (s.direction ?? '').toLowerCase();
+            const dCol = dirColorMap[dir] ?? C.dim;
+            return (
+              <div key={s.coin+i}
+                style={{ display:'grid', gridTemplateColumns:'20px 60px 58px 60px 80px 1fr', gap:0, padding:'3px 8px',
+                  background:i%2===0?C.bg:C.card2, borderBottom:`1px solid ${C.dimLow}`, alignItems:'center' }}>
+                <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
+                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>{s.coin}</span>
+                <span style={{ fontSize:7.5, fontWeight:700, color:dCol }}>{s.direction?.toUpperCase() ?? '—'}</span>
+                <span style={{ fontSize:7.5, color:C.dim }}>{s.setup_type ?? '—'}</span>
+                <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
+                <span style={{ fontSize:8, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.thesis ?? '—'}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HyperliquidScreenerPage() {
   const [search,        setSearch]        = useState('');
@@ -2577,6 +2822,8 @@ export default function HyperliquidScreenerPage() {
   const [showFilters,   setShowFilters]   = useState(false);
   const [rowHighlights, setRowHighlights] = useState<Set<string>>(new Set());
   const [chartModal,    setChartModal]    = useState<{ title: string; coins: string[] } | null>(null);
+  const [pageTab,       setPageTab]       = useState<'radar' | 'lab'>('radar');
+  const [selectedSetup, setSelectedSetup] = useState<{ card: TradeRadarCard; label: string; color: string } | null>(null);
 
   const { data: raw, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery<
     { rows: ScreenerRow[]; meta: ScreenerMeta }
@@ -2593,6 +2840,20 @@ export default function HyperliquidScreenerPage() {
     retry: 1,
     refetchOnWindowFocus: false, // avoid double-fetch on tab switch
     placeholderData: (previousData: any) => previousData,
+  });
+
+  const { data: tradeRadar, isLoading: trRadarLoading, isError: trRadarError } = useQuery<TradeRadarData>({
+    queryKey: ['hl-trade-radar'],
+    queryFn: async () => {
+      const r = await fetch('/api/hyperliquid/screener/trade-radar');
+      if (!r.ok) throw new Error(`Server returned ${r.status}`);
+      return r.json();
+    },
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    refetchInterval: 60_000,
   });
 
   // Permanent last-good-data ref — NEVER cleared, so the screen never goes
@@ -2815,6 +3076,25 @@ export default function HyperliquidScreenerPage() {
         </div>
       </div>
 
+      {/* ── TAB BAR ──────────────────────────────────────────────────── */}
+      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', display:'flex', alignItems:'center', gap:0, flexShrink:0 }}>
+        {([
+          { id:'radar', label:'Trade Radar',  icon:<Activity style={{ width:10, height:10 }} /> },
+          { id:'lab',   label:'Signal Lab',   icon:<BarChart2 style={{ width:10, height:10 }} /> },
+        ] as const).map(tab => {
+          const active = pageTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setPageTab(tab.id)}
+              style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', background:'none', border:'none',
+                borderBottom: active ? `2px solid ${C.teal}` : '2px solid transparent',
+                color: active ? C.teal : C.dim, fontSize:10.5, fontWeight:700, cursor:'pointer',
+                letterSpacing:0.5, transition:'color 0.12s', textTransform:'uppercase', marginBottom:'-1px' }}>
+              {tab.icon}{tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
       <div style={{ flex:1, overflowY:'auto', overflowX:'hidden' }}>
 
@@ -2842,13 +3122,47 @@ export default function HyperliquidScreenerPage() {
           </div>
         )}
 
-        {displayData && (
+        {displayData && pageTab === 'radar' && (
           <>
-            {/* ── HERO: SIGNAL BRIEF (Market Matrix injected between quick-look and ranked ideas) ── */}
+            {/* ── TRADE RADAR COMMAND CENTER ── */}
+            <TradeRadarSection
+              data={tradeRadar ?? null}
+              isLoading={trRadarLoading}
+              isError={trRadarError}
+              selectedSetup={selectedSetup}
+              onSelectSetup={s => setSelectedSetup(s)}
+            />
+
+            {/* ── SETUP EXPLANATION PANEL ── */}
+            {selectedSetup && (
+              <SetupExplanationPanel
+                card={selectedSetup.card}
+                label={selectedSetup.label}
+                color={selectedSetup.color}
+                onClose={() => setSelectedSetup(null)}
+              />
+            )}
+
+            {/* ── MARKET MATRIX ── */}
+            <MarketMatrixSection search={search} fallbackRows={sorted} />
+
+            {/* ── TSMOM MOMENTUM PANEL ── */}
+            {sorted.length > 0 && (
+              <SectionErrorBoundary label="Time-Series Momentum">
+                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
+                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+              </SectionErrorBoundary>
+            )}
+          </>
+        )}
+
+        {displayData && pageTab === 'lab' && (
+          <>
+            {/* ── HERO: SIGNAL BRIEF (Agent Market Brief — existing widget) ── */}
             <AgentMarketBrief
               agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}
               rows={sorted} selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-              middleSlot={<MarketMatrixSection search={search} fallbackRows={sorted} />} />
+              middleSlot={null} />
 
             {/* ── ADVANCED SIGNAL CARDS (RS, Order Book, OI Regime) ── */}
             {sorted.length > 0 && (
@@ -2858,15 +3172,7 @@ export default function HyperliquidScreenerPage() {
               </SectionErrorBoundary>
             )}
 
-            {/* ── TSMOM MOMENTUM PANEL ──────────────────────────────── */}
-            {sorted.length > 0 && (
-              <SectionErrorBoundary label="Time-Series Momentum">
-                <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
-              </SectionErrorBoundary>
-            )}
-
-            {/* ── SIGNAL BOARDS ──────────────────────────────────────── */}
+            {/* ── SIGNAL BOARDS ── */}
             {sorted.length > 0 && (
               <div style={{ padding:'12px 14px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))', gap:10 }}>
                 {signalSections.map(sec => (

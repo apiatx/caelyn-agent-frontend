@@ -1,0 +1,158 @@
+Hyperliquid frontend restructure — proceed now that backend Trade Radar endpoint is live.
+
+Backend added:
+GET /api/hyperliquid/screener/trade-radar
+
+It returns:
+trade_radar.market_regime
+trade_radar.cards.best_long
+trade_radar.cards.best_short
+trade_radar.cards.squeeze_watch
+trade_radar.cards.pullback_buy
+trade_radar.cards.crowded_avoid
+trade_radar.top_setups
+trade_radar.selected_defaults.top_ticker
+meta.assets_scanned / elapsed_ms / generated_at
+
+Important:
+- Do NOT recreate Trade Radar scoring in the frontend.
+- Use the backend trade-radar endpoint as source of truth.
+- Do NOT change Market Matrix.
+- Do NOT change Time-Series Momentum.
+- Move all current raw widgets/cards except Market Matrix and Time-Series Momentum into a second tab.
+- Keep current page route.
+
+Create two tabs on the Hyperliquid page:
+
+Tab 1: Trade Radar
+Tab 2: Signal Lab
+
+Trade Radar tab layout:
+1. Compact HL page header/search stays.
+2. Trade Radar command center using /api/hyperliquid/screener/trade-radar.
+3. Market Matrix unchanged.
+4. Selected Setup Explanation panel.
+5. Time-Series Momentum unchanged.
+
+Signal Lab tab:
+Move all current existing raw signal cards/widgets here, including:
+- Top Gainers
+- Top Losers
+- High Funding
+- Negative Funding
+- OI Leaders
+- Volume Leaders
+- Breakout Watch
+- Mark/Oracle Gap
+- Vol Impulse
+- Short Squeeze
+- Long Flush
+- Funding Extremes
+- Relative Strength Leaders
+- Order Book Pressure
+- OI Regime Shift
+- OI Cap Risk
+- any other existing raw Hyperliquid signal cards
+
+Do not delete these widgets. Just move them into Signal Lab.
+
+Trade Radar command center:
+Render 5 main cards:
+- Best Long
+- Best Short
+- Squeeze Watch
+- Pullback Buy
+- Crowded / Avoid
+
+Optional sixth card:
+- Market Regime
+
+Each card should show:
+- ticker
+- side
+- setup_type
+- score
+- confidence
+- risk_label
+- timing_state
+- why_now
+- entry_condition
+- warnings if present
+
+Top setups:
+Under the command cards, show a concise ranked top_setups list:
+Columns:
+- Rank
+- Ticker
+- Side
+- Setup
+- Score
+- Confidence
+- Action
+- Risk
+
+Selected Setup Explanation panel:
+When user clicks a Trade Radar card, top setup row, or Market Matrix row, update the selected ticker panel.
+
+For selected ticker, show:
+- ticker
+- side
+- setup_type
+- score
+- confidence
+- risk_label
+- timing_state
+- action_label
+- why_now
+- entry_condition
+- invalidation_hint
+- warnings
+
+Component breakdown:
+Use SetupCard.components:
+- Momentum
+- Positioning
+- Funding
+- Flow
+- Microstructure
+- Risk
+
+Each component should show:
+- label pill: BULLISH / BEARISH / NEUTRAL / CAUTION / RISK
+- score
+- explanation
+
+Market Matrix:
+Keep visually and functionally unchanged.
+Existing filters/search should still work.
+
+Time-Series Momentum:
+Keep visually and functionally unchanged.
+
+Fallback:
+If /api/hyperliquid/screener/trade-radar fails, show a small error state for Trade Radar only.
+Do not break Market Matrix or Time-Series Momentum.
+Do not build a big frontend fallback scoring engine unless absolutely necessary.
+
+Copy rules:
+- Do not say “guaranteed.”
+- Do not make it sound like financial advice.
+- Use setup language:
+  “watch,” “trigger,” “bias,” “confirmation,” “avoid chase,” “risk.”
+- Only show “TRADE NOW” if backend setup_type is TRADE_NOW.
+- Otherwise use backend action_label/setup_type.
+
+Validation:
+1. Confirm tabs exist:
+   - Trade Radar
+   - Signal Lab
+2. Confirm Trade Radar is default tab.
+3. Confirm /api/hyperliquid/screener/trade-radar is called once on page load.
+4. Confirm Trade Radar cards populate.
+5. Confirm top_setups list populates.
+6. Confirm selecting a card or setup updates explanation panel.
+7. Confirm Market Matrix unchanged.
+8. Confirm Time-Series Momentum unchanged.
+9. Confirm all old raw widgets moved to Signal Lab.
+10. Confirm no runtime errors.
+11. Confirm page feels less cluttered on first load.

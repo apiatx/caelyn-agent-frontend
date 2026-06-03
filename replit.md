@@ -15,7 +15,7 @@ Full-stack crypto and stock market intelligence platform built with React (Vite)
 4. **NotifAI** (`/app/notifai`) — useQuery; keys: `['notifai-weekly-summary']`, `['notifai-the-brief']`
 5. **Watchlist** (`/app/watchlist`) — React Query; key: `['/api/watchlist/list']`
 6. **Portfolio** (`/app/portfolio`) — Static page, no backend fetches
-7. **Hyperliquid** (`/app/hyperliquid-screener`) — React Query; keys: `['hl-screener', marketType]`, `['hl-advanced-signals']`, `['tsmom-signals']`
+7. **Hyperliquid** (`/app/hyperliquid-screener`) — Two tabs: **Trade Radar** (default) + **Signal Lab**. React Query keys: `['hl-screener', marketType]`, `['hl-trade-radar']`, `['hl-advanced-signals']`, `['tsmom-signals']`. Trade Radar tab: `TradeRadarSection` (5 cards from `/api/hyperliquid/screener/trade-radar`) + `SetupExplanationPanel` + `MarketMatrixSection` + `MomentumPanel`. Signal Lab tab: `AgentMarketBrief` + `AdvancedSignalCards` + `SignalBoards`.
 8. **Prophetik** (`/app/predict`) — useQuery; keys: `['predict-signals']`, `['predict-scored']`; tab switcher: Gambler / Investor
 9. **Bittensor** (`/app/bittensor`) — React Query; keys: `["/api/bittensor/dashboard"]`, `["/api/bittensor/price/history"]`, `["/api/bittensor/blocks/history?scale=hours&points=30"]`
 
