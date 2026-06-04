@@ -993,9 +993,18 @@ interface TradeRadarSetup {
   confirmation:  string | null;
   invalidation:  string | null;
 }
+interface TradeRadarRegime {
+  regime_label?:       string | null;
+  summary?:            string | null;
+  long_pct?:           number | null;
+  short_pct?:          number | null;
+  watch_pct?:          number | null;
+  avoid_pct?:          number | null;
+  total_assets_scanned?: number | null;
+}
 interface TradeRadarData {
   trade_radar: {
-    market_regime:     string | null;
+    market_regime:     string | TradeRadarRegime | null;
     cards: {
       best_long:      TradeRadarCard | null;
       best_short:     TradeRadarCard | null;
@@ -2681,7 +2690,15 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
 }) {
   const radar  = data?.trade_radar;
   const meta   = data?.meta;
-  const regime = radar?.market_regime ?? null;
+  const regimeRaw = radar?.market_regime ?? null;
+  const regime: string | null = typeof regimeRaw === 'string'
+    ? regimeRaw
+    : regimeRaw != null
+      ? (regimeRaw as TradeRadarRegime).regime_label ?? (regimeRaw as TradeRadarRegime).summary ?? null
+      : null;
+  const regimeObj: TradeRadarRegime | null = (regimeRaw != null && typeof regimeRaw === 'object')
+    ? (regimeRaw as TradeRadarRegime)
+    : null;
 
   if (isLoading && !data) {
     return (
@@ -2782,7 +2799,7 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
             const dir = (s.direction ?? '').toLowerCase();
             const dCol = dirColorMap[dir] ?? C.dim;
             return (
-              <div key={s.coin+i}
+              <div key={i}
                 style={{ display:'grid', gridTemplateColumns:'20px 60px 58px 60px 80px 1fr', gap:0, padding:'3px 8px',
                   background:i%2===0?C.bg:C.card2, borderBottom:`1px solid ${C.dimLow}`, alignItems:'center' }}>
                 <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
