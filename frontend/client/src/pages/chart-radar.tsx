@@ -412,7 +412,7 @@ export default function ChartRadarPage() {
     if (!data) return [];
     const s = new Set<string>();
     for (const g of data.groups) for (const sym of g.symbols) if (sym.market_cap_bucket) s.add(sym.market_cap_bucket);
-    return [...s].sort((a, b) => (MKT_CAP_ORDER[a] ?? 99) - (MKT_CAP_ORDER[b] ?? 99));
+    return Array.from(s).sort((a, b) => (MKT_CAP_ORDER[a] ?? 99) - (MKT_CAP_ORDER[b] ?? 99));
   }, [data]);
 
   /* ── Filter + sort symbols per group ────────────────────────────────── */
@@ -631,6 +631,31 @@ export default function ChartRadarPage() {
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+
+        {/* ── Temporary debug strip — remove once confirmed working ── */}
+        {(data || isError) && (
+          <div style={{
+            fontFamily: C.font, fontSize: 9.5, lineHeight: 1.9, padding: '8px 14px',
+            marginBottom: 10, borderRadius: 4,
+            background: isError ? '#1a0808' : '#071510',
+            border: `1px solid ${isError ? C.red : C.teal}30`,
+            color: isError ? C.red : '#4ade80',
+          }}>
+            {isError ? (
+              <span>❌ ERROR — fetch failed. Check network tab.</span>
+            ) : (
+              <>
+                ✅ data.count={data!.count} &nbsp;|&nbsp;
+                groups={data!.groups?.length ?? 0} &nbsp;|&nbsp;
+                filteredGroups={filteredGroups.length} &nbsp;|&nbsp;
+                firstGroup="{data!.groups?.[0]?.label ?? 'none'}" &nbsp;|&nbsp;
+                firstGroupSyms={data!.groups?.[0]?.symbols?.length ?? 0}
+                <br/>
+                first5Tickers=[{data!.groups?.[0]?.symbols?.slice(0, 5).map(s => s.ticker).join(', ') ?? 'none'}]
+              </>
+            )}
+          </div>
+        )}
 
         {/* Warnings */}
         {data?.warnings && data.warnings.length > 0 && (
