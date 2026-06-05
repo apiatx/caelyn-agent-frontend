@@ -504,7 +504,7 @@ export default function MultiChartsPage({ isActive = true, onCurated }: { isActi
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="min-h-screen text-white" style={{ background: "#050608" }}>
+      <div className="min-h-screen text-white" style={{ background: "#080c13" }}>
         <div className="max-w-[98vw] mx-auto px-2 sm:px-4 py-4 space-y-4">
 
           {/* ── Control Bar ── */}
@@ -641,14 +641,16 @@ export default function MultiChartsPage({ isActive = true, onCurated }: { isActi
               Clear
             </button>
 
-            {/* Toggle → Curated */}
-            <button
-              onClick={() => onCurated ? onCurated() : navigate('/app/chart-radar')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-sky-500/30 text-sky-400 hover:bg-sky-900/25 transition-all"
-              title="Switch to Curated Chart Radar"
-            >
-              Curated
-            </button>
+            {/* Toggle → Curated (only shown when accessed directly at /app/multicharts) */}
+            {!onCurated && (
+              <button
+                onClick={() => navigate('/app/chart-radar')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-sky-500/30 text-sky-400 hover:bg-sky-900/25 transition-all"
+                title="Switch to Curated Chart Radar"
+              >
+                Curated
+              </button>
+            )}
           </div>
 
           {/* ── Chart count badge ── */}

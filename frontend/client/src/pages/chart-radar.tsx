@@ -397,11 +397,13 @@ function GroupSection({
 
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
-  /* View mode — 'curated' shows Chart Radar, 'custom' shows embedded MultiCharts */
-  const [mode, setMode] = useState<'curated' | 'custom'>('curated');
+  /* ── Tab: watchlist | portfolio | custom (MultiCharts) ─────────────── */
+  const [tab, setTab] = useState<'watchlist' | 'portfolio' | 'custom'>('watchlist');
+
+  /* Derive API source — falls back to watchlist when custom tab is active */
+  const source: 'watchlist' | 'portfolio' = tab === 'custom' ? 'watchlist' : tab;
 
   /* Core controls */
-  const [source,  setSource]  = useState<'watchlist' | 'portfolio'>('watchlist');
   const [groupBy, setGroupBy] = useState('theme');
   const [sort,    setSort]    = useState('ticker');
 
@@ -435,7 +437,6 @@ export default function ChartRadarPage() {
   const lastAutoExpandKey = useRef('');
   useEffect(() => {
     if (!data?.groups?.length) return;
-    // Use count + source + groupBy as a stable primitive key — avoids object-ref churn
     const key = `${source}|${groupBy}|${data.count}`;
     if (key === lastAutoExpandKey.current) return;
     lastAutoExpandKey.current = key;
@@ -499,16 +500,9 @@ export default function ChartRadarPage() {
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
-    <>
-    {/* ── Embedded MultiCharts — always mounted, shown via CSS when mode='custom' ── */}
-    <div style={mode === 'curated' ? { display: 'none' } : undefined}>
-      <MultiChartsPage isActive={mode === 'custom'} onCurated={() => setMode('curated')} />
-    </div>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
 
-    {/* ── Curated Chart Radar — hidden via CSS when mode='custom' ── */}
-    <div style={mode === 'custom' ? { display: 'none' } : { background: C.bg, minHeight: '100vh', color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
-
-      {/* ── Control bar ─────────────────────────────────────────────────── */}
+      {/* ── Control bar — always visible across all three tabs ───────────── */}
       <div style={{ borderBottom: `1px solid ${C.border}`, background: C.card, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', flexWrap: 'wrap' }}>
           {/* Title */}
@@ -517,60 +511,56 @@ export default function ChartRadarPage() {
             CHART RADAR
           </span>
 
-          {/* Source */}
+          {/* 3-way tab toggle: WATCHLIST | PORTFOLIO | CUSTOM */}
           <div style={{ display: 'flex', gap: 2 }}>
-            {(['watchlist', 'portfolio'] as const).map(s => (
-              <button key={s} onClick={() => setSource(s)} style={source === s ? activeBtn() : inactiveBtn}>
-                {s.toUpperCase()}
+            {(['watchlist', 'portfolio', 'custom'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)} style={tab === t ? activeBtn() : inactiveBtn}>
+                {t.toUpperCase()}
               </button>
             ))}
           </div>
 
-          {/* Group by */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>GROUP</span>
-            <div style={{ position: 'relative' }}>
-              <select value={groupBy} onChange={e => setGroupBy(e.target.value)} style={selectStyle}>
-                <option value="theme">Theme</option>
-                <option value="market_cap">Market Cap</option>
-                <option value="leader_tier">Leader Tier</option>
-              </select>
-              <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
+          {/* GROUP — only shown for curated tabs */}
+          {tab !== 'custom' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>GROUP</span>
+              <div style={{ position: 'relative' }}>
+                <select value={groupBy} onChange={e => setGroupBy(e.target.value)} style={selectStyle}>
+                  <option value="theme">Theme</option>
+                  <option value="market_cap">Market Cap</option>
+                  <option value="leader_tier">Leader Tier</option>
+                </select>
+                <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Sort */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>SORT</span>
-            <div style={{ position: 'relative' }}>
-              <select value={sort} onChange={e => setSort(e.target.value)} style={selectStyle}>
-                <option value="ticker">Ticker A–Z</option>
-                <option value="relvol">Rel Vol ↓</option>
-                <option value="mktcap">Market Cap</option>
-                <option value="weight">Port Weight ↓</option>
-                <option value="price">Price ↓</option>
-              </select>
-              <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
+          {/* SORT — only shown for curated tabs */}
+          {tab !== 'custom' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>SORT</span>
+              <div style={{ position: 'relative' }}>
+                <select value={sort} onChange={e => setSort(e.target.value)} style={selectStyle}>
+                  <option value="ticker">Ticker A–Z</option>
+                  <option value="relvol">Rel Vol ↓</option>
+                  <option value="mktcap">Market Cap</option>
+                  <option value="weight">Port Weight ↓</option>
+                  <option value="price">Price ↓</option>
+                </select>
+                <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
+              </div>
             </div>
-          </div>
-
-          {/* Toggle → Custom MultiCharts */}
-          <button
-            onClick={() => setMode('custom')}
-            style={{
-              marginLeft: 'auto', fontSize: 9, fontWeight: 700, fontFamily: C.font,
-              padding: '5px 12px', borderRadius: 3, cursor: 'pointer',
-              letterSpacing: '0.06em', border: `1px solid ${C.purple}40`,
-              color: C.purple, background: C.purple + '12',
-            }}
-          >
-            Custom MultiCharts
-          </button>
+          )}
         </div>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+      {/* ── Custom MultiCharts — mounted once first activated, CSS-gated ── */}
+      <div style={tab !== 'custom' ? { display: 'none' } : { flex: 1, minHeight: 0 }}>
+        <MultiChartsPage isActive={tab === 'custom'} onCurated={() => setTab('watchlist')} />
+      </div>
+
+      {/* ── Curated content — hidden when CUSTOM tab active ──────────────── */}
+      <div style={tab === 'custom' ? { display: 'none' } : { flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
 
         {/* Warnings — collapsible */}
         {data?.warnings && data.warnings.length > 0 && (
@@ -657,6 +647,5 @@ export default function ChartRadarPage() {
         ))}
       </div>
     </div>
-    </>
   );
 }
