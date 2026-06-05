@@ -1,0 +1,114 @@
+Charts are now loading super slow across all three chart sources/toggles:
+- Watchlist
+- Portfolio
+- Custom MultiCharts
+
+This means the issue is not backend and not Chart Radar data. It means a shared TradingView chart render path, iframe URL builder, component, lazy-loading wrapper, React key, or chart mounting behavior changed and affected all chart modes.
+
+Please stop backend debugging. Fix frontend TradingView rendering.
+
+Goal:
+Restore the exact previous MultiCharts chart loading behavior that was instant before Chart Radar changes.
+
+Do this in order:
+
+1. Find the original/previous MultiCharts TradingView iframe/widget implementation.
+Compare before vs current for:
+- iframe src
+- TradingView embed URL
+- symbol param
+- interval param
+- theme param
+- timezone
+- style
+- locale
+- allow_symbol_change
+- enabled_features
+- disabled_features
+- autosize
+- iframe loading attribute
+- iframe sandbox/allow attributes
+- wrapper height/width
+- React key
+- lazy render logic
+- IntersectionObserver logic if added
+- any memoization changes
+- any chart-card component extraction/reuse changes
+
+2. If Chart Radar introduced a new shared TradingView component, and Watchlist/Portfolio/Custom MultiCharts were switched to it, revert that shared component change.
+MultiCharts should go back to the exact component/pattern that was fast before.
+
+3. Check for iframe remount loops.
+The chart iframe key must be stable:
+key={`${symbol}-${interval}`}
+
+Do not include:
+- group object
+- chart object
+- filters
+- layout state
+- expanded groups
+- Date.now()
+- Math.random()
+- full iframe src if it changes every render
+- unstable object references
+
+If the iframe key changes on every render, TradingView reloads forever and feels extremely slow.
+
+4. Check whether the iframe src is recomputed with unstable params every render.
+Use useMemo for iframe src based only on:
+- symbol
+- interval
+- theme if actually needed
+
+5. Check whether lazy loading became too aggressive.
+If the new lazy loader waits for IntersectionObserver but the chart containers have weird dimensions, nested scroll containers, or threshold issues, charts may not mount until late or may mount/unmount repeatedly.
+
+For now, temporarily disable the new lazy loader for Custom MultiCharts and restore the old immediate render behavior there. If Custom MultiCharts becomes instant again, the lazy loader is the bug.
+
+6. Check whether all charts are being mounted at once.
+Chart Radar should lazy mount because it can have 302 symbols.
+But Custom MultiCharts should behave like before.
+Do not force the same lazy strategy on all modes.
+
+Correct architecture:
+- Custom MultiCharts: old fast render behavior
+- Watchlist/Portfolio Chart Radar: lazy by group, but stable and not remounting
+- Shared helper only for iframe src creation, not forced shared mounting behavior
+
+7. Inspect Network tab:
+On Custom MultiCharts page, compare before/expected behavior:
+- How many TradingView iframe requests fire?
+- Are the same iframe requests firing repeatedly?
+- Are requests cancelled/restarted?
+- Is the iframe src changing?
+- Are TradingView requests blocked or delayed?
+
+If requests are repeated or cancelled, this is a remount/re-render bug.
+
+8. Add temporary render logs:
+console.log("[TV_CHART_MOUNT]", { symbol, interval, key, src });
+console.log("[TV_CHART_UNMOUNT]", { symbol, interval });
+
+Then open Custom MultiCharts.
+If the same ticker mounts/unmounts repeatedly, fix the React key/effect/lazy wrapper.
+
+9. Restore old iframe src exactly.
+If the old MultiCharts iframe URL was lightweight and the new one uses a heavier TradingView advanced chart URL, revert to the old URL.
+
+10. Remove any debug strip/logging after verification.
+
+Acceptance tests:
+- Custom MultiCharts loads charts instantly again.
+- Watchlist chart view loads first visible charts quickly.
+- Portfolio chart view loads first visible charts quickly.
+- Switching interval reloads charts only once.
+- Changing source/group does not reload unrelated charts repeatedly.
+- Network tab does not show repeated/cancelled TradingView iframe requests for the same symbol.
+- No external market-data API calls are made.
+- Backend calls remain only /api/chart-radar/universe for metadata.
+
+Do not touch backend.
+Do not add provider calls.
+Do not add new chart libraries.
+This is a frontend TradingView iframe render regression. Find the change that slowed the previously fast MultiCharts page and revert or isolate it.

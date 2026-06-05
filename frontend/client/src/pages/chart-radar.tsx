@@ -399,6 +399,14 @@ function GroupSection({
 export default function ChartRadarPage() {
   /* ── Tab: watchlist | portfolio | custom (MultiCharts) ─────────────── */
   const [tab, setTab] = useState<'watchlist' | 'portfolio' | 'custom'>('watchlist');
+  /* Only mount MultiChartsPage after user first clicks CUSTOM — prevents
+     eager iframe loading from competing with Chart Radar charts on startup */
+  const [customMounted, setCustomMounted] = useState(false);
+
+  const handleTabChange = useCallback((t: 'watchlist' | 'portfolio' | 'custom') => {
+    if (t === 'custom') setCustomMounted(true);
+    setTab(t);
+  }, []);
 
   /* Derive API source — falls back to watchlist when custom tab is active */
   const source: 'watchlist' | 'portfolio' = tab === 'custom' ? 'watchlist' : tab;
@@ -514,7 +522,7 @@ export default function ChartRadarPage() {
           {/* 3-way tab toggle: WATCHLIST | PORTFOLIO | CUSTOM */}
           <div style={{ display: 'flex', gap: 2 }}>
             {(['watchlist', 'portfolio', 'custom'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)} style={tab === t ? activeBtn() : inactiveBtn}>
+              <button key={t} onClick={() => handleTabChange(t)} style={tab === t ? activeBtn() : inactiveBtn}>
                 {t.toUpperCase()}
               </button>
             ))}
@@ -554,9 +562,11 @@ export default function ChartRadarPage() {
         </div>
       </div>
 
-      {/* ── Custom MultiCharts — mounted once first activated, CSS-gated ── */}
+      {/* ── Custom MultiCharts — only mounted after first CUSTOM click, then CSS-gated ── */}
       <div style={tab !== 'custom' ? { display: 'none' } : { flex: 1, minHeight: 0 }}>
-        <MultiChartsPage isActive={tab === 'custom'} onCurated={() => setTab('watchlist')} />
+        {customMounted && (
+          <MultiChartsPage isActive={tab === 'custom'} onCurated={() => setTab('watchlist')} />
+        )}
       </div>
 
       {/* ── Curated content — hidden when CUSTOM tab active ──────────────── */}
