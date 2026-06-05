@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
-import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import MultiChartsPage from "./multicharts";
 import {
   ChevronDown, ChevronRight, ExternalLink,
   AlertTriangle, BarChart3,
@@ -397,7 +397,8 @@ function GroupSection({
 
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
-  const [, navigate] = useLocation();
+  /* View mode — 'curated' shows Chart Radar, 'custom' shows embedded MultiCharts */
+  const [mode, setMode] = useState<'curated' | 'custom'>('curated');
 
   /* Core controls */
   const [source,  setSource]  = useState<'watchlist' | 'portfolio'>('watchlist');
@@ -498,7 +499,14 @@ export default function ChartRadarPage() {
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
+    <>
+    {/* ── Embedded MultiCharts — always mounted, shown via CSS when mode='custom' ── */}
+    <div style={mode === 'curated' ? { display: 'none' } : undefined}>
+      <MultiChartsPage isActive={mode === 'custom'} onCurated={() => setMode('curated')} />
+    </div>
+
+    {/* ── Curated Chart Radar — hidden via CSS when mode='custom' ── */}
+    <div style={mode === 'custom' ? { display: 'none' } : { background: C.bg, minHeight: '100vh', color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Control bar ─────────────────────────────────────────────────── */}
       <div style={{ borderBottom: `1px solid ${C.border}`, background: C.card, flexShrink: 0 }}>
@@ -546,9 +554,9 @@ export default function ChartRadarPage() {
             </div>
           </div>
 
-          {/* Toggle → MultiCharts */}
+          {/* Toggle → Custom MultiCharts */}
           <button
-            onClick={() => navigate('/app/multicharts')}
+            onClick={() => setMode('custom')}
             style={{
               marginLeft: 'auto', fontSize: 9, fontWeight: 700, fontFamily: C.font,
               padding: '5px 12px', borderRadius: 3, cursor: 'pointer',
@@ -556,7 +564,7 @@ export default function ChartRadarPage() {
               color: C.purple, background: C.purple + '12',
             }}
           >
-            Custom MultiCharts ↗
+            Custom MultiCharts
           </button>
         </div>
       </div>
@@ -649,5 +657,6 @@ export default function ChartRadarPage() {
         ))}
       </div>
     </div>
+    </>
   );
 }

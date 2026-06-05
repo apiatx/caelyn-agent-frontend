@@ -305,7 +305,7 @@ function SortableChartCard(props: SortableChartCardProps) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-export default function MultiChartsPage({ isActive = true }: { isActive?: boolean }) {
+export default function MultiChartsPage({ isActive = true, onCurated }: { isActive?: boolean; onCurated?: () => void }) {
   const [, navigate] = useLocation();
   const [views, setViews] = useState<MultiChartsView[]>(() => loadLocalViews());
   const [activeId, setActiveId] = useState<string>(() => loadLocalViews()[0]?.id ?? "");
@@ -641,13 +641,13 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
               Clear
             </button>
 
-            {/* Toggle → Chart Radar */}
+            {/* Toggle → Curated */}
             <button
-              onClick={() => navigate('/app/chart-radar')}
+              onClick={() => onCurated ? onCurated() : navigate('/app/chart-radar')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-sky-500/30 text-sky-400 hover:bg-sky-900/25 transition-all"
               title="Switch to Curated Chart Radar"
             >
-              Curated ↗
+              Curated
             </button>
           </div>
 
