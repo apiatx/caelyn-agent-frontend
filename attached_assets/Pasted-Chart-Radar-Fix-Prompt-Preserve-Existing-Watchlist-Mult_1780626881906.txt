@@ -1,0 +1,147 @@
+Chart Radar Fix Prompt — Preserve Existing Watchlist/MultiCharts Behavior
+
+The Chart Radar page is not working correctly and the implementation may have drifted from the intended architecture.
+
+Important: This feature must NOT make extra market-data API calls. Do not call FMP, Tradier, Polygon, Finnhub, TwelveData, or any other external data provider from this page. The only data request should be to our own backend/proxy endpoint that reads already-existing watchlist/portfolio data.
+
+The goal is simple:
+
+Use the existing Watchlist data that already powers the Watchlist page, group symbols exactly like the Watchlist page groups them, and display those symbols as TradingView chart widgets exactly like the existing MultiCharts page does.
+
+Please stop adding new enrichment logic. This is a display/organization layer.
+
+Core requirement:
+
+* Chart Radar = Watchlist/Portfolio metadata + MultiCharts TradingView widgets.
+* It should not fetch candles.
+* It should not fetch quotes.
+* It should not fetch fundamentals.
+* It should not refetch market cap/theme/relative volume externally.
+* It should not create new data sources.
+* It should not hardcode demo symbols.
+* It should not use fake fallback tickers.
+
+Backend endpoint already exists:
+GET /api/chart-radar/universe?source=watchlist&group_by=theme
+
+This backend endpoint already returns the data from the watchlist/portfolio layer. Use it only.
+
+First, debug why the page says:
+“Failed to load chart universe. Check backend connectivity.”
+
+Do this before any UI changes:
+
+1. Open browser network tab.
+2. Find the failing Chart Radar request.
+3. Report:
+
+   * exact URL
+   * status code
+   * response body
+   * whether cookies/auth headers are included
+4. Confirm the frontend is calling:
+   /api/chart-radar/universe?source=watchlist&group_by=theme
+
+If it is not calling exactly that route, fix the URL/proxy path.
+
+Likely issues to check:
+
+* wrong route path
+* missing /api prefix
+* double /api/api prefix
+* using wrong base URL
+* bypassing existing frontend proxy
+* missing auth/session forwarding
+* expecting the wrong JSON shape
+* parsing groups incorrectly
+
+Use the same API/proxy/auth pattern as the working Watchlist and Portfolio pages. Do not create a new fetch pattern if one already exists.
+
+After the endpoint loads, simplify the UI behavior:
+
+V1 should only do this:
+
+1. Source toggle:
+
+   * Watchlist
+   * Portfolio
+
+2. Group by:
+
+   * Theme
+   * Market Cap
+   * Leader Tier
+
+3. Default view:
+
+   * Source = Watchlist
+   * Group By = Theme
+   * Groups should match the Watchlist theme/category groupings as closely as the backend returns them.
+
+4. Each group should be clickable/expandable:
+
+   * AI Networking
+   * Clean Energy
+   * Cybersecurity
+   * Data Center Infrastructure
+   * Defense
+   * Drones
+   * Industrials
+   * etc.
+
+5. Inside each expanded group:
+
+   * Render TradingView iframe/widget chart cards using the exact same/safest pattern from the existing MultiCharts page.
+   * Use symbol.tradingview_symbol if provided.
+   * Fallback to ticker only if needed.
+   * Do not fetch chart data from backend.
+
+6. Performance:
+
+   * Do not mount all 302 TradingView iframes at page load.
+   * Groups should start collapsed or only the first group expanded.
+   * Render 6 charts initially per expanded group.
+   * Add “Load more” per group.
+   * When a group collapses, unmount/destroy its chart iframes if possible.
+
+7. Remove or defer anything that is causing complexity:
+
+   * Saved views can wait.
+   * Complex filters can wait.
+   * Manual source can wait.
+   * Daily % sort can wait because backend said daily_change_pct is mostly null.
+   * Do not block the main feature on saved views.
+
+Please verify with these exact tests:
+
+Test 1:
+Open /app/chart-radar.
+It should call:
+GET /api/chart-radar/universe?source=watchlist&group_by=theme
+It should load 302 watchlist tickers grouped into 24 theme groups.
+
+Test 2:
+Expand one group.
+Only that group’s TradingView widgets should mount.
+Collapsed groups should not load iframes.
+
+Test 3:
+Switch source to Portfolio.
+It should call:
+GET /api/chart-radar/universe?source=portfolio&group_by=theme
+or group_by=leader_tier depending on selected dropdown.
+It should show the user’s 16 holdings.
+
+Test 4:
+Check the browser network tab.
+There should be no FMP/Tradier/Polygon/Finnhub/TwelveData requests caused by Chart Radar.
+Only our internal /api/chart-radar request and TradingView iframe/widget requests should appear.
+
+Test 5:
+Compare TradingView chart rendering to the existing MultiCharts page.
+If MultiCharts charts work, Chart Radar should use that same rendering approach.
+
+Do not rewrite backend.
+Do not rename backend endpoints.
+Do not break existing Watchlist, Portfolio, or MultiCharts pages.
+This is a wiring/simplification fix, not a rebuild.
