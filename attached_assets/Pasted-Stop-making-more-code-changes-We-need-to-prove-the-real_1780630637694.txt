@@ -1,0 +1,65 @@
+Stop making more code changes. We need to prove the real browser request path.
+
+The UI still shows:
+“❌ ERROR — fetch failed. Check network tab. Failed to load chart universe.”
+
+Backend says production FastAPI has received zero real frontend requests for:
+GET /api/chart-radar/universe
+
+Frontend says Express logs show 200s, but that may only prove the frontend proxy/dev server was hit, not that the real FastAPI backend deployment was hit.
+
+Please do this exact debug pass from the real browser session where the user sees the error:
+
+1. Open DevTools → Network tab.
+
+2. Hard refresh /app/chart-radar.
+
+3. Click the failed chart-radar request.
+
+4. Report the exact:
+
+   * Request URL
+   * Request method
+   * Status code
+   * Response body
+   * Response headers content-type
+   * Initiator file/line
+   * Whether the request says “failed”, “blocked”, “CORS”, “ERR_CONNECTION_REFUSED”, “404”, “500”, “502”, etc.
+
+5. In the browser console, run:
+
+fetch("/api/chart-radar/universe?source=watchlist&group_by=theme")
+.then(async r => ({ status: r.status, url: r.url, text: await r.text() }))
+.then(console.log)
+.catch(console.error)
+
+Report the exact output.
+
+6. If that fetch fails in the browser console, this is not a React render issue. It is routing/proxy/deployment/connectivity.
+
+7. If that fetch returns 200 JSON in the browser console, then React Query/fetch wrapper is wrong. Compare the manual fetch to the code fetch.
+
+8. Check whether the frontend Express proxy route for /api/chart-radar/universe is forwarding to the correct FastAPI backend URL/environment variable. Print/log the backend target URL used by the proxy for this route.
+
+9. Add one temporary Express proxy log line for the chart-radar route:
+   console.log("[CHART_RADAR_PROXY]", {
+   incomingUrl: req.originalUrl,
+   backendTarget,
+   status: upstreamStatus,
+   responsePreview
+   });
+
+10. Confirm whether the proxy is returning 200 from:
+
+* real FastAPI backend response
+* cached/stubbed response
+* fallback catch block
+* an empty object from catch(() => ({}))
+
+Important:
+Do not summarize “it should work.”
+Do not rely only on HMR logs.
+Do not make more UI changes.
+We need the actual browser Network request and the actual proxy upstream target.
+
+The backend agent says FastAPI production has not seen the request. So if Express shows 200 but backend sees nothing, the proxy is not pointing at that backend or the logs are from different environments.

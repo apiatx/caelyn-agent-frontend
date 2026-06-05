@@ -6238,15 +6238,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/chart-radar/universe', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
     const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const backendTarget = `${FA_URL}/api/chart-radar/universe`;
     try {
       const qs = new URLSearchParams(req.query as Record<string, string>).toString();
-      const r  = await fetch(`${FA_URL}/api/chart-radar/universe${qs ? `?${qs}` : ''}`, {
+      const fullTarget = `${backendTarget}${qs ? `?${qs}` : ''}`;
+      const r  = await fetch(fullTarget, {
         headers: { 'X-API-Key': FA_KEY },
         signal: AbortSignal.timeout(30_000),
       });
-      const data = await r.json().catch(() => ({}));
+      const rawText = await r.text();
+      let data: any;
+      try { data = JSON.parse(rawText); } catch (_) { data = {}; }
+      const responsePreview = rawText.slice(0, 200);
+      console.log('[CHART_RADAR_PROXY]', JSON.stringify({
+        incomingUrl: req.originalUrl,
+        backendTarget: fullTarget,
+        upstreamStatus: r.status,
+        contentType: r.headers.get('content-type'),
+        responsePreview,
+        parsedOk: Array.isArray(data?.groups),
+      }));
       return res.status(r.status).json(data);
     } catch (err: any) {
+      console.log('[CHART_RADAR_PROXY] CATCH_BLOCK', JSON.stringify({
+        incomingUrl: req.originalUrl,
+        backendTarget,
+        error: err?.message ?? 'unknown',
+      }));
       return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
     }
   });
