@@ -1,0 +1,101 @@
+Chart Radar is still not working. Please stop summarizing completed work and run a concrete proof/debug pass.
+
+Backend appears reachable because you reported:
+GET /api/chart-radar/universe returned 200 in 3–4ms.
+
+Now prove exactly where the failure is.
+
+Please do the following and report the actual values:
+
+1. In the Chart Radar component, temporarily log the parsed response:
+   console.log("CHART_RADAR_RESPONSE", data)
+
+Confirm:
+
+* data.count
+* data.groups.length
+* first group label
+* first group symbols.length
+* first symbol object
+
+2. Add a temporary visible debug box at the top of /app/chart-radar showing:
+
+* loading: true/false
+* error: actual error message
+* source
+* groupBy
+* count
+* groups.length
+* firstGroup.label
+* firstGroup.symbols.length
+
+3. If data.groups.length > 0 but nothing renders:
+   The issue is frontend rendering/filtering, not backend.
+   Check:
+
+* are filters accidentally excluding every symbol?
+* is selected group collapsed with no visible expand affordance?
+* is filteredGroups empty?
+* is the component reading group.symbols or expecting group.tickers/items/children?
+* is the render using data.groups or stale derived state?
+
+4. If groups render but charts are blank:
+   Compare the exact iframe src from Chart Radar to the existing working MultiCharts iframe src.
+
+Print/log one example:
+
+* Chart Radar iframe src
+* MultiCharts iframe src for the same ticker
+
+Use the exact same TradingView embed construction as MultiCharts. Do not invent a new iframe URL format.
+
+5. If the TradingView iframe URL contains an invalid symbol:
+   Use symbol.tradingview_symbol if present.
+   Fallback to symbol.ticker only if tradingview_symbol is missing.
+   Do not transform NASDAQ:AAOI into NASDAQ%3AAAOI twice.
+   Do not strip the exchange prefix.
+   Do not lowercase symbols.
+
+6. If the page is still showing “Failed to load chart universe” while network says 200:
+   That means the frontend is throwing after fetch, probably during parsing, filtering, or rendering.
+   Wrap fetch parsing separately from render logic:
+
+* network error
+* JSON parse error
+* invalid response shape
+* render error
+  Show the actual error in the UI.
+
+7. Temporarily disable all filters and saved view logic.
+   For V1, render this directly:
+
+const groups = data?.groups ?? [];
+
+Then map:
+groups.map(group => group.symbols.map(symbol => ...))
+
+No extra derived filtering until the base data visibly renders.
+
+8. Create the simplest proof render before charts:
+   Show this plain text/table on the page:
+
+* group.label
+* group.count
+* first 5 tickers in group.symbols
+
+If this appears, backend/data is fine and the remaining issue is chart card rendering.
+
+9. After proof render works, add the TradingView iframe back using the exact MultiCharts component/pattern.
+
+10. Confirm in browser:
+
+* Do I see group headers?
+* Do I see ticker labels?
+* Do I see at least one TradingView iframe?
+* Are there any console errors after the page loads?
+
+Do not touch backend.
+Do not add external API calls.
+Do not re-add saved views.
+Do not rebuild the whole page.
+Find the exact failing layer: response parse, derived filtering, group rendering, or TradingView iframe rendering.

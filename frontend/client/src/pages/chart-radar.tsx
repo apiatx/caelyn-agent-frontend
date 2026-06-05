@@ -376,14 +376,13 @@ export default function ChartRadarPage() {
   const [groupLimits,    setGroupLimits]    = useState<Record<string, number>>({});
 
   /* Page context for AI chatbot */
-  useSetPageContext((() => ({
-    page: 'chart_radar',
-    description: 'Chart Radar — TradingView chart grid organized into collapsible groups (theme, market cap, leader tier)',
-    source, group_by: groupBy,
-  }))());
+  useSetPageContext(
+    `[Chart Radar] source:${source} group_by:${groupBy}`,
+    [source, groupBy],
+  );
 
   /* ── Universe query ─────────────────────────────────────────────────── */
-  const { data, isLoading, isError, isFetching, refetch } = useQuery<RadarResponse>({
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery<RadarResponse>({
     queryKey: ['/api/chart-radar/universe', source, groupBy],
     queryFn: async () => {
       const qs = new URLSearchParams({ source, group_by: groupBy });
