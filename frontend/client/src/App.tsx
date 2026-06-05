@@ -63,6 +63,7 @@ import AboutPage from "@/pages/about";
 import WatchlistPage from "@/pages/watchlist";
 import StrategyScreenerPage from "@/pages/strategy-screener";
 import MultiChartsPage from "@/pages/multicharts";
+import ChartRadarPage from "@/pages/chart-radar";
 
 import NotFound from "@/pages/not-found";
 import { GlobalPrefetch } from "@/contexts/GlobalDataContext";
@@ -189,6 +190,8 @@ function Router() {
       <Route path="/watchlist" component={WatchlistPage} />
       <Route path="/app/multicharts">{() => null}</Route>
       <Route path="/multicharts">{() => null}</Route>
+      <Route path="/app/chart-radar" component={ChartRadarPage} />
+      <Route path="/chart-radar" component={ChartRadarPage} />
       <Route path="/app/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/app/about" component={AboutPage} />

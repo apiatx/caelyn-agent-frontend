@@ -153,6 +153,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <LayoutGrid className="w-4 h-4" />,
           path: '/app/multicharts'
         },
+        {
+          id: 'chart-radar',
+          label: 'Chart Radar',
+          icon: <BarChart3 className="w-4 h-4" />,
+          path: '/app/chart-radar'
+        },
       ]
     },
     {

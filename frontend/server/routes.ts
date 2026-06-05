@@ -6234,5 +6234,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Chart Radar — universe ────────────────────────────────────────────────
+  app.get('/api/chart-radar/universe', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r  = await fetch(`${FA_URL}/api/chart-radar/universe${qs ? `?${qs}` : ''}`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  // ── Chart Radar — saved views (GET / POST) ────────────────────────────────
+  app.get('/api/chart-radar/views', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/chart-radar/views`, {
+        headers: {
+          'X-API-Key': FA_KEY,
+          ...(req.headers.authorization ? { Authorization: req.headers.authorization as string } : {}),
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.post('/api/chart-radar/views', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/chart-radar/views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': FA_KEY,
+          ...(req.headers.authorization ? { Authorization: req.headers.authorization as string } : {}),
+        },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  // ── Chart Radar — saved views (PATCH / DELETE) ────────────────────────────
+  app.patch('/api/chart-radar/views/:id', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { id } = req.params;
+    try {
+      const r = await fetch(`${FA_URL}/api/chart-radar/views/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': FA_KEY },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.delete('/api/chart-radar/views/:id', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const { id } = req.params;
+    try {
+      const r = await fetch(`${FA_URL}/api/chart-radar/views/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (r.status === 204) return res.status(204).send();
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
   return httpServer;
 }
