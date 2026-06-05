@@ -148,12 +148,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/caelyn-terminal'
         },
         {
-          id: 'multicharts',
-          label: 'MultiCharts',
-          icon: <LayoutGrid className="w-4 h-4" />,
-          path: '/app/multicharts'
-        },
-        {
           id: 'chart-radar',
           label: 'Chart Radar',
           icon: <BarChart3 className="w-4 h-4" />,
