@@ -67,14 +67,14 @@ function buildTvUrl(symbol: string, interval: string): string {
     `&theme=dark` +
     `&timezone=exchange` +
     `&withdateranges=true` +
-    `&hide_side_toolbar=false` +
+    `&hide_side_toolbar=true` +
     `&hide_top_toolbar=false` +
     `&allow_symbol_change=true` +
     `&enable_publishing=false` +
     `&calendar=false` +
     `&studies=%5B%5D` +
     `&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D` +
-    `&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%5D`
+    `&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%5D`
   );
 }
 
