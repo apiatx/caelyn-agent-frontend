@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown, ChevronRight, ExternalLink,
@@ -396,6 +397,8 @@ function GroupSection({
 
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
+  const [, navigate] = useLocation();
+
   /* Core controls */
   const [source,  setSource]  = useState<'watchlist' | 'portfolio'>('watchlist');
   const [groupBy, setGroupBy] = useState('theme');
@@ -542,6 +545,19 @@ export default function ChartRadarPage() {
               <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
             </div>
           </div>
+
+          {/* Toggle → MultiCharts */}
+          <button
+            onClick={() => navigate('/app/multicharts')}
+            style={{
+              marginLeft: 'auto', fontSize: 9, fontWeight: 700, fontFamily: C.font,
+              padding: '5px 12px', borderRadius: 3, cursor: 'pointer',
+              letterSpacing: '0.06em', border: `1px solid ${C.purple}40`,
+              color: C.purple, background: C.purple + '12',
+            }}
+          >
+            Custom MultiCharts ↗
+          </button>
         </div>
       </div>
 

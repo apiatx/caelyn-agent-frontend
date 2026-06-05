@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "wouter";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { Plus, Trash2, LayoutGrid, Pencil, Check, X, GripVertical, Cloud, CloudOff } from "lucide-react";
@@ -305,6 +306,7 @@ function SortableChartCard(props: SortableChartCardProps) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function MultiChartsPage({ isActive = true }: { isActive?: boolean }) {
+  const [, navigate] = useLocation();
   const [views, setViews] = useState<MultiChartsView[]>(() => loadLocalViews());
   const [activeId, setActiveId] = useState<string>(() => loadLocalViews()[0]?.id ?? "");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -637,6 +639,15 @@ export default function MultiChartsPage({ isActive = true }: { isActive?: boolea
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear
+            </button>
+
+            {/* Toggle → Chart Radar */}
+            <button
+              onClick={() => navigate('/app/chart-radar')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-sky-500/30 text-sky-400 hover:bg-sky-900/25 transition-all"
+              title="Switch to Curated Chart Radar"
+            >
+              Curated ↗
             </button>
           </div>
 
