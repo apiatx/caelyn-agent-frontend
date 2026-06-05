@@ -72,8 +72,33 @@ interface NewsItem {
   source: string;
 }
 
+interface TopArticle {
+  title:             string;
+  url:               string;
+  source:            string;
+  published_at:      string;
+  symbol?:           string;
+  major_news_score?: number;
+  signal_strength?:  string;
+  catalyst_type?:    string;
+  bull_bear_impact?: string;
+  why_it_matters?:   string;
+}
+
+interface FlatNewsItem extends NewsItem {
+  symbol?:           string;
+  major_news_score?: number;
+  signal_strength?:  string;
+  catalyst_type?:    string;
+  bull_bear_impact?: string;
+  why_it_matters?:   string;
+}
+
 interface NewsResponse {
-  [ticker: string]: NewsItem[];
+  top_articles?: TopArticle[];
+  is_building?:  boolean;
+  cache_age_s?:  number;
+  [ticker: string]: any;
 }
 
 interface MajorNewsItem {
@@ -841,7 +866,7 @@ export default function WatchlistPage() {
   })(), [watchlist, activeId, wlMetas, sortKey, sortDir]);
 
   /* ── news for active watchlist ───────────────────────────────────── */
-  const { data: newsData } = useQuery<NewsResponse>({
+  const { data: newsData, isFetching: newsFetching } = useQuery<NewsResponse>({
     queryKey: ['/api/watchlist/news', activeId],
     queryFn: async () => {
       if (!activeId) return {};
@@ -849,8 +874,8 @@ export default function WatchlistPage() {
       if (!r.ok) return {};
       return r.json();
     },
-    staleTime: 60_000,
-    refetchInterval: 5 * 60 * 1000,
+    staleTime: 18 * 60_000,
+    refetchInterval: 20 * 60 * 1000,
     enabled: !!activeId && !!watchlist?.analysis,
   });
 
@@ -1103,7 +1128,12 @@ export default function WatchlistPage() {
     ? (analysis?.sections?.length > 0)
     : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
   const allStocks = extractAllStocks(analysis);
-  const allNews = flattenNews(newsData);
+  const topArticles: TopArticle[] = newsData?.top_articles ?? [];
+  const allNews: FlatNewsItem[] = topArticles.length > 0
+    ? topArticles.map(a => ({ ...a, ticker: a.symbol ?? '' }))
+    : flattenNews(newsData);
+  const newsIsBuilding: boolean = newsData?.is_building ?? false;
+  const newsCacheAge: number | null = newsData?.cache_age_s ?? null;
   const majorNews: MajorNewsItem[] = (majorNewsData?.major_developments ?? []).slice(0, 20);
   const marketThemes: string[] = newFmt ? (analysis?.market_themes || []) : [];
   const lastUpdated: string | undefined = newFmt ? analysis?.last_updated : watchlist?.saved_at;
@@ -2317,6 +2347,25 @@ export default function WatchlistPage() {
                     LIVE NEWS
                   </span>
                   <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
+                  {newsCacheAge !== null && (
+                    <span style={{ fontSize: 9, color: C.dim, marginLeft: 2 }}>
+                      · Updated {newsCacheAge < 60
+                        ? `${newsCacheAge}s ago`
+                        : `${Math.round(newsCacheAge / 60)} min ago`}
+                    </span>
+                  )}
+                  {(newsIsBuilding || newsFetching) && (
+                    <span style={{
+                      marginLeft: 'auto',
+                      fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
+                      padding: '2px 6px', borderRadius: 3,
+                      color: C.teal, background: C.teal + '18',
+                      border: `1px solid ${C.teal}30`,
+                      textTransform: 'uppercase' as const,
+                    }}>
+                      Refreshing…
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
@@ -2464,6 +2513,10 @@ export default function WatchlistPage() {
                     const col = newFmt
                       ? (tickerStock?.section_id ? sectionAccent(tickerStock.section_id) : C.teal)
                       : signalColor(tickerStock?.signal);
+                    const impactCol = item.bull_bear_impact === 'bullish' ? '#22c55e'
+                      : item.bull_bear_impact === 'bearish' ? '#ef4444'
+                      : item.bull_bear_impact === 'mixed'   ? '#f59e0b'
+                      : null;
                     return (
                       <a
                         key={`news-${item.ticker}-${i}`}
@@ -2474,6 +2527,7 @@ export default function WatchlistPage() {
                           display: 'flex', alignItems: 'flex-start', gap: 10,
                           padding: '9px 14px',
                           borderBottom: `1px solid ${C.border}`,
+                          borderLeft: impactCol ? `2px solid ${impactCol}35` : undefined,
                           textDecoration: 'none',
                           cursor: 'pointer',
                           transition: 'background 0.1s',
@@ -2481,17 +2535,57 @@ export default function WatchlistPage() {
                         onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <span style={{
-                          flexShrink: 0,
-                          fontSize: 8, fontWeight: 800, fontFamily: C.font,
-                          padding: '2px 7px', borderRadius: 3,
-                          color: col, background: col + '15',
-                          border: `1px solid ${col}25`,
-                          textTransform: 'uppercase' as const,
-                        }}>
-                          {item.ticker}
-                        </span>
+                        {item.ticker && (
+                          <span style={{
+                            flexShrink: 0,
+                            fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                            padding: '2px 7px', borderRadius: 3,
+                            color: col, background: col + '15',
+                            border: `1px solid ${col}25`,
+                            textTransform: 'uppercase' as const,
+                          }}>
+                            {item.ticker}
+                          </span>
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* badges row — only when rich fields are present */}
+                          {(item.catalyst_type || item.signal_strength || (item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown')) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
+                              {item.catalyst_type && (
+                                <span style={{
+                                  fontSize: 8, fontWeight: 700, fontFamily: C.font,
+                                  padding: '1px 5px', borderRadius: 3,
+                                  color: C.amber, background: C.amber + '15',
+                                  border: `1px solid ${C.amber}25`,
+                                  textTransform: 'uppercase' as const, letterSpacing: '0.07em',
+                                }}>
+                                  {item.catalyst_type}
+                                </span>
+                              )}
+                              {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && impactCol && (
+                                <span style={{
+                                  fontSize: 8, fontWeight: 600, fontFamily: C.font,
+                                  padding: '1px 5px', borderRadius: 3,
+                                  color: impactCol, background: impactCol + '12',
+                                  border: `1px solid ${impactCol}22`,
+                                  textTransform: 'capitalize' as const,
+                                }}>
+                                  {item.bull_bear_impact}
+                                </span>
+                              )}
+                              {item.signal_strength && (
+                                <span style={{
+                                  fontSize: 8, fontWeight: 600, fontFamily: C.font,
+                                  padding: '1px 5px', borderRadius: 3,
+                                  color: C.dim, background: '#ffffff08',
+                                  border: `1px solid ${C.border}`,
+                                  textTransform: 'capitalize' as const,
+                                }}>
+                                  {item.signal_strength}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <div style={{
                             fontSize: 11, color: C.text,
                             lineHeight: 1.4, marginBottom: 3,
@@ -2499,6 +2593,16 @@ export default function WatchlistPage() {
                           }}>
                             {item.title}
                           </div>
+                          {item.why_it_matters && (
+                            <div style={{
+                              fontSize: 10, color: C.dim, fontFamily: C.font,
+                              lineHeight: 1.35, marginBottom: 3,
+                              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                              fontStyle: 'italic',
+                            }}>
+                              {item.why_it_matters}
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: 9, color: C.dim }}>{item.source}</span>
                             <span style={{ fontSize: 9, color: C.dim }}>{timeAgo(item.published_at)}</span>
@@ -2508,9 +2612,14 @@ export default function WatchlistPage() {
                       </a>
                     );
                   })}
-                  {allNews.length === 0 && (
+                  {allNews.length === 0 && !newsIsBuilding && !newsFetching && (
                     <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
-                      {watchlist?.analysis ? 'Loading news...' : 'No news available'}
+                      {watchlist?.analysis ? 'No news available yet' : 'No news available'}
+                    </div>
+                  )}
+                  {allNews.length === 0 && (newsIsBuilding || newsFetching) && (
+                    <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
+                      Building news feed…
                     </div>
                   )}
                 </div>

@@ -1,0 +1,231 @@
+Frontend Replit Agent Prompt — Build Chart Radar Page Using Confirmed Backend Endpoints
+
+We now have backend Chart Radar endpoints live. Please build the frontend page using the existing Multi-Charts / TradingView chart card patterns without breaking the existing Watchlist, Portfolio, or Multi-Charts pages.
+
+Important:
+Do not rewrite Watchlist.
+Do not rewrite Portfolio.
+Do not destructively modify the current Multi-Charts page.
+Create a new experimental page first.
+
+Suggested route:
+
+* /chart-radar
+  or
+* /multi-charts/radar
+
+Backend endpoints confirmed:
+
+GET /api/chart-radar/universe
+
+Query params:
+
+* source=watchlist | portfolio | manual
+* group_by=theme | market_cap | leader_tier | watchlist_section | portfolio_weight | none
+* watchlist_id optional
+
+Confirmed backend examples:
+
+* /api/chart-radar/universe?source=watchlist&group_by=theme
+* /api/chart-radar/universe?source=watchlist&group_by=market_cap
+* /api/chart-radar/universe?source=portfolio&group_by=leader_tier
+
+Response shape:
+{
+"source": "watchlist",
+"group_by": "theme",
+"count": 302,
+"groups": [
+{
+"key": "AI Networking",
+"label": "AI Networking",
+"count": 6,
+"summary": {
+"avg_change_pct": null,
+"avg_relative_volume": 1.8,
+"total_portfolio_weight_pct": null
+},
+"symbols": [
+{
+"ticker": "AAOI",
+"tradingview_symbol": "NASDAQ:AAOI",
+"company_name": "Applied Optoelectronics",
+"theme": "Photonics / Lasers",
+"market_cap_bucket": "Small",
+"leader_tier": "Niche Breakout",
+"price": 202.89,
+"daily_change_pct": null,
+"relative_volume": 1.2,
+"portfolio_weight_pct": null,
+"watchlist_section": "Photonics / Lasers"
+}
+]
+}
+],
+"warnings": []
+}
+
+Saved view endpoints confirmed:
+
+* POST /api/chart-radar/views
+* GET /api/chart-radar/views
+* PATCH /api/chart-radar/views/{id}
+* DELETE /api/chart-radar/views/{id}
+
+Main UI requirements:
+
+Page title:
+CHART RADAR
+
+Top control bar:
+
+1. Source toggle:
+
+   * Watchlist
+   * Portfolio
+   * Manual only if backend returns useful data for manual; otherwise hide it for v1
+
+2. Group By dropdown:
+
+   * Theme
+   * Market Cap
+   * Leader Tier
+   * Watchlist Section
+   * Portfolio Weight
+   * None
+
+3. Sort dropdown:
+
+   * Ticker A-Z
+   * Relative Volume desc
+   * Market Cap bucket
+   * Portfolio Weight desc
+   * Price desc
+   * Daily % desc only if daily_change_pct exists
+
+4. Filter controls:
+
+   * Search ticker/company
+   * Theme filter based on groups/symbol data
+   * Market cap bucket filter
+   * Leader tier filter
+   * Min relative volume filter
+
+5. Layout controls:
+
+   * 2 columns
+   * 3 columns
+   * 4 columns
+   * Compact mode
+
+6. Chart interval selector:
+
+   * 30m
+   * 1h
+   * D
+   * W
+   * M
+
+Render behavior:
+
+* Render groups as collapsible sections.
+* Each group header should show:
+
+  * group label
+  * ticker count
+  * avg relative volume if available
+  * avg daily move only if not null
+  * total portfolio weight only for portfolio source
+* Inside each expanded group, render TradingView chart cards in a responsive grid.
+* Each chart card should show:
+
+  * ticker
+  * company name
+  * theme
+  * market_cap_bucket
+  * leader_tier
+  * price if available
+  * relative_volume if available
+  * portfolio_weight_pct if source=portfolio
+  * TradingView chart widget/iframe
+
+Critical performance requirement:
+Do not mount hundreds of TradingView iframes at once.
+The watchlist endpoint returns 302 tickers, so loading all charts immediately will crush the browser.
+
+Use lazy rendering:
+
+* Default to collapsed groups, or only expand the first/highest-priority group.
+* Add “Expand group” and “Collapse all.”
+* Add “Load more charts” inside each group.
+* Initial per-group chart render limit should be around 6–12 charts.
+* Only create TradingView iframe/widgets for visible/expanded cards.
+* Destroy/unmount iframe widgets when a group is collapsed if needed.
+
+TradingView behavior:
+
+* Use symbol.tradingview_symbol when present.
+* Fallback to symbol.ticker if tradingview_symbol is missing.
+* Do not fetch OHLC/candle data from our backend.
+* Do not make external market-data calls from frontend.
+* TradingView handles chart rendering.
+
+Saved views:
+If easy, implement saved views using:
+
+* GET /api/chart-radar/views
+* POST /api/chart-radar/views
+* PATCH /api/chart-radar/views/{id}
+* DELETE /api/chart-radar/views/{id}
+
+Saved view should remember:
+
+* source
+* group_by
+* selected filters
+* sort
+* columns
+* chart interval
+* compact mode
+* expanded/collapsed groups if simple
+
+Do not block the core page on saved views. Core page first.
+
+Styling:
+Use the same dark terminal/cyber style already present in Watchlist, Portfolio, and Multi-Charts:
+
+* dark background
+* blue/purple accents
+* compact dense layout
+* thin bordered cards
+* existing button/toggle styling where possible
+* no bright white generic dashboard styling
+
+Empty/error states:
+
+* If no groups return, show “No symbols found for this source.”
+* If source=portfolio has no holdings, show “No portfolio holdings found.”
+* If backend returns warnings, display them in a small non-blocking warning row.
+* If fields are null, show “—”, not broken UI.
+
+Important constraints:
+
+* Do not hardcode screenshot tickers.
+* Do not create demo tickers.
+* Do not duplicate watchlist or portfolio storage on the frontend.
+* Use the backend endpoint as the source of truth.
+* Preserve all existing pages.
+* No fake daily % if daily_change_pct is null.
+* No mass TradingView iframe render at page load.
+
+Deliverables:
+
+1. New Chart Radar route/page.
+2. Watchlist source working.
+3. Portfolio source working.
+4. Group by Theme working.
+5. Group by Market Cap working.
+6. Group by Leader Tier working.
+7. Lazy chart rendering working.
+8. Clean loading/error/empty states.
+9. Saved views only if straightforward after the core page works.
