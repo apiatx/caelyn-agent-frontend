@@ -1,0 +1,112 @@
+Chart Radar is working now, but the TradingView widgets/iframes load way too slowly. The existing MultiCharts page loads TradingView charts much faster, so please optimize Chart Radar by reusing the exact MultiCharts chart rendering pattern.
+
+Do not touch backend.
+Do not add external API calls.
+Do not fetch candles/quotes/fundamentals.
+This is frontend iframe rendering performance only.
+
+Please compare Chart Radar vs existing MultiCharts directly:
+
+1. Open MultiCharts and inspect one working chart iframe.
+2. Open Chart Radar and inspect one chart iframe.
+3. Compare:
+
+   * iframe src
+   * symbol param
+   * interval param
+   * theme param
+   * enabled_features
+   * disabled_features
+   * autosize/settings
+   * loading attribute
+   * iframe sandbox/allow attributes if any
+   * wrapper dimensions
+   * React key
+   * whether it uses iframe or script-based TradingView widget
+
+Chart Radar should reuse the exact same helper/component/pattern from MultiCharts if possible. Do not maintain a separate custom TradingView embed implementation unless absolutely necessary.
+
+Performance requirements:
+
+1. Do not mount all charts in an expanded group at once if the group is large.
+
+   * Initial render per expanded group should be 4–6 charts max.
+   * “Load more” should add 4–6 more.
+   * Do not render hidden charts.
+
+2. Use viewport lazy mounting:
+
+   * Only mount the iframe when its card is near visible using IntersectionObserver or an existing lazy-render pattern.
+   * Before visible, show a lightweight placeholder card with ticker/theme.
+   * Once visible, mount the iframe.
+
+3. Prevent iframe remount loops:
+
+   * Ensure iframe React key is stable.
+   * Key should be something stable like `${ticker}-${interval}`.
+   * Do not include object references, group object, random IDs, Date.now(), or changing layout state in iframe key.
+   * Changing filters/group expand should not remount already-visible iframes unless symbol/interval actually changes.
+
+4. Default state:
+
+   * Only first group expanded, or all groups collapsed.
+   * First expanded group should render only first 4–6 visible charts.
+   * Collapsed groups must not mount iframes.
+
+5. Symbol handling:
+
+   * Use symbol.tradingview_symbol when provided.
+   * If it is bare ticker, pass it exactly as-is.
+   * Do not double encode `NASDAQ:AAOI`.
+   * Do not strip exchange prefix.
+   * Do not lowercase.
+   * Do not transform symbols differently from MultiCharts.
+
+6. Add a temporary performance log:
+
+   * number of groups
+   * number of chart cards visible
+   * number of iframes mounted
+   * first iframe src
+   * whether each iframe mounted because it became visible
+
+Example:
+console.log("[CHART_RADAR_RENDER]", {
+groups: groups.length,
+expandedGroups: Array.from(expandedGroups),
+visibleCards: visibleSymbols.length,
+mountedIframes: mountedIframeCount,
+firstIframeSrc
+});
+
+7. Check Network tab:
+
+   * Compare how many TradingView requests fire on Chart Radar page load vs MultiCharts page load.
+   * Chart Radar should not fire 50–300 TradingView iframe requests immediately.
+   * It should fire only for visible charts.
+
+8. If MultiCharts uses a lightweight iframe URL and Chart Radar uses the heavier advanced chart widget URL, switch Chart Radar to the same lightweight URL as MultiCharts.
+
+9. If Chart Radar is wrapping each TradingView chart in extra expensive React state/effects, simplify:
+
+   * static iframe
+   * memoized ChartCard
+   * React.memo for chart card component
+   * useMemo for filtered groups
+   * no iframe src recomputation unless symbol or interval changes
+
+10. Remove the debug strip once verified, but first use it to confirm:
+
+* data.count=302
+* groups=24
+* only a small number of iframes mounted initially
+
+Acceptance tests:
+
+* /app/chart-radar loads metadata immediately.
+* Expanding one theme shows chart placeholders instantly.
+* First 4–6 TradingView charts begin loading quickly.
+* Network tab does not show hundreds of TradingView requests on page load.
+* MultiCharts and Chart Radar iframe src patterns match as closely as possible.
+* Switching groups does not remount unrelated already-loaded charts.
+* No external provider API calls are made.

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown, ChevronRight, ExternalLink, RefreshCw,
@@ -124,11 +124,35 @@ interface RadarChartCardProps {
   source:   string;
 }
 
-function RadarChartCard({ sym, interval, compact, source }: RadarChartCardProps) {
+const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, source }: RadarChartCardProps) {
   const tvSym = sym.tradingview_symbol || sym.ticker;
   const rvCol = sym.relative_volume == null ? C.dim
     : sym.relative_volume >= 2   ? C.amber
     : sym.relative_volume >= 1.5 ? C.teal : C.dim;
+
+  /* ── IntersectionObserver lazy-mount: iframe only when card is near viewport */
+  const cardRef        = useRef<HTMLDivElement>(null);
+  const [iframeMounted, setIframeMounted] = useState(false);
+
+  /* Reset when symbol or interval changes so stale iframe doesn't persist */
+  const prevKeyRef = useRef('');
+  const stableKey  = `${tvSym}||${interval}`;
+  if (prevKeyRef.current !== stableKey) {
+    prevKeyRef.current = stableKey;
+    if (iframeMounted) setIframeMounted(false);
+  }
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || iframeMounted) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIframeMounted(true); obs.disconnect(); } },
+      { rootMargin: '300px 0px' },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [stableKey, iframeMounted]);
 
   return (
     <div style={{
@@ -231,19 +255,34 @@ function RadarChartCard({ sym, interval, compact, source }: RadarChartCardProps)
         )}
       </div>
 
-      {/* TradingView iframe — lazy: only mounted when group is expanded */}
-      <div style={{ height: compact ? 210 : 340, position: 'relative', flexShrink: 0 }}>
-        <iframe
-          key={`${sym.ticker}|${tvSym}|${interval}`}
-          src={buildTvUrl(tvSym, interval)}
-          title={sym.ticker}
-          allowFullScreen
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-        />
+      {/* TradingView iframe — mounted only when card enters viewport */}
+      <div
+        ref={cardRef}
+        style={{ height: compact ? 210 : 340, position: 'relative', flexShrink: 0, background: C.card2 }}
+      >
+        {iframeMounted ? (
+          <iframe
+            key={`${sym.ticker}-${interval}`}
+            src={buildTvUrl(tvSym, interval)}
+            title={sym.ticker}
+            allowFullScreen
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+          />
+        ) : (
+          /* Lightweight placeholder until IntersectionObserver fires */
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+            color: C.dim, fontFamily: C.font,
+          }}>
+            <BarChart3 style={{ width: 22, height: 22, opacity: 0.25 }} />
+            <span style={{ fontSize: 9, letterSpacing: '0.06em' }}>{sym.ticker}</span>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+});
 
 /* ── GroupSection ───────────────────────────────────────────────────────── */
 interface GroupSectionProps {
@@ -466,6 +505,28 @@ export default function ChartRadarPage() {
     setGroupLimits(prev => ({ ...prev, [key]: (prev[key] ?? 6) + 6 }));
   }, []);
 
+  /* ── Performance log (dev) ──────────────────────────────────────────── */
+  useEffect(() => {
+    if (!data) return;
+    const expandedArr = Array.from(expandedGroups);
+    const visibleCards = filteredGroups
+      .filter(g => expandedArr.includes(g.key))
+      .reduce((sum, g) => sum + Math.min(g.filteredSymbols.length, groupLimits[g.key] ?? 6), 0);
+    const firstExpanded = filteredGroups.find(g => expandedArr.includes(g.key));
+    const firstSym      = firstExpanded?.filteredSymbols[0];
+    const firstIframeSrc = firstSym
+      ? buildTvUrl(firstSym.tradingview_symbol || firstSym.ticker, chartInterval)
+      : null;
+    console.log('[CHART_RADAR_RENDER]', {
+      groups:        filteredGroups.length,
+      expandedGroups: expandedArr,
+      visibleCards,
+      mountedIframes: 'lazy — IntersectionObserver gated per card',
+      firstIframeSrc,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedGroups, filteredGroups, groupLimits, chartInterval]);
+
   /* ── Derived flags ──────────────────────────────────────────────────── */
   const hasFilters = !!(filterSearch || filterMktCap || filterMinRelVol);
   const activeFilterCount = [filterSearch, filterMktCap, filterMinRelVol].filter(Boolean).length;
@@ -631,31 +692,6 @@ export default function ChartRadarPage() {
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-
-        {/* ── Temporary debug strip — remove once confirmed working ── */}
-        {(data || isError) && (
-          <div style={{
-            fontFamily: C.font, fontSize: 9.5, lineHeight: 1.9, padding: '8px 14px',
-            marginBottom: 10, borderRadius: 4,
-            background: isError ? '#1a0808' : '#071510',
-            border: `1px solid ${isError ? C.red : C.teal}30`,
-            color: isError ? C.red : '#4ade80',
-          }}>
-            {isError ? (
-              <span>❌ ERROR — fetch failed. Check network tab.</span>
-            ) : (
-              <>
-                ✅ data.count={data!.count} &nbsp;|&nbsp;
-                groups={data!.groups?.length ?? 0} &nbsp;|&nbsp;
-                filteredGroups={filteredGroups.length} &nbsp;|&nbsp;
-                firstGroup="{data!.groups?.[0]?.label ?? 'none'}" &nbsp;|&nbsp;
-                firstGroupSyms={data!.groups?.[0]?.symbols?.length ?? 0}
-                <br/>
-                first5Tickers=[{data!.groups?.[0]?.symbols?.slice(0, 5).map(s => s.ticker).join(', ') ?? 'none'}]
-              </>
-            )}
-          </div>
-        )}
 
         {/* Warnings */}
         {data?.warnings && data.warnings.length > 0 && (
