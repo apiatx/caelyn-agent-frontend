@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ChevronDown, ChevronRight, ExternalLink, RefreshCw,
-  AlertTriangle, X, Filter, BarChart3,
+  ChevronDown, ChevronRight, ExternalLink,
+  AlertTriangle, BarChart3,
 } from "lucide-react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 
@@ -397,18 +397,12 @@ function GroupSection({
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
   /* Core controls */
-  const [source,         setSource]        = useState<'watchlist' | 'portfolio'>('watchlist');
-  const [groupBy,        setGroupBy]       = useState('theme');
-  const [sort,           setSort]          = useState('ticker');
-  const [cols,           setCols]          = useState<number>(3);
-  const [compact,        setCompact]       = useState(false);
-  const [chartInterval,  setChartInterval] = useState('D');
+  const [source,  setSource]  = useState<'watchlist' | 'portfolio'>('watchlist');
+  const [groupBy, setGroupBy] = useState('theme');
+  const [sort,    setSort]    = useState('ticker');
 
-  /* Filter panel */
-  const [filtersOpen,     setFiltersOpen]     = useState(false);
-  const [filterSearch,    setFilterSearch]    = useState('');
-  const [filterMktCap,    setFilterMktCap]    = useState('');
-  const [filterMinRelVol, setFilterMinRelVol] = useState('');
+  /* Warnings collapse */
+  const [warningsOpen, setWarningsOpen] = useState(false);
 
   /* Expand / load-more state */
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -421,7 +415,7 @@ export default function ChartRadarPage() {
   );
 
   /* ── Universe query ─────────────────────────────────────────────────── */
-  const { data, isLoading, isError, error, isFetching, refetch } = useQuery<RadarResponse>({
+  const { data, isLoading, isError } = useQuery<RadarResponse>({
     queryKey: ['/api/chart-radar/universe', source, groupBy],
     queryFn: async () => {
       const qs = new URLSearchParams({ source, group_by: groupBy });
@@ -446,32 +440,11 @@ export default function ChartRadarPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.count, source, groupBy]);
 
-  /* ── Filter option sets ─────────────────────────────────────────────── */
-  const allMktCaps = useMemo(() => {
-    if (!data) return [];
-    const s = new Set<string>();
-    for (const g of data.groups) for (const sym of g.symbols) if (sym.market_cap_bucket) s.add(sym.market_cap_bucket);
-    return Array.from(s).sort((a, b) => (MKT_CAP_ORDER[a] ?? 99) - (MKT_CAP_ORDER[b] ?? 99));
-  }, [data]);
-
-  /* ── Filter + sort symbols per group ────────────────────────────────── */
+  /* ── Sort symbols per group ─────────────────────────────────────────── */
   const filteredGroups = useMemo<FlatGroup[]>(() => {
     if (!data) return [];
-    const search = filterSearch.trim().toLowerCase();
-    const minRV  = parseFloat(filterMinRelVol) || 0;
-
     return data.groups.flatMap<FlatGroup>(g => {
-      let syms = g.symbols.filter(sym => {
-        if (search && !(
-          sym.ticker.toLowerCase().includes(search) ||
-          (sym.company_name ?? '').toLowerCase().includes(search)
-        )) return false;
-        if (filterMktCap && sym.market_cap_bucket !== filterMktCap) return false;
-        if (minRV > 0 && (sym.relative_volume == null || sym.relative_volume < minRV)) return false;
-        return true;
-      });
-
-      syms = [...syms].sort((a, b) => {
+      const syms = [...g.symbols].sort((a, b) => {
         switch (sort) {
           case 'relvol':  return (b.relative_volume      ?? 0) - (a.relative_volume      ?? 0);
           case 'mktcap':  return (MKT_CAP_ORDER[a.market_cap_bucket ?? ''] ?? 99) - (MKT_CAP_ORDER[b.market_cap_bucket ?? ''] ?? 99);
@@ -480,11 +453,10 @@ export default function ChartRadarPage() {
           default:        return a.ticker.localeCompare(b.ticker);
         }
       });
-
       if (syms.length === 0) return [];
       return [{ ...g, filteredSymbols: syms }];
     });
-  }, [data, filterSearch, filterMktCap, filterMinRelVol, sort]);
+  }, [data, sort]);
 
   /* ── Group expand / collapse ────────────────────────────────────────── */
   const toggleGroup = useCallback((key: string) => {
@@ -494,12 +466,6 @@ export default function ChartRadarPage() {
       return next;
     });
   }, []);
-
-  const expandAll   = useCallback(() => {
-    if (data) setExpandedGroups(new Set(data.groups.map(g => g.key)));
-  }, [data]);
-
-  const collapseAll = useCallback(() => setExpandedGroups(new Set()), []);
 
   const loadMore = useCallback((key: string) => {
     setGroupLimits(prev => ({ ...prev, [key]: (prev[key] ?? 6) + 6 }));
@@ -515,7 +481,7 @@ export default function ChartRadarPage() {
     const firstExpanded = filteredGroups.find(g => expandedArr.includes(g.key));
     const firstSym      = firstExpanded?.filteredSymbols[0];
     const firstIframeSrc = firstSym
-      ? buildTvUrl(firstSym.tradingview_symbol || firstSym.ticker, chartInterval)
+      ? buildTvUrl(firstSym.tradingview_symbol || firstSym.ticker, 'D')
       : null;
     console.log('[CHART_RADAR_RENDER]', {
       groups:        filteredGroups.length,
@@ -525,11 +491,7 @@ export default function ChartRadarPage() {
       firstIframeSrc,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedGroups, filteredGroups, groupLimits, chartInterval]);
-
-  /* ── Derived flags ──────────────────────────────────────────────────── */
-  const hasFilters = !!(filterSearch || filterMktCap || filterMinRelVol);
-  const activeFilterCount = [filterSearch, filterMktCap, filterMinRelVol].filter(Boolean).length;
+  }, [expandedGroups, filteredGroups, groupLimits]);
 
   /* ── Render ─────────────────────────────────────────────────────────── */
   return (
@@ -537,8 +499,6 @@ export default function ChartRadarPage() {
 
       {/* ── Control bar ─────────────────────────────────────────────────── */}
       <div style={{ borderBottom: `1px solid ${C.border}`, background: C.card, flexShrink: 0 }}>
-
-        {/* Row 1 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', flexWrap: 'wrap' }}>
           {/* Title */}
           <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', letterSpacing: '0.12em', marginRight: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -582,128 +542,45 @@ export default function ChartRadarPage() {
               <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
             </div>
           </div>
-
-          {/* Filter toggle */}
-          <button
-            onClick={() => setFiltersOpen(f => !f)}
-            style={{
-              ...(hasFilters ? activeBtn(C.amber) : filtersOpen ? activeBtn() : inactiveBtn),
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            <Filter style={{ width: 9, height: 9 }} />
-            FILTER{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </button>
-
-          {/* Refresh */}
-          <button onClick={() => refetch()} style={{ ...inactiveBtn, display: 'flex', alignItems: 'center', gap: 3 }}>
-            <RefreshCw style={{ width: 9, height: 9, ...(isFetching ? { animation: 'spin 1s linear infinite' } : {}) }} />
-            {isFetching ? 'LOADING…' : 'REFRESH'}
-          </button>
-
-          {/* Stats */}
-          {data && (
-            <span style={{ fontSize: 9, color: C.dim }}>
-              {data.count} symbols · {filteredGroups.length} groups
-            </span>
-          )}
         </div>
-
-        {/* Row 2: layout + interval + expand/collapse */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px 10px', flexWrap: 'wrap' }}>
-          {/* Cols */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>COLS</span>
-            {([2, 3, 4] as const).map(n => (
-              <button key={n} onClick={() => setCols(n)} style={cols === n ? activeBtn() : inactiveBtn}>{n}</button>
-            ))}
-          </div>
-
-          {/* Compact */}
-          <button onClick={() => setCompact(c => !c)} style={compact ? activeBtn(C.purple) : inactiveBtn}>
-            COMPACT
-          </button>
-
-          {/* Interval */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>INTERVAL</span>
-            {(['30m', '1h', 'D', 'W', 'M'] as const).map(iv => (
-              <button key={iv} onClick={() => setChartInterval(iv)} style={chartInterval === iv ? activeBtn() : inactiveBtn}>{iv}</button>
-            ))}
-          </div>
-
-          {/* Expand / Collapse all */}
-          <div style={{ display: 'flex', gap: 2, marginLeft: 4 }}>
-            <button onClick={expandAll}   style={inactiveBtn}>EXPAND ALL</button>
-            <button onClick={collapseAll} style={inactiveBtn}>COLLAPSE ALL</button>
-          </div>
-        </div>
-
-        {/* Row 3: Filters (collapsible) */}
-        {filtersOpen && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px 11px', flexWrap: 'wrap',
-            borderTop: `1px solid ${C.border}`, background: C.card2,
-          }}>
-            <input
-              placeholder="Search ticker / company…"
-              value={filterSearch}
-              onChange={e => setFilterSearch(e.target.value)}
-              style={{
-                fontSize: 9, fontFamily: C.font, background: C.bg,
-                border: `1px solid ${C.border}`, color: C.text,
-                borderRadius: 3, padding: '4px 8px', outline: 'none', width: 180,
-              }}
-            />
-            {allMktCaps.length > 0 && (
-              <div style={{ position: 'relative' }}>
-                <select value={filterMktCap} onChange={e => setFilterMktCap(e.target.value)} style={selectStyle}>
-                  <option value="">All Sizes</option>
-                  {allMktCaps.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <ChevronDown style={{ width: 10, height: 10, position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: C.dim }} />
-              </div>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>MIN RVOL</span>
-              <input
-                placeholder="e.g. 1.5"
-                value={filterMinRelVol}
-                onChange={e => setFilterMinRelVol(e.target.value)}
-                style={{
-                  fontSize: 9, fontFamily: C.font, background: C.bg,
-                  border: `1px solid ${C.border}`, color: C.text,
-                  borderRadius: 3, padding: '4px 8px', outline: 'none', width: 60,
-                }}
-              />
-            </div>
-            {hasFilters && (
-              <button
-                onClick={() => { setFilterSearch(''); setFilterMktCap(''); setFilterMinRelVol(''); }}
-                style={{ ...inactiveBtn, color: C.red, background: C.red + '10', borderColor: C.red + '30', display: 'flex', alignItems: 'center', gap: 3 }}
-              >
-                <X style={{ width: 8, height: 8 }} /> CLEAR
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
 
-        {/* Warnings */}
+        {/* Warnings — collapsible */}
         {data?.warnings && data.warnings.length > 0 && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 12px', marginBottom: 10, borderRadius: 4,
-            background: C.amber + '10', border: `1px solid ${C.amber}25`,
-          }}>
-            <AlertTriangle style={{ width: 11, height: 11, color: C.amber, flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: C.amber, fontFamily: C.font }}>
-              {data.warnings.join(' · ')}
-            </span>
+          <div style={{ marginBottom: 10 }}>
+            <button
+              onClick={() => setWarningsOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, width: '100%',
+                background: C.amber + '10', border: `1px solid ${C.amber}25`,
+                borderRadius: warningsOpen ? '4px 4px 0 0' : 4,
+                padding: '6px 10px', cursor: 'pointer',
+              }}
+            >
+              <AlertTriangle style={{ width: 10, height: 10, color: C.amber, flexShrink: 0 }} />
+              <span style={{ fontSize: 9, color: C.amber, fontFamily: C.font, flex: 1, textAlign: 'left' }}>
+                {data.warnings.length} notice{data.warnings.length !== 1 ? 's' : ''} from data pipeline
+              </span>
+              <ChevronDown style={{
+                width: 10, height: 10, color: C.amber, flexShrink: 0,
+                transform: warningsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s',
+              }} />
+            </button>
+            {warningsOpen && (
+              <div style={{
+                background: C.amber + '08', border: `1px solid ${C.amber}25`, borderTop: 'none',
+                borderRadius: '0 0 4px 4px', padding: '8px 12px',
+              }}>
+                {data.warnings.map((w, i) => (
+                  <div key={i} style={{ fontSize: 9, color: C.amber, fontFamily: C.font, lineHeight: 1.8 }}>
+                    · {w}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -721,7 +598,7 @@ export default function ChartRadarPage() {
             <div style={{ fontSize: 11, color: C.red, fontFamily: C.font, marginBottom: 12 }}>
               Failed to load chart universe. Check backend connectivity.
             </div>
-            <button onClick={() => refetch()} style={{ ...btnBase, color: C.teal, background: C.teal + '15', borderColor: C.teal + '30' }}>
+            <button onClick={() => window.location.reload()} style={{ ...btnBase, color: C.teal, background: C.teal + '15', borderColor: C.teal + '30' }}>
               RETRY
             </button>
           </div>
@@ -748,9 +625,9 @@ export default function ChartRadarPage() {
             onToggle={() => toggleGroup(g.key)}
             limit={groupLimits[g.key] ?? 6}
             onLoadMore={() => loadMore(g.key)}
-            cols={cols}
-            compact={compact}
-            interval={chartInterval}
+            cols={3}
+            compact={false}
+            interval="D"
             source={source}
           />
         ))}
