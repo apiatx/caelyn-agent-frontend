@@ -3300,6 +3300,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Home Risk Intelligence (single consolidated source for risk banner + events + trade decision) ──
+  let _homeRiskIntelCache: { data: any; ts: number } | null = null;
+  const HOME_RISK_INTEL_TTL = 90_000; // 90s
+  app.get('/api/home/risk-intelligence', async (req, res) => {
+    try {
+      const now = Date.now();
+      if (_homeRiskIntelCache && (now - _homeRiskIntelCache.ts) < HOME_RISK_INTEL_TTL) {
+        return res.json({ ..._homeRiskIntelCache.data, _express_cache_age_ms: now - _homeRiskIntelCache.ts });
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+      const response = await fetch(`${AGENT_URL}/api/home/risk-intelligence`, {
+        headers: { 'X-API-Key': AGENT_KEY },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) throw new Error(`FastAPI ${response.status}`);
+      const data = await response.json();
+      _homeRiskIntelCache = { data, ts: now };
+      return res.json(data);
+    } catch (error: any) {
+      if (_homeRiskIntelCache) {
+        return res.json({ ..._homeRiskIntelCache.data, _express_cache_age_ms: Date.now() - _homeRiskIntelCache.ts });
+      }
+      console.error('Home risk intelligence proxy error:', error);
+      res.status(502).json({ error: error?.name === 'AbortError' ? 'Timed out' : 'Failed to fetch risk intelligence' });
+    }
+  });
+
   let caelynTerminalCache: { data: any; ts: number } | null = null;
   const CAELYN_CACHE_TTL = 10 * 60 * 1000;
 

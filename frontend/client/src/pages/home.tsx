@@ -40,6 +40,8 @@ import {
   X,
   Signal,
   GripVertical,
+  AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import { DailyAlphaBoard } from "@/components/home/DailyAlphaBoard";
@@ -1179,15 +1181,16 @@ export default function HomePage() {
     refetchOnWindowFocus: false,
   });
 
-  // Should I Be Trading? — trading dashboard (swing mode)
-  const { data: tradingData } = useQuery<any>({
-    queryKey: ["/api/trading-dashboard-home"],
+  // Home Risk Intelligence — single source for Should I Trade, Risk Cluster banner,
+  // Upcoming Economic Events, and data freshness. No direct FMP/Calendar/Macro calls.
+  const { data: riskIntel } = useQuery<any>({
+    queryKey: ["/api/home/risk-intelligence"],
     queryFn: async () => {
-      const r = await fetch("/api/trading-dashboard?mode=swing");
-      if (!r.ok) throw new Error(`Trading dashboard ${r.status}`);
+      const r = await fetch("/api/home/risk-intelligence");
+      if (!r.ok) throw new Error(`Risk intel ${r.status}`);
       return r.json();
     },
-    staleTime: 5 * 60_000,
+    staleTime: 90_000,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -1357,7 +1360,23 @@ export default function HomePage() {
 
           {/* Center: compact Market Snapshot strip */}
           <div className="flex-1 min-w-0">
-            <div className="text-[8.5px] uppercase tracking-[0.18em] text-white/30 mb-1.5 px-0.5">Market Snapshot</div>
+            <div className="text-[8.5px] uppercase tracking-[0.18em] text-white/30 mb-1.5 px-0.5 flex items-center gap-2">
+              Market Snapshot
+              {riskIntel?.data_freshness && (() => {
+                const df = riskIntel.data_freshness;
+                const status = df.market_snapshot_status as string | undefined;
+                const ageSec = df.market_snapshot_age_seconds as number | undefined;
+                const label = ageSec != null && ageSec < 60 ? `${ageSec}s ago` : ageSec != null && ageSec < 3600 ? `${Math.round(ageSec / 60)}m ago` : null;
+                const dot = status === 'live' ? 'bg-emerald-400' : status === 'cached' ? 'bg-amber-400' : 'bg-white/30';
+                const text = status === 'live' ? 'text-emerald-400/70' : status === 'cached' ? 'text-amber-400/70' : 'text-white/25';
+                return (
+                  <span className={`flex items-center gap-1 text-[8px] lowercase normal-case tracking-normal font-normal ${text}`}>
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                    {status}{label ? ` · ${label}` : ''}
+                  </span>
+                );
+              })()}
+            </div>
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {isLoading &&
                 Array.from({ length: 7 }).map((_, i) => (
@@ -1386,35 +1405,130 @@ export default function HomePage() {
           {/* Thin divider */}
           <div className="self-stretch w-px bg-white/[0.07] shrink-0" />
 
-          {/* Right: Should I Trade? */}
+          {/* Right: Should I Trade? — powered by riskIntel.trade_decision */}
           {(() => {
-            const td = tradingData;
-            const decision: string | undefined = td?.decision;
-            const score: number | undefined = td?.market_quality_score;
+            const td = riskIntel?.trade_decision;
+            const decision: string | undefined = td?.label;
+            const score: number | undefined = td?.score;
+            const mode: string = td?.mode ?? 'swing';
+            const hint: string | undefined = td?.position_size_hint;
+            const oneLine: string | undefined = td?.one_line;
+            const avoids: string[] = td?.avoid ?? [];
             const decisionColor = decision === 'YES' ? 'text-emerald-400' : decision === 'CAUTION' ? 'text-amber-400' : decision === 'NO' ? 'text-rose-400' : 'text-white/40';
-            const borderColor = decision === 'YES' ? 'border-emerald-500/20' : decision === 'CAUTION' ? 'border-amber-500/20' : decision === 'NO' ? 'border-rose-500/20' : 'border-white/10';
+            const borderColor = decision === 'YES' ? 'border-emerald-500/25' : decision === 'CAUTION' ? 'border-amber-500/25' : decision === 'NO' ? 'border-rose-500/25' : 'border-white/10';
+            const bgColor = decision === 'YES' ? 'bg-emerald-500/[0.03]' : decision === 'CAUTION' ? 'bg-amber-500/[0.03]' : decision === 'NO' ? 'bg-rose-500/[0.03]' : 'bg-white/[0.02]';
             const scoreColor = score == null ? 'text-white/30' : score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : score >= 30 ? 'text-orange-400' : 'text-rose-400';
             return (
               <button
                 onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] transition-all px-4 py-2.5 shrink-0 text-center ${borderColor}`}
+                className={`flex flex-col justify-center rounded-xl border ${bgColor} hover:bg-white/[0.05] transition-all px-4 py-2.5 shrink-0 text-left ${borderColor}`}
+                style={{ minWidth: 162 }}
               >
-                <div className="text-[8.5px] uppercase tracking-widest text-white/30 mb-0.5">Should I Trade?</div>
+                <div className="text-[8.5px] uppercase tracking-widest text-white/30 mb-1">Should I Trade?</div>
                 {!td ? (
                   <div className="text-base font-bold text-white/20">—</div>
                 ) : (
                   <>
-                    <div className={`text-xl font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</div>
-                    {score != null && (
-                      <div className={`text-[10px] font-semibold mt-0.5 tabular-nums ${scoreColor}`}>{score}/100</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-base font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</span>
+                      {score != null && (
+                        <span className={`text-[10px] font-semibold tabular-nums ${scoreColor}`}>{score.toFixed(1)}/100</span>
+                      )}
+                    </div>
+                    {mode && <div className="text-[9px] text-white/35 mt-0.5">Mode: {mode}</div>}
+                    {hint && <div className="text-[9px] text-white/40 truncate">{hint}</div>}
+                    {oneLine && <div className="text-[9px] text-white/50 mt-0.5 line-clamp-2 leading-snug">{oneLine}</div>}
+                    {avoids.length > 0 && (
+                      <div className="text-[9px] text-rose-400/60 mt-1 line-clamp-1">Avoid: {avoids.slice(0, 2).join(', ')}</div>
                     )}
                   </>
                 )}
-                <div className="text-[8.5px] text-white/20 mt-0.5 flex items-center gap-0.5">swing <ChevronRight className="w-2.5 h-2.5" /></div>
+                <div className="text-[8px] text-white/20 mt-1.5 flex items-center gap-0.5">{mode} mode <ChevronRight className="w-2.5 h-2.5" /></div>
               </button>
             );
           })()}
         </div>
+
+        {/* ── Risk Cluster Alert Banner ─────────────────────────────────── */}
+        {riskIntel?.risk_cluster?.active && (() => {
+          const rc = riskIntel.risk_cluster;
+          const sev: string = rc.severity ?? '';
+          const CHIP_CLS: Record<string, string> = {
+            green:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+            yellow: 'text-amber-300 bg-amber-500/10 border-amber-500/25',
+            orange: 'text-orange-300 bg-orange-500/10 border-orange-500/25',
+            red:    'text-rose-400 bg-rose-500/10 border-rose-500/25',
+          };
+          const bannerBg =
+            sev === 'EXTREME'  ? 'bg-rose-950/70 border-rose-500/50' :
+            sev === 'HIGH'     ? 'bg-orange-950/60 border-orange-500/40' :
+            sev === 'ELEVATED' ? 'bg-amber-950/50 border-amber-500/30' :
+                                 'bg-white/[0.03] border-white/10';
+          const sevText =
+            sev === 'EXTREME'  ? 'text-rose-300' :
+            sev === 'HIGH'     ? 'text-orange-300' :
+            sev === 'ELEVATED' ? 'text-amber-300' : 'text-white/50';
+          const sevBadge =
+            sev === 'EXTREME'  ? 'text-rose-300 border-rose-500/40 bg-rose-500/15' :
+            sev === 'HIGH'     ? 'text-orange-300 border-orange-500/40 bg-orange-500/15' :
+            sev === 'ELEVATED' ? 'text-amber-300 border-amber-500/40 bg-amber-500/15' :
+                                 'text-white/40 border-white/10 bg-white/5';
+          const triggers: any[] = rc.triggers ?? [];
+          const activeTriggers = triggers.filter(t => t.status !== 'green');
+          return (
+            <div className={`rounded-xl border mb-5 px-4 py-3 ${bannerBg}`}>
+              <div className="flex items-start gap-3">
+                <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevText}`} />
+                <div className="flex-1 min-w-0">
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${sevText}`}>
+                    ⚠ RISK CLUSTER ACTIVE — {rc.headline ?? `${rc.trigger_count ?? activeTriggers.length} risk signals active`}
+                  </div>
+                  {activeTriggers.length > 0 && (
+                    <div className="text-[10px] text-white/55 mb-2.5 leading-relaxed">
+                      {activeTriggers.slice(0, 4).map((t: any) => t.message).filter(Boolean).join(' | ')}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {triggers.map((t: any, i: number) => (
+                      <span key={i} className={`text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none ${CHIP_CLS[t.status] ?? 'text-white/40 bg-white/5 border-white/10'}`}>
+                        {t.label} · {(t.status ?? '').toUpperCase()}
+                      </span>
+                    ))}
+                  </div>
+                  {riskIntel.trade_decision?.position_size_hint && (
+                    <div className="text-[10px] text-white/35 mt-2">
+                      Suggested posture: <span className="text-white/55">{riskIntel.trade_decision.position_size_hint}</span>
+                    </div>
+                  )}
+                </div>
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start ${sevBadge}`}>{sev}</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
+        {riskIntel?.why_market_is_moving && (() => {
+          const bullets: string[] = Array.isArray(riskIntel.why_market_is_moving)
+            ? riskIntel.why_market_is_moving
+            : typeof riskIntel.why_market_is_moving === 'string'
+              ? [riskIntel.why_market_is_moving]
+              : [];
+          if (bullets.length === 0) return null;
+          return (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 mb-5">
+              <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
+              <ol className="space-y-1">
+                {bullets.slice(0, 3).map((b, i) => (
+                  <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
+                    <span className="text-white/25 shrink-0">{i + 1}.</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          );
+        })()}
 
         {/* TradingView chart popup modal */}
         <Dialog open={!!macroChartCard} onOpenChange={(open) => { if (!open) setMacroChartCard(null); }}>
@@ -1444,9 +1558,55 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-        {/* Daily Alpha Board — below macro hero, above draggable sections */}
-        <div className="mb-6">
+        {/* Daily Alpha Board + Upcoming Economic Events — 60/40 desktop, stacked mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 mb-6">
           <DailyAlphaBoard />
+
+          {/* Upcoming Economic Events card */}
+          <GlassCard className="p-4 flex flex-col" style={{ maxHeight: 480 }}>
+            <div className="mb-3 shrink-0">
+              <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+              {!riskIntel && Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 my-1 rounded bg-white/[0.04]" />
+              ))}
+              {(riskIntel?.upcoming_economic_events ?? []).slice(0, 20).map((ev: any, i: number) => {
+                const importance = (ev.importance ?? '').toLowerCase();
+                const impCls = importance === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
+                               importance === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' :
+                                                        'text-white/35 bg-white/5 border-white/10';
+                const rowBorder = importance === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
+                const dateLabel = (() => {
+                  if (!ev.date) return '';
+                  const d = new Date(ev.date + 'T00:00:00');
+                  const today = new Date(); today.setHours(0, 0, 0, 0);
+                  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+                  if (d.getTime() === today.getTime()) return 'Today';
+                  if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
+                  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                })();
+                return (
+                  <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border ${rowBorder} hover:bg-white/[0.04] transition-colors`}>
+                    <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border shrink-0 mt-0.5 leading-none ${impCls}`}>
+                      {importance === 'high' ? 'HIGH' : importance === 'medium' ? 'MED' : 'LOW'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] text-white/85 font-medium leading-snug">{ev.title}</div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {dateLabel && <span className="text-[9px] text-white/35">{dateLabel}{ev.time ? ` · ${ev.time}` : ''}</span>}
+                        {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
+                        {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {riskIntel && (!riskIntel.upcoming_economic_events || riskIntel.upcoming_economic_events.length === 0) && (
+                <div className="text-xs text-white/40 py-6 text-center">No upcoming events data available.</div>
+              )}
+            </div>
+          </GlassCard>
         </div>
 
         <DndContext sensors={homeSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>

@@ -1,0 +1,179 @@
+Redesign the Home page to make major market risk impossible to miss, using the backend Home Risk Intelligence payload. Do not create frontend-only scoring logic and do not call FMP or any upstream data provider directly from the frontend.
+
+Important data-source rules:
+
+* The Home “Should I Trade?” card must display the same trade decision data that powers Macro → Should I Be Trading.
+* The Home “Upcoming Economic Events” card must display the same economic release data that powers Calendar → Economic Releases.
+* The Home Market Snapshot must continue using the existing Market Snapshot data source.
+* Do not add direct frontend calls to FMP.
+* Do not create a separate Calendar fetch just for Home unless the backend has explicitly exposed the same cached data in the Home Risk Intelligence payload.
+* Do not create a second scoring engine in the frontend.
+
+Required Home page changes:
+
+1. Add prominent Market Risk Alert banner
+
+Place this near the top of the Home page, above or directly below Market Snapshot.
+
+Show only when:
+
+risk_cluster.active === true
+
+Banner behavior:
+
+* LOW/MODERATE: subtle
+* ELEVATED/HIGH: amber/orange
+* EXTREME: red
+* Match the current dark terminal/glass UI style
+* It should be visually obvious enough that the user cannot miss it
+
+Example copy:
+
+⚠ RISK CLUSTER ACTIVE — 4 of 6 major risk signals flashing
+
+VIX +33.9% | QQQ -4.8% | Breadth 36/100 | BTC -9.1%
+
+Suggested posture: Selective / half-size / avoid weak breakouts
+
+Use values from risk_cluster.triggers and trade_decision.position_size_hint.
+
+2. Upgrade the Home “Should I Trade?” card
+
+The current top-right bubble is too subtle. Keep it in the same general area, but make the signal more actionable.
+
+Display:
+
+* decision label
+* score
+* mode: swing/day
+* position size hint
+* one-line reason
+* 2–3 avoid bullets
+
+Example:
+
+SHOULD I TRADE?
+CAUTION — 59.7/100
+Mode: Swing
+Position size: Half-size / selective
+Avoid: chasing, weak breakouts, revenge trades
+
+This must use trade_decision from the backend payload, which should be sourced from the existing Macro → Should I Be Trading logic.
+
+3. Split Daily Alpha Board row into two cards
+
+Current:
+Daily Alpha Board spans full width.
+
+New desktop layout:
+
+* Left card: Daily Alpha Board, around 55–60% width
+* Right card: Upcoming Economic Events, around 40–45% width
+
+Mobile layout:
+
+* Stack vertically
+* Daily Alpha Board first
+* Upcoming Economic Events second
+
+Do not remove the Daily Alpha Board. Just resize it.
+
+4. Add Upcoming Economic Events card
+
+Use upcoming_economic_events from the backend Home Risk Intelligence payload.
+
+Card should show:
+
+* event date/day
+* event title
+* importance badge
+* estimate / previous if available
+* “Today,” “Tomorrow,” or date grouping
+* high-impact events highlighted in amber/red
+
+Example:
+
+UPCOMING ECONOMIC EVENTS
+HIGH  Jun 10  CPI Report
+HIGH  Jun 11  PPI Report
+HIGH  Jun 17  FOMC Rate Decision
+MED   Jun 26  PCE Report
+
+Click behavior:
+If the Calendar page already has an event modal component, reuse that same modal component. Do not create a duplicate modal implementation if one already exists.
+
+5. Add compact Risk Stack chips
+
+Either inside the alert banner or directly below Market Snapshot, show compact chips for major risk inputs:
+
+* VIX
+* QQQ / Nasdaq100
+* SPY / S&P
+* Breadth
+* 10Y
+* DXY
+* BTC
+* Macro Events
+
+Each chip should use the backend trigger status:
+green / yellow / orange / red
+
+Example:
+VIX RED
+QQQ RED
+BTC RED
+Breadth RED
+10Y YELLOW
+DXY YELLOW
+
+Do not calculate these statuses in the frontend except for simple display mapping from backend trigger.status.
+
+6. Add data freshness visibility
+
+Market Snapshot should visibly show whether data is live, cached, or stale.
+
+Use data_freshness from the backend payload.
+
+Examples:
+
+* Live · updated 10s ago
+* Cached · market closed
+* Stale · updated 18m ago
+
+Make this subtle but visible.
+
+7. Add “Why Markets Are Moving” mini-summary if payload exists
+
+If why_market_is_moving is present, show a compact card or section with up to 3 bullets.
+
+Example:
+
+WHY MARKETS ARE MOVING
+
+1. Strong labor data reduced rate-cut odds
+2. 10Y yield holding near 4.55%
+3. AI / semiconductor leadership selling hard
+
+Keep this short. Do not turn Home into a long article.
+
+Design constraints:
+
+* Keep the current dark terminal/glass CaelynAI style.
+* Do not rebuild the whole Home page.
+* Do not remove existing Market Snapshot.
+* Do not remove Daily Alpha Board.
+* Do not create new unrelated cards that clutter the page.
+* Make risk state obvious without making the page ugly.
+
+Validation checklist:
+
+* Bad-market example shows a prominent Risk Cluster banner:
+  VIX +33.94%, QQQ -4.80%, BTC -9.12%, breadth 36/100, 10Y 4.55.
+* Daily Alpha Board no longer spans full width on desktop.
+* Upcoming Economic Events appears to the right of Daily Alpha Board on desktop.
+* Upcoming Economic Events matches Calendar → Economic Releases.
+* Home “Should I Trade?” matches Macro → Should I Be Trading.
+* Market Snapshot shows live/cached/stale freshness.
+* Frontend makes no direct FMP calls.
+* Frontend does not duplicate risk scoring logic.
+* Mobile layout stacks cleanly.
