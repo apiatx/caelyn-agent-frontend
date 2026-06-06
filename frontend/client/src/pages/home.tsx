@@ -1183,7 +1183,7 @@ export default function HomePage() {
 
   // Home Risk Intelligence — single source for Should I Trade, Risk Cluster banner,
   // Upcoming Economic Events, and data freshness. No direct FMP/Calendar/Macro calls.
-  const { data: riskIntel } = useQuery<any>({
+  const { data: riskIntel, isLoading: riskIntelLoading, isError: riskIntelError } = useQuery<any>({
     queryKey: ["/api/home/risk-intelligence"],
     queryFn: async () => {
       const r = await fetch("/api/home/risk-intelligence");
@@ -1563,50 +1563,170 @@ export default function HomePage() {
           <DailyAlphaBoard />
 
           {/* Upcoming Economic Events card */}
-          <GlassCard className="p-4 flex flex-col" style={{ maxHeight: 480 }}>
-            <div className="mb-3 shrink-0">
-              <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
-              {!riskIntel && Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 my-1 rounded bg-white/[0.04]" />
-              ))}
-              {(riskIntel?.upcoming_economic_events ?? []).slice(0, 20).map((ev: any, i: number) => {
-                const importance = (ev.importance ?? '').toLowerCase();
-                const impCls = importance === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
-                               importance === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' :
-                                                        'text-white/35 bg-white/5 border-white/10';
-                const rowBorder = importance === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
-                const dateLabel = (() => {
-                  if (!ev.date) return '';
-                  const d = new Date(ev.date + 'T00:00:00');
-                  const today = new Date(); today.setHours(0, 0, 0, 0);
-                  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-                  if (d.getTime() === today.getTime()) return 'Today';
-                  if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
-                  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                })();
-                return (
-                  <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border ${rowBorder} hover:bg-white/[0.04] transition-colors`}>
-                    <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border shrink-0 mt-0.5 leading-none ${impCls}`}>
-                      {importance === 'high' ? 'HIGH' : importance === 'medium' ? 'MED' : 'LOW'}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-white/85 font-medium leading-snug">{ev.title}</div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {dateLabel && <span className="text-[9px] text-white/35">{dateLabel}{ev.time ? ` · ${ev.time}` : ''}</span>}
-                        {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
-                        {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+          {(() => {
+            // ── Normalizer: handles multiple possible backend field name variants ──
+            type NormalizedEvent = {
+              title: string;
+              date: string | null;
+              time: string | null;
+              importance: 'high' | 'medium' | 'low';
+              actual: string | number | null;
+              estimate: string | number | null;
+              previous: string | number | null;
+              country: string | null;
+            };
+            const normalizeEv = (ev: any): NormalizedEvent => {
+              const raw = ev ?? {};
+              const title = String(raw.title ?? raw.event ?? raw.name ?? raw.indicator ?? '').trim();
+              const rawDate = raw.date ?? raw.datetime ?? raw.release_date ?? raw.calendar_date ?? null;
+              const date = rawDate ? String(rawDate).slice(0, 10) : null;
+              const rawTime = raw.time ?? raw.release_time ?? null;
+              const time = rawTime ? String(rawTime).slice(0, 5) : null; // HH:MM
+              const rawImp = String(raw.importance ?? raw.impact ?? raw.priority ?? '').toLowerCase();
+              const importance: 'high' | 'medium' | 'low' =
+                rawImp === 'high' || rawImp === '3' ? 'high' :
+                rawImp === 'medium' || rawImp === '2' ? 'medium' : 'low';
+              return {
+                title,
+                date,
+                time,
+                importance,
+                actual:   raw.actual   ?? null,
+                estimate: raw.estimate ?? raw.consensus ?? raw.forecast ?? null,
+                previous: raw.previous ?? raw.prior     ?? null,
+                country:  raw.country  ? String(raw.country).toUpperCase() : null,
+              };
+            };
+
+            // ── Date label helper ──
+            const dateLabel = (dateStr: string | null): string => {
+              if (!dateStr) return '';
+              try {
+                const d = new Date(dateStr + 'T00:00:00');
+                if (isNaN(d.getTime())) return dateStr;
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+                if (d.getTime() === today.getTime()) return 'Today';
+                if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              } catch { return dateStr ?? ''; }
+            };
+
+            // ── Build display list ──
+            const rawEvents: any[] = Array.isArray(riskIntel?.upcoming_economic_events)
+              ? riskIntel.upcoming_economic_events : [];
+            const normalized = rawEvents.map(normalizeEv);
+
+            // Today's midnight for "upcoming" gate
+            const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+            const todayStr = todayMidnight.toISOString().slice(0, 10);
+
+            // Filter: upcoming (date >= today), prefer US + high/medium, then any country high/medium
+            const isUpcoming = (ev: NormalizedEvent) => {
+              if (!ev.date) return false;
+              return ev.date >= todayStr;
+            };
+
+            const upcoming = normalized.filter(isUpcoming);
+
+            // Primary: US upcoming
+            const usUpcoming = upcoming
+              .filter(ev => ev.country === 'US' && (ev.importance === 'high' || ev.importance === 'medium'))
+              .sort((a, b) => {
+                const da = (a.date ?? '') + (a.time ?? '');
+                const db = (b.date ?? '') + (b.time ?? '');
+                return da < db ? -1 : da > db ? 1 : 0;
+              });
+
+            // Secondary: all upcoming high/medium if not enough US
+            const allHighMed = upcoming
+              .filter(ev => ev.importance === 'high' || ev.importance === 'medium')
+              .sort((a, b) => {
+                const da = (a.date ?? '') + (a.time ?? '');
+                const db = (b.date ?? '') + (b.time ?? '');
+                return da < db ? -1 : da > db ? 1 : 0;
+              });
+
+            // Build final list: prefer US, supplement with non-US high/medium, cap at 8
+            const finalList: NormalizedEvent[] = [];
+            const seen = new Set<string>();
+            const addEv = (ev: NormalizedEvent) => {
+              const key = `${ev.date}|${ev.time}|${ev.title}`;
+              if (!seen.has(key) && finalList.length < 8) { seen.add(key); finalList.push(ev); }
+            };
+            usUpcoming.forEach(addEv);
+            if (finalList.length < 5) allHighMed.forEach(addEv);
+
+            // Fallback: if date filtering yields nothing, show first 5 high/medium by importance order
+            const fallbackList: NormalizedEvent[] = finalList.length === 0
+              ? normalized.filter(ev => ev.importance === 'high' || ev.importance === 'medium').slice(0, 5)
+              : [];
+
+            const displayList = finalList.length > 0 ? finalList : fallbackList;
+
+            const impCls = (imp: string) =>
+              imp === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
+              imp === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' :
+                                 'text-white/35 bg-white/5 border-white/10';
+            const rowBorder = (imp: string) =>
+              imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
+
+            return (
+              <GlassCard className="p-4 flex flex-col" style={{ maxHeight: 480 }}>
+                <div className="mb-3 shrink-0">
+                  <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+
+                  {/* Loading */}
+                  {riskIntelLoading && Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 my-1 rounded bg-white/[0.04]" />
+                  ))}
+
+                  {/* Error */}
+                  {!riskIntelLoading && riskIntelError && (
+                    <div className="text-xs text-white/40 py-6 text-center">Could not load economic events.</div>
+                  )}
+
+                  {/* No array */}
+                  {!riskIntelLoading && !riskIntelError && rawEvents.length === 0 && (
+                    <div className="text-xs text-white/40 py-6 text-center">No upcoming events data available.</div>
+                  )}
+
+                  {/* No events pass filter */}
+                  {!riskIntelLoading && !riskIntelError && rawEvents.length > 0 && displayList.length === 0 && (
+                    <div className="text-xs text-white/40 py-6 text-center">No upcoming high-impact events found.</div>
+                  )}
+
+                  {/* Event rows */}
+                  {displayList.map((ev, i) => (
+                    <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border ${rowBorder(ev.importance)} hover:bg-white/[0.04] transition-colors`}>
+                      <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border shrink-0 mt-0.5 leading-none ${impCls(ev.importance)}`}>
+                        {ev.importance === 'high' ? 'HIGH' : ev.importance === 'medium' ? 'MED' : 'LOW'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] text-white/85 font-medium leading-snug">
+                          {ev.title || 'Untitled event'}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {ev.date && (
+                            <span className="text-[9px] text-white/35">
+                              {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
+                              {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
+                            </span>
+                          )}
+                          {ev.actual   != null && <span className="text-[9px] text-emerald-400/70">act. {ev.actual}</span>}
+                          {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
+                          {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              {riskIntel && (!riskIntel.upcoming_economic_events || riskIntel.upcoming_economic_events.length === 0) && (
-                <div className="text-xs text-white/40 py-6 text-center">No upcoming events data available.</div>
-              )}
-            </div>
-          </GlassCard>
+                  ))}
+
+                </div>
+              </GlassCard>
+            );
+          })()}
         </div>
 
         <DndContext sensors={homeSensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>

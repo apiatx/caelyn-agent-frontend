@@ -1,0 +1,100 @@
+The new Upcoming Economic Events card on the Home page is not loading/rendering even though /api/home/risk-intelligence returns 200 and backend says upcoming_economic_events has 190 events.
+
+Do not add any new API calls. Do not call Calendar, FMP, or any upstream provider directly. This must use only /api/home/risk-intelligence.
+
+Please debug and fix the Home Upcoming Economic Events card.
+
+Steps:
+
+1. Inspect the actual runtime shape of:
+   riskIntel.upcoming_economic_events
+
+Add a temporary console.log or use existing dev logs to verify the first 3 event objects from the endpoint. Then remove the log after fixing.
+
+2. Make the frontend event normalization robust to the real backend/event snapshot shape.
+
+The card should support possible field names like:
+- title, event, name, indicator
+- date, datetime, release_date, calendar_date
+- time, release_time
+- importance, impact, priority
+- estimate, consensus, forecast
+- previous, prior
+- actual
+- country
+
+Create a small normalizeHomeEconomicEvent(event) helper in home.tsx or nearby local helper area.
+
+Return a normalized shape like:
+{
+  title: string,
+  date: string | null,
+  time: string | null,
+  importance: "high" | "medium" | "low",
+  actual: string | number | null,
+  estimate: string | number | null,
+  previous: string | number | null,
+  country: string | null
+}
+
+3. Filter the events for Home display.
+
+Do not render all 190 events.
+
+Display only:
+- US events when country is available
+- upcoming events only when date is parseable
+- next 5 to 8 events
+- prioritize high-impact and medium-impact events
+- sort by soonest date/time first
+
+If date parsing fails but events exist, still show a fallback list of the first 5 normalized high/medium events instead of showing an empty card.
+
+4. Fix empty/loading states.
+
+The card should distinguish between:
+- riskIntel loading
+- riskIntel error
+- no upcoming_economic_events array
+- events array exists but no events pass filter
+
+Use clear UI:
+- Loading: “Loading economic events…”
+- Error: “Could not load economic events”
+- Empty: “No upcoming high-impact events found”
+- Bad shape fallback: show first 5 available events with title/date if possible
+
+5. Make sure field access is null-safe.
+
+The Home page should not crash if:
+- upcoming_economic_events is undefined
+- event.date is null
+- event.title is missing
+- importance is uppercase, lowercase, numeric, or missing
+- estimate/previous/actual are null
+
+6. Keep the no-new-calls contract.
+
+The only frontend source for this card should be:
+GET /api/home/risk-intelligence
+
+Do not call:
+- Calendar endpoint
+- FMP
+- Macro endpoint
+- any quote provider
+
+7. Validate in browser.
+
+Confirm:
+- /api/home/risk-intelligence returns 200
+- riskIntel.upcoming_economic_events contains events
+- Upcoming Economic Events card renders on Home
+- It shows 5 to 8 events max
+- High-impact events get highlighted
+- No console errors
+- Daily Alpha Board still appears on the left
+- Mobile layout still stacks correctly
+
+Likely cause:
+Backend is returning events, but the frontend is probably mapping the wrong field names or filtering everything out due to date/importance parsing. Fix the frontend normalization/filtering, not the backend data source.
