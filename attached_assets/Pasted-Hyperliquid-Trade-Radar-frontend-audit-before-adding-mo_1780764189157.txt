@@ -1,0 +1,123 @@
+Hyperliquid Trade Radar frontend audit before adding more Market Matrix columns.
+
+Problem:
+The Trade Radar tab is rendering incorrectly:
+- Best Long / Best Short / Crowded cards show dashes instead of tickers.
+- Top Setups rows show setup/confidence but no coin/ticker and no thesis.
+- The section feels duplicative of Signal Lab instead of being a clear decision engine.
+
+Do not add 5m/15m/1h/4h columns yet.
+
+Please audit the frontend mapping for:
+
+GET /api/hyperliquid/screener/trade-radar
+
+Check whether frontend is reading the correct backend fields.
+
+Backend expected shape:
+trade_radar.cards.best_long
+trade_radar.cards.best_short
+trade_radar.cards.squeeze_watch
+trade_radar.cards.pullback_buy
+trade_radar.cards.crowded_avoid
+trade_radar.top_setups
+trade_radar.market_regime
+
+SetupCard expected fields:
+- ticker
+- side
+- setup_type
+- score
+- confidence
+- risk_label
+- timing_state
+- action_label
+- why_now
+- entry_condition
+- invalidation_hint
+- warnings
+- components
+- raw_refs
+
+Audit tasks:
+1. Log the raw trade_radar response in dev console once.
+2. Confirm whether cards are actually null or just mapped incorrectly.
+3. Confirm whether top_setups rows contain ticker in the response.
+4. Fix mapping so Top Setups table uses:
+   - ticker, not coin if backend returns ticker
+   - confidence, not conf if backend returns confidence
+   - why_now, not thesis if backend returns why_now
+   - action_label if available
+   - setup_type for setup label
+5. Fix cards so they render:
+   - ticker
+   - setup_type
+   - score
+   - confidence
+   - risk_label
+   - timing_state
+   - why_now
+   - entry_condition
+
+Do not recreate scoring in frontend.
+Do not duplicate Signal Lab widgets on Trade Radar.
+Trade Radar should summarize decisions, not show raw metric widgets.
+
+Recommended Trade Radar layout after audit/fix:
+
+Top command cards:
+- Best Long
+- Best Short
+- Squeeze Watch
+- Pullback Buy
+- Crowded / Avoid
+- Market Regime
+
+Each card should display:
+Ticker
+Setup label
+Score / Confidence
+Timing state
+Why now
+Entry condition
+Risk/warning
+
+Top Setups table columns:
+- Rank
+- Ticker
+- Side
+- Setup
+- Score
+- Confidence
+- Action
+- Risk
+- Why Now
+
+Selected Setup Explanation panel:
+When a user clicks a card or top setup row, show:
+- ticker
+- side
+- setup_type
+- score
+- confidence
+- risk_label
+- timing_state
+- action_label
+- why_now
+- entry_condition
+- invalidation_hint
+- warnings
+- components breakdown
+
+Signal Lab tab:
+Keep the old raw widgets there only.
+Do not duplicate Best Long / Best Short blocks there unless they were pre-existing and clearly raw summary cards.
+
+Validation:
+- Trade Radar cards show tickers, not dashes.
+- Top Setups rows show ticker and why/action text.
+- Clicking a top setup updates explanation panel.
+- Signal Lab still contains old raw cards.
+- Market Matrix unchanged.
+- Time-Series Momentum unchanged.
+- No runtime errors.

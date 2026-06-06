@@ -971,27 +971,33 @@ interface TsmomResult {
 
 // ─── Trade Radar Types ────────────────────────────────────────────────────────
 interface TradeRadarCard {
-  coin:          string | null;
-  direction:     string | null;
-  setup_type:    string | null;
-  confidence:    number | null;
-  thesis:        string | null;
-  entry_trigger: string | null;
-  confirmation:  string | null;
-  invalidation:  string | null;
-  bias:          string | null;
-  score:         number | null;
+  ticker:            string | null;
+  name:              string | null;
+  side:              string | null;
+  setup_type:        string | null;
+  confidence:        number | null;
+  score:             number | null;
+  risk_label:        string | null;
+  timing_state:      string | null;
+  action_label:      string | null;
+  why_now:           string | null;
+  entry_condition:   string | null;
+  invalidation_hint: string | null;
+  warnings:          string[] | null;
 }
 interface TradeRadarSetup {
-  coin:          string;
-  direction:     string;
-  setup_type:    string | null;
-  confidence:    number | null;
-  score:         number | null;
-  thesis:        string | null;
-  entry_trigger: string | null;
-  confirmation:  string | null;
-  invalidation:  string | null;
+  ticker:            string;
+  name:              string;
+  side:              string;
+  setup_type:        string | null;
+  confidence:        number | null;
+  score:             number | null;
+  risk_label:        string | null;
+  timing_state:      string | null;
+  action_label:      string | null;
+  why_now:           string | null;
+  entry_condition:   string | null;
+  invalidation_hint: string | null;
 }
 interface TradeRadarRegime {
   regime_label?:       string | null;
@@ -2612,58 +2618,67 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 function SetupExplanationPanel({ card, label, color, onClose }: {
   card: TradeRadarCard; label: string; color: string; onClose: () => void;
 }) {
-  const dirMap: Record<string, string> = { long:'LONG', short:'SHORT', watch:'WATCH', avoid:'AVOID', neutral:'WATCH' };
-  const dirColor: Record<string, string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
-  const dir  = (card.direction ?? '').toLowerCase();
-  const dCol = dirColor[dir] ?? C.dim;
-  const dLbl = dirMap[dir]  ?? (card.direction ?? '—').toUpperCase();
+  const sideColor: Record<string, string> = { LONG:C.green, SHORT:C.red, WATCH:C.amber, AVOID:'#f97316', NEUTRAL:C.dim };
+  const side = (card.side ?? '').toUpperCase();
+  const sCol = sideColor[side] ?? C.dim;
   return (
     <div style={{ background:'#050d1c', border:`1px solid ${color}44`, borderTop:`2px solid ${color}`, borderRadius:6, margin:'0 14px 12px', padding:'12px 16px', position:'relative' }}>
       <button onClick={onClose} style={{ position:'absolute', top:8, right:10, background:'none', border:'none', cursor:'pointer', color:C.dim, lineHeight:1 }}>
         <X style={{ width:12, height:12 }} />
       </button>
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-        <span style={{ fontSize:14, fontWeight:800, color, fontFamily:C.font }}>{card.coin ?? '—'}</span>
-        <span style={{ fontSize:8, fontWeight:800, color:dCol, background:`${dCol}18`, border:`1px solid ${dCol}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>{dLbl}</span>
-        {card.setup_type && card.setup_type === 'TRADE_NOW' && (
-          <span style={{ fontSize:8, fontWeight:800, color:C.green, background:`${C.green}18`, border:`1px solid ${C.green}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>TRADE NOW</span>
+      {/* ── Header row ── */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
+        <span style={{ fontSize:15, fontWeight:800, color, fontFamily:C.font }}>{card.name ?? '—'}</span>
+        <span style={{ fontSize:8, fontWeight:800, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>{side || '—'}</span>
+        {card.setup_type && (
+          <span style={{ fontSize:8, fontWeight:700, color:C.dim, background:`${C.border}`, borderRadius:3, padding:'1px 6px', letterSpacing:0.3 }}>{card.setup_type}</span>
         )}
-        {card.confidence != null && (
-          <span style={{ fontSize:8, color:C.dim, marginLeft:'auto' }}>Confidence: <span style={{ color:C.text, fontFamily:C.font }}>{(card.confidence * 100).toFixed(0)}%</span></span>
+        {card.timing_state && (
+          <span style={{ fontSize:8, fontWeight:700, color:C.amber, background:`${C.amber}15`, border:`1px solid ${C.amber}30`, borderRadius:3, padding:'1px 6px', letterSpacing:0.3 }}>{card.timing_state}</span>
         )}
-        {card.score != null && (
-          <span style={{ fontSize:8, color:C.dim }}>Score: <span style={{ color:C.purple, fontFamily:C.font }}>{card.score.toFixed(2)}</span></span>
+        {card.risk_label && (
+          <span style={{ fontSize:8, fontWeight:700, color:card.risk_label==='LOW'?C.green:card.risk_label==='HIGH'?C.red:C.amber, background:`${C.border}`, borderRadius:3, padding:'1px 6px' }}>{card.risk_label}</span>
         )}
+        <span style={{ marginLeft:'auto', display:'flex', gap:10 }}>
+          {card.confidence != null && (
+            <span style={{ fontSize:8, color:C.dim }}>Conf <span style={{ color:C.text, fontFamily:C.font }}>{(card.confidence*100).toFixed(0)}%</span></span>
+          )}
+          {card.score != null && (
+            <span style={{ fontSize:8, color:C.dim }}>Score <span style={{ color:C.purple, fontFamily:C.font }}>{card.score.toFixed(1)}</span></span>
+          )}
+        </span>
       </div>
-      {card.thesis && (
-        <div style={{ fontSize:10, color:'#c8d8e8', lineHeight:1.65, marginBottom:10, fontStyle:'italic' }}>{card.thesis}</div>
+      {/* ── Action label ── */}
+      {card.action_label && (
+        <div style={{ fontSize:9.5, fontWeight:700, color:color, marginBottom:8 }}>{card.action_label}</div>
       )}
+      {/* ── Why now ── */}
+      {card.why_now && (
+        <div style={{ fontSize:9.5, color:'#c8d8e8', lineHeight:1.65, marginBottom:10 }}>{card.why_now}</div>
+      )}
+      {/* ── Detail grid ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:'8px 16px' }}>
-        {card.bias && (
+        {card.entry_condition && (
           <div>
-            <div style={{ fontSize:7.5, color:C.teal, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Bias</div>
-            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.bias}</div>
+            <div style={{ fontSize:7.5, color:C.teal, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Entry Condition</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.entry_condition}</div>
           </div>
         )}
-        {card.entry_trigger && (
-          <div>
-            <div style={{ fontSize:7.5, color:C.teal, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Entry Trigger</div>
-            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.entry_trigger}</div>
-          </div>
-        )}
-        {card.confirmation && (
-          <div>
-            <div style={{ fontSize:7.5, color:C.amber, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Confirmation</div>
-            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.confirmation}</div>
-          </div>
-        )}
-        {card.invalidation && (
+        {card.invalidation_hint && (
           <div>
             <div style={{ fontSize:7.5, color:C.red, letterSpacing:1.2, textTransform:'uppercase', fontWeight:800, marginBottom:3 }}>Invalidation</div>
-            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.invalidation}</div>
+            <div style={{ fontSize:9, color:C.text, lineHeight:1.5 }}>{card.invalidation_hint}</div>
           </div>
         )}
       </div>
+      {/* ── Warnings ── */}
+      {card.warnings && card.warnings.length > 0 && (
+        <div style={{ marginTop:10, padding:'6px 10px', background:`${C.amber}08`, border:`1px solid ${C.amber}25`, borderRadius:4 }}>
+          {card.warnings.map((w, i) => (
+            <div key={i} style={{ fontSize:8.5, color:C.amber, lineHeight:1.6 }}>⚠ {w}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2674,12 +2689,16 @@ const RADAR_CARDS_META: Array<{
   label: string;
   color: string;
 }> = [
-  { key: 'best_long',     label: 'Best Long',     color: C.green  },
-  { key: 'best_short',    label: 'Best Short',    color: C.red    },
-  { key: 'squeeze_watch', label: 'Squeeze Watch', color: C.amber  },
-  { key: 'pullback_buy',  label: 'Pullback Buy',  color: C.teal   },
+  { key: 'best_long',     label: 'Best Long',     color: C.green   },
+  { key: 'best_short',    label: 'Best Short',    color: C.red     },
+  { key: 'squeeze_watch', label: 'Squeeze Watch', color: C.amber   },
+  { key: 'pullback_buy',  label: 'Pullback Buy',  color: C.teal    },
   { key: 'crowded_avoid', label: 'Crowded/Avoid', color: '#f97316' },
 ];
+
+const SIDE_COLOR: Record<string, string> = {
+  LONG: C.green, SHORT: C.red, WATCH: C.amber, AVOID: '#f97316', NEUTRAL: C.dim,
+};
 
 function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup }: {
   data: TradeRadarData | null;
@@ -2727,25 +2746,30 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
           <span style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>Market Regime</span>
           <span style={{ fontSize:10, fontWeight:700, color:regime?C.text:C.dimLow }}>{regime ?? '—'}</span>
         </div>
+        {regimeObj && (
+          <div style={{ display:'flex', gap:10 }}>
+            {regimeObj.long_pct != null && <span style={{ fontSize:8, color:C.green }}>{(regimeObj.long_pct*100).toFixed(0)}% long</span>}
+            {regimeObj.short_pct != null && <span style={{ fontSize:8, color:C.red }}>{(regimeObj.short_pct*100).toFixed(0)}% short</span>}
+            {regimeObj.watch_pct != null && <span style={{ fontSize:8, color:C.amber }}>{(regimeObj.watch_pct*100).toFixed(0)}% watch</span>}
+            {regimeObj.avoid_pct != null && <span style={{ fontSize:8, color:'#f97316' }}>{(regimeObj.avoid_pct*100).toFixed(0)}% avoid</span>}
+          </div>
+        )}
         {meta && (
           <div style={{ display:'flex', alignItems:'center', gap:12, marginLeft:'auto' }}>
-            <span style={{ fontSize:8, color:C.dimLow }}>{meta.assets_scanned} assets scanned</span>
+            <span style={{ fontSize:8, color:C.dimLow }}>{meta.assets_scanned} assets</span>
             <span style={{ fontSize:8, color:C.dimLow }}>{meta.elapsed_ms}ms</span>
             {meta.generated_at && <span style={{ fontSize:8, color:C.dimLow }}>{new Date(meta.generated_at).toLocaleTimeString()}</span>}
           </div>
         )}
       </div>
 
-      {/* ── 5 Radar Cards ── */}
+      {/* ── 5 Command Cards ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:0, borderBottom:`1px solid ${C.dimLow}` }}>
         {RADAR_CARDS_META.map(({ key, label, color }) => {
           const card = radar.cards?.[key] ?? null;
           const isSelected = selectedSetup?.label === label;
-          const dirMap: Record<string,string> = { long:'LONG', short:'SHORT', watch:'WATCH', avoid:'AVOID', neutral:'WATCH' };
-          const dirColorMap: Record<string,string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
-          const dir   = (card?.direction ?? '').toLowerCase();
-          const dCol  = dirColorMap[dir]  ?? C.dim;
-          const dLbl  = dirMap[dir]       ?? (card?.direction ?? '—').toUpperCase();
+          const side = (card?.side ?? '').toUpperCase();
+          const sCol = SIDE_COLOR[side] ?? C.dim;
           return (
             <div key={key}
               onClick={() => card ? onSelectSetup(isSelected ? null : { card, label, color }) : undefined}
@@ -2760,21 +2784,32 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
               <div style={{ fontSize:7.5, color, letterSpacing:1.5, textTransform:'uppercase', fontWeight:800, marginBottom:4 }}>{label}</div>
               {card ? (
                 <>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
-                    <span style={{ fontSize:12, fontWeight:800, color, fontFamily:C.font }}>{card.coin ?? '—'}</span>
-                    <span style={{ fontSize:7.5, fontWeight:700, color:dCol, background:`${dCol}18`, border:`1px solid ${dCol}44`, borderRadius:3, padding:'1px 5px' }}>{dLbl}</span>
-                    {card.setup_type === 'TRADE_NOW' && (
-                      <span style={{ fontSize:7, fontWeight:800, color:C.green, background:`${C.green}18`, border:`1px solid ${C.green}44`, borderRadius:3, padding:'1px 4px' }}>NOW</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:13, fontWeight:800, color, fontFamily:C.font }}>{card.name ?? '—'}</span>
+                    <span style={{ fontSize:7.5, fontWeight:700, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 5px' }}>{side || '—'}</span>
+                    {card.timing_state && (
+                      <span style={{ fontSize:7, fontWeight:700, color:C.amber, background:`${C.amber}15`, borderRadius:3, padding:'1px 4px' }}>{card.timing_state}</span>
                     )}
                   </div>
-                  {card.thesis && <div style={{ fontSize:8.5, color:C.dim, lineHeight:1.5, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{card.thesis}</div>}
+                  {card.setup_type && (
+                    <div style={{ fontSize:7.5, color:C.dim, marginBottom:3 }}>{card.setup_type}</div>
+                  )}
+                  {card.why_now && (
+                    <div style={{ fontSize:8.5, color:C.dim, lineHeight:1.5, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', marginBottom:4 }}>{card.why_now}</div>
+                  )}
                   {card.confidence != null && (
-                    <div style={{ marginTop:4, display:'flex', alignItems:'center', gap:4 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                       <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
                         <div style={{ width:`${(card.confidence*100).toFixed(0)}%`, height:'100%', background:color, borderRadius:2 }} />
                       </div>
                       <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{(card.confidence*100).toFixed(0)}%</span>
+                      {card.score != null && <span style={{ fontSize:7.5, color:C.purple, fontFamily:C.font }}>{card.score.toFixed(0)}</span>}
                     </div>
+                  )}
+                  {card.risk_label && (
+                    <div style={{ marginTop:3, fontSize:7.5, fontWeight:700,
+                      color: card.risk_label==='LOW'?C.green : card.risk_label==='HIGH'||card.risk_label==='CROWDED'?C.red : C.amber
+                    }}>{card.risk_label}</div>
                   )}
                 </>
               ) : (
@@ -2789,25 +2824,46 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
       {(radar.top_setups?.length ?? 0) > 0 && (
         <div style={{ padding:'8px 14px' }}>
           <div style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase', fontWeight:800, marginBottom:6 }}>Top Setups</div>
-          <div style={{ display:'grid', gridTemplateColumns:'20px 60px 58px 60px 80px 1fr', gap:0, padding:'3px 8px', background:'#060b14', borderBottom:`1px solid ${C.border}`, borderRadius:'4px 4px 0 0' }}>
-            {['#','COIN','DIR','SETUP','CONF','THESIS'].map(h => (
-              <span key={h} style={{ fontSize:7.5, color:C.dimLow, fontWeight:700, letterSpacing:1 }}>{h}</span>
+          <div style={{ display:'grid', gridTemplateColumns:'18px 58px 52px 110px 40px 54px 80px 1fr', gap:0, padding:'3px 8px', background:'#060b14', borderBottom:`1px solid ${C.border}`, borderRadius:'4px 4px 0 0' }}>
+            {['#','TICKER','SIDE','SETUP','CONF','RISK','ACTION','WHY NOW'].map(h => (
+              <span key={h} style={{ fontSize:7, color:C.dimLow, fontWeight:700, letterSpacing:0.8 }}>{h}</span>
             ))}
           </div>
           {radar.top_setups.slice(0, 8).map((s, i) => {
-            const dirColorMap: Record<string,string> = { long:C.green, short:C.red, watch:C.amber, avoid:C.red, neutral:C.dim };
-            const dir = (s.direction ?? '').toLowerCase();
-            const dCol = dirColorMap[dir] ?? C.dim;
+            const side = (s.side ?? '').toUpperCase();
+            const sCol = SIDE_COLOR[side] ?? C.dim;
+            const isRowSelected = selectedSetup?.card?.ticker === s.ticker && selectedSetup?.card?.name === s.name;
             return (
               <div key={i}
-                style={{ display:'grid', gridTemplateColumns:'20px 60px 58px 60px 80px 1fr', gap:0, padding:'3px 8px',
-                  background:i%2===0?C.bg:C.card2, borderBottom:`1px solid ${C.dimLow}`, alignItems:'center' }}>
+                onClick={() => {
+                  if (isRowSelected) { onSelectSetup(null); return; }
+                  // Cast TradeRadarSetup to TradeRadarCard for the panel (shares same fields)
+                  const asCard: TradeRadarCard = {
+                    ticker: s.ticker, name: s.name, side: s.side,
+                    setup_type: s.setup_type, confidence: s.confidence, score: s.score,
+                    risk_label: s.risk_label, timing_state: s.timing_state,
+                    action_label: s.action_label, why_now: s.why_now,
+                    entry_condition: s.entry_condition, invalidation_hint: s.invalidation_hint,
+                    warnings: null,
+                  };
+                  onSelectSetup({ card: asCard, label: `#${i+1} ${s.name ?? s.ticker}`, color: sCol });
+                }}
+                style={{
+                  display:'grid', gridTemplateColumns:'18px 58px 52px 110px 40px 54px 80px 1fr', gap:0, padding:'4px 8px',
+                  background: isRowSelected ? `${sCol}12` : i%2===0 ? C.bg : C.card2,
+                  borderBottom:`1px solid ${C.dimLow}`, alignItems:'center',
+                  cursor:'pointer', transition:'background 0.1s',
+                }}
+                onMouseEnter={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=`${C.border}`; }}
+                onMouseLeave={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=i%2===0?C.bg:C.card2; }}>
                 <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
-                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>{s.coin}</span>
-                <span style={{ fontSize:7.5, fontWeight:700, color:dCol }}>{s.direction?.toUpperCase() ?? '—'}</span>
+                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>{s.name ?? s.ticker}</span>
+                <span style={{ fontSize:7.5, fontWeight:700, color:sCol }}>{side || '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim }}>{s.setup_type ?? '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
-                <span style={{ fontSize:8, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.thesis ?? '—'}</span>
+                <span style={{ fontSize:7.5, fontWeight:600, color: s.risk_label==='LOW'?C.green:s.risk_label==='HIGH'||s.risk_label==='CROWDED'?C.red:C.amber }}>{s.risk_label ?? '—'}</span>
+                <span style={{ fontSize:7.5, color:C.teal, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.action_label ?? '—'}</span>
+                <span style={{ fontSize:8, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.why_now ?? '—'}</span>
               </div>
             );
           })}
