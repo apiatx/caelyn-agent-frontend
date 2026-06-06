@@ -1,0 +1,117 @@
+The Upcoming Economic Events card still says “Cannot load economic events.”
+
+Do not keep changing normalization blindly. The backend FastAPI endpoint has already been confirmed to return valid upcoming_economic_events. Now debug the browser-facing frontend data path.
+
+Important:
+Do not add new API calls.
+Do not call Calendar directly.
+Do not call FMP.
+Do not call Macro directly.
+This must use only the existing frontend query for:
+GET /api/home/risk-intelligence
+
+Task:
+Find why the Home Economic Events card is entering the error state even though /api/home/risk-intelligence returns 200.
+
+Debug steps:
+
+1. Inspect the browser-facing response, not FastAPI directly.
+
+In the frontend browser devtools/network or with the Express/Vite route, inspect the actual JSON returned from:
+
+/api/home/risk-intelligence
+
+Do not only test FastAPI directly. The frontend consumes the Express proxy route, so we need to confirm the exact shape after the proxy.
+
+Log temporarily in home.tsx:
+
+console.log("riskIntel raw", riskIntel);
+console.log("riskIntel keys", riskIntel && Object.keys(riskIntel));
+console.log("events direct", riskIntel?.upcoming_economic_events);
+console.log("events nested data", riskIntel?.data?.upcoming_economic_events);
+console.log("query error", riskIntelError);
+
+Remove these logs after fixing.
+
+2. Fix the response unwrapping.
+
+Create a safe accessor:
+
+const riskIntelPayload =
+  riskIntel?.upcoming_economic_events ? riskIntel :
+  riskIntel?.data?.upcoming_economic_events ? riskIntel.data :
+  riskIntel?.payload?.upcoming_economic_events ? riskIntel.payload :
+  riskIntel?.result?.upcoming_economic_events ? riskIntel.result :
+  riskIntel;
+
+Then use:
+
+const economicEventsRaw = Array.isArray(riskIntelPayload?.upcoming_economic_events)
+  ? riskIntelPayload.upcoming_economic_events
+  : [];
+
+Use riskIntelPayload for:
+- market_snapshot
+- trade_decision
+- risk_cluster
+- upcoming_economic_events
+- why_market_is_moving
+- data_freshness
+
+This prevents the Home page from breaking if the Express proxy wraps the FastAPI response.
+
+3. Do not show “Cannot load economic events” unless the actual query failed.
+
+The Economic Events card should not show “Cannot load economic events” just because upcoming_economic_events is empty or undefined.
+
+Use these states:
+
+- If riskIntel query is loading:
+  show “Loading economic events…”
+
+- If the whole riskIntel query failed:
+  show “Could not load Home Risk Intelligence”
+  But this should be page/query-level, not just events-specific.
+
+- If riskIntel loaded but economicEventsRaw is empty:
+  show “No upcoming economic events found”
+
+- If economicEventsRaw exists but filter removes all:
+  show fallback first 5 normalized events, or “No upcoming high-impact events found”
+
+Do not treat missing events as a query error.
+
+4. Confirm query destructuring is correct.
+
+If using React Query, make sure the code is not doing this incorrectly:
+
+const { data: riskIntel, isError } = useQuery(...)
+
+when the fetch helper returns something like:
+
+{ data: actualPayload }
+
+If the fetch helper wraps responses, either unwrap in the queryFn or use riskIntelPayload as described above.
+
+5. Validate all Home widgets use the same unwrapped payload.
+
+After this fix, confirm:
+- Risk Cluster banner still works
+- Should I Trade card still works
+- Why Markets Are Moving still works
+- Market Snapshot still works
+- Upcoming Economic Events works
+
+If only the economic events card fails while other widgets work, inspect whether the card is accidentally reading from riskIntel.upcomingEvents, riskIntel.events, or another wrong property name.
+
+6. Final validation:
+
+In browser console before removing logs, confirm:
+
+Array.isArray(riskIntelPayload.upcoming_economic_events) === true
+riskIntelPayload.upcoming_economic_events.length > 0
+
+Then confirm the card renders 5–8 events.
+
+Likely root cause:
+The FastAPI payload is correct, but the frontend is either reading the wrong nesting level from the Express proxy response or treating missing/empty upcoming_economic_events as an error state. Fix payload unwrapping and UI state handling, not the backend and not the event normalization.

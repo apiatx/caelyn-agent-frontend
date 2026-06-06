@@ -1191,9 +1191,22 @@ export default function HomePage() {
       return r.json();
     },
     staleTime: 90_000,
-    retry: false,
+    retry: 2,
+    retryDelay: 1500,
     refetchOnWindowFocus: false,
   });
+
+  // Safe payload unwrapper: handles flat response (normal) and wrapped response (.data/.payload/.result).
+  // This prevents the card from breaking if the Express proxy ever nests the FastAPI body.
+  const riskIntelPayload: any =
+    riskIntel?.upcoming_economic_events   ? riskIntel :
+    riskIntel?.trade_decision             ? riskIntel :
+    riskIntel?.data?.upcoming_economic_events   ? riskIntel.data :
+    riskIntel?.data?.trade_decision             ? riskIntel.data :
+    riskIntel?.payload?.upcoming_economic_events ? riskIntel.payload :
+    riskIntel?.result?.upcoming_economic_events  ? riskIntel.result :
+    riskIntel ?? null;
+
 
   // Top Equity Signals — from Prophetik investor overview
   const { data: equityOverview } = useQuery<any>({
@@ -1362,8 +1375,8 @@ export default function HomePage() {
           <div className="flex-1 min-w-0">
             <div className="text-[8.5px] uppercase tracking-[0.18em] text-white/30 mb-1.5 px-0.5 flex items-center gap-2">
               Market Snapshot
-              {riskIntel?.data_freshness && (() => {
-                const df = riskIntel.data_freshness;
+              {riskIntelPayload?.data_freshness && (() => {
+                const df = riskIntelPayload.data_freshness;
                 const status = df.market_snapshot_status as string | undefined;
                 const ageSec = df.market_snapshot_age_seconds as number | undefined;
                 const label = ageSec != null && ageSec < 60 ? `${ageSec}s ago` : ageSec != null && ageSec < 3600 ? `${Math.round(ageSec / 60)}m ago` : null;
@@ -1405,9 +1418,9 @@ export default function HomePage() {
           {/* Thin divider */}
           <div className="self-stretch w-px bg-white/[0.07] shrink-0" />
 
-          {/* Right: Should I Trade? — powered by riskIntel.trade_decision */}
+          {/* Right: Should I Trade? — powered by riskIntelPayload.trade_decision */}
           {(() => {
-            const td = riskIntel?.trade_decision;
+            const td = riskIntelPayload?.trade_decision;
             const decision: string | undefined = td?.label;
             const score: number | undefined = td?.score;
             const mode: string = td?.mode ?? 'swing';
@@ -1450,8 +1463,8 @@ export default function HomePage() {
         </div>
 
         {/* ── Risk Cluster Alert Banner ─────────────────────────────────── */}
-        {riskIntel?.risk_cluster?.active && (() => {
-          const rc = riskIntel.risk_cluster;
+        {riskIntelPayload?.risk_cluster?.active && (() => {
+          const rc = riskIntelPayload.risk_cluster;
           const sev: string = rc.severity ?? '';
           const CHIP_CLS: Record<string, string> = {
             green:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
@@ -1495,9 +1508,9 @@ export default function HomePage() {
                       </span>
                     ))}
                   </div>
-                  {riskIntel.trade_decision?.position_size_hint && (
+                  {riskIntelPayload?.trade_decision?.position_size_hint && (
                     <div className="text-[10px] text-white/35 mt-2">
-                      Suggested posture: <span className="text-white/55">{riskIntel.trade_decision.position_size_hint}</span>
+                      Suggested posture: <span className="text-white/55">{riskIntelPayload.trade_decision.position_size_hint}</span>
                     </div>
                   )}
                 </div>
@@ -1508,11 +1521,11 @@ export default function HomePage() {
         })()}
 
         {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
-        {riskIntel?.why_market_is_moving && (() => {
-          const bullets: string[] = Array.isArray(riskIntel.why_market_is_moving)
-            ? riskIntel.why_market_is_moving
-            : typeof riskIntel.why_market_is_moving === 'string'
-              ? [riskIntel.why_market_is_moving]
+        {riskIntelPayload?.why_market_is_moving && (() => {
+          const bullets: string[] = Array.isArray(riskIntelPayload.why_market_is_moving)
+            ? riskIntelPayload.why_market_is_moving
+            : typeof riskIntelPayload.why_market_is_moving === 'string'
+              ? [riskIntelPayload.why_market_is_moving]
               : [];
           if (bullets.length === 0) return null;
           return (
@@ -1613,8 +1626,8 @@ export default function HomePage() {
             };
 
             // ── Build display list ──
-            const rawEvents: any[] = Array.isArray(riskIntel?.upcoming_economic_events)
-              ? riskIntel.upcoming_economic_events : [];
+            const rawEvents: any[] = Array.isArray(riskIntelPayload?.upcoming_economic_events)
+              ? riskIntelPayload.upcoming_economic_events : [];
             const normalized = rawEvents.map(normalizeEv);
 
             // Today's midnight for "upcoming" gate
