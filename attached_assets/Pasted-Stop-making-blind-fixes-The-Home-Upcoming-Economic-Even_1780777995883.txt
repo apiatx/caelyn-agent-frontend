@@ -1,0 +1,162 @@
+Stop making blind fixes. The Home Upcoming Economic Events card still says “Cannot load economic events.”
+
+We need a hop-by-hop proof of where the failure is. Do not add new API calls. Do not call FMP. Do not call Calendar directly. Do not call Macro directly. This must use only /api/home/risk-intelligence.
+
+Goal:
+Find the exact condition causing the Economic Events card to render “Cannot load economic events” and fix that specific condition.
+
+Required debugging steps:
+
+1. Grep the exact UI text.
+
+Search the frontend repo for the exact string:
+
+“Cannot load economic events”
+“Could not load economic events”
+“Could not load Home Risk Intelligence”
+“Loading economic events”
+
+Find the exact JSX branch rendering the message currently visible on the Home page.
+
+Do not assume which branch it is. Identify it.
+
+2. Print the condition next to that exact branch.
+
+Temporarily add a dev-only console log immediately before the Economic Events card render:
+
+console.log("[HomeEvents Debug]", {
+riskIntelIsLoading,
+riskIntelIsError,
+riskIntelError,
+hasRiskIntel: !!riskIntel,
+hasRiskIntelPayload: !!riskIntelPayload,
+payloadKeys: riskIntelPayload ? Object.keys(riskIntelPayload) : null,
+eventsIsArray: Array.isArray(riskIntelPayload?.upcoming_economic_events),
+eventsLength: Array.isArray(riskIntelPayload?.upcoming_economic_events)
+? riskIntelPayload.upcoming_economic_events.length
+: null,
+filteredEventsLength: typeof filteredEvents !== "undefined" ? filteredEvents.length : null,
+firstEvent: Array.isArray(riskIntelPayload?.upcoming_economic_events)
+? riskIntelPayload.upcoming_economic_events[0]
+: null
+});
+
+Load Home in the browser and report the actual log output before changing more code.
+
+3. Inspect the browser-facing response, not FastAPI direct.
+
+In the browser devtools Network tab, click:
+
+GET /api/home/risk-intelligence
+
+Confirm and report:
+
+* HTTP status
+* response body top-level keys
+* whether upcoming_economic_events exists
+* whether it is an array
+* its length
+* the first event object
+
+Do not only curl FastAPI directly. The frontend consumes the Express/Vite route. The browser-facing response is the truth.
+
+4. Compare all three hops.
+
+Report these three results:
+
+A) FastAPI direct:
+curl FastAPI /api/home/risk-intelligence
+
+* status
+* top-level keys
+* upcoming_economic_events length
+
+B) Express proxy:
+curl Express/Vite /api/home/risk-intelligence
+
+* status
+* top-level keys
+* upcoming_economic_events length
+
+C) Browser React Query:
+console log from home.tsx
+
+* riskIntelPayload keys
+* upcoming_economic_events length
+* query isLoading/isError/error
+
+If A works but B fails, fix Express proxy.
+If B works but C fails, fix frontend queryFn/unwrapping/state.
+If C has events but UI still says cannot load, fix the JSX conditional branch.
+If all three have events, the card logic is wrong.
+
+5. Check whether the frontend queryFn is returning parsed JSON or a Response wrapper.
+
+Find the actual query function for /api/home/risk-intelligence.
+
+Confirm whether it returns:
+
+* actual JSON payload
+* { data: payload }
+* Response object
+* Axios response object
+* something else
+
+If it returns a Response object, fix it to parse JSON before storing in React Query.
+
+Expected pattern:
+
+const res = await fetch("/api/home/risk-intelligence");
+if (!res.ok) throw new Error(...);
+return await res.json();
+
+Or use the app’s existing apiRequest helper correctly if that helper already unwraps JSON.
+
+6. Remove “Cannot load economic events” as an events-specific state unless the whole risk intelligence query truly failed.
+
+The Economic Events card should use these states only:
+
+* Query loading:
+  “Loading economic events…”
+
+* Query failed AND no usable cached payload:
+  “Could not load Home Risk Intelligence”
+
+* Query succeeded but events missing/empty:
+  “No upcoming economic events found”
+
+* Events exist but all were filtered out:
+  show fallback first 5 normalized events, or “No upcoming high-impact events found”
+
+Do not show “Cannot load economic events” just because filteredEvents is empty, because that is not a load failure.
+
+7. Check for leftover separate events query.
+
+Search home.tsx for any separate query or variable related to:
+
+* calendar
+* economicEvents
+* eventsQuery
+* calendarQuery
+* economicReleases
+* upcomingEvents
+
+There should not be a separate frontend query for the Home events card. The card must only read from riskIntelPayload.upcoming_economic_events.
+
+If a leftover query is driving the error state, remove it.
+
+8. Validate final behavior.
+
+Final required validation:
+
+* Browser Network /api/home/risk-intelligence returns 200
+* Browser response has upcoming_economic_events array length > 0
+* React console confirms riskIntelPayload.upcoming_economic_events.length > 0
+* The visible Home card renders 5–8 events
+* No “Cannot load economic events” message appears
+* No direct Calendar/FMP/Macro calls were added
+* Risk Cluster banner still works
+* Should I Trade still works
+* Daily Alpha Board still renders left of events card
+
+Do not report “fixed” until you can provide the actual browser-facing payload shape and the exact condition that was causing the error message.
