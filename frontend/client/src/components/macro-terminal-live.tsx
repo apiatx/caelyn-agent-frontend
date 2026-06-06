@@ -2398,9 +2398,9 @@ function TradingTab() {
           </div>
           <div style={{ padding: '0 20px', borderRight: `1px solid ${ST.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <STGauge score={mqs} size={110} thick={8} />
+              <STGauge score={mqs ?? 0} size={110} thick={8} />
               <div style={{ position: 'absolute', textAlign: 'center' }}>
-                <div style={{ fontSize: 26, fontWeight: 900, color: stScoreColor(mqs), lineHeight: 1 }}>{mqs.toFixed(0)}</div>
+                <div style={{ fontSize: 26, fontWeight: 900, color: stScoreColor(mqs ?? 0), lineHeight: 1 }}>{mqs != null ? mqs.toFixed(0) : '—'}</div>
                 <div style={{ fontSize: 10, color: ST.dim, lineHeight: 1 }}>/ 100</div>
               </div>
             </div>
@@ -2415,7 +2415,7 @@ function TradingTab() {
                   <div style={{ fontSize: 8, color: ST.dim, letterSpacing: 1, textAlign: 'center', textTransform: 'uppercase' }}>
                     {p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','MOM').replace('VOLATILITY','VOLAT')}
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{p.score.toFixed(0)}</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{(p.score ?? 0).toFixed(0)}</div>
                   <div style={{ width: '100%', height: 3, background: ST.bg, borderRadius: 2 }}>
                     <div style={{ height: '100%', width: `${barWidth}%`, background: color, borderRadius: 2, boxShadow: `0 0 4px ${color}88`, transition: 'width 0.8s ease' }} />
                   </div>
@@ -2426,7 +2426,7 @@ function TradingTab() {
           <div style={{ minWidth: 110, paddingLeft: 18, borderLeft: `1px solid ${ST.border}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{ color: ST.dim, fontSize: 9, letterSpacing: 2 }}>POSITION SIZE</div>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <STGauge score={mqs} size={46} thick={4} />
+              <STGauge score={mqs ?? 0} size={46} thick={4} />
               <span style={{ position: 'absolute', fontSize: 8, color: dc, fontWeight: 700 }}>●</span>
             </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: dc }}>{pos.label}</div>
@@ -2457,7 +2457,7 @@ function TradingTab() {
                         {p.title.split('/')[0].trim().replace('MARKET ','')}
                       </span>
                     </div>
-                    <span style={{ fontSize: 18, fontWeight: 900, color }}>{p.score.toFixed(0)}</span>
+                    <span style={{ fontSize: 18, fontWeight: 900, color }}>{(p.score ?? 0).toFixed(0)}</span>
                   </div>
                   <div style={{ marginTop: 6, height: 3, background: ST.bg, borderRadius: 2 }}>
                     <div style={{ height: '100%', width: `${Math.min(p.score, 100)}%`, background: color, borderRadius: 2, transition: 'width 0.8s ease' }} />
@@ -2495,10 +2495,10 @@ function TradingTab() {
                 <span style={{ color: ST.red, fontSize: 10 }}>◈</span>
                 <span style={{ color: ST.dim, fontSize: 9, letterSpacing: 1.5 }}>EXECUTION WINDOW</span>
               </div>
-              <span style={{ fontSize: 18, fontWeight: 900, color: stScoreColor(ews) }}>{ews.toFixed(0)}</span>
+              <span style={{ fontSize: 18, fontWeight: 900, color: stScoreColor(ews ?? 0) }}>{ews != null ? ews.toFixed(0) : '—'}</span>
             </div>
             <div style={{ height: 2, background: ST.bg }}>
-              <div style={{ height: '100%', width: `${Math.min(ews,100)}%`, background: stScoreColor(ews), transition: 'width 0.8s ease' }} />
+              <div style={{ height: '100%', width: `${Math.min(ews ?? 0, 100)}%`, background: stScoreColor(ews ?? 0), transition: 'width 0.8s ease' }} />
             </div>
             <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 9 }}>
               {d.execution_conditions.map((ec, i) => {
