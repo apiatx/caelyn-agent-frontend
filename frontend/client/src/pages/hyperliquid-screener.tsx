@@ -2683,6 +2683,66 @@ function SetupExplanationPanel({ card, label, color, onClose }: {
   );
 }
 
+// ─── Priority Watchlist Strip ────────────────────────────────────────────────
+interface PriorityItem { ticker: string; side: string; reason: string | null; source: 'both' | 'lab' | 'radar' | 'avoid'; }
+
+function renderPriorityBucket(label: string, color: string, icon: string, list: PriorityItem[]) {
+  if (list.length === 0) return null;
+  return (
+    <div style={{ flex:1, minWidth:140 }}>
+      <div style={{ fontSize:7, color, letterSpacing:1.5, textTransform:'uppercase', fontWeight:800, marginBottom:5 }}>{icon} {label}</div>
+      {list.map((item, i) => {
+        const sCol = SIDE_COLOR[(item.side ?? '').toUpperCase()] ?? C.dim;
+        return (
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:4 }}>
+            <span style={{ fontSize:9.5, fontWeight:800, color, fontFamily:C.font, minWidth:34 }}>{item.ticker}</span>
+            <span style={{ fontSize:7, fontWeight:700, color:sCol, background:`${sCol}15`, borderRadius:3, padding:'1px 4px' }}>{(item.side||'').toUpperCase()}</span>
+            {item.source === 'both' && (
+              <span style={{ fontSize:7, color:'#a3e635', background:'#84cc1615', borderRadius:3, padding:'1px 5px', fontWeight:700 }}>✓ Both</span>
+            )}
+            {item.reason && (
+              <span style={{ fontSize:7.5, color:C.dimLow, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{item.reason}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PriorityWatchlistStrip({ items }: { items: PriorityItem[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const confirmed = items.filter(x => x.source === 'both');
+  const labOnly   = items.filter(x => x.source === 'lab').slice(0, 4);
+  const radarOnly = items.filter(x => x.source === 'radar').slice(0, 4);
+  const avoid     = items.filter(x => x.source === 'avoid').slice(0, 3);
+  const hasContent = confirmed.length + labOnly.length + radarOnly.length + avoid.length > 0;
+  if (!hasContent) return null;
+  return (
+    <div style={{ background:'#050c17', borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+      <button onClick={() => setExpanded(e => !e)}
+        style={{ width:'100%', padding:'5px 14px', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:8, textAlign:'left' }}>
+        <Pin style={{ width:9, height:9, color:C.teal }} />
+        <span style={{ fontSize:8, fontWeight:800, color:C.teal, letterSpacing:1.5, textTransform:'uppercase' }}>Priority Watchlist</span>
+        {confirmed.length > 0 && (
+          <span style={{ fontSize:7.5, color:'#a3e635', background:'#84cc1615', border:'1px solid #84cc1630', borderRadius:10, padding:'1px 8px', fontWeight:700 }}>
+            {confirmed.length} confirmed by both engines
+          </span>
+        )}
+        <span style={{ fontSize:8, color:C.dimLow, marginLeft:'auto' }}>{expanded ? '▲ hide' : '▼ show'}</span>
+      </button>
+      {expanded && (
+        <div style={{ padding:'8px 14px 12px', display:'flex', gap:20, flexWrap:'wrap' }}>
+          {renderPriorityBucket('Confirmed by Both', '#a3e635', '⚡', confirmed)}
+          {renderPriorityBucket('Signal Lab Picks',  C.teal,   '◆', labOnly)}
+          {renderPriorityBucket('Radar Setups',      C.purple, '◎', radarOnly)}
+          {renderPriorityBucket('Avoid / Crowded',   C.red,    '⊘', avoid)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Trade Radar: Command Center ─────────────────────────────────────────────
 const RADAR_CARDS_META: Array<{
   key: keyof TradeRadarData['trade_radar']['cards'];
@@ -2700,12 +2760,14 @@ const SIDE_COLOR: Record<string, string> = {
   LONG: C.green, SHORT: C.red, WATCH: C.amber, AVOID: '#f97316', NEUTRAL: C.dim,
 };
 
-function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup }: {
+function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup, overlapSet = new Set(), labTickerSet = new Set() }: {
   data: TradeRadarData | null;
   isLoading: boolean;
   isError: boolean;
   selectedSetup: { card: TradeRadarCard; label: string; color: string } | null;
   onSelectSetup: (s: { card: TradeRadarCard; label: string; color: string } | null) => void;
+  overlapSet?: Set<string>;
+  labTickerSet?: Set<string>;
 }) {
   const radar  = data?.trade_radar;
   const meta   = data?.meta;
@@ -2790,6 +2852,9 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                     {card.timing_state && (
                       <span style={{ fontSize:7, fontWeight:700, color:C.amber, background:`${C.amber}15`, borderRadius:3, padding:'1px 4px' }}>{card.timing_state}</span>
                     )}
+                    {card.name && overlapSet.has(card.name.toUpperCase()) && (
+                      <span style={{ fontSize:7, fontWeight:800, color:'#a3e635', background:'#84cc1615', border:'1px solid #84cc1630', borderRadius:3, padding:'1px 5px' }}>✓ Lab agrees</span>
+                    )}
                   </div>
                   {card.setup_type && (
                     <div style={{ fontSize:7.5, color:C.dim, marginBottom:3 }}>{card.setup_type}</div>
@@ -2857,7 +2922,12 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                 onMouseEnter={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=`${C.border}`; }}
                 onMouseLeave={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=i%2===0?C.bg:C.card2; }}>
                 <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
-                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>{s.name ?? s.ticker}</span>
+                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>
+                  {s.name ?? s.ticker}
+                  {s.name && overlapSet.has(s.name.toUpperCase()) && (
+                    <span style={{ fontSize:6.5, color:'#a3e635', background:'#84cc1610', border:'1px solid #84cc1625', borderRadius:3, padding:'1px 4px', marginLeft:4, fontWeight:800 }}>✓</span>
+                  )}
+                </span>
                 <span style={{ fontSize:7.5, fontWeight:700, color:sCol }}>{side || '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim }}>{s.setup_type ?? '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
@@ -3023,6 +3093,70 @@ export default function HyperliquidScreenerPage() {
 
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
 
+  // ── Cross-engine overlap computation ─────────────────────────────────────
+  // Radar tickers: from cards + top_setups (use clean `name` field)
+  const radarTickerSet = useMemo(() => {
+    if (!tradeRadar?.trade_radar) return new Set<string>();
+    const s = new Set<string>();
+    Object.values(tradeRadar.trade_radar.cards).forEach(c => { if (c?.name) s.add(c.name.toUpperCase()); });
+    (tradeRadar.trade_radar.top_setups ?? []).forEach(ts => { if (ts.name) s.add(ts.name.toUpperCase()); });
+    return s;
+  }, [tradeRadar]);
+
+  // Lab tickers: top rows by composite signal (same basis AgentMarketBrief uses)
+  const labSortedRows = useMemo(() =>
+    [...rows].filter(r => r.compositeSignal != null)
+      .sort((a, b) => (b.compositeSignal! - a.compositeSignal!))
+      .slice(0, 20),
+  [rows]);
+  const labTickerSet = useMemo(() => new Set(labSortedRows.map(r => r.coin.toUpperCase())), [labSortedRows]);
+
+  // Overlap = tickers in both engines
+  const overlapSet = useMemo(() => {
+    const s = new Set<string>();
+    radarTickerSet.forEach(t => { if (labTickerSet.has(t)) s.add(t); });
+    return s;
+  }, [radarTickerSet, labTickerSet]);
+
+  // Build priority watchlist items for PriorityWatchlistStrip
+  const priorityItems = useMemo((): PriorityItem[] => {
+    const items: PriorityItem[] = [];
+    const seen = new Set<string>();
+
+    // Confirmed by both
+    overlapSet.forEach(ticker => {
+      if (seen.has(ticker)) return; seen.add(ticker);
+      const row = labSortedRows.find(r => r.coin.toUpperCase() === ticker);
+      const side = row?.signalDirection === 'bullish' ? 'LONG' : row?.signalDirection === 'bearish' ? 'SHORT' : 'WATCH';
+      items.push({ ticker, side, reason: null, source: 'both' });
+    });
+
+    // Radar-only (not in lab)
+    (tradeRadar?.trade_radar?.top_setups ?? []).slice(0, 6).forEach(ts => {
+      const t = (ts.name ?? '').toUpperCase();
+      if (!t || seen.has(t) || overlapSet.has(t)) return;
+      seen.add(t);
+      items.push({ ticker: ts.name, side: ts.side ?? 'WATCH', reason: ts.action_label, source: 'radar' });
+    });
+
+    // Lab-only (not in radar)
+    labSortedRows.slice(0, 8).forEach(row => {
+      const t = row.coin.toUpperCase();
+      if (seen.has(t) || radarTickerSet.has(t)) return;
+      seen.add(t);
+      const side = row.signalDirection === 'bullish' ? 'LONG' : row.signalDirection === 'bearish' ? 'SHORT' : 'WATCH';
+      items.push({ ticker: row.coin, side, reason: null, source: 'lab' });
+    });
+
+    // Avoid / crowded
+    const avoidCard = tradeRadar?.trade_radar?.cards?.crowded_avoid;
+    if (avoidCard?.name && !seen.has(avoidCard.name.toUpperCase())) {
+      items.push({ ticker: avoidCard.name, side: avoidCard.side ?? 'AVOID', reason: avoidCard.action_label, source: 'avoid' });
+    }
+
+    return items;
+  }, [overlapSet, labSortedRows, radarTickerSet, tradeRadar]);
+
   const summaryItems = useMemo(() => {
     const meta = displayData?.meta;
     if (!rows.length && !meta) return [];
@@ -3150,22 +3284,57 @@ export default function HyperliquidScreenerPage() {
       </div>
 
       {/* ── TAB BAR ──────────────────────────────────────────────────── */}
-      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', display:'flex', alignItems:'center', gap:0, flexShrink:0 }}>
+      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', display:'flex', alignItems:'stretch', gap:0, flexShrink:0 }}>
         {([
-          { id:'radar', label:'Trade Radar',  icon:<Activity style={{ width:10, height:10 }} /> },
-          { id:'lab',   label:'Signal Lab',   icon:<BarChart2 style={{ width:10, height:10 }} /> },
-        ] as const).map(tab => {
+          {
+            id: 'radar' as const,
+            label: 'Trade Radar',
+            subtitle: 'Momentum · Funding · OI · Flow · Microstructure',
+            pill: '15m–4h tactical',
+            color: C.purple,
+            icon: <Activity style={{ width:10, height:10 }} />,
+          },
+          {
+            id: 'lab' as const,
+            label: 'Signal Lab',
+            subtitle: 'Structure · Regime · Liquidity · Quality filters',
+            pill: '4h–1d swing ideas',
+            color: C.teal,
+            icon: <BarChart2 style={{ width:10, height:10 }} />,
+          },
+        ]).map(tab => {
           const active = pageTab === tab.id;
           return (
             <button key={tab.id} onClick={() => setPageTab(tab.id)}
-              style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', background:'none', border:'none',
-                borderBottom: active ? `2px solid ${C.teal}` : '2px solid transparent',
-                color: active ? C.teal : C.dim, fontSize:10.5, fontWeight:700, cursor:'pointer',
-                letterSpacing:0.5, transition:'color 0.12s', textTransform:'uppercase', marginBottom:'-1px' }}>
-              {tab.icon}{tab.label}
+              style={{ display:'flex', flexDirection:'column', justifyContent:'center', gap:1, padding:'6px 18px', background:'none', border:'none',
+                borderBottom: active ? `2px solid ${tab.color}` : '2px solid transparent',
+                cursor:'pointer', transition:'all 0.12s', marginBottom:'-1px', textAlign:'left' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ color: active ? tab.color : C.dim }}>{tab.icon}</span>
+                <span style={{ fontSize:10.5, fontWeight:800, color: active ? tab.color : C.dim, letterSpacing:0.5, textTransform:'uppercase' }}>{tab.label}</span>
+                <span style={{ fontSize:7, fontWeight:700, color: active ? tab.color : C.dimLow, background: active ? `${tab.color}18` : 'transparent', border: `1px solid ${active ? tab.color+'44' : 'transparent'}`, borderRadius:10, padding:'1px 6px', letterSpacing:0.3 }}>{tab.pill}</span>
+              </div>
+              <div style={{ fontSize:7.5, color: active ? '#8aa0b8' : C.dimLow, letterSpacing:0.2, whiteSpace:'nowrap' }}>{tab.subtitle}</div>
             </button>
           );
         })}
+        {overlapSet.size > 0 && (
+          <div style={{ display:'flex', alignItems:'center', marginLeft:'auto', gap:6 }}>
+            <span style={{ fontSize:7.5, color:'#a3e635', background:'#84cc1612', border:'1px solid #84cc1628', borderRadius:10, padding:'2px 10px', fontWeight:700 }}>
+              ⚡ {overlapSet.size} ticker{overlapSet.size !== 1 ? 's' : ''} confirmed by both
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── HOW TO USE STRIP ─────────────────────────────────────────── */}
+      <div style={{ background:'#040a12', borderBottom:`1px solid ${C.dimLow}22`, padding:'4px 14px', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+        <Eye style={{ width:9, height:9, color:C.dimLow, flexShrink:0 }} />
+        <span style={{ fontSize:8, color:C.dimLow, lineHeight:1.4 }}>
+          <span style={{ color:C.teal, fontWeight:700 }}>Signal Lab</span> finds cleaner swing ideas (structure + quality gates).{'  '}
+          <span style={{ color:C.purple, fontWeight:700 }}>Trade Radar</span> finds faster tactical pressure (live flow + microstructure).{'  '}
+          When both agree on a ticker, investigate first. If they disagree, check why — Lab favors structure, Radar favors live flow.
+        </span>
       </div>
 
       {/* ── SCROLLABLE BODY ───────────────────────────────────────────── */}
@@ -3197,6 +3366,9 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && pageTab === 'radar' && (
           <>
+            {/* ── PRIORITY WATCHLIST ── */}
+            <PriorityWatchlistStrip items={priorityItems} radarData={tradeRadar ?? null} />
+
             {/* ── TRADE RADAR COMMAND CENTER ── */}
             <TradeRadarSection
               data={tradeRadar ?? null}
@@ -3204,6 +3376,8 @@ export default function HyperliquidScreenerPage() {
               isError={trRadarError}
               selectedSetup={selectedSetup}
               onSelectSetup={s => setSelectedSetup(s)}
+              overlapSet={overlapSet}
+              labTickerSet={labTickerSet}
             />
 
             {/* ── SETUP EXPLANATION PANEL ── */}
@@ -3231,6 +3405,22 @@ export default function HyperliquidScreenerPage() {
 
         {displayData && pageTab === 'lab' && (
           <>
+            {/* ── SIGNAL LAB CONTEXT HEADER ── */}
+            <div style={{ padding:'8px 14px', background:'#050c17', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <BarChart2 style={{ width:11, height:11, color:C.teal }} />
+                <span style={{ fontSize:10, fontWeight:800, color:C.teal, letterSpacing:0.5 }}>Signal Lab</span>
+                <span style={{ fontSize:7.5, color:'#8aa0b8' }}>Higher-quality swing ideas using structure, regime, liquidity, and quality filters.</span>
+              </div>
+              <span style={{ fontSize:7.5, fontWeight:700, color:C.teal, background:`${C.teal}18`, border:`1px solid ${C.teal}33`, borderRadius:10, padding:'2px 8px' }}>Best for 4h–1d ideas</span>
+              <span style={{ fontSize:7.5, fontWeight:600, color:C.dim, background:`${C.dimLow}`, borderRadius:3, padding:'2px 7px' }}>◆ SWING IDEA</span>
+              <span style={{ fontSize:7.5, fontWeight:600, color:C.dim, background:`${C.dimLow}`, borderRadius:3, padding:'2px 7px' }}>◆ QUALITY-GATED</span>
+              <span style={{ fontSize:7.5, fontWeight:600, color:C.dim, background:`${C.dimLow}`, borderRadius:3, padding:'2px 7px' }}>◆ STRUCTURE</span>
+            </div>
+
+            {/* ── PRIORITY WATCHLIST ── */}
+            <PriorityWatchlistStrip items={priorityItems} radarData={tradeRadar ?? null} />
+
             {/* ── HERO: SIGNAL BRIEF (Agent Market Brief — existing widget) ── */}
             <AgentMarketBrief
               agentResult={agentResult} agentLoading={agentLoading} agentStage={agentStage}

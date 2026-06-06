@@ -1,0 +1,111 @@
+Hyperliquid UI clarity improvement — keep both Signal Lab and Trade Radar, but make their purpose obvious.
+
+Important:
+- Do NOT remove Signal Lab.
+- Do NOT assume Trade Radar is better.
+- Do NOT consolidate logic yet.
+- Do NOT add 5m/15m/1h/4h columns yet.
+- This is a UI clarity pass only.
+
+Context from backend audit:
+Signal Lab and Trade Radar are different engines:
+- Signal Lab uses /api/hyperliquid/screener/hero.
+- Signal Lab is more structure/regime/quality gated, with a higher volume floor.
+- Signal Lab is better for cleaner 4h–1d swing ideas.
+- Trade Radar uses /api/hyperliquid/screener/trade-radar.
+- Trade Radar uses a wider universe and 6-component tactical composite: momentum, positioning, funding, flow, microstructure, risk.
+- Trade Radar is better for faster 15m–4h tactical pressure and early signals.
+
+Goal:
+Make the UI explain this distinction so users are not confused when the tabs show different tickers.
+
+Tasks:
+
+1. Add tab subtitles/descriptions.
+
+For Signal Lab:
+Title: Signal Lab
+Subtitle: “Higher-quality swing ideas using structure, regime, liquidity, and quality filters.”
+Small use-case pill: “Best for 4h–1d ideas”
+
+For Trade Radar:
+Title: Trade Radar
+Subtitle: “Faster tactical setups using momentum, funding, OI, flow, and microstructure.”
+Small use-case pill: “Best for 15m–4h pressure”
+
+2. Consider making Signal Lab the default tab if it currently feels like the better idea generator.
+If changing default is risky, leave current default but add clear descriptions.
+
+3. Add a compact “How to use this page” helper strip near the top:
+
+“Signal Lab finds cleaner setup ideas. Trade Radar finds faster tactical pressure. When both agree, investigate first. If they disagree, check the reason: Signal Lab favors structure, Radar favors live flow.”
+
+4. Add overlap badges.
+
+If the same ticker appears in both Signal Lab actionable ideas and Trade Radar top_setups/cards, show:
+“✓ Confirmed by both”
+
+On Signal Lab cards/list:
+If ticker also appears in Trade Radar, show:
+“⚡ Active on Radar”
+
+On Trade Radar cards/list:
+If ticker also appears in Signal Lab buy_now or high_quality_watchlist, show:
+“✓ Signal Lab agrees”
+
+Use ticker/displayName normalization carefully:
+- match clean display ticker where possible
+- fallback to coin_id/coin mapping where needed
+
+5. Add source/explanation badges on each tab/card.
+
+Signal Lab cards should show pills like:
+- SWING IDEA
+- QUALITY-GATED
+- STRUCTURE
+
+Trade Radar cards should show pills like:
+- TACTICAL
+- FLOW-DRIVEN
+- EARLY SIGNAL
+
+6. Add a small “Priority Watchlist” section if low-risk.
+
+Priority Watchlist buckets:
+- Confirmed by Both
+- Signal Lab Favorites
+- Fast Radar Setups
+- Avoid / Crowded
+
+Populate using existing payloads:
+Confirmed by Both:
+tickers appearing in both Signal Lab actionable ideas and Trade Radar top_setups/cards
+
+Signal Lab Favorites:
+top Signal Lab actionable ideas not in Trade Radar
+
+Fast Radar Setups:
+top Trade Radar setups not in Signal Lab
+
+Avoid / Crowded:
+Signal Lab avoid bucket + Trade Radar crowded_avoid
+
+Each item should show:
+ticker, side, source badge, one-line reason if available.
+
+7. Add disagreement helper copy.
+
+When selected ticker exists in one engine but not the other, show a small note:
+- “Radar-only: live flow/microstructure is active, but structure may not pass Signal Lab quality gates yet.”
+- “Lab-only: structure looks cleaner, but live tactical pressure is not strong enough for Radar yet.”
+- “Both agree: structure and tactical pressure are aligned.”
+
+8. Do not change the underlying scoring logic.
+
+Validation:
+- Signal Lab still renders all existing data.
+- Trade Radar still renders all existing data.
+- User can visually understand the difference between the tabs.
+- Overlap badges appear where tickers match.
+- No runtime errors.
+- No backend contract changes required.
