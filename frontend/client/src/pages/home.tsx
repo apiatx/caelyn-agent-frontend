@@ -1118,18 +1118,6 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, []);
 
-  // Match Economic Events card height to Daily Alpha Board
-  const alphaRef = useRef<HTMLDivElement>(null);
-  const [alphaHeight, setAlphaHeight] = useState<number | null>(null);
-  useEffect(() => {
-    const el = alphaRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      setAlphaHeight(entry.contentRect.height);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
@@ -1585,8 +1573,8 @@ export default function HomePage() {
         </Dialog>
 
         {/* Daily Alpha Board + Upcoming Economic Events — equal height columns, right 360px */}
-        <div className="flex flex-col lg:flex-row gap-5 mb-6">
-          <div ref={alphaRef} className="flex-1 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-5 mb-6">
+          <div>
             <DailyAlphaBoard />
           </div>
 
@@ -1700,15 +1688,11 @@ export default function HomePage() {
               imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
 
             return (
-              <div
-                className="w-full lg:w-[360px] shrink-0 flex flex-col"
-                style={alphaHeight ? { height: alphaHeight } : undefined}
-              >
-              <GlassCard className="p-4 flex flex-col flex-1">
+              <GlassCard className="p-4 flex flex-col">
                 <div className="mb-3 shrink-0">
                   <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
+                <div className="overflow-y-auto max-h-[188px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 
                   {/* Loading */}
                   {riskIntelLoading && Array.from({ length: 5 }).map((_, i) => (
@@ -1765,7 +1749,6 @@ export default function HomePage() {
 
                 </div>
               </GlassCard>
-              </div>
             );
           })()}
         </div>
