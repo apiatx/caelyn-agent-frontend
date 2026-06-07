@@ -1118,6 +1118,19 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, []);
 
+  // Match Economic Events card height to Daily Alpha Board
+  const alphaRef = useRef<HTMLDivElement>(null);
+  const [alphaHeight, setAlphaHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const el = alphaRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setAlphaHeight(entry.contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Home aggregator — primary query. The Express proxy composes:
   // backend /api/home/dashboard + news (NEWS_CACHE) + crypto FG (CMC cache).
   const { data, isLoading, isError } = useQuery<HomeDashboardPayload>({
@@ -1572,8 +1585,8 @@ export default function HomePage() {
         </Dialog>
 
         {/* Daily Alpha Board + Upcoming Economic Events — equal height columns, right 360px */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-5 mb-6">
-          <div className="flex flex-col">
+        <div className="flex flex-col lg:flex-row gap-5 mb-6">
+          <div ref={alphaRef} className="flex-1 min-w-0">
             <DailyAlphaBoard />
           </div>
 
@@ -1687,7 +1700,11 @@ export default function HomePage() {
               imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
 
             return (
-              <GlassCard className="p-4 flex flex-col h-full min-h-0">
+              <div
+                className="w-full lg:w-[360px] shrink-0 flex flex-col"
+                style={alphaHeight ? { height: alphaHeight } : undefined}
+              >
+              <GlassCard className="p-4 flex flex-col flex-1">
                 <div className="mb-3 shrink-0">
                   <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
                 </div>
@@ -1748,6 +1765,7 @@ export default function HomePage() {
 
                 </div>
               </GlassCard>
+              </div>
             );
           })()}
         </div>
