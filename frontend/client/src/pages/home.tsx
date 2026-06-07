@@ -1571,9 +1571,9 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-        {/* Daily Alpha Board + Upcoming Economic Events — left expands, right fixed 360px, stacked mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] items-start gap-5 mb-6">
-          <div className="self-start">
+        {/* Daily Alpha Board + Upcoming Economic Events — equal height columns, right 360px */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-5 mb-6">
+          <div className="flex flex-col">
             <DailyAlphaBoard />
           </div>
 
@@ -1687,7 +1687,7 @@ export default function HomePage() {
               imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
 
             return (
-              <GlassCard className="p-4 flex flex-col max-h-[360px] xl:max-h-[400px] self-start">
+              <GlassCard className="p-4 flex flex-col h-full min-h-0">
                 <div className="mb-3 shrink-0">
                   <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
                 </div>
@@ -1714,29 +1714,42 @@ export default function HomePage() {
                   )}
 
                   {/* Event rows */}
-                  {displayList.map((ev, i) => (
-                    <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border ${rowBorder(ev.importance)} hover:bg-white/[0.04] transition-colors`}>
-                      <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border shrink-0 mt-0.5 leading-none ${impCls(ev.importance)}`}>
-                        {ev.importance === 'high' ? 'HIGH' : ev.importance === 'medium' ? 'MED' : 'LOW'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-white/85 font-medium leading-snug">
-                          {ev.title || 'Untitled event'}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          {ev.date && (
-                            <span className="text-[9px] text-white/35">
-                              {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
-                              {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
-                            </span>
-                          )}
-                          {ev.actual   != null && <span className="text-[9px] text-emerald-400/70">act. {ev.actual}</span>}
-                          {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
-                          {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+                  {displayList.map((ev, i) => {
+                    const isHigh = ev.importance === 'high';
+                    const isMed  = ev.importance === 'medium';
+                    return (
+                      <div key={i} className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg border transition-colors ${
+                        isHigh ? 'border-rose-500/25 bg-rose-500/[0.05] hover:bg-rose-500/[0.09]' :
+                        isMed  ? 'border-amber-500/20 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]' :
+                                 'border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04]'
+                      }`}>
+                        {/* Impact pill — bold solid colour, unmissable */}
+                        <span className={`shrink-0 text-[9px] font-black tracking-widest uppercase px-2 py-1 rounded-md min-w-[38px] text-center leading-none ${
+                          isHigh ? 'bg-rose-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.45)]' :
+                          isMed  ? 'bg-amber-400 text-black' :
+                                   'bg-white/10 text-white/40'
+                        }`}>
+                          {isHigh ? 'HIGH' : isMed ? 'MED' : 'LOW'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-[11.5px] font-semibold leading-snug truncate ${isHigh ? 'text-white' : 'text-white/80'}`}>
+                            {ev.title || 'Untitled event'}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {ev.date && (
+                              <span className="text-[9px] text-white/35">
+                                {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
+                                {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
+                              </span>
+                            )}
+                            {ev.actual   != null && <span className="text-[9px] text-emerald-400/80 font-medium">act. {ev.actual}</span>}
+                            {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
+                            {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                 </div>
               </GlassCard>
