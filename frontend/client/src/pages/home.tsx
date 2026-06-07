@@ -1692,7 +1692,7 @@ export default function HomePage() {
                 <div className="mb-3 shrink-0">
                   <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
                 </div>
-                <div className="overflow-y-auto max-h-[188px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
+                <div className="overflow-y-auto max-h-[153px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 
                   {/* Loading */}
                   {riskIntelLoading && Array.from({ length: 5 }).map((_, i) => (
