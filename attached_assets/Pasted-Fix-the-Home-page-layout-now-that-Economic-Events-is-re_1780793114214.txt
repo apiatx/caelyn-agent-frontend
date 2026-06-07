@@ -1,0 +1,101 @@
+Fix the Home page layout now that Economic Events is rendering.
+
+Current issue:
+The Daily Alpha Board card became way too tall/fat after splitting the row with Economic Events. It has a huge empty glass-card area. The Daily Alpha Board should look close to its original compact height/width and fit its own content. The Economic Events card should be shorter and internally scrollable.
+
+Do not change data fetching.
+Do not change backend.
+Do not add API calls.
+This is layout/CSS only.
+
+Required changes:
+
+1. Fix the Daily Alpha Board wrapper height
+
+Find the new grid row that contains:
+
+* DailyAlphaBoard
+* Upcoming Economic Events
+
+The Daily Alpha Board side should not stretch to match the height of the Economic Events card.
+
+Use layout rules like:
+
+* parent grid should use `items-start`
+* Daily Alpha wrapper should use `h-fit`, `self-start`, or equivalent
+* remove any `min-h`, `h-full`, `flex-1`, or forced height applied to the Daily Alpha card/container
+* do not wrap DailyAlphaBoard in an extra tall glass card if DailyAlphaBoard already renders its own card styling
+
+Target behavior:
+Daily Alpha Board should hug its content height, roughly like it did before the split.
+
+2. Restore Daily Alpha Board width feel
+
+The Daily Alpha Board should remain the main feature on the left and feel close to its previous width.
+
+Desktop grid should be closer to:
+`lg:grid-cols-[minmax(0,1fr)_360px]`
+or
+`lg:grid-cols-[minmax(0,1fr)_380px]`
+
+Do not let Economic Events become too wide.
+Do not shrink Daily Alpha too aggressively.
+
+3. Make Economic Events shorter and scrollable
+
+The Economic Events card should not determine the full row height.
+
+Set a compact fixed/max height for the card, for example:
+
+* `max-h-[360px]`
+* or `h-[360px]`
+* or a responsive version like `max-h-[340px] xl:max-h-[380px]`
+
+Inside the card:
+
+* keep the header fixed at the top
+* make only the events list scrollable
+* use `overflow-y-auto`
+* use the app’s existing subtle scrollbar styling if available
+
+Target behavior:
+Economic Events shows maybe 4–6 rows at a time, then scrolls inside the card.
+
+4. Do not stretch Daily Alpha to match Economic Events
+
+If the parent grid currently uses equal-height columns, fix that.
+
+Use:
+`items-start`
+
+Avoid:
+
+* `items-stretch`
+* `h-full` on both children
+* forcing both cards to same height
+
+5. Clean final visual target
+
+Top section should look like:
+
+Left:
+Daily Alpha Board compact card, no giant empty dead space.
+
+Right:
+Economic Events compact card, shorter than the current version, with internal scroll.
+
+The two cards can sit side by side, but they do not need to be equal height.
+
+6. Validate
+
+Confirm:
+
+* Daily Alpha Board no longer has huge empty vertical space.
+* Daily Alpha Board keeps roughly its original compact card height.
+* Economic Events is shorter and internally scrollable.
+* The Home page does not become taller because of 190 economic events.
+* Risk Cluster banner still renders correctly.
+* Why Markets Are Moving still renders correctly.
+* Market Snapshot still renders correctly.
+* No new network calls were added.
+* Mobile stacks cleanly: Daily Alpha first, Economic Events below.

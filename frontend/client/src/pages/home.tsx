@@ -1571,9 +1571,11 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-        {/* Daily Alpha Board + Upcoming Economic Events — 60/40 desktop, stacked mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 mb-6">
-          <DailyAlphaBoard />
+        {/* Daily Alpha Board + Upcoming Economic Events — left expands, right fixed 360px, stacked mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] items-start gap-5 mb-6">
+          <div className="self-start">
+            <DailyAlphaBoard />
+          </div>
 
           {/* Upcoming Economic Events card */}
           {(() => {
@@ -1685,11 +1687,11 @@ export default function HomePage() {
               imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
 
             return (
-              <GlassCard className="p-4 flex flex-col" style={{ maxHeight: 480 }}>
+              <GlassCard className="p-4 flex flex-col max-h-[360px] xl:max-h-[400px] self-start">
                 <div className="mb-3 shrink-0">
                   <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 
                   {/* Loading */}
                   {riskIntelLoading && Array.from({ length: 5 }).map((_, i) => (
