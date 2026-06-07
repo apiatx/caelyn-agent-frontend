@@ -1714,42 +1714,37 @@ export default function HomePage() {
                   )}
 
                   {/* Event rows */}
-                  {displayList.map((ev, i) => {
-                    const isHigh = ev.importance === 'high';
-                    const isMed  = ev.importance === 'medium';
-                    return (
-                      <div key={i} className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg border transition-colors ${
-                        isHigh ? 'border-rose-500/25 bg-rose-500/[0.05] hover:bg-rose-500/[0.09]' :
-                        isMed  ? 'border-amber-500/20 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]' :
-                                 'border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04]'
+                  {displayList.map((ev, i) => (
+                    <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border transition-colors ${
+                      ev.importance === 'high'
+                        ? 'border-rose-500/15 bg-rose-500/[0.03] hover:bg-rose-500/[0.06]'
+                        : 'border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04]'
+                    }`}>
+                      <span className={`shrink-0 mt-0.5 text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none ${
+                        ev.importance === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
+                        ev.importance === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/25' :
+                                                     'text-white/35 bg-white/5 border-white/10'
                       }`}>
-                        {/* Impact pill — bold solid colour, unmissable */}
-                        <span className={`shrink-0 text-[9px] font-black tracking-widest uppercase px-2 py-1 rounded-md min-w-[38px] text-center leading-none ${
-                          isHigh ? 'bg-rose-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.45)]' :
-                          isMed  ? 'bg-amber-400 text-black' :
-                                   'bg-white/10 text-white/40'
-                        }`}>
-                          {isHigh ? 'HIGH' : isMed ? 'MED' : 'LOW'}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-[11.5px] font-semibold leading-snug truncate ${isHigh ? 'text-white' : 'text-white/80'}`}>
-                            {ev.title || 'Untitled event'}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            {ev.date && (
-                              <span className="text-[9px] text-white/35">
-                                {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
-                                {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
-                              </span>
-                            )}
-                            {ev.actual   != null && <span className="text-[9px] text-emerald-400/80 font-medium">act. {ev.actual}</span>}
-                            {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
-                            {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
-                          </div>
+                        {ev.importance === 'high' ? 'HIGH' : ev.importance === 'medium' ? 'MED' : 'LOW'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] text-white/85 font-medium leading-snug">
+                          {ev.title || 'Untitled event'}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {ev.date && (
+                            <span className="text-[9px] text-white/35">
+                              {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
+                              {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
+                            </span>
+                          )}
+                          {ev.actual   != null && <span className="text-[9px] text-emerald-400/70">act. {ev.actual}</span>}
+                          {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
+                          {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
 
                 </div>
               </GlassCard>
