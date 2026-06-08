@@ -1493,7 +1493,7 @@ export default function HomePage() {
           const triggers: any[] = rc.triggers ?? [];
           const activeTriggers = triggers.filter(t => t.status !== 'green');
           return (
-            <div className={`rounded-xl border h-full px-4 py-3 ${bannerBg}`}>
+            <div className={`rounded-xl border px-4 py-3 ${bannerBg}`}>
               <div className="flex items-start gap-3">
                 <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevText}`} />
                 <div className="flex-1 min-w-0">
@@ -1533,7 +1533,7 @@ export default function HomePage() {
               : [];
           if (bullets.length === 0) return null;
           return (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] h-full px-4 py-3">
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
               <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
               <ol className="space-y-1">
                 {bullets.slice(0, 3).map((b, i) => (
