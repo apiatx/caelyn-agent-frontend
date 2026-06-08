@@ -1208,7 +1208,6 @@ export default function HomePage() {
     riskIntel?.result?.upcoming_economic_events  ? riskIntel.result :
     riskIntel ?? null;
 
-
   // Top Equity Signals — from Prophetik investor overview
   const { data: equityOverview } = useQuery<any>({
     queryKey: ["/api/predict/investor/overview"],
@@ -1463,11 +1462,24 @@ export default function HomePage() {
           })()}
         </div>
 
-        {/* ── Risk Cluster + Why Markets Are Moving — side by side ───────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        {/* ── Risk Cluster + Why Markets Are Moving — side by side when both present ── */}
+        {(() => {
+          const hasRiskCluster = !!riskIntelPayload?.risk_cluster?.active;
+          const whyBullets: string[] = Array.isArray(riskIntelPayload?.why_market_is_moving)
+            ? riskIntelPayload.why_market_is_moving
+            : typeof riskIntelPayload?.why_market_is_moving === 'string'
+              ? [riskIntelPayload.why_market_is_moving]
+              : [];
+          const hasWhyMarkets = whyBullets.length > 0;
+          if (!hasRiskCluster && !hasWhyMarkets) return null;
+          const gridCls = hasRiskCluster && hasWhyMarkets
+            ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5'
+            : 'mb-5';
+          return (
+            <div className={gridCls}>
 
         {/* ── Risk Cluster Alert Banner ─────────────────────────────────── */}
-        {riskIntelPayload?.risk_cluster?.active && (() => {
+        {hasRiskCluster && (() => {
           const rc = riskIntelPayload.risk_cluster;
           const sev: string = rc.severity ?? '';
           const CHIP_CLS: Record<string, string> = {
@@ -1525,29 +1537,23 @@ export default function HomePage() {
         })()}
 
         {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
-        {riskIntelPayload?.why_market_is_moving && (() => {
-          const bullets: string[] = Array.isArray(riskIntelPayload.why_market_is_moving)
-            ? riskIntelPayload.why_market_is_moving
-            : typeof riskIntelPayload.why_market_is_moving === 'string'
-              ? [riskIntelPayload.why_market_is_moving]
-              : [];
-          if (bullets.length === 0) return null;
-          return (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-              <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
-              <ol className="space-y-1">
-                {bullets.slice(0, 3).map((b, i) => (
-                  <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
-                    <span className="text-white/25 shrink-0">{i + 1}.</span>
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ol>
+        {hasWhyMarkets && (
+          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+            <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
+            <ol className="space-y-1">
+              {whyBullets.slice(0, 3).map((b, i) => (
+                <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
+                  <span className="text-white/25 shrink-0">{i + 1}.</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
             </div>
           );
         })()}
-
-        </div>{/* end Risk Cluster + Why Markets grid */}
 
         {/* TradingView chart popup modal */}
         <Dialog open={!!macroChartCard} onOpenChange={(open) => { if (!open) setMacroChartCard(null); }}>
