@@ -1021,14 +1021,18 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
 
 // ─── D: ETF Detail Panel (chart + performance + holdings) ────────────────────
 interface EtfDetail {
-  symbol:        string;
-  price:         number | null;
-  performance:   { "1d"?: number; "7d"?: number; "30d"?: number; ytd?: number; "1y"?: number } | null;
-  holding_count: number | null;
-  top_holdings:  { ticker: string; name: string; weight: number }[];
-  holdings:      { ticker: string; name: string; weight: number }[];
-  as_of:         string | null;
-  source:        string | null;
+  symbol:             string;
+  price:              number | null;
+  performance:        { "1d"?: number; "7d"?: number; "30d"?: number; ytd?: number; "1y"?: number } | null;
+  holding_count:      number | null;
+  top_holdings:       { ticker: string; name: string; weight: number }[];
+  holdings:           { ticker: string; name: string; weight: number }[];
+  as_of:              string | null;
+  source:             string | null;
+  reason?:            string | null;
+  stale?:             boolean;
+  last_refreshed_at?: string | null;
+  holdings_disabled?: boolean;
 }
 
 function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
@@ -1091,13 +1095,18 @@ function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
             ))}
           </div>
 
-          {displayed.length > 0 && (
+          {displayed.length > 0 ? (
             <div>
               <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">ETF Holdings</span>
                   {data.as_of && (
-                    <span className="text-[10px] text-gray-600">Top holdings as of {data.as_of}</span>
+                    <span className="text-[10px] text-gray-600">
+                      {data.stale ? 'Cached as of' : 'Top holdings as of'} {data.as_of}
+                    </span>
+                  )}
+                  {data.stale && (
+                    <span className="text-[9px] text-amber-500/60 border border-amber-500/20 rounded px-1 py-0.5">cached</span>
                   )}
                 </div>
                 {canExpand && (
@@ -1131,6 +1140,19 @@ function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
                   ))}
                 </tbody>
               </table>
+            </div>
+          ) : (
+            <div className="mt-3 flex items-start gap-2 text-[11px] text-white/30 bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
+              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-white/20" />
+              <span>
+                {data.reason
+                  ? data.reason
+                  : 'ETF holdings unavailable on current data plan.'}
+                {' '}Showing saved theme universe.
+                {data.last_refreshed_at && (
+                  <span className="block text-white/20 mt-0.5">Last refreshed: {data.last_refreshed_at}</span>
+                )}
+              </span>
             </div>
           )}
         </div>

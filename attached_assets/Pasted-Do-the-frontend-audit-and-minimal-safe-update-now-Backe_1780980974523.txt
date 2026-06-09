@@ -1,0 +1,60 @@
+Do the frontend audit and minimal safe update now.
+
+Backend audit/fix result:
+The backend found only one FMP /stable/etf/holdings caller in services/sector_rotation/etf_holdings_service.py. FMP ETF holdings are now disabled by plan at the service layer before any HTTP call. Tradier quote/price/options/volume/VolX paths were audited and not touched. Backend may now return holdings: [] or metadata showing ETF holdings are disabled/unavailable. Existing saved theme universe/cache data should continue to be used.
+
+Critical guardrails:
+- Do NOT add direct FMP calls from the frontend.
+- Do NOT add direct Finnhub calls from the frontend.
+- Do NOT touch Tradier-powered frontend paths.
+- Do NOT touch watchlist price data, portfolio price data, options flow, relative volume, VolX, alerts, or quote display unless the audit proves direct coupling.
+- Do NOT add polling or retry loops for ETF holdings.
+- Do NOT rewrite the theme page architecture.
+- Make the smallest safe UI change.
+
+Audit first:
+1. Search the frontend for:
+   - ETF holdings
+   - etfHoldings
+   - holdings
+   - asset exposure
+   - theme ETF
+   - theme universe
+   - sector rotation
+   - sector weighting
+   - country allocation
+2. Identify which components call sector-rotation ETF holdings endpoints.
+3. Identify whether missing holdings currently causes:
+   - page crash
+   - red error state
+   - retry loop
+   - blank theme universe
+   - blocked loading state
+4. Confirm whether any watchlist, portfolio, options flow, quote, alert, relative volume, or VolX components share hooks/helpers with ETF holdings logic. Do not edit them unless directly required and explained.
+
+Fix after audit:
+1. Update only the components that assume ETF holdings always exist.
+2. If backend returns holdings: [] or source/reason fields showing ETF holdings unavailable/disabled, show a calm fallback:
+   "ETF holdings unavailable on current data plan. Showing saved theme universe."
+3. Keep rendering saved theme universe/ticker mappings if available.
+4. If stale cached holdings exist, allow them to render with subtle metadata:
+   - source
+   - stale
+   - last_refreshed_at
+   - reason
+5. Do not show a hard red error unless the entire backend endpoint fails.
+6. Do not block the whole page while ETF holdings are missing.
+7. Do not create any new frontend API route.
+8. Do not introduce repeated retries for ETF holdings.
+9. Preserve existing routes/components wherever possible.
+
+Acceptance checks:
+- Theme/sector rotation pages load when holdings are unavailable.
+- Existing saved theme universe still displays.
+- No direct frontend FMP/Finnhub calls.
+- No repeated retry loop for ETF holdings.
+- Watchlist price/volume/relative volume UI unchanged.
+- Portfolio price/volume UI unchanged.
+- Options flow UI unchanged.
+- Alerts UI unchanged.
+- Provide a short summary of audited files, changed files, and confirm no Tradier-related frontend paths were modified.
