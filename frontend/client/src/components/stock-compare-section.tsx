@@ -614,9 +614,6 @@ export function StockCompareSection() {
     if (compareParam) {
       const syms = compareParam.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
       setSymbols(syms.slice(0, 15).map((s) => ({ symbol: s })));
-    } else {
-      // default tickers from spec
-      setSymbols([{ symbol: "INTT" }, { symbol: "TRT" }, { symbol: "NNBR" }]);
     }
     if (metricParam && metricParam !== "recent_news") {
       const m = FALLBACK_STOCK_COMPARE_METRICS.find((x) => x.key === metricParam);
