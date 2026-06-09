@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -99,6 +99,39 @@ function normaliseChartData(
   }
   return null;
 }
+
+// ─── TradingView mini chart (compact, modal-safe) ─────────────────────────────
+const TVMiniChart = memo(function TVMiniChart({ ticker }: { ticker: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbol: ticker,
+      width: '100%',
+      height: 220,
+      locale: 'en',
+      dateRange: '1M',
+      colorTheme: 'dark',
+      trendLineColor: 'rgba(41, 98, 255, 1)',
+      underLineColor: 'rgba(41, 98, 255, 0.15)',
+      isTransparent: true,
+      autosize: true,
+      largeChartUrl: '',
+      noTimeScale: false,
+    });
+    ref.current.appendChild(script);
+    return () => { if (ref.current) ref.current.innerHTML = ''; };
+  }, [ticker]);
+  return (
+    <div ref={ref} className="tradingview-widget-container w-full rounded-lg overflow-hidden" style={{ height: 220 }}>
+      <div className="tradingview-widget-container__widget" style={{ height: 220, width: '100%' }} />
+    </div>
+  );
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -218,6 +251,13 @@ export function AlertDetailModal({ alert, onClose }: Props) {
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+          {/* TradingView price chart */}
+          {src?.ticker && (
+            <div className="rounded-lg overflow-hidden border border-white/[0.06] bg-white/[0.01]">
+              <TVMiniChart key={src.ticker} ticker={src.ticker} />
+            </div>
+          )}
 
           {/* Loading / error state */}
           {detailLoading && (
