@@ -7,6 +7,8 @@ import { MainLayout } from "@/components/main-layout";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { PageContextProvider } from "@/contexts/PageContextContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AlertProvider } from "@/contexts/AlertContext";
+import { AlertBubbles } from "@/components/alert-bubbles";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
@@ -221,22 +223,25 @@ function AppInner() {
       <GlobalPrefetch />
       <PageContextProvider>
         <ChatbotProvider>
-          <TooltipProvider>
-            <Toaster />
-            <MainLayout>
-              {/* Normal router — hidden on multicharts route so the always-on instance shows instead */}
-              <div style={isMultichartsRoute ? { display: 'none' } : undefined}>
-                <Router />
-              </div>
-              {/* Always-mounted MultiChartsPage — iframes are never destroyed on navigation */}
-              {!isLoading && isAuthenticated && (
-                <div style={isMultichartsRoute ? undefined : { display: 'none' }}>
-                  <MultiChartsPage isActive={isMultichartsRoute} />
+          <AlertProvider>
+            <TooltipProvider>
+              <Toaster />
+              <MainLayout>
+                {/* Normal router — hidden on multicharts route so the always-on instance shows instead */}
+                <div style={isMultichartsRoute ? { display: 'none' } : undefined}>
+                  <Router />
                 </div>
-              )}
-            </MainLayout>
-            <ChatbotWidget />
-          </TooltipProvider>
+                {/* Always-mounted MultiChartsPage — iframes are never destroyed on navigation */}
+                {!isLoading && isAuthenticated && (
+                  <div style={isMultichartsRoute ? undefined : { display: 'none' }}>
+                    <MultiChartsPage isActive={isMultichartsRoute} />
+                  </div>
+                )}
+              </MainLayout>
+              <ChatbotWidget />
+              <AlertBubbles />
+            </TooltipProvider>
+          </AlertProvider>
         </ChatbotProvider>
       </PageContextProvider>
     </AuthGuard>

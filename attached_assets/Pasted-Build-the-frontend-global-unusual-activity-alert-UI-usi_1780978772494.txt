@@ -1,0 +1,180 @@
+Build the frontend global unusual-activity alert UI using the backend Alert Signal Bus endpoints that are now live.
+
+Backend is already implemented. Do not rebuild alert logic. Do not calculate alert scores in the frontend. Do not call FMP, Tradier, Hyperliquid, news APIs, chart APIs, or any market-data providers directly from the frontend.
+
+Use these backend endpoints:
+
+* `GET /api/alerts/stream`
+* `GET /api/alerts/diagnostics`
+* `GET /api/alerts/recent`
+* `GET /api/alerts/{id}/detail`
+* `GET /api/alerts/{id}`
+* `POST /api/alerts/{id}/ack`
+* `POST /api/alerts/{id}/dismiss`
+
+Goal:
+Create a global alert UI visible across the whole app. It should show small top-right popup bubbles when the backend streams or returns unusual ticker alerts. Clicking a bubble opens a detail modal with the alert explanation, coverage label, reasons, source tags, chart/news if available, and dismiss/ack actions.
+
+Critical constraints:
+
+* Frontend is display only.
+* Do not calculate unusual activity in the frontend.
+* Do not create any new polling to FMP/Tradier/Hyperliquid.
+* Do not duplicate existing page data fetching.
+* Do not change existing Home, Watchlist, Portfolio, Options Flow, or Hyperliquid page behavior.
+* Do not break existing routes/layouts.
+* Use the backend alert payload as the source of truth.
+* If chart/news are missing from detail response, show clean fallback states.
+* Do not create fake production alerts. Mock/test alerts are okay only for local component testing if clearly isolated from production behavior.
+
+Global provider:
+
+1. Add a global `AlertProvider` mounted near the app root/layout so alerts are visible on every page.
+2. Connect to `GET /api/alerts/stream` using SSE.
+3. Handle the backend’s 20-second keepalive cleanly.
+4. If SSE fails, fall back to polling `GET /api/alerts/recent?limit=25` every 30-60 seconds.
+5. On initial app load, call `GET /api/alerts/recent?limit=25` once so the UI can show recent high-severity unacknowledged alerts even before the next SSE event.
+6. Keep the provider lightweight. Do not cause full-page rerenders when alerts arrive.
+
+Alert bubble UI:
+
+1. Render bubbles fixed in the top-right corner.
+2. Bubble should be small, clean, and non-blocking.
+3. Each bubble should show only:
+
+   * ticker symbol
+   * backend-provided `short_label`
+4. Examples:
+
+   * `GSIT Calls Hot`
+   * `WULF Flow Surge`
+   * `NBIS Options Spike`
+   * `IREN VolX Spike`
+   * `BTC Liq Wave`
+5. Stack max 3 visible bubbles at once.
+6. Queue additional alerts or replace lower-priority alerts.
+7. Auto-hide low/medium alerts after 8-12 seconds.
+8. Keep high-severity alerts visible slightly longer unless dismissed.
+9. Add a small close/dismiss button.
+10. Deduplicate by alert `id`.
+11. If the same ticker + alert_type arrives repeatedly, update the existing bubble instead of stacking duplicates.
+12. Do not show dismissed alerts again.
+
+Click behavior:
+
+1. Clicking a bubble opens an alert detail modal.
+2. On open, call:
+   `GET /api/alerts/{id}/detail`
+3. After opening, call:
+   `POST /api/alerts/{id}/ack`
+4. If user dismisses, call:
+   `POST /api/alerts/{id}/dismiss`
+5. If detail fetch fails, show a graceful error state and keep the basic alert metadata visible.
+
+Alert detail modal:
+Render the backend detail response.
+
+Show:
+
+* ticker
+* title
+* severity
+* coverage label
+* score if provided
+* summary
+* reasons
+* source tags
+* chart section
+* news section
+* dismiss button
+
+Coverage label:
+Display the backend-provided `coverage_label`, including:
+
+* `Options-only signal`
+* `Full activity signal`
+* `Cross-confirmed signal`
+* `Hyperliquid signal`
+
+If `coverage_label` is `Options-only signal`, show helper copy:
+“This alert is based on options activity from the Options Flow/Home scan. Full VolX and Vol/MC tracking is only available for Watchlist/Portfolio tickers.”
+
+If the backend includes a flag showing the ticker is not in Watchlist/Portfolio, show a small CTA:
+`Add to Watchlist for full tracking`
+
+Only wire the Add to Watchlist action if an existing endpoint already exists. If no existing endpoint is found, omit the CTA or render it disabled. Do not invent a new backend endpoint for this in the frontend task.
+
+Reason bullets:
+Render backend `reasons` as readable bullets.
+
+Example:
+
+* Price: +6.2% — above recent baseline
+* VolX: 5.1x — sharp jump from prior snapshot
+* Vol/MC: 98th percentile — unusual dollar flow
+* Options: Bullish — appeared in options scan
+
+Chart section:
+
+* Use an existing app chart component if one already exists.
+* Do not introduce a heavy new charting dependency unless there is no existing chart component and the app already uses a lightweight chart library.
+* If `GET /api/alerts/{id}/detail` returns chart data, render it.
+* If chart data is missing, show:
+  “Chart unavailable for this alert.”
+
+News section:
+
+* Render news articles only if returned by the backend detail endpoint.
+* Do not fetch external news directly.
+* If news is missing, show:
+  “No related news found yet.”
+
+Diagnostics/dev validation:
+
+1. Use `GET /api/alerts/diagnostics` for development validation only.
+2. Show diagnostics in console logs or a dev-only hidden/debug panel if the app has one.
+3. Do not expose noisy diagnostics in the normal user UI.
+4. Confirm diagnostics show:
+
+   * alert bus is healthy
+   * provider_calls is 0
+   * snapshots by source
+   * alerts by lane
+
+Styling:
+
+* The alert UI should feel like a trading radar ping, not a huge notification banner.
+* Ticker should be bold.
+* Label should be short.
+* Severity can subtly affect border/glow/icon, but keep it clean.
+* Must work with the app’s existing dark mode.
+* Must not cover nav, charts, or major page controls.
+* Must be mobile-safe.
+* Keep animation subtle.
+
+State behavior:
+
+* Keep visible alerts in local React state.
+* Keep a short-lived seen-ID set to prevent repeated rendering.
+* Respect backend dismissed/acknowledged state.
+* On initial load, only show recent alerts that are not dismissed and are high-value enough to surface.
+* Do not spam users with old alerts.
+
+Validation checklist:
+
+* Global AlertProvider mounts successfully.
+* `/api/alerts/stream` connects successfully or falls back to polling.
+* Initial `/api/alerts/recent` fetch works.
+* Top-right bubbles render ticker + short label only.
+* Max 3 bubbles visible at once.
+* Duplicate alerts do not stack endlessly.
+* Clicking a bubble opens the detail modal.
+* Detail modal calls `/api/alerts/{id}/detail`.
+* Opening a detail calls `/api/alerts/{id}/ack`.
+* Dismissing calls `/api/alerts/{id}/dismiss`.
+* Coverage badge renders correctly.
+* Reasons render correctly.
+* Source tags render correctly.
+* Missing chart/news render graceful fallback messages.
+* Frontend makes zero direct market-data provider calls.
+* Existing Home, Watchlist, Portfolio, Options Flow, and Hyperliquid pages still work normally.

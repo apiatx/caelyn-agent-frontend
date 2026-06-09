@@ -6375,5 +6375,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Alert Signal Bus ──────────────────────────────────────────────────────
+
+  // SSE stream passthrough — must stay streaming (no buffering)
+  app.get('/api/alerts/stream', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+    let aborted = false;
+    const ac = new AbortController();
+    req.on('close', () => { aborted = true; ac.abort(); });
+    try {
+      const upstream = await fetch(`${FA_URL}/api/alerts/stream`, {
+        headers: { 'X-API-Key': FA_KEY, Accept: 'text/event-stream' },
+        signal: ac.signal,
+      });
+      if (!upstream.ok || !upstream.body) { res.end(); return; }
+      const reader = (upstream.body as any).getReader();
+      while (!aborted) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(Buffer.from(value));
+      }
+    } catch (err: any) {
+      if (!aborted) console.error('[alerts/stream]', err?.message);
+    } finally {
+      res.end();
+    }
+  });
+
+  app.get('/api/alerts/diagnostics', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/diagnostics`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(8_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/alerts/recent', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/recent${qs}`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/alerts/:id/detail', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/${encodeURIComponent(req.params.id)}/detail`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.get('/api/alerts/:id', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/${encodeURIComponent(req.params.id)}`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.post('/api/alerts/:id/ack', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/${encodeURIComponent(req.params.id)}/ack`, {
+        method: 'POST',
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(8_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.post('/api/alerts/:id/dismiss', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/alerts/${encodeURIComponent(req.params.id)}/dismiss`, {
+        method: 'POST',
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(8_000),
+      });
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
   return httpServer;
 }
