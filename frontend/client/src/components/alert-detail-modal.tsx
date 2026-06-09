@@ -25,6 +25,7 @@ import {
   BookOpen,
   Tag,
   Plus,
+  Clock,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -83,6 +84,17 @@ const COVERAGE_COPY: Record<string, string> = {
   'Options-only signal':
     'This alert is based on options activity from the Options Flow/Home scan. Full VolX and Vol/MC tracking is only available for Watchlist/Portfolio tickers.',
 };
+
+function firedAt(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return `Fired at ${time}`;
+  const date = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return `Fired ${date} at ${time}`;
+}
 
 function normaliseChartData(
   chart: AlertDetail['chart'],
@@ -245,6 +257,13 @@ export function AlertDetailModal({ alert, onClose }: Props) {
           {src?.score != null && (
             <div className="text-[10px] text-white/35 mt-1">
               Signal score: <span className="text-white/55 font-medium">{src.score.toFixed?.(1) ?? src.score}</span>
+            </div>
+          )}
+
+          {src?.created_at && (
+            <div className="flex items-center gap-1 text-[10px] text-white/25 mt-1">
+              <Clock className="w-3 h-3 shrink-0" />
+              <span>{firedAt(src.created_at)}</span>
             </div>
           )}
         </div>

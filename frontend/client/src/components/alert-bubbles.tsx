@@ -28,6 +28,19 @@ const SEV: Record<string, { border: string; dot: string; icon: React.ReactNode }
   },
 };
 
+// ─── Relative time ────────────────────────────────────────────────────────────
+
+export function relativeTime(iso?: string | null): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000) return 'now';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 // ─── Single bubble ────────────────────────────────────────────────────────────
 
 function AlertBubble({
@@ -40,6 +53,7 @@ function AlertBubble({
   onDismiss: (e: React.MouseEvent) => void;
 }) {
   const cfg = SEV[alert.severity] ?? SEV.low;
+  const ts = relativeTime(alert.created_at);
 
   return (
     <div
@@ -60,10 +74,13 @@ function AlertBubble({
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
 
       {/* Content */}
-      <span className="text-[11px] leading-none">
+      <span className="text-[11px] leading-none min-w-0">
         <span className="font-bold text-white/90 tracking-tight">{alert.ticker}</span>
         {alert.short_label && (
           <span className="text-white/45 ml-1.5">{alert.short_label}</span>
+        )}
+        {ts && (
+          <span className="text-white/25 ml-1.5 font-normal">{ts}</span>
         )}
       </span>
 
@@ -99,7 +116,7 @@ export function AlertBubbles() {
       {/* Stack — fixed top-right, below any top navbar */}
       <div
         className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"
-        style={{ maxWidth: 260 }}
+        style={{ maxWidth: 280 }}
         aria-live="polite"
         aria-label="Activity alerts"
       >

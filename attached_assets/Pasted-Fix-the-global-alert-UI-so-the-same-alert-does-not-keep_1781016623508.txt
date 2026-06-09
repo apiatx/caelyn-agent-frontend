@@ -1,0 +1,116 @@
+Fix the global alert UI so the same alert does not keep reappearing every 30 seconds.
+
+Current bug:
+The frontend keeps showing the same alert repeatedly after the user clicks out or dismisses it. Alerts should stack/history, but the same exact alert should not pop back up unless the backend creates a brand-new alert event with a new alert ID because the signal engine triggered again.
+
+Goal:
+Make alert popups behave like real notifications:
+
+* Same alert ID should only surface once.
+* Closing/clicking/dismissing an alert should prevent that exact alert from reappearing.
+* Alerts should be timestamped so the user knows when they fired.
+* Recent/polling fallback should not re-toast old alerts repeatedly.
+* A new backend alert event with a new ID may appear again if the signal engine genuinely fires again later.
+
+Rules:
+
+1. Deduplicate strictly by backend alert `id`.
+2. Also soft-dedupe by `ticker + alert_type + created_at` if needed.
+3. Never show the same alert ID as a top-right popup more than once in the same browser session.
+4. When user clicks an alert bubble, mark it as acknowledged and remove it from visible popup stack.
+5. When user closes/dismisses an alert bubble, call dismiss if appropriate and remove it from visible popup stack.
+6. Once acknowledged or dismissed locally, do not re-show it as a popup even if `/api/alerts/recent` returns it again.
+7. Persist seen/dismissed alert IDs in `localStorage` so refreshing the page does not immediately bring back the same old alerts.
+8. Keep the persisted seen/dismissed store bounded, such as max 500 alert IDs or alerts from last 7 days, to avoid infinite localStorage growth.
+9. Only surface alerts from `/api/alerts/recent` on initial load if:
+
+   * not dismissed
+   * not already seen locally
+   * not already acknowledged locally
+   * recent enough, preferably created within the last 15-30 minutes
+   * high enough severity if showing old alerts on page load
+10. For polling fallback, only show alerts that are newer than the last seen timestamp or not in the local seen set.
+11. For SSE, only show events if the alert ID has not already been seen/surfaced.
+12. If the same ticker/type has a new backend alert ID and newer created_at timestamp, allow it to show. That means the signal engine triggered again, which is valid.
+
+Timestamp UI:
+
+1. Add timestamp to each alert bubble.
+2. Show compact relative time:
+
+   * `now`
+   * `2m ago`
+   * `14m ago`
+3. In alert detail modal, show full timestamp:
+
+   * `Fired at 10:42 AM`
+   * include date if not today.
+4. Use backend `created_at` as the source of truth.
+
+Popup stack behavior:
+
+1. Keep max 3 visible popup bubbles.
+2. Additional new alerts should queue in memory or go to alert history.
+3. Closing one popup should reveal the next queued unseen alert, not re-show an already seen one.
+4. Do not re-add acknowledged/dismissed alerts to the queue.
+
+Alert history behavior:
+
+1. It is okay for acknowledged/dismissed alerts to remain visible in an alert history/list if the UI has one.
+2. But they should not reappear as popup bubbles.
+3. History rows should clearly show timestamp and dismissed/acknowledged state if available.
+
+Implementation detail:
+Create a small alert lifecycle state model:
+
+* `visibleAlerts`
+* `queuedAlerts`
+* `seenAlertIds`
+* `acknowledgedAlertIds`
+* `dismissedAlertIds`
+* `lastSeenAlertCreatedAt`
+
+Persist to localStorage:
+
+* `caelyn_alert_seen_ids`
+* `caelyn_alert_ack_ids`
+* `caelyn_alert_dismissed_ids`
+* `caelyn_alert_last_seen_created_at`
+
+When alert arrives:
+
+1. Normalize alert.
+2. If no `id`, build stable fallback key from ticker + alert_type + created_at.
+3. If ID/key exists in seen/ack/dismissed, do not show popup.
+4. If alert is old beyond initial-load threshold, do not show popup.
+5. Otherwise add to visible stack or queue.
+6. Immediately mark as `seen` once surfaced as a popup, not only after user clicks.
+
+Click behavior:
+
+1. Open detail modal.
+2. Call `POST /api/alerts/{id}/ack`.
+3. Add ID to local acknowledged set.
+4. Remove from visible stack.
+5. Do not show this alert again as a popup.
+
+Dismiss behavior:
+
+1. Call `POST /api/alerts/{id}/dismiss`.
+2. Add ID to local dismissed set.
+3. Remove from visible stack.
+4. Do not show this alert again as a popup.
+
+Validation checklist:
+
+* Same alert does not reappear every 30 seconds from polling.
+* Same alert does not reappear after SSE reconnect.
+* Same alert does not reappear after user clicks it.
+* Same alert does not reappear after user closes/dismisses it.
+* New alert with new backend ID can still appear.
+* Alert bubbles show relative timestamp.
+* Detail modal shows full timestamp.
+* Max 3 visible alerts still works.
+* Existing detail modal still works.
+* Existing ack/dismiss endpoints are still called.
+* No market-data provider calls are made from frontend.
