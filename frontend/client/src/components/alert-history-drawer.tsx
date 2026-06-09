@@ -328,7 +328,7 @@ export function AlertHistoryButton() {
       <button
         onClick={() => setOpen(true)}
         className="
-          fixed bottom-6 right-5 z-[9990]
+          fixed top-4 right-4 z-[9990]
           w-9 h-9 rounded-full flex items-center justify-center
           bg-[#111318]/90 backdrop-blur-md border border-white/10
           hover:border-white/25 hover:bg-white/[0.08]
