@@ -9,6 +9,7 @@ import { PageContextProvider } from "@/contexts/PageContextContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { AlertBubbles } from "@/components/alert-bubbles";
+import { AlertHistoryButton } from "@/components/alert-history-drawer";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
@@ -240,6 +241,7 @@ function AppInner() {
               </MainLayout>
               <ChatbotWidget />
               <AlertBubbles />
+              <AlertHistoryButton />
             </TooltipProvider>
           </AlertProvider>
         </ChatbotProvider>

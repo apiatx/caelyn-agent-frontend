@@ -1,0 +1,217 @@
+Build the frontend Alerts History button and drawer using the live backend history endpoint.
+
+Backend is already live.
+
+Use this endpoint for the history list:
+`GET /api/alerts/history?days=7&limit=100&offset=0`
+
+Endpoint supports:
+
+* `days=7` default, max 30
+* `limit=100` default, max 500
+* `offset=0`
+* `ticker=`
+* `alert_lane=`
+* `severity=`
+* `include_acknowledged=true`
+* `include_dismissed=true`
+
+Response shape:
+{
+"items": [
+{
+"id": 140,
+"ticker": "NOW",
+"alert_type": "...",
+"alert_lane": "...",
+"short_label": "...",
+"title": "...",
+"severity": "high",
+"coverage_label": "...",
+"score": 88,
+"summary": "...",
+"source_tags": [...],
+"created_at": "2026-06-09T14:54:29+00:00",
+"acknowledged_at": null,
+"dismissed_at": null,
+"is_acknowledged": false,
+"is_dismissed": false
+}
+],
+"limit": 100,
+"offset": 0,
+"days": 7,
+"has_more": true
+}
+
+Goal:
+Add a small global Alerts History button that the user can manually click to open a right-side drawer or modal showing all alerts from the past 7 days with timestamps.
+
+Critical constraints:
+
+* Do not change backend alert logic.
+* Do not calculate alert scoring in frontend.
+* Do not call FMP, Tradier, Hyperliquid, chart providers, or news providers directly from frontend.
+* Do not alter popup alert dedupe behavior.
+* Do not let history alerts re-enter the top-right popup queue.
+* Fetching history should not mark every alert as seen, acknowledged, or dismissed.
+* Opening the history drawer should not acknowledge alerts.
+* Only clicking a specific alert row should acknowledge that specific alert.
+
+Placement:
+
+1. Add a small global alerts button/icon visible across the app.
+2. Best placement: near existing global alert/top-right UI controls.
+3. Use a bell, radar, activity, or notification icon from the existing icon library.
+4. Show a small badge count for unacknowledged and non-dismissed alerts from the loaded 7-day history if easy.
+5. Do not cover navigation, charts, or main page controls.
+6. Keep it mobile-safe.
+
+Button behavior:
+
+1. Clicking the button opens an Alerts History drawer.
+2. Use a right-side drawer if the app has an existing drawer pattern.
+3. On open, fetch:
+   `/api/alerts/history?days=7&limit=100&offset=0`
+4. Show loading state.
+5. Show empty state:
+   “No alerts in the past 7 days.”
+6. Show error state if request fails.
+7. Add refresh button inside the drawer.
+
+History drawer UI:
+Show newest alerts first.
+
+Each alert row/card should show:
+
+* ticker
+* short_label
+* severity
+* coverage_label
+* alert_lane
+* source_tags
+* timestamp
+* summary if available
+* acknowledged/dismissed status
+
+Timestamp formatting:
+Use backend `created_at` as source of truth.
+
+Format:
+
+* Today: `Today, 10:42 AM`
+* Yesterday: `Yesterday, 2:14 PM`
+* Older: `Jun 7, 3:31 PM`
+
+Row examples:
+
+* `WULF · Flow Surge · Today, 10:42 AM`
+* `GSIT · Calls Hot · Yesterday, 2:14 PM`
+* `BTC · Liq Wave · Jun 7, 3:31 PM`
+
+Click behavior:
+
+1. Clicking a row opens the existing Alert Detail modal.
+2. Fetch:
+   `GET /api/alerts/{id}/detail`
+3. Mark only that alert as acknowledged:
+   `POST /api/alerts/{id}/ack`
+4. Update that row locally:
+
+   * `is_acknowledged = true`
+   * `acknowledged_at = now or backend returned value if available`
+5. Do not add the clicked history alert to the popup queue.
+6. Do not re-show the clicked alert as a popup.
+
+Dismiss behavior:
+
+1. Each row may have a dismiss action if it fits cleanly.
+2. Dismiss calls:
+   `POST /api/alerts/{id}/dismiss`
+3. Update that row locally:
+
+   * `is_dismissed = true`
+   * `dismissed_at = now or backend returned value if available`
+4. Keep the dismissed alert visible in history unless the user has selected a filter that hides dismissed alerts.
+
+Filters:
+Add lightweight client-side filters from the loaded 7-day list:
+
+* All
+* Unread
+* High severity
+* Options-only
+* Cross-confirmed
+* Full activity
+* Hyperliquid
+* Dismissed
+
+Search:
+Add simple client-side ticker search:
+
+* Typing `WULF` filters loaded rows to WULF.
+* Do not add a backend search unless already trivial.
+
+Pagination:
+
+1. If backend returns `has_more: true`, show `Load more`.
+2. Load more should call:
+   `/api/alerts/history?days=7&limit=100&offset=<nextOffset>`
+3. Append results to the drawer list.
+4. Do not duplicate rows by ID.
+
+Badge count:
+If implementing badge:
+
+1. Count loaded alerts where:
+
+   * `is_acknowledged === false`
+   * `is_dismissed === false`
+2. Badge should update when:
+
+   * history fetch completes
+   * new SSE alert arrives
+   * user opens/clicks/acks an alert
+   * user dismisses an alert
+3. Badge should not require extra provider calls.
+
+Important lifecycle rules:
+
+1. Popup bubbles remain only for new/unseen alerts from SSE or `/recent`.
+2. History list is a separate alert inbox/log.
+3. History fetch must not dispatch `ADD_ALERT` into popup reducer.
+4. History fetch must not modify popup `seenIds` unless the user clicks a specific alert.
+5. Opening history drawer should not acknowledge all alerts.
+6. Clicking one history row acknowledges only that row.
+7. Dismissed alerts remain visible in history with dismissed status.
+8. Existing localStorage dedupe for popup alerts must continue working unchanged.
+
+Visual design:
+
+* Make it feel like a compact trading radar log.
+* Use a right-side drawer if possible.
+* Ticker should be bold.
+* Timestamp should be easy to scan.
+* Severity should be subtle but visible.
+* Use source tags as small pills.
+* Dark mode compatible.
+* Mobile-safe.
+* Do not make it loud or huge.
+
+Validation checklist:
+
+* Alerts History button appears globally.
+* Clicking button opens drawer.
+* Drawer fetches `/api/alerts/history?days=7&limit=100&offset=0`.
+* Rows show ticker, label, severity, coverage label, source tags, timestamp, and status.
+* Empty state works.
+* Error state works.
+* Clicking row opens existing alert detail modal.
+* Clicking row acknowledges only that row.
+* Dismissing row updates status.
+* Load more works when `has_more=true`.
+* Client-side filters work.
+* Ticker search works.
+* History alerts do not become popup bubbles.
+* Existing popup dedupe remains fixed.
+* No frontend market-data provider calls.
