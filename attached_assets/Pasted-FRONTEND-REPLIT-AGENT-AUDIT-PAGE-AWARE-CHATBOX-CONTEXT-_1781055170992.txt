@@ -1,0 +1,273 @@
+FRONTEND REPLIT AGENT — AUDIT + PAGE-AWARE CHATBOX CONTEXT
+
+You are working in the CaelynAI frontend repo.
+
+Goal:
+Make the global popup chatbot page-aware without making it page-limited.
+
+The backend has now fixed the main user-context injection path:
+
+* _user_context survives compression
+* chatbox prompt now understands watchlist chunks
+* watchlist count/chunks reach Claude
+* current page context is additive, not a hard boundary
+
+Now the frontend needs to:
+
+1. send lightweight app/page context with every popup/terminal chat request
+2. make popup preset prompt buttons change based on the current page
+3. ensure Chart Radar / TradingView pages send ticker/timeframe/chart metadata, not screenshots or raw widget content
+4. preserve existing chatbox/terminal paths
+
+Important:
+Do not rebuild the chatbox.
+Do not move backend investing logic to frontend.
+Do not add frontend FMP/Tradier/Hyperliquid calls.
+Do not try to scrape/read TradingView widget iframes/canvas.
+Do not send huge datasets from frontend.
+Backend remains source of truth for watchlist, portfolio, signals, market data, and user account context.
+
+Core behavior rule:
+The current page is the user's current focus, not the agent's only context boundary.
+
+Examples:
+
+* If user is on Hyperliquid page and asks about stocks to add to watchlist, the backend should still use watchlist, themes, macro, options, and stock signal context.
+* If user is on Watchlist page and asks about crypto/perps, backend can use Hyperliquid context.
+* If user is on Chart Radar and asks about a chart, frontend should send selected ticker/timeframe/chart view metadata, while backend should use OHLCV/indicator services for TA.
+
+Audit first:
+
+1. Find popup and terminal agent components
+   Search for:
+
+* chatbox
+* popup
+* terminal
+* agent
+* assistant
+* CaelynAI
+* fairy
+* chatbox_mode
+* suggested prompts
+* preset prompts
+* prompt buttons
+* quick prompts
+* starter prompts
+
+Report:
+
+* popup component file
+* terminal/main agent component file
+* API client file
+* backend route called
+* whether popup and terminal share the same route
+* whether streaming is used
+* whether credentials/cookies are included
+
+2. Inspect current chat request payload
+   For popup and terminal, report the exact current payload:
+
+* message
+* conversation id
+* chatbox_mode
+* screen_context/app_context
+* route/pathname
+* selected ticker
+* visible symbols
+* active tab
+* selected timeframe
+* filters/sorts
+* any page-only/context-scope field
+
+3. Add lightweight app_context to every chat request
+   Every popup and terminal chat request should include:
+
+{
+"app_context": {
+"route": current pathname,
+"page": normalized page name,
+"current_focus_page": normalized page name,
+"active_tab": active tab if available,
+"selected_ticker": selected ticker if available,
+"visible_symbols": visible symbols if cheaply available,
+"timeframe": selected timeframe if available,
+"filters": lightweight filter summary if available,
+"sort": lightweight sort summary if available
+}
+}
+
+Use current_focus_page language.
+Do not use names like:
+
+* allowed_context
+* current_page_only
+* restricted_context
+* page_scope_only
+
+Current page should focus the answer, not restrict backend context retrieval.
+
+4. Normalize page names
+   Map routes to page names:
+
+* / -> home
+* /watchlist -> watchlist
+* /portfolio -> portfolio
+* /options or /options-flow -> options
+* /hyperliquid -> hyperliquid
+* /themes -> themes
+* /strategy -> strategy
+* /chart-radar or chart pages -> chart_radar
+* ticker detail pages -> ticker
+* default -> general
+
+5. Make popup prompt buttons page-aware
+   Find the current hardcoded/global prompt buttons and replace with route-aware prompts.
+
+Keep button labels short, 2–5 words. If the component supports label/value, use concise label but send richer prompt text.
+
+Suggested labels by page:
+
+Home:
+
+* What matters today?
+* Top risk signal
+* Best opportunities
+* Regime shift?
+* What changed?
+
+Watchlist:
+
+* Best new adds
+* Strongest names
+* Theme breakouts
+* What am I missing?
+* Regime-fit picks
+
+Portfolio:
+
+* Biggest risk
+* Add or trim?
+* Concentration check
+* Portfolio hedges
+* Watchlist upgrades
+
+Options:
+
+* Best flow setups
+* Call skew leaders
+* Put risk names
+* Portfolio options
+* Unusual flow
+
+Hyperliquid:
+
+* Strongest perps
+* Overheated longs
+* Short squeeze risk
+* TSM reversals
+* Crypto-stock readthrough
+
+Themes:
+
+* Breaking themes
+* Theme leaders
+* Missing tickers
+* Rotation check
+* Best positioned
+
+Strategy/Macro:
+
+* Should I trade?
+* VIX signal
+* Market regime
+* Risk-on/off?
+* What changed?
+
+Chart Radar:
+
+* Best charts
+* Breakout setups
+* Weakening names
+* Theme leaders
+* Add to watchlist?
+
+Ticker detail:
+
+* Explain setup
+* Key levels
+* Add or avoid?
+* Catalyst check
+* Options read
+
+Default:
+
+* What matters?
+* Best opportunities
+* Biggest risks
+* What changed?
+* Explain signals
+
+If label/value is supported, examples:
+Label: Best new adds
+Prompt sent:
+"What new stocks should I consider adding to my watchlist, excluding anything already on my watchlist, using my theme preferences, current market regime, and strongest signals across the app?"
+
+Label: Best charts
+Prompt sent:
+"Which visible Chart Radar names have the best technical setups right now? Use selected tickers/timeframes from this page when available, and use backend OHLCV/indicator context rather than trying to read the TradingView widget image."
+
+Label: Strongest perps
+Prompt sent:
+"Which Hyperliquid perps look strongest right now, and are there any stock/theme readthroughs I should care about?"
+
+6. Chart Radar / TradingView rule
+   Do not try to read TradingView widget visuals directly.
+
+For Chart Radar pages, send only lightweight metadata:
+{
+"page": "chart_radar",
+"visible_symbols": [...],
+"selected_ticker": "...",
+"timeframe": "1D",
+"chart_group": "watchlist/portfolio/custom",
+"theme": "...",
+"cap_tier": "..."
+}
+
+Backend should use existing or future OHLCV/TA services for chart analysis.
+The frontend should not screenshot TradingView widgets or scrape iframe/canvas content for this patch.
+
+7. Add small context badge
+   In popup UI, add a subtle label:
+
+* Context: Watchlist
+* Context: Portfolio
+* Context: Hyperliquid
+* Context: Chart Radar
+* Context: Home
+
+This badge should reflect current focus page only. Do not imply it is the only context the agent can use.
+
+8. Validation
+   Test:
+
+* Watchlist page shows watchlist-specific prompt buttons.
+* Hyperliquid page shows Hyperliquid-specific prompt buttons.
+* Portfolio page shows portfolio-specific prompt buttons.
+* Chart Radar page shows chart-specific prompt buttons.
+* Popup request includes app_context.current_focus_page.
+* Popup request includes route/pathname.
+* Popup request includes selected_ticker/timeframe when available.
+* Credentials/cookies still included.
+* Asking from Hyperliquid page: “What new stocks should I add to my watchlist?” still sends current_focus_page=hyperliquid but does not restrict backend from using watchlist context.
+* Asking from Chart Radar page: “Explain this chart” sends selected ticker/timeframe metadata.
+
+Return:
+
+* files changed
+* current payload before/after
+* page prompt mapping added
+* context badge behavior
+* validation results
+* any backend dependency still needed

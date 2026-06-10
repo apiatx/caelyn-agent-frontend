@@ -78,14 +78,91 @@ function ChatboxMessage({ content, structured }: { content: string, structured?:
   return <div style={{ color: C.text, fontSize: 11, lineHeight: 1.6, fontFamily: sansFont }} dangerouslySetInnerHTML={{ __html: formatChatMarkdown(content) }} />;
 }
 
-const QUICK_PROMPTS = [
-  { l: 'Trending', p: 'What stocks are trending across ALL platforms right now? Cross-reference StockTwits, Yahoo Finance, StockAnalysis, Finviz, and Polygon.' },
-  { l: 'Best Trades', p: 'Show me the best trade setups right now with MACD crossovers, RSI in 50-65, price above rising SMAs, volume 2x+ average.' },
-  { l: 'Macro', p: 'Full macro dashboard. Fed funds rate, CPI, yield curve, VIX, Fear & Greed, DXY, oil, gold. Risk-on or risk-off?' },
-  { l: 'Sectors', p: 'Full sector rotation analysis. Show every major sector ETF performance, RSI, trend direction, and relative strength vs SPY.' },
-  { l: 'Crypto', p: 'Full crypto market scan. Global market state, funding rates, hot categories, top momentum coins with social buzz.' },
-  { l: 'Briefing', p: 'Give me the full daily intelligence briefing in 60 seconds. Market pulse, key numbers, top signals, and highest conviction moves.' },
-];
+// ── Page-aware prompts ────────────────────────────────────────────────────────
+
+function normalizePage(pathname: string): string {
+  const p = pathname.toLowerCase();
+  if (p === '/' || p.endsWith('/home')) return 'Home';
+  if (p.includes('watchlist')) return 'Watchlist';
+  if (p.includes('portfolio')) return 'Portfolio';
+  if (p.includes('option')) return 'Options';
+  if (p.includes('hyperliquid')) return 'Hyperliquid';
+  if (p.includes('theme')) return 'Themes';
+  if (p.includes('chart-radar') || p.includes('multicharts')) return 'Chart Radar';
+  if (p.includes('predict') || p.includes('macro') || p.includes('strategy') || p.includes('sector')) return 'Strategy';
+  return 'General';
+}
+
+const PAGE_PROMPTS: Record<string, Array<{ l: string; p: string }>> = {
+  'Home': [
+    { l: 'What matters today?', p: 'What are the most important market developments happening right now that I need to know? Give me the key signals, regime status, and highest-conviction moves.' },
+    { l: 'Top risk signal', p: 'What is the single biggest risk signal in the market right now? Check VIX, macro, sector weakness, and cross-asset divergences.' },
+    { l: 'Best opportunities', p: 'What are the best trade opportunities across stocks, crypto, and macro right now? Use all available signal context.' },
+    { l: 'Regime shift?', p: 'Is the current market regime shifting? Check macro indicators, sector rotation, options flow, and momentum signals for regime change evidence.' },
+    { l: 'What changed?', p: 'What has changed in the market since yesterday or the last session? What moved, what broke, what surprised?' },
+  ],
+  'Watchlist': [
+    { l: 'Best new adds', p: 'What new stocks should I consider adding to my watchlist, excluding anything already on my watchlist, using my theme preferences, current market regime, and strongest signals across the app?' },
+    { l: 'Strongest names', p: 'Which names on my watchlist are showing the strongest signals right now? Rank by signal strength, momentum, and regime fit.' },
+    { l: 'Theme breakouts', p: 'Which watchlist names are breaking out of or into a new theme? Show theme momentum and rotation signals.' },
+    { l: 'What am I missing?', p: 'Based on my watchlist themes and current market conditions, what important names or themes am I missing that I should consider adding?' },
+    { l: 'Regime-fit picks', p: 'Which of my watchlist names are the best fit for the current market regime? Show me the top picks given current macro and sector conditions.' },
+  ],
+  'Portfolio': [
+    { l: 'Biggest risk', p: 'What is the biggest risk in my current portfolio right now? Check concentration, sector exposure, macro sensitivity, and signal deterioration.' },
+    { l: 'Add or trim?', p: 'Which portfolio positions should I consider adding to, and which should I consider trimming or cutting? Use current signals, momentum, and regime context.' },
+    { l: 'Concentration check', p: 'Do I have dangerous concentration risk in my portfolio? Check sector, theme, factor, and single-name exposure.' },
+    { l: 'Portfolio hedges', p: 'What are the best hedges for my current portfolio given the market regime and macro backdrop? Consider options, inverse ETFs, or sector rotation.' },
+    { l: 'Watchlist upgrades', p: 'Are there any names on my watchlist that should replace current portfolio positions based on relative signal strength and regime fit?' },
+  ],
+  'Options': [
+    { l: 'Best flow setups', p: 'What are the best options flow setups right now? Show me the highest-conviction unusual activity with the strongest multi-source confirmation.' },
+    { l: 'Call skew leaders', p: 'Which names are showing the strongest bullish call skew and unusual call buying right now? Include context on why the flow matters.' },
+    { l: 'Put risk names', p: 'Which names have concerning put buying or bearish options flow that signals downside risk? Cross-reference with fundamentals and macro.' },
+    { l: 'Portfolio options', p: 'Are there options setups on any of my watchlist or portfolio names right now? Show relevant flow and potential plays.' },
+    { l: 'Unusual flow', p: 'Show me the most unusual options activity right now — large sweeps, out-of-money buys, and multi-leg structures that stand out from baseline activity.' },
+  ],
+  'Hyperliquid': [
+    { l: 'Strongest perps', p: 'Which Hyperliquid perps look strongest right now, and are there any stock or theme readthroughs I should care about?' },
+    { l: 'Overheated longs', p: 'Which Hyperliquid perps have overheated long positioning? Show funding rates, open interest, and liquidation risk.' },
+    { l: 'Short squeeze risk', p: 'Are there any Hyperliquid perps with high short squeeze potential right now? Check positioning, funding, and momentum.' },
+    { l: 'TSM reversals', p: 'Are there any time-series momentum reversals setting up on Hyperliquid perps? Show current TSMOM signals and setup quality.' },
+    { l: 'Crypto-stock link', p: 'What are the strongest crypto-to-stock readthroughs right now? Which Hyperliquid moves have implications for equities or macro?' },
+  ],
+  'Themes': [
+    { l: 'Breaking themes', p: 'Which market themes are breaking out or breaking down right now? Show theme momentum, rotation signals, and entry quality.' },
+    { l: 'Theme leaders', p: 'Who are the strongest leaders in each active theme right now? Rank by signal strength and theme conviction.' },
+    { l: 'Missing tickers', p: 'Based on the strongest themes, what tickers am I missing that I should add to my watchlist? Avoid anything already tracked.' },
+    { l: 'Rotation check', p: 'Is there active rotation happening between themes right now? Where is money flowing in and out?' },
+    { l: 'Best positioned', p: 'Which themes are best positioned for the current macro regime? Score each active theme for regime fit.' },
+  ],
+  'Strategy': [
+    { l: 'Should I trade?', p: 'Given the current VIX, macro backdrop, and market regime, should I be actively trading or reducing exposure right now?' },
+    { l: 'VIX signal', p: 'What is the VIX telling us about near-term market risk? Is this a buying opportunity or a warning sign?' },
+    { l: 'Market regime', p: 'What is the current market regime? Risk-on, risk-off, or transitional? What signals define it and how should I position?' },
+    { l: 'Risk-on/off?', p: 'Are we in a risk-on or risk-off environment right now? Show the key indicators and what changed recently.' },
+    { l: 'What changed?', p: 'What has changed in the macro or strategy signals recently? What new data or developments should change my positioning?' },
+  ],
+  'Chart Radar': [
+    { l: 'Best charts', p: 'Which visible Chart Radar names have the best technical setups right now? Use selected tickers and timeframes from this page when available, and use backend OHLCV/indicator context rather than trying to read the TradingView widget image.' },
+    { l: 'Breakout setups', p: 'Which Chart Radar names are setting up for breakouts? Show volume, momentum, and technical confirmation signals.' },
+    { l: 'Weakening names', p: 'Which Chart Radar names are showing technical deterioration or breakdown risk? Flag names I should reduce or avoid.' },
+    { l: 'Theme leaders', p: 'Among the visible Chart Radar names, which are the strongest theme leaders right now? Use backend signal context.' },
+    { l: 'Add to watchlist?', p: 'Based on the current Chart Radar view, which names showing strong setups should I add to my watchlist?' },
+  ],
+  'General': [
+    { l: 'What matters?', p: 'What are the most important market developments right now across stocks, crypto, and macro?' },
+    { l: 'Best opportunities', p: 'What are the best trade opportunities across all asset classes right now? Use all available signal and market context.' },
+    { l: 'Biggest risks', p: 'What are the biggest risks in the market right now? Check macro, technicals, options flow, and cross-asset signals.' },
+    { l: 'What changed?', p: 'What has changed in the market since the last session? What moved, what broke, what surprised?' },
+    { l: 'Explain signals', p: 'Explain the most important signals the platform is seeing right now across stocks, crypto, macro, and options.' },
+  ],
+};
+
+function getPagePrompts(pathname: string): Array<{ l: string; p: string }> {
+  const page = normalizePage(pathname);
+  return PAGE_PROMPTS[page] ?? PAGE_PROMPTS['General'];
+}
 
 export default function ChatbotWidget() {
   const [location] = useLocation();
@@ -252,6 +329,9 @@ export default function ChatbotWidget() {
             <span style={{ color: C.dim, fontSize: 10, marginRight: 2, letterSpacing: 1 }} title="Drag to reposition">⠿</span>
           )}
           <span style={{ color: C.bright, fontSize: 13, fontWeight: 700, fontFamily: sansFont }}>Ask Caelyn</span>
+          <span style={{ fontSize: 8, color: C.dim, background: C.border, padding: '2px 7px', borderRadius: 10, fontFamily: font, letterSpacing: 0.4, whiteSpace: 'nowrap' }}>
+            {normalizePage(location)}
+          </span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {isExpanded && <button onClick={clearChat} style={{ padding:'4px 8px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, fontSize:10, cursor:'pointer', fontFamily:font }} onMouseEnter={e => e.currentTarget.style.color = C.bright} onMouseLeave={e => e.currentTarget.style.color = C.dim}>Clear</button>}
@@ -308,7 +388,7 @@ export default function ChatbotWidget() {
       <div style={{ flexShrink: 0, borderTop: `1px solid ${C.border}`, padding: 10, background: C.card }}>
         {showChips && (
           <div className="chatbot-chips-bar" style={{ display: 'flex', gap: 4, marginBottom: 8, overflowX: 'auto', paddingBottom: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
-            {QUICK_PROMPTS.map(qp => (
+            {getPagePrompts(location).map(qp => (
               <button key={qp.l} onClick={() => { sendMessage(qp.p); }} disabled={isLoading} style={{
                 padding: isMobile ? '6px 12px' : '4px 10px', background: `${C.purple}08`, border: `1px solid ${C.purple}18`,
                 borderRadius: 12, color: C.dim, fontSize: isMobile ? 11 : 9, fontWeight: 600, fontFamily: font,
