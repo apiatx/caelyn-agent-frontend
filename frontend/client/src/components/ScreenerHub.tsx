@@ -74,11 +74,30 @@ type SignalKey = (typeof SIGNALS)[number]["key"];
 
 // ── Interfaces ─────────────────────────────────────────────────────────────────
 
-interface ThemeOption { id: string; label: string; }
+interface ThemeOption {
+  id: string;
+  label: string;
+  rs_score?: number;
+  momentum_rank?: number;
+  state?: string;
+  state_reason?: string;
+  stage?: string;
+  stage_label?: string;
+  return_pct?: number;
+  breadth_pct?: number;
+  trend_accel_20d?: number;
+  snapshot_row_count?: number;
+}
 interface RowData { [k: string]: any; }
 interface HubResponse {
-  status?: string; tab?: string; theme?: string; generated_at?: string;
-  fundamentals_cache_status?: string; quote_cache_status?: string;
+  status?: string; tab?: string; theme?: string;
+  generated_at?: string; served_at?: string; universe_built_at?: string;
+  universe_age_hours?: number; universe_db_source?: string;
+  universe_expires_at?: string; next_rebuild_at?: string;
+  filters_applied?: Record<string, any>;
+  rows_before_filters?: number; rows_after_filters?: number;
+  quote_cache_status?: string; quote_refresh_mode?: string; quote_refresh_started?: boolean;
+  fundamentals_cache_status?: string;
   message?: string; error_code?: string; theme_state?: string; theme_state_reason?: string;
   rows?: any; data?: any; items?: any; results?: any;
 }
@@ -119,23 +138,8 @@ function classNames(...xs: Array<string | false | undefined | null>): string {
   return xs.filter(Boolean).join(" ");
 }
 
-function preferredDefaultTheme(themes: ThemeOption[]): string | undefined {
-  if (themes.length === 0) return undefined;
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
-  const exactIds = ["semiconductors", "semiconductor", "semis", "clean_energy", "cleanenergy", "drones"];
-  for (const id of exactIds) {
-    const found = themes.find((t) => norm(t.id) === id);
-    if (found) return found.id;
-  }
-  const byLabel = themes.find((t) => norm(t.label) === "semiconductors");
-  if (byLabel) return byLabel.id;
-  const semiSlug = themes.find((t) => /^semiconductor(s)?$/.test(norm(t.id)));
-  if (semiSlug) return semiSlug.id;
-  return themes[0].id;
-}
-
-async function fetchJson<T = any>(url: string): Promise<T> {
-  const res = await fetch(url, { credentials: "include" });
+async function fetchJson<T = any>(url: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(url, { credentials: "include", signal });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`${url} failed: ${res.status} ${txt.slice(0, 120)}`);
@@ -278,15 +282,65 @@ function TvChartModal({ symbol, onClose }: { symbol: string; onClose: () => void
   );
 }
 
+// ── Market cap presets ─────────────────────────────────────────────────────────
+
+type McapPreset = "all" | "under10b" | "50m_1b" | "1b_10b" | "over10b" | "custom";
+
+const MCAP_PRESETS: { id: McapPreset; label: string; min?: number; max?: number }[] = [
+  { id: "all",      label: "All cached" },
+  { id: "under10b", label: "Under $10B",  max: 10_000_000_000 },
+  { id: "50m_1b",   label: "$50M–$1B",    min: 50_000_000,    max: 1_000_000_000 },
+  { id: "1b_10b",   label: "$1B–$10B",    min: 1_000_000_000, max: 10_000_000_000 },
+  { id: "over10b",  label: "$10B+",       min: 10_000_000_000 },
+  { id: "custom",   label: "Custom" },
+];
+
+function mcapBounds(preset: McapPreset, customMin: string, customMax: string) {
+  if (preset === "all") return { min: null, max: null };
+  if (preset === "custom") {
+    const min = customMin !== "" ? Number(customMin) : null;
+    const max = customMax !== "" ? Number(customMax) : null;
+    return {
+      min: min !== null && Number.isFinite(min) ? min : null,
+      max: max !== null && Number.isFinite(max) ? max : null,
+    };
+  }
+  const p = MCAP_PRESETS.find((x) => x.id === preset);
+  return { min: p?.min ?? null, max: p?.max ?? null };
+}
+
+const LS_THEME_KEY = "screener-hub-theme";
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ScreenerHub() {
   const [tab, setTab] = useState<TabKey>("thematic");
-  const [themes, setThemes] = useState<ThemeOption[]>([]);
-  const [theme, setTheme] = useState<string>("");
-  const [scoreMode, setScoreMode] = useState<boolean>(true);
 
-  // Unified signal toggles — same set for all four tabs
+  // Themes + backend defaults
+  const [themes, setThemes] = useState<ThemeOption[]>([]);
+  const [defaultThemeId, setDefaultThemeId] = useState<string>("");
+  const [defaultThemeReason, setDefaultThemeReason] = useState<string>("");
+  const [themeRsUpdatedAt, setThemeRsUpdatedAt] = useState<string>("");
+
+  // ── Pending state — user edits freely; does NOT trigger fetches ───────────────
+  const [pendingTheme, setPendingTheme] = useState<string>("");
+  const [pendingScoreMode, setPendingScoreMode] = useState<boolean>(true);
+  const [pendingMcapPreset, setPendingMcapPreset] = useState<McapPreset>("under10b");
+  const [pendingMcapCustomMin, setPendingMcapCustomMin] = useState<string>("");
+  const [pendingMcapCustomMax, setPendingMcapCustomMax] = useState<string>("");
+  const [pendingMinVolume, setPendingMinVolume] = useState<string>("");
+  const [pendingExchange, setPendingExchange] = useState<string>("");
+
+  // ── Applied state — what the last Apply committed; drives buildUrl + fetch ────
+  const [appliedTheme, setAppliedTheme] = useState<string>("");
+  const [appliedScoreMode, setAppliedScoreMode] = useState<boolean>(true);
+  const [appliedMcapPreset, setAppliedMcapPreset] = useState<McapPreset>("under10b");
+  const [appliedMcapCustomMin, setAppliedMcapCustomMin] = useState<string>("");
+  const [appliedMcapCustomMax, setAppliedMcapCustomMax] = useState<string>("");
+  const [appliedMinVolume, setAppliedMinVolume] = useState<string>("");
+  const [appliedExchange, setAppliedExchange] = useState<string>("");
+
+  // Unified signal toggles — client-only column visibility, no refetch
   const [signals, setSignals] = useState<Record<SignalKey, boolean>>({
     volume_surge: true,
     accumulation: true,
@@ -295,8 +349,11 @@ export default function ScreenerHub() {
 
   const [rows, setRows] = useState<RowData[]>([]);
   const [meta, setMeta] = useState<{
-    generated_at?: string; fundamentals_cache_status?: string; quote_cache_status?: string;
-    message?: string; error_code?: string;
+    generated_at?: string; served_at?: string; universe_built_at?: string;
+    universe_age_hours?: number; universe_db_source?: string;
+    next_rebuild_at?: string; rows_before_filters?: number; rows_after_filters?: number;
+    quote_cache_status?: string; quote_refresh_mode?: string; quote_refresh_started?: boolean;
+    fundamentals_cache_status?: string; message?: string; error_code?: string;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -304,29 +361,83 @@ export default function ScreenerHub() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [copied, setCopied] = useState<boolean>(false);
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
-  const themeBootstrappedRef = useRef<boolean>(false);
 
-  // Load themes list
+  // Prevents the initial auto-apply from running more than once
+  const initialAppliedRef = useRef<boolean>(false);
+
+  // ── Load themes list ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const data = await fetchJson<any>("/api/screener-hub/themes");
         if (cancelled) return;
-        const arr = pickArray(data, ["themes", "items", "rows", "results", "data"]);
+
+        // Support both legacy array response and new object response
+        const arr: any[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.themes)
+            ? data.themes
+            : pickArray(data, ["themes", "items", "rows", "results", "data"]);
+
         const opts: ThemeOption[] = arr
           .map((t: any) => {
             if (typeof t === "string") return { id: t, label: t };
-            const id = t?.id ?? t?.slug ?? t?.value ?? t?.key ?? t?.name ?? t?.label;
+            const id    = t?.id ?? t?.slug ?? t?.value ?? t?.key ?? t?.name ?? t?.label;
             const label = t?.label ?? t?.name ?? t?.title ?? id;
-            return id ? { id: String(id), label: String(label ?? id) } : null;
+            if (!id) return null;
+            return {
+              id: String(id), label: String(label ?? id),
+              rs_score:           t?.rs_score,
+              momentum_rank:      t?.momentum_rank,
+              state:              t?.state,
+              state_reason:       t?.state_reason,
+              stage:              t?.stage,
+              stage_label:        t?.stage_label,
+              return_pct:         t?.return_pct,
+              breadth_pct:        t?.breadth_pct,
+              trend_accel_20d:    t?.trend_accel_20d,
+              snapshot_row_count: t?.snapshot_row_count,
+            };
           })
           .filter(Boolean) as ThemeOption[];
+
+        // Sort by momentum_rank first, then rs_score descending
+        opts.sort((a, b) => {
+          if (a.momentum_rank != null && b.momentum_rank != null) return a.momentum_rank - b.momentum_rank;
+          if (a.momentum_rank != null) return -1;
+          if (b.momentum_rank != null) return  1;
+          if (a.rs_score != null && b.rs_score != null) return b.rs_score - a.rs_score;
+          return 0;
+        });
+
+        const backendDefault = typeof data?.default_theme === "string" ? data.default_theme : "";
+        const backendReason  = typeof data?.default_theme_reason === "string" ? data.default_theme_reason : "";
+        const rsUpdatedAt    = typeof data?.theme_rs_updated_at === "string" ? data.theme_rs_updated_at : "";
+
         setThemes(opts);
-        if (!themeBootstrappedRef.current) {
-          const def = preferredDefaultTheme(opts);
-          if (def) setTheme(def);
-          themeBootstrappedRef.current = true;
+        if (backendDefault) setDefaultThemeId(backendDefault);
+        if (backendReason)  setDefaultThemeReason(backendReason);
+        if (rsUpdatedAt)    setThemeRsUpdatedAt(rsUpdatedAt);
+
+        if (!initialAppliedRef.current && opts.length > 0) {
+          // Default priority:
+          // 1. URL ?theme= if present and valid
+          // 2. localStorage last applied theme if still valid
+          // 3. backend default_theme if valid
+          // 4. first theme in list
+          const isValid = (id: string) => !!opts.find((t) => t.id === id);
+          const urlTheme = new URLSearchParams(window.location.search).get("theme") ?? "";
+          const lsTheme  = localStorage.getItem(LS_THEME_KEY) ?? "";
+          const chosenTheme =
+            (urlTheme && isValid(urlTheme) ? urlTheme : null) ??
+            (lsTheme  && isValid(lsTheme)  ? lsTheme  : null) ??
+            (backendDefault && isValid(backendDefault) ? backendDefault : null) ??
+            opts[0].id;
+
+          setPendingTheme(chosenTheme);
+          setAppliedTheme(chosenTheme);
+          initialAppliedRef.current = true;
         }
       } catch (e) {
         if (!cancelled) console.warn("[ScreenerHub] themes load failed:", e);
@@ -335,50 +446,70 @@ export default function ScreenerHub() {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Build URL from applied state only ────────────────────────────────────────
   const buildUrl = useCallback(() => {
     const params = new URLSearchParams();
     params.set("tab", tab);
-    if (tab === "thematic" && theme) params.set("theme", theme);
-    params.set("scoreMode", scoreMode ? "true" : "false");
+    params.set("scoreMode", appliedScoreMode ? "true" : "false");
+    if (tab === "thematic") {
+      if (appliedTheme) params.set("theme", appliedTheme);
+      const { min, max } = mcapBounds(appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax);
+      if (min != null) params.set("marketCapMin", String(min));
+      if (max != null) params.set("marketCapMax", String(max));
+      if (appliedMinVolume) params.set("minVolume", appliedMinVolume);
+      if (appliedExchange)  params.set("exchange",  appliedExchange);
+    }
     return `/api/screener-hub?${params.toString()}`;
-  }, [tab, theme, scoreMode]);
+  }, [tab, appliedTheme, appliedScoreMode, appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax, appliedMinVolume, appliedExchange]);
 
-  // Fetch rows whenever URL inputs change
+  // ── Fetch rows whenever applied state or tab changes ─────────────────────────
+  // Uses AbortController to cancel in-flight requests cleanly.
+  // setLoading(false) is only suppressed for aborted requests to avoid
+  // clearing the loading state that the newer request set.
   useEffect(() => {
-    if (tab === "thematic" && !theme && themes.length > 0) return;
-    let cancelled = false;
+    if (tab === "thematic" && !appliedTheme) return;
+    const url = buildUrl();
+    const ctrl = new AbortController();
     setLoading(true);
     setError(null);
+    setRows([]);
     (async () => {
       try {
-        const data = await fetchJson<HubResponse>(buildUrl());
-        if (cancelled) return;
+        const data = await fetchJson<HubResponse>(url, ctrl.signal);
+        if (ctrl.signal.aborted) return;
         const arr = pickArray(data, ["rows", "data", "items", "results"]);
         setRows(arr);
         setMeta({
-          generated_at: data?.generated_at,
+          generated_at:           data?.generated_at,
+          served_at:              data?.served_at,
+          universe_built_at:      data?.universe_built_at,
+          universe_age_hours:     data?.universe_age_hours,
+          universe_db_source:     data?.universe_db_source,
+          next_rebuild_at:        data?.next_rebuild_at,
+          rows_before_filters:    data?.rows_before_filters,
+          rows_after_filters:     data?.rows_after_filters,
+          quote_cache_status:     data?.quote_cache_status,
+          quote_refresh_mode:     data?.quote_refresh_mode,
+          quote_refresh_started:  data?.quote_refresh_started,
           fundamentals_cache_status: data?.fundamentals_cache_status,
-          quote_cache_status: data?.quote_cache_status,
-          message: data?.message ?? undefined,
-          error_code: data?.error_code ?? undefined,
+          message:                data?.message ?? undefined,
+          error_code:             data?.error_code ?? undefined,
         });
       } catch (e: any) {
-        if (cancelled) return;
+        if (ctrl.signal.aborted) return;
         setError(e?.message ?? String(e));
         setRows([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [buildUrl, tab, theme, themes.length]);
+    return () => { ctrl.abort(); };
+  }, [buildUrl]);
 
-  // Visible columns: filtered by active tab and signal toggles
+  // ── Visible columns ───────────────────────────────────────────────────────────
   const visibleColumns = useMemo(() => {
     return ALL_COLUMNS.filter((c) => {
-      // Tab-scoped columns only show for their designated tabs
       if (c.tabs && !c.tabs.includes(tab)) return false;
-      // Signal toggle columns
       const sig = SIGNALS.find((s) => s.col === c.key);
       if (sig) return signals[sig.key];
       return true;
@@ -426,6 +557,18 @@ export default function ScreenerHub() {
     setSortKey("score");
     setSortDir("desc");
     setExpandedSymbol(null);
+  };
+
+  // ── Apply — commit pending → applied (triggers one fetch via buildUrl change) ─
+  const handleApply = () => {
+    setAppliedTheme(pendingTheme);
+    setAppliedScoreMode(pendingScoreMode);
+    setAppliedMcapPreset(pendingMcapPreset);
+    setAppliedMcapCustomMin(pendingMcapCustomMin);
+    setAppliedMcapCustomMax(pendingMcapCustomMax);
+    setAppliedMinVolume(pendingMinVolume);
+    setAppliedExchange(pendingExchange);
+    if (pendingTheme) localStorage.setItem(LS_THEME_KEY, pendingTheme);
   };
 
   const copyTable = async () => {
@@ -555,7 +698,6 @@ export default function ScreenerHub() {
       if (v === null || v === undefined) return <span className="text-white/40">—</span>;
       const formatted = formatCompactNumber(v);
       if (formatted === "—") return <span className="text-white/40">—</span>;
-      // Subtle freshness indicator using options_updated_at / options_source
       const updatedAt = getField(row, "options_updated_at", ["optionsUpdatedAt"]);
       const source    = getField(row, "options_source",     ["optionsSource"]);
       const freshLabel = updatedAt
@@ -587,7 +729,6 @@ export default function ScreenerHub() {
     }
 
     if (c.key === "options_oi_change") {
-      // Prefer the percent field if the backend provides it
       const pctRaw = getField(row, "options_oi_change_pct", ["optionsOiChangePct"]);
       if (pctRaw !== undefined && pctRaw !== null) {
         const { text, positive, negative } = formatChangePercent(pctRaw);
@@ -598,7 +739,6 @@ export default function ScreenerHub() {
           </span>
         );
       }
-      // Fall back to absolute signed change
       const n = toNum(v);
       if (n === null) return <span className="text-white/40">—</span>;
       const sign = n > 0 ? "+" : "";
@@ -698,16 +838,18 @@ export default function ScreenerHub() {
     return <span>{String(v)}</span>;
   };
 
-  // ── Shared controls renderer ─────────────────────────────────────────────────
+  // ── Controls ─────────────────────────────────────────────────────────────────
+  // Pending state only — Apply commits to applied state and triggers fetch.
 
   const renderControls = (k: TabKey) => (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        {/* Theme dropdown — Thematic tab only */}
+
+        {/* Theme dropdown — Thematic only; updates pending only */}
         {k === "thematic" && (
           <div className="flex items-center gap-2">
             <label className="text-xs text-white/60">Theme</label>
-            <Select value={theme} onValueChange={setTheme}>
+            <Select value={pendingTheme} onValueChange={setPendingTheme}>
               <SelectTrigger
                 className="w-[200px] bg-black/40 border-purple-500/20 text-white"
                 data-testid="screener-hub-theme"
@@ -717,7 +859,18 @@ export default function ScreenerHub() {
               <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
                 {themes.map((t) => (
                   <SelectItem key={t.id} value={t.id} data-testid={`screener-hub-theme-option-${t.id}`}>
-                    {t.label}
+                    <span className="inline-flex items-center gap-1.5">
+                      {t.id === defaultThemeId && (
+                        <span className="text-[9px] text-purple-400 shrink-0">★</span>
+                      )}
+                      <span>{t.label}</span>
+                      {t.state && (
+                        <span className="text-[10px] text-white/35 shrink-0">{t.state}</span>
+                      )}
+                      {t.rs_score != null && (
+                        <span className="text-[10px] text-white/30 shrink-0">RS {t.rs_score.toFixed(0)}</span>
+                      )}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -725,16 +878,103 @@ export default function ScreenerHub() {
           </div>
         )}
 
-        {/* Score Mode toggle */}
+        {/* Market cap preset — Thematic only */}
+        {k === "thematic" && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/60">Market Cap</label>
+            <Select
+              value={pendingMcapPreset}
+              onValueChange={(v) => setPendingMcapPreset(v as McapPreset)}
+            >
+              <SelectTrigger className="w-[130px] bg-black/40 border-purple-500/20 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
+                {MCAP_PRESETS.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Custom mcap range inputs */}
+        {k === "thematic" && pendingMcapPreset === "custom" && (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              placeholder="Min $"
+              value={pendingMcapCustomMin}
+              onChange={(e) => setPendingMcapCustomMin(e.target.value)}
+              className="w-[88px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+            />
+            <span className="text-white/35 text-xs">–</span>
+            <input
+              type="number"
+              placeholder="Max $"
+              value={pendingMcapCustomMax}
+              onChange={(e) => setPendingMcapCustomMax(e.target.value)}
+              className="w-[88px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+            />
+          </div>
+        )}
+
+        {/* Min volume — Thematic only */}
+        {k === "thematic" && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/60">Min Vol</label>
+            <input
+              type="number"
+              placeholder="e.g. 500000"
+              value={pendingMinVolume}
+              onChange={(e) => setPendingMinVolume(e.target.value)}
+              className="w-[110px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+            />
+          </div>
+        )}
+
+        {/* Exchange — Thematic only */}
+        {k === "thematic" && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/60">Exchange</label>
+            <Select
+              value={pendingExchange || "__all__"}
+              onValueChange={(v) => setPendingExchange(v === "__all__" ? "" : v)}
+            >
+              <SelectTrigger className="w-[96px] bg-black/40 border-purple-500/20 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
+                <SelectItem value="__all__">All</SelectItem>
+                <SelectItem value="NYSE">NYSE</SelectItem>
+                <SelectItem value="NASDAQ">NASDAQ</SelectItem>
+                <SelectItem value="AMEX">AMEX</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Score Mode — updates pending only */}
         <div className="flex items-center gap-2">
           <Switch
             id={`screener-hub-score-${k}`}
-            checked={scoreMode}
-            onCheckedChange={setScoreMode}
+            checked={pendingScoreMode}
+            onCheckedChange={setPendingScoreMode}
             data-testid="screener-hub-score-toggle"
           />
           <label htmlFor={`screener-hub-score-${k}`} className="text-xs text-white/70">Score Mode</label>
         </div>
+
+        {/* Apply button — only this triggers a fetch */}
+        <Button
+          type="button"
+          onClick={handleApply}
+          data-testid="screener-hub-apply"
+          size="sm"
+          className="bg-purple-600/80 hover:bg-purple-500 border-0 text-white"
+        >
+          Apply
+        </Button>
 
         <div className="ml-auto">
           <Button
@@ -763,6 +1003,28 @@ export default function ScreenerHub() {
           </label>
         ))}
       </div>
+
+      {/* Applied filter summary — shows what the current rows are filtered by */}
+      {k === "thematic" && appliedTheme && (
+        <div className="text-[11px] text-white/30 flex flex-wrap gap-x-3 gap-y-0.5">
+          <span>
+            Showing:{" "}
+            <span className="text-white/50">{themes.find((t) => t.id === appliedTheme)?.label ?? appliedTheme}</span>
+            {defaultThemeId === appliedTheme && defaultThemeReason && (
+              <span className="ml-1 text-white/25">({defaultThemeReason})</span>
+            )}
+          </span>
+          {(() => {
+            const { min, max } = mcapBounds(appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax);
+            const parts: string[] = [];
+            if (min != null) parts.push(`MCap ≥ ${formatCompactCurrency(min)}`);
+            if (max != null) parts.push(`MCap ≤ ${formatCompactCurrency(max)}`);
+            if (appliedMinVolume) parts.push(`Vol ≥ ${formatCompactNumber(Number(appliedMinVolume))}`);
+            if (appliedExchange)  parts.push(`Exchange: ${appliedExchange}`);
+            return parts.map((p, i) => <span key={i}>· {p}</span>);
+          })()}
+        </div>
+      )}
     </div>
   );
 
@@ -792,20 +1054,89 @@ export default function ScreenerHub() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div className="flex items-center gap-2 text-[11px] text-white/50" data-testid="screener-hub-meta">
-              {meta.generated_at && (
-                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                  Updated {new Date(meta.generated_at).toLocaleTimeString()}
+
+            {/* ── Freshness metadata ─────────────────────────────────────────── */}
+            <div
+              className="flex flex-wrap items-center gap-2 text-[11px] text-white/50"
+              data-testid="screener-hub-meta"
+            >
+              {/* Universe built — the snapshot build time, not request time */}
+              {(meta.universe_built_at || meta.generated_at) && (
+                <span
+                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
+                  title="Timestamp when the universe snapshot was built"
+                >
+                  Universe built {new Date(meta.universe_built_at ?? meta.generated_at!).toLocaleTimeString()}
                 </span>
               )}
+              {/* Response served time — distinct from build time */}
+              {meta.served_at && (
+                <span
+                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
+                  title="When this response was served"
+                >
+                  Served {new Date(meta.served_at).toLocaleTimeString()}
+                </span>
+              )}
+              {/* Universe age — amber warning if stale */}
+              {meta.universe_age_hours != null && (
+                <span className={classNames(
+                  "px-2 py-0.5 rounded border bg-white/5",
+                  meta.universe_age_hours > 12
+                    ? "border-amber-500/30 text-amber-400/70"
+                    : "border-white/10",
+                )}>
+                  {meta.universe_age_hours > 12
+                    ? "Cached universe"
+                    : `${meta.universe_age_hours.toFixed(1)}h old`}
+                </span>
+              )}
+              {/* DB source */}
+              {meta.universe_db_source && (
+                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                  {meta.universe_db_source}
+                </span>
+              )}
+              {/* Fundamentals cache */}
               {meta.fundamentals_cache_status && (
                 <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
                   Fund: {meta.fundamentals_cache_status}
                 </span>
               )}
-              {meta.quote_cache_status && (
+              {/* Quote refreshing badge */}
+              {meta.quote_refresh_started ? (
+                <span className="px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/8 text-blue-300/70">
+                  Quotes refreshing
+                </span>
+              ) : meta.quote_cache_status ? (
                 <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
                   Quote: {meta.quote_cache_status}
+                </span>
+              ) : null}
+              {/* Row filter counts */}
+              {meta.rows_after_filters != null &&
+               meta.rows_before_filters != null &&
+               meta.rows_after_filters !== meta.rows_before_filters && (
+                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                  {meta.rows_after_filters} / {meta.rows_before_filters} rows
+                </span>
+              )}
+              {/* Next rebuild */}
+              {meta.next_rebuild_at && (
+                <span
+                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
+                  title="Next scheduled universe rebuild"
+                >
+                  Rebuilds {new Date(meta.next_rebuild_at).toLocaleTimeString()}
+                </span>
+              )}
+              {/* RS updated at (from themes metadata) */}
+              {themeRsUpdatedAt && (
+                <span
+                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
+                  title="When theme relative strength scores were last computed"
+                >
+                  RS {new Date(themeRsUpdatedAt).toLocaleDateString()}
                 </span>
               )}
             </div>
@@ -814,7 +1145,7 @@ export default function ScreenerHub() {
           {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
             <TabsContent key={k} value={k} className="mt-4 space-y-4">
 
-              {/* Controls — identical structure for all tabs; theme dropdown gated to Thematic */}
+              {/* Controls — pending state only; Apply commits */}
               {renderControls(k)}
 
               {/* Table */}

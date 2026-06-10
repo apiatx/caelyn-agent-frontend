@@ -1,0 +1,245 @@
+Use the current Replit workspace as the source of truth.
+
+Do not pull from git.
+Do not create branches.
+Do not open PRs.
+Do not worry about git commits.
+Do not modify unrelated pages.
+
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not change TradingView widgets.
+Do not call FMP, Tradier, options providers, admin rebuild endpoints, or refresh endpoints directly.
+Use only normal backend Screener Hub GET endpoints.
+
+Goal:
+Update Screener Hub frontend to use the backend fixes that are already implemented:
+- dynamic default_theme from /api/screener-hub/themes
+- theme RS metadata from /api/screener-hub/themes
+- real snapshot freshness fields
+- cache-only market cap / volume / exchange filters
+- non-blocking quote refresh metadata
+
+Do not rebuild the page from scratch.
+Reuse existing ScreenerHub.tsx structure and table wherever possible.
+
+Important backend behavior now available:
+GET /api/screener-hub/themes returns an object like:
+{
+  default_theme,
+  default_theme_reason,
+  theme_rs_updated_at,
+  themes: [...]
+}
+
+Each theme may include:
+- rs_score
+- momentum_rank
+- state
+- state_reason
+- stage
+- stage_label
+- return_pct
+- breadth_pct
+- trend_accel_20d
+- snapshot_row_count
+
+GET /api/screener-hub now supports:
+- marketCapMin / market_cap_min
+- marketCapMax / market_cap_max
+- minVolume / min_volume
+- exchange
+
+GET /api/screener-hub responses now include:
+- generated_at
+- served_at
+- universe_built_at
+- universe_age_hours
+- universe_expires_at
+- universe_db_source
+- next_rebuild_at
+- filters_applied
+- rows_before_filters
+- rows_after_filters
+- quote_refresh_mode
+- quote_refresh_started
+- quote_cache_status
+
+Part 1 — Fix default theme
+
+Remove the hardcoded Semiconductors default behavior.
+
+New default priority:
+1. URL ?theme= if present and valid
+2. localStorage last selected/applied theme if still valid
+3. backend default_theme from /api/screener-hub/themes
+4. first theme in themes list
+
+Do not hardcode Semiconductors.
+
+Persist the applied theme to localStorage after successful Apply.
+
+Part 2 — Support new /themes response shape
+
+Frontend may currently expect /api/screener-hub/themes to return an array.
+
+Update parsing defensively:
+- if response is array, use it
+- if response has themes array, use response.themes
+- read response.default_theme if present
+- read response.default_theme_reason if present
+- read response.theme_rs_updated_at if present
+
+Do not crash if any field is missing.
+
+Part 3 — Add controlled Apply flow
+
+Do not fetch immediately on every dropdown/filter change.
+
+Use pending vs applied state:
+- pendingTheme
+- appliedTheme
+- pendingScoreMode
+- appliedScoreMode
+- pendingMarketCapPreset
+- pendingMarketCapMin
+- pendingMarketCapMax
+- pendingMinVolume
+- pendingExchange
+- appliedFilters
+
+User changes controls freely.
+Only clicking Apply triggers one backend GET.
+
+Score Mode should not immediately fetch.
+Theme dropdown should not immediately fetch.
+Market cap / volume fields should not immediately fetch.
+
+Part 4 — Add market cap / volume controls
+
+Add simple controls near the Theme dropdown.
+
+Market cap presets:
+- All cached
+- Under $10B
+- $50M–$1B
+- $1B–$10B
+- $10B+
+- Custom
+
+Map to query params:
+- marketCapMin
+- marketCapMax
+
+Add Min Volume control:
+- optional input/preset
+- send minVolume only when set
+
+Optional exchange control:
+- blank/all by default
+- send exchange only when set
+
+Default preset:
+- Under $10B for Thematic unless backend/default state says otherwise
+
+Part 5 — Build request URL from applied state only
+
+For Thematic:
+GET /api/screener-hub?tab=thematic&theme=<appliedTheme>&scoreMode=<appliedScoreMode>&marketCapMin=...&marketCapMax=...&minVolume=...&exchange=...
+
+Only include params that are set.
+
+For other tabs:
+Keep current tab behavior, but do not add Thematic-only filters unless already intended.
+
+Part 6 — Fix stale rows and stuck loading
+
+On new applied request:
+- clear rows OR show a clear “Loading new screen…” state
+- do not let old theme rows masquerade as the new theme
+- keep old rows only if clearly labeled as stale/previous
+- fix cancellation so loading cannot get stuck forever
+- do not suppress setLoading(false) forever when requests are cancelled
+- if request fails, show error and avoid showing stale rows as current rows
+
+Part 7 — Display real freshness
+
+Replace misleading “Updated” behavior.
+
+Show:
+- Universe built: from universe_built_at
+- Served: from served_at
+- Universe age: from universe_age_hours if available
+- Source: universe_db_source if available
+- Next rebuild: next_rebuild_at if available
+- Quotes: quote_cache_status and/or quote_refresh_mode
+
+If quote_refresh_started is true, show subtle badge:
+“Quotes refreshing”
+
+If universe_age_hours is old, show:
+“Cached universe”
+
+Do not imply request time means universe refresh time.
+
+Part 8 — Improve theme dropdown context
+
+If theme metadata exists, show it lightly:
+- theme label
+- RS score or state
+- momentum rank if easy
+
+At minimum:
+- sort themes by momentum_rank or rs_score if available
+- keep display names readable
+- make backend default theme obvious
+
+Do not overbuild.
+
+Part 9 — Preserve table and tabs
+
+Do not break:
+- Thematic
+- Social
+- Bottlenecks
+- Watchlist + Portfolio
+- Fundamentals tab if present
+- clean 20-column table
+- Copy button
+- TradingView widgets
+
+Frontend must still only call:
+- /api/screener-hub/themes
+- /api/screener-hub?tab=...
+
+No direct provider calls.
+No admin rebuilds.
+
+Part 10 — Validation
+
+Validate:
+1. First page load uses backend default_theme, not hardcoded Semiconductors.
+2. URL ?theme= overrides default if valid.
+3. localStorage last theme works if valid.
+4. Theme dropdown changes pendingTheme only and does not fetch immediately.
+5. Apply triggers exactly one request.
+6. Score Mode does not fetch until Apply.
+7. Market cap preset sends correct query params.
+8. Min volume sends correct query param.
+9. Rows clear or show clear loading state during new request.
+10. Loading cannot get stuck after fast switching.
+11. Universe built timestamp displays separately from served time.
+12. Quote refreshing/cold status displays subtly.
+13. Thematic, Social, Bottlenecks, Watchlist+Portfolio still load.
+14. Existing TradingView widgets still render.
+15. No direct FMP/Tradier/options/admin calls from frontend.
+
+Return:
+- files changed
+- default theme behavior
+- Apply flow behavior
+- market cap filter UI behavior
+- freshness label behavior
+- validation results
+- remaining limitations
