@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import caelynLogo from "@assets/image_1771528728963.png";
 import { useAuth } from '@/contexts/AuthContext';
 import { usePageContext } from '@/contexts/PageContextContext';
+import type { ScreenContext } from '@/contexts/PageContextContext';
 import { normalizeHistory, normalizeNewHistoryFlat, normalizeSidebarResponse, type NormalizedHistoryEntry } from '@/lib/history';
 import {
   applyPresetState,
@@ -17,6 +18,40 @@ import type { PlaybookDiscoveryCapabilities } from '@/types/playbook';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+
+function normalizePageKey(pathname: string): string {
+  const p = pathname.toLowerCase();
+  if (p === '/' || p.endsWith('/home')) return 'home';
+  if (p.includes('watchlist')) return 'watchlist';
+  if (p.includes('portfolio')) return 'portfolio';
+  if (p.includes('option')) return 'options';
+  if (p.includes('hyperliquid')) return 'hyperliquid';
+  if (p.includes('theme')) return 'themes';
+  if (p.includes('chart-radar') || p.includes('multicharts')) return 'chart_radar';
+  if (p.includes('predict') || p.includes('macro') || p.includes('strategy') || p.includes('sector')) return 'strategy';
+  if (p.includes('hippo-ai') || p.includes('caelyn-ai')) return 'ai_terminal';
+  return 'general';
+}
+
+// Builds lightweight app_context from screen state.
+// visible_symbols = currently visible rows on screen only (≤20 tickers).
+// Full saved watchlist always comes from backend _user_context, never from here.
+function buildAppContext(screenCtx: ScreenContext | null): Record<string, any> {
+  const route = screenCtx?.route ?? window.location.pathname;
+  const page = screenCtx?.page ?? normalizePageKey(window.location.pathname);
+  const ctx: Record<string, any> = { route, page, current_focus_page: page };
+  if (screenCtx?.tab) ctx.active_tab = screenCtx.tab;
+  if (screenCtx?.selected) ctx.selected_ticker = screenCtx.selected;
+  if (screenCtx?.extra?.timeframe) ctx.timeframe = screenCtx.extra.timeframe;
+  if (screenCtx?.extra?.chart_group) ctx.chart_group = screenCtx.extra.chart_group;
+  if (screenCtx?.filters && Object.keys(screenCtx.filters).length > 0) ctx.filters = screenCtx.filters;
+  if (screenCtx?.sort) ctx.sort = screenCtx.sort;
+  if (screenCtx?.visible_rows && screenCtx.visible_rows.length > 0) {
+    const syms = screenCtx.visible_rows.map((r: any) => r.ticker || r.symbol).filter(Boolean).slice(0, 20);
+    if (syms.length > 0) ctx.visible_symbols = syms;
+  }
+  return ctx;
+}
 
 function getToken(): string | null {
   return localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt');
@@ -647,6 +682,7 @@ export default function TradingAgent() {
       conversation_id: convId || null,
       history,
       screen_context: screenContextRef.current ?? undefined,
+      app_context: buildAppContext(screenContextRef.current),
       ...buildCollabPayload(collabConfig, selectedModel),
     };
 
@@ -908,6 +944,7 @@ export default function TradingAgent() {
       conversation_id: freshChat ? null : (typeof conversationId === 'string' ? conversationId : null),
       ...(csvData ? { csv_data: csvData } : {}),
       screen_context: screenContextRef.current ?? undefined,
+      app_context: buildAppContext(screenContextRef.current),
     };
     if (presetIntent) {
       // Per-preset reasoning family overrides — family alias, backend picks exact model/tier
