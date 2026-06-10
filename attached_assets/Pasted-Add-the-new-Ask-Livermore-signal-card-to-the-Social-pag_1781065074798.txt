@@ -1,0 +1,68 @@
+Add the new Ask Livermore signal card to the Social page using the existing /api/social/x-dashboard response. Do not add any new API call.
+
+Backend is complete and now returns:
+
+ask_livermore_signal: {
+  handle: "@asklivermore",
+  stance: "buying" | "taking_profits" | "selling" | "waiting" | "warning_drawdown" | "risk_on" | "risk_off" | "unclear",
+  signal_label: string,
+  confidence: number,
+  timeframe: string | null,
+  summary: string,
+  evidence: string[],
+  tickers_mentioned: string[],
+  market_levels_mentioned: string[],
+  updated_at: string | null,
+  source_window: string | null,
+  stale: boolean
+}
+
+Important:
+- Do NOT add a new fetch.
+- Do NOT add a new endpoint.
+- Do NOT interpret tweets in the frontend.
+- Do NOT affect Social Screener, Warning toggle, Social toggle, or Fundamentals toggle.
+- Use only the existing Social page data object from /api/social/x-dashboard.
+- This is render-only.
+
+Placement:
+Put the card in the top signal area near the other main signal cards.
+
+Card content:
+- Title: ASK LIVERMORE
+- Subtitle: @asklivermore
+- Main badge: signal_label if present, otherwise stance
+- Body: summary
+- Show confidence if present: e.g. “Confidence: 72%”
+- Show timeframe if present
+- Show stale badge if stale=true:
+  - “STALE”
+  - or “OLDER SIGNAL”
+- Show up to 2 short evidence bullets if evidence exists and there is room.
+- Optional compact chips for tickers_mentioned and market_levels_mentioned if they exist.
+
+Fallback behavior:
+If ask_livermore_signal is missing/null, show a graceful compact fallback:
+“No recent Ask Livermore signal available.”
+
+If stale=true with fallback summary, still render the card but make it clear it is stale/older and not a live signal.
+
+Suggested stance labels:
+- buying → Buying / Risk-On
+- taking_profits → Taking Profits
+- selling → Selling / De-Risking
+- waiting → Waiting
+- warning_drawdown → Warning Drawdown
+- risk_on → Risk-On
+- risk_off → Risk-Off
+- unclear → Unclear
+
+Validation:
+1. Confirm Social page loads.
+2. Confirm existing Social Screener still shows rows.
+3. Confirm no extra network request was added.
+4. Confirm the Ask Livermore card renders from ask_livermore_signal.
+5. Confirm stale=true displays a stale/older badge.
+6. Confirm the page does not break if ask_livermore_signal is missing.
+
+Keep this as a small UI addition only. No redesign.

@@ -778,6 +778,83 @@ function XSnapshotSections({ tx, onTickerClick }: {
         )}
       </div>
 
+      {/* ── Ask Livermore Signal Card ── */}
+      {(() => {
+        const als = tx.ask_livermore_signal ?? null;
+        const stanceLabels: Record<string, string> = {
+          buying: 'Buying / Risk-On',
+          taking_profits: 'Taking Profits',
+          selling: 'Selling / De-Risking',
+          waiting: 'Waiting',
+          warning_drawdown: 'Warning Drawdown',
+          risk_on: 'Risk-On',
+          risk_off: 'Risk-Off',
+          unclear: 'Unclear',
+        };
+        const stanceColor = (stance: string | null | undefined) => {
+          if (!stance) return C.dim;
+          if (/buying|risk_on/.test(stance)) return C.blue;
+          if (/selling|risk_off|warning_drawdown/.test(stance)) return 'rgba(255,255,255,0.35)';
+          return C.dim;
+        };
+
+        if (!als) {
+          return (
+            <div style={{ marginBottom: '0.85rem', background: 'rgba(10,12,18,0.85)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: font, fontSize: '0.75rem', fontWeight: 700, color: C.dim }}>ASK LIVERMORE</span>
+              <span style={{ color: C.dim, fontSize: '0.7rem', fontFamily: sansFont }}>No recent Ask Livermore signal available.</span>
+            </div>
+          );
+        }
+
+        const label = als.signal_label || stanceLabels[als.stance] || als.stance || 'Unknown';
+        const sc = stanceColor(als.stance);
+        const evidence: string[] = Array.isArray(als.evidence) ? als.evidence.slice(0, 2) : [];
+        const tickers: string[] = Array.isArray(als.tickers_mentioned) ? als.tickers_mentioned : [];
+        const levels: string[] = Array.isArray(als.market_levels_mentioned) ? als.market_levels_mentioned : [];
+
+        return (
+          <div style={{ marginBottom: '0.85rem', background: 'rgba(10,12,18,0.85)', border: `1px solid ${sc}22`, borderRadius: 10, padding: '0.85rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: als.summary ? '0.55rem' : 0 }}>
+              <span style={{ fontFamily: font, fontSize: '0.75rem', fontWeight: 700, color: C.bright }}>ASK LIVERMORE</span>
+              <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>@asklivermore</span>
+              <span style={{ padding: '1px 8px', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700, fontFamily: font, color: sc, border: `1px solid ${sc}40`, background: `${sc}12`, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{label}</span>
+              {als.stale && (
+                <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700, fontFamily: font, color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>OLDER SIGNAL</span>
+              )}
+              {als.confidence != null && (
+                <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Confidence: <span style={{ color: sc }}>{als.confidence}%</span></span>
+              )}
+              {als.timeframe && (
+                <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>· {als.timeframe}</span>
+              )}
+            </div>
+            {als.summary && (
+              <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.6, marginBottom: evidence.length > 0 ? '0.45rem' : 0 }}>
+                {als.summary}
+              </div>
+            )}
+            {evidence.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: (tickers.length > 0 || levels.length > 0) ? '0.45rem' : 0 }}>
+                {evidence.map((e, i) => (
+                  <div key={i} style={{ color: C.dim, fontSize: '0.67rem', fontFamily: sansFont, lineHeight: 1.55 }}>• {e}</div>
+                ))}
+              </div>
+            )}
+            {(tickers.length > 0 || levels.length > 0) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                {tickers.map((t, i) => (
+                  <span key={i} style={{ padding: '1px 7px', borderRadius: 5, fontSize: '0.62rem', fontWeight: 700, fontFamily: font, color: C.blue, background: `${C.blue}10`, border: `1px solid ${C.blue}28` }}>${t}</span>
+                ))}
+                {levels.map((l, i) => (
+                  <span key={i} style={{ padding: '1px 7px', borderRadius: 5, fontSize: '0.62rem', fontFamily: font, color: C.dim, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>{l}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── 4-col → 2-col grid ── */}
       <div className="x-snap-grid">
 
