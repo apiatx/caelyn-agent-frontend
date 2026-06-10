@@ -1,0 +1,123 @@
+Pull latest main.
+
+Do not create branches.
+Do not open PRs.
+Do not worry about git commits.
+
+Frontend only.
+Do not touch backend.
+Do not change code unless adding temporary diagnostics is necessary.
+Do not call FMP, Tradier, or options providers directly.
+Do not trigger admin rebuilds or refresh endpoints.
+
+Goal:
+Full frontend audit of Screener Hub behavior.
+
+Observed issues:
+1. Thematic defaults to Semiconductors every visit.
+2. Theme dropdown selections do not reliably load new theme data.
+3. Some themes show incomplete data or appear stuck.
+4. The Thematic table takes too long to load.
+5. It says updated today but rows look unchanged from the original build.
+6. User needs filter customization before applying a new search, especially market cap range.
+
+Part 1 — Audit default theme
+
+Find:
+- where the default selected theme is set
+- whether “Semiconductors” is hardcoded
+- whether selected theme is persisted in local state/localStorage
+- whether the UI ignores backend recommended theme if any
+- whether the URL/query param can set theme
+- what happens on first visit vs return visit
+
+Report exact file/function/state.
+
+Part 2 — Audit dropdown behavior
+
+Trace what happens when user selects a theme:
+- does selectedTheme state update?
+- does API request fire?
+- what URL is requested?
+- does it include the correct theme key?
+- are old rows preserved or replaced?
+- can stale rows remain if request fails?
+- is loading state stuck?
+- are errors swallowed?
+- is theme display name mapped incorrectly to backend theme key?
+
+Report exact root cause if dropdown does not reload.
+
+Part 3 — Audit API fetching
+
+Find:
+- whether ScreenerHub fetches all tabs on initial load
+- whether it fetches only active tab
+- whether switching themes causes multiple requests
+- whether Score Mode/signal toggles trigger refetches
+- whether table filters are client-only or API calls
+- whether requests are debounced
+- whether there is cancellation/abort causing stuck loading
+- whether cache buster or stale query key issue exists
+
+Part 4 — Audit loading issue
+
+Find why Thematic stays loading:
+- request pending?
+- response returned but parser fails?
+- rows filtered to zero?
+- columns causing render error?
+- state race?
+- promise aborted?
+- one tab request blocking another?
+
+Part 5 — Audit “updated” label
+
+Find what field powers:
+- Updated 2:27 PM
+- Fund: partial/fresh
+- Quote: ok
+
+Report whether that timestamp means:
+- response time
+- quote freshness
+- fund cache freshness
+- actual universe snapshot build time
+
+Part 6 — Audit customization readiness
+
+Determine how to add controlled filters:
+- market cap min/max
+- market cap presets
+- min volume
+- maybe exchange
+- apply/run button
+
+Report:
+- current state fields
+- current backend query params
+- required new props/state
+- how to prevent refetch on every dropdown/filter change
+- recommended UI flow
+
+Desired future UX:
+- user selects theme
+- user selects market cap range / volume min
+- user clicks Apply
+- frontend sends one backend GET request
+- backend filters cached snapshot
+- no live FMP calls
+
+Part 7 — Final report only
+
+Do not implement yet.
+
+Return:
+- root cause of default Semiconductors
+- root cause of dropdown not loading new themes
+- root cause of long loading
+- root cause of stale “updated” label if any
+- whether frontend fetches all tabs or only active
+- whether old rows are kept after failed theme request
+- recommended frontend changes
+- confirmation no external provider calls were made
