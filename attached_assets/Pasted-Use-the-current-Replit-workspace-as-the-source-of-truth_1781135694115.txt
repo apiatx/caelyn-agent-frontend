@@ -1,0 +1,162 @@
+Use the current Replit workspace as the source of truth.
+
+Do not pull from git.
+Do not create branches.
+Do not open PRs.
+Do not worry about git commits.
+Do not modify unrelated pages.
+
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP, Tradier, options providers, admin rebuild endpoints, or refresh endpoints directly.
+Use only normal backend Screener Hub GET endpoints.
+
+Goal:
+Apply the final frontend fixes after the backend Screener Hub data-quality fixes.
+
+Do not rebuild the component from scratch.
+Reuse the current ScreenerHub.tsx structure, controls, table, and tabs wherever possible.
+
+Backend now provides:
+- default_theme selected by RS score + metadata coverage
+- fund_coverage_pct
+- eligible_fund_coverage_pct
+- low_metadata_coverage
+- metadata_coverage_warning
+- filters_applied
+- rows_before_filters
+- rows_after_filters
+- universe_built_at
+- served_at
+- universe_age_hours
+- universe_db_source
+- next_rebuild_at
+- quote_refresh_mode
+- quote_refresh_started
+- quote_cache_status
+
+Backend validation confirmed:
+- default_theme is now regional_banks, not hardcoded Semiconductors or Healthcare
+- Healthcare has low_metadata_coverage=true and should show a warning if selected
+- Semiconductors still has strong metadata coverage
+- Regional Banks is the current default because it has high RS and enough usable metadata
+- Backend sends change_percent_1d as percentage points, e.g. -1.35 means -1.35%
+- Frontend currently appears to multiply 1D values by 100, causing impossible values like -135%
+
+Part 1 — Fix 1D % display
+
+Audit the 1D % column renderer.
+
+Backend sends percentage points:
+- -1.35 means -1.35%
+- 2.4 means +2.4%
+
+Do not multiply change_percent_1d by 100.
+
+Fix aliases carefully:
+- change_percent_1d
+- changePercent1d
+- oneDayChange
+
+Render:
+- -1.35 as -1.35%
+- 0.42 as +0.42%
+- 4.5 as +4.50%
+
+If value is null/missing, render —.
+
+Do not change backend.
+
+Part 2 — Show metadata coverage warning
+
+If backend response includes:
+- low_metadata_coverage=true
+or
+- metadata_coverage_warning
+
+Show a subtle warning near the controls/freshness badges:
+“Partial fundamentals coverage”
+
+If metadata_coverage_warning exists, show it in a tooltip or small muted text.
+
+Do not make it scary. This is an informational badge.
+
+Part 3 — Show coverage metrics if available
+
+If present, display small muted metadata:
+- Fund coverage: fund_coverage_pct
+- Eligible coverage: eligible_fund_coverage_pct
+
+Example:
+“Coverage: 65% eligible metadata”
+
+Keep compact. Do not clutter the table.
+
+Part 4 — Keep default theme behavior
+
+Do not reintroduce hardcoded Semiconductors.
+
+Keep current default priority:
+1. URL ?theme=
+2. valid localStorage theme
+3. backend default_theme
+4. first theme
+
+But if localStorage points to a low_metadata_coverage theme and backend default_theme is different, do not force override automatically. Just show the metadata warning when the user is viewing that theme.
+
+Part 5 — Market cap filter messaging
+
+If backend returns:
+- rows_before_filters
+- rows_after_filters
+- filters_applied
+
+Keep showing filter summary.
+
+If backend returns rows with missing market cap and a warning, do not pretend the filter found perfect data. Show backend warning.
+
+Do not implement frontend-side market cap filtering. Backend owns filtering.
+
+Part 6 — Preserve tabs/table
+
+Do not remove columns:
+- Market Cap
+- Sector
+- Industry
+- Beta
+- Div/Yr
+- Vol/MCap
+- Exchange
+
+Missing values should render —.
+
+Do not break:
+- Thematic
+- Social
+- Bottlenecks
+- Watchlist + Portfolio
+- Fundamentals
+- Copy button
+- TradingView chart modal
+- existing clean table columns
+
+Part 7 — Validation
+
+Validate:
+1. Default theme is Regional Banks if backend returns it.
+2. 1D % values no longer show impossible multiplied values like -135%.
+3. Healthcare, if selected, shows partial fundamentals coverage warning.
+4. Semiconductors still displays normally.
+5. Market cap/filter summary still displays.
+6. Theme dropdown + Apply flow still works.
+7. Thematic, Social, Bottlenecks, Watchlist+Portfolio, Fundamentals still load.
+8. No direct FMP/Tradier/options/admin calls from frontend.
+
+Return:
+- files changed
+- exact 1D % display fix
+- metadata warning UI behavior
+- default theme behavior
+- validation results
+- remaining limitations

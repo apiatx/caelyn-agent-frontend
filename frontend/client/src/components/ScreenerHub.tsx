@@ -98,6 +98,8 @@ interface HubResponse {
   rows_before_filters?: number; rows_after_filters?: number;
   quote_cache_status?: string; quote_refresh_mode?: string; quote_refresh_started?: boolean;
   fundamentals_cache_status?: string;
+  low_metadata_coverage?: boolean; metadata_coverage_warning?: string;
+  fund_coverage_pct?: number; eligible_fund_coverage_pct?: number;
   message?: string; error_code?: string; theme_state?: string; theme_state_reason?: string;
   rows?: any; data?: any; items?: any; results?: any;
 }
@@ -188,9 +190,9 @@ function formatCompactNumber(v: any): string {
 function formatChangePercent(v: any): { text: string; positive: boolean; negative: boolean } {
   const n = toNum(v);
   if (n === null) return { text: "—", positive: false, negative: false };
-  const pct = Math.abs(n) <= 1.5 ? n * 100 : n;
-  const sign = pct > 0 ? "+" : "";
-  return { text: `${sign}${pct.toFixed(2)}%`, positive: pct > 0, negative: pct < 0 };
+  // Backend sends percentage points directly (e.g. -1.35 = -1.35%). Do not multiply.
+  const sign = n > 0 ? "+" : "";
+  return { text: `${sign}${n.toFixed(2)}%`, positive: n > 0, negative: n < 0 };
 }
 
 function formatSmallPercent(v: any): string {
@@ -354,6 +356,8 @@ export default function ScreenerHub() {
     next_rebuild_at?: string; rows_before_filters?: number; rows_after_filters?: number;
     quote_cache_status?: string; quote_refresh_mode?: string; quote_refresh_started?: boolean;
     fundamentals_cache_status?: string; message?: string; error_code?: string;
+    low_metadata_coverage?: boolean; metadata_coverage_warning?: string;
+    fund_coverage_pct?: number; eligible_fund_coverage_pct?: number;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -491,9 +495,13 @@ export default function ScreenerHub() {
           quote_cache_status:     data?.quote_cache_status,
           quote_refresh_mode:     data?.quote_refresh_mode,
           quote_refresh_started:  data?.quote_refresh_started,
-          fundamentals_cache_status: data?.fundamentals_cache_status,
-          message:                data?.message ?? undefined,
-          error_code:             data?.error_code ?? undefined,
+          fundamentals_cache_status:    data?.fundamentals_cache_status,
+          low_metadata_coverage:         data?.low_metadata_coverage,
+          metadata_coverage_warning:     data?.metadata_coverage_warning,
+          fund_coverage_pct:             data?.fund_coverage_pct,
+          eligible_fund_coverage_pct:    data?.eligible_fund_coverage_pct,
+          message:                       data?.message ?? undefined,
+          error_code:                    data?.error_code ?? undefined,
         });
       } catch (e: any) {
         if (ctrl.signal.aborted) return;
@@ -1113,6 +1121,28 @@ export default function ScreenerHub() {
                   Quote: {meta.quote_cache_status}
                 </span>
               ) : null}
+              {/* Metadata coverage warning — shown when low_metadata_coverage=true */}
+              {meta.low_metadata_coverage && (
+                <span
+                  className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-400/8 text-amber-400/80"
+                  title={meta.metadata_coverage_warning ?? "This theme has limited fundamentals data coverage"}
+                >
+                  Partial fundamentals coverage
+                </span>
+              )}
+              {/* Coverage metrics — compact, muted */}
+              {meta.eligible_fund_coverage_pct != null && (
+                <span
+                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
+                  title={
+                    meta.fund_coverage_pct != null
+                      ? `Total coverage: ${meta.fund_coverage_pct.toFixed(0)}% · Eligible: ${meta.eligible_fund_coverage_pct.toFixed(0)}%`
+                      : `Eligible coverage: ${meta.eligible_fund_coverage_pct.toFixed(0)}%`
+                  }
+                >
+                  Coverage: {meta.eligible_fund_coverage_pct.toFixed(0)}% eligible metadata
+                </span>
+              )}
               {/* Row filter counts */}
               {meta.rows_after_filters != null &&
                meta.rows_before_filters != null &&
