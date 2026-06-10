@@ -1,0 +1,83 @@
+We need a targeted frontend layout fix on the Social page.
+
+Backend is now working correctly. ask_livermore_signal is live and populated from the existing /api/social/x-dashboard response:
+
+stance: "risk_on"
+confidence: 85
+stale: false
+signal_label: "Risk-On: Holding Strong Through Dip for AI Bull Run"
+evidence: real @asklivermore evidence quotes
+
+Do not touch backend. Do not add any new API calls.
+
+Current frontend bug:
+The Ask Livermore card is showing, but the existing top signal cards disappeared:
+
+1. Market Pulse
+2. Portfolio Bias
+
+Ask Livermore should not replace either one.
+
+Required final layout:
+The top signal row should show all three cards:
+
+[ MARKET PULSE ] [ ASK LIVERMORE ] [ PORTFOLIO BIAS ]
+
+Important:
+
+* Do NOT add a new API call.
+* Do NOT touch backend.
+* Do NOT touch Social Screener.
+* Do NOT touch Warning / Social / Fundamentals toggles.
+* Do NOT change the lower X Consensus / Fresh / Leading Themes / Sentiment Acceleration grid.
+* This is only a JSX/layout repair in the existing Social page.
+* Keep the current Ask Livermore rendering logic, but position it correctly between the original two cards.
+
+Audit first:
+
+1. Find where Market Pulse and Portfolio Bias were rendered before the Ask Livermore change.
+2. Confirm whether those JSX blocks were deleted, moved, hidden, or bypassed.
+3. Restore both original cards.
+4. Insert Ask Livermore between them.
+
+Data paths:
+
+* Market Pulse should read from the existing market_pulse object exactly as before.
+* Portfolio Bias should read from the existing portfolio_bias string/object exactly as before.
+* Ask Livermore should read from ask_livermore_signal exactly as currently implemented.
+
+UI requirements:
+
+* Use a 3-card top layout if there is room.
+* On smaller screens, allow the cards to stack naturally.
+* Ask Livermore should visually match the existing Market Pulse / Portfolio Bias card style.
+* Do not make Ask Livermore full-width if that causes the original two cards to disappear.
+* Do not place Ask Livermore above the two original cards unless the layout requires stacking on mobile.
+
+Ask Livermore display behavior:
+
+* If ask_livermore_signal is real, display:
+
+  * signal_label
+  * stance
+  * confidence
+  * timeframe if present
+  * summary
+  * up to 2 evidence bullets
+  * stale badge only when stale=true
+* If ask_livermore_signal is fallback/stale, display it only inside the Ask Livermore card.
+* If ask_livermore_signal is missing/null, show compact fallback only inside the Ask Livermore card.
+* Ask Livermore missing/stale/null must never hide Market Pulse or Portfolio Bias.
+
+Validation:
+
+1. Social page shows Market Pulse.
+2. Social page shows Ask Livermore in the middle.
+3. Social page shows Portfolio Bias.
+4. Ask Livermore shows the real backend signal, not stale fallback, assuming the API response includes stale=false.
+5. X Consensus / Fresh / Leading Themes / Sentiment Acceleration still render below.
+6. Social Screener still renders rows.
+7. Network tab still shows no extra API request.
+8. Build clean.
+
+Do not redesign. Just restore the two original cards and place Ask Livermore between them.

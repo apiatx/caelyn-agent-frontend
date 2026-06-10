@@ -739,46 +739,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
         }
       `}</style>
 
-      {/* ── Context strip (Market Pulse + Portfolio Bias) ── */}
-      {(mp.verdict || mp.summary || bias) && (
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
-          {(mp.verdict || mp.summary) && (
-            <div style={{ flex: 1, minWidth: 200, background: `${verdictColor}08`, border: `1px solid ${verdictColor}22`,
-              borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>Market Pulse</span>
-              {mp.verdict && <span style={{ color: verdictColor, fontWeight: 800, fontSize: '0.7rem', fontFamily: font, textTransform: 'uppercase' }}>{mp.verdict}</span>}
-              {mp.summary && <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{mp.summary}</span>}
-            </div>
-          )}
-          {bias && (
-            <div style={{ flex: 1, minWidth: 200, background: `${C.blue}08`, border: `1px solid ${C.blue}18`,
-              borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
-                textTransform: 'uppercase', letterSpacing: '0.08em' }}>Portfolio Bias</span>
-              <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{bias}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Freshness + state strip ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
-        {relTime && <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Updated {relTime}</span>}
-        {isStale && (
-          <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, fontWeight: 700,
-            background: 'rgba(92,200,240,0.08)', border: '1px solid rgba(92,200,240,0.2)',
-            borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>STALE</span>
-        )}
-        {isRefreshing && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.dim, fontSize: '0.6rem', fontFamily: font }}>
-            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: C.blue, opacity: 0.8 }} />
-            Refreshing…
-          </span>
-        )}
-      </div>
-
-      {/* ── Ask Livermore Signal Card ── */}
+      {/* ── Top signal row: Market Pulse | Ask Livermore | Portfolio Bias ── */}
       {(() => {
         const als = tx.ask_livermore_signal ?? null;
         const stanceLabels: Record<string, string> = {
@@ -797,63 +758,119 @@ function XSnapshotSections({ tx, onTickerClick }: {
           if (/selling|risk_off|warning_drawdown/.test(stance)) return 'rgba(255,255,255,0.35)';
           return C.dim;
         };
-
-        if (!als) {
-          return (
-            <div style={{ marginBottom: '0.85rem', background: 'rgba(10,12,18,0.85)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: font, fontSize: '0.75rem', fontWeight: 700, color: C.dim }}>ASK LIVERMORE</span>
-              <span style={{ color: C.dim, fontSize: '0.7rem', fontFamily: sansFont }}>No recent Ask Livermore signal available.</span>
-            </div>
-          );
-        }
-
-        const label = als.signal_label || stanceLabels[als.stance] || als.stance || 'Unknown';
-        const sc = stanceColor(als.stance);
-        const evidence: string[] = Array.isArray(als.evidence) ? als.evidence.slice(0, 2) : [];
-        const tickers: string[] = Array.isArray(als.tickers_mentioned) ? als.tickers_mentioned : [];
-        const levels: string[] = Array.isArray(als.market_levels_mentioned) ? als.market_levels_mentioned : [];
+        const hasMP   = !!(mp.verdict || mp.summary);
+        const hasBias = !!bias;
+        const alsLabel = als ? (als.signal_label || stanceLabels[als.stance] || als.stance || 'Unknown') : null;
+        const sc       = stanceColor(als?.stance);
+        const evidence: string[] = als && Array.isArray(als.evidence) ? als.evidence.slice(0, 2) : [];
+        const tickers:  string[] = als && Array.isArray(als.tickers_mentioned) ? als.tickers_mentioned : [];
+        const levels:   string[] = als && Array.isArray(als.market_levels_mentioned) ? als.market_levels_mentioned : [];
 
         return (
-          <div style={{ marginBottom: '0.85rem', background: 'rgba(10,12,18,0.85)', border: `1px solid ${sc}22`, borderRadius: 10, padding: '0.85rem 1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: als.summary ? '0.55rem' : 0 }}>
-              <span style={{ fontFamily: font, fontSize: '0.75rem', fontWeight: 700, color: C.bright }}>ASK LIVERMORE</span>
-              <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>@asklivermore</span>
-              <span style={{ padding: '1px 8px', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700, fontFamily: font, color: sc, border: `1px solid ${sc}40`, background: `${sc}12`, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{label}</span>
-              {als.stale && (
-                <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700, fontFamily: font, color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>OLDER SIGNAL</span>
-              )}
-              {als.confidence != null && (
-                <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Confidence: <span style={{ color: sc }}>{als.confidence}%</span></span>
-              )}
-              {als.timeframe && (
-                <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>· {als.timeframe}</span>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap', alignItems: 'stretch' }}>
+
+            {/* Market Pulse — only when data present */}
+            {hasMP && (
+              <div style={{ flex: 1, minWidth: 200, background: `${verdictColor}08`, border: `1px solid ${verdictColor}22`,
+                borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>Market Pulse</span>
+                {mp.verdict && <span style={{ color: verdictColor, fontWeight: 800, fontSize: '0.7rem', fontFamily: font, textTransform: 'uppercase' }}>{mp.verdict}</span>}
+                {mp.summary && <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{mp.summary}</span>}
+              </div>
+            )}
+
+            {/* Ask Livermore — always rendered, fallback when null */}
+            <div style={{ flex: 1, minWidth: 200, background: 'rgba(10,12,18,0.85)',
+              border: als ? `1px solid ${sc}22` : '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 8, padding: '0.5rem 0.85rem' }}>
+              {!als ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                    textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ask Livermore</span>
+                  <span style={{ color: C.dim, fontSize: '0.68rem', fontFamily: sansFont }}>No recent signal available.</span>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: als.summary ? '0.4rem' : 0 }}>
+                    <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                      textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ask Livermore</span>
+                    <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>@asklivermore</span>
+                    <span style={{ padding: '1px 7px', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700, fontFamily: font,
+                      color: sc, border: `1px solid ${sc}40`, background: `${sc}12`,
+                      textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{alsLabel}</span>
+                    {als.stale && (
+                      <span style={{ padding: '1px 6px', borderRadius: 100, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                        color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)',
+                        textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>OLDER SIGNAL</span>
+                    )}
+                    {als.confidence != null && (
+                      <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>
+                        Confidence: <span style={{ color: sc }}>{als.confidence}%</span>
+                      </span>
+                    )}
+                    {als.timeframe && (
+                      <span style={{ color: C.dim, fontSize: '0.58rem', fontFamily: font }}>· {als.timeframe}</span>
+                    )}
+                  </div>
+                  {als.summary && (
+                    <div style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont, lineHeight: 1.55,
+                      marginBottom: evidence.length > 0 ? '0.35rem' : 0 }}>
+                      {als.summary}
+                    </div>
+                  )}
+                  {evidence.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem',
+                      marginBottom: (tickers.length > 0 || levels.length > 0) ? '0.35rem' : 0 }}>
+                      {evidence.map((e, i) => (
+                        <div key={i} style={{ color: C.dim, fontSize: '0.65rem', fontFamily: sansFont, lineHeight: 1.5 }}>• {e}</div>
+                      ))}
+                    </div>
+                  )}
+                  {(tickers.length > 0 || levels.length > 0) && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.15rem' }}>
+                      {tickers.map((t, i) => (
+                        <span key={i} style={{ padding: '1px 6px', borderRadius: 5, fontSize: '0.6rem', fontWeight: 700,
+                          fontFamily: font, color: C.blue, background: `${C.blue}10`, border: `1px solid ${C.blue}28` }}>${t}</span>
+                      ))}
+                      {levels.map((l, i) => (
+                        <span key={i} style={{ padding: '1px 6px', borderRadius: 5, fontSize: '0.6rem',
+                          fontFamily: font, color: C.dim, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>{l}</span>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            {als.summary && (
-              <div style={{ color: C.text, fontSize: '0.72rem', fontFamily: sansFont, lineHeight: 1.6, marginBottom: evidence.length > 0 ? '0.45rem' : 0 }}>
-                {als.summary}
-              </div>
-            )}
-            {evidence.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: (tickers.length > 0 || levels.length > 0) ? '0.45rem' : 0 }}>
-                {evidence.map((e, i) => (
-                  <div key={i} style={{ color: C.dim, fontSize: '0.67rem', fontFamily: sansFont, lineHeight: 1.55 }}>• {e}</div>
-                ))}
-              </div>
-            )}
-            {(tickers.length > 0 || levels.length > 0) && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                {tickers.map((t, i) => (
-                  <span key={i} style={{ padding: '1px 7px', borderRadius: 5, fontSize: '0.62rem', fontWeight: 700, fontFamily: font, color: C.blue, background: `${C.blue}10`, border: `1px solid ${C.blue}28` }}>${t}</span>
-                ))}
-                {levels.map((l, i) => (
-                  <span key={i} style={{ padding: '1px 7px', borderRadius: 5, fontSize: '0.62rem', fontFamily: font, color: C.dim, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>{l}</span>
-                ))}
+
+            {/* Portfolio Bias — only when data present */}
+            {hasBias && (
+              <div style={{ flex: 1, minWidth: 200, background: `${C.blue}08`, border: `1px solid ${C.blue}18`,
+                borderRadius: 8, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ color: C.dim, fontSize: '0.58rem', fontWeight: 700, fontFamily: font,
+                  textTransform: 'uppercase', letterSpacing: '0.08em' }}>Portfolio Bias</span>
+                <span style={{ color: C.text, fontSize: '0.68rem', fontFamily: sansFont }}>{bias}</span>
               </div>
             )}
           </div>
         );
       })()}
+
+      {/* ── Freshness + state strip ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+        {relTime && <span style={{ color: C.dim, fontSize: '0.6rem', fontFamily: font }}>Updated {relTime}</span>}
+        {isStale && (
+          <span style={{ color: C.blue, fontSize: '0.58rem', fontFamily: font, fontWeight: 700,
+            background: 'rgba(92,200,240,0.08)', border: '1px solid rgba(92,200,240,0.2)',
+            borderRadius: 4, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>STALE</span>
+        )}
+        {isRefreshing && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.dim, fontSize: '0.6rem', fontFamily: font }}>
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: C.blue, opacity: 0.8 }} />
+            Refreshing…
+          </span>
+        )}
+      </div>
 
       {/* ── 4-col → 2-col grid ── */}
       <div className="x-snap-grid">

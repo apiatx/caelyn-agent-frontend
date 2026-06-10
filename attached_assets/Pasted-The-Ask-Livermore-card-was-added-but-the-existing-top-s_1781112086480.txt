@@ -1,0 +1,55 @@
+The Ask Livermore card was added, but the existing top signal cards disappeared from the Social page.
+
+Current bug:
+Before the Ask Livermore frontend change, the top of the Social page had:
+1. Market Pulse
+2. Portfolio Bias
+
+After the change, only Ask Livermore appears. That is wrong.
+
+Required layout:
+The top signal row should show all three cards:
+1. Market Pulse
+2. Ask Livermore
+3. Portfolio Bias
+
+Do not remove or replace Market Pulse or Portfolio Bias.
+
+Important:
+- Do NOT add a new API call.
+- Do NOT touch backend.
+- Do NOT touch Social Screener.
+- Do NOT touch Warning / Social / Fundamentals toggles.
+- Do NOT change the lower X Consensus / Fresh / Leading Themes / Sentiment Acceleration grid.
+- This is only a JSX/layout fix in the existing Social page.
+
+Audit first:
+1. Find where Market Pulse and Portfolio Bias were rendered before the Ask Livermore change.
+2. Confirm whether those JSX blocks were deleted, moved, hidden, or bypassed.
+3. Restore them.
+4. Insert Ask Livermore between them.
+
+Expected final layout:
+A top card grid/row like:
+
+[ MARKET PULSE ] [ ASK LIVERMORE ] [ PORTFOLIO BIAS ]
+
+Use the existing styling pattern from Market Pulse / Portfolio Bias.
+Ask Livermore should match their card height and visual style as much as possible.
+
+Data paths:
+- Market Pulse should still read from the existing market_pulse object.
+- Portfolio Bias should still read from the existing portfolio_bias string/object exactly as before.
+- Ask Livermore should read from ask_livermore_signal.
+- If Ask Livermore is stale or missing, only the Ask Livermore card should show stale/fallback. It should not affect the other two cards.
+
+Validation:
+1. Social page shows Market Pulse again.
+2. Social page shows Ask Livermore in the middle.
+3. Social page shows Portfolio Bias again.
+4. X Consensus / Fresh / Leading Themes / Sentiment Acceleration still render below.
+5. Social Screener still renders rows.
+6. Network tab still shows no extra API request.
+7. Build clean.
+
+Do not redesign. Just restore the two original cards and place Ask Livermore between them.
