@@ -181,11 +181,22 @@ async function fetchJsonAuth<T = any>(url: string, opts: RequestInit = {}): Prom
     ...opts,
     headers: { "Content-Type": "application/json", ...authHdr, ...(opts.headers as Record<string, string> | undefined) },
   });
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("text/html")) {
+    throw new Error(`Saved screen endpoint returned HTML instead of JSON — the frontend proxy route may not be active yet. Try refreshing.`);
+  }
+  const txt = await res.text();
+  if (txt.trimStart().startsWith("<!DOCTYPE") || txt.trimStart().startsWith("<html")) {
+    throw new Error(`Saved screen endpoint returned an HTML page — check that the frontend proxy route is registered and the server was restarted.`);
+  }
   if (!res.ok) {
-    const txt = await res.text().catch(() => "");
     throw new Error(`${url} failed: ${res.status} ${txt.slice(0, 120)}`);
   }
-  return res.json();
+  try {
+    return JSON.parse(txt);
+  } catch {
+    throw new Error(`${url} returned non-JSON: ${txt.slice(0, 80)}`);
+  }
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────────────
