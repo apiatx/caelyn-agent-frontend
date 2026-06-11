@@ -593,8 +593,22 @@ export default function ScreenerHub() {
           error_code:                    data?.error_code ?? undefined,
         });
 
-        // ── Daily auto-save (thematic only, once per tab/theme/date per session) ──
-        if (tab === "thematic" && arr.length > 0 && !ctrl.signal.aborted) {
+        // ── Daily auto-save — default screen only, once per tab/theme/date per session ──
+        // Only fires for the app's recommended daily screen (backend default_theme + default
+        // filter state). If the user has manually changed theme or applied custom filters,
+        // isDefaultScreen will be false and auto-save is skipped entirely.
+        const isDefaultScreen =
+          tab === "thematic" &&
+          defaultThemeId !== "" &&
+          appliedTheme === defaultThemeId &&
+          appliedScoreMode === true &&
+          appliedMcapPreset === "under10b" &&
+          appliedMcapCustomMin === "" &&
+          appliedMcapCustomMax === "" &&
+          appliedMinVolume === "" &&
+          appliedExchange === "";
+
+        if (isDefaultScreen && arr.length > 0 && !ctrl.signal.aborted) {
           const today   = new Date().toISOString().slice(0, 10);
           const autoKey = `${tab}::${appliedTheme ?? ""}::${today}`;
           if (!dailyAutoSavedKeys.has(autoKey)) {
@@ -1279,17 +1293,7 @@ export default function ScreenerHub() {
             {copied ? "Copied" : "Copy"}
           </Button>
 
-          {/* Save Manual Snapshot — live mode only, secondary action */}
-          {!savedMode && activeRows.length > 0 && (
-            <Button
-              type="button" variant="outline" size="sm"
-              onClick={openSaveModal}
-              className="bg-black/40 border-purple-500/30 text-white/60 hover:bg-purple-500/20 hover:text-white"
-            >
-              <Save className="w-3.5 h-3.5 mr-1.5" />
-              Save Snapshot
-            </Button>
-          )}
+          {/* Manual save intentionally hidden — daily auto-save handles snapshots */}
 
           {/* Saved Screens dropdown */}
           <div className="relative" ref={savedListRef}>

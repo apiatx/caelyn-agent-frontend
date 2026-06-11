@@ -1,0 +1,98 @@
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP, Tradier, options providers, admin rebuild, or refresh endpoints.
+
+Goal:
+Finalize Daily Screener History behavior now that backend daily_auto is working.
+
+Current status:
+Daily auto-save works and POST /api/screener-hub/saved-screens/daily-auto returns 200.
+But the UI still shows a manual “Save Snapshot” button, and auto-save may fire for non-default user-selected Thematic slices.
+
+Part 1 — Remove manual save button from primary UI
+
+Remove/hide the visible “Save Snapshot” / manual save button from the main Screener controls.
+
+Do not delete backend manual save support.
+Do not break existing saved/daily screens logic.
+Do not show manual save as a primary action.
+
+Daily Screens should feel automatic.
+
+Part 2 — Auto-save only the default daily Thematic screen
+
+Do not auto-save every Thematic slice the user explores.
+
+Only fire daily auto-save when all are true:
+
+* live mode, not savedMode
+* active tab is Thematic
+* rows.length > 0
+* applied theme equals backend default_theme, if backend default_theme is present
+* current screen is not a custom user-filtered/manual exploration beyond the app’s default filter state
+
+If detecting “default filter state” is messy, at minimum:
+
+* auto-save when applied theme equals backend default_theme
+* do not auto-save if the user manually changes theme or clicks Apply after changing controls during the session
+
+Reason:
+Daily history should represent the app’s recommended daily screen, not random exploratory filter slices that overwrite the daily record.
+
+Part 3 — Keep Daily Screens UI
+
+Keep:
+
+* Daily Screens
+* Last 60 Days
+* Daily Insights
+* “Daily screens are kept for 60 days.”
+* Opening daily screens
+* Back to Live Screener
+
+Part 4 — Optional status
+
+If showing a status, keep it subtle:
+
+* “Daily screen saved”
+  or
+* “Auto-saved daily”
+
+Do not add clutter.
+
+Part 5 — Preserve behavior
+
+Do not break:
+
+* daily auto-save endpoint call
+* Daily Screens dropdown
+* opening a daily screen
+* Back to Live Screener
+* Daily Insights
+* Copy button
+* all Screener tabs
+* existing table columns
+* Div/Yr remains removed
+
+Part 6 — Validation
+
+Validate:
+
+1. Main “Save Snapshot” / manual save button no longer appears.
+2. Daily auto-save still fires for the default Thematic screen.
+3. Daily auto-save does not fire when user manually changes theme/filter controls and applies a custom screen.
+4. Daily Screens dropdown still shows today’s screen.
+5. Opening daily screen works.
+6. Back to Live works.
+7. Daily Insights loads.
+8. No provider/admin calls.
+9. Div/Yr does not reappear.
+
+Return:
+
+* files changed
+* manual save UI removal confirmation
+* auto-save gating behavior
+* validation results
+* limitations
