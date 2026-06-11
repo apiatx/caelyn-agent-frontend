@@ -1,0 +1,151 @@
+Do not call FMP, Tradier, options providers, admin rebuild endpoints, or refresh endpoints directly.
+Use only normal backend Screener Hub GET endpoints.
+
+Goal:
+Clean up Screener Hub columns and options display now that backend options fields are standardized.
+
+Backend now provides:
+- options_oi
+- previous_options_oi
+- options_oi_change
+- options_oi_change_pct
+- options_oi_change_status
+- options_activity_score
+- options_source
+- options_updated_at
+- options_columns_info
+
+Important backend semantics:
+- options_oi = open interest contracts, not dollars
+- options_oi_change_pct = percent change in OI versus previous cached snapshot
+- options_oi_change_pct is percentage points: 12.5 = +12.5%
+- options_oi_change_status explains why pct is missing, e.g. prior_zero or no_prior_snapshot
+
+Part 1 — Remove Div/Yr column
+
+Remove/hide Div/Yr / Last Annual Dividend from all Screener Hub tabs.
+
+Remove it from:
+- visible columns
+- column config
+- sort config if present
+- copy/export output if applicable
+
+Do not remove backend fields. This is frontend display only.
+
+Part 2 — OI Chg must always display percent only
+
+Update OI Chg rendering:
+- Use options_oi_change_pct OR optionsOiChangePct only.
+- Render as signed percent:
+  - +12.50%
+  - -8.20%
+  - 0.00%
+
+If options_oi_change_pct is null/missing:
+- show —
+- optionally use title tooltip from options_oi_change_status:
+  - prior_zero = “No percent change yet because previous OI was zero.”
+  - no_prior_snapshot = “No prior options snapshot yet.”
+- Do NOT show absolute options_oi_change in the OI Chg column.
+
+This should eliminate mixed displays like:
+- +94.4K
+- +417.65%
+in the same OI Chg column.
+
+Part 3 — Clarify Options OI display
+
+Keep the label as:
+- Options OI
+
+Render compact number only:
+- 94.4K
+- 14.1K
+- 866
+
+Do not show a dollar sign.
+Do not imply this is money.
+Keep freshness text like “14m ago” subtle and small.
+
+Add tooltip/header title:
+“Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker.”
+
+Part 4 — Add header tooltips for non-obvious columns
+
+Use existing tooltip component if available.
+If not, use native title attributes.
+
+Add tooltips to:
+
+Vol/MCap:
+“Trading volume divided by market cap. Higher values can signal unusual activity relative to company size.”
+
+Vol Surge:
+“Current volume versus recent average volume. Example: 3.0x means roughly 3 times normal volume.”
+
+Accum:
+“Accumulation signal from cached price/volume behavior. A check means the stock is showing accumulation-like behavior.”
+
+Options OI:
+“Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker.”
+
+OI Chg:
+“Percent change in open interest versus the previous cached options snapshot.”
+
+Opt Activity:
+“Internal options activity score based on cached options signals like open interest, change, and volume where available.”
+
+Role:
+“Why the ticker appears in this screen, such as hidden gem, supply chain player, options confirmed, or social confirmed.”
+
+Score:
+“Composite screener score for the selected tab. Higher is better within this screen.”
+
+Do not add tooltips to obvious columns:
+- Symbol
+- Company
+- Market Cap
+- Sector
+- Industry
+- Beta
+- Price
+- 1D %
+- Volume
+- $ Volume
+- Exchange
+
+Part 5 — Preserve behavior
+
+Do not break:
+- Thematic
+- Social
+- Bottlenecks
+- Watchlist + Portfolio
+- Fundamentals
+- Apply flow
+- market cap filters
+- freshness badges
+- Copy button
+- TradingView chart modal
+
+Part 6 — Validation
+
+Validate:
+1. Div/Yr column no longer appears on any Screener Hub tab.
+2. Options OI displays compact contract counts only, no dollar signs.
+3. OI Chg displays percent when options_oi_change_pct exists.
+4. OI Chg displays — when pct is unavailable.
+5. OI Chg no longer displays absolute values like +94.4K.
+6. Header tooltips appear for Vol/MCap, Vol Surge, Accum, Options OI, OI Chg, Opt Activity, Role, and Score.
+7. Thematic, Social, Bottlenecks, Watchlist+Portfolio, Fundamentals still load.
+8. No direct provider/admin calls.
+
+Return:
+- files changed
+- Div/Yr removal confirmation
+- OI Chg percent-only behavior
+- Options OI display behavior
+- tooltip behavior
+- validation results
+- remaining limitations

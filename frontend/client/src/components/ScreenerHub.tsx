@@ -26,7 +26,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 // ── Column definitions ─────────────────────────────────────────────────────────
 // Single unified column set used by ALL four tabs.
 
-type ColDef = { key: string; label: string; numeric?: boolean; aliases?: string[]; tabs?: TabKey[] };
+type ColDef = { key: string; label: string; numeric?: boolean; aliases?: string[]; tabs?: TabKey[]; tooltip?: string };
 
 const ALL_COLUMNS: ColDef[] = [
   { key: "symbol",                 label: "Symbol",       aliases: ["ticker", "stock"] },
@@ -41,18 +41,17 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "change_30d",             label: "30D %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["30d", "30D", "1M", "1m", "price_change_30d", "change_1m", "month_change"] },
   { key: "change_ytd",             label: "YTD %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["ytd", "YTD", "price_change_ytd", "ytd_change", "ytdchange"] },
   { key: "change_1y",              label: "1Y %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["1y", "1Y", "price_change_1y", "year_change", "change_1year", "oneYearChange"] },
-  { key: "last_annual_dividend",   label: "Div/Yr",       numeric: true,  aliases: ["lastAnnualDividend", "annual_dividend", "dividend"] },
   { key: "volume",                 label: "Volume",       numeric: true,  aliases: ["vol"] },
   { key: "dollar_volume",          label: "$ Volume",     numeric: true,  aliases: ["dollarVolume", "dv"] },
-  { key: "volume_to_market_cap",   label: "Vol/MCap",     numeric: true,  aliases: ["volumeToMarketCap", "vol_to_mcap"] },
+  { key: "volume_to_market_cap",   label: "Vol/MCap",     numeric: true,  aliases: ["volumeToMarketCap", "vol_to_mcap"],     tooltip: "Trading volume divided by market cap. Higher values can signal unusual activity relative to company size." },
   { key: "exchange",               label: "Exchange" },
-  { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge"] },
-  { key: "accumulation",           label: "Accum",                        aliases: ["accum"] },
-  { key: "options_oi",             label: "Options OI",   numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"] },
-  { key: "options_oi_change",      label: "OI Chg",       numeric: true,  aliases: ["optionsOiChange", "oi_change", "options_oi_change_pct", "optionsOiChangePct"] },
-  { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity", "options_activity"] },
-  { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"] },
-  { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"] },
+  { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge"],                tooltip: "Current volume versus recent average volume. Example: 3.0x means roughly 3 times normal volume." },
+  { key: "accumulation",           label: "Accum",                        aliases: ["accum"],                                tooltip: "Accumulation signal from cached price/volume behavior. A check means the stock is showing accumulation-like behavior." },
+  { key: "options_oi",             label: "Options OI",   numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"], tooltip: "Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker." },
+  { key: "options_oi_change",      label: "OI Chg",       numeric: true,  aliases: ["optionsOiChange", "oi_change", "options_oi_change_pct", "optionsOiChangePct"],     tooltip: "Percent change in open interest versus the previous cached options snapshot." },
+  { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity", "options_activity"],                   tooltip: "Internal options activity score based on cached options signals like open interest, change, and volume where available." },
+  { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"], tooltip: "Why the ticker appears in this screen, such as hidden gem, supply chain player, options confirmed, or social confirmed." },
+  { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"],   tooltip: "Composite screener score for the selected tab. Higher is better within this screen." },
   // Fundamentals-only columns
   { key: "pe_ratio",        label: "P/E",        numeric: true, tabs: ["fundamentals"], aliases: ["pe", "priceEarnings", "price_to_earnings", "priceToEarningsRatio", "pe_ttm"] },
   { key: "eps",             label: "EPS",        numeric: true, tabs: ["fundamentals"], aliases: ["eps_ttm", "earningsPerShare", "eps_diluted"] },
@@ -652,12 +651,6 @@ export default function ScreenerHub() {
       );
     }
 
-    if (c.key === "last_annual_dividend") {
-      const n = toNum(v);
-      if (n === null || n === 0) return <span className="text-white/40">—</span>;
-      return <span>{formatCurrency(v)}</span>;
-    }
-
     if (c.key === "volume") {
       return <span>{formatCompactNumber(v)}</span>;
     }
@@ -747,14 +740,13 @@ export default function ScreenerHub() {
           </span>
         );
       }
-      const n = toNum(v);
-      if (n === null) return <span className="text-white/40">—</span>;
-      const sign = n > 0 ? "+" : "";
-      return (
-        <span className={classNames(n > 0 && "text-emerald-300", n < 0 && "text-rose-300", n === 0 && "text-white/50")}>
-          {sign}{formatCompactNumber(n)}
-        </span>
-      );
+      // No pct available — show — with status-based tooltip explaining why
+      const status = getField(row, "options_oi_change_status", ["optionsOiChangeStatus"]);
+      const tip =
+        status === "prior_zero"          ? "No percent change yet because previous OI was zero." :
+        status === "no_prior_snapshot"   ? "No prior options snapshot yet." :
+        undefined;
+      return <span className="text-white/40" title={tip}>—</span>;
     }
 
     if (c.key === "options_activity_score") {
@@ -1194,9 +1186,11 @@ export default function ScreenerHub() {
                               key={c.key}
                               onClick={() => onSort(c.key)}
                               data-testid={`screener-hub-th-${c.key}`}
+                              title={c.tooltip}
                               className={classNames(
                                 "text-left px-3 py-2 font-medium text-white/70 whitespace-nowrap cursor-pointer select-none hover:text-white",
                                 isSorted && "text-purple-200",
+                                c.tooltip && "cursor-help",
                               )}
                             >
                               <span className="inline-flex items-center gap-1">
