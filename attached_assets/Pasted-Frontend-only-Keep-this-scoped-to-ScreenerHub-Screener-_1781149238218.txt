@@ -1,0 +1,200 @@
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not modify unrelated pages.
+Do not call FMP.
+Do not call Tradier.
+Do not call options providers.
+Do not call admin rebuild or refresh endpoints.
+
+Goal:
+Add Saved Screens UI to Screener Hub using the new backend endpoints.
+
+Backend endpoints now available:
+
+* POST /api/screener-hub/saved-screens
+* GET /api/screener-hub/saved-screens
+* GET /api/screener-hub/saved-screens/{id}
+* DELETE /api/screener-hub/saved-screens/{id}
+* GET /api/screener-hub/saved-screens/insights
+
+Important:
+Saved screens must save and reopen the current visible table rows only.
+Opening a saved screen must not re-run the screener.
+Opening a saved screen must not call providers.
+Use the same auth/header pattern already used by other authenticated frontend API calls.
+
+Current table columns:
+
+* Symbol
+* Company
+* Market Cap
+* Sector
+* Industry
+* Beta
+* Price
+* 1D %
+* Volume
+* $ Volume
+* Vol/MCap
+* Exchange
+* Vol Surge
+* Accum
+* Options OI
+* OI Chg
+* Opt Activity
+* Role
+* Score
+
+Do not reintroduce Div/Yr.
+
+Part 1 — Save Screen button
+
+Add a button near Copy:
+“Save Screen”
+
+When clicked:
+
+* open a small modal
+* default name: “{Theme or Tab} — {current date}”
+* allow user to edit name
+* save current visible rows only
+* include:
+
+  * current tab
+  * selected/applied theme_key
+  * theme_label
+  * applied filters
+  * query params
+  * score mode
+  * current response metadata if available:
+
+    * universe_built_at
+    * served_at
+    * universe_age_hours
+    * universe_db_source
+    * quote_cache_status
+    * low_metadata_coverage
+    * metadata_coverage_warning
+    * fund_coverage_pct
+    * eligible_fund_coverage_pct
+    * theme_rs_updated_at
+    * default_theme_reason
+* POST to /api/screener-hub/saved-screens
+
+Do not refetch live screener data while saving.
+
+Part 2 — Saved Screens dropdown
+
+Add a Saved Screens dropdown/button near Save Screen.
+
+On open/load:
+
+* GET /api/screener-hub/saved-screens
+
+Display:
+
+* saved screen name
+* date
+* tab/theme
+* row count
+* top symbol preview if useful
+
+On select:
+
+* GET /api/screener-hub/saved-screens/{id}
+* display saved rows in the same Screener Hub table
+
+Show a clear banner:
+“Viewing saved screen from {date}”
+
+Add:
+“Back to Live Screener”
+
+Opening a saved screen must not trigger /api/screener-hub live fetch unless user clicks Back to Live Screener.
+
+Part 3 — Saved mode behavior
+
+When viewing a saved screen:
+
+* table uses saved rows
+* Copy button copies saved rows
+* show saved screen metadata instead of live universe freshness
+* disable or visually de-emphasize Apply controls, or label them as live-only
+* Save Screen can be hidden or changed to “Save Copy”
+* Back to Live Screener restores normal live screener state
+
+Part 4 — Saved Insights
+
+Add a compact Saved Insights section/button/panel.
+
+Call:
+GET /api/screener-hub/saved-screens/insights
+
+Display compact lists/cards:
+
+* Recurring tickers
+* Week-over-week tickers
+* Newly appearing tickers
+* Biggest gainers since first saved
+* Biggest decliners since first saved
+* Recurring themes
+* Emerging themes
+
+Keep this lightweight. It should answer:
+
+* “What keeps showing up?”
+* “What is newly emerging?”
+* “What has worked since it first appeared?”
+
+Do not make this a huge analytics page.
+
+Part 5 — Delete saved screen
+
+Add delete action from saved screen dropdown or saved screen detail.
+
+Use:
+DELETE /api/screener-hub/saved-screens/{id}
+
+Confirm before delete.
+Refresh saved screens list after delete.
+If currently viewing the deleted screen, return to live screener.
+
+Part 6 — API behavior
+
+Frontend should only call:
+
+* saved screen endpoints for saved mode
+* existing /api/screener-hub live endpoints for live mode only
+
+No direct FMP.
+No direct Tradier.
+No direct options provider.
+No admin rebuild.
+No admin refresh.
+
+Part 7 — Validation
+
+Validate:
+
+1. Save current Thematic screen.
+2. Saved screen appears in dropdown.
+3. Reopen saved screen.
+4. Saved screen shows the same rows in the same clean table.
+5. Saved screen does not trigger live screener/provider calls.
+6. Back to Live Screener works.
+7. Saved Insights loads.
+8. Recurring/new/performance/theme insight sections render.
+9. Delete saved screen works.
+10. Existing Thematic/Social/Bottlenecks/Watchlist+Portfolio/Fundamentals tabs still work.
+11. Div/Yr does not reappear.
+
+Return:
+
+* files changed
+* UI added
+* endpoint calls used
+* saved mode behavior
+* insights behavior
+* validation result
+* limitations

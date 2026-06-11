@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, BarChart2, X } from "lucide-react";
+import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, BarChart2, X, Save, BookOpen, Trash2, ChevronDown, TrendingUp, TrendingDown, Lightbulb, RefreshCw } from "lucide-react";
 
 type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio" | "fundamentals";
 
@@ -103,6 +103,31 @@ interface HubResponse {
   rows?: any; data?: any; items?: any; results?: any;
 }
 
+interface SavedScreen {
+  id: string;
+  name: string;
+  created_at: string;
+  tab?: string;
+  theme_key?: string;
+  theme_label?: string;
+  row_count?: number;
+  top_symbols?: string[];
+}
+interface SavedScreenDetail extends SavedScreen {
+  rows: RowData[];
+  metadata?: Record<string, any>;
+  filters?: Record<string, any>;
+}
+interface InsightsData {
+  recurring_tickers?:      Array<{ symbol: string; count?: number }>;
+  week_over_week_tickers?: Array<{ symbol: string }>;
+  newly_appearing_tickers?: Array<{ symbol: string; first_seen?: string }>;
+  biggest_gainers?:        Array<{ symbol: string; gain_pct?: number; price_change_pct?: number }>;
+  biggest_decliners?:      Array<{ symbol: string; decline_pct?: number; price_change_pct?: number }>;
+  recurring_themes?:       Array<{ theme: string; count?: number }>;
+  emerging_themes?:        Array<{ theme: string }>;
+}
+
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
 function pickArray(payload: any, keys: string[]): any[] {
@@ -141,6 +166,21 @@ function classNames(...xs: Array<string | false | undefined | null>): string {
 
 async function fetchJson<T = any>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, { credentials: "include", signal });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`${url} failed: ${res.status} ${txt.slice(0, 120)}`);
+  }
+  return res.json();
+}
+
+async function fetchJsonAuth<T = any>(url: string, opts: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem("caelyn_jwt") ?? sessionStorage.getItem("caelyn_jwt") ?? "";
+  const authHdr: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(url, {
+    credentials: "include",
+    ...opts,
+    headers: { "Content-Type": "application/json", ...authHdr, ...(opts.headers as Record<string, string> | undefined) },
+  });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`${url} failed: ${res.status} ${txt.slice(0, 120)}`);
@@ -365,8 +405,43 @@ export default function ScreenerHub() {
   const [copied, setCopied] = useState<boolean>(false);
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
 
+  // ── Saved Screens ─────────────────────────────────────────────────────────────
+  const [savedMode, setSavedMode]               = useState(false);
+  const [currentSavedId, setCurrentSavedId]     = useState<string | null>(null);
+  const [savedRows, setSavedRows]               = useState<RowData[]>([]);
+  const [savedScreenName, setSavedScreenName]   = useState("");
+  const [savedScreenCreatedAt, setSavedScreenCreatedAt] = useState("");
+  const [savedMetaObj, setSavedMetaObj]         = useState<Record<string, any>>({});
+  // Save modal
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName]           = useState("");
+  const [saving, setSaving]               = useState(false);
+  const [saveError, setSaveError]         = useState<string | null>(null);
+  // Saved list dropdown
+  const [showSavedList, setShowSavedList]     = useState(false);
+  const [savedList, setSavedList]             = useState<SavedScreen[]>([]);
+  const [savedListLoading, setSavedListLoading] = useState(false);
+  const savedListRef                          = useRef<HTMLDivElement>(null);
+  // Insights
+  const [showInsights, setShowInsights]   = useState(false);
+  const [insightsData, setInsightsData]   = useState<InsightsData | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  // Delete confirmation
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   // Prevents the initial auto-apply from running more than once
   const initialAppliedRef = useRef<boolean>(false);
+
+  // Close saved list dropdown on outside click
+  useEffect(() => {
+    if (!showSavedList) return;
+    const handler = (e: MouseEvent) => {
+      if (savedListRef.current && !savedListRef.current.contains(e.target as Node))
+        setShowSavedList(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showSavedList]);
 
   // ── Load themes list ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -470,6 +545,7 @@ export default function ScreenerHub() {
   // setLoading(false) is only suppressed for aborted requests to avoid
   // clearing the loading state that the newer request set.
   useEffect(() => {
+    if (savedMode) return;
     if (tab === "thematic" && !appliedTheme) return;
     const url = buildUrl();
     const ctrl = new AbortController();
@@ -511,7 +587,7 @@ export default function ScreenerHub() {
       }
     })();
     return () => { ctrl.abort(); };
-  }, [buildUrl]);
+  }, [buildUrl, savedMode]);
 
   // ── Visible columns ───────────────────────────────────────────────────────────
   const visibleColumns = useMemo(() => {
@@ -523,13 +599,18 @@ export default function ScreenerHub() {
     });
   }, [signals, tab]);
 
+  const activeRows = useMemo(
+    () => (savedMode ? savedRows : rows),
+    [savedMode, savedRows, rows],
+  );
+
   const sortedRows = useMemo(() => {
-    if (!rows.length) return rows;
+    if (!activeRows.length) return activeRows;
     const col = ALL_COLUMNS.find((c) => c.key === sortKey);
     const aliases = col?.aliases ?? [];
     const numeric = !!col?.numeric;
     const dir = sortDir === "asc" ? 1 : -1;
-    const out = [...rows];
+    const out = [...activeRows];
     out.sort((a, b) => {
       const va = getField(a, sortKey, aliases);
       const vb = getField(b, sortKey, aliases);
@@ -547,7 +628,7 @@ export default function ScreenerHub() {
       return String(va).localeCompare(String(vb)) * dir;
     });
     return out;
-  }, [rows, sortKey, sortDir]);
+  }, [activeRows, sortKey, sortDir]);
 
   const onSort = (key: string) => {
     if (sortKey === key) {
@@ -594,6 +675,151 @@ export default function ScreenerHub() {
     } catch (e) {
       console.warn("[ScreenerHub] clipboard write failed", e);
     }
+  };
+
+  // ── Saved Screens handlers ────────────────────────────────────────────────────
+
+  const loadSavedList = useCallback(async () => {
+    setSavedListLoading(true);
+    try {
+      const data = await fetchJsonAuth<any>("/api/screener-hub/saved-screens");
+      const list: SavedScreen[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.saved_screens) ? data.saved_screens
+        : Array.isArray(data?.screens)        ? data.screens
+        : Array.isArray(data?.items)          ? data.items
+        : [];
+      setSavedList(list);
+    } catch (e) {
+      console.warn("[ScreenerHub] saved list load failed", e);
+      setSavedList([]);
+    } finally {
+      setSavedListLoading(false);
+    }
+  }, []);
+
+  const toggleSavedList = () => {
+    const next = !showSavedList;
+    setShowSavedList(next);
+    if (next) loadSavedList();
+  };
+
+  const openSaveModal = () => {
+    const themeObj   = themes.find((t) => t.id === appliedTheme);
+    const tabLabel   = TAB_LABELS[tab] ?? tab;
+    const themeLabel = themeObj?.label ?? appliedTheme;
+    const dateStr    = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    setSaveName(tab === "thematic" && themeLabel ? `${themeLabel} — ${dateStr}` : `${tabLabel} — ${dateStr}`);
+    setSaveError(null);
+    setShowSaveModal(true);
+  };
+
+  const doSave = async () => {
+    if (!saveName.trim()) { setSaveError("Name is required"); return; }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const themeObj = themes.find((t) => t.id === appliedTheme);
+      await fetchJsonAuth("/api/screener-hub/saved-screens", {
+        method: "POST",
+        body: JSON.stringify({
+          name:        saveName.trim(),
+          tab,
+          theme_key:   appliedTheme  || null,
+          theme_label: themeObj?.label ?? appliedTheme ?? null,
+          score_mode:  appliedScoreMode,
+          filters: {
+            mcap_preset:     appliedMcapPreset,
+            mcap_custom_min: appliedMcapCustomMin || null,
+            mcap_custom_max: appliedMcapCustomMax || null,
+            min_volume:      appliedMinVolume      || null,
+            exchange:        appliedExchange       || null,
+          },
+          metadata: {
+            universe_built_at:          meta.universe_built_at,
+            served_at:                  meta.served_at,
+            universe_age_hours:         meta.universe_age_hours,
+            universe_db_source:         meta.universe_db_source,
+            quote_cache_status:         meta.quote_cache_status,
+            low_metadata_coverage:      meta.low_metadata_coverage,
+            metadata_coverage_warning:  meta.metadata_coverage_warning,
+            fund_coverage_pct:          meta.fund_coverage_pct,
+            eligible_fund_coverage_pct: meta.eligible_fund_coverage_pct,
+            theme_rs_updated_at:        themeRsUpdatedAt   || null,
+            default_theme_reason:       defaultThemeReason || null,
+            rows_before_filters:        meta.rows_before_filters,
+            rows_after_filters:         meta.rows_after_filters,
+          },
+          rows: sortedRows,
+        }),
+      });
+      setShowSaveModal(false);
+      if (showSavedList) loadSavedList();
+    } catch (e: any) {
+      setSaveError(e?.message ?? "Save failed. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openSavedScreen = async (id: string) => {
+    setShowSavedList(false);
+    try {
+      const data   = await fetchJsonAuth<any>(`/api/screener-hub/saved-screens/${id}`);
+      const detail = data?.screen ?? data?.saved_screen ?? data;
+      const arr: RowData[] = Array.isArray(detail?.rows) ? detail.rows : [];
+      setSavedRows(arr);
+      setCurrentSavedId(id);
+      setSavedScreenName(detail?.name ?? "Saved screen");
+      setSavedScreenCreatedAt(detail?.created_at ?? "");
+      setSavedMetaObj(detail?.metadata ?? {});
+      setSavedMode(true);
+    } catch (e: any) {
+      console.warn("[ScreenerHub] open saved screen failed:", e);
+    }
+  };
+
+  const backToLive = () => {
+    setSavedMode(false);
+    setCurrentSavedId(null);
+    setSavedRows([]);
+    setSavedScreenName("");
+    setSavedScreenCreatedAt("");
+    setSavedMetaObj({});
+  };
+
+  const confirmDelete = (id: string) => setConfirmDeleteId(id);
+  const cancelDelete  = ()           => setConfirmDeleteId(null);
+
+  const doDelete = async (id: string) => {
+    try {
+      await fetchJsonAuth(`/api/screener-hub/saved-screens/${id}`, { method: "DELETE" });
+      setConfirmDeleteId(null);
+      if (savedMode && currentSavedId === id) backToLive();
+      await loadSavedList();
+      setShowSavedList(true);
+    } catch (e) {
+      console.warn("[ScreenerHub] delete failed:", e);
+    }
+  };
+
+  const loadInsights = useCallback(async () => {
+    setInsightsLoading(true);
+    try {
+      const data = await fetchJsonAuth<InsightsData>("/api/screener-hub/saved-screens/insights");
+      setInsightsData(data);
+    } catch (e) {
+      console.warn("[ScreenerHub] insights load failed:", e);
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, []);
+
+  const toggleInsights = () => {
+    const next = !showInsights;
+    setShowInsights(next);
+    if (next && !insightsData) loadInsights();
+    setShowSavedList(false);
   };
 
   // ── Cell renderers ───────────────────────────────────────────────────────────
@@ -978,7 +1204,8 @@ export default function ScreenerHub() {
           Apply
         </Button>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Copy */}
           <Button
             type="button" onClick={copyTable}
             data-testid="screener-hub-copy" variant="outline" size="sm"
@@ -987,6 +1214,117 @@ export default function ScreenerHub() {
             {copied ? <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
             {copied ? "Copied" : "Copy"}
           </Button>
+
+          {/* Save Screen — live mode only, requires rows */}
+          {!savedMode && activeRows.length > 0 && (
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={openSaveModal}
+              className="bg-black/40 border-purple-500/30 text-white hover:bg-purple-500/20"
+            >
+              <Save className="w-3.5 h-3.5 mr-1.5" />
+              Save
+            </Button>
+          )}
+
+          {/* Saved Screens dropdown */}
+          <div className="relative" ref={savedListRef}>
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={toggleSavedList}
+              className={classNames(
+                "bg-black/40 border-purple-500/30 text-white hover:bg-purple-500/20",
+                showSavedList && "bg-purple-500/15 border-purple-400/50",
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+              Saved
+              {savedList.length > 0 && (
+                <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-purple-500/30 text-purple-200 leading-none">
+                  {savedList.length}
+                </span>
+              )}
+              <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
+            </Button>
+
+            {showSavedList && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-[320px] bg-[#0c0717] border border-purple-500/25 rounded-xl shadow-2xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-white/8 flex items-center justify-between">
+                  <span className="text-xs font-medium text-white/60">Saved Screens</span>
+                  <button
+                    onClick={toggleInsights}
+                    className="flex items-center gap-1 text-[11px] text-purple-300/60 hover:text-purple-200 transition-colors"
+                  >
+                    <Lightbulb className="w-3 h-3" />
+                    Insights
+                  </button>
+                </div>
+                <div className="max-h-[340px] overflow-y-auto">
+                  {savedListLoading ? (
+                    <div className="px-3 py-6 text-center text-white/40 text-xs flex items-center justify-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…
+                    </div>
+                  ) : savedList.length === 0 ? (
+                    <div className="px-3 py-8 text-center space-y-1">
+                      <div className="text-xs text-white/30">No saved screens yet.</div>
+                      <div className="text-[11px] text-white/20">Use "Save" to capture the current results.</div>
+                    </div>
+                  ) : (
+                    savedList.map((s) => (
+                      <div
+                        key={s.id}
+                        className={classNames(
+                          "flex items-start gap-2 px-3 py-2.5 border-b border-white/5 hover:bg-purple-500/8 transition-colors",
+                          currentSavedId === s.id && savedMode && "bg-purple-600/10",
+                        )}
+                      >
+                        <button onClick={() => openSavedScreen(s.id)} className="flex-1 text-left min-w-0">
+                          <div className="text-xs font-medium text-white/90 truncate">{s.name}</div>
+                          <div className="text-[11px] text-white/35 mt-0.5 flex flex-wrap gap-x-2">
+                            {s.created_at && (
+                              <span>{new Date(s.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+                            )}
+                            {s.tab && <span>{TAB_LABELS[s.tab as TabKey] ?? s.tab}</span>}
+                            {s.theme_label && <span>· {s.theme_label}</span>}
+                            {s.row_count != null && <span>· {s.row_count} rows</span>}
+                          </div>
+                          {s.top_symbols && s.top_symbols.length > 0 && (
+                            <div className="text-[11px] text-purple-300/40 mt-0.5 truncate">
+                              {s.top_symbols.slice(0, 5).join(" · ")}
+                            </div>
+                          )}
+                        </button>
+                        {confirmDeleteId === s.id ? (
+                          <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                            <button
+                              onClick={() => doDelete(s.id)}
+                              className="text-[11px] text-rose-400 hover:text-rose-300 px-1.5 py-0.5 rounded border border-rose-500/30 hover:border-rose-400/50 transition-colors"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={cancelDelete}
+                              className="text-[11px] text-white/35 hover:text-white/70 px-1"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); confirmDelete(s.id); }}
+                            className="shrink-0 mt-0.5 p-1 rounded text-white/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1134,6 +1472,153 @@ export default function ScreenerHub() {
           {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
             <TabsContent key={k} value={k} className="mt-4 space-y-4">
 
+              {/* Saved mode banner */}
+              {savedMode && (
+                <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-amber-500/8 border border-amber-500/20 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
+                    <span className="text-white/70 truncate">
+                      Viewing saved screen
+                      {savedScreenCreatedAt && (
+                        <> from{" "}
+                          <span className="text-white/90">{new Date(savedScreenCreatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+                        </>
+                      )}
+                      {savedScreenName && (
+                        <> · <span className="text-white/90 font-medium">{savedScreenName}</span></>
+                      )}
+                      <span className="text-white/30 ml-1.5">({savedRows.length} rows)</span>
+                    </span>
+                  </div>
+                  <Button
+                    type="button" size="sm" variant="outline"
+                    onClick={backToLive}
+                    className="shrink-0 h-6 px-2 text-[11px] bg-black/40 border-white/20 text-white/80 hover:bg-white/10 hover:text-white"
+                  >
+                    Back to Live Screener
+                  </Button>
+                </div>
+              )}
+
+              {/* Saved Insights panel */}
+              {showInsights && (
+                <div className="rounded-xl border border-purple-500/20 bg-black/40 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-purple-400" />
+                      <span className="text-sm font-semibold text-white/90">Saved Insights</span>
+                      <span className="text-[11px] text-white/30">across all saved screens</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={loadInsights} disabled={insightsLoading}
+                        className="text-white/25 hover:text-white/60 transition-colors disabled:opacity-40"
+                        title="Refresh insights"
+                      >
+                        <RefreshCw className={classNames("w-3.5 h-3.5", insightsLoading && "animate-spin")} />
+                      </button>
+                      <button
+                        onClick={() => setShowInsights(false)}
+                        className="text-white/25 hover:text-white/60 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {insightsLoading && !insightsData ? (
+                    <div className="py-5 text-center text-white/40 text-xs flex items-center justify-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading insights…
+                    </div>
+                  ) : !insightsData ? (
+                    <p className="py-4 text-center text-white/30 text-xs">
+                      Save at least one screen to see insights.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                      {insightsData.recurring_tickers && insightsData.recurring_tickers.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Recurring</div>
+                          {insightsData.recurring_tickers.slice(0, 7).map((t) => (
+                            <div key={t.symbol} className="flex items-center justify-between text-xs">
+                              <span className="font-semibold text-white/90">{t.symbol}</span>
+                              {t.count != null && <span className="text-white/30">{t.count}×</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {insightsData.week_over_week_tickers && insightsData.week_over_week_tickers.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Week-over-Week</div>
+                          {insightsData.week_over_week_tickers.slice(0, 7).map((t) => (
+                            <div key={t.symbol} className="text-xs font-semibold text-white/80">{t.symbol}</div>
+                          ))}
+                        </div>
+                      )}
+                      {insightsData.newly_appearing_tickers && insightsData.newly_appearing_tickers.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Newly Appearing</div>
+                          {insightsData.newly_appearing_tickers.slice(0, 7).map((t) => (
+                            <div key={t.symbol} className="text-xs font-semibold text-white/80">{t.symbol}</div>
+                          ))}
+                        </div>
+                      )}
+                      {insightsData.biggest_gainers && insightsData.biggest_gainers.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-400/60" />
+                            <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Gainers Since Save</div>
+                          </div>
+                          {insightsData.biggest_gainers.slice(0, 5).map((t) => {
+                            const pct = t.gain_pct ?? t.price_change_pct;
+                            return (
+                              <div key={t.symbol} className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-white/90">{t.symbol}</span>
+                                {pct != null && <span className="text-emerald-300">+{pct.toFixed(1)}%</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {insightsData.biggest_decliners && insightsData.biggest_decliners.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <TrendingDown className="w-3 h-3 text-rose-400/60" />
+                            <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Decliners Since Save</div>
+                          </div>
+                          {insightsData.biggest_decliners.slice(0, 5).map((t) => {
+                            const pct = t.decline_pct ?? t.price_change_pct;
+                            return (
+                              <div key={t.symbol} className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-white/90">{t.symbol}</span>
+                                {pct != null && <span className="text-rose-300">{pct.toFixed(1)}%</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {((insightsData.recurring_themes?.length ?? 0) > 0 || (insightsData.emerging_themes?.length ?? 0) > 0) && (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Themes</div>
+                          {insightsData.recurring_themes?.slice(0, 4).map((t) => (
+                            <div key={t.theme} className="flex items-center justify-between text-xs">
+                              <span className="text-white/80 truncate">{t.theme}</span>
+                              {t.count != null && <span className="text-white/30 ml-1 shrink-0">{t.count}×</span>}
+                            </div>
+                          ))}
+                          {insightsData.emerging_themes?.slice(0, 2).map((t) => (
+                            <div key={t.theme} className="flex items-center gap-1.5 text-xs">
+                              <span className="text-[9px] px-1 py-0.5 rounded bg-amber-400/15 text-amber-400/80 border border-amber-400/20">new</span>
+                              <span className="text-white/60 truncate">{t.theme}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Controls — pending state only; Apply commits */}
               {renderControls(k)}
 
@@ -1246,6 +1731,75 @@ export default function ScreenerHub() {
           symbol={expandedSymbol}
           onClose={() => setExpandedSymbol(null)}
         />
+      )}
+
+      {/* ── Save Screen Modal ───────────────────────────────────────────────── */}
+      {showSaveModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowSaveModal(false)}
+        >
+          <div
+            className="w-full max-w-[420px] bg-[#0c0717] border border-purple-500/30 rounded-xl p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Save className="w-4 h-4 text-purple-400" />
+                <h3 className="text-sm font-semibold text-white">Save Screen</h3>
+              </div>
+              <button onClick={() => setShowSaveModal(false)} className="text-white/30 hover:text-white/70 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/50">Screen name</label>
+              <input
+                autoFocus
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
+                placeholder="e.g. AI Infrastructure — Jun 11"
+                className="w-full bg-black/50 border border-purple-500/25 rounded-lg text-white text-sm px-3 py-2 placeholder-white/20 focus:outline-none focus:border-purple-400/60"
+              />
+            </div>
+
+            <div className="text-xs text-white/35 space-y-0.5">
+              <div>{sortedRows.length} rows saved as a static snapshot.</div>
+              <div className="text-white/20">Opening a saved screen does not re-run the screener or call any providers.</div>
+            </div>
+
+            {saveError && (
+              <div className="text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                {saveError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                type="button" variant="outline" size="sm"
+                onClick={() => setShowSaveModal(false)}
+                className="bg-black/40 border-white/15 text-white/60 hover:bg-white/10 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button" size="sm"
+                onClick={doSave}
+                disabled={saving || !saveName.trim()}
+                className="bg-purple-600/80 hover:bg-purple-500 border-0 text-white disabled:opacity-50"
+              >
+                {saving ? (
+                  <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
+                ) : (
+                  <><Save className="w-3.5 h-3.5 mr-1.5" />Save</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </Card>
   );
