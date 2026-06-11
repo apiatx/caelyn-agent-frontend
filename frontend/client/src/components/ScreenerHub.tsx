@@ -31,27 +31,27 @@ type ColDef = { key: string; label: string; numeric?: boolean; aliases?: string[
 const ALL_COLUMNS: ColDef[] = [
   { key: "symbol",                 label: "Symbol",       aliases: ["ticker", "stock"] },
   { key: "company_name",           label: "Company",      aliases: ["companyName", "name", "company"] },
-  { key: "market_cap",             label: "Market Cap",   numeric: true,  aliases: ["marketCap", "mcap"] },
   { key: "sector",                 label: "Sector" },
   { key: "industry",               label: "Industry" },
-  { key: "beta",                   label: "Beta",         numeric: true, tooltip: "Measures how volatile the stock is relative to the market. Beta above 1 means more volatile than the market; below 1 means less volatile." },
+  { key: "market_cap",             label: "Market Cap",   numeric: true,  aliases: ["marketCap", "mcap"] },
   { key: "price",                  label: "Price",        numeric: true,  aliases: ["last", "lastPrice"] },
   { key: "change_1d",              label: "1D %",         numeric: true,  aliases: ["change_percent_1d", "changePercent1d", "oneDayChange", "pct_1d", "change_pct_1d", "day_change_pct", "1D", "1d"] },
   { key: "change_7d",              label: "7D %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["7d", "7D", "5D", "5d", "price_change_7d", "change_5d", "week_change", "fiveday"] },
   { key: "change_30d",             label: "30D %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["30d", "30D", "1M", "1m", "price_change_30d", "change_1m", "month_change"] },
   { key: "change_ytd",             label: "YTD %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["ytd", "YTD", "price_change_ytd", "ytd_change", "ytdchange"] },
   { key: "change_1y",              label: "1Y %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["1y", "1Y", "price_change_1y", "year_change", "change_1year", "oneYearChange"] },
-  { key: "volume",                 label: "Volume",       numeric: true,  aliases: ["vol"] },
+  { key: "volume",                 label: "Options Volume", numeric: true,  aliases: ["vol"] },
   { key: "dollar_volume",          label: "$ Volume",     numeric: true,  aliases: ["dollarVolume", "dv"] },
   { key: "volume_to_market_cap",   label: "Vol/MCap",     numeric: true,  aliases: ["volumeToMarketCap", "vol_to_mcap"],     tooltip: "Trading volume divided by market cap. Higher values can signal unusual activity relative to company size." },
-  { key: "exchange",               label: "Exchange" },
   { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge"],                tooltip: "Current volume versus recent average volume. Example: 3.0x means roughly 3 times normal volume." },
   { key: "accumulation",           label: "Accum",                        aliases: ["accum"],                                tooltip: "Accumulation signal from cached price/volume behavior. A check means the stock is showing accumulation-like behavior." },
-  { key: "options_oi",             label: "Options OI",   numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"], tooltip: "Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker." },
+  { key: "beta",                   label: "Beta",         numeric: true, tooltip: "Measures how volatile the stock is relative to the market. Beta above 1 means more volatile than the market; below 1 means less volatile." },
+  { key: "options_oi",             label: "OI Contracts", numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"], tooltip: "Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker." },
   { key: "options_oi_change",      label: "OI Chg",       numeric: true,  aliases: ["optionsOiChange", "oi_change", "options_oi_change_pct", "optionsOiChangePct"],     tooltip: "Percent change in open interest versus the previous cached options snapshot." },
   { key: "options_activity_score", label: "Opt Activity", numeric: true,  aliases: ["optionsActivityScore", "options_activity", "options_activity"],                   tooltip: "Internal options activity score based on cached options signals like open interest, change, and volume where available." },
   { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"], tooltip: "Why the ticker appears in this screen, such as hidden gem, supply chain player, options confirmed, or social confirmed." },
   { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"],   tooltip: "Composite screener score for the selected tab. Higher is better within this screen." },
+  { key: "exchange",               label: "Exchange" },
   // Fundamentals-only columns
   { key: "pe_ratio",        label: "P/E",        numeric: true, tabs: ["fundamentals"], aliases: ["pe", "priceEarnings", "price_to_earnings", "priceToEarningsRatio", "pe_ttm"] },
   { key: "eps",             label: "EPS",        numeric: true, tabs: ["fundamentals"], aliases: ["eps_ttm", "earningsPerShare", "eps_diluted"] },
@@ -1158,6 +1158,7 @@ export default function ScreenerHub() {
                                 "text-left px-3 py-2 font-medium text-white/70 whitespace-nowrap cursor-pointer select-none hover:text-white",
                                 isSorted && "text-purple-200",
                                 c.tooltip && "cursor-help",
+                                c.key === "symbol" && "sticky left-0 z-20 bg-purple-950 border-r border-purple-500/20",
                               )}
                             >
                               <span className="inline-flex items-center gap-1">
@@ -1208,11 +1209,14 @@ export default function ScreenerHub() {
                         {sortedRows.map((row, i) => {
                           const sym = (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`;
                           return (
-                            <tr key={sym} className="border-t border-white/5 hover:bg-purple-500/5 transition-colors">
+                            <tr key={sym} className="group border-t border-white/5 hover:bg-purple-500/5 transition-colors">
                               {visibleColumns.map((c) => (
                                 <td
                                   key={c.key}
-                                  className="px-3 py-2 whitespace-nowrap text-white/90"
+                                  className={classNames(
+                                    "px-3 py-2 whitespace-nowrap text-white/90",
+                                    c.key === "symbol" && "sticky left-0 z-[1] bg-[#0c0717] group-hover:bg-[#100b1f] border-r border-purple-500/10",
+                                  )}
                                   data-testid={`screener-hub-cell-${c.key}-${i}`}
                                 >
                                   {renderCell(row, c, c.key === "symbol" ? () => setExpandedSymbol(sym) : undefined)}
