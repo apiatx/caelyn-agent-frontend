@@ -1,0 +1,192 @@
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP, Tradier, options providers, LLM APIs, admin rebuild, or refresh endpoints directly.
+Use only normal Screener Hub GET endpoints.
+
+Goal:
+Replace and correctly wire the Market Cap dropdown presets.
+
+Backend has validated these ranges and expects these params:
+
+Preset → Query params
+
+All:
+
+* omit marketCapMin
+* omit marketCapMax
+
+Under $1B:
+
+* marketCapMin=50000000
+* marketCapMax=1000000000
+
+$1B–$10B:
+
+* marketCapMin=1000000000
+* marketCapMax=10000000000
+
+$10B–$100B:
+
+* marketCapMin=10000000000
+* marketCapMax=100000000000
+
+$100B+:
+
+* marketCapMin=100000000000
+* omit marketCapMax
+
+Custom default:
+
+* marketCapMin=50000000
+* marketCapMax=10000000000
+
+Important:
+The UI label should say “Under $1B”, but the backend params should silently enforce $50M–$1B. Do not show “$50M” in the dropdown label.
+
+Default selected preset:
+
+* Custom
+
+Default Custom values:
+
+* $50M minimum
+* $10B maximum
+
+Part 1 — Replace dropdown options
+
+Replace current Market Cap dropdown options with exactly:
+
+* Custom
+* All
+* Under $1B
+* $1B–$10B
+* $10B–$100B
+* $100B+
+
+Default selected option should be:
+
+* Custom
+
+Remove old options:
+
+* All cached
+* Under $10B
+* $50M–$1B
+* $1B–$10B
+* $10B+
+
+Part 2 — Wire params correctly
+
+When user selects each preset and clicks Apply, request URL must include the correct params:
+
+Custom default:
+marketCapMin=50000000&marketCapMax=10000000000
+
+All:
+no marketCapMin or marketCapMax params
+
+Under $1B:
+marketCapMin=50000000&marketCapMax=1000000000
+
+$1B–$10B:
+marketCapMin=1000000000&marketCapMax=10000000000
+
+$10B–$100B:
+marketCapMin=10000000000&marketCapMax=100000000000
+
+$100B+:
+marketCapMin=100000000000 only
+
+Part 3 — Custom behavior
+
+When Custom is selected:
+
+* use existing custom min/max inputs if they already exist
+* default them to $50M and $10B
+* if user edits custom min/max, Apply sends those edited values
+
+Do not break existing Apply flow.
+
+Part 4 — Filter summary
+
+Show compact applied filter summary:
+
+Custom default:
+
+* “MCap: $50M–$10B”
+
+Custom edited:
+
+* formatted custom range
+
+All:
+
+* no MCap pill, or “MCap: All” if the current UI requires one
+
+Under $1B:
+
+* “MCap: Under $1B”
+
+$1B–$10B:
+
+* “MCap: $1B–$10B”
+
+$10B–$100B:
+
+* “MCap: $10B–$100B”
+
+$100B+:
+
+* “MCap: $100B+”
+
+Part 5 — Preserve current behavior
+
+Do not break:
+
+* Theme dropdown auto-apply
+* Apply button for market cap/min volume/exchange/score mode
+* selected_theme_label from backend
+* Daily default vs Custom screen badge
+* Limited screenable results warning
+* Daily Screens
+* Daily Insights
+* Back to Live
+* sticky Symbol column
+* table sorting
+* Div/Yr remains removed
+
+Part 6 — Validation
+
+Validate request URLs and table updates for at least:
+
+* AI Networking
+* Semiconductors
+* Regional Banks
+* Quantum
+
+For each range:
+
+1. Custom default
+2. All
+3. Under $1B
+4. $1B–$10B
+5. $10B–$100B
+6. $100B+
+
+Confirm:
+
+* request URL sends correct params
+* Apply changes the table or honestly returns zero if no rows fit
+* filter summary matches selected range
+* selected theme remains correct
+* no provider/admin/LLM calls from frontend
+
+Return:
+
+* files changed
+* market cap preset mapping implemented
+* default Custom behavior
+* request URLs validated
+* row count changes by range/theme
+* limitations

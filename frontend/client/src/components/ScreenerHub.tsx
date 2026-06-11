@@ -339,15 +339,15 @@ function TvChartModal({ symbol, onClose }: { symbol: string; onClose: () => void
 
 // ── Market cap presets ─────────────────────────────────────────────────────────
 
-type McapPreset = "all" | "under10b" | "50m_1b" | "1b_10b" | "over10b" | "custom";
+type McapPreset = "custom" | "all" | "under1b" | "1b_10b" | "10b_100b" | "over100b";
 
 const MCAP_PRESETS: { id: McapPreset; label: string; min?: number; max?: number }[] = [
-  { id: "all",      label: "All cached" },
-  { id: "under10b", label: "Under $10B",  max: 10_000_000_000 },
-  { id: "50m_1b",   label: "$50M–$1B",    min: 50_000_000,    max: 1_000_000_000 },
-  { id: "1b_10b",   label: "$1B–$10B",    min: 1_000_000_000, max: 10_000_000_000 },
-  { id: "over10b",  label: "$10B+",       min: 10_000_000_000 },
   { id: "custom",   label: "Custom" },
+  { id: "all",      label: "All" },
+  { id: "under1b",  label: "Under $1B",   min: 50_000_000,      max: 1_000_000_000 },
+  { id: "1b_10b",   label: "$1B–$10B",    min: 1_000_000_000,   max: 10_000_000_000 },
+  { id: "10b_100b", label: "$10B–$100B",  min: 10_000_000_000,  max: 100_000_000_000 },
+  { id: "over100b", label: "$100B+",      min: 100_000_000_000 },
 ];
 
 function mcapBounds(preset: McapPreset, customMin: string, customMax: string) {
@@ -380,18 +380,18 @@ export default function ScreenerHub() {
   // ── Pending state — user edits freely; does NOT trigger fetches ───────────────
   const [pendingTheme, setPendingTheme] = useState<string>("");
   const [pendingScoreMode, setPendingScoreMode] = useState<boolean>(true);
-  const [pendingMcapPreset, setPendingMcapPreset] = useState<McapPreset>("under10b");
-  const [pendingMcapCustomMin, setPendingMcapCustomMin] = useState<string>("");
-  const [pendingMcapCustomMax, setPendingMcapCustomMax] = useState<string>("");
+  const [pendingMcapPreset, setPendingMcapPreset] = useState<McapPreset>("custom");
+  const [pendingMcapCustomMin, setPendingMcapCustomMin] = useState<string>("50000000");
+  const [pendingMcapCustomMax, setPendingMcapCustomMax] = useState<string>("10000000000");
   const [pendingMinVolume, setPendingMinVolume] = useState<string>("");
   const [pendingExchange, setPendingExchange] = useState<string>("");
 
   // ── Applied state — what the last Apply committed; drives buildUrl + fetch ────
   const [appliedTheme, setAppliedTheme] = useState<string>("");
   const [appliedScoreMode, setAppliedScoreMode] = useState<boolean>(true);
-  const [appliedMcapPreset, setAppliedMcapPreset] = useState<McapPreset>("under10b");
-  const [appliedMcapCustomMin, setAppliedMcapCustomMin] = useState<string>("");
-  const [appliedMcapCustomMax, setAppliedMcapCustomMax] = useState<string>("");
+  const [appliedMcapPreset, setAppliedMcapPreset] = useState<McapPreset>("custom");
+  const [appliedMcapCustomMin, setAppliedMcapCustomMin] = useState<string>("50000000");
+  const [appliedMcapCustomMax, setAppliedMcapCustomMax] = useState<string>("10000000000");
   const [appliedMinVolume, setAppliedMinVolume] = useState<string>("");
   const [appliedExchange, setAppliedExchange] = useState<string>("");
 
@@ -777,9 +777,9 @@ export default function ScreenerHub() {
     defaultThemeId !== "" &&
     appliedTheme === defaultThemeId &&
     appliedScoreMode === true &&
-    appliedMcapPreset === "under10b" &&
-    appliedMcapCustomMin === "" &&
-    appliedMcapCustomMax === "" &&
+    appliedMcapPreset === "custom" &&
+    appliedMcapCustomMin === "50000000" &&
+    appliedMcapCustomMax === "10000000000" &&
     appliedMinVolume === "" &&
     appliedExchange === "",
   [tab, defaultThemeId, appliedTheme, appliedScoreMode, appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax, appliedMinVolume, appliedExchange]);
@@ -1553,16 +1553,14 @@ export default function ScreenerHub() {
           </span>
           {(() => {
             const parts: string[] = [];
-            if (appliedMcapPreset !== "all") {
-              if (appliedMcapPreset === "custom") {
-                const { min, max } = mcapBounds("custom", appliedMcapCustomMin, appliedMcapCustomMax);
-                if (min != null || max != null) {
-                  parts.push(`MCap: ${min != null ? formatCompactCurrency(min) : "any"}–${max != null ? formatCompactCurrency(max) : "any"}`);
-                }
-              } else {
-                const preset = MCAP_PRESETS.find((p) => p.id === appliedMcapPreset);
-                if (preset) parts.push(`MCap: ${preset.label}`);
+            if (appliedMcapPreset === "custom") {
+              const { min, max } = mcapBounds("custom", appliedMcapCustomMin, appliedMcapCustomMax);
+              if (min != null || max != null) {
+                parts.push(`MCap: ${min != null ? formatCompactCurrency(min) : "any"}–${max != null ? formatCompactCurrency(max) : "any"}`);
               }
+            } else if (appliedMcapPreset !== "all") {
+              const preset = MCAP_PRESETS.find((p) => p.id === appliedMcapPreset);
+              if (preset) parts.push(`MCap: ${preset.label}`);
             }
             if (appliedMinVolume) parts.push(`Min Vol: ${formatCompactNumber(Number(appliedMinVolume))}`);
             if (appliedExchange)  parts.push(`Exchange: ${appliedExchange}`);
