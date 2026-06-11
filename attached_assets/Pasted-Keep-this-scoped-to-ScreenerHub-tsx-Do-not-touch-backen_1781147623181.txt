@@ -1,0 +1,108 @@
+Keep this scoped to ScreenerHub.tsx.
+
+Do not touch backend.
+Do not call external providers or admin endpoints.
+Do not change unrelated behavior.
+
+Goal:
+Clean up the Screener Hub metadata/freshness badges so the UI looks polished and user-friendly instead of showing internal debug/status pills.
+
+Current issue:
+The top of the Screener Hub shows too many badges:
+
+* Universe built 12:15:39 AM
+* Served 10:10:39 PM
+* Cached universe
+* warm_job
+* Fund: partial
+* Quotes refreshing
+* Coverage: 65% eligible metadata
+* Rebuilds 11:30:00 PM
+* RS 6/10/2026
+
+This is too much visual clutter. Most of it is internal diagnostics.
+
+Part 1 — Collapse metadata into one compact freshness/info control
+
+Replace the long row of badges with a cleaner display:
+
+Primary visible text:
+
+* “Universe: cached”
+* “Built: Jun 10, 12:15 AM”
+* “Quotes: fresh” or “Quotes: refreshing”
+
+Then add one small info icon or “Details” hover/click tooltip that contains the rest:
+
+* Served time
+* Source: warm_job
+* Fund cache status
+* Eligible metadata coverage
+* Next rebuild
+* RS date
+
+If no tooltip component exists, use native title= or a compact details popover using existing styles.
+
+Part 2 — Hide internal labels from the main UI
+
+Do not show these as standalone main badges anymore:
+
+* served_at / “Served”
+* universe_db_source / “warm_job”
+* fundamentals_cache_status / “Fund: partial”
+* eligible_fund_coverage_pct / “Coverage: 65% eligible metadata”
+* next_rebuild_at / “Rebuilds”
+* theme_rs_updated_at / “RS date”
+
+They can live inside the Details tooltip/popover.
+
+Part 3 — Reword coverage into plain English
+
+If shown in Details, do not say:
+“Coverage: 65% eligible metadata”
+
+Instead say:
+“Data quality: 65% of rows have complete cached fundamentals for this screen.”
+
+If low_metadata_coverage is true, show a small amber warning:
+“Partial data”
+Tooltip:
+“Some rows are missing cached fundamentals like Market Cap, Sector, Industry, Beta, or Exchange.”
+
+Part 4 — Keep only important visible status
+
+Visible statuses should be minimal:
+
+* Universe cached/fresh/stale
+* Universe built date/time
+* Quotes fresh/refreshing
+
+Example:
+“Universe cached · Built Jun 10, 12:15 AM · Quotes fresh ⓘ”
+
+Part 5 — Preserve functionality
+
+Do not remove backend metadata parsing.
+Do not remove warnings entirely.
+Do not break:
+
+* Thematic
+* Social
+* Bottlenecks
+* Watchlist + Portfolio
+* Fundamentals
+* Apply flow
+* market cap filters
+* Copy button
+* TradingView chart modal
+
+Part 6 — Validation
+
+Validate:
+
+* Metadata row is visually reduced to a compact status line.
+* Internal debug badges no longer clutter the UI.
+* Low metadata coverage still shows a subtle warning when applicable.
+* Details tooltip/popover exposes the deeper metadata.
+* Thematic, Social, Bottlenecks, Watchlist+Portfolio, Fundamentals still load.
+* No provider/admin calls.

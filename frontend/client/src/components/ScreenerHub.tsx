@@ -990,21 +990,6 @@ export default function ScreenerHub() {
         </div>
       </div>
 
-      {/* Signal toggles */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="screener-hub-signals">
-        <span className="text-xs uppercase tracking-wider text-white/40">Signals</span>
-        {SIGNALS.map((s) => (
-          <label key={s.key} className="flex items-center gap-1.5 text-xs text-white/80 cursor-pointer">
-            <Checkbox
-              checked={signals[s.key]}
-              onCheckedChange={(v) => setSignals((prev) => ({ ...prev, [s.key]: !!v }))}
-              data-testid={`screener-hub-signal-${s.key}`}
-              className="border-purple-400/40 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
-            />
-            {s.label}
-          </label>
-        ))}
-      </div>
 
       {/* Applied filter summary — shows what the current rows are filtered by */}
       {k === "thematic" && appliedTheme && (
@@ -1057,87 +1042,47 @@ export default function ScreenerHub() {
               ))}
             </TabsList>
 
-            {/* ── Freshness metadata ─────────────────────────────────────────── */}
+            {/* ── Freshness metadata — compact primary display + ⓘ details ─── */}
             <div
               className="flex flex-wrap items-center gap-2 text-[11px] text-white/50"
               data-testid="screener-hub-meta"
             >
-              {/* Universe built — the snapshot build time, not request time */}
-              {(meta.universe_built_at || meta.generated_at) && (
-                <span
-                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
-                  title="Timestamp when the universe snapshot was built"
-                >
-                  Universe built {new Date(meta.universe_built_at ?? meta.generated_at!).toLocaleTimeString()}
-                </span>
+              {/* Universe status + built time — one pill */}
+              {(meta.universe_built_at || meta.generated_at || meta.universe_age_hours != null) && (() => {
+                const isStale = meta.universe_age_hours != null && meta.universe_age_hours > 12;
+                const builtAt  = meta.universe_built_at ?? meta.generated_at;
+                const builtLabel = builtAt ? (() => {
+                  try {
+                    return new Date(builtAt).toLocaleString(undefined, {
+                      month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+                    });
+                  } catch { return null; }
+                })() : null;
+                return (
+                  <span className={classNames(
+                    "px-2 py-0.5 rounded border bg-white/5",
+                    isStale ? "border-amber-500/30 text-amber-400/70" : "border-white/10",
+                  )}>
+                    Universe: {isStale ? "cached" : "fresh"}
+                    {builtLabel && <> · Built {builtLabel}</>}
+                  </span>
+                );
+              })()}
+
+              {/* Quotes status */}
+              {(meta.quote_refresh_started || meta.quote_cache_status) && (
+                meta.quote_refresh_started ? (
+                  <span className="px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/8 text-blue-300/70">
+                    Quotes: refreshing
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                    Quotes: {meta.quote_cache_status}
+                  </span>
+                )
               )}
-              {/* Response served time — distinct from build time */}
-              {meta.served_at && (
-                <span
-                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
-                  title="When this response was served"
-                >
-                  Served {new Date(meta.served_at).toLocaleTimeString()}
-                </span>
-              )}
-              {/* Universe age — amber warning if stale */}
-              {meta.universe_age_hours != null && (
-                <span className={classNames(
-                  "px-2 py-0.5 rounded border bg-white/5",
-                  meta.universe_age_hours > 12
-                    ? "border-amber-500/30 text-amber-400/70"
-                    : "border-white/10",
-                )}>
-                  {meta.universe_age_hours > 12
-                    ? "Cached universe"
-                    : `${meta.universe_age_hours.toFixed(1)}h old`}
-                </span>
-              )}
-              {/* DB source */}
-              {meta.universe_db_source && (
-                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                  {meta.universe_db_source}
-                </span>
-              )}
-              {/* Fundamentals cache */}
-              {meta.fundamentals_cache_status && (
-                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                  Fund: {meta.fundamentals_cache_status}
-                </span>
-              )}
-              {/* Quote refreshing badge */}
-              {meta.quote_refresh_started ? (
-                <span className="px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/8 text-blue-300/70">
-                  Quotes refreshing
-                </span>
-              ) : meta.quote_cache_status ? (
-                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                  Quote: {meta.quote_cache_status}
-                </span>
-              ) : null}
-              {/* Metadata coverage warning — shown when low_metadata_coverage=true */}
-              {meta.low_metadata_coverage && (
-                <span
-                  className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-400/8 text-amber-400/80"
-                  title={meta.metadata_coverage_warning ?? "This theme has limited fundamentals data coverage"}
-                >
-                  Partial fundamentals coverage
-                </span>
-              )}
-              {/* Coverage metrics — compact, muted */}
-              {meta.eligible_fund_coverage_pct != null && (
-                <span
-                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
-                  title={
-                    meta.fund_coverage_pct != null
-                      ? `Total coverage: ${meta.fund_coverage_pct.toFixed(0)}% · Eligible: ${meta.eligible_fund_coverage_pct.toFixed(0)}%`
-                      : `Eligible coverage: ${meta.eligible_fund_coverage_pct.toFixed(0)}%`
-                  }
-                >
-                  Coverage: {meta.eligible_fund_coverage_pct.toFixed(0)}% eligible metadata
-                </span>
-              )}
-              {/* Row filter counts */}
+
+              {/* Row filter counts — user-facing, keep visible */}
               {meta.rows_after_filters != null &&
                meta.rows_before_filters != null &&
                meta.rows_after_filters !== meta.rows_before_filters && (
@@ -1145,24 +1090,44 @@ export default function ScreenerHub() {
                   {meta.rows_after_filters} / {meta.rows_before_filters} rows
                 </span>
               )}
-              {/* Next rebuild */}
-              {meta.next_rebuild_at && (
+
+              {/* Partial data warning — amber, subtle */}
+              {meta.low_metadata_coverage && (
                 <span
-                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
-                  title="Next scheduled universe rebuild"
+                  className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-400/8 text-amber-400/80"
+                  title="Some rows are missing cached fundamentals like Market Cap, Sector, Industry, Beta, or Exchange."
                 >
-                  Rebuilds {new Date(meta.next_rebuild_at).toLocaleTimeString()}
+                  Partial data
                 </span>
               )}
-              {/* RS updated at (from themes metadata) */}
-              {themeRsUpdatedAt && (
-                <span
-                  className="px-2 py-0.5 rounded border border-white/10 bg-white/5"
-                  title="When theme relative strength scores were last computed"
-                >
-                  RS {new Date(themeRsUpdatedAt).toLocaleDateString()}
-                </span>
-              )}
+
+              {/* ⓘ Details — internal/debug info collapsed into hover tooltip */}
+              {(() => {
+                const parts: string[] = [];
+                if (meta.served_at) {
+                  try { parts.push(`Served: ${new Date(meta.served_at).toLocaleTimeString()}`); } catch {}
+                }
+                if (meta.universe_db_source) parts.push(`Source: ${meta.universe_db_source}`);
+                if (meta.fundamentals_cache_status) parts.push(`Fundamentals cache: ${meta.fundamentals_cache_status}`);
+                if (meta.eligible_fund_coverage_pct != null) {
+                  parts.push(`Data quality: ${meta.eligible_fund_coverage_pct.toFixed(0)}% of rows have complete cached fundamentals for this screen.`);
+                }
+                if (meta.next_rebuild_at) {
+                  try { parts.push(`Next rebuild: ${new Date(meta.next_rebuild_at).toLocaleTimeString()}`); } catch {}
+                }
+                if (themeRsUpdatedAt) {
+                  try { parts.push(`RS scores: ${new Date(themeRsUpdatedAt).toLocaleDateString()}`); } catch {}
+                }
+                if (parts.length === 0) return null;
+                return (
+                  <span
+                    className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 cursor-help text-white/30 hover:text-white/60 transition-colors select-none"
+                    title={parts.join("\n")}
+                  >
+                    ⓘ
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
