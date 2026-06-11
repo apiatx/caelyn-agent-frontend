@@ -127,6 +127,7 @@ export function AlertBubbles() {
               onClick={() => setSelected(alert)}
               onDismiss={(e) => {
                 e.stopPropagation();
+                e.nativeEvent.stopImmediatePropagation();
                 dismissAlert(alert.id);
               }}
             />

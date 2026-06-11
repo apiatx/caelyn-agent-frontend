@@ -195,7 +195,7 @@ function TradingViewChartModal({ symbol, assetType, onClose }: {
 
   return (
     <Dialog open={!!symbol} onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-4xl w-[96vw] h-[82vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col" aria-describedby={undefined}>
+      <DialogContent hideClose className="max-w-4xl w-[96vw] h-[82vh] p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col" aria-describedby={undefined}>
         <VisuallyHidden.Root><DialogTitle>Chart — {symbol}</DialogTitle></VisuallyHidden.Root>
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.07] shrink-0">
           <div className="flex items-center gap-2">
@@ -256,12 +256,8 @@ function MiniIdeaRow({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: 
 // ── Full idea card (modal) ────────────────────────────────────────────────────
 
 function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: number; onChartOpen: (sym: string, at?: string) => void }) {
-  const [expanded, setExpanded] = useState(false);
   const ss = scoreStyle(idea.score);
   const ds = directionStyle(idea.direction);
-  const topEvidence = idea.evidence.slice(0, expanded ? idea.evidence.length : 3);
-  const topRisks    = idea.risks.slice(0, expanded ? idea.risks.length : 2);
-  const hasExtra    = idea.evidence.length > 3 || idea.risks.length > 2 || !!idea.trigger || !!idea.invalidation;
 
   return (
     <div className={`relative rounded-xl border bg-white/[0.02] ${ss.border} ${ss.glow ? `shadow-lg ${ss.glow}` : ""} transition-all duration-200 hover:bg-white/[0.035]`}>
@@ -299,18 +295,13 @@ function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: num
               </div>
             )}
           </div>
-          {hasExtra && (
-            <button onClick={() => setExpanded(e => !e)} className="shrink-0 p-1 rounded-md hover:bg-white/6 text-white/25 hover:text-white/60 transition-colors">
-              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          )}
         </div>
 
         <p className="text-[12px] text-white/65 leading-relaxed mt-2.5">{idea.summary}</p>
 
-        {topEvidence.length > 0 && (
+        {idea.evidence.length > 0 && (
           <ul className="mt-2 space-y-0.5">
-            {topEvidence.map((ev, i) => (
+            {idea.evidence.map((ev, i) => (
               <li key={i} className="text-[11px] text-white/45 flex gap-1.5 leading-snug">
                 <span className="text-white/20 shrink-0 mt-0.5">›</span><span>{ev}</span>
               </li>
@@ -318,49 +309,39 @@ function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: num
           </ul>
         )}
 
-        {expanded && (
-          <div className="mt-3 space-y-2 pt-2.5 border-t border-white/[0.05]">
-            {idea.trigger && (
-              <div className="flex gap-1.5">
-                <span className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wider shrink-0 mt-0.5">Trigger</span>
-                <span className="text-[11px] text-white/55">{idea.trigger}</span>
-              </div>
-            )}
-            {idea.invalidation && (
-              <div className="flex gap-1.5">
-                <span className="text-[10px] font-semibold text-rose-400/60 uppercase tracking-wider shrink-0 mt-0.5">Invalidation</span>
-                <span className="text-[11px] text-white/55">{idea.invalidation}</span>
-              </div>
-            )}
-            {topRisks.length > 0 && (
-              <div className="flex gap-1.5">
-                <span className="text-[10px] font-semibold text-amber-400/60 uppercase tracking-wider shrink-0 mt-0.5">Risks</span>
-                <div className="space-y-0.5">{topRisks.map((r, i) => <div key={i} className="text-[11px] text-white/45">{r}</div>)}</div>
-              </div>
-            )}
-            {idea.source_pages.length > 0 && (
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[10px] text-white/25">Sources:</span>
-                {idea.source_pages.map(src => (
-                  <span key={src} className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-medium border ${srcBadge(src)}`}>{src}</span>
-                ))}
-              </div>
-            )}
-            {idea.updated_at && (
-              <div className="text-[10px] text-white/20 flex items-center gap-1">
-                <Clock className="w-2.5 h-2.5" />Updated {fmtAgo(idea.updated_at)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {!expanded && idea.source_pages.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap mt-2">
-            {idea.source_pages.map(src => (
-              <span key={src} className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-medium border ${srcBadge(src)}`}>{src}</span>
-            ))}
-          </div>
-        )}
+        <div className="mt-3 space-y-2 pt-2.5 border-t border-white/[0.05]">
+          {idea.trigger && (
+            <div className="flex gap-1.5">
+              <span className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wider shrink-0 mt-0.5">Trigger</span>
+              <span className="text-[11px] text-white/55">{idea.trigger}</span>
+            </div>
+          )}
+          {idea.invalidation && (
+            <div className="flex gap-1.5">
+              <span className="text-[10px] font-semibold text-rose-400/60 uppercase tracking-wider shrink-0 mt-0.5">Invalidation</span>
+              <span className="text-[11px] text-white/55">{idea.invalidation}</span>
+            </div>
+          )}
+          {idea.risks.length > 0 && (
+            <div className="flex gap-1.5">
+              <span className="text-[10px] font-semibold text-amber-400/60 uppercase tracking-wider shrink-0 mt-0.5">Risks</span>
+              <div className="space-y-0.5">{idea.risks.map((r, i) => <div key={i} className="text-[11px] text-white/45">{r}</div>)}</div>
+            </div>
+          )}
+          {idea.source_pages.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] text-white/25">Sources:</span>
+              {idea.source_pages.map(src => (
+                <span key={src} className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-medium border ${srcBadge(src)}`}>{src}</span>
+              ))}
+            </div>
+          )}
+          {idea.updated_at && (
+            <div className="text-[10px] text-white/20 flex items-center gap-1">
+              <Clock className="w-2.5 h-2.5" />Updated {fmtAgo(idea.updated_at)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
