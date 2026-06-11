@@ -1,0 +1,128 @@
+Frontend only.
+Keep scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP.
+Do not call Tradier.
+Do not call options providers.
+Do not call admin rebuild or refresh endpoints.
+
+Goal:
+Change Saved Screens UI into Daily Screener History.
+
+The app should automatically save the current daily screener once per day and keep the last 60 days. Manual Save can remain optional, but the primary UI should be Daily Screens / Last 60 Days.
+
+Backend now provides:
+
+* POST /api/screener-hub/saved-screens/daily-auto
+* GET /api/screener-hub/saved-screens?save_type=daily_auto&lookback_days=60
+* GET /api/screener-hub/saved-screens/{id}
+* GET /api/screener-hub/saved-screens/insights?save_type=daily_auto&lookback_days=60
+* DELETE /api/screener-hub/saved-screens/{id}
+
+Part 1 — Auto-save daily screen
+
+After live Screener Hub data successfully loads:
+
+* if tab is Thematic
+* and rows.length > 0
+* and not in savedMode
+* call POST /api/screener-hub/saved-screens/daily-auto
+
+Payload:
+
+* tab
+* theme_key
+* theme_label
+* filters
+* query_params
+* rows = current visible rows
+* metadata = current response metadata
+* snapshot_date = local YYYY-MM-DD
+
+Rules:
+
+* only attempt once per tab/theme/date per browser session to avoid repeated calls
+* use an in-memory Set key like dailyAutoSavedKeys
+* do not block the UI if it fails
+* do not trigger live refresh when auto-saving
+
+Part 2 — Rename UI
+
+Use primary language:
+
+* “Daily Screens”
+* “Last 60 Days”
+* “Daily Insights”
+
+Manual Save can remain, but make it secondary:
+
+* “Save Manual Snapshot”
+
+Part 3 — Daily Screens dropdown
+
+Load:
+GET /api/screener-hub/saved-screens?save_type=daily_auto&lookback_days=60
+
+Display:
+
+* date
+* theme/tab
+* row count
+* top symbols preview
+
+On select:
+GET /api/screener-hub/saved-screens/{id}
+
+Show banner:
+“Viewing daily screen from {date}”
+
+Button:
+“Back to Live Screener”
+
+Opening a daily screen must not call live Screener Hub or providers.
+
+Part 4 — Daily Insights
+
+Call:
+GET /api/screener-hub/saved-screens/insights?save_type=daily_auto&lookback_days=60
+
+Display compact sections:
+
+* recurring tickers
+* week-over-week tickers
+* newly appearing tickers
+* biggest gainers since first saved
+* biggest decliners since first saved
+* recurring themes
+* emerging themes
+
+Keep compact.
+
+Part 5 — 60-day retention messaging
+
+Add subtle helper text:
+“Daily screens are kept for 60 days.”
+
+Do not mention Neon, database, cache, or cleanup to users.
+
+Part 6 — Manual Save
+
+Manual Save can still use:
+POST /api/screener-hub/saved-screens
+
+But it should be secondary to Daily Screens.
+
+Part 7 — Validation
+
+Validate:
+
+1. Live Thematic screen loads.
+2. Daily auto-save fires once for current tab/theme/date.
+3. Re-loading or changing minor UI state does not spam auto-save.
+4. Daily Screens dropdown shows today’s screen.
+5. Opening daily screen shows saved rows and does not live fetch.
+6. Back to Live works.
+7. Daily Insights loads with 60-day lookback.
+8. Manual Save still works as a secondary action.
+9. No provider/admin calls.
+10. Div/Yr does not reappear.

@@ -6223,7 +6223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30_000);
     try {
-      const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens/insights`, { headers: shFwd(req), signal: ctrl.signal });
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens/insights${qs ? `?${qs}` : ''}`, { headers: shFwd(req), signal: ctrl.signal });
       clearTimeout(timer);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
       return res.json(await r.json());
@@ -6237,7 +6238,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30_000);
     try {
-      const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens`, { headers: shFwd(req), signal: ctrl.signal });
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens${qs ? `?${qs}` : ''}`, { headers: shFwd(req), signal: ctrl.signal });
       clearTimeout(timer);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
       return res.json(await r.json());
@@ -6252,6 +6254,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const timer = setTimeout(() => ctrl.abort(), 30_000);
     try {
       const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens/${req.params.id}`, { headers: shFwd(req), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
+  app.post('/api/screener-hub/saved-screens/daily-auto', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    try {
+      const r = await fetch(`${SH_URL}/api/screener-hub/saved-screens/daily-auto`, {
+        method: 'POST', headers: shFwd(req), body: JSON.stringify(req.body), signal: ctrl.signal,
+      });
       clearTimeout(timer);
       if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
       return res.json(await r.json());

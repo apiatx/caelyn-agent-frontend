@@ -13,6 +13,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { Copy, Check, Loader2, ArrowUpDown, ArrowUp, ArrowDown, BarChart2, X, Save, BookOpen, Trash2, ChevronDown, TrendingUp, TrendingDown, Lightbulb, RefreshCw } from "lucide-react";
 
+// Tracks tab/theme/date combos already auto-saved this browser session — never resets across re-renders.
+const dailyAutoSavedKeys = new Set<string>();
+
 type TabKey = "thematic" | "social" | "bottlenecks" | "watchlist_portfolio" | "fundamentals";
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -589,6 +592,52 @@ export default function ScreenerHub() {
           message:                       data?.message ?? undefined,
           error_code:                    data?.error_code ?? undefined,
         });
+
+        // ── Daily auto-save (thematic only, once per tab/theme/date per session) ──
+        if (tab === "thematic" && arr.length > 0 && !ctrl.signal.aborted) {
+          const today   = new Date().toISOString().slice(0, 10);
+          const autoKey = `${tab}::${appliedTheme ?? ""}::${today}`;
+          if (!dailyAutoSavedKeys.has(autoKey)) {
+            dailyAutoSavedKeys.add(autoKey); // mark immediately — prevents spam even on failure
+            const themeObj = themes.find((t) => t.id === appliedTheme);
+            fetchJsonAuth("/api/screener-hub/saved-screens/daily-auto", {
+              method: "POST",
+              body: JSON.stringify({
+                tab,
+                theme_key:    appliedTheme || null,
+                theme_label:  themeObj?.label ?? appliedTheme ?? null,
+                score_mode:   appliedScoreMode,
+                filters: {
+                  mcap_preset:     appliedMcapPreset,
+                  mcap_custom_min: appliedMcapCustomMin || null,
+                  mcap_custom_max: appliedMcapCustomMax || null,
+                  min_volume:      appliedMinVolume || null,
+                  exchange:        appliedExchange  || null,
+                },
+                query_params: Object.fromEntries(
+                  new URLSearchParams(url.split("?")[1] ?? "").entries()
+                ),
+                rows: arr,
+                metadata: {
+                  universe_built_at:          data?.universe_built_at,
+                  served_at:                  data?.served_at,
+                  universe_age_hours:         data?.universe_age_hours,
+                  universe_db_source:         data?.universe_db_source,
+                  quote_cache_status:         data?.quote_cache_status,
+                  low_metadata_coverage:      data?.low_metadata_coverage,
+                  metadata_coverage_warning:  data?.metadata_coverage_warning,
+                  fund_coverage_pct:          data?.fund_coverage_pct,
+                  eligible_fund_coverage_pct: data?.eligible_fund_coverage_pct,
+                  rows_before_filters:        data?.rows_before_filters,
+                  rows_after_filters:         data?.rows_after_filters,
+                },
+                snapshot_date: today,
+              }),
+            }).catch((e: any) => {
+              console.warn("[ScreenerHub] daily auto-save failed (non-blocking):", e?.message);
+            });
+          }
+        }
       } catch (e: any) {
         if (ctrl.signal.aborted) return;
         setError(e?.message ?? String(e));
@@ -693,7 +742,9 @@ export default function ScreenerHub() {
   const loadSavedList = useCallback(async () => {
     setSavedListLoading(true);
     try {
-      const data = await fetchJsonAuth<any>("/api/screener-hub/saved-screens");
+      const data = await fetchJsonAuth<any>(
+        "/api/screener-hub/saved-screens?save_type=daily_auto&lookback_days=60"
+      );
       const list: SavedScreen[] = Array.isArray(data)
         ? data
         : Array.isArray(data?.saved_screens) ? data.saved_screens
@@ -702,7 +753,7 @@ export default function ScreenerHub() {
         : [];
       setSavedList(list);
     } catch (e) {
-      console.warn("[ScreenerHub] saved list load failed", e);
+      console.warn("[ScreenerHub] daily screens load failed", e);
       setSavedList([]);
     } finally {
       setSavedListLoading(false);
@@ -817,10 +868,12 @@ export default function ScreenerHub() {
   const loadInsights = useCallback(async () => {
     setInsightsLoading(true);
     try {
-      const data = await fetchJsonAuth<InsightsData>("/api/screener-hub/saved-screens/insights");
+      const data = await fetchJsonAuth<InsightsData>(
+        "/api/screener-hub/saved-screens/insights?save_type=daily_auto&lookback_days=60"
+      );
       setInsightsData(data);
     } catch (e) {
-      console.warn("[ScreenerHub] insights load failed:", e);
+      console.warn("[ScreenerHub] daily insights load failed:", e);
     } finally {
       setInsightsLoading(false);
     }
@@ -1226,15 +1279,15 @@ export default function ScreenerHub() {
             {copied ? "Copied" : "Copy"}
           </Button>
 
-          {/* Save Screen — live mode only, requires rows */}
+          {/* Save Manual Snapshot — live mode only, secondary action */}
           {!savedMode && activeRows.length > 0 && (
             <Button
               type="button" variant="outline" size="sm"
               onClick={openSaveModal}
-              className="bg-black/40 border-purple-500/30 text-white hover:bg-purple-500/20"
+              className="bg-black/40 border-purple-500/30 text-white/60 hover:bg-purple-500/20 hover:text-white"
             >
               <Save className="w-3.5 h-3.5 mr-1.5" />
-              Save
+              Save Snapshot
             </Button>
           )}
 
@@ -1249,7 +1302,7 @@ export default function ScreenerHub() {
               )}
             >
               <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-              Saved
+              Daily Screens
               {savedList.length > 0 && (
                 <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-purple-500/30 text-purple-200 leading-none">
                   {savedList.length}
@@ -1261,13 +1314,13 @@ export default function ScreenerHub() {
             {showSavedList && (
               <div className="absolute right-0 top-full mt-1 z-50 w-[320px] bg-[#0c0717] border border-purple-500/25 rounded-xl shadow-2xl overflow-hidden">
                 <div className="px-3 py-2 border-b border-white/8 flex items-center justify-between">
-                  <span className="text-xs font-medium text-white/60">Saved Screens</span>
+                  <span className="text-xs font-medium text-white/60">Daily Screens · Last 60 Days</span>
                   <button
                     onClick={toggleInsights}
                     className="flex items-center gap-1 text-[11px] text-purple-300/60 hover:text-purple-200 transition-colors"
                   >
                     <Lightbulb className="w-3 h-3" />
-                    Insights
+                    Daily Insights
                   </button>
                 </div>
                 <div className="max-h-[340px] overflow-y-auto">
@@ -1277,8 +1330,8 @@ export default function ScreenerHub() {
                     </div>
                   ) : savedList.length === 0 ? (
                     <div className="px-3 py-8 text-center space-y-1">
-                      <div className="text-xs text-white/30">No saved screens yet.</div>
-                      <div className="text-[11px] text-white/20">Use "Save" to capture the current results.</div>
+                      <div className="text-xs text-white/30">No daily screens yet.</div>
+                      <div className="text-[11px] text-white/20">Daily screens are auto-saved when the Thematic tab loads.</div>
                     </div>
                   ) : (
                     savedList.map((s) => (
@@ -1333,6 +1386,11 @@ export default function ScreenerHub() {
                     ))
                   )}
                 </div>
+                {savedList.length > 0 && (
+                  <div className="px-3 py-1.5 border-t border-white/5 text-[10px] text-white/20 text-center">
+                    Daily screens are kept for 60 days.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1489,7 +1547,7 @@ export default function ScreenerHub() {
                   <div className="flex items-center gap-2 min-w-0">
                     <BookOpen className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
                     <span className="text-white/70 truncate">
-                      Viewing saved screen
+                      Viewing daily screen
                       {savedScreenCreatedAt && (
                         <> from{" "}
                           <span className="text-white/90">{new Date(savedScreenCreatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
@@ -1517,8 +1575,8 @@ export default function ScreenerHub() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Lightbulb className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-white/90">Saved Insights</span>
-                      <span className="text-[11px] text-white/30">across all saved screens</span>
+                      <span className="text-sm font-semibold text-white/90">Daily Insights</span>
+                      <span className="text-[11px] text-white/30">last 60 days · auto-saved daily</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -1758,7 +1816,7 @@ export default function ScreenerHub() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Save className="w-4 h-4 text-purple-400" />
-                <h3 className="text-sm font-semibold text-white">Save Screen</h3>
+                <h3 className="text-sm font-semibold text-white">Save Manual Snapshot</h3>
               </div>
               <button onClick={() => setShowSaveModal(false)} className="text-white/30 hover:text-white/70 transition-colors">
                 <X className="w-4 h-4" />
