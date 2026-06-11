@@ -594,20 +594,8 @@ export default function ScreenerHub() {
         });
 
         // ── Daily auto-save — default screen only, once per tab/theme/date per session ──
-        // Only fires for the app's recommended daily screen (backend default_theme + default
-        // filter state). If the user has manually changed theme or applied custom filters,
-        // isDefaultScreen will be false and auto-save is skipped entirely.
-        const isDefaultScreen =
-          tab === "thematic" &&
-          defaultThemeId !== "" &&
-          appliedTheme === defaultThemeId &&
-          appliedScoreMode === true &&
-          appliedMcapPreset === "under10b" &&
-          appliedMcapCustomMin === "" &&
-          appliedMcapCustomMax === "" &&
-          appliedMinVolume === "" &&
-          appliedExchange === "";
-
+        // isDefaultScreen (useMemo) gates this: only fires when viewing the backend's
+        // recommended daily theme with no custom filters applied.
         if (isDefaultScreen && arr.length > 0 && !ctrl.signal.aborted) {
           const today   = new Date().toISOString().slice(0, 10);
           const autoKey = `${tab}::${appliedTheme ?? ""}::${today}`;
@@ -704,6 +692,21 @@ export default function ScreenerHub() {
     return out;
   }, [activeRows, sortKey, sortDir]);
 
+  // Whether the current live view is showing the app's recommended default screen
+  // (backend default_theme, no custom filters). Used to gate auto-save and the
+  // "Daily default" / "Custom screen" badge in the filter summary.
+  const isDefaultScreen = useMemo(() =>
+    tab === "thematic" &&
+    defaultThemeId !== "" &&
+    appliedTheme === defaultThemeId &&
+    appliedScoreMode === true &&
+    appliedMcapPreset === "under10b" &&
+    appliedMcapCustomMin === "" &&
+    appliedMcapCustomMax === "" &&
+    appliedMinVolume === "" &&
+    appliedExchange === "",
+  [tab, defaultThemeId, appliedTheme, appliedScoreMode, appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax, appliedMinVolume, appliedExchange]);
+
   const onSort = (key: string) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -722,7 +725,17 @@ export default function ScreenerHub() {
   };
 
   // ── Apply — commit pending → applied (triggers one fetch via buildUrl change) ─
+  // If in savedMode, clears it first in the same React batch so the live fetch
+  // gate (if savedMode) return) is lifted before the effect fires.
   const handleApply = () => {
+    if (savedMode) {
+      setSavedMode(false);
+      setCurrentSavedId(null);
+      setSavedRows([]);
+      setSavedScreenName("");
+      setSavedScreenCreatedAt("");
+      setSavedMetaObj({});
+    }
     setAppliedTheme(pendingTheme);
     setAppliedScoreMode(pendingScoreMode);
     setAppliedMcapPreset(pendingMcapPreset);
@@ -1271,7 +1284,7 @@ export default function ScreenerHub() {
           <label htmlFor={`screener-hub-score-${k}`} className="text-xs text-white/70">Score Mode</label>
         </div>
 
-        {/* Apply button — only this triggers a fetch */}
+        {/* Apply button — commits pending → applied; exits saved mode if needed */}
         <Button
           type="button"
           onClick={handleApply}
@@ -1279,7 +1292,7 @@ export default function ScreenerHub() {
           size="sm"
           className="bg-purple-600/80 hover:bg-purple-500 border-0 text-white"
         >
-          Apply
+          {savedMode ? "Apply & Go Live" : "Apply"}
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
@@ -1404,22 +1417,44 @@ export default function ScreenerHub() {
 
       {/* Applied filter summary — shows what the current rows are filtered by */}
       {k === "thematic" && appliedTheme && (
-        <div className="text-[11px] text-white/30 flex flex-wrap gap-x-3 gap-y-0.5">
-          <span>
-            Showing:{" "}
-            <span className="text-white/50">{themes.find((t) => t.id === appliedTheme)?.label ?? appliedTheme}</span>
-            {defaultThemeId === appliedTheme && defaultThemeReason && (
-              <span className="ml-1 text-white/25">({defaultThemeReason})</span>
+        <div className="text-[11px] flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="flex items-center gap-1.5">
+            <span className="text-white/30">Showing:</span>
+            <span className="text-white/70 font-medium">{themes.find((t) => t.id === appliedTheme)?.label ?? appliedTheme}</span>
+            {isDefaultScreen ? (
+              <span className="px-1 py-px rounded text-[10px] bg-purple-500/15 text-purple-300/70 border border-purple-400/20 leading-tight">
+                Daily default
+              </span>
+            ) : (
+              <span className="px-1 py-px rounded text-[10px] bg-white/5 text-white/40 border border-white/10 leading-tight">
+                Custom screen
+              </span>
+            )}
+            {isDefaultScreen && defaultThemeReason && (
+              <span className="text-white/25">· {defaultThemeReason}</span>
             )}
           </span>
           {(() => {
-            const { min, max } = mcapBounds(appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax);
             const parts: string[] = [];
-            if (min != null) parts.push(`MCap ≥ ${formatCompactCurrency(min)}`);
-            if (max != null) parts.push(`MCap ≤ ${formatCompactCurrency(max)}`);
-            if (appliedMinVolume) parts.push(`Vol ≥ ${formatCompactNumber(Number(appliedMinVolume))}`);
+            if (appliedMcapPreset !== "all") {
+              if (appliedMcapPreset === "custom") {
+                const { min, max } = mcapBounds("custom", appliedMcapCustomMin, appliedMcapCustomMax);
+                if (min != null || max != null) {
+                  parts.push(`MCap: ${min != null ? formatCompactCurrency(min) : "any"}–${max != null ? formatCompactCurrency(max) : "any"}`);
+                }
+              } else {
+                const preset = MCAP_PRESETS.find((p) => p.id === appliedMcapPreset);
+                if (preset) parts.push(`MCap: ${preset.label}`);
+              }
+            }
+            if (appliedMinVolume) parts.push(`Min Vol: ${formatCompactNumber(Number(appliedMinVolume))}`);
             if (appliedExchange)  parts.push(`Exchange: ${appliedExchange}`);
-            return parts.map((p, i) => <span key={i}>· {p}</span>);
+            if (!appliedScoreMode) parts.push("Score: off");
+            return parts.map((p, i) => (
+              <span key={i} className="text-white/40 bg-white/5 border border-white/8 px-1.5 py-px rounded text-[10px]">
+                {p}
+              </span>
+            ));
           })()}
         </div>
       )}

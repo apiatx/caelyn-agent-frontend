@@ -1,0 +1,172 @@
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP, Tradier, options providers, LLM APIs, admin rebuild, or refresh endpoints directly.
+Use only normal Screener Hub GET endpoints.
+
+Goal:
+Make Screener Hub controls actually drive the displayed screen.
+
+The intended product behavior:
+
+* Default view = backend’s daily recommended theme.
+* User can select another theme and click Apply.
+* User can change market cap, min volume, exchange, and score mode.
+* Apply sends those params to backend and updates the table.
+* Changing controls should not be fake UI.
+* Saved/Daily screen mode should not block live Apply once user returns to Live.
+
+Part 1 — Audit current frontend control flow
+
+Audit:
+
+* pendingTheme
+* appliedTheme
+* pending market cap
+* applied market cap
+* pending min volume
+* applied min volume
+* pending exchange
+* applied exchange
+* pending scoreMode
+* applied scoreMode
+* handleApply
+* fetch URL construction
+* localStorage theme behavior
+* savedMode/live mode fetch gate
+
+Report:
+
+* Does dropdown change pendingTheme only?
+* Does Apply copy pending values into applied values?
+* Does fetch use applied values, not stale values?
+* Does fetch include theme param when user selected a theme?
+* Does fetch include marketCapMin/marketCapMax?
+* Does fetch include minVolume?
+* Does fetch include exchange?
+* Does savedMode block live fetch after Back to Live?
+* Does localStorage override user selection after Apply?
+
+Part 2 — Fix Apply behavior
+
+When user clicks Apply:
+
+* copy pending controls into applied controls
+* exit savedMode if necessary or require Back to Live first
+* clear current rows immediately so stale rows do not remain
+* show loading state
+* request backend with all applied params
+* update table with returned rows
+* update “Showing:” text to selected theme, not backend default unless selected
+* save applied theme to localStorage only after successful fetch or intentional Apply
+
+Part 3 — URL/query construction
+
+For Thematic tab, request should include:
+
+* tab=thematic
+* theme={appliedTheme} when selected
+* marketCapMin / marketCapMax when set
+* minVolume when set
+* exchange when set
+* scoreMode when set
+
+Example:
+GET /api/screener-hub?tab=thematic&theme=semiconductors&marketCapMin=50000000&marketCapMax=1000000000&minVolume=1000000&exchange=NASDAQ
+
+Do not call providers directly.
+
+Part 4 — Show selected vs default clearly
+
+The UI should distinguish:
+
+* Default daily theme
+* User-selected theme
+
+Examples:
+
+* “Showing: Regional Banks · Daily default”
+* “Showing: Semiconductors · Custom screen”
+* “Theme refreshed today”
+* “Theme cached, next refresh allowed {time}” if backend provides it
+
+Use backend fields:
+
+* selected_theme
+* selected_theme_label
+* is_default_theme
+* default_theme
+* default_theme_reason
+* theme_refresh_status
+* theme_last_refreshed_at
+* theme_next_refresh_allowed_at
+
+Part 5 — Filter summary
+
+Show a compact active filter summary:
+
+* MCap: $50M–$1B
+* Min Vol: 1M
+* Exchange: NASDAQ
+* Score: {score mode}
+
+Do not clutter the page with debug badges.
+
+Part 6 — Sort behavior
+
+Ensure column sorting still works on displayed rows:
+
+* Symbol
+* Company
+* Market Cap
+* Sector
+* Industry
+* Beta
+* Price
+* 1D %
+* Volume
+* $ Volume
+* Vol/MCap
+* Options OI
+* OI Chg
+* Opt Activity
+* Role
+* Score
+* Exchange
+
+Sort should operate on the currently displayed rows, whether default, custom live, or daily saved screen.
+
+Part 7 — Saved/Daily mode safety
+
+When viewing a daily saved screen:
+
+* controls should not silently refetch live data
+* Apply should either be disabled with label “Back to Live to change filters”
+  or clicking Apply should first return to live mode intentionally
+* Back to Live should restore live fetch behavior
+
+Part 8 — Validation
+
+Validate:
+
+1. Default page loads backend default theme.
+2. Change theme to Semiconductors and click Apply → request URL includes theme=semiconductors and rows change.
+3. Change theme to Regional Banks and click Apply → rows change again.
+4. Set MCap $50M–$1B and Apply → request includes cap params and row count changes.
+5. Set Min Volume and Apply → request includes minVolume and row count changes.
+6. Set Exchange and Apply → request includes exchange and rows change or filter summary shows zero rows honestly.
+7. Saved/Daily screen mode does not block Apply after Back to Live.
+8. Rows clear/loading state appears during fetch so stale rows are not shown as new results.
+9. No direct provider/LLM/admin calls.
+10. Daily Screens and Daily Insights still work.
+11. Div/Yr does not reappear.
+
+Return:
+
+* files changed
+* control-flow audit findings
+* exact request URLs validated
+* before/after row counts for theme/filter changes
+* saved/live behavior
+* validation results
+* limitations
