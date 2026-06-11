@@ -34,7 +34,7 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "market_cap",             label: "Market Cap",   numeric: true,  aliases: ["marketCap", "mcap"] },
   { key: "sector",                 label: "Sector" },
   { key: "industry",               label: "Industry" },
-  { key: "beta",                   label: "Beta",         numeric: true },
+  { key: "beta",                   label: "Beta",         numeric: true, tooltip: "Measures how volatile the stock is relative to the market. Beta above 1 means more volatile than the market; below 1 means less volatile." },
   { key: "price",                  label: "Price",        numeric: true,  aliases: ["last", "lastPrice"] },
   { key: "change_1d",              label: "1D %",         numeric: true,  aliases: ["change_percent_1d", "changePercent1d", "oneDayChange", "pct_1d", "change_pct_1d", "day_change_pct", "1D", "1d"] },
   { key: "change_7d",              label: "7D %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["7d", "7D", "5D", "5d", "price_change_7d", "change_5d", "week_change", "fiveday"] },
@@ -740,11 +740,13 @@ export default function ScreenerHub() {
           </span>
         );
       }
-      // No pct available — show — with status-based tooltip explaining why
+      // No pct available — show — with status-based tooltip explaining why.
+      // getField aliases cover both snake_case and camelCase keys.
       const status = getField(row, "options_oi_change_status", ["optionsOiChangeStatus"]);
       const tip =
-        status === "prior_zero"          ? "No percent change yet because previous OI was zero." :
-        status === "no_prior_snapshot"   ? "No prior options snapshot yet." :
+        status === "prior_zero"        ? "No percent change yet because previous OI was zero." :
+        status === "no_prior_snapshot" ? "No prior options snapshot yet." :
+        (status && typeof status === "string" && status.trim().length > 0) ? String(status) :
         undefined;
       return <span className="text-white/40" title={tip}>—</span>;
     }
