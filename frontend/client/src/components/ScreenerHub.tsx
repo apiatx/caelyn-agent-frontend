@@ -414,6 +414,9 @@ export default function ScreenerHub() {
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // Backend-confirmed theme state — source of truth for "Showing:" label after every fetch
+  const [responseThemeLabel, setResponseThemeLabel] = useState<string>("");
+  const [responseIsDefault, setResponseIsDefault]   = useState<boolean | null>(null);
   const [sortKey, setSortKey] = useState<string>("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [copied, setCopied] = useState<boolean>(false);
@@ -566,11 +569,32 @@ export default function ScreenerHub() {
     setLoading(true);
     setError(null);
     setRows([]);
+    setResponseThemeLabel("");
+    setResponseIsDefault(null);
     (async () => {
       try {
         const data = await fetchJson<HubResponse>(url, ctrl.signal);
         if (ctrl.signal.aborted) return;
         const arr = pickArray(data, ["rows", "data", "items", "results"]);
+
+        // Capture backend-confirmed theme — source of truth for "Showing:" label
+        const backendLabel = (data as any)?.selected_theme_label ?? (data as any)?.selected_theme ?? "";
+        const backendIsDefault = (data as any)?.is_default_theme;
+        setResponseThemeLabel(typeof backendLabel === "string" ? backendLabel : "");
+        setResponseIsDefault(typeof backendIsDefault === "boolean" ? backendIsDefault : null);
+
+        if (import.meta.env.DEV) {
+          console.log("[ScreenerHub] request URL:", url);
+          console.log("[ScreenerHub] response →", {
+            selected_theme:       (data as any)?.selected_theme,
+            selected_theme_label: (data as any)?.selected_theme_label,
+            is_default_theme:     (data as any)?.is_default_theme,
+            default_theme:        (data as any)?.default_theme,
+            row_count:            arr.length,
+            first_5_symbols:      arr.slice(0, 5).map((r: any) => r.symbol ?? r.ticker ?? "?"),
+          });
+        }
+
         setRows(arr);
         setMeta({
           generated_at:           data?.generated_at,
@@ -706,6 +730,18 @@ export default function ScreenerHub() {
     appliedMinVolume === "" &&
     appliedExchange === "",
   [tab, defaultThemeId, appliedTheme, appliedScoreMode, appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax, appliedMinVolume, appliedExchange]);
+
+  // True when the user has changed non-theme filters but not yet clicked Apply
+  const hasPendingChanges = useMemo(() =>
+    pendingScoreMode     !== appliedScoreMode  ||
+    pendingMcapPreset    !== appliedMcapPreset ||
+    pendingMcapCustomMin !== appliedMcapCustomMin ||
+    pendingMcapCustomMax !== appliedMcapCustomMax ||
+    pendingMinVolume     !== appliedMinVolume  ||
+    pendingExchange      !== appliedExchange,
+  [pendingScoreMode, appliedScoreMode, pendingMcapPreset, appliedMcapPreset,
+   pendingMcapCustomMin, appliedMcapCustomMin, pendingMcapCustomMax, appliedMcapCustomMax,
+   pendingMinVolume, appliedMinVolume, pendingExchange, appliedExchange]);
 
   const onSort = (key: string) => {
     if (sortKey === key) {
@@ -1164,11 +1200,20 @@ export default function ScreenerHub() {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
 
-        {/* Theme dropdown — Thematic only; updates pending only */}
+        {/* Theme dropdown — Thematic only; auto-applies immediately on change */}
         {k === "thematic" && (
           <div className="flex items-center gap-2">
             <label className="text-xs text-white/60">Theme</label>
-            <Select value={pendingTheme} onValueChange={setPendingTheme}>
+            <Select
+              value={pendingTheme}
+              onValueChange={(id) => {
+                setPendingTheme(id);
+                setAppliedTheme(id);
+                setResponseThemeLabel("");
+                setResponseIsDefault(null);
+                if (id) localStorage.setItem(LS_THEME_KEY, id);
+              }}
+            >
               <SelectTrigger
                 className="w-[200px] bg-black/40 border-purple-500/20 text-white"
                 data-testid="screener-hub-theme"
@@ -1284,13 +1329,28 @@ export default function ScreenerHub() {
           <label htmlFor={`screener-hub-score-${k}`} className="text-xs text-white/70">Score Mode</label>
         </div>
 
+        {/* Pending-filters hint — only shown when non-theme filters are dirty */}
+        {hasPendingChanges && !savedMode && (
+          <span className="text-[11px] text-amber-400/80 flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400/80 shrink-0" />
+            Filters changed — click Apply
+          </span>
+        )}
+
         {/* Apply button — commits pending → applied; exits saved mode if needed */}
         <Button
           type="button"
           onClick={handleApply}
           data-testid="screener-hub-apply"
           size="sm"
-          className="bg-purple-600/80 hover:bg-purple-500 border-0 text-white"
+          className={classNames(
+            "border-0 text-white transition-colors",
+            savedMode
+              ? "bg-purple-600/80 hover:bg-purple-500"
+              : hasPendingChanges
+                ? "bg-amber-500/80 hover:bg-amber-400"
+                : "bg-purple-600/80 hover:bg-purple-500",
+          )}
         >
           {savedMode ? "Apply & Go Live" : "Apply"}
         </Button>
@@ -1420,8 +1480,12 @@ export default function ScreenerHub() {
         <div className="text-[11px] flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="flex items-center gap-1.5">
             <span className="text-white/30">Showing:</span>
-            <span className="text-white/70 font-medium">{themes.find((t) => t.id === appliedTheme)?.label ?? appliedTheme}</span>
-            {isDefaultScreen ? (
+            {/* Use backend-confirmed label as source of truth; fallback to frontend label */}
+            <span className="text-white/70 font-medium">
+              {responseThemeLabel || themes.find((t) => t.id === appliedTheme)?.label || appliedTheme}
+            </span>
+            {/* Use backend is_default_theme when available; fall back to isDefaultScreen */}
+            {(responseIsDefault ?? isDefaultScreen) ? (
               <span className="px-1 py-px rounded text-[10px] bg-purple-500/15 text-purple-300/70 border border-purple-400/20 leading-tight">
                 Daily default
               </span>
@@ -1430,7 +1494,7 @@ export default function ScreenerHub() {
                 Custom screen
               </span>
             )}
-            {isDefaultScreen && defaultThemeReason && (
+            {(responseIsDefault ?? isDefaultScreen) && defaultThemeReason && (
               <span className="text-white/25">· {defaultThemeReason}</span>
             )}
           </span>

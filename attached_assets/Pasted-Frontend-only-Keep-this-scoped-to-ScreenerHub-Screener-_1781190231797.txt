@@ -1,0 +1,135 @@
+Frontend only.
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend unless the audit proves backend is returning the wrong selected_theme.
+Do not call FMP, Tradier, options providers, LLM APIs, admin rebuild, or refresh endpoints directly.
+Use only normal Screener Hub GET endpoints.
+
+Issue:
+User selected “Memory” from the Theme dropdown, but the page still shows Regional Banks, which was the default theme. The table does not appear to update to Memory.
+
+Goal:
+Make theme selection + Apply behavior obvious and correct. When the user chooses Memory and applies it, the request must include the Memory theme key and the UI/table must update to the backend response.
+
+Part 1 — Audit the exact theme flow
+
+Add temporary console logging or use existing dev logging to verify:
+
+When user selects Memory:
+
+* pendingTheme value
+* pendingTheme label
+* appliedTheme before Apply
+
+When user clicks Apply:
+
+* appliedTheme after Apply
+* final request URL
+* response selected_theme
+* response selected_theme_label
+* response default_theme
+* response is_default_theme
+* response row count
+* first 5 symbols
+
+Specifically validate:
+
+* Select Memory
+* Click Apply
+* Request URL should include theme=<memory theme key>
+* Response should not silently show selected_theme=regional_banks unless backend explicitly says Memory is invalid
+
+Part 2 — Fix Apply if it sends stale theme
+
+If Apply currently sends the old appliedTheme instead of new pendingTheme, fix it.
+
+Expected behavior:
+
+* Dropdown changes pendingTheme
+* Apply copies pendingTheme to appliedTheme
+* Fetch URL uses new appliedTheme
+* Rows clear immediately
+* Loading state appears
+* Returned rows replace old rows
+* Showing label uses response selected_theme/selected_theme_label, not stale frontend default
+
+Part 3 — Improve UI if Apply is required
+
+If the design is still “dropdown is pending until Apply,” make that obvious.
+
+When pendingTheme !== appliedTheme, show a small inline message near Apply:
+“Theme changed — click Apply to update”
+
+Make Apply button visually active when pending values differ from applied values.
+
+Do not make the user guess why the table did not change.
+
+Part 4 — Consider auto-apply only for theme dropdown if simple
+
+If it is clean and safe, changing the Theme dropdown can auto-apply immediately.
+
+Preferred behavior if simple:
+
+* User selects Memory
+* Frontend immediately applies theme and fetches /api/screener-hub?tab=thematic&theme=<memory_key>
+* No need to click Apply for theme-only changes
+
+But keep Apply for market cap, min volume, exchange, and score mode if that is safer.
+
+Do not auto-fire provider calls directly. This should only call the normal backend Screener Hub GET endpoint.
+
+Part 5 — Validate theme key mapping
+
+Check the theme dropdown options.
+
+For each theme option, make sure:
+
+* label is human-readable, e.g. “Memory”
+* value is the actual backend theme_key expected by /api/screener-hub
+* no mismatch like label “Memory” but value still “regional_banks”
+* no fallback to default when option key is missing
+
+If backend returns UNKNOWN_THEME for Memory:
+
+* surface a clean UI error:
+  “Theme not available: Memory”
+* report the exact theme key frontend sent so backend can be fixed separately
+
+Part 6 — Use backend selected_theme as source of truth
+
+After every fetch, the “Showing:” label should use:
+
+* response.selected_theme_label if present
+* else response.selected_theme
+* fallback to applied theme label only if backend does not provide selected_theme
+
+Do not show default_theme as the selected theme when the user requested a custom theme.
+
+Display:
+
+* “Daily default” only when response.is_default_theme === true
+* “Custom screen” when response.is_default_theme === false
+
+Part 7 — Validation
+
+Validate these exact cases:
+
+1. Load default page → Showing: Regional Banks · Daily default
+2. Select Memory and click Apply → request URL includes Memory theme key
+3. Memory response updates Showing label away from Regional Banks
+4. Memory table rows differ from Regional Banks rows, or backend returns a clear empty/error state
+5. Select Semiconductors and Apply → rows update
+6. Select Regional Banks and Apply → rows update back
+7. Change market cap filter and Apply → request URL includes marketCapMin/marketCapMax and row count changes
+8. Change min volume and Apply → request URL includes minVolume and row count changes
+9. Saved/Daily screen mode still works
+10. Back to Live still works
+11. No provider/admin/LLM calls from frontend
+
+Return:
+
+* files changed
+* exact Memory request URL tested
+* backend selected_theme returned for Memory
+* whether bug was stale Apply state, bad theme key, missing Apply UX, or backend fallback
+* before/after row counts and first 5 symbols for Regional Banks vs Memory
+* validation results
