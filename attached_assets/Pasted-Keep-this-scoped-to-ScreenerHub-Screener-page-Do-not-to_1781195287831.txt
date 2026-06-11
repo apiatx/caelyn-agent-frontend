@@ -1,0 +1,154 @@
+Keep this scoped to ScreenerHub / Screener page.
+Do not touch backend.
+Do not call FMP, Tradier, options providers, LLM APIs, admin rebuild, or refresh endpoints directly.
+Use only normal Screener Hub GET endpoints.
+
+Goal:
+Use the new backend refresh/data-quality metadata to make selected theme behavior clear and polished.
+
+Backend now returns:
+
+selected_theme
+selected_theme_label
+is_default_theme
+theme_refresh_status
+theme_last_refreshed_at
+theme_next_refresh_allowed_at
+theme_refresh_inflight_count
+theme_refresh_concurrency_limit
+default_last_refreshed_at
+next_default_refresh_at
+fmp_refresh_used
+fmp_refresh_reason
+row_source_breakdown
+low_result_quality
+result_quality_warning
+screen_quality
+rows_excluded_missing_market_cap
+rows_excluded_missing_volume
+rows_excluded_non_equity
+unknown_market_cap_policy
+unknown_volume_policy
+unknown_exchange_policy
+
+Part 1 — Showing label
+
+Use backend response as source of truth:
+
+selected_theme_label first
+selected_theme second
+frontend applied theme label only as fallback
+
+Display:
+
+“Daily default” when is_default_theme === true
+“Custom screen” when is_default_theme === false
+
+Examples:
+
+Showing: Regional Banks · Daily default
+Showing: Memory & Storage · Custom screen
+
+Part 2 — Theme refresh status UX
+
+Do not show raw debug fields as badges.
+
+Show a small plain-English status only when useful:
+
+If theme_refresh_status is:
+
+fresh → show nothing or subtle “Theme data fresh” in tooltip/details only
+refresh_scheduled → show “Refreshing theme data…”
+refreshing → show “Refreshing theme data…”
+refresh_queued → show “Refresh queued”
+stale_cap_active → show “Using cached theme data”
+refresh_failed → show “Theme refresh failed”
+weak_cache → show “Limited cached data”
+
+Use tooltip/detail text for:
+
+theme_last_refreshed_at
+theme_next_refresh_allowed_at
+fmp_refresh_reason
+
+Part 3 — Low-result-quality warning
+
+If low_result_quality === true:
+Show a subtle amber warning near the Showing line:
+“Limited screenable results”
+
+Tooltip or small text:
+Use result_quality_warning from backend.
+
+If present, include concise detail:
+
+“{rows_excluded_missing_market_cap} rows excluded for missing market cap”
+“{rows_excluded_missing_volume} rows excluded for missing volume”
+“{rows_excluded_non_equity} non-stock rows excluded”
+
+Keep it compact. Do not make the page ugly.
+
+Part 4 — Clean freshness line
+
+Keep the main freshness/status line compact.
+
+Preferred:
+“Universe cached · Built Jun 11, 10:12 AM · Quotes fresh ⓘ”
+
+Details/tooltip can include:
+
+default_last_refreshed_at
+next_default_refresh_at
+theme_last_refreshed_at
+theme_next_refresh_allowed_at
+row_source_breakdown
+screen_quality
+
+Do not bring back the long row of debug badges.
+
+Part 5 — Auto-refresh visibility
+
+When a custom theme was just selected and backend returns refresh_scheduled/refreshing:
+
+keep showing current cached rows
+show “Refreshing theme data…”
+optionally refetch once after 5–10 seconds if simple and safe
+do not poll aggressively
+do not call provider/admin endpoints directly
+
+Part 6 — Preserve control behavior
+
+Keep:
+
+Theme dropdown auto-applies and fetches selected theme
+Apply button handles market cap/min volume/exchange/score mode
+“Filters changed — click Apply” indicator
+Daily Screens behavior
+Daily Insights behavior
+Back to Live behavior
+table sorting
+sticky Symbol column
+Div/Yr remains removed
+
+Part 7 — Validation
+
+Validate:
+
+Default load shows backend selected_theme_label and Daily default.
+Selecting Memory & Storage shows Memory & Storage, not memory_storage raw key if label is provided.
+Selecting a weak/custom theme shows Limited screenable results if backend returns low_result_quality.
+Backend refresh_scheduled/refreshing displays a clean plain-English refresh message.
+Semiconductors and Regional Banks still look normal with no noisy warnings.
+Market cap filter excludes unknown market caps and UI does not show unknown rows as under $10B.
+Min volume filter excludes unknown volume when active.
+Daily Screens and Daily Insights still work.
+No provider/admin/LLM calls from frontend.
+Div/Yr does not reappear.
+
+Return:
+
+files changed
+status/warning UI behavior
+selected theme label behavior
+validation results
+limitations

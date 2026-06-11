@@ -411,12 +411,32 @@ export default function ScreenerHub() {
     fundamentals_cache_status?: string; message?: string; error_code?: string;
     low_metadata_coverage?: boolean; metadata_coverage_warning?: string;
     fund_coverage_pct?: number; eligible_fund_coverage_pct?: number;
+    // Theme-level refresh / quality fields
+    theme_refresh_status?: string;
+    theme_last_refreshed_at?: string;
+    theme_next_refresh_allowed_at?: string;
+    default_last_refreshed_at?: string;
+    next_default_refresh_at?: string;
+    fmp_refresh_used?: boolean;
+    fmp_refresh_reason?: string;
+    row_source_breakdown?: Record<string, number>;
+    low_result_quality?: boolean;
+    result_quality_warning?: string;
+    screen_quality?: string;
+    rows_excluded_missing_market_cap?: number;
+    rows_excluded_missing_volume?: number;
+    rows_excluded_non_equity?: number;
+    unknown_market_cap_policy?: string;
+    unknown_volume_policy?: string;
+    unknown_exchange_policy?: string;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   // Backend-confirmed theme state — source of truth for "Showing:" label after every fetch
   const [responseThemeLabel, setResponseThemeLabel] = useState<string>("");
   const [responseIsDefault, setResponseIsDefault]   = useState<boolean | null>(null);
+  // Incremented to trigger a one-time re-fetch when theme data is mid-refresh
+  const [refetchTrigger, setRefetchTrigger] = useState<number>(0);
   const [sortKey, setSortKey] = useState<string>("score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [copied, setCopied] = useState<boolean>(false);
@@ -571,6 +591,7 @@ export default function ScreenerHub() {
     setRows([]);
     setResponseThemeLabel("");
     setResponseIsDefault(null);
+    let autoRefetchTid: ReturnType<typeof window.setTimeout> | null = null;
     (async () => {
       try {
         const data = await fetchJson<HubResponse>(url, ctrl.signal);
@@ -615,6 +636,23 @@ export default function ScreenerHub() {
           eligible_fund_coverage_pct:    data?.eligible_fund_coverage_pct,
           message:                       data?.message ?? undefined,
           error_code:                    data?.error_code ?? undefined,
+          theme_refresh_status:          (data as any)?.theme_refresh_status,
+          theme_last_refreshed_at:       (data as any)?.theme_last_refreshed_at,
+          theme_next_refresh_allowed_at: (data as any)?.theme_next_refresh_allowed_at,
+          default_last_refreshed_at:     (data as any)?.default_last_refreshed_at,
+          next_default_refresh_at:       (data as any)?.next_default_refresh_at,
+          fmp_refresh_used:              (data as any)?.fmp_refresh_used,
+          fmp_refresh_reason:            (data as any)?.fmp_refresh_reason,
+          row_source_breakdown:          (data as any)?.row_source_breakdown,
+          low_result_quality:            (data as any)?.low_result_quality,
+          result_quality_warning:        (data as any)?.result_quality_warning,
+          screen_quality:                (data as any)?.screen_quality,
+          rows_excluded_missing_market_cap: (data as any)?.rows_excluded_missing_market_cap,
+          rows_excluded_missing_volume:     (data as any)?.rows_excluded_missing_volume,
+          rows_excluded_non_equity:         (data as any)?.rows_excluded_non_equity,
+          unknown_market_cap_policy:     (data as any)?.unknown_market_cap_policy,
+          unknown_volume_policy:         (data as any)?.unknown_volume_policy,
+          unknown_exchange_policy:       (data as any)?.unknown_exchange_policy,
         });
 
         // ── Daily auto-save — default screen only, once per tab/theme/date per session ──
@@ -664,6 +702,18 @@ export default function ScreenerHub() {
             });
           }
         }
+        // ── Auto-refetch when theme data is mid-refresh (one shot, 7s delay) ──────
+        const refreshStatus = (data as any)?.theme_refresh_status;
+        if (
+          !ctrl.signal.aborted &&
+          (refreshStatus === "refresh_scheduled" || refreshStatus === "refreshing") &&
+          autoRefetchTid === null
+        ) {
+          autoRefetchTid = window.setTimeout(
+            () => setRefetchTrigger((n) => n + 1),
+            7000,
+          );
+        }
       } catch (e: any) {
         if (ctrl.signal.aborted) return;
         setError(e?.message ?? String(e));
@@ -672,8 +722,11 @@ export default function ScreenerHub() {
         if (!ctrl.signal.aborted) setLoading(false);
       }
     })();
-    return () => { ctrl.abort(); };
-  }, [buildUrl, savedMode]);
+    return () => {
+      ctrl.abort();
+      if (autoRefetchTid !== null) window.clearTimeout(autoRefetchTid);
+    };
+  }, [buildUrl, savedMode, refetchTrigger]);
 
   // ── Visible columns ───────────────────────────────────────────────────────────
   const visibleColumns = useMemo(() => {
@@ -1520,6 +1573,53 @@ export default function ScreenerHub() {
               </span>
             ));
           })()}
+          {/* Theme refresh status — plain English, only when actionable */}
+          {(() => {
+            const REFRESH_LABELS: Record<string, string> = {
+              refresh_scheduled: "Refreshing theme data…",
+              refreshing:        "Refreshing theme data…",
+              refresh_queued:    "Refresh queued",
+              stale_cap_active:  "Using cached theme data",
+              refresh_failed:    "Theme refresh failed",
+              weak_cache:        "Limited cached data",
+            };
+            const status = meta.theme_refresh_status;
+            const label  = status ? REFRESH_LABELS[status] : null;
+            if (!label) return null;
+            const isWarn = status === "refresh_failed" || status === "weak_cache";
+            const tipLines = [
+              meta.theme_last_refreshed_at       ? `Last refreshed: ${(() => { try { return new Date(meta.theme_last_refreshed_at!).toLocaleTimeString(); } catch { return meta.theme_last_refreshed_at; } })()}` : null,
+              meta.theme_next_refresh_allowed_at  ? `Next refresh allowed: ${(() => { try { return new Date(meta.theme_next_refresh_allowed_at!).toLocaleTimeString(); } catch { return meta.theme_next_refresh_allowed_at; } })()}` : null,
+              meta.fmp_refresh_reason             ? `Reason: ${meta.fmp_refresh_reason}` : null,
+            ].filter(Boolean).join("\n");
+            return (
+              <span
+                className={classNames(
+                  "text-[11px] flex items-center gap-1 cursor-default",
+                  isWarn ? "text-amber-400/70" : "text-white/35",
+                )}
+                title={tipLines || undefined}
+              >
+                {isWarn && <span className="text-[10px]">⚠</span>}
+                {label}
+              </span>
+            );
+          })()}
+          {/* Low-result-quality warning — amber, with exclusion detail in tooltip */}
+          {meta.low_result_quality && (
+            <span
+              className="text-[11px] text-amber-400/70 flex items-center gap-1 cursor-default"
+              title={[
+                meta.result_quality_warning,
+                meta.rows_excluded_missing_market_cap ? `${meta.rows_excluded_missing_market_cap} rows excluded (missing market cap)` : null,
+                meta.rows_excluded_missing_volume     ? `${meta.rows_excluded_missing_volume} rows excluded (missing volume)` : null,
+                meta.rows_excluded_non_equity         ? `${meta.rows_excluded_non_equity} non-stock rows excluded` : null,
+              ].filter(Boolean).join(" · ") || undefined}
+            >
+              <span className="text-[10px]">⚠</span>
+              Limited screenable results
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -1552,93 +1652,92 @@ export default function ScreenerHub() {
               ))}
             </TabsList>
 
-            {/* ── Freshness metadata — compact primary display + ⓘ details ─── */}
-            <div
-              className="flex flex-wrap items-center gap-2 text-[11px] text-white/50"
-              data-testid="screener-hub-meta"
-            >
-              {/* Universe status + built time — one pill */}
-              {(meta.universe_built_at || meta.generated_at || meta.universe_age_hours != null) && (() => {
-                const isStale = meta.universe_age_hours != null && meta.universe_age_hours > 12;
-                const builtAt  = meta.universe_built_at ?? meta.generated_at;
-                const builtLabel = builtAt ? (() => {
-                  try {
-                    return new Date(builtAt).toLocaleString(undefined, {
-                      month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
-                    });
-                  } catch { return null; }
-                })() : null;
-                return (
-                  <span className={classNames(
-                    "px-2 py-0.5 rounded border bg-white/5",
-                    isStale ? "border-amber-500/30 text-amber-400/70" : "border-white/10",
-                  )}>
-                    Universe: {isStale ? "cached" : "fresh"}
-                    {builtLabel && <> · Built {builtLabel}</>}
-                  </span>
-                );
-              })()}
+            {/* ── Freshness metadata — compact single line + ⓘ tooltip ─── */}
+            {(() => {
+              const isStale  = meta.universe_age_hours != null && meta.universe_age_hours > 12;
+              const builtAt  = meta.universe_built_at ?? meta.generated_at;
+              const builtLabel = builtAt ? (() => {
+                try { return new Date(builtAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+                catch { return null; }
+              })() : null;
 
-              {/* Quotes status */}
-              {(meta.quote_refresh_started || meta.quote_cache_status) && (
-                meta.quote_refresh_started ? (
-                  <span className="px-2 py-0.5 rounded border border-blue-400/30 bg-blue-400/8 text-blue-300/70">
-                    Quotes: refreshing
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                    Quotes: {meta.quote_cache_status}
-                  </span>
-                )
-              )}
+              const quoteText = meta.quote_refresh_started
+                ? "Quotes: refreshing"
+                : meta.quote_cache_status ? `Quotes: ${meta.quote_cache_status}` : null;
 
-              {/* Row filter counts — user-facing, keep visible */}
-              {meta.rows_after_filters != null &&
-               meta.rows_before_filters != null &&
-               meta.rows_after_filters !== meta.rows_before_filters && (
-                <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
-                  {meta.rows_after_filters} / {meta.rows_before_filters} rows
-                </span>
-              )}
+              // ⓘ tooltip detail lines
+              const tipParts: string[] = [];
+              if (meta.served_at) { try { tipParts.push(`Served: ${new Date(meta.served_at).toLocaleTimeString()}`); } catch {} }
+              if (meta.universe_db_source) tipParts.push(`Source: ${meta.universe_db_source}`);
+              if (meta.fundamentals_cache_status) tipParts.push(`Fundamentals cache: ${meta.fundamentals_cache_status}`);
+              if (meta.eligible_fund_coverage_pct != null) tipParts.push(`Fundamentals coverage: ${meta.eligible_fund_coverage_pct.toFixed(0)}%`);
+              if (meta.next_rebuild_at) { try { tipParts.push(`Next rebuild: ${new Date(meta.next_rebuild_at).toLocaleTimeString()}`); } catch {} }
+              if (themeRsUpdatedAt) { try { tipParts.push(`RS scores: ${new Date(themeRsUpdatedAt).toLocaleDateString()}`); } catch {} }
+              if (meta.theme_last_refreshed_at) { try { tipParts.push(`Theme refreshed: ${new Date(meta.theme_last_refreshed_at).toLocaleTimeString()}`); } catch {} }
+              if (meta.theme_next_refresh_allowed_at) { try { tipParts.push(`Next theme refresh allowed: ${new Date(meta.theme_next_refresh_allowed_at).toLocaleTimeString()}`); } catch {} }
+              if (meta.default_last_refreshed_at) { try { tipParts.push(`Default theme refreshed: ${new Date(meta.default_last_refreshed_at).toLocaleTimeString()}`); } catch {} }
+              if (meta.next_default_refresh_at) { try { tipParts.push(`Next default refresh: ${new Date(meta.next_default_refresh_at).toLocaleTimeString()}`); } catch {} }
+              if (meta.fmp_refresh_reason) tipParts.push(`FMP refresh reason: ${meta.fmp_refresh_reason}`);
+              if (meta.screen_quality) tipParts.push(`Screen quality: ${meta.screen_quality}`);
+              if (meta.row_source_breakdown) {
+                const bd = meta.row_source_breakdown;
+                const bdStr = Object.entries(bd).map(([k, v]) => `${k}: ${v}`).join(", ");
+                if (bdStr) tipParts.push(`Row sources: ${bdStr}`);
+              }
+              if (meta.unknown_market_cap_policy) tipParts.push(`Unknown MCap policy: ${meta.unknown_market_cap_policy}`);
+              if (meta.unknown_volume_policy) tipParts.push(`Unknown volume policy: ${meta.unknown_volume_policy}`);
+              if (meta.unknown_exchange_policy) tipParts.push(`Unknown exchange policy: ${meta.unknown_exchange_policy}`);
 
-              {/* Partial data warning — amber, subtle */}
-              {meta.low_metadata_coverage && (
-                <span
-                  className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-400/8 text-amber-400/80"
-                  title="Some rows are missing cached fundamentals like Market Cap, Sector, Industry, Beta, or Exchange."
-                >
-                  Partial data
-                </span>
-              )}
+              // Row filter count — visible only when backend filtered some rows
+              const rowsFiltered = meta.rows_after_filters != null &&
+                meta.rows_before_filters != null &&
+                meta.rows_after_filters !== meta.rows_before_filters;
 
-              {/* ⓘ Details — internal/debug info collapsed into hover tooltip */}
-              {(() => {
-                const parts: string[] = [];
-                if (meta.served_at) {
-                  try { parts.push(`Served: ${new Date(meta.served_at).toLocaleTimeString()}`); } catch {}
-                }
-                if (meta.universe_db_source) parts.push(`Source: ${meta.universe_db_source}`);
-                if (meta.fundamentals_cache_status) parts.push(`Fundamentals cache: ${meta.fundamentals_cache_status}`);
-                if (meta.eligible_fund_coverage_pct != null) {
-                  parts.push(`Data quality: ${meta.eligible_fund_coverage_pct.toFixed(0)}% of rows have complete cached fundamentals for this screen.`);
-                }
-                if (meta.next_rebuild_at) {
-                  try { parts.push(`Next rebuild: ${new Date(meta.next_rebuild_at).toLocaleTimeString()}`); } catch {}
-                }
-                if (themeRsUpdatedAt) {
-                  try { parts.push(`RS scores: ${new Date(themeRsUpdatedAt).toLocaleDateString()}`); } catch {}
-                }
-                if (parts.length === 0) return null;
-                return (
-                  <span
-                    className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 cursor-help text-white/30 hover:text-white/60 transition-colors select-none"
-                    title={parts.join("\n")}
-                  >
-                    ⓘ
-                  </span>
-                );
-              })()}
-            </div>
+              if (!builtLabel && !quoteText && tipParts.length === 0 && !rowsFiltered) return null;
+
+              return (
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/50" data-testid="screener-hub-meta">
+                  {/* Compact universe + quotes line */}
+                  {(builtLabel || quoteText) && (
+                    <span className={classNames(
+                      "px-2 py-0.5 rounded border bg-white/5",
+                      isStale ? "border-amber-500/30 text-amber-400/70" : "border-white/10",
+                    )}>
+                      Universe: {isStale ? "cached" : "fresh"}
+                      {builtLabel && <> · Built {builtLabel}</>}
+                      {quoteText && <> · {quoteText.replace("Quotes: ", "Quotes: ")}</>}
+                    </span>
+                  )}
+
+                  {/* Row filter count */}
+                  {rowsFiltered && (
+                    <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">
+                      {meta.rows_after_filters} / {meta.rows_before_filters} rows
+                    </span>
+                  )}
+
+                  {/* Partial metadata coverage */}
+                  {meta.low_metadata_coverage && (
+                    <span
+                      className="px-2 py-0.5 rounded border border-amber-500/30 bg-amber-400/8 text-amber-400/80"
+                      title={meta.metadata_coverage_warning ?? "Some rows are missing cached fundamentals."}
+                    >
+                      Partial data
+                    </span>
+                  )}
+
+                  {/* ⓘ details tooltip */}
+                  {tipParts.length > 0 && (
+                    <span
+                      className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 cursor-help text-white/30 hover:text-white/60 transition-colors select-none"
+                      title={tipParts.join("\n")}
+                    >
+                      ⓘ
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
