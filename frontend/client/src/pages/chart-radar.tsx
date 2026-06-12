@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import MultiChartsPage from "./multicharts";
 import {
   ChevronDown, ChevronRight, ExternalLink,
-  AlertTriangle, BarChart3,
+  AlertTriangle, BarChart3, Columns2, Rows2,
 } from "lucide-react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 
@@ -395,21 +395,155 @@ function GroupSection({
   );
 }
 
+/* ── Compare Panel ──────────────────────────────────────────────────────── */
+function ComparePanel() {
+  const [layout,  setLayout]  = useState<'side-by-side' | 'top-bottom'>('side-by-side');
+  const [input1,  setInput1]  = useState('AAPL');
+  const [input2,  setInput2]  = useState('NVDA');
+  const [sym1,    setSym1]    = useState('AAPL');
+  const [sym2,    setSym2]    = useState('NVDA');
+
+  const apply = () => {
+    if (input1.trim()) setSym1(input1.trim().toUpperCase());
+    if (input2.trim()) setSym2(input2.trim().toUpperCase());
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') apply();
+  };
+
+  const inputStyle: React.CSSProperties = {
+    fontSize: 11, fontFamily: C.font, fontWeight: 700,
+    background: C.card2, border: `1px solid ${C.border}`,
+    color: C.teal, borderRadius: 3, padding: '4px 8px',
+    outline: 'none', width: 100, letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+  };
+
+  const iframeStyle: React.CSSProperties = {
+    flex: 1, border: 0, display: 'block', minHeight: 0, minWidth: 0,
+  };
+
+  const isHoriz = layout === 'side-by-side';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* Toolbar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+        borderBottom: `1px solid ${C.border}`, background: C.card, flexShrink: 0, flexWrap: 'wrap',
+      }}>
+        {/* Symbol inputs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>CHART 1</span>
+          <input
+            value={input1}
+            onChange={e => setInput1(e.target.value.toUpperCase())}
+            onKeyDown={handleKey}
+            placeholder="AAPL"
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>CHART 2</span>
+          <input
+            value={input2}
+            onChange={e => setInput2(e.target.value.toUpperCase())}
+            onKeyDown={handleKey}
+            placeholder="NVDA"
+            style={inputStyle}
+          />
+        </div>
+        <button
+          onClick={apply}
+          style={{ ...btnBase, color: C.teal, background: C.teal + '20', borderColor: C.teal + '40', padding: '4px 12px' }}
+        >
+          APPLY
+        </button>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 16, background: C.border, margin: '0 4px' }} />
+
+        {/* Layout toggle */}
+        <div style={{ display: 'flex', gap: 2 }}>
+          <button
+            onClick={() => setLayout('side-by-side')}
+            title="Side by side"
+            style={layout === 'side-by-side' ? activeBtn(C.purple) : inactiveBtn}
+          >
+            <Columns2 style={{ width: 10, height: 10, display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+            SIDE BY SIDE
+          </button>
+          <button
+            onClick={() => setLayout('top-bottom')}
+            title="Top and bottom"
+            style={layout === 'top-bottom' ? activeBtn(C.purple) : inactiveBtn}
+          >
+            <Rows2 style={{ width: 10, height: 10, display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+            TOP / BOTTOM
+          </button>
+        </div>
+
+        <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto', letterSpacing: '0.04em' }}>
+          You can also change the symbol directly inside each chart
+        </span>
+      </div>
+
+      {/* Charts */}
+      <div style={{
+        display: 'flex',
+        flexDirection: isHoriz ? 'row' : 'column',
+        flex: 1, minHeight: 0, gap: 0,
+      }}>
+        {/* Chart 1 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0, borderRight: isHoriz ? `1px solid ${C.border}` : 'none', borderBottom: !isHoriz ? `1px solid ${C.border}` : 'none' }}>
+          <div style={{ padding: '5px 10px', background: C.card2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.teal, fontFamily: C.font, letterSpacing: '0.06em' }}>{sym1}</span>
+          </div>
+          <iframe
+            key={`compare-1-${sym1}`}
+            src={buildTvUrl(sym1, 'D')}
+            title={`Compare Chart 1 — ${sym1}`}
+            allowFullScreen
+            style={iframeStyle}
+          />
+        </div>
+
+        {/* Chart 2 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
+          <div style={{ padding: '5px 10px', background: C.card2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: C.teal, fontFamily: C.font, letterSpacing: '0.06em' }}>{sym2}</span>
+          </div>
+          <iframe
+            key={`compare-2-${sym2}`}
+            src={buildTvUrl(sym2, 'D')}
+            title={`Compare Chart 2 — ${sym2}`}
+            allowFullScreen
+            style={iframeStyle}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
-  /* ── Tab: watchlist | portfolio | custom (MultiCharts) ─────────────── */
-  const [tab, setTab] = useState<'watchlist' | 'portfolio' | 'custom'>('watchlist');
-  /* Only mount MultiChartsPage after user first clicks CUSTOM — prevents
-     eager iframe loading from competing with Chart Radar charts on startup */
-  const [customMounted, setCustomMounted] = useState(false);
+  /* ── Tab: custom | watchlist | portfolio | compare ──────────────────── */
+  const [tab, setTab] = useState<'custom' | 'watchlist' | 'portfolio' | 'compare'>('watchlist');
+  /* Lazy-mount expensive tabs on first activation */
+  const [customMounted,  setCustomMounted]  = useState(false);
+  const [compareMounted, setCompareMounted] = useState(false);
 
-  const handleTabChange = useCallback((t: 'watchlist' | 'portfolio' | 'custom') => {
-    if (t === 'custom') setCustomMounted(true);
+  const handleTabChange = useCallback((t: 'custom' | 'watchlist' | 'portfolio' | 'compare') => {
+    if (t === 'custom')  setCustomMounted(true);
+    if (t === 'compare') setCompareMounted(true);
     setTab(t);
   }, []);
 
-  /* Derive API source — falls back to watchlist when custom tab is active */
-  const source: 'watchlist' | 'portfolio' = tab === 'custom' ? 'watchlist' : tab;
+  /* Derive API source — falls back to watchlist for non-curated tabs */
+  const source: 'watchlist' | 'portfolio' =
+    tab === 'watchlist' || tab === 'portfolio' ? tab : 'watchlist';
 
   /* Core controls */
   const [groupBy, setGroupBy] = useState('theme');
@@ -519,17 +653,23 @@ export default function ChartRadarPage() {
             CHART RADAR
           </span>
 
-          {/* 3-way tab toggle: WATCHLIST | PORTFOLIO | CUSTOM */}
+          {/* 4-way tab toggle: CUSTOM | WATCHLIST | PORTFOLIO | COMPARE */}
           <div style={{ display: 'flex', gap: 2 }}>
-            {(['watchlist', 'portfolio', 'custom'] as const).map(t => (
-              <button key={t} onClick={() => handleTabChange(t)} style={tab === t ? activeBtn() : inactiveBtn}>
+            {(['custom', 'watchlist', 'portfolio', 'compare'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => handleTabChange(t)}
+                style={tab === t
+                  ? activeBtn(t === 'compare' ? C.purple : C.teal)
+                  : inactiveBtn}
+              >
                 {t.toUpperCase()}
               </button>
             ))}
           </div>
 
           {/* GROUP — only shown for curated tabs */}
-          {tab !== 'custom' && (
+          {(tab === 'watchlist' || tab === 'portfolio') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>GROUP</span>
               <div style={{ position: 'relative' }}>
@@ -544,7 +684,7 @@ export default function ChartRadarPage() {
           )}
 
           {/* SORT — only shown for curated tabs */}
-          {tab !== 'custom' && (
+          {(tab === 'watchlist' || tab === 'portfolio') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 8, color: C.dim, letterSpacing: '0.06em' }}>SORT</span>
               <div style={{ position: 'relative' }}>
@@ -563,14 +703,19 @@ export default function ChartRadarPage() {
       </div>
 
       {/* ── Custom MultiCharts — only mounted after first CUSTOM click, then CSS-gated ── */}
-      <div style={tab !== 'custom' ? { display: 'none' } : { flex: 1, minHeight: 0 }}>
+      <div style={tab !== 'custom' ? { display: 'none' } : { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {customMounted && (
           <MultiChartsPage isActive={tab === 'custom'} onCurated={() => setTab('watchlist')} />
         )}
       </div>
 
-      {/* ── Curated content — hidden when CUSTOM tab active ──────────────── */}
-      <div style={tab === 'custom' ? { display: 'none' } : { flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+      {/* ── Compare — only mounted after first COMPARE click, then CSS-gated ── */}
+      <div style={tab !== 'compare' ? { display: 'none' } : { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {compareMounted && <ComparePanel />}
+      </div>
+
+      {/* ── Curated content — hidden when CUSTOM or COMPARE tab active ───── */}
+      <div style={(tab === 'custom' || tab === 'compare') ? { display: 'none' } : { flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
 
         {/* Warnings — collapsible */}
         {data?.warnings && data.warnings.length > 0 && (
