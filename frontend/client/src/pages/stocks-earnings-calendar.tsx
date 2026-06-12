@@ -3056,6 +3056,9 @@ function getEventDisplayTitle(ev: CatalystEvent, tab?: string): string {
     _evStr(r.name) ||
     _evStr(r.event) ||
     _evStr(r.title) ||
+    _evStr(r.category as unknown) ||
+    _evStr(r.source as unknown) ||
+    _evStr(r.description as unknown) ||
     _evStr(ev.company) ||
     _evStr(ev.companyName) ||
     _evStr(r.company) ||
@@ -3137,17 +3140,23 @@ function normalizeCatalystEvent(ev: CatalystEvent, tab: string, idx: number): Ca
     if (parts.length === 0)           parts.push("Economic Release");
     subtitle = parts.join(" · ");
   } else if (tab === "treasury_macro") {
-    // Title: real event name from priority chain
+    // Title: real event name from priority chain (r.category / r.source often carry it)
     title = getEventDisplayTitle(ev, tab);
-    // Subtitle: time + source / category
+    // Subtitle: numeric data — yield, rate, maturity, prev (NOT r.category/r.source
+    // since those are now used as the title above)
     const parts: string[] = [];
-    const timeVal  = _evStr((r as Record<string, unknown>).time) || _evStr((r as Record<string, unknown>).release_time);
-    const category = _evStr(ev.currency) || _evStr(ev.country) || _evStr((r as Record<string, unknown>).category) || _evStr((r as Record<string, unknown>).source);
-    const yld      = ev.yield ?? (r.yield != null ? Number(r.yield) : undefined) ?? ev.actual ?? (r.actual != null ? Number(r.actual) : undefined);
-    if (timeVal)    parts.push(timeVal);
-    if (category)   parts.push(category);
-    if (yld != null) parts.push(`${yld}%`);
-    if (parts.length === 0) parts.push("Treasury / Macro");
+    const timeVal = _evStr((r as Record<string, unknown>).time) || _evStr((r as Record<string, unknown>).release_time);
+    const yld     = ev.yield ?? (r.yield != null ? Number(r.yield) : undefined) ?? ev.actual ?? (r.actual != null ? Number(r.actual) : undefined);
+    const rate    = ev.rate  ?? (r.rate  != null ? Number(r.rate)  : undefined);
+    const mat     = _evStr(ev.maturity) || _evStr((r as Record<string, unknown>).maturity as unknown);
+    const prev    = ev.previous ?? (r.previous != null ? Number(r.previous) : undefined);
+    const ctry    = _evStr(ev.country) || _evStr((r as Record<string, unknown>).country as unknown);
+    if (timeVal)              parts.push(timeVal);
+    if (ctry)                 parts.push(ctry);
+    if (yld  != null)         parts.push(`${yld}%`);
+    if (rate != null && rate !== yld) parts.push(`Rate: ${rate}%`);
+    if (mat)                  parts.push(mat);
+    if (prev != null)         parts.push(`Prev: ${prev}%`);
     subtitle = parts.join(" · ");
   } else {
     title = getEventDisplayTitle(ev, tab);
