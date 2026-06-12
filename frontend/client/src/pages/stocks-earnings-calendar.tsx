@@ -3010,8 +3010,14 @@ function _evStr(v: unknown): string | null {
 
 /**
  * Return the best human-readable display title for a catalyst event.
- * Priority: display_title → title → event_name → name → company /
- *           companyName → symbol → tab-specific fallback → "Unknown Event"
+ * Priority chain (first non-empty wins):
+ *   display_title → title → indicatorName → event_name → name →
+ *   raw variants → company / companyName → symbol → fallback
+ *
+ * indicatorName is placed BEFORE event_name because for treasury/macro
+ * events the backend may populate event_name with a generic type string
+ * (e.g. "macro") while the real human-readable name lives in indicatorName
+ * (e.g. "10-Year Treasury Yield", "Federal Funds Rate").
  */
 function getEventDisplayTitle(ev: CatalystEvent, tab?: string): string {
   const r = ev.raw || {};
@@ -3026,6 +3032,9 @@ function getEventDisplayTitle(ev: CatalystEvent, tab?: string): string {
   return (
     _evStr(ev.display_title) ||
     _evStr(ev.title) ||
+    _evStr(ev.indicatorName) ||
+    _evStr(r.indicatorName as unknown) ||
+    _evStr(r.indicator_name as unknown) ||
     _evStr(ev.event_name) ||
     _evStr(ev.name) ||
     _evStr(r.display_title) ||
