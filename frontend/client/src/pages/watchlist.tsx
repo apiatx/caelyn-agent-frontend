@@ -1306,7 +1306,7 @@ export default function WatchlistPage() {
       borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap',
     }}>
       {(wlMetas || []).map((meta) => {
-        const isActive = activeId === meta.id;
+        const isActive = activeId === meta.id && innerView === 'tickers';
         return (
           <div
             key={meta.id}
