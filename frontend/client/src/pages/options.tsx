@@ -21,6 +21,7 @@ import {
   X,
   Clock,
   Eye,
+  BookOpen,
 } from "lucide-react";
 import {
   BarChart,
@@ -286,6 +287,12 @@ const fmtRatioPct = (n: unknown, d = 1) => {
   return `${(v * 100).toFixed(d)}%`;
 };
 const fmtPlainPct = (n: unknown, d = 1) => { const v = safeNum(n); return v == null ? "—" : `${v.toFixed(d)}%`; };
+const fmtIV = (n: unknown): string => {
+  const v = safeNum(n);
+  if (v == null) return "—";
+  if (v >= 0 && v <= 3) return `${(v * 100).toFixed(0)}%`;
+  return `${v.toFixed(0)}%`;
+};
 const fmtCurrencyShort = (n: unknown): string => {
   const v = safeNum(n);
   if (v == null) return "—";
@@ -1754,6 +1761,11 @@ const COL_TIPS: Record<string, string> = {
   otm:     "Distance of the contract strike from the underlying price.",
   unusual: "OTM contract with meaningful premium and unusually high volume/OI.",
   dte:     "Days until expiration of the primary contract focus.",
+  g_delta: "Estimated option price move for a $1 move in the stock.",
+  g_gamma: "How quickly Delta changes.",
+  g_theta: "Estimated daily time decay.",
+  g_vega:  "Sensitivity to implied volatility.",
+  g_iv:    "Implied volatility estimate.",
 };
 
 const getBias = (t: TickerResult): { label: string; color: string } | null => {
@@ -1805,6 +1817,13 @@ const getVolOI = (t: TickerResult): number | null => {
   return (vol != null && oi != null && oi > 0) ? vol / oi : null;
 };
 
+const getTopContractGreeks = (t: TickerResult) => {
+  const c = t.top_contracts?.[0];
+  if (!c) return { delta: null, gamma: null, theta: null, vega: null, iv: null };
+  const nc = normalizeContract(c);
+  return { delta: nc.delta, gamma: nc.gamma, theta: nc.theta, vega: nc.vega, iv: nc.iv };
+};
+
 const isUnusualOTM = (t: TickerResult): boolean => {
   if (t.unusual_otm != null) return Boolean(t.unusual_otm);
   return (t.top_contracts || []).some(c =>
@@ -1831,6 +1850,7 @@ const W = {
   signal: 130, bias: 60, move: 58, premium: 80, prem_d: 60, vol: 60,
   oi: 60, oi_d: 58, voi: 48, callpct: 50, putpct: 50, dte: 38,
   strike: 62, otm: 54, unusual: 64,
+  g_delta: 36, g_gamma: 36, g_theta: 40, g_vega: 36, g_iv: 44,
 } as const;
 
 function MasterScreener({
@@ -2005,6 +2025,11 @@ function MasterScreener({
         <span style={{ flex: 1 }} />
         {sorted.length > 0 && <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>{sorted.length} signals</span>}
         {statusEl}
+        {resp?.greeks_meta && (
+          <span style={{ color: C.dim, fontSize: 9, fontFamily: font, opacity: 0.55 }} title="Greeks enriched contracts / total">
+            Δ {resp.greeks_meta.contracts_enriched ?? 0}/{resp.greeks_meta.total_contracts ?? "?"}
+          </span>
+        )}
         <button onClick={() => setShowAbout(true)}
           style={{ padding: "3px 10px", borderRadius: 4, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 10, fontFamily: font, cursor: "pointer", transition: "border-color 0.1s, color 0.1s" }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.blue; (e.currentTarget as HTMLButtonElement).style.color = C.blue; }}
@@ -2049,7 +2074,7 @@ function MasterScreener({
       {/* ── Screener table (fills viewport width) ── */}
       {sorted.length > 0 && (
         <div style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
-          <div style={{ width: "100%", minWidth: 900 }}>
+          <div style={{ width: "100%", minWidth: 1050 }}>
 
             {/* Sticky column header row */}
             <div style={{
@@ -2079,6 +2104,11 @@ function MasterScreener({
               {ch("strike",  "Strike",   undefined, "right")}
               {ch("otm",     "OTM %",    undefined, "right")}
               {ch("unusual", "Unusual")}
+              {ch("g_delta", "Δ",   undefined, "right")}
+              {ch("g_gamma", "Γ",   undefined, "right")}
+              {ch("g_theta", "Θ",   undefined, "right")}
+              {ch("g_vega",  "Vega", undefined, "right")}
+              {ch("g_iv",    "IV",  undefined, "right")}
             </div>
 
             {/* Data rows */}
@@ -2100,6 +2130,7 @@ function MasterScreener({
               const otmPct  = getOTMPct(t);
               const unusual = isUnusualOTM(t);
               const assetLbl = (t.asset_type || "").toUpperCase();
+              const { delta: gd, gamma: gg, theta: gt, vega: gv, iv: giv } = getTopContractGreeks(t);
 
               const thesisArr  = Array.isArray(t.thesis) ? t.thesis : (t.thesis ? [t.thesis] : []);
               const thesisFull = thesisArr[0] || t.stock_context_summary || t.options_context_summary || "";
@@ -2199,6 +2230,12 @@ function MasterScreener({
                       <span style={{ fontSize: 9, color: C.orange, fontFamily: font, background: `${C.orange}18`, border: `1px solid ${C.orange}35`, borderRadius: 3, padding: "1px 5px", fontWeight: 700, letterSpacing: "0.04em" }}>UNUSUAL</span>
                     )}
                   </div>
+
+                  {cell("g_delta", gd != null ? fmtNum(gd, 2) : null, gd == null ? C.dim : C.text, "right")}
+                  {cell("g_gamma", gg != null ? fmtNum(gg, 2) : null, gg == null ? C.dim : C.text, "right")}
+                  {cell("g_theta", gt != null ? fmtNum(gt, 2) : null, gt == null ? C.dim : gt < 0 ? C.red : C.orange, "right")}
+                  {cell("g_vega",  gv != null ? fmtNum(gv, 2) : null, gv == null ? C.dim : C.text, "right")}
+                  {cell("g_iv",    giv != null ? fmtIV(giv) : null, giv == null ? C.dim : C.yellow, "right")}
                 </div>
               );
             })}
@@ -2256,8 +2293,13 @@ function MasterScreener({
                     { col: "Strike",   def: "The option contract's strike price." },
                     { col: "OTM %",    def: "How far the contract is out-of-the-money. Far OTM contracts are higher risk, higher reward." },
                     { col: "Unusual",  def: "Flags contracts that are meaningfully out-of-the-money with strong premium and unusual volume/open-interest behavior." },
+                    { col: "Δ (Delta)", def: "Estimated option price change for a $1 move in the underlying stock. Derived from the top contract." },
+                    { col: "Γ (Gamma)", def: "How quickly Delta changes as the stock moves. Derived from the top contract." },
+                    { col: "Θ (Theta)", def: "Estimated daily time decay. Negative means the option loses value each day. Derived from the top contract." },
+                    { col: "Vega",     def: "Sensitivity to implied volatility. Higher vega means premium is more affected by IV changes." },
+                    { col: "IV",       def: "Implied volatility estimate for the top contract. High IV means the premium is more expensive." },
                   ].map(({ col, def }, i) => (
-                    <div key={col} style={{ display: "grid", gridTemplateColumns: "90px 1fr", borderBottom: i < 19 ? `1px solid ${C.border}` : "none", background: i % 2 === 0 ? C.cardAlt : "transparent" }}>
+                    <div key={col} style={{ display: "grid", gridTemplateColumns: "90px 1fr", borderBottom: i < 24 ? `1px solid ${C.border}` : "none", background: i % 2 === 0 ? C.cardAlt : "transparent" }}>
                       <div style={{ padding: "8px 12px", color: C.blue, fontSize: 11, fontFamily: font, fontWeight: 700, borderRight: `1px solid ${C.border}` }}>{col}</div>
                       <div style={{ padding: "8px 12px", color: C.text, fontSize: 11, fontFamily: font, lineHeight: 1.5 }}>{def}</div>
                     </div>
@@ -2292,6 +2334,104 @@ function MasterScreener({
   );
 }
 
+// ─── Options Guide modal ─────────────────────────────────────────────────────
+function OptionsGuideModal({ onClose }: { onClose: () => void }) {
+  const STitle = ({ children }: { children: ReactNode }) => (
+    <div style={{ color: C.bright, fontSize: 11, fontFamily: font, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>
+      {children}
+    </div>
+  );
+  const Bullet = ({ label, text }: { label?: string; text: string }) => (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 5 }}>
+      <span style={{ color: C.blue, fontFamily: font, fontSize: 11, flexShrink: 0, paddingTop: 1 }}>·</span>
+      <span style={{ color: C.text, fontSize: 12, fontFamily: font, lineHeight: 1.6 }}>
+        {label && <span style={{ color: C.bright, fontWeight: 700 }}>{label}: </span>}{text}
+      </span>
+    </div>
+  );
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 3000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 32, paddingBottom: 32 }}
+      onClick={onClose}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.78)" }} />
+      <div
+        style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "92%", maxWidth: 640, maxHeight: "calc(100vh - 64px)", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <BookOpen className="w-4 h-4" style={{ color: C.blue }} />
+            <span style={{ color: C.bright, fontSize: 15, fontWeight: 800, fontFamily: font }}>Options Guide</span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 4, display: "flex" }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div style={{ padding: "18px 20px", display: "grid", gap: 20 }}>
+
+          <div>
+            <STitle>What Is an Option?</STitle>
+            <Bullet text="An option is a contract that gives you the right, but not the obligation, to buy or sell an asset at a set price within a specific timeframe." />
+            <Bullet text="Each standard options contract represents 100 shares." />
+          </div>
+
+          <div>
+            <STitle>Main Types of Options</STitle>
+            <Bullet label="Call Option" text="The right to buy shares at a set price. Used when you think the stock may go up." />
+            <Bullet label="Put Option" text="The right to sell shares at a set price. Used when you think the stock may go down." />
+          </div>
+
+          <div>
+            <STitle>Core Contract Terms</STitle>
+            <Bullet label="Strike Price" text="The agreed-upon price where the option can buy or sell the underlying stock." />
+            <Bullet label="Premium" text="The price paid for the option contract." />
+            <Bullet label="Expiration Date" text="The deadline before the contract expires." />
+            <Bullet label="Open Interest" text="The number of outstanding contracts that still exist." />
+            <Bullet label="Volume" text="The number of contracts traded today." />
+          </div>
+
+          <div>
+            <STitle>Moneyness</STitle>
+            <Bullet label="ITM (In-The-Money)" text="The option has intrinsic value. Calls: strike is below current stock price. Puts: strike is above current stock price." />
+            <Bullet label="OTM (Out-Of-The-Money)" text="The option has no intrinsic value. Calls: strike above stock price. Puts: strike below stock price." />
+            <Bullet label="ATM (At-The-Money)" text="Strike is very close to the current stock price." />
+          </div>
+
+          <div>
+            <STitle>The Greeks</STitle>
+            <Bullet label="Delta / Δ" text="How much the option price may move for a $1 move in the stock. A 0.45 delta call moves roughly $0.45 for a $1 stock move." />
+            <Bullet label="Gamma / Γ" text="How quickly Delta changes as the stock moves." />
+            <Bullet label="Theta / Θ" text="Daily time decay. The closer expiration gets, the faster this bleeds." />
+            <Bullet label="Vega" text="Sensitivity to implied volatility. Rising IV inflates option price; falling IV deflates it." />
+            <Bullet label="Rho" text="Sensitivity to interest rates. Usually less important for short-term options, more relevant for LEAPS." />
+          </div>
+
+          <div>
+            <STitle>IV / Implied Volatility</STitle>
+            <Bullet text="IV shows how much volatility the market is pricing into the option." />
+            <Bullet text="High IV means premium is expensive." />
+            <Bullet text="Buying high-IV options before a catalyst can be risky — IV can collapse even if the stock moves in the right direction." />
+          </div>
+
+          <div>
+            <STitle>Buyer vs Seller</STitle>
+            <Bullet label="Buying / Long Options" text="You pay the premium. Risk is limited to what you paid. Calls can have large upside if the stock moves strongly." />
+            <Bullet label="Selling / Writing Options" text="You collect premium but take on obligations. This can carry much higher risk than buying." />
+          </div>
+
+          <div style={{ color: C.dim, fontSize: 10, fontFamily: font, lineHeight: 1.5, borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+            This guide is educational only and not financial advice. Options are risky instruments and can expire worthless.
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
   // ── Thematic context (global macro strip) ─────────────────────────────────
@@ -2306,6 +2446,7 @@ export default function OptionsPage() {
   // ── Screener data (single fetch, all categories merged by backend) ────────
   const [screenerData, setScreenerData] = useState<any>(null);
   const [pageLoading, setPageLoading]   = useState(true);
+  const [showGuide, setShowGuide]       = useState(false);
 
   // ── Page context for chatbot ──────────────────────────────────────────────
   useSetPageContext((() => {
@@ -2442,7 +2583,16 @@ export default function OptionsPage() {
           <Zap className="w-5 h-5" style={{ color: C.green }} />
           <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
           <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· unusual options flow · master screener</span>
-          <div style={{ marginLeft: "auto" }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={() => setShowGuide(true)}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 10, fontFamily: font, cursor: "pointer", transition: "border-color 0.1s, color 0.1s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}
+            >
+              <BookOpen className="w-3 h-3" />
+              Options Guide
+            </button>
             <DataIngestionWidget />
           </div>
         </div>
@@ -2518,6 +2668,10 @@ export default function OptionsPage() {
       {/* Contract detail modal (for inline contract drill-down) */}
       {contractDetailSymbol && (
         <ContractDetailModal occSymbol={contractDetailSymbol} onClose={() => setContractDetailSymbol(null)} />
+      )}
+
+      {showGuide && (
+        <OptionsGuideModal onClose={() => setShowGuide(false)} />
       )}
     </div>
   );

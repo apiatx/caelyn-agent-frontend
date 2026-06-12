@@ -1,0 +1,136 @@
+Update the Options Flow page frontend to add the Options Guide button and display optional Tradier Greeks from the existing backend response.
+
+Important:
+
+* Do not redesign the Options Flow page.
+* Do not change existing routes, API clients, filters, sort behavior, or table structure unless required for these fields.
+* Do not add any new backend calls.
+* Do not create a new options API endpoint.
+* Use the existing Options Flow response only.
+* Greeks are contract-level fields, so inspect the actual response shape before wiring the table.
+* Do not use `data_quality.greeks_meta` as the source for displayed Greek values. That block is diagnostics only.
+
+Part 1 — Add Options Guide button:
+
+1. Add a compact “Options Guide” button near the Options Flow page title/header controls.
+2. On click, open a modal/drawer/popover using the existing project UI pattern.
+3. Content:
+
+Title: Options Guide
+
+What Is an Option?
+
+* An option is a contract that gives you the right, but not the obligation, to buy or sell an asset at a set price within a specific timeframe.
+* Each standard options contract represents 100 shares.
+
+Main Types of Options
+
+* Call Option: The right to buy shares at a set price. Used when you think the stock may go up.
+* Put Option: The right to sell shares at a set price. Used when you think the stock may go down.
+
+Core Contract Terms
+
+* Strike Price: The agreed-upon price where the option can buy or sell the underlying stock.
+* Premium: The price paid for the option contract.
+* Expiration Date: The deadline before the contract expires.
+* Open Interest: The number of outstanding contracts that still exist.
+* Volume: The number of contracts traded today.
+
+Moneyness
+
+* In-The-Money / ITM: The option has intrinsic value.
+
+  * Calls: strike is below current stock price.
+  * Puts: strike is above current stock price.
+* Out-Of-The-Money / OTM: The option has no intrinsic value.
+
+  * Calls: strike is above current stock price.
+  * Puts: strike is below current stock price.
+* At-The-Money / ATM: Strike is very close to current stock price.
+
+The Greeks
+
+* Delta / Δ: How much the option price may move for a $1 move in the stock. A 0.45 delta call moves roughly $0.45 for a $1 stock move.
+* Gamma / Γ: How quickly Delta changes as the stock moves.
+* Theta / Θ: Daily time decay. This is the bleed. The closer expiration gets, the more dangerous this can become.
+* Vega: Sensitivity to implied volatility.
+* Rho: Sensitivity to interest rates, usually less important for short-term flow but more relevant for LEAPS.
+
+IV / Implied Volatility
+
+* IV shows how much volatility the market is pricing into the option.
+* High IV means premium is expensive.
+* Buying high-IV options before a catalyst can be risky because IV can collapse even if the stock moves in the right direction.
+
+Buyer vs Seller
+
+* Buying / Long Options: You pay the premium. Risk is limited to the premium paid. Calls can have large upside.
+* Selling / Writing Options: You collect premium but take on obligations. This can carry much higher risk.
+
+Footer disclaimer:
+“This guide is educational only and not financial advice. Options are risky and can expire worthless.”
+
+Part 2 — Add optional Greek/IV columns:
+Add compact optional columns to the existing Options Flow screener/table if the fields exist on the displayed row/contract:
+
+* Δ
+* Γ
+* Θ
+* Vega
+* IV
+
+Field mapping:
+
+* Δ = `delta`
+* Γ = `gamma`
+* Θ = `theta`
+* Vega = `vega`
+* IV = prefer `mid_iv`, fallback `smv_vol`, fallback `ask_iv`, fallback `bid_iv`
+
+Also support if these fields are nested inside a contract object, for example:
+
+* `row.contract.delta`
+* `row.best_contract.delta`
+* `row.contracts[0].delta`
+* or whatever the actual current Options Flow response uses.
+
+Do not guess blindly. Inspect the existing response shape in the frontend code or browser network response and wire to the actual structure.
+
+Display rules:
+
+* If missing/null/undefined, show `—`.
+* Delta, Gamma, Vega: show 2 decimals.
+* Theta: show 2 decimals and preserve the negative sign.
+* IV: format defensively:
+
+  * If value is between 0 and 3, treat it as decimal IV and display as percentage, e.g. `0.82` → `82%`.
+  * If value is greater than 3, assume it is already percent-like and display compactly, e.g. `82` → `82%`.
+* Use existing number formatting helpers if available.
+
+Tooltips:
+
+* Delta: “Estimated option price move for a $1 move in the stock.”
+* Gamma: “How quickly Delta changes.”
+* Theta: “Estimated daily time decay.”
+* Vega: “Sensitivity to implied volatility.”
+* IV: “Implied volatility estimate.”
+
+Part 3 — Diagnostics display:
+If the Options Flow response includes `data_quality.greeks_meta`, optionally show a tiny non-intrusive diagnostic indicator in the page footer/dev details area, not in the main table:
+
+* Greeks requested: yes/no
+* Extra Tradier calls: 0
+* Contracts enriched: N / total
+
+Only show this if there is already a diagnostics/dev metadata pattern on the page. Do not clutter the main user UI.
+
+Validation:
+
+1. Options Flow page still loads.
+2. Existing filters still work.
+3. Existing table columns still render.
+4. Rows with missing Greeks do not crash.
+5. New Greek columns show values when backend returns them.
+6. IV formatting looks correct for decimal and percent-like values.
+7. Options Guide opens/closes on desktop and mobile.
+8. No new network request is added for Greeks.
