@@ -3002,10 +3002,24 @@ interface CalendarEvent {
  * Coerce an unknown value to a trimmed non-empty string, or null.
  * Used throughout the event normalization pipeline.
  */
+/** Bare event-type strings the backend sometimes sets as placeholder titles — treat as null */
+const _GENERIC_TYPE_STRS = new Set([
+  "macro", "economic release", "economic_release", "economic releases", "economic_releases",
+  "treasury macro", "treasury_macro", "treasury / macro",
+  "stock split", "stock_split",
+  "ipo", "ipos",
+  "dividend", "dividends",
+  "event", "unknown", "n/a", "na", "none", "-", "--", "—",
+]);
+
 function _evStr(v: unknown): string | null {
   if (v == null) return null;
   const s = String(v).trim();
-  return s.length > 0 && s !== "null" && s !== "undefined" ? s : null;
+  if (!s || s === "null" || s === "undefined") return null;
+  // Treat bare event-type placeholder strings as null so the chain falls
+  // through to the real name fields (e.g. indicatorName, event_name)
+  if (_GENERIC_TYPE_STRS.has(s.toLowerCase())) return null;
+  return s;
 }
 
 /**
