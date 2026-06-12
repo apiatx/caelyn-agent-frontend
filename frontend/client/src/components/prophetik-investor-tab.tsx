@@ -32,6 +32,28 @@ interface BackendSupportingMarket {
   equity_relevance_score?: number;
 }
 
+interface BackendDriverMarket {
+  condition_id?: string;
+  question?: string;
+  title?: string;
+  outcome_label?: string;
+  current_odds?: number;
+  delta_24h_pp?: number;
+  delta_7d_pp?: number;
+  direction?: string;
+  semantic_event_type?: string;
+  event_type?: string;
+  equity_regime_read?: string;
+  polarity?: string;
+  contribution_score?: number;
+}
+
+interface BackendSignalIntegrity {
+  has_polarity_conflict?: boolean;
+  has_mixed_semantics?: boolean;
+  warning?: string;
+}
+
 interface BackendEquitySignal {
   theme_id?: string;
   title: string;
@@ -51,6 +73,11 @@ interface BackendEquitySignal {
   confidence_score?: number;         // 0-100 number
   narrative?: string;
   watchlist_priority?: string;
+  // new diagnostic fields
+  primary_driver_market?: BackendDriverMarket;
+  driver_markets?: BackendDriverMarket[];
+  confidence_explanation?: string;
+  signal_integrity?: BackendSignalIntegrity;
 }
 
 interface BackendRegimeValue {
@@ -292,6 +319,76 @@ function EmptyState({ text }: { text: string }) {
 
 // ─── Top Equity Signals ───────────────────────────────────────────────────────
 
+function fmtPP(v?: number | null): string {
+  if (v == null) return "—";
+  const sign = v >= 0 ? "+" : "";
+  return `${sign}${v.toFixed(1)}pp`;
+}
+
+function fmtOdds(v?: number | null): string {
+  if (v == null) return "—";
+  return `${v.toFixed(1)}%`;
+}
+
+function DriverMarketsTable({ markets }: { markets: BackendDriverMarket[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-white/[0.06] mt-2">
+      <table className="w-full text-[9px] min-w-[520px]">
+        <thead>
+          <tr className="border-b border-white/[0.06]">
+            {["Market", "Outcome", "Odds", "24h Δ", "7d Δ", "Event type", "Equity read", "Polarity", "Score"].map(h => (
+              <th key={h} className="text-left px-2 py-1.5 text-white/25 font-semibold uppercase tracking-wider whitespace-nowrap">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {markets.map((m, i) => {
+            const isInverted = m.polarity === "inverted";
+            const d24 = m.delta_24h_pp ?? 0;
+            const d7  = m.delta_7d_pp  ?? 0;
+            return (
+              <tr key={m.condition_id ?? i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                <td className="px-2 py-1.5 text-white/55 max-w-[180px]">
+                  <span className="line-clamp-2 leading-snug">{m.question ?? m.title ?? "—"}</span>
+                </td>
+                <td className="px-2 py-1.5 text-white/60 font-semibold whitespace-nowrap">{m.outcome_label ?? "YES"}</td>
+                <td className="px-2 py-1.5 text-white/50 font-mono whitespace-nowrap">{fmtOdds(m.current_odds)}</td>
+                <td className={`px-2 py-1.5 font-mono whitespace-nowrap ${d24 >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {fmtPP(m.delta_24h_pp)}
+                </td>
+                <td className={`px-2 py-1.5 font-mono whitespace-nowrap ${d7 >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {fmtPP(m.delta_7d_pp)}
+                </td>
+                <td className="px-2 py-1.5 text-white/40 whitespace-nowrap">
+                  {m.semantic_event_type ?? m.event_type ?? "—"}
+                </td>
+                <td className="px-2 py-1.5 text-white/50 whitespace-nowrap">{m.equity_regime_read ?? "—"}</td>
+                <td className="px-2 py-1.5 whitespace-nowrap">
+                  {isInverted ? (
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/15 border border-amber-500/25 text-amber-400"
+                      title="YES rising means the opposite of the broad category framing."
+                    >
+                      Inverted
+                    </span>
+                  ) : (
+                    <span className="text-white/25">Direct</span>
+                  )}
+                </td>
+                <td className="px-2 py-1.5 text-white/35 font-mono whitespace-nowrap">
+                  {m.contribution_score != null ? m.contribution_score.toFixed(2) : "—"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const EquitySignalCard = memo(function EquitySignalCard({
   signal,
   hero = false,
@@ -300,11 +397,35 @@ const EquitySignalCard = memo(function EquitySignalCard({
   hero?: boolean;
 }) {
   const [expanded, setExpanded] = useState(hero);
+
+  const pdm  = signal.primary_driver_market;
+  const si   = signal.signal_integrity;
+  const isMixed = si?.has_polarity_conflict || si?.has_mixed_semantics;
+
   const score = confidenceScore(signal);
   const confLabel = confidenceLabel(score, signal.confidence);
   const confColor = confidenceColor(score, signal.confidence);
-  const dir = directionFromSummary(signal.summary_direction);
+
+  // Direction: if mixed, override display
+  const baseDir = directionFromSummary(signal.summary_direction);
+  const dir: "bullish" | "bearish" | "neutral" = isMixed ? "neutral" : baseDir;
   const dc = dirColors(dir);
+
+  // Explicit odds text from primary driver market
+  const oddsLine = (() => {
+    if (!pdm) return null;
+    const outcome   = pdm.outcome_label ?? "YES";
+    const direction = (pdm.direction ?? "moving").toLowerCase();
+    const d24 = fmtPP(pdm.delta_24h_pp);
+    const d7  = fmtPP(pdm.delta_7d_pp);
+    return `${outcome} odds ${direction}: 24h ${d24}, 7d ${d7}`;
+  })();
+
+  // Sector box opacity — tone down when mixed
+  const sectorOpacity = isMixed ? "opacity-40" : "";
+
+  // Has expanded content
+  const hasExpanded = !!(signal.why_it_matters || (signal.driver_markets?.length ?? 0) > 0 || (signal.supporting_markets?.length ?? 0) > 0);
 
   return (
     <div
@@ -313,42 +434,121 @@ const EquitySignalCard = memo(function EquitySignalCard({
         ${hero ? "col-span-full border-blue-500/20 bg-gradient-to-br from-blue-500/[0.04] to-transparent" : ""}
       `}
     >
-      {/* Direction badge */}
+      {/* ── Mixed / polarity warning ── */}
+      {isMixed && (
+        <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg bg-amber-500/[0.07] border border-amber-500/20">
+          <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0" />
+          <span className="text-[9px] font-bold text-amber-300">Mixed drivers — not one clean sector signal</span>
+          {si?.warning && (
+            <span className="text-[9px] text-amber-300/60 ml-1">· {si.warning}</span>
+          )}
+        </div>
+      )}
+
+      {/* ── Header row: driver question + mapping label ── */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
+          {/* Direction badge */}
           <div className="flex items-center gap-1.5 mb-1.5">
             {dirIcon(dir, "w-3 h-3")}
-            <span className={`text-[8px] font-bold uppercase tracking-widest ${dc.text}`}>{dir}</span>
+            <span className={`text-[8px] font-bold uppercase tracking-widest ${dc.text}`}>
+              {isMixed ? "Mixed" : dir}
+            </span>
           </div>
-          <h3 className={`font-semibold text-white/90 leading-snug ${hero ? "text-base" : "text-sm"}`}>
-            {signal.title}
-          </h3>
+
+          {/* Primary driver question (driver-first) */}
+          {pdm ? (
+            <>
+              <p className="text-[8px] font-semibold uppercase tracking-widest text-white/25 mb-0.5">Driver</p>
+              <h3 className={`font-semibold text-white/90 leading-snug mb-1 ${hero ? "text-sm" : "text-[12px]"}`}>
+                {pdm.question ?? pdm.title ?? "Driver unavailable — backend attribution missing"}
+              </h3>
+              {/* Category label below */}
+              <p className="text-[10px] text-white/40">{signal.title}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[8px] font-semibold uppercase tracking-widest text-amber-400/60 mb-0.5">
+                Driver unavailable — backend attribution missing
+              </p>
+              <h3 className={`font-semibold text-white/90 leading-snug ${hero ? "text-base" : "text-sm"}`}>
+                {signal.title}
+              </h3>
+            </>
+          )}
         </div>
+
+        {/* Mapping / data agreement label */}
         {confLabel && (
-          <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-            <span className="text-[9px] text-white/30">Conf.</span>
+          <div
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] cursor-help"
+            title={signal.confidence_explanation ?? "This measures prediction-market/sector mapping agreement, not guaranteed trade outcome."}
+          >
+            <span className="text-[9px] text-white/30">Mapping:</span>
             <span className={`text-[11px] font-bold ${confColor}`}>{confLabel}</span>
           </div>
         )}
       </div>
 
-      {/* Summary */}
+      {/* ── Odds line — explicit outcome text ── */}
+      {(oddsLine ?? signal.odds_move_summary) && (
+        <div className="flex items-center gap-1.5 mb-2 text-[10px]">
+          <BarChart3 className="w-3 h-3 text-blue-400/60 flex-shrink-0" />
+          <span className="text-blue-300/80 font-medium">
+            {oddsLine ?? signal.odds_move_summary}
+          </span>
+        </div>
+      )}
+
+      {/* ── Equity read + event type pills ── */}
+      {pdm && (pdm.equity_regime_read || pdm.semantic_event_type || pdm.event_type) && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          {pdm.equity_regime_read && (
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/[0.08] border border-blue-500/20 text-[9px] text-blue-300/80 font-medium">
+              <Globe2 className="w-2.5 h-2.5" />
+              {pdm.equity_regime_read}
+            </span>
+          )}
+          {(pdm.semantic_event_type ?? pdm.event_type) && (
+            <span className="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-[9px] text-white/40">
+              {pdm.semantic_event_type ?? pdm.event_type}
+            </span>
+          )}
+          {pdm.polarity === "inverted" && (
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 cursor-help"
+              title="YES rising means the opposite of the broad category framing."
+            >
+              Inverted
+            </span>
+          )}
+          {si?.has_mixed_semantics && (
+            <span
+              className="px-1.5 py-0.5 rounded text-[9px] bg-purple-500/10 border border-purple-500/20 text-purple-400 cursor-help"
+              title="This cluster contains markets pointing to different equity regimes."
+            >
+              Mixed semantics
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── Fallback odds when no primary_driver_market ── */}
+      {!pdm && !oddsLine && signal.odds_move_summary && (
+        <div className="flex items-center gap-1.5 mb-3 text-[10px] px-2 py-1 rounded bg-white/[0.03] border border-white/[0.05]">
+          <CircleDot className="w-2.5 h-2.5 text-white/20 flex-shrink-0" />
+          <span className="text-white/30 italic text-[9px]">Market-level attribution unavailable — odds move may be aggregated.</span>
+        </div>
+      )}
+
+      {/* ── Summary ── */}
       {signal.summary && (
         <p className="text-[11px] text-white/55 leading-relaxed mb-3">{signal.summary}</p>
       )}
 
-      {/* Odds move */}
-      {signal.odds_move_summary && (
-        <div className="flex items-center gap-1.5 mb-3 text-[10px]">
-          <BarChart3 className="w-3 h-3 text-blue-400/60" />
-          <span className="text-white/35">Odds:</span>
-          <span className="text-blue-300/80 font-medium">{signal.odds_move_summary}</span>
-        </div>
-      )}
-
-      {/* Sector implications */}
+      {/* ── Sector implications (toned down when mixed) ── */}
       {((signal.bullish_sectors?.length ?? 0) > 0 || (signal.bearish_sectors?.length ?? 0) > 0) && (
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className={`grid grid-cols-2 gap-2 mb-3 ${sectorOpacity}`}>
           {(signal.bullish_sectors?.length ?? 0) > 0 && (
             <div className="rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15 p-2">
               <p className="text-[8px] font-bold uppercase tracking-widest text-emerald-400/60 mb-1.5">↑ Bullish Sectors</p>
@@ -368,9 +568,9 @@ const EquitySignalCard = memo(function EquitySignalCard({
         </div>
       )}
 
-      {/* Stock tickers */}
+      {/* ── Stock tickers (toned down when mixed) ── */}
       {((signal.bullish_stocks?.length ?? 0) > 0 || (signal.bearish_stocks?.length ?? 0) > 0) && (
-        <div className="flex items-start gap-3 mb-3">
+        <div className={`flex items-start gap-3 mb-3 ${sectorOpacity}`}>
           {(signal.bullish_stocks?.length ?? 0) > 0 && (
             <div className="flex-1">
               <p className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/50 mb-1">Bullish</p>
@@ -394,7 +594,7 @@ const EquitySignalCard = memo(function EquitySignalCard({
         </div>
       )}
 
-      {/* Regime impact (backend: regime_impact, not regime_implication) */}
+      {/* ── Regime impact ── */}
       {signal.regime_impact && (
         <div className="mb-3 flex items-start gap-1.5 text-[10px] px-2 py-1.5 rounded bg-white/[0.03] border border-white/[0.05]">
           <Globe2 className="w-3 h-3 text-white/25 mt-0.5 flex-shrink-0" />
@@ -402,15 +602,15 @@ const EquitySignalCard = memo(function EquitySignalCard({
         </div>
       )}
 
-      {/* Expandable detail */}
-      {(signal.why_it_matters || (signal.supporting_markets?.length ?? 0) > 0) && (
+      {/* ── Expandable: why it matters + driver markets table ── */}
+      {hasExpanded && (
         <>
           <button
             onClick={() => setExpanded(v => !v)}
             className="flex items-center gap-1 text-[9px] text-white/25 hover:text-white/50 transition-colors mt-1"
           >
             {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            {expanded ? "Less detail" : "More detail"}
+            {expanded ? "Less detail" : "Supporting markets"}
           </button>
           {expanded && (
             <div className="mt-2 space-y-2">
@@ -420,7 +620,14 @@ const EquitySignalCard = memo(function EquitySignalCard({
                   <p className="text-[10px] text-white/45 leading-relaxed">{signal.why_it_matters}</p>
                 </div>
               )}
-              {(signal.supporting_markets?.length ?? 0) > 0 && (
+
+              {/* Driver markets table (preferred over old supporting_markets list) */}
+              {(signal.driver_markets?.length ?? 0) > 0 ? (
+                <div>
+                  <p className="text-[8px] font-semibold uppercase tracking-wider text-white/25 mb-1.5">Driver markets</p>
+                  <DriverMarketsTable markets={signal.driver_markets!} />
+                </div>
+              ) : (signal.supporting_markets?.length ?? 0) > 0 ? (
                 <div>
                   <p className="text-[8px] font-semibold uppercase tracking-wider text-white/25 mb-1.5">Supporting markets</p>
                   <div className="space-y-1">
@@ -435,7 +642,7 @@ const EquitySignalCard = memo(function EquitySignalCard({
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </>

@@ -1,0 +1,126 @@
+Update the Prediction Markets dashboard Top Equity Signals UI to consume the new backend diagnostic fields from /api/predict/investor/overview. Do not change endpoint paths. Do not create frontend-only semantic interpretation. The backend now provides primary_driver_market, driver_markets, confidence_explanation, and signal_integrity. Use those fields directly.
+
+Goal:
+Make every Top Equity Signal card answer:
+1. Which exact prediction market moved?
+2. Which exact outcome moved?
+3. Did YES or NO odds rise/fall?
+4. What is the equity interpretation?
+5. Is this a clean signal or a mixed/polarity-conflicted signal?
+
+Required changes:
+
+1. Card title/header
+Replace broad category-first display with driver-first display.
+
+Current style:
+“Geopolitics / War / Trade / Sanctions”
+
+New style:
+Primary line:
+“Driver: {primary_driver_market.question/title}”
+
+Secondary smaller line:
+Category/theme label, e.g.
+“Geopolitics / War / Trade / Sanctions”
+
+If primary_driver_market is missing, show:
+“Driver unavailable — backend attribution missing”
+and keep the old title underneath.
+
+2. Odds line
+Replace vague text like:
+“Odds rising — 24h: +19.0pp, 7d: +9.0pp”
+
+With explicit outcome text:
+“{primary_driver_market.outcome_label} odds {direction}: 24h {delta_24h_pp}pp, 7d {delta_7d_pp}pp”
+
+Examples:
+“YES odds rising: 24h +28.0pp, 7d +9.0pp”
+“NO odds falling: 24h -6.2pp, 7d -3.1pp”
+
+3. Add Equity Read line
+Directly below the odds line, show:
+“Equity read: {primary_driver_market.equity_regime_read}”
+
+Also show:
+“Event type: {primary_driver_market.semantic_event_type}”
+
+Format these as small readable pills/tags.
+
+4. Confidence label
+Rename “Conf. High” to “Mapping: High” or “Data agreement: High”.
+
+Add a tooltip or small info text using backend field confidence_explanation:
+“This measures prediction-market/sector mapping agreement, not guaranteed trade outcome.”
+
+Do not imply “confidence” means the trade will work.
+
+5. Polarity / mixed warning
+If signal_integrity.has_polarity_conflict === true OR signal_integrity.has_mixed_semantics === true:
+Show a warning pill near the top of the card:
+“Mixed drivers — not one clean sector signal”
+
+Also show signal_integrity.warning if present.
+
+When this warning is active:
+- Visually tone down the bullish/bearish sector boxes.
+- Do not make the card look like a high-conviction clean long/short sector call.
+- If the effective direction is mixed, show “Mixed” instead of “Bullish” or “Bearish”.
+
+6. Bullish / bearish sector boxes
+Keep the current bullish/bearish sector/ticker boxes, but only after the driver context.
+
+Order should be:
+- Primary driver market
+- Outcome odds movement
+- Equity read
+- Mapping/data agreement label
+- Warning if mixed/polarity conflict
+- Bullish/bearish sectors
+- Bullish/bearish tickers
+- Expanded supporting markets
+
+7. Expanded supporting markets section
+Replace the current vague supporting markets list with a clear driver table/list using driver_markets.
+
+For each driver market show:
+- Market question/title
+- Outcome tracked
+- Current odds
+- 24h Δ
+- 7d Δ
+- Event type
+- Equity read
+- Polarity
+- Contribution score
+
+Use compact styling consistent with the current dark UI. The table can be horizontally scrollable on small screens.
+
+8. Specific display rules
+For polarity:
+- direct = normal mapping
+- inverted = show small amber/purple pill “Inverted”
+Tooltip: “YES rising means the opposite of the broad category framing.”
+
+For mixed semantics:
+Tooltip: “This cluster contains markets pointing to different equity regimes.”
+
+9. Fallback compatibility
+If the new fields do not exist yet, keep rendering the old card but add a muted warning:
+“Market-level attribution unavailable — odds move may be aggregated.”
+
+10. Do not regress layout
+Keep the same card density and dark style. This should become clearer, not bloated.
+No new API calls.
+No endpoint changes.
+No frontend guessing.
+Use backend-provided diagnostics only.
+
+After changes, validate with the live geopolitics card:
+Expected:
+- It should show “US-Iran nuclear deal by June 30?” as the primary driver if that is still the backend primary driver.
+- It should show YES odds rising.
+- It should show de-escalation/risk-on or the backend-provided equity_regime_read.
+- It should show a mixed/polarity warning.
+- It should no longer visually imply a clean bullish Defense/Energy war-premium signal when peace/deal odds are the driver.
