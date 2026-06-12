@@ -4110,6 +4110,7 @@ function CatalystSnapshotTab({
         <CatalystSnapshotRecentList
           events={normalized}
           loading={isLoading}
+          tabKey={tabKey}
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
         />
@@ -4119,6 +4120,7 @@ function CatalystSnapshotTab({
         <CatalystSnapshotDayView
           events={normalized}
           loading={isLoading}
+          tabKey={tabKey}
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
         />
@@ -4128,6 +4130,7 @@ function CatalystSnapshotTab({
         <CatalystSnapshotWeekBoard
           events={normalized}
           loading={isLoading}
+          tabKey={tabKey}
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
           windowFrom={backendWindowFrom}
@@ -4138,6 +4141,7 @@ function CatalystSnapshotTab({
         <CatalystSnapshotMonthView
           events={normalized}
           loading={isLoading}
+          tabKey={tabKey}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
         />
       )}
@@ -4149,6 +4153,50 @@ function CatalystSnapshotTab({
   );
 }
 
+// ─── Macro / Economic-tab card helpers ────────────────────────────
+// Scoped ONLY to economic_releases and treasury_macro tab cards.
+// Do NOT use these for IPOs, Dividends, Splits, or Earnings.
+
+const MACRO_CARD_TABS = new Set(["economic_releases", "treasury_macro"]);
+
+/** Strings that are type/category placeholders, not real event names */
+const MACRO_INVALID_TITLE_SET = new Set([
+  "macro", "m",
+  "economic release", "economic_release", "economic releases", "economic_releases",
+  "treasury / macro", "treasury/macro", "treasury_macro", "treasury macro",
+  "event", "calendar event",
+  "n/a", "na", "none", "-", "--", "—", "unknown",
+]);
+
+/**
+ * Resolve the best human-readable card title for a macro / economic-release
+ * event.  Falls through a priority chain and filters known-useless placeholders.
+ * Priority (per spec):
+ *   CalendarEvent.title → display_title → indicatorName → event_name →
+ *   category → source → description → CalendarEvent.subtitle → "Unknown Event"
+ */
+function macroCardTitle(ev: CalendarEvent): string {
+  const r = (ev.raw || {}) as Record<string, unknown>;
+  const ok = (v: unknown): string | null => {
+    if (v == null) return null;
+    const s = String(v).trim();
+    return s && !MACRO_INVALID_TITLE_SET.has(s.toLowerCase()) ? s : null;
+  };
+  return (
+    ok(ev.title) ||
+    ok(r.display_title) ||
+    ok(r.indicatorName) ||
+    ok(r.indicator_name) ||
+    ok(r.event_name) ||
+    ok(r.eventName) ||
+    ok(r.category) ||
+    ok(r.source) ||
+    ok(r.description) ||
+    ok(ev.subtitle) ||
+    "Unknown Event"
+  );
+}
+
 // ─── Snapshot Recent list — date-grouped list view ────────────────
 // Mirrors the Earnings Recent list pattern (CatalystListTab) but
 // reads events from the snapshot envelope (no new API calls).
@@ -4156,11 +4204,13 @@ function CatalystSnapshotTab({
 function CatalystSnapshotRecentList({
   events,
   loading,
+  tabKey,
   tabLabel,
   onEventClick,
 }: {
   events: CalendarEvent[];
   loading: boolean;
+  tabKey: string;
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
 }) {
@@ -4210,30 +4260,41 @@ function CatalystSnapshotRecentList({
               {entries.map((ev, i) => {
                 const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                 const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                const isMacro = MACRO_CARD_TABS.has(tabKey);
+                const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
                 const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+                const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
                 return (
                   <button
                     key={ev.id || `${dk}-${i}`}
                     onClick={() => onEventClick(ev)}
                     className="w-full text-left rounded-xl border border-white/[0.06] p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3"
                   >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ background: c.bg, border: `1px solid ${c.border}` }}
-                    >
-                      <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
-                    </div>
+                    {!isMacro && (
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                        style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                      >
+                        <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {ev.symbol && (
-                          <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                        {isMacro ? (
+                          <span className="text-xs font-bold text-white/90 truncate">{displayTitle}</span>
+                        ) : (
+                          <>
+                            {ev.symbol && (
+                              <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                            )}
+                            <span className="text-xs text-white/70 truncate">{ev.title}</span>
+                            <EventTypeBadge type={ev.eventType} />
+                          </>
                         )}
-                        <span className="text-xs text-white/70 truncate">{ev.title}</span>
-                        <EventTypeBadge type={ev.eventType} />
                         {ev.importance && <ImportanceBadge importance={ev.importance} />}
                       </div>
-                      {ev.subtitle && (
-                        <p className="text-[10px] text-white/35 mt-0.5 truncate">{ev.subtitle}</p>
+                      {subtitleText && (
+                        <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
                       )}
                     </div>
                   </button>
@@ -4255,12 +4316,14 @@ function CatalystSnapshotRecentList({
 function CatalystSnapshotWeekBoard({
   events,
   loading,
+  tabKey,
   tabLabel,
   onEventClick,
   windowFrom,
 }: {
   events: CalendarEvent[];
   loading: boolean;
+  tabKey: string;
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
   windowFrom?: string;
@@ -4352,6 +4415,11 @@ function CatalystSnapshotWeekBoard({
                 {entries.map((ev, i) => {
                   const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                   const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                  const isMacro = MACRO_CARD_TABS.has(tabKey);
+                  const displayTitle = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
+                  const displaySubtitle = isMacro
+                    ? (ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : "")
+                    : (ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel));
                   const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
                   return (
                     <button
@@ -4359,19 +4427,23 @@ function CatalystSnapshotWeekBoard({
                       onClick={() => onEventClick(ev)}
                       className="w-full text-left rounded-lg border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2 flex items-center gap-2"
                     >
-                      <div
-                        className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center"
-                        style={{ background: c.bg, border: `1px solid ${c.border}` }}
-                      >
-                        <span className="text-[9px] font-bold" style={{ color: c.text }}>{letter}</span>
-                      </div>
+                      {!isMacro && (
+                        <div
+                          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center"
+                          style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                        >
+                          <span className="text-[9px] font-bold" style={{ color: c.text }}>{letter}</span>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-white">
-                          {ev.symbol || ev.title}
+                          {displayTitle}
                         </p>
-                        <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
-                          {ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel)}
-                        </p>
+                        {displaySubtitle && (
+                          <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
+                            {displaySubtitle}
+                          </p>
+                        )}
                       </div>
                       <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0 leading-none">+</span>
                     </button>
@@ -4391,11 +4463,13 @@ function CatalystSnapshotWeekBoard({
 function CatalystSnapshotDayView({
   events,
   loading,
+  tabKey,
   tabLabel,
   onEventClick,
 }: {
   events: CalendarEvent[];
   loading: boolean;
+  tabKey: string;
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
 }) {
@@ -4543,30 +4617,41 @@ function CatalystSnapshotDayView({
           {entries.map((ev, i) => {
             const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
             const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+            const isMacro = MACRO_CARD_TABS.has(tabKey);
+            const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
             const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+            const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
             return (
               <button
                 key={ev.id || i}
                 onClick={() => onEventClick(ev)}
                 className="w-full text-left rounded-xl border border-white/[0.06] p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3"
               >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{ background: c.bg, border: `1px solid ${c.border}` }}
-                >
-                  <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
-                </div>
+                {!isMacro && (
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                  >
+                    <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {ev.symbol && (
-                      <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                    {isMacro ? (
+                      <span className="text-xs font-bold text-white/90 truncate">{displayTitle}</span>
+                    ) : (
+                      <>
+                        {ev.symbol && (
+                          <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                        )}
+                        <span className="text-xs text-white/70 truncate">{ev.title}</span>
+                        <EventTypeBadge type={ev.eventType} />
+                      </>
                     )}
-                    <span className="text-xs text-white/70 truncate">{ev.title}</span>
-                    <EventTypeBadge type={ev.eventType} />
                     {ev.importance && <ImportanceBadge importance={ev.importance} />}
                   </div>
-                  {ev.subtitle && (
-                    <p className="text-[10px] text-white/35 mt-0.5 truncate">{ev.subtitle}</p>
+                  {subtitleText && (
+                    <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
                   )}
                 </div>
               </button>
@@ -4586,10 +4671,12 @@ function CatalystSnapshotDayView({
 function CatalystSnapshotMonthView({
   events,
   loading,
+  tabKey,
   onEventClick,
 }: {
   events: CalendarEvent[];
   loading: boolean;
+  tabKey: string;
   onEventClick: (ev: CalendarEvent) => void;
 }) {
   // Anchor: month containing the most events in the snapshot, fallback to today
@@ -4726,15 +4813,17 @@ function CatalystSnapshotMonthView({
                   {top.map((ev, idx) => {
                     const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                     const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                    const isMacro = MACRO_CARD_TABS.has(tabKey);
+                    const chipLabel = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
                     return (
                       <button
                         key={ev.id || `${dateStr}-${idx}`}
                         onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                         className="w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity"
                         style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
-                        title={ev.title}
+                        title={chipLabel}
                       >
-                        {ev.symbol || ev.title}
+                        {chipLabel}
                       </button>
                     );
                   })}

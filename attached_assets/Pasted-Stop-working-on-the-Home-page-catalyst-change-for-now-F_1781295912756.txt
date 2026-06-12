@@ -1,0 +1,143 @@
+Stop working on the Home page catalyst change for now. Fix only the Calendar page event-card rendering bug below.
+
+Important scope:
+
+* Do not touch backend.
+* Do not touch Calendar data fetching.
+* Do not touch date windows.
+* Do not touch Earnings behavior.
+* Do not touch Top Catalysts This Week.
+* Do not change Home page.
+* Do not keep broadening global title-resolution chains until the actual rendered component is identified.
+
+Bug:
+On Calendar → Economic Releases and Calendar → Treasury / Macro, event cards still render like this:
+
+M icon
+Macro
+Treasury Yield Snapshot
+
+or:
+
+M icon
+Macro
+CPI YoY (May)
+
+This is wrong.
+
+For these two tabs only, the card should render the actual event name as the primary bold text and should not show the word “Macro” anywhere on the card.
+
+Desired card example:
+Treasury Yield Snapshot
+
+Desired Economic Releases example:
+CPI YoY (May)
+
+No “M” badge.
+No “Macro” title.
+No “Economic Release” placeholder title.
+The actual event name should be the primary bold text.
+
+This must be true across all Calendar timeframes:
+
+* Recent
+* Day
+* Week
+* Month
+
+Required audit before editing:
+
+1. Find the exact rendered card component responsible for the cards visible in Week view.
+2. Find the exact rendered card component responsible for Recent view.
+3. Find the exact rendered card component responsible for Day view.
+4. Find the exact rendered card component responsible for Month view.
+5. Show the JSX/TSX lines that render:
+
+   * the pink circular “M” badge
+   * the bold “Macro” text
+   * the fine-print actual event name
+6. Confirm whether these are all the same component or separate render paths.
+
+Do not claim this is fixed until you identify the exact JSX that renders the visible “M Macro” pair.
+
+Fix requirement:
+For `activeTab === "economic_releases"` or `activeTab === "treasury_macro"` or whatever exact tab IDs are used:
+
+1. Hide/remove the category icon badge on individual event cards.
+
+   * Do not show the pink “M” circle.
+   * Do not show any icon letter derived from category/type for these two tabs.
+
+2. Make the actual event name the primary card title.
+   Use a local helper scoped to these calendar cards, not a broad global helper that changes IPOs/dividends/splits.
+
+   Preferred title priority for these two tabs:
+
+   * event.display_title if meaningful and not generic
+   * event.indicatorName / event.indicator_name
+   * event.event_name / event.eventName
+   * event.category, but only if it is a real event name like “Treasury Yield Snapshot”, not generic “macro”
+   * event.source, but only if it is a real event name
+   * event.subtitle, but only if that is where the actual event name currently lives
+   * fallback: “Unknown Event”
+
+3. Treat these strings as invalid/generic titles for these two tabs:
+
+   * Macro
+   * macro
+   * M
+   * Economic Release
+   * economic_release
+   * Treasury / Macro
+   * treasury_macro
+   * event
+   * calendar event
+
+4. The subtitle/fine print should not repeat the title.
+   For Economic Releases, subtitle can show:
+
+   * time
+   * country
+   * impact
+   * actual / estimate / previous if compact
+
+   For Treasury / Macro, subtitle can show:
+
+   * yield/rate/maturity/previous if available
+   * date/time/source if useful
+
+5. Keep IPOs, Dividends, Stock Splits, Earnings, and Top Catalysts behavior unchanged.
+   If existing shared helpers were changed globally during the previous attempts, audit the diff and either:
+
+   * prove they are safe, or
+   * restrict the new logic only to economic_releases and treasury_macro card rendering.
+
+Validation:
+
+1. Run frontend locally.
+2. Hard refresh the browser.
+3. Open Calendar → Economic Releases → Week.
+
+   * Confirm zero visible cards contain “Macro” as primary text.
+   * Confirm zero visible cards show the “M” badge.
+   * Confirm visible card titles are actual event names like CPI, PPI, GDP, Jobless Claims, etc.
+4. Repeat for:
+
+   * Economic Releases → Recent
+   * Economic Releases → Day
+   * Economic Releases → Month
+   * Treasury / Macro → Recent
+   * Treasury / Macro → Day
+   * Treasury / Macro → Week
+   * Treasury / Macro → Month
+5. Confirm Earnings still renders exactly as before.
+6. Confirm IPOs, Dividends, Stock Splits still render correctly.
+7. Print the final changed files and a concise diff summary.
+
+Acceptance criteria:
+
+* There is no visible “M Macro” on Economic Releases cards.
+* There is no visible “M Macro” on Treasury / Macro cards.
+* The actual event name is the bold primary card text.
+* The fine-print subtitle contains only secondary context.
+* No other Calendar tab regresses.
