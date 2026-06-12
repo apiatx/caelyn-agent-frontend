@@ -5362,6 +5362,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Favorites (Close Watch) ────────────────────────────────────────
+  app.get('/api/watchlist/favorites', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/favorites`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist/favorites GET failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(502).json({ error: e.message || 'watchlist/favorites GET error' }); }
+  });
+
+  app.post('/api/watchlist/favorites', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/favorites`, {
+        method: 'POST',
+        headers: { ...wlHdr(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist/favorites POST failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(502).json({ error: e.message || 'watchlist/favorites POST error' }); }
+  });
+
+  app.delete('/api/watchlist/favorites/:ticker', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/favorites/${encodeURIComponent(req.params.ticker)}`, {
+        method: 'DELETE',
+        headers: wlHdr(),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist/favorites DELETE failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) { res.status(502).json({ error: e.message || 'watchlist/favorites DELETE error' }); }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;

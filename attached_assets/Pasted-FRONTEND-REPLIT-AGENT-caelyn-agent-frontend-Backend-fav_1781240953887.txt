@@ -1,0 +1,161 @@
+FRONTEND REPLIT AGENT — caelyn-agent-frontend
+
+Backend favorites support is now complete and validated. Implement the frontend Watchlist Favorites / Close Watch feature.
+
+Backend endpoints available:
+
+GET /api/watchlist/favorites
+Returns:
+{
+"favorites": ["CRWV", "NBIS"],
+"count": 2
+}
+
+POST /api/watchlist/favorites
+Body:
+{
+"ticker": "CRWV"
+}
+Returns:
+{
+"ticker": "CRWV",
+"is_favorite": true,
+"favorites": [...]
+}
+
+DELETE /api/watchlist/favorites/{ticker}
+Returns:
+{
+"ticker": "CRWV",
+"is_favorite": false,
+"favorites": [...]
+}
+
+Task:
+Add a favorites star next to each ticker in the Tickers section of the Watchlist page, and add a new Watchlist tab titled exactly “Close Watch” that shows only favorited/starred tickers.
+
+Important constraints:
+
+* Do NOT add any new market-data calls.
+* Do NOT add any new FMP, Tradier, options, LLM, or backend market-data requests.
+* Close Watch must reuse the existing Watchlist/Tickers table data already loaded on the page.
+* Close Watch is only a filtered view of existing rows where the ticker is starred.
+* Preserve existing Watchlist page data loading, sorting, filters, row click behavior, tab behavior, and styling as much as possible.
+* Do not rename existing tabs.
+* Do not create a separate favorites watchlist data engine.
+
+Implementation requirements:
+
+1. Audit the existing Watchlist page first.
+   Find:
+
+* The Watchlist page component.
+* The Tickers section / tab rendering.
+* The table component or row renderer where ticker symbols are displayed.
+* Existing API helper pattern.
+* Existing toast/error pattern, if any.
+
+2. Add frontend favorites API helpers.
+   Use the same API client/fetch pattern already used in the app.
+
+Add helpers equivalent to:
+
+* fetchWatchlistFavorites()
+* addWatchlistFavorite(ticker)
+* removeWatchlistFavorite(ticker)
+
+Normalize tickers to uppercase in frontend state.
+
+3. Favorites state.
+   On Watchlist page load:
+
+* Fetch /api/watchlist/favorites once.
+* Store favorites as Set<string>.
+* Use favoritesSet.has(ticker.toUpperCase()) to determine starred state.
+
+Do not refetch the entire watchlist when starring/unstarring.
+
+4. Star UI.
+   In the Tickers table, show a small star icon immediately to the LEFT of each ticker symbol/name.
+
+Behavior:
+
+* Empty/subtle star = not favorited.
+* Filled gold star = favorited.
+* Clicking the star toggles favorite state.
+* The star click must NOT trigger row click/navigation/selection. Use event.stopPropagation() and event.preventDefault() if needed.
+* Use existing icon library if available, preferably lucide-react Star if already used.
+* Filled star should look gold.
+* Empty star should be muted but visible, with hover state.
+* Keep the ticker cell compact and aligned.
+
+Accessibility:
+
+* If not favorited: aria-label = “Add {TICKER} to Close Watch”
+* If favorited: aria-label = “Remove {TICKER} from Close Watch”
+* Add title tooltip text if consistent with existing UI.
+
+5. Optimistic toggle.
+   When user clicks empty star:
+
+* Immediately add ticker to favoritesSet.
+* Star turns gold.
+* Ticker appears in Close Watch immediately.
+* POST /api/watchlist/favorites in the background.
+
+When user clicks gold star:
+
+* Immediately remove ticker from favoritesSet.
+* Star becomes empty.
+* Ticker disappears from Close Watch immediately.
+* DELETE /api/watchlist/favorites/{ticker} in the background.
+
+If the API call fails:
+
+* Roll back the favorite state.
+* Show a subtle toast/error if the app already has a toast system.
+* Do not break the table.
+
+6. Add new tab: Close Watch.
+   Add a tab titled exactly:
+   Close Watch
+
+Place it alongside the existing Watchlist page tabs.
+
+Close Watch behavior:
+
+* Use the same table/component/columns as the normal Tickers table.
+* Rows should be existing ticker rows filtered to favoritesSet.
+* Do not call a new endpoint to fetch ticker data for this tab.
+* Sorting/filtering should work the same as the normal Tickers tab where possible.
+* If other tabs show count badges, show count for Close Watch too, e.g. Close Watch (7).
+
+Empty state:
+“No Close Watch tickers yet. Star tickers from the Tickers tab to add them here.”
+
+7. Avoid table/sorting regressions.
+
+* Do not make the star itself a sortable column unless the existing table architecture forces it.
+* If adding the star inside the ticker cell is easier/safer than adding a new column, do that.
+* Ticker sorting should still sort by ticker symbol/name, not favorite state.
+* Existing row click behavior must still work when clicking anywhere except the star.
+
+8. Validate.
+   Run the frontend and confirm:
+
+* Star appears to the left of each ticker in the Tickers section.
+* Clicking star turns it gold.
+* Clicking star does not open row details or trigger row navigation.
+* Starred ticker appears in Close Watch immediately without page reload.
+* Unstarring removes ticker from Close Watch immediately without page reload.
+* Refresh page: favorited tickers still show gold.
+* Close Watch tab uses the same existing row data as the normal Tickers section.
+* Existing tabs still work.
+* Existing sorting and filters still work.
+* No new market-data calls were added.
+* Only new backend calls are:
+  GET /api/watchlist/favorites
+  POST /api/watchlist/favorites
+  DELETE /api/watchlist/favorites/{ticker}
+
+Do not push to git. Report files changed and validation results.

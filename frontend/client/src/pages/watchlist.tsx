@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -751,6 +751,9 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  /* ── Close Watch / favorites ─────────────────────────────────────── */
+  const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
+  const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -918,6 +921,52 @@ export default function WatchlistPage() {
     }
     return m;
   }, [earningsResp]);
+
+  /* ── favorites: fetch once, sync to Set, optimistic toggle ─────── */
+  const { data: favoritesData } = useQuery<{ favorites: string[]; count: number }>({
+    queryKey: ['watchlist-favorites'],
+    queryFn: async () => {
+      const r = await fetch('/api/watchlist/favorites');
+      if (!r.ok) return { favorites: [], count: 0 };
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  useEffect(() => {
+    if (favoritesData?.favorites) {
+      setFavoritesSet(new Set(favoritesData.favorites.map((t: string) => t.toUpperCase())));
+    }
+  }, [favoritesData]);
+
+  const toggleFavorite = useCallback(async (ticker: string) => {
+    const t = ticker.toUpperCase();
+    const wasFav = favoritesSet.has(t);
+    setFavoritesSet(prev => {
+      const next = new Set(prev);
+      if (wasFav) next.delete(t); else next.add(t);
+      return next;
+    });
+    try {
+      if (wasFav) {
+        const r = await fetch(`/api/watchlist/favorites/${encodeURIComponent(t)}`, { method: 'DELETE' });
+        if (!r.ok) throw new Error('remove failed');
+      } else {
+        const r = await fetch('/api/watchlist/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: t }),
+        });
+        if (!r.ok) throw new Error('add failed');
+      }
+    } catch {
+      setFavoritesSet(prev => {
+        const next = new Set(prev);
+        if (wasFav) next.add(t); else next.delete(t);
+        return next;
+      });
+    }
+  }, [favoritesSet]);
 
   /* ── delete specific watchlist ───────────────────────────────────── */
   const deleteMut = useMutation({
@@ -1244,6 +1293,11 @@ export default function WatchlistPage() {
     }
   }
 
+  const closeWatchTickers = useMemo(
+    () => sortedTickers.filter(s => s.ticker && favoritesSet.has(s.ticker.toUpperCase())),
+    [sortedTickers, favoritesSet],
+  );
+
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
     <div style={{
@@ -1256,7 +1310,7 @@ export default function WatchlistPage() {
         return (
           <div
             key={meta.id}
-            onClick={() => { setActiveId(meta.id); setShowAddPanel(false); }}
+            onClick={() => { setActiveId(meta.id); setShowAddPanel(false); setInnerView('tickers'); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '5px 10px 5px 12px',
@@ -1330,6 +1384,35 @@ export default function WatchlistPage() {
           </div>
         );
       })}
+
+      {/* Close Watch tab */}
+      <div
+        key="close-watch"
+        onClick={() => { setShowAddPanel(false); setInnerView(innerView === 'close-watch' ? 'tickers' : 'close-watch'); }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '5px 10px',
+          borderRadius: '4px 4px 0 0',
+          background: innerView === 'close-watch' ? C.card : 'transparent',
+          border: `1px solid ${innerView === 'close-watch' ? C.border : 'transparent'}`,
+          borderBottom: innerView === 'close-watch' ? `1px solid ${C.card}` : '1px solid transparent',
+          cursor: 'pointer', marginBottom: -1,
+          fontFamily: C.font, fontSize: 11,
+          color: innerView === 'close-watch' ? C.amber : '#475569',
+          transition: 'color 0.15s',
+          userSelect: 'none',
+        }}
+        title="Starred tickers"
+      >
+        <Star
+          size={10}
+          fill={innerView === 'close-watch' ? C.amber : 'none'}
+          color={innerView === 'close-watch' ? C.amber : '#475569'}
+          style={{ flexShrink: 0 }}
+        />
+        <span>Close Watch</span>
+        <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>({favoritesSet.size})</span>
+      </div>
 
       {/* + ADD TAB */}
       <button
@@ -1823,7 +1906,9 @@ export default function WatchlistPage() {
   };
 
   /* ── ticker table for new format ─────────────────────── */
-  const renderNewFormatTickerTable = () => {
+  const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
+    const rows = opts?.rows ?? sortedTickers;
+    const tableTitle = opts?.title ?? 'TICKERS';
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 44px 62px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
@@ -1846,15 +1931,17 @@ export default function WatchlistPage() {
           padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
         }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-            TICKERS
+          <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'CLOSE WATCH' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
+            {tableTitle}
           </span>
           <span style={{ fontSize: 9, color: C.dim }}>
-            {pendingCount > 0
-              ? `${analyzedCount} analyzed · ${pendingCount} pending`
-              : `${mergedTickers.length} total`}
+            {opts?.rows !== undefined
+              ? `${rows.length} ticker${rows.length !== 1 ? 's' : ''}`
+              : pendingCount > 0
+                ? `${analyzedCount} analyzed · ${pendingCount} pending`
+                : `${mergedTickers.length} total`}
           </span>
-          {pendingCount > 0 && (
+          {!opts?.rows && pendingCount > 0 && (
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: C.font,
               padding: '2px 6px', borderRadius: 3,
@@ -1910,7 +1997,7 @@ export default function WatchlistPage() {
             </div>
 
             {/* table rows */}
-            {sortedTickers.map((stock, i) => {
+            {rows.map((stock, i) => {
               const isPending = stock._pending;
               const chg1d = stock.change_pct ?? stock.change_pct_1d;
               const cCol = changeColor(chg1d);
@@ -1933,8 +2020,24 @@ export default function WatchlistPage() {
                   onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = `${C.teal}0c`; }}
                   onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
                 >
-                  <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                    {stock.ticker || DASH}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
+                    {!isPending && stock.ticker && (
+                      <button
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(stock.ticker!); }}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1 }}
+                        aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                        title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                      >
+                        <Star
+                          size={10}
+                          fill={favoritesSet.has((stock.ticker || '').toUpperCase()) ? C.amber : 'none'}
+                          color={favoritesSet.has((stock.ticker || '').toUpperCase()) ? C.amber : C.dim}
+                        />
+                      </button>
+                    )}
+                    <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                      {stock.ticker || DASH}
+                    </span>
                   </span>
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
@@ -2006,8 +2109,12 @@ export default function WatchlistPage() {
                 </div>
               );
             })}
-            {sortedTickers.length === 0 && (
-              <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>No tickers</div>
+            {rows.length === 0 && (
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
+                {tableTitle === 'CLOSE WATCH'
+                  ? 'No Close Watch tickers yet. Star tickers from the Tickers tab to add them here.'
+                  : 'No tickers'}
+              </div>
             )}
           </div>
         </div>
@@ -2061,8 +2168,24 @@ export default function WatchlistPage() {
             onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
             onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
           >
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
-              {stock.ticker || '\u2014'}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              {stock.ticker && (
+                <button
+                  onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(stock.ticker!); }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1 }}
+                  aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                  title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                >
+                  <Star
+                    size={10}
+                    fill={favoritesSet.has((stock.ticker || '').toUpperCase()) ? C.amber : 'none'}
+                    color={favoritesSet.has((stock.ticker || '').toUpperCase()) ? C.amber : C.dim}
+                  />
+                </button>
+              )}
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
+                {stock.ticker || '\u2014'}
+              </span>
             </span>
             <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
               {stock.company || '\u2014'}
@@ -2331,7 +2454,10 @@ export default function WatchlistPage() {
             >
               {/* ── Ticker Table (wider) ── */}
               {/* Show new-format table whenever we have saved symbols — covers pending state (no sections yet) */}
-              {(newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()}
+              {innerView === 'close-watch'
+                ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'CLOSE WATCH' })
+                : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
+              }
 
               {/* ── Live News (narrower) ── */}
               <div style={{
