@@ -119,21 +119,23 @@ const selectStyle: React.CSSProperties = {
 
 /* ── RadarChartCard ─────────────────────────────────────────────────────── */
 interface RadarChartCardProps {
-  sym:      RadarSymbol;
-  interval: string;
-  compact:  boolean;
-  source:   string;
+  sym:          RadarSymbol;
+  interval:     string;
+  compact:      boolean;
+  source:       string;
+  staggerIndex: number;
 }
 
-const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, source }: RadarChartCardProps) {
+const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, source, staggerIndex }: RadarChartCardProps) {
   const tvSym = sym.tradingview_symbol || sym.ticker;
   const rvCol = sym.relative_volume == null ? C.dim
     : sym.relative_volume >= 2   ? C.amber
     : sym.relative_volume >= 1.5 ? C.teal : C.dim;
 
-  /* ── IntersectionObserver lazy-mount: iframe only when card is near viewport */
+  /* ── IntersectionObserver + stagger: iframe mounts 1s apart top-to-bottom */
   const cardRef        = useRef<HTMLDivElement>(null);
   const [iframeMounted, setIframeMounted] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Reset when symbol or interval changes so stale iframe doesn't persist */
   const prevKeyRef = useRef('');
@@ -141,19 +143,26 @@ const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, so
   if (prevKeyRef.current !== stableKey) {
     prevKeyRef.current = stableKey;
     if (iframeMounted) setIframeMounted(false);
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
   }
 
   useEffect(() => {
     const el = cardRef.current;
     if (!el || iframeMounted) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setIframeMounted(true); obs.disconnect(); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          obs.disconnect();
+          /* Stagger: each card waits staggerIndex × 1 000 ms before mounting */
+          timerRef.current = setTimeout(() => setIframeMounted(true), staggerIndex * 1000);
+        }
+      },
       { rootMargin: '300px 0px' },
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); if (timerRef.current) clearTimeout(timerRef.current); };
   /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [stableKey, iframeMounted]);
+  }, [stableKey, iframeMounted, staggerIndex]);
 
   return (
     <div style={{
@@ -368,13 +377,14 @@ function GroupSection({
               gridTemplateColumns: `repeat(${visible.length === 1 ? 1 : cols}, 1fr)`,
               gap: 10,
             }}>
-              {visible.map(sym => (
+              {visible.map((sym, i) => (
                 <RadarChartCard
                   key={sym.ticker}
                   sym={sym}
                   interval={interval}
                   compact={compact}
                   source={source}
+                  staggerIndex={i}
                 />
               ))}
             </div>
@@ -530,9 +540,9 @@ function ComparePanel() {
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
   /* ── Tab: custom | watchlist | portfolio | compare ──────────────────── */
-  const [tab, setTab] = useState<'custom' | 'watchlist' | 'portfolio' | 'compare'>('watchlist');
-  /* Lazy-mount expensive tabs on first activation */
-  const [customMounted,  setCustomMounted]  = useState(false);
+  const [tab, setTab] = useState<'custom' | 'watchlist' | 'portfolio' | 'compare'>('custom');
+  /* Custom is the default tab — mount it immediately */
+  const [customMounted,  setCustomMounted]  = useState(true);
   const [compareMounted, setCompareMounted] = useState(false);
 
   const handleTabChange = useCallback((t: 'custom' | 'watchlist' | 'portfolio' | 'compare') => {
