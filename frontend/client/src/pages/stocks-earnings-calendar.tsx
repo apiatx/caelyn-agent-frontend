@@ -2751,9 +2751,12 @@ interface CatalystEvent {
   date: string;
   symbol?: string;
   // display / label fields (backend may use either naming)
+  display_title?: string;
   company?: string;
   companyName?: string;
+  name?: string;
   event_name?: string;
+  ticker?: string;
   title?: string;
   subtitle?: string;
   event_type: string;
@@ -2942,7 +2945,7 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
               <ImportanceBadge importance={event.importance} />
             </div>
             <h2 className="text-base font-bold text-white">
-              {event.title || event.companyName || str(r.companyName) || str(r.company) || str(r.name) || str(r.title) || event.event_name || event.company || event.symbol || "Catalyst Event"}
+              {getEventDisplayTitle(event)}
             </h2>
             {event.symbol && event.event_name && (
               <p className="text-xs text-white/40 mt-0.5">{event.symbol} · {event.date}</p>
@@ -2995,6 +2998,50 @@ interface CalendarEvent {
   raw: CatalystEvent;
 }
 
+/**
+ * Coerce an unknown value to a trimmed non-empty string, or null.
+ * Used throughout the event normalization pipeline.
+ */
+function _evStr(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s.length > 0 && s !== "null" && s !== "undefined" ? s : null;
+}
+
+/**
+ * Return the best human-readable display title for a catalyst event.
+ * Priority: display_title → title → event_name → name → company /
+ *           companyName → symbol → tab-specific fallback → "Unknown Event"
+ */
+function getEventDisplayTitle(ev: CatalystEvent, tab?: string): string {
+  const r = ev.raw || {};
+  const FALLBACKS: Record<string, string> = {
+    dividends:          "Dividend",
+    ipos:               "IPO",
+    splits:             "Stock Split",
+    economic_releases:  "Economic Release",
+    treasury_macro:     "Treasury / Macro",
+  };
+  const fallback = (tab && FALLBACKS[tab]) ? FALLBACKS[tab] : "Unknown Event";
+  return (
+    _evStr(ev.display_title) ||
+    _evStr(ev.title) ||
+    _evStr(ev.event_name) ||
+    _evStr(ev.name) ||
+    _evStr(r.display_title) ||
+    _evStr(r.event_name) ||
+    _evStr(r.name) ||
+    _evStr(r.event) ||
+    _evStr(r.title) ||
+    _evStr(ev.company) ||
+    _evStr(ev.companyName) ||
+    _evStr(r.company) ||
+    _evStr(r.companyName) ||
+    (ev.symbol ? ev.symbol : null) ||
+    fallback
+  );
+}
+
 /** Normalize a raw CatalystEvent into the unified CalendarEvent shape */
 function normalizeCatalystEvent(ev: CatalystEvent, tab: string, idx: number): CalendarEvent | null {
   // Pick the best available date field
@@ -3006,44 +3053,82 @@ function normalizeCatalystEvent(ev: CatalystEvent, tab: string, idx: number): Ca
   // Ensure YYYY-MM-DD format (strip time if present)
   date = date.slice(0, 10);
 
+  const r = ev.raw || {};
   let title = "";
   let subtitle = "";
 
   if (tab === "dividends") {
     date = ev.ex_date?.slice(0, 10) || ev.date?.slice(0, 10) || "";
     if (!date) return null;
-    title = ev.symbol ? `${ev.symbol} Dividend` : "Dividend";
+    // Title: use display_title chain; default to "{SYMBOL} Dividend"
+    const base = getEventDisplayTitle(ev, tab);
+    title = (base !== "Dividend") ? base : (ev.symbol ? `${ev.symbol} Dividend` : "Dividend");
+    // Subtitle: amount / yield / pay date
     const parts: string[] = [];
-    if (ev.dividend_amount != null) parts.push(`$${ev.dividend_amount.toFixed(4)}/share`);
-    if (ev.dividend_yield != null) parts.push(`Yield ${(ev.dividend_yield * 100).toFixed(2)}%`);
-    if (ev.pay_date) parts.push(`Pay ${ev.pay_date.slice(0, 10)}`);
+    const amt = ev.dividend_amount ?? ev.dividend ?? (_evStr(r.dividend_amount) ? Number(r.dividend_amount) : undefined) ?? (_evStr(r.dividend) ? Number(r.dividend) : undefined);
+    const yld = ev.dividend_yield ?? (r.dividend_yield != null ? Number(r.dividend_yield) : undefined);
+    const pay = _evStr(ev.pay_date) || _evStr(ev.paymentDate) || _evStr(r.pay_date) || _evStr(r.paymentDate);
+    if (amt != null)  parts.push(`$${Number(amt).toFixed(4)}/share`);
+    if (yld != null)  parts.push(`Yield ${(Number(yld) * 100).toFixed(2)}%`);
+    if (pay)          parts.push(`Pay ${pay.slice(0, 10)}`);
     subtitle = parts.join(" · ");
   } else if (tab === "ipos") {
-    title = ev.symbol ? `${ev.symbol} IPO` : (ev.company ? `${ev.company} IPO` : "IPO");
+    // Title: use display_title chain; append "IPO" suffix if not already present
+    const base = getEventDisplayTitle(ev, tab);
+    title = /ipo/i.test(base) ? base : `${base} IPO`;
+    // Subtitle: company name / exchange / price range / date
     const parts: string[] = [];
-    if (ev.ipo_price_range) parts.push(ev.ipo_price_range);
-    if (ev.company && ev.symbol) parts.push(ev.company);
+    const company = ev.company && ev.symbol && ev.company !== ev.symbol ? ev.company : null;
+    const exch    = _evStr(ev.exchange) || _evStr(r.exchange) || _evStr(r.market);
+    const price   = _evStr(ev.priceRange) || _evStr(ev.ipo_price_range) || _evStr(r.priceRange) || _evStr(r.price_range)
+                  || (ev.offerPrice != null ? `$${ev.offerPrice}` : null);
+    if (company)  parts.push(company);
+    if (exch)     parts.push(exch);
+    if (price)    parts.push(price);
+    if (date)     parts.push(date);
     subtitle = parts.join(" · ");
   } else if (tab === "splits") {
-    title = ev.symbol ? `${ev.symbol} Split` : "Stock Split";
-    subtitle = ev.split_ratio ? `Ratio ${ev.split_ratio}` : (ev.company || "");
-  } else if (tab === "economic_releases") {
-    title = ev.event_name || ev.company || "Economic Release";
+    // Title: use display_title chain; default to "{SYMBOL} Split"
+    const base = getEventDisplayTitle(ev, tab);
+    title = (base !== "Stock Split") ? base : (ev.symbol ? `${ev.symbol} Split` : "Stock Split");
+    // Subtitle: split ratio / date
+    const ratio = _evStr(ev.split_ratio) || _evStr(ev.splitRatio) || _evStr(r.split_ratio) || _evStr(r.splitRatio);
+    const n  = ev.numerator   ?? (r.numerator   != null ? Number(r.numerator)   : undefined);
+    const d2 = ev.denominator ?? (r.denominator != null ? Number(r.denominator) : undefined);
     const parts: string[] = [];
-    if (ev.actual != null) parts.push(`Actual: ${ev.actual}`);
-    if (ev.estimate != null) parts.push(`Est: ${ev.estimate}`);
-    if (ev.previous != null) parts.push(`Prev: ${ev.previous}`);
+    if (ratio)                    parts.push(ratio);
+    else if (n != null && d2 != null) parts.push(`${n}:${d2}`);
+    if (date)                     parts.push(date);
+    subtitle = parts.join(" · ");
+  } else if (tab === "economic_releases") {
+    // Title: real event name from priority chain
+    title = getEventDisplayTitle(ev, tab);
+    // Subtitle: time + country + impact level
+    const parts: string[] = [];
+    const timeVal = _evStr((r as Record<string, unknown>).time) || _evStr((r as Record<string, unknown>).release_time);
+    const country = _evStr(ev.country) || _evStr(r.country as unknown);
+    const impact  = ev.importance;
+    if (timeVal)                      parts.push(timeVal);
+    if (country)                      parts.push(country);
+    if (impact && impact !== "low")   parts.push(impact === "high" ? "High Impact" : "Medium Impact");
+    if (parts.length === 0)           parts.push("Economic Release");
     subtitle = parts.join(" · ");
   } else if (tab === "treasury_macro") {
-    title = ev.event_name || ev.company || "Macro Event";
+    // Title: real event name from priority chain
+    title = getEventDisplayTitle(ev, tab);
+    // Subtitle: time + source / category
     const parts: string[] = [];
-    if (ev.country) parts.push(ev.country);
-    if (ev.currency) parts.push(ev.currency);
-    if (ev.actual != null) parts.push(`Actual: ${ev.actual}`);
+    const timeVal  = _evStr((r as Record<string, unknown>).time) || _evStr((r as Record<string, unknown>).release_time);
+    const category = _evStr(ev.currency) || _evStr(ev.country) || _evStr((r as Record<string, unknown>).category) || _evStr((r as Record<string, unknown>).source);
+    const yld      = ev.yield ?? (r.yield != null ? Number(r.yield) : undefined) ?? ev.actual ?? (r.actual != null ? Number(r.actual) : undefined);
+    if (timeVal)    parts.push(timeVal);
+    if (category)   parts.push(category);
+    if (yld != null) parts.push(`${yld}%`);
+    if (parts.length === 0) parts.push("Treasury / Macro");
     subtitle = parts.join(" · ");
   } else {
-    title = ev.event_name || ev.company || ev.symbol || "Event";
-    subtitle = ev.sector || "";
+    title = getEventDisplayTitle(ev, tab);
+    subtitle = _evStr(ev.subtitle as unknown) || _evStr(ev.sector as unknown) || "";
   }
 
   return {
@@ -3803,6 +3888,9 @@ interface CatalystSnapshotEnvelope {
   previous_week?: CatalystEvent[];
   last_updated?: string | number | null;
   status?: "ready" | "stale" | "empty" | string;
+  is_stale?: boolean;
+  window?: { requested_from?: string; requested_to?: string };
+  diagnostics?: Record<string, unknown>;
 }
 
 type SnapshotMode = "recent" | "day" | "week" | "month";
@@ -3829,7 +3917,9 @@ function CatalystSnapshotTab({
 
   // Snapshot fetch — long staleTime, no polling/refetch on window focus.
   // Re-keyed by tab/scope/search; stable for repeated tab clicks.
-  const queryKey = ["catalysts", "snapshot", tabKey, scope, search.trim()] as const;
+  // Include current week ID so stale-time cache is automatically busted at week boundaries
+  const currentWeekId = dateKey(getMonday(new Date()));
+  const queryKey = ["catalysts", "snapshot", tabKey, scope, search.trim(), currentWeekId] as const;
   const { data, isLoading, error } = useQuery<CatalystSnapshotEnvelope | CatalystEvent[]>({
     queryKey,
     queryFn: async () => {
@@ -3866,6 +3956,8 @@ function CatalystSnapshotTab({
   const currentWeek = envelope.current_week || [];
   const previousWeek = envelope.previous_week || [];
   const status = envelope.status || (currentWeek.length === 0 && previousWeek.length === 0 ? "empty" : "ready");
+  const isStale = envelope.is_stale === true || status === "stale";
+  const backendWindowFrom = envelope.window?.requested_from;
 
   // Recent → previous_week list view; Day/Week/Month use current_week.
   // If current_week is empty but previous_week has data (stale snapshot),
@@ -3956,7 +4048,7 @@ function CatalystSnapshotTab({
               <Loader2 className="w-3 h-3 animate-spin" /> Loading…
             </span>
           )}
-          {!isLoading && status === "stale" && (
+          {!isLoading && isStale && (
             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
               style={{ background: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.25)" }}>
               Stale snapshot
@@ -4006,6 +4098,7 @@ function CatalystSnapshotTab({
           loading={isLoading}
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
+          windowFrom={backendWindowFrom}
         />
       )}
 
@@ -4132,14 +4225,14 @@ function CatalystSnapshotWeekBoard({
   loading,
   tabLabel,
   onEventClick,
+  windowFrom,
 }: {
   events: CalendarEvent[];
   loading: boolean;
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
+  windowFrom?: string;
 }) {
-  // Anchor the week to the Monday containing the most snapshot events
-  // (typically the current week). Fall back to today's Monday if empty.
   const dateMap = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
     if (!ev.date) continue;
@@ -4148,6 +4241,15 @@ function CatalystSnapshotWeekBoard({
   }
 
   const anchorMonday = (() => {
+    // Prefer the backend-provided requested_from window over the event-based heuristic.
+    // This prevents the view from drifting to "last week" when the snapshot carries
+    // stale events from the prior week.
+    if (windowFrom) {
+      try {
+        const [y, m, d] = windowFrom.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+        if (y && m && d) return getMonday(new Date(y, m - 1, d));
+      } catch { /* fall through to heuristic */ }
+    }
     if (dateMap.size === 0) return getMonday(new Date());
     const counts = new Map<string, number>();
     Array.from(dateMap.entries()).forEach(([k, list]) => {

@@ -1,0 +1,158 @@
+Calendar frontend fix pass.
+
+Backend is now fixed and validated. Do not change backend routes. Do not change Earnings behavior. Do not change Top Catalysts This Week.
+
+Scope:
+Fix calendar UI rendering for:
+
+* Economic Releases
+* Treasury / Macro
+* IPOs
+* Dividends
+* Stock Splits
+
+Do not modify:
+
+* Earnings logic/rendering unless only shared helpers are needed and behavior remains identical
+* Top Catalysts This Week
+* Ask Caelyn button/modal behavior
+
+Backend now returns useful fields for snapshot-backed tabs:
+
+* `display_title`
+* `title`
+* `event_name` / source event names when available
+* `is_stale`
+* `window`
+* `diagnostics`
+
+Main tasks:
+
+1. Audit the calendar page and event card rendering.
+   Find:
+
+* tab/timeframe state
+* API request/query keys
+* collapsed card title/subtitle logic
+* popup/modal title/detail logic
+* stale snapshot badge rendering
+* date column/week generation logic
+
+2. Fix collapsed card title mapping.
+   Visible card title should use this priority:
+
+* `event.display_title`
+* `event.title`
+* `event.event_name`
+* `event.name`
+* stock-specific fallback: `event.symbol`
+* final fallback: `Unknown Event`
+
+Do not show generic `Macro` as the card title when `display_title` or another real title exists.
+
+3. Align collapsed card and popup title logic.
+   If the popup/modal shows the real event name, the collapsed card should use the same helper.
+
+Create a helper like:
+
+* `getEventDisplayTitle(event)`
+
+Use it for:
+
+* event card title
+* modal title
+* any expanded detail header where practical
+
+4. Improve subtitle mapping by category.
+   Keep it compact.
+
+Economic Releases:
+
+* show time + country + impact if available
+* fallback to `Economic Release`
+
+Treasury / Macro:
+
+* show time + source/category if available
+* fallback to `Treasury / Macro`
+
+IPOs:
+
+* show company name / exchange / IPO date if available
+
+Dividends:
+
+* show symbol + amount/date if available
+
+Stock Splits:
+
+* show symbol + split ratio/date if available
+
+5. Fix frontend query/cache keys.
+   Query keys must include:
+
+* selected tab
+* selected timeframe
+* requested/backend window start
+* requested/backend window end when available
+
+Switching tabs or timeframe must not reuse stale data from a previous tab/timeframe.
+
+When a new request is pending:
+
+* either show loading/skeleton state
+* or clearly preserve old data as loading, but do not make old data look like the new tab’s current data
+
+6. Use backend window metadata.
+   If backend returns `window.requested_from` and `window.requested_to`, use that for week labels and validation display.
+
+Do not derive the visible week from:
+
+* snapshot `updated_at`
+* oldest event date
+* stale stored window
+* previous tab state
+
+Week view should visually show the backend-requested current Mon–Fri window.
+
+7. Stale badge behavior.
+   Keep the stale badge only when backend says `is_stale=true`.
+
+If stale:
+
+* show the stale badge
+* optionally show stored window vs requested window in tooltip/detail
+
+If not stale:
+
+* do not show stale badge just because `updated_at` is old-looking if backend says the requested window is fresh.
+
+8. Handle large event counts gracefully.
+   Economic Releases may return hundreds of events for a valid week. Do not break layout.
+
+For Week view:
+
+* cards should remain compact
+* columns should scroll internally if needed
+* consider showing the most relevant/high-impact events first if impact/importance exists
+* do not silently drop events unless the existing UI already has a limit; if limiting, show `+ N more`
+
+9. Validate locally against fixed backend.
+   Test Week view for:
+
+* Economic Releases
+* Treasury / Macro
+* IPOs
+* Dividends
+* Stock Splits
+* Earnings
+
+Acceptance criteria:
+
+* Economic Releases cards show real names like CPI, PPI, Jobless Claims, etc., not `Macro`.
+* Treasury / Macro cards show real names like 2Y Treasury Rate, 10Y Treasury Rate, etc., not `Macro`.
+* Week view displays current Mon–Fri week from backend window metadata.
+* IPOs, Dividends, and Stock Splits no longer appear stuck on last week.
+* Switching tabs/timeframes does not flash or reuse stale old-tab data as current data.
+* Earnings still works exactly as before.
+* Top Catalysts still works exactly as before.
