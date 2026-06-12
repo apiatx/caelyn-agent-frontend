@@ -1,0 +1,146 @@
+Update the Prediction Markets Top Equity Signals UI using the latest backend contract from /api/predict/investor/overview. Do not change endpoint paths. Do not add new API calls. Do not create frontend-only semantic interpretation. Use backend-provided fields.
+
+Important backend fields now available:
+- signal_quality_label
+- signal_quality_explanation
+- signal_integrity.user_warning
+- display_impact_mode
+- headline_bullish_sectors
+- headline_bearish_sectors
+- headline_bullish_tickers
+- headline_bearish_tickers
+- headline_impact_note
+- primary_driver_market
+- driver_markets
+- current_probability / current_probability_pct / current_odds_label where available
+- delta_24h_pp
+- delta_7d_pp
+- semantic_event_type
+- equity_regime_read
+- polarity
+
+Audit first:
+Find every component rendering Prediction Markets Top Equity Signals:
+1. Main Prediction Markets page
+2. Home page Prediction Markets widget
+3. Any compact card/shared card/copy-pasted old card
+
+The Home page is currently still showing the old format, so it is probably using a separate renderer or ignoring the enriched fields. Fix all renderers or extract one shared renderer.
+
+Required UI changes:
+
+1. Main Prediction Markets page count
+Show top 7 equity signals on the main Prediction Markets page.
+
+2. Home page count
+Show top 3–5 signals on Home depending layout space, but use the new enriched compact format. Do not keep the old vague format.
+
+3. Replace “Mapping”
+Do not display “Mapping: High/Moderate.”
+
+Use:
+“Signal Quality: {signal_quality_label}”
+
+Tooltip/help copy:
+Use signal_quality_explanation if present.
+Fallback:
+“Measures data agreement and equity-impact clarity, not trade certainty.”
+
+4. Driver-first card
+Every card should lead with the exact primary driver market.
+
+Card order:
+- Signal status: Mixed / Bullish / Bearish / Neutral
+- Driver: primary_driver_market.question/title
+- Smaller category/theme label
+- Explicit odds line
+- Equity read/event type pills
+- Signal Quality label
+- Warning if mixed
+- Sector/ticker impact
+- Expandable driver markets table/details
+
+5. Odds display
+Current odds must show. Do not render “Odds: —” when probability exists under another field.
+
+Primary driver odds line should look like:
+“YES odds: 74.3% · 24h +36.0pp · 7d +14.5pp”
+
+Use this fallback order for current odds:
+1. current_odds_label
+2. current_probability_pct
+3. current_probability * 100
+4. yes_pct
+5. probability
+6. “Unavailable”
+
+Formatting:
+- If value is 0–1, multiply by 100.
+- If value is 1–100, use as-is.
+- Show one decimal place.
+- Rename table column from “Odds” to “Current odds.”
+
+6. Mixed/polarity conflict warning
+If signal_integrity.has_polarity_conflict or signal_integrity.has_mixed_semantics is true:
+- Show warning pill: “Mixed drivers — not one clean sector signal”
+- Show signal_integrity.user_warning if present.
+- Do not render raw backend diagnostic warning text containing arrays like ['escalation/direct'].
+- Do not show a clean bullish/bearish sector call.
+
+7. Sector/ticker impact
+Use backend headline fields first:
+- headline_bullish_sectors
+- headline_bearish_sectors
+- headline_bullish_tickers
+- headline_bearish_tickers
+- headline_impact_note
+
+For mixed signals:
+Label boxes:
+“Primary driver bullish”
+“Primary driver bearish”
+
+Do not use old cluster-level bullish/bearish sectors if display_impact_mode === "mixed".
+
+For clean signals:
+Use headline fields first, fallback to old bullish/bearish fields.
+
+8. Expanded driver markets table
+Use driver_markets and show:
+- Market
+- Outcome
+- Current odds
+- 24h Δ
+- 7d Δ
+- Event type
+- Equity read
+- Polarity
+- Score
+
+Polarity labels:
+- direct = “Direct”
+- inverted = “Inverted”
+Tooltip for inverted:
+“YES rising means the opposite of the broad category framing.”
+
+9. Home page compact format
+Home card should show:
+- Signal Quality
+- Driver title
+- Outcome/current odds/move line
+- Equity read
+- Mixed warning if applicable
+- Primary driver bullish/bearish sectors/tickers from headline fields
+
+Example compact line:
+“YES odds: 74.3% · 24h +36.0pp”
+
+10. Validation
+After changes:
+- Main Prediction Markets page shows 7 signals if backend returns 7.
+- Main page no longer shows “Mapping.”
+- Home page no longer shows old broad-category/vague “Odds rising” format.
+- Current odds appear on main card and driver markets table.
+- Mixed geopolitics peace/deal driver shows Airlines/Consumer/Industrials as primary-driver bullish, not Defense/Energy.
+- Raw backend warning strings with arrays are not displayed.
+- No new API calls were added.

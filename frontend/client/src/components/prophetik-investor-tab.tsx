@@ -38,6 +38,11 @@ interface BackendDriverMarket {
   title?: string;
   outcome_label?: string;
   current_odds?: number;
+  current_probability?: number;
+  current_probability_pct?: number;
+  current_odds_label?: string | number;
+  yes_pct?: number;
+  probability?: number;
   delta_24h_pp?: number;
   delta_7d_pp?: number;
   direction?: string;
@@ -52,6 +57,7 @@ interface BackendSignalIntegrity {
   has_polarity_conflict?: boolean;
   has_mixed_semantics?: boolean;
   warning?: string;
+  user_warning?: string;
 }
 
 interface BackendEquitySignal {
@@ -73,11 +79,19 @@ interface BackendEquitySignal {
   confidence_score?: number;         // 0-100 number
   narrative?: string;
   watchlist_priority?: string;
-  // new diagnostic fields
+  // enriched diagnostic fields
   primary_driver_market?: BackendDriverMarket;
   driver_markets?: BackendDriverMarket[];
   confidence_explanation?: string;
   signal_integrity?: BackendSignalIntegrity;
+  signal_quality_label?: string;
+  signal_quality_explanation?: string;
+  display_impact_mode?: string;
+  headline_bullish_sectors?: string[];
+  headline_bearish_sectors?: string[];
+  headline_bullish_tickers?: string[];
+  headline_bearish_tickers?: string[];
+  headline_impact_note?: string;
 }
 
 interface BackendRegimeValue {
@@ -325,18 +339,24 @@ function fmtPP(v?: number | null): string {
   return `${sign}${v.toFixed(1)}pp`;
 }
 
-function fmtOdds(v?: number | null): string {
-  if (v == null) return "—";
-  return `${v.toFixed(1)}%`;
+function resolveOdds(m: BackendDriverMarket): string {
+  const raw = m.current_odds_label ?? m.current_probability_pct ?? m.current_odds ??
+    (m.current_probability != null ? m.current_probability : null) ??
+    m.yes_pct ?? m.probability;
+  if (raw == null) return "Unavailable";
+  const n = typeof raw === "string" ? parseFloat(raw) : raw;
+  if (isNaN(n)) return String(raw);
+  const pct = n >= 0 && n <= 1 ? n * 100 : n;
+  return `${pct.toFixed(1)}%`;
 }
 
 function DriverMarketsTable({ markets }: { markets: BackendDriverMarket[] }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-white/[0.06] mt-2">
-      <table className="w-full text-[9px] min-w-[520px]">
+      <table className="w-full text-[9px] min-w-[560px]">
         <thead>
           <tr className="border-b border-white/[0.06]">
-            {["Market", "Outcome", "Odds", "24h Δ", "7d Δ", "Event type", "Equity read", "Polarity", "Score"].map(h => (
+            {["Market", "Outcome", "Current odds", "24h Δ", "7d Δ", "Event type", "Equity read", "Polarity", "Score"].map(h => (
               <th key={h} className="text-left px-2 py-1.5 text-white/25 font-semibold uppercase tracking-wider whitespace-nowrap">
                 {h}
               </th>
@@ -354,7 +374,7 @@ function DriverMarketsTable({ markets }: { markets: BackendDriverMarket[] }) {
                   <span className="line-clamp-2 leading-snug">{m.question ?? m.title ?? "—"}</span>
                 </td>
                 <td className="px-2 py-1.5 text-white/60 font-semibold whitespace-nowrap">{m.outcome_label ?? "YES"}</td>
-                <td className="px-2 py-1.5 text-white/50 font-mono whitespace-nowrap">{fmtOdds(m.current_odds)}</td>
+                <td className="px-2 py-1.5 text-white/50 font-mono whitespace-nowrap">{resolveOdds(m)}</td>
                 <td className={`px-2 py-1.5 font-mono whitespace-nowrap ${d24 >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                   {fmtPP(m.delta_24h_pp)}
                 </td>
@@ -400,29 +420,52 @@ const EquitySignalCard = memo(function EquitySignalCard({
 
   const pdm  = signal.primary_driver_market;
   const si   = signal.signal_integrity;
-  const isMixed = si?.has_polarity_conflict || si?.has_mixed_semantics;
+  const isMixed = !!(si?.has_polarity_conflict || si?.has_mixed_semantics);
+  const isMixedMode = signal.display_impact_mode === "mixed";
 
-  const score = confidenceScore(signal);
-  const confLabel = confidenceLabel(score, signal.confidence);
-  const confColor = confidenceColor(score, signal.confidence);
+  // Signal quality label (replaces "Mapping")
+  const sqLabel = signal.signal_quality_label;
+  const sqTooltip = signal.signal_quality_explanation
+    ?? "Measures data agreement and equity-impact clarity, not trade certainty.";
 
   // Direction: if mixed, override display
   const baseDir = directionFromSummary(signal.summary_direction);
   const dir: "bullish" | "bearish" | "neutral" = isMixed ? "neutral" : baseDir;
   const dc = dirColors(dir);
 
-  // Explicit odds text from primary driver market
+  // Odds line with current probability included
   const oddsLine = (() => {
     if (!pdm) return null;
-    const outcome   = pdm.outcome_label ?? "YES";
-    const direction = (pdm.direction ?? "moving").toLowerCase();
+    const outcome = pdm.outcome_label ?? "YES";
+    const currentPct = resolveOdds(pdm);
     const d24 = fmtPP(pdm.delta_24h_pp);
     const d7  = fmtPP(pdm.delta_7d_pp);
-    return `${outcome} odds ${direction}: 24h ${d24}, 7d ${d7}`;
+    const parts = [`${outcome} odds: ${currentPct}`];
+    if (pdm.delta_24h_pp != null) parts.push(`24h ${d24}`);
+    if (pdm.delta_7d_pp  != null) parts.push(`7d ${d7}`);
+    return parts.join(" · ");
   })();
 
-  // Sector box opacity — tone down when mixed
-  const sectorOpacity = isMixed ? "opacity-40" : "";
+  // Headline sector/ticker fields (preferred over old cluster-level fields)
+  const bullSectors = signal.headline_bullish_sectors?.length
+    ? signal.headline_bullish_sectors
+    : (isMixedMode ? [] : (signal.bullish_sectors ?? []));
+  const bearSectors = signal.headline_bearish_sectors?.length
+    ? signal.headline_bearish_sectors
+    : (isMixedMode ? [] : (signal.bearish_sectors ?? []));
+  const bullTickers = signal.headline_bullish_tickers?.length
+    ? signal.headline_bullish_tickers
+    : (isMixedMode ? [] : (signal.bullish_stocks ?? []));
+  const bearTickers = signal.headline_bearish_tickers?.length
+    ? signal.headline_bearish_tickers
+    : (isMixedMode ? [] : (signal.bearish_stocks ?? []));
+
+  // Sector label prefix
+  const bullSectorLabel = isMixedMode ? "↑ Primary driver bullish" : "↑ Bullish Sectors";
+  const bearSectorLabel = isMixedMode ? "↓ Primary driver bearish" : "↓ Bearish Sectors";
+
+  // Sector box opacity — tone down when mixed (unless headline fields specifically provided)
+  const sectorOpacity = (isMixed && !signal.headline_bullish_sectors?.length && !signal.headline_bearish_sectors?.length) ? "opacity-40" : "";
 
   // Has expanded content
   const hasExpanded = !!(signal.why_it_matters || (signal.driver_markets?.length ?? 0) > 0 || (signal.supporting_markets?.length ?? 0) > 0);
@@ -436,11 +479,13 @@ const EquitySignalCard = memo(function EquitySignalCard({
     >
       {/* ── Mixed / polarity warning ── */}
       {isMixed && (
-        <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg bg-amber-500/[0.07] border border-amber-500/20">
-          <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0" />
-          <span className="text-[9px] font-bold text-amber-300">Mixed drivers — not one clean sector signal</span>
-          {si?.warning && (
-            <span className="text-[9px] text-amber-300/60 ml-1">· {si.warning}</span>
+        <div className="flex flex-col gap-0.5 mb-3 px-2 py-1.5 rounded-lg bg-amber-500/[0.07] border border-amber-500/20">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0" />
+            <span className="text-[9px] font-bold text-amber-300">Mixed drivers — not one clean sector signal</span>
+          </div>
+          {si?.user_warning && (
+            <p className="text-[9px] text-amber-300/60 pl-4.5 leading-snug">{si.user_warning}</p>
           )}
         </div>
       )}
@@ -478,14 +523,14 @@ const EquitySignalCard = memo(function EquitySignalCard({
           )}
         </div>
 
-        {/* Mapping / data agreement label */}
-        {confLabel && (
+        {/* Signal Quality label */}
+        {sqLabel && (
           <div
             className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] cursor-help"
-            title={signal.confidence_explanation ?? "This measures prediction-market/sector mapping agreement, not guaranteed trade outcome."}
+            title={sqTooltip}
           >
-            <span className="text-[9px] text-white/30">Mapping:</span>
-            <span className={`text-[11px] font-bold ${confColor}`}>{confLabel}</span>
+            <span className="text-[9px] text-white/30">Signal Quality:</span>
+            <span className="text-[11px] font-bold text-white/70">{sqLabel}</span>
           </div>
         )}
       </div>
@@ -546,21 +591,21 @@ const EquitySignalCard = memo(function EquitySignalCard({
         <p className="text-[11px] text-white/55 leading-relaxed mb-3">{signal.summary}</p>
       )}
 
-      {/* ── Sector implications (toned down when mixed) ── */}
-      {((signal.bullish_sectors?.length ?? 0) > 0 || (signal.bearish_sectors?.length ?? 0) > 0) && (
+      {/* ── Sector implications (headline fields first; toned down when mixed with no headline data) ── */}
+      {(bullSectors.length > 0 || bearSectors.length > 0) && (
         <div className={`grid grid-cols-2 gap-2 mb-3 ${sectorOpacity}`}>
-          {(signal.bullish_sectors?.length ?? 0) > 0 && (
+          {bullSectors.length > 0 && (
             <div className="rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15 p-2">
-              <p className="text-[8px] font-bold uppercase tracking-widest text-emerald-400/60 mb-1.5">↑ Bullish Sectors</p>
-              {signal.bullish_sectors!.map(s => (
+              <p className="text-[8px] font-bold uppercase tracking-widest text-emerald-400/60 mb-1.5">{bullSectorLabel}</p>
+              {bullSectors.map(s => (
                 <p key={s} className="text-[10px] text-emerald-300/80 font-medium">{s}</p>
               ))}
             </div>
           )}
-          {(signal.bearish_sectors?.length ?? 0) > 0 && (
+          {bearSectors.length > 0 && (
             <div className="rounded-lg bg-red-500/[0.06] border border-red-500/15 p-2">
-              <p className="text-[8px] font-bold uppercase tracking-widest text-red-400/60 mb-1.5">↓ Bearish Sectors</p>
-              {signal.bearish_sectors!.map(s => (
+              <p className="text-[8px] font-bold uppercase tracking-widest text-red-400/60 mb-1.5">{bearSectorLabel}</p>
+              {bearSectors.map(s => (
                 <p key={s} className="text-[10px] text-red-300/80 font-medium">{s}</p>
               ))}
             </div>
@@ -568,30 +613,35 @@ const EquitySignalCard = memo(function EquitySignalCard({
         </div>
       )}
 
-      {/* ── Stock tickers (toned down when mixed) ── */}
-      {((signal.bullish_stocks?.length ?? 0) > 0 || (signal.bearish_stocks?.length ?? 0) > 0) && (
+      {/* ── Stock tickers (headline fields first; toned down when mixed with no headline data) ── */}
+      {(bullTickers.length > 0 || bearTickers.length > 0) && (
         <div className={`flex items-start gap-3 mb-3 ${sectorOpacity}`}>
-          {(signal.bullish_stocks?.length ?? 0) > 0 && (
+          {bullTickers.length > 0 && (
             <div className="flex-1">
               <p className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/50 mb-1">Bullish</p>
               <div className="flex flex-wrap gap-1">
-                {signal.bullish_stocks!.map(t => (
+                {bullTickers.map(t => (
                   <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
                 ))}
               </div>
             </div>
           )}
-          {(signal.bearish_stocks?.length ?? 0) > 0 && (
+          {bearTickers.length > 0 && (
             <div className="flex-1">
               <p className="text-[8px] font-semibold uppercase tracking-wider text-red-400/50 mb-1">Bearish</p>
               <div className="flex flex-wrap gap-1">
-                {signal.bearish_stocks!.map(t => (
+                {bearTickers.map(t => (
                   <span key={t} className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>
                 ))}
               </div>
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Headline impact note ── */}
+      {signal.headline_impact_note && (
+        <p className="text-[9px] text-white/35 italic mb-3 leading-snug">{signal.headline_impact_note}</p>
       )}
 
       {/* ── Regime impact ── */}
@@ -669,7 +719,7 @@ function TopEquitySignals({ signals, loading }: { signals: BackendEquitySignal[]
         <EmptyState text="No equity signals available yet." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {signals.map((s, i) => (
+          {signals.slice(0, 7).map((s, i) => (
             <EquitySignalCard key={s.theme_id ?? i} signal={s} hero={i === 0} />
           ))}
         </div>

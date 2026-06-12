@@ -1214,6 +1214,22 @@ export default function HomePage() {
   });
   const topEquitySignals: any[] = equityOverview?.top_equity_signals?.slice(0, 5) ?? [];
 
+  // Home-page compact equity signal renderer helpers
+  const homeResolveOdds = (pdm: any): string => {
+    const raw = pdm?.current_odds_label ?? pdm?.current_probability_pct ?? pdm?.current_odds ??
+      (pdm?.current_probability != null ? pdm.current_probability : null) ??
+      pdm?.yes_pct ?? pdm?.probability;
+    if (raw == null) return "";
+    const n = typeof raw === "string" ? parseFloat(raw) : raw;
+    if (isNaN(n)) return String(raw);
+    const pct = n >= 0 && n <= 1 ? n * 100 : n;
+    return `${pct.toFixed(1)}%`;
+  };
+  const homeFmtPP = (v?: number | null): string => {
+    if (v == null) return "";
+    return `${v >= 0 ? "+" : ""}${v.toFixed(1)}pp`;
+  };
+
   // Extra macro cards (Dow Jones + Bitcoin) fetched client-side
   const { data: extraCards } = useQuery<HomeMacroCard[]>({
     queryKey: ["/api/macro/extra-cards"],
@@ -1854,58 +1870,130 @@ export default function HomePage() {
                           {topEquitySignals.length > 0 && (
                             <div className="space-y-2.5">
                               {topEquitySignals.map((sig: any, i: number) => {
-                                const dir = (() => {
+                                const pdm = sig.primary_driver_market;
+                                const si  = sig.signal_integrity;
+                                const isMixed = !!(si?.has_polarity_conflict || si?.has_mixed_semantics);
+                                const isMixedMode = sig.display_impact_mode === "mixed";
+
+                                // Direction
+                                const baseDir = (() => {
                                   const s = (sig.summary_direction || '').toLowerCase();
                                   if (s.includes('bull') || s === 'up') return 'bullish';
                                   if (s.includes('bear') || s === 'down') return 'bearish';
                                   return 'neutral';
                                 })();
+                                const dir = isMixed ? 'neutral' : baseDir;
                                 const dirColor = dir === 'bullish' ? 'text-emerald-400' : dir === 'bearish' ? 'text-rose-400' : 'text-amber-400';
-                                const dirBg    = dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-amber-500/15';
-                                const bullSectors: string[] = sig.bullish_sectors ?? [];
-                                const bearSectors: string[] = sig.bearish_sectors ?? [];
-                                const bullStocks:  string[] = sig.bullish_stocks  ?? [];
-                                const bearStocks:  string[] = sig.bearish_stocks  ?? [];
+                                const dirBg    = isMixed ? 'border-amber-500/15' : dir === 'bullish' ? 'border-emerald-500/15' : dir === 'bearish' ? 'border-rose-500/15' : 'border-white/[0.07]';
+
+                                // Odds line
+                                const oddsLine = (() => {
+                                  if (!pdm) return null;
+                                  const outcome = pdm.outcome_label ?? 'YES';
+                                  const currentPct = homeResolveOdds(pdm);
+                                  const parts = [`${outcome} odds: ${currentPct || '—'}`];
+                                  const d24 = homeFmtPP(pdm.delta_24h_pp);
+                                  if (d24) parts.push(`24h ${d24}`);
+                                  return parts.join(' · ');
+                                })();
+
+                                // Sector/ticker: headline fields first
+                                const bullSectors: string[] = (sig.headline_bullish_sectors?.length ? sig.headline_bullish_sectors : (isMixedMode ? [] : (sig.bullish_sectors ?? [])));
+                                const bearSectors: string[] = (sig.headline_bearish_sectors?.length ? sig.headline_bearish_sectors : (isMixedMode ? [] : (sig.bearish_sectors ?? [])));
+                                const bullStocks:  string[] = (sig.headline_bullish_tickers?.length  ? sig.headline_bullish_tickers  : (isMixedMode ? [] : (sig.bullish_stocks ?? [])));
+                                const bearStocks:  string[] = (sig.headline_bearish_tickers?.length  ? sig.headline_bearish_tickers  : (isMixedMode ? [] : (sig.bearish_stocks ?? [])));
+                                const sectorOpacity = (isMixed && !sig.headline_bullish_sectors?.length && !sig.headline_bearish_sectors?.length) ? 'opacity-40' : '';
+
                                 return (
                                   <div key={i} className={`rounded-lg border bg-white/[0.02] p-2.5 ${dirBg}`}>
+                                    {/* Status + Signal Quality */}
                                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                                      <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>{dir}</span>
-                                      {sig.confidence && <span className="text-[9px] text-white/25 capitalize">{sig.confidence}</span>}
+                                      <span className={`text-[8px] font-bold uppercase tracking-widest ${dirColor}`}>
+                                        {isMixed ? 'Mixed' : dir}
+                                      </span>
+                                      {sig.signal_quality_label && (
+                                        <span
+                                          className="text-[8px] text-white/30 cursor-help"
+                                          title={sig.signal_quality_explanation ?? 'Measures data agreement and equity-impact clarity, not trade certainty.'}
+                                        >
+                                          Signal Quality: {sig.signal_quality_label}
+                                        </span>
+                                      )}
                                     </div>
-                                    <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1">{sig.title}</p>
-                                    {sig.summary && <p className="text-[10px] text-white/45 leading-relaxed mb-2 line-clamp-2">{sig.summary}</p>}
-                                    {sig.odds_move_summary && <p className="text-[10px] text-blue-300/70 mb-2 leading-snug">↻ {sig.odds_move_summary}</p>}
+
+                                    {/* Mixed warning */}
+                                    {isMixed && (
+                                      <div className="flex items-center gap-1 mb-1.5 text-[8px] text-amber-300/80">
+                                        <span>⚠</span>
+                                        <span className="font-semibold">Mixed drivers</span>
+                                        {si?.user_warning && <span className="text-amber-300/50 truncate">· {si.user_warning}</span>}
+                                      </div>
+                                    )}
+
+                                    {/* Driver question (primary) or category title */}
+                                    {pdm ? (
+                                      <>
+                                        <p className="text-[10px] font-semibold text-white/85 leading-snug mb-0.5">
+                                          {pdm.question ?? pdm.title}
+                                        </p>
+                                        <p className="text-[9px] text-white/35 mb-1.5">{sig.title}</p>
+                                      </>
+                                    ) : (
+                                      <p className="text-[11px] text-white/85 font-semibold leading-snug mb-1.5">{sig.title}</p>
+                                    )}
+
+                                    {/* Odds line */}
+                                    {(oddsLine || sig.odds_move_summary) && (
+                                      <p className="text-[9px] text-blue-300/80 font-medium mb-1.5 font-mono">
+                                        {oddsLine ?? `↻ ${sig.odds_move_summary}`}
+                                      </p>
+                                    )}
+
+                                    {/* Equity read pill */}
+                                    {pdm?.equity_regime_read && (
+                                      <span className="inline-block px-1.5 py-0.5 rounded bg-blue-500/[0.08] border border-blue-500/15 text-[8px] text-blue-300/70 mb-2">
+                                        {pdm.equity_regime_read}
+                                      </span>
+                                    )}
+
+                                    {/* Sectors */}
                                     {(bullSectors.length > 0 || bearSectors.length > 0) && (
-                                      <div className="flex gap-2 mb-2">
+                                      <div className={`flex gap-2 mb-1.5 ${sectorOpacity}`}>
                                         {bullSectors.length > 0 && (
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">↑ Sectors</p>
-                                            {bullSectors.slice(0, 3).map(s => <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>)}
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-0.5">
+                                              {isMixedMode ? '↑ Driver bullish' : '↑ Sectors'}
+                                            </p>
+                                            {bullSectors.slice(0, 2).map(s => <p key={s} className="text-[9px] text-emerald-300/80 font-medium truncate">{s}</p>)}
                                           </div>
                                         )}
                                         {bearSectors.length > 0 && (
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">↓ Sectors</p>
-                                            {bearSectors.slice(0, 3).map(s => <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>)}
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-0.5">
+                                              {isMixedMode ? '↓ Driver bearish' : '↓ Sectors'}
+                                            </p>
+                                            {bearSectors.slice(0, 2).map(s => <p key={s} className="text-[9px] text-rose-300/80 font-medium truncate">{s}</p>)}
                                           </div>
                                         )}
                                       </div>
                                     )}
+
+                                    {/* Tickers */}
                                     {(bullStocks.length > 0 || bearStocks.length > 0) && (
-                                      <div className="flex gap-2">
+                                      <div className={`flex gap-2 ${sectorOpacity}`}>
                                         {bullStocks.length > 0 && (
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-1">Bullish</p>
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-emerald-400/50 mb-0.5">Bullish</p>
                                             <div className="flex flex-wrap gap-1">
-                                              {bullStocks.slice(0, 4).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
+                                              {bullStocks.slice(0, 3).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
                                             </div>
                                           </div>
                                         )}
                                         {bearStocks.length > 0 && (
                                           <div className="flex-1 min-w-0">
-                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-1">Bearish</p>
+                                            <p className="text-[7px] font-bold uppercase tracking-widest text-rose-400/50 mb-0.5">Bearish</p>
                                             <div className="flex flex-wrap gap-1">
-                                              {bearStocks.slice(0, 4).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
+                                              {bearStocks.slice(0, 3).map(t => <span key={t} className="text-[8px] font-bold font-mono px-1 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors" onClick={() => openTicker(t)}>{t}</span>)}
                                             </div>
                                           </div>
                                         )}
