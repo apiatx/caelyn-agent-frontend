@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
+import { resolveTVSymbol as resolveTVSymbolUtil } from "@/utils/tvSymbol";
 import { AreaChart, Area, LineChart as RLineChart, Line, ResponsiveContainer } from "recharts";
 import {
   TrendingUp,
@@ -145,10 +146,6 @@ function getMoverExternalUrl(ticker: string, assetType: string | null | undefine
   return null;
 }
 
-function resolveTVSymbol(symbol: string): string {
-  // For stocks/ETFs the bare symbol works on TradingView
-  return symbol;
-}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -989,7 +986,7 @@ function TickerInfoPopup({
   const changePct = snapshot?.change_1d_pct  ?? moverChangePct ?? null;
   const signal    = snapshot?.signal_label   || flow?.signal || null;
 
-  const tvSymbol = resolveTVSymbol(symbol);
+  const tvSymbol = resolveTVSymbolUtil(symbol, snapshot);
   const tvSrc = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=D&range=3M&style=1&toolbar_bg=0a0a0a&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=America%2FNew_York&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
 
   return (

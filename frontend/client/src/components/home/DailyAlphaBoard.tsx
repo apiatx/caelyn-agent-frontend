@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { resolveTVSymbol } from "@/utils/tvSymbol";
 import { useQuery } from "@tanstack/react-query";
 import {
   RefreshCw, TrendingUp, TrendingDown, Minus,
@@ -25,6 +26,7 @@ export interface DailyAlphaIdea {
   summary: string; trigger: string | null; invalidation: string | null;
   signals: DailyAlphaSignals; evidence: string[]; risks: string[];
   source_pages: string[]; updated_at: string | null; has_timing_signal: boolean;
+  tradingview_symbol?: string; exchange?: string;
 }
 export interface DailyAlphaRegime {
   label: string; summary: string; drivers: string[]; confidence: number;
@@ -177,16 +179,16 @@ function GoldStyleTag() {
 
 // ── TradingView chart modal ────────────────────────────────────────────────────
 
-function TradingViewChartModal({ symbol, assetType, onClose }: {
-  symbol: string | null; assetType?: string; onClose: () => void;
+function TradingViewChartModal({ symbol, assetType, tvSym, onClose }: {
+  symbol: string | null; assetType?: string; tvSym?: string; onClose: () => void;
 }) {
   const tvSymbol = (() => {
     if (!symbol) return '';
-    const s = symbol.toUpperCase();
-    if (assetType === 'crypto' && !s.includes(':') && !s.endsWith('USD') && !s.endsWith('USDT')) {
-      return `${s}USD`;
-    }
-    return s;
+    // Use backend-provided symbol or resolve with exchange mapping
+    return resolveTVSymbol(symbol, {
+      tradingview_symbol: tvSym,
+      asset_type: assetType,
+    });
   })();
 
   const iframeSrc = tvSymbol
@@ -255,7 +257,7 @@ function MiniIdeaRow({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: 
 
 // ── Full idea card (modal) ────────────────────────────────────────────────────
 
-function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: number; onChartOpen: (sym: string, at?: string) => void }) {
+function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: number; onChartOpen: (sym: string, at?: string, tvSym?: string) => void }) {
   const ss = scoreStyle(idea.score);
   const ds = directionStyle(idea.direction);
 
@@ -268,7 +270,7 @@ function IdeaCard({ idea, rank, onChartOpen }: { idea: DailyAlphaIdea; rank: num
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <button
-                onClick={() => onChartOpen(idea.symbol, idea.asset_type)}
+                onClick={() => onChartOpen(idea.symbol, idea.asset_type, idea.tradingview_symbol)}
                 className="text-sm font-bold text-white/95 tracking-wide hover:text-white hover:underline underline-offset-2 transition-colors bg-transparent border-0 p-0 cursor-pointer"
               >
                 {idea.symbol}
@@ -467,7 +469,7 @@ function AlphaBoardModalContent({
   data: DailyAlphaBoardResponse | undefined;
   isLoading: boolean; isFetching: boolean; isError: boolean;
   filter: FilterKey; setFilter: (f: FilterKey) => void; onRefresh: () => void;
-  onChartOpen: (sym: string, at?: string) => void;
+  onChartOpen: (sym: string, at?: string, tvSym?: string) => void;
 }) {
   const ideas = data?.ideas ?? [];
   const isEmpty = !isLoading && ideas.length === 0;
@@ -573,10 +575,12 @@ export function DailyAlphaBoard() {
   const [fresh, setFresh] = useState(false);
   const [chartSymbol, setChartSymbol] = useState<string | null>(null);
   const [chartAssetType, setChartAssetType] = useState<string | undefined>(undefined);
+  const [chartTvSymbol, setChartTvSymbol] = useState<string | undefined>(undefined);
 
-  const handleChartOpen = useCallback((sym: string, at?: string) => {
+  const handleChartOpen = useCallback((sym: string, at?: string, tvSym?: string) => {
     setChartSymbol(sym);
     setChartAssetType(at);
+    setChartTvSymbol(tvSym);
   }, []);
   const handleChartClose = useCallback(() => setChartSymbol(null), []);
 
@@ -698,7 +702,7 @@ export function DailyAlphaBoard() {
       </button>
 
       {/* ── TradingView chart popup ── */}
-      <TradingViewChartModal symbol={chartSymbol} assetType={chartAssetType} onClose={handleChartClose} />
+      <TradingViewChartModal symbol={chartSymbol} assetType={chartAssetType} tvSym={chartTvSymbol} onClose={handleChartClose} />
 
       {/* ── Full board modal ── */}
       <Dialog open={open} onOpenChange={setOpen}>
