@@ -1205,6 +1205,20 @@ export default function HomePage() {
     riskIntel?.result?.upcoming_economic_events  ? riskIntel.result :
     riskIntel ?? null;
 
+  // Top Catalysts This Week — replaces the old Economic Events section
+  const { data: topCatalysts, isLoading: topCatalystsLoading, isError: topCatalystsError } = useQuery<any>({
+    queryKey: ["/api/home/top-catalysts"],
+    queryFn: async () => {
+      const r = await fetch("/api/home/top-catalysts");
+      if (!r.ok) throw new Error(`Top catalysts ${r.status}`);
+      return r.json();
+    },
+    staleTime: 5 * 60_000,
+    retry: 2,
+    retryDelay: 1500,
+    refetchOnWindowFocus: false,
+  });
+
   // Top Equity Signals — from Prophetik investor overview
   const { data: equityOverview } = useQuery<any>({
     queryKey: ["/api/predict/investor/overview"],
@@ -1602,174 +1616,102 @@ export default function HomePage() {
             <DailyAlphaBoard />
           </div>
 
-          {/* Upcoming Economic Events card */}
+          {/* ── Top Catalysts This Week card ── */}
           {(() => {
-            // ── Normalizer: handles multiple possible backend field name variants ──
-            type NormalizedEvent = {
-              title: string;
-              date: string | null;
-              time: string | null;
-              importance: 'high' | 'medium' | 'low';
-              actual: string | number | null;
-              estimate: string | number | null;
-              previous: string | number | null;
-              country: string | null;
-            };
-            const normalizeEv = (ev: any): NormalizedEvent => {
-              const raw = ev ?? {};
-              const title = String(raw.title ?? raw.event ?? raw.name ?? raw.indicator ?? '').trim();
-              const rawDate = raw.date ?? raw.datetime ?? raw.release_date ?? raw.calendar_date ?? null;
-              const date = rawDate ? String(rawDate).slice(0, 10) : null;
-              const rawTime = raw.time ?? raw.release_time ?? null;
-              const time = rawTime ? String(rawTime).slice(0, 5) : null; // HH:MM
-              const rawImp = String(raw.importance ?? raw.impact ?? raw.priority ?? '').toLowerCase();
-              const importance: 'high' | 'medium' | 'low' =
-                rawImp === 'high' || rawImp === '3' ? 'high' :
-                rawImp === 'medium' || rawImp === '2' ? 'medium' : 'low';
-              return {
-                title,
-                date,
-                time,
-                importance,
-                actual:   raw.actual   ?? null,
-                estimate: raw.estimate ?? raw.consensus ?? raw.forecast ?? null,
-                previous: raw.previous ?? raw.prior     ?? null,
-                country:  raw.country  ? String(raw.country).toUpperCase() : null,
-              };
+            const raw: any = topCatalysts;
+            const catalysts: any[] = (
+              Array.isArray(raw)              ? raw :
+              Array.isArray(raw?.catalysts)   ? raw.catalysts :
+              Array.isArray(raw?.items)       ? raw.items :
+              Array.isArray(raw?.data)        ? raw.data : []
+            ).slice(0, 8);
+
+            const typeBadge = (type: string | undefined, category: string | undefined) => {
+              const t = String(type ?? category ?? '').toLowerCase().replace(/_/g, ' ');
+              if (t.includes('earn'))                                  return { label: 'Earnings',  cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+              if (t.includes('ipo'))                                   return { label: 'IPO',       cls: 'text-purple-400  bg-purple-500/10  border-purple-500/30'  };
+              if (t.includes('fed') || t.includes('rate'))             return { label: 'Fed/Rates', cls: 'text-rose-400    bg-rose-500/10    border-rose-500/30'    };
+              if (t.includes('inflat') || t.includes('cpi') || t.includes('ppi')) return { label: 'Inflation', cls: 'text-amber-300 bg-amber-500/10 border-amber-500/25' };
+              if (t.includes('labor') || t.includes('jobs') || t.includes('employ')) return { label: 'Labor', cls: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
+              if (t.includes('treasury') || t.includes('macro'))       return { label: 'Macro',     cls: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' };
+              if (t.includes('split'))                                  return { label: 'Split',     cls: 'text-teal-400   bg-teal-500/10   border-teal-500/30'   };
+              if (t.includes('div'))                                    return { label: 'Dividend',  cls: 'text-green-400  bg-green-500/10  border-green-500/30'  };
+              return { label: String(type ?? category ?? 'Event').replace(/_/g, ' '), cls: 'text-white/45 bg-white/5 border-white/15' };
             };
 
-            // ── Date label helper ──
-            const dateLabel = (dateStr: string | null): string => {
-              if (!dateStr) return '';
+            const dateRange = (c: any): string => {
+              if (c.date_label) return String(c.date_label);
+              const s = c.start_date ?? c.window_start;
+              const e = c.end_date   ?? c.window_end;
+              if (!s) return '';
               try {
-                const d = new Date(dateStr + 'T00:00:00');
-                if (isNaN(d.getTime())) return dateStr;
+                const sd = new Date(String(s) + 'T00:00:00');
+                if (isNaN(sd.getTime())) return String(s);
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-                if (d.getTime() === today.getTime()) return 'Today';
-                if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-              } catch { return dateStr ?? ''; }
+                if (!e || e === s) {
+                  if (sd.getTime() === today.getTime()) return 'Today';
+                  if (sd.getTime() === tomorrow.getTime()) return 'Tomorrow';
+                  return sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                const ed = new Date(String(e) + 'T00:00:00');
+                return `${sd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${ed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+              } catch { return String(s); }
             };
-
-            // ── Build display list ──
-            const rawEvents: any[] = Array.isArray(riskIntelPayload?.upcoming_economic_events)
-              ? riskIntelPayload.upcoming_economic_events : [];
-            const normalized = rawEvents.map(normalizeEv);
-
-            // Today's midnight for "upcoming" gate
-            const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
-            const todayStr = todayMidnight.toISOString().slice(0, 10);
-
-            // Filter: upcoming (date >= today), prefer US + high/medium, then any country high/medium
-            const isUpcoming = (ev: NormalizedEvent) => {
-              if (!ev.date) return false;
-              return ev.date >= todayStr;
-            };
-
-            const upcoming = normalized.filter(isUpcoming);
-
-            // Primary: US upcoming
-            const usUpcoming = upcoming
-              .filter(ev => ev.country === 'US' && (ev.importance === 'high' || ev.importance === 'medium'))
-              .sort((a, b) => {
-                const da = (a.date ?? '') + (a.time ?? '');
-                const db = (b.date ?? '') + (b.time ?? '');
-                return da < db ? -1 : da > db ? 1 : 0;
-              });
-
-            // Secondary: all upcoming high/medium if not enough US
-            const allHighMed = upcoming
-              .filter(ev => ev.importance === 'high' || ev.importance === 'medium')
-              .sort((a, b) => {
-                const da = (a.date ?? '') + (a.time ?? '');
-                const db = (b.date ?? '') + (b.time ?? '');
-                return da < db ? -1 : da > db ? 1 : 0;
-              });
-
-            // Build final list: prefer US, supplement with non-US high/medium, cap at 8
-            const finalList: NormalizedEvent[] = [];
-            const seen = new Set<string>();
-            const addEv = (ev: NormalizedEvent) => {
-              const key = `${ev.date}|${ev.time}|${ev.title}`;
-              if (!seen.has(key) && finalList.length < 8) { seen.add(key); finalList.push(ev); }
-            };
-            usUpcoming.forEach(addEv);
-            if (finalList.length < 5) allHighMed.forEach(addEv);
-
-            // Fallback: if date filtering yields nothing, show first 5 high/medium by importance order
-            const fallbackList: NormalizedEvent[] = finalList.length === 0
-              ? normalized.filter(ev => ev.importance === 'high' || ev.importance === 'medium').slice(0, 5)
-              : [];
-
-            const displayList = finalList.length > 0 ? finalList : fallbackList;
-
-            const impCls = (imp: string) =>
-              imp === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
-              imp === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' :
-                                 'text-white/35 bg-white/5 border-white/10';
-            const rowBorder = (imp: string) =>
-              imp === 'high' ? 'border-rose-500/15 bg-rose-500/[0.03]' : 'border-white/[0.05] bg-white/[0.01]';
 
             return (
               <GlassCard className="p-4 flex flex-col">
                 <div className="mb-3 shrink-0">
-                  <SectionHeader icon={CalendarDays} title="Economic Events" accent="upcoming" viewMore="/app/macro-terminal" />
+                  <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/calendar" />
+                  <p className="text-[10px] text-white/30 mt-0.5 leading-snug">Earnings, IPOs, macro, treasury, splits &amp; dividends — condensed.</p>
                 </div>
                 <div className="overflow-y-auto max-h-[153px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 
                   {/* Loading */}
-                  {riskIntelLoading && Array.from({ length: 5 }).map((_, i) => (
+                  {topCatalystsLoading && Array.from({ length: 5 }).map((_, i) => (
                     <Skeleton key={i} className="h-12 my-1 rounded bg-white/[0.04]" />
                   ))}
 
                   {/* Error */}
-                  {!riskIntelLoading && riskIntelError && (
-                    <div className="text-xs text-white/40 py-6 text-center">Could not load economic events.</div>
+                  {!topCatalystsLoading && topCatalystsError && (
+                    <div className="text-xs text-white/40 py-6 text-center">Could not load catalysts.</div>
                   )}
 
-                  {/* No array */}
-                  {!riskIntelLoading && !riskIntelError && rawEvents.length === 0 && (
-                    <div className="text-xs text-white/40 py-6 text-center">No upcoming events data available.</div>
+                  {/* Empty */}
+                  {!topCatalystsLoading && !topCatalystsError && catalysts.length === 0 && (
+                    <div className="text-xs text-white/40 py-6 text-center">No major catalysts found for this week.</div>
                   )}
 
-                  {/* No events pass filter */}
-                  {!riskIntelLoading && !riskIntelError && rawEvents.length > 0 && displayList.length === 0 && (
-                    <div className="text-xs text-white/40 py-6 text-center">No upcoming high-impact events found.</div>
-                  )}
-
-                  {/* Event rows */}
-                  {displayList.map((ev, i) => (
-                    <div key={i} className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg border transition-colors ${
-                      ev.importance === 'high'
-                        ? 'border-rose-500/15 bg-rose-500/[0.03] hover:bg-rose-500/[0.06]'
-                        : 'border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04]'
-                    }`}>
-                      <span className={`shrink-0 mt-0.5 text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none ${
-                        ev.importance === 'high'   ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
-                        ev.importance === 'medium' ? 'text-amber-300 bg-amber-500/10 border-amber-500/25' :
-                                                     'text-white/35 bg-white/5 border-white/10'
-                      }`}>
-                        {ev.importance === 'high' ? 'HIGH' : ev.importance === 'medium' ? 'MED' : 'LOW'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] text-white/85 font-medium leading-snug">
-                          {ev.title || 'Untitled event'}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          {ev.date && (
-                            <span className="text-[9px] text-white/35">
-                              {dateLabel(ev.date)}{ev.time ? ` · ${ev.time}` : ''}
-                              {ev.country && ev.country !== 'US' ? ` · ${ev.country}` : ''}
-                            </span>
+                  {/* Catalyst cards */}
+                  {catalysts.map((c: any, i: number) => {
+                    const badge = typeBadge(c.type, c.category);
+                    const dl = dateRange(c);
+                    const hiddenCount: number = c.hidden_count ?? 0;
+                    const childCount: number = Array.isArray(c.children) ? c.children.length : (Array.isArray(c.events) ? c.events.length : 0);
+                    const groupedCount = hiddenCount > 0 ? hiddenCount : childCount;
+                    return (
+                      <div key={i} className="flex items-start gap-2.5 px-2.5 py-2 rounded-lg border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] transition-colors">
+                        <span className={`shrink-0 mt-0.5 text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] text-white/85 font-medium leading-snug truncate">
+                            {c.title || 'Untitled'}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {dl && <span className="text-[9px] text-white/35">{dl}</span>}
+                            {c.subtitle && <span className="text-[9px] text-white/40 truncate max-w-[160px]">{c.subtitle}</span>}
+                          </div>
+                          {c.reason && (
+                            <div className="text-[9px] text-white/25 mt-0.5 leading-snug truncate">{c.reason}</div>
                           )}
-                          {ev.actual   != null && <span className="text-[9px] text-emerald-400/70">act. {ev.actual}</span>}
-                          {ev.estimate != null && <span className="text-[9px] text-white/30">est. {ev.estimate}</span>}
-                          {ev.previous != null && <span className="text-[9px] text-white/25">prev. {ev.previous}</span>}
+                          {groupedCount > 0 && (
+                            <div className="text-[9px] text-white/25 mt-0.5">+{groupedCount} releases grouped</div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                 </div>
               </GlassCard>

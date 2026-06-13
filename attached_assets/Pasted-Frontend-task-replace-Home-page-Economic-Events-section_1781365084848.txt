@@ -1,0 +1,129 @@
+Frontend task: replace Home page “Economic Events” section with compact “Top Catalysts This Week”.
+
+Backend is ready.
+
+New backend route:
+GET `/api/home/top-catalysts`
+
+Important scope:
+
+* Only change the Home page section currently labeled “Economic Events”.
+* Do not edit the Calendar page.
+* Do not edit Calendar → Top Catalysts This Week.
+* Do not edit Earnings behavior.
+* Do not fetch Economic Releases or Treasury / Macro directly for this Home section anymore.
+* Do not create frontend-side macro grouping logic unless only needed as a defensive fallback.
+
+Goal:
+The Home page section should become a compact “Top Catalysts This Week” quick-glance view using the new backend route.
+
+Current backend output should include grouped cards such as:
+
+* Fed / Rates
+* Inflation Data
+* Labor Market Data
+* SpaceX
+
+Tasks:
+
+1. Audit current Home Economic Events component.
+   Find:
+
+* component file
+* API hook/query used
+* current title/subtitle text
+* loading/error/empty states
+* card rendering fields
+
+2. Rename the section.
+   Change the section title from:
+   “Economic Events”
+
+To:
+“Top Catalysts This Week”
+
+Suggested subtitle:
+“Earnings, IPOs, macro, treasury, splits, and dividends — condensed for quick scan.”
+
+3. Replace data source.
+   Use:
+   GET `/api/home/top-catalysts`
+
+Do not call:
+
+* economic releases endpoint
+* treasury/macro endpoint
+* calendar tab endpoints
+* `/api/catalysts/top` directly from the Home section
+
+The backend route is now the Home source of truth.
+
+4. Render compact catalyst cards.
+   Support these likely response fields:
+
+* `title`
+* `subtitle`
+* `date_label`
+* `start_date`
+* `end_date`
+* `type`
+* `category`
+* `impact`
+* `urgency`
+* `reason`
+* `children` or `events`
+* `hidden_count`
+* `source`
+* `window_start`
+* `window_end`
+
+Suggested card layout:
+
+* Title: `title`
+* Badge: type/category, e.g. Macro, Earnings, IPO, Treasury
+* Date label: `date_label` or compact start/end date
+* Subtitle: `subtitle`
+* Small reason line if available
+* If grouped: show “+N events grouped” or “N releases grouped”
+
+5. Keep it compact.
+   Home should show max 6–8 cards.
+   If backend returns fewer, show fewer.
+   Do not expand every grouped child event into separate cards.
+   Do not reintroduce CPI YoY/MoM/Core CPI spam.
+
+6. Empty/loading/error states.
+   Loading:
+
+* show skeleton cards
+
+Empty:
+
+* “No major catalysts found for this week.”
+
+Error:
+
+* show a compact fallback message without breaking Home layout
+
+7. Preserve styling.
+   Use existing Home page card styles, spacing, badges, and dark theme patterns.
+   Do not redesign the whole Home page.
+
+8. Validation.
+   Run frontend locally against backend and confirm:
+
+* Home section says “Top Catalysts This Week”
+* Home no longer shows old “Economic Events”
+* Home calls `/api/home/top-catalysts`
+* It does not call economic releases or treasury/macro endpoints for this section
+* Grouped macro cards render as one card each, not many duplicate CPI rows
+* Calendar page remains unchanged
+* Calendar Top Catalysts tab remains unchanged
+* Earnings remains unchanged
+
+Acceptance criteria:
+
+* Home page has a compact high-signal catalysts section.
+* Fed/rates, inflation, labor, earnings, IPOs can appear together in one quick-glance view.
+* Macro duplicates are grouped.
+* No Calendar page regressions.
