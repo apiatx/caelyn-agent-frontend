@@ -1,0 +1,109 @@
+We need to redesign the landing / login page only, using the attached reference images as the visual target.
+
+Goal:
+Create a consistent premium design direction for the app, starting with the public landing/login page. The current app has inconsistent black/white/blue/purple/gray styling across pages. Do NOT redesign the whole app yet. Start with the landing/login entry page and establish reusable design tokens/classes that can later be applied across the rest of the product.
+
+Visual direction:
+- Sleek black, glossy, high-end fintech / AI terminal feel.
+- Reference images: dark black background, soft glass panels, muted silver/white typography, subtle green-gray glow, atmospheric gradients, rounded mega-card layout, thin borders, pill nav, luminous highlights.
+- Avoid bright blue/purple gradients unless they are extremely subtle. The new palette should be mostly black, charcoal, graphite, white, soft silver, muted mint/sage glow.
+- Think: “premium AI trading cockpit,” not “generic SaaS dashboard.”
+- Shiny, cinematic, quiet luxury. Not colorful. Not noisy. Not crypto cartoon.
+
+Design system requirements:
+1. First audit the current frontend structure:
+   - Identify the actual landing page route/component.
+   - Identify the login form/component.
+   - Identify global CSS/Tailwind config/theme files.
+   - Do not invent a new route if an existing landing/login route already exists.
+   - Preserve current auth behavior, form submission, redirects, validation, and API calls.
+
+2. Add or update reusable visual tokens:
+   - Background: near-black base.
+   - Surfaces: layered black/charcoal glass panels.
+   - Borders: soft white/gray transparency.
+   - Text: white primary, silver secondary, muted gray tertiary.
+   - Accent: muted mint/sage glow, not neon.
+   - Buttons: glossy black primary, white pill secondary, subtle hover glow.
+   - Inputs: dark glass, soft border, focus glow.
+   - Cards: large radius, thin border, backdrop blur, inner shadows.
+
+Suggested token values:
+- bg-base: #030404
+- bg-elevated: #080909
+- bg-panel: rgba(255,255,255,0.035)
+- border-soft: rgba(255,255,255,0.10)
+- border-bright: rgba(255,255,255,0.18)
+- text-primary: #f7f7f2
+- text-secondary: rgba(247,247,242,0.72)
+- text-muted: rgba(247,247,242,0.46)
+- accent-mist: #d8e5dc
+- accent-sage: #aebfb4
+- glow-mist: rgba(216,229,220,0.28)
+
+Landing/login page layout:
+- Full viewport black cinematic background.
+- Add large rounded hero shell/card similar to reference:
+  - max-width container
+  - very rounded corners
+  - black/glass surface
+  - thin border
+  - subtle inner highlight
+  - soft misty glow from top-right and bottom-left
+- Top nav/header inside or above the shell:
+  - Logo on left
+  - Center pill nav if current landing has nav links
+  - Login/create account area on right
+  - Keep existing navigation paths intact
+- Hero content:
+  - Big headline centered or slightly left-centered.
+  - Suggested copy if needed:
+    “AI market intelligence, without the noise.”
+    Subcopy:
+    “Track catalysts, unusual flow, watchlists, social signals, and risk in one sleek command center.”
+  - Primary CTA should preserve existing login/get-started route behavior.
+  - Secondary CTA can scroll or link to features if that exists.
+- Add abstract dashboard-style visual elements, not screenshots unless existing assets already exist:
+  - Floating signal tags
+  - Thin curved lines
+  - Small market metric chips
+  - Soft vertical data streaks
+  - Minimal ticker/signal cards
+  - Do this with CSS/HTML/SVG, no external assets required.
+- Login form:
+  - If login is on the same page, restyle it as a dark glass card.
+  - Keep all existing fields, state, handlers, errors, loading states, and auth calls.
+  - Make input/button styling match the new system.
+  - Error/success states should be readable and not bright default red/blue unless already required.
+
+Implementation constraints:
+- Do not touch backend.
+- Do not change auth logic.
+- Do not rename existing routes unless absolutely necessary.
+- Do not delete existing functionality.
+- Do not introduce a heavy animation library.
+- Use CSS/Tailwind/framer-motion only if already present. If framer-motion is not already installed, do not add it just for this.
+- Prefer CSS gradients, pseudo-elements, blur, radial-gradients, and simple transforms.
+- Keep performance sane: no giant canvas animation, no dependency bloat.
+- Mobile responsive:
+  - Hero shell stacks nicely.
+  - Nav collapses or simplifies.
+  - Login form remains usable.
+  - No horizontal overflow.
+
+Acceptance checks:
+- Landing/login page visually matches the attached reference direction: black, glossy, premium, misty glow, rounded glass panels.
+- Login still works exactly as before.
+- Existing auth redirects still work.
+- No backend changes.
+- No broken routes.
+- No TypeScript/build errors.
+- No console errors.
+- The new styling should be reusable later across the rest of the app.
+
+After implementation, report:
+1. Files changed.
+2. Which existing route/component was updated.
+3. Whether auth behavior was preserved.
+4. Any reusable design tokens/classes added.
+5. Screenshot-ready summary of what changed.
