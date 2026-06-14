@@ -327,14 +327,23 @@ export default function LoginPage() {
 
         {/* Bottom — avatar + tagline */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-            <img src={caelynFairy} alt="CaelynAI"
-              style={{
-                width: 200, height: 200,
-                borderRadius: '50%', objectFit: 'cover',
-                border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: '0 0 50px rgba(255,255,250,0.07), 0 0 100px rgba(0,0,0,0.6)',
-              }} />
+          <div style={{ position: 'relative', marginBottom: '1rem' }}>
+            <svg width="100%" height="220" viewBox="0 0 400 220" preserveAspectRatio="none"
+              style={{ position: 'absolute', inset: 0, opacity: 0.18, pointerEvents: 'none' }}>
+              <path d="M0,160 Q80,110 160,135 T320,120 T400,130" fill="none" stroke="#d8d8d2" strokeWidth="1.2" />
+              <path d="M0,185 Q100,155 200,168 T400,158"          fill="none" stroke="#d8d8d2" strokeWidth="0.7" />
+              <path d="M0,130 Q60,85  180,105 T360,90  T400,98"  fill="none" stroke="#d8d8d2" strokeWidth="0.5" />
+              <path d="M0,205 Q120,180 240,192 T400,182"          fill="none" stroke="#d8d8d2" strokeWidth="0.4" />
+            </svg>
+            <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+              <img src={caelynFairy} alt="CaelynAI"
+                style={{
+                  width: 200, height: 200,
+                  borderRadius: '50%', objectFit: 'cover',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  boxShadow: '0 0 50px rgba(255,255,250,0.07), 0 0 100px rgba(0,0,0,0.6)',
+                }} />
+            </div>
           </div>
           <div style={{
             width: 34, height: 1,
