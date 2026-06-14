@@ -1,0 +1,119 @@
+Frontend task: finish Top Catalysts fixes.
+
+Backend is ready.
+
+Home endpoint:
+GET `/api/home/top-catalysts`
+
+Current backend behavior:
+
+* Monday–Friday: returns current week catalysts
+* Saturday/Sunday: returns next-week planning catalysts
+* Response includes:
+
+  * `window_start`
+  * `window_end`
+  * `window_mode`
+  * `generated_at`
+  * catalyst cards such as Fed/Rates, Inflation Data, Labor Market Data, IPOs, Earnings, etc.
+
+Scope:
+
+* Home page “Top Catalysts This Week” section
+* Calendar page → “Top Catalysts This Week” tab styling only
+* Do not edit Calendar Economic Releases cards.
+* Do not edit Calendar Treasury / Macro cards.
+* Do not edit Calendar date-window logic.
+* Do not edit Earnings behavior.
+* Do not change backend routes.
+
+Fix #1 — Home section week label:
+Update Home “Top Catalysts This Week” to use backend metadata.
+
+Use:
+
+* `window_start`
+* `window_end`
+* `window_mode`
+
+Display label:
+
+* if `window_mode === "next_week_planning"`: show “Coming week: Jun 15–19”
+* if `window_mode === "current_week"`: show “This week: Jun 15–19”
+
+Do not compute this from old event dates.
+Do not assume Saturday should still mean current week.
+
+Fix #2 — View More deep link:
+When the user clicks “View More” in the Home “Top Catalysts This Week” section, route them to the Calendar page with the “Top Catalysts This Week” tab selected.
+
+Implementation:
+
+1. Audit Calendar tab state.
+2. Determine the correct tab id for Top Catalysts.
+3. Add a deep link, likely one of:
+
+   * `/calendar?tab=top-catalysts`
+   * `/calendar?tab=top_catalysts`
+   * `/calendar#top-catalysts`
+     Use whatever matches existing routing conventions.
+4. Make Calendar read that param/hash on load and activate the Top Catalysts tab.
+5. Do not change the default Calendar behavior when no tab param is present.
+
+Acceptance:
+
+* Clicking View More from Home lands on Calendar.
+* The selected tab is Top Catalysts This Week.
+* It does not land on Earnings, Economic Releases, or another default tab.
+
+Fix #3 — Shared type badge styling:
+Apply the same badge/color styling from Home Top Catalysts cards to Calendar → Top Catalysts This Week tab.
+
+Color mapping:
+
+* Earnings: green
+* IPO: purple
+* Fed/Rates: rose
+* Inflation: amber
+* Labor: sky
+* Macro: indigo
+* Split: teal
+* Dividend: green
+
+Implementation:
+
+1. Find the Home catalyst badge styling/component/helper.
+2. Reuse or extract it if practical:
+
+   * `CatalystTypeBadge`
+   * `getCatalystBadgeMeta`
+   * or similar
+3. Apply it only to:
+
+   * Home Top Catalysts cards
+   * Calendar Top Catalysts This Week cards/list items
+4. Do not restyle Economic Releases, Treasury / Macro, Earnings, Dividends, Splits, or IPO calendar tabs unless they already share this badge component safely.
+5. Keep Calendar Top Catalysts layout otherwise unchanged.
+
+Validation:
+Run frontend locally against the fixed backend.
+
+Confirm:
+
+* Home section title says “Top Catalysts This Week”.
+* On Saturday/Sunday, Home shows “Coming week: [next Mon–Fri]”.
+* Home calls `/api/home/top-catalysts`.
+* Home does not call economic releases or treasury/macro endpoints for this section.
+* View More opens Calendar with Top Catalysts selected.
+* Calendar Top Catalysts uses the same colored type badges as Home.
+* Calendar Economic Releases remains unchanged.
+* Calendar Treasury / Macro remains unchanged.
+* Earnings remains unchanged.
+* IPOs, Dividends, Stock Splits remain unchanged.
+
+Acceptance criteria:
+
+* Saturday planning view works on Home.
+* View More deep-link works.
+* Badge styling matches Home on Calendar Top Catalysts.
+* No other Calendar regressions.

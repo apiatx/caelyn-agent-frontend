@@ -1662,8 +1662,33 @@ export default function HomePage() {
             return (
               <GlassCard className="p-4 flex flex-col">
                 <div className="mb-3 shrink-0">
-                  <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/calendar" />
-                  <p className="text-[10px] text-white/30 mt-0.5 leading-snug">Earnings, IPOs, macro, treasury, splits &amp; dividends — condensed.</p>
+                  <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
+                  {(() => {
+                    const ws = raw?.window_start;
+                    const we = raw?.window_end;
+                    const wm = raw?.window_mode;
+                    if (!ws) return <p className="text-[10px] text-white/30 mt-0.5 leading-snug">Earnings, IPOs, macro, treasury, splits &amp; dividends — condensed.</p>;
+                    try {
+                      const sd = new Date(String(ws) + 'T00:00:00');
+                      if (isNaN(sd.getTime())) return null;
+                      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                      const prefix = wm === 'next_week_planning' ? 'Coming week' : 'This week';
+                      let range: string;
+                      if (we) {
+                        const ed = new Date(String(we) + 'T00:00:00');
+                        if (!isNaN(ed.getTime())) {
+                          range = sd.getMonth() === ed.getMonth()
+                            ? `${MONTHS[sd.getMonth()]} ${sd.getDate()}–${ed.getDate()}`
+                            : `${MONTHS[sd.getMonth()]} ${sd.getDate()} – ${MONTHS[ed.getMonth()]} ${ed.getDate()}`;
+                        } else {
+                          range = `${MONTHS[sd.getMonth()]} ${sd.getDate()}`;
+                        }
+                      } else {
+                        range = `${MONTHS[sd.getMonth()]} ${sd.getDate()}`;
+                      }
+                      return <p className="text-[10px] text-white/30 mt-0.5 leading-snug">{prefix}: {range}</p>;
+                    } catch { return null; }
+                  })()}
                 </div>
                 <div className="overflow-y-auto max-h-[153px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 

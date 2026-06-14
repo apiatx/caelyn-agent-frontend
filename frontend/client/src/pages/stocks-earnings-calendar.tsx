@@ -6406,6 +6406,26 @@ function tcEventTime(ev: TopCatalystEntry): string | null {
   return t;
 }
 
+function CatalystTypeBadge({ type, category }: { type?: string; category?: string }) {
+  const t = String(type ?? category ?? "").toLowerCase().replace(/_/g, " ");
+  let label: string;
+  let cls: string;
+  if (t.includes("earn"))                                                   { label = "Earnings";  cls = "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"; }
+  else if (t.includes("ipo"))                                               { label = "IPO";       cls = "text-purple-400 bg-purple-500/10 border-purple-500/30"; }
+  else if (t.includes("fed") || t.includes("rate"))                         { label = "Fed/Rates"; cls = "text-rose-400 bg-rose-500/10 border-rose-500/30"; }
+  else if (t.includes("inflat") || t.includes("cpi") || t.includes("ppi")) { label = "Inflation"; cls = "text-amber-300 bg-amber-500/10 border-amber-500/25"; }
+  else if (t.includes("labor") || t.includes("jobs") || t.includes("employ")) { label = "Labor"; cls = "text-sky-400 bg-sky-500/10 border-sky-500/30"; }
+  else if (t.includes("treasury") || t.includes("macro"))                  { label = "Macro";     cls = "text-indigo-400 bg-indigo-500/10 border-indigo-500/30"; }
+  else if (t.includes("split"))                                             { label = "Split";     cls = "text-teal-400 bg-teal-500/10 border-teal-500/30"; }
+  else if (t.includes("div"))                                               { label = "Dividend";  cls = "text-green-400 bg-green-500/10 border-green-500/30"; }
+  else { label = String(type ?? category ?? "Event").replace(/_/g, " "); cls = "text-white/45 bg-white/5 border-white/15"; }
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 // Compact event row used inside calendar day columns and in event-type sections.
 function TopCatalystEventRow({
   ev,
@@ -6486,7 +6506,7 @@ function TopCatalystEventRow({
           </p>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <EventTypeBadge type={eventType} />
+          <CatalystTypeBadge type={eventType} />
           {time && <span className="text-[8px] px-1 py-0.5 rounded bg-white/[0.04] text-white/35">{time}</span>}
           {variant === "earnings" && score != null && (
             <span className="text-[8px] font-semibold text-amber-300/80">{score.toFixed(1)}</span>
@@ -6892,7 +6912,12 @@ export default function StocksEarningsCalendarPage() {
   const queryClient = useQueryClient();
 
   // ── Tab + mode state ─────────────────────────────────────────────
-  const [activeTab,    setActiveTab]    = useState<string>("earnings_dates");
+  const [activeTab,    setActiveTab]    = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const valid = CATALYST_TABS.map((t) => t.key);
+    return tab && valid.includes(tab) ? tab : "earnings_dates";
+  });
   const [earningsMode, setEarningsMode] = useState<"upcoming" | "thisweek" | "recent" | "month">("thisweek");
   const [earningsSignalMode, setEarningsSignalMode] = useState<"curated" | "all">("curated");
   const [earningsJumpDate, setEarningsJumpDate] = useState<string | null>(null);
