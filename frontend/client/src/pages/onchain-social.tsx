@@ -93,8 +93,8 @@ function renderBriefingCard(data: BriefingResponse) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, rgba(15,23,42,0.95), rgba(10,15,30,0.98))',
-      border: '1px solid rgba(92,200,240,0.15)',
+      background: 'rgba(8,8,8,0.82)',
+      border: '1px solid rgba(255,255,255,0.10)',
       borderRadius: 10,
       padding: '1rem 1.2rem',
       fontFamily: "'JetBrains Mono', monospace",
@@ -206,7 +206,7 @@ function renderConsensusResponse(structured: any, fallbackText?: string) {
   const C = {
     blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
     purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
+    card: 'rgba(8,8,8,0.82)', border: 'rgba(255,255,255,0.10)',
   };
 
   const tickers: any[] = structured.consensus_tickers || [];
@@ -411,7 +411,7 @@ function ConsensusBriefingCard({ data }: { data: any }) {
   const C = {
     blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
     purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
+    card: 'rgba(8,8,8,0.82)', border: 'rgba(255,255,255,0.10)',
   };
   const mp = data.market_pulse || {};
   const hypeRadar: any[] = data.hype_radar || [];
@@ -647,7 +647,7 @@ function XSnapshotSections({ tx, onTickerClick }: {
   const C = {
     blue: '#5cc8f0', gold: '#5cc8f0', green: '#5cc8f0', red: 'rgba(255,255,255,0.35)',
     purple: '#5cc8f0', dim: '#475569', text: '#94a3b8', bright: '#e2e8f0',
-    card: 'rgba(10,12,18,0.85)', border: 'rgba(255,255,255,0.06)',
+    card: 'rgba(8,8,8,0.82)', border: 'rgba(255,255,255,0.10)',
   };
 
   const mp          = tx.market_pulse      || {};
@@ -1730,15 +1730,15 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   // ── Styles ───────────────────────────────────────────────────────
   const C = {
-    bg: 'rgba(10,12,18,0.85)',
-    border: 'rgba(255,255,255,0.06)',
-    headerBg: 'rgba(10,12,18,0.95)',
-    rowHover: 'rgba(255,255,255,0.03)',
+    bg: 'rgba(8,8,8,0.82)',
+    border: 'rgba(255,255,255,0.10)',
+    headerBg: 'rgba(6,6,6,0.95)',
+    rowHover: 'rgba(255,255,255,0.04)',
     text: '#e2e8f0',
     dim: '#64748b',
     subtle: '#94a3b8',
-    accent: '#5cc8f0',
-    purple: '#5cc8f0',
+    accent: '#d8d8d2',
+    purple: '#d8d8d2',
   };
 
   const cardStyle: CSSProperties = {
@@ -2246,16 +2246,16 @@ export default function OnchainSocialPage() {
   })();
 
   return (
-    <div className="min-h-screen text-white relative" style={{ background: '#050608', fontFamily: "'Outfit', sans-serif", lineHeight: 1.65 }}>
+    <div className="min-h-screen text-white relative" style={{ background: '#020202', fontFamily: "'Outfit', sans-serif", lineHeight: 1.65 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        .social-page .ice { color: #5cc8f0; }
+        .social-page .ice { color: #d8d8d2; }
         .social-page .gradient-text {
-          background: linear-gradient(135deg, #e0f0ff 0%, #5cc8f0 40%, #2090d0 100%);
+          background: linear-gradient(128deg, #f5f5f0 0%, #d8d8d2 55%, #a9aaa6 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
-        .social-page .profile-cell:hover { background: rgba(255,255,255,0.03) !important; }
+        .social-page .profile-cell:hover { background: rgba(255,255,255,0.05) !important; }
         .social-page .section-card:hover { background: rgba(255,255,255,0.03) !important; }
       `}</style>
 
@@ -2264,7 +2264,7 @@ export default function OnchainSocialPage() {
 
         <div style={{
           position: 'fixed', top: '-40%', left: '-20%', width: '140%', height: '140%',
-          background: 'radial-gradient(ellipse 800px 600px at 20% 15%, rgba(40,160,220,0.04) 0%, transparent 70%), radial-gradient(ellipse 600px 500px at 80% 70%, rgba(60,180,240,0.03) 0%, transparent 70%), radial-gradient(ellipse 900px 400px at 50% 50%, rgba(50,170,230,0.02) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse 800px 600px at 20% 15%, rgba(255,255,255,0.012) 0%, transparent 70%), radial-gradient(ellipse 600px 500px at 80% 70%, rgba(255,255,255,0.008) 0%, transparent 70%), radial-gradient(ellipse 900px 400px at 50% 50%, rgba(255,255,255,0.005) 0%, transparent 60%)',
           pointerEvents: 'none', zIndex: 0
         }} />
 
