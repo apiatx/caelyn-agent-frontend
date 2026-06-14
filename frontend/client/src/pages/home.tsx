@@ -213,8 +213,8 @@ function SectionHeader({
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         <div className="w-6 h-6 rounded-md flex items-center justify-center"
-             style={{ background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.18)" }}>
-          <Icon className="w-3.5 h-3.5" style={{ color: "#0ea5e9" }} />
+             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}>
+          <Icon className="w-3.5 h-3.5" style={{ color: "#a9aaa6" }} />
         </div>
         <h2 className="text-sm font-semibold text-white/90 tracking-wide uppercase">
           {title}
@@ -1364,7 +1364,7 @@ export default function HomePage() {
   const localClockStr = `${localDayStr} ${localTimeStr}${localTzAbbr ? ` ${localTzAbbr}` : ""}`;
 
   return (
-    <div className="home-wl-theme relative min-h-screen text-white" style={{ background: "#080c13" }}>
+    <div className="home-page relative min-h-screen text-white" style={{ background: "#020202" }}>
       <div className="relative z-10 max-w-[1540px] mx-auto px-5 lg:px-8 pt-10 pb-6">
         {/* ── Header row: Greeting · Market Snapshot strip · Should I Trade ── */}
         <div className="flex items-center gap-4 mb-6 min-h-[64px]">
