@@ -91,7 +91,7 @@
   "fearGreedCache": {
     "data": {
       "index_value": 20,
-      "timestamp": "2026-06-14T19:08:10.030Z",
+      "timestamp": "2026-06-14T19:23:10.036Z",
       "classification": "Fear",
       "historical": {
         "yesterday": 18,
@@ -110,7 +110,7 @@
         "low_classification": "Extreme Fear"
       }
     },
-    "lastFetch": 1781464433631
+    "lastFetch": 1781465325669
   },
-  "lastSaved": "2026-06-14T19:13:53.631Z"
+  "lastSaved": "2026-06-14T19:28:45.669Z"
 }

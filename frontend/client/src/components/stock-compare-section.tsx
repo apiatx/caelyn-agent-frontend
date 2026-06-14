@@ -321,7 +321,7 @@ function ScreenerTable({
   // Data columns (skip symbol & name which are pinned)
   const dataCols = SCREENER_COLUMNS.slice(2);
 
-  const HEADER_BG = "#111827"; // matches dark card bg on Fundamentals page
+  const HEADER_BG = "#080808";
 
   return (
     <div className="mt-6 overflow-x-auto rounded-lg border border-white/10">
@@ -515,8 +515,8 @@ function NewsCompareView({
 function CompareTooltip({ active, payload, label, unit, seriesMap }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-xl text-xs min-w-[180px]">
-      <div className="text-gray-500 mb-2 font-medium border-b border-gray-100 pb-1.5">
+    <div className="rounded-lg p-3 shadow-xl text-xs min-w-[180px]" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.12)' }}>
+      <div className="mb-2 font-medium pb-1.5" style={{ color: 'rgba(255,255,255,0.45)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         {String(label)}
       </div>
       {payload.map((p: any) => {
@@ -525,12 +525,12 @@ function CompareTooltip({ active, payload, label, unit, seriesMap }: any) {
           <div key={p.dataKey} className="flex items-start gap-2 py-0.5">
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0 mt-0.5" style={{ backgroundColor: p.color }} />
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-800">{p.dataKey}</div>
+              <div className="font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>{p.dataKey}</div>
               {name && name !== p.dataKey && (
-                <div className="text-gray-400 truncate">{name}</div>
+                <div className="truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{name}</div>
               )}
             </div>
-            <span className="font-semibold text-gray-900 ml-2 tabular-nums">
+            <span className="font-semibold ml-2 tabular-nums" style={{ color: '#f5f5f0' }}>
               {p.value != null ? formatValue(p.value, unit) : "N/A"}
             </span>
           </div>
@@ -870,18 +870,18 @@ export function StockCompareSection() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.10)' }}>
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-        <h2 className="text-2xl font-bold text-gray-900 leading-tight">Stock Compare</h2>
-        <div className="mt-1 h-0.5 w-16 bg-blue-500 rounded-full" />
+      <div className="px-5 pt-5 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <h2 className="text-2xl font-bold leading-tight" style={{ color: '#f5f5f0' }}>Stock Compare</h2>
+        <div className="mt-1 h-0.5 w-16 rounded-full" style={{ background: 'rgba(255,255,255,0.18)' }} />
       </div>
 
       <div className="p-5">
         {/* Controls row */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {/* Ticker chips + input */}
-          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 rounded-lg px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}>
             {symbols.map((s) => (
               <TickerChip
                 key={s.symbol}
@@ -897,27 +897,29 @@ export function StockCompareSection() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => { if (searchResults.length) setSearchOpen(true); }}
                 placeholder={symbols.length === 0 ? "Search ticker or company..." : "Add ticker..."}
-                className="bg-transparent text-xs text-gray-700 placeholder-gray-400 outline-none w-full"
+                className="bg-transparent text-xs outline-none w-full"
+                style={{ color: 'rgba(255,255,255,0.85)' }}
               />
-              <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 ml-1" />
+              <Search className="w-3.5 h-3.5 flex-shrink-0 ml-1" style={{ color: 'rgba(255,255,255,0.35)' }} />
 
               {/* Autocomplete dropdown */}
               {searchOpen && searchResults.length > 0 && (
                 <div
-                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-50 min-w-[260px]"
+                  className="absolute top-full left-0 mt-1 rounded-lg shadow-xl py-1 z-50 min-w-[260px]"
+                  style={{ background: '#0f0f0f', border: '1px solid rgba(255,255,255,0.12)' }}
                   onMouseDown={(e) => e.preventDefault()}
                 >
                   {searchLoading && (
-                    <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>
+                    <div className="px-3 py-2 text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>Searching…</div>
                   )}
                   {searchResults.map((r) => (
                     <button
                       key={r.symbol}
                       onClick={() => addSymbol(r)}
-                      className="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors"
+                      className="w-full text-left px-3 py-2 transition-colors hover:bg-white/5"
                     >
-                      <div className="text-xs font-bold text-gray-800">{r.symbol} — {r.name}</div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.85)' }}>{r.symbol} — {r.name}</div>
+                      <div className="text-xs" style={{ color: 'rgba(255,255,255,0.40)' }}>
                         {[r.exchange, r.sector || r.industry].filter(Boolean).join(" · ")}
                       </div>
                     </button>
@@ -931,10 +933,11 @@ export function StockCompareSection() {
           <div className="relative">
             <button
               onClick={() => { setMetricOpen((o) => !o); setOptionsOpen(false); setMetricSearch(""); }}
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-2 transition-colors whitespace-nowrap hover:bg-white/5"
+              style={{ color: 'rgba(255,255,255,0.80)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
               {metric.label}
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.35)' }} />
             </button>
             <DropdownMenu open={metricOpen} onClose={() => setMetricOpen(false)} width={240}>
               <div className="px-2 py-1.5 border-b border-white/10">
@@ -978,10 +981,11 @@ export function StockCompareSection() {
           <div className="relative">
             <button
               onClick={() => { setOptionsOpen((o) => !o); setMetricOpen(false); }}
-              className="flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium rounded-lg px-3 py-2 transition-colors hover:bg-white/5"
+              style={{ color: 'rgba(255,255,255,0.80)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}
             >
               Options
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.35)' }} />
             </button>
             <DropdownMenu open={optionsOpen} onClose={() => setOptionsOpen(false)} width={200}>
               <button
@@ -1018,7 +1022,7 @@ export function StockCompareSection() {
 
         {/* Period badge */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-medium uppercase tracking-wide">
+          <span className="text-xs px-2 py-0.5 rounded font-medium uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)' }}>
             {period}
           </span>
         </div>
@@ -1029,11 +1033,10 @@ export function StockCompareSection() {
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                range === r
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
+              className="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+              style={range === r
+                ? { background: 'rgba(255,255,255,0.12)', color: '#f5f5f0', border: '1px solid rgba(255,255,255,0.20)' }
+                : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.50)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               {r}
             </button>
@@ -1051,7 +1054,7 @@ export function StockCompareSection() {
 
         {/* Empty state */}
         {symbols.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-16" style={{ color: 'rgba(255,255,255,0.35)' }}>
             <Search className="w-10 h-10 mb-3 opacity-30" />
             <div className="text-sm">Add up to 15 tickers to compare fundamentals.</div>
           </div>
@@ -1060,8 +1063,8 @@ export function StockCompareSection() {
         {/* Loading state */}
         {symbols.length > 0 && loading && (
           <div className="h-64 flex items-center justify-center">
-            <div className="text-sm text-gray-400 flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-sm flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.40)' }}>
+              <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.40)', borderTopColor: 'transparent' }} />
               Loading comparison data…
             </div>
           </div>
@@ -1069,7 +1072,7 @@ export function StockCompareSection() {
 
         {/* Error state */}
         {symbols.length > 0 && !loading && error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 mb-4">
+          <div className="rounded-lg px-4 py-3 text-sm mb-4" style={{ border: '1px solid rgba(239,68,68,0.30)', background: 'rgba(239,68,68,0.08)', color: 'rgba(252,165,165,0.90)' }}>
             {error}
           </div>
         )}
@@ -1088,21 +1091,21 @@ export function StockCompareSection() {
                       const color = colorMap[s.symbol] || CHIP_COLORS[i % CHIP_COLORS.length];
                       const hasData = validSymbols.includes(s.symbol);
                       return (
-                        <div key={s.symbol} className={`flex items-center gap-1.5 text-xs ${hasData ? "text-gray-600" : "text-gray-400"}`}>
-                          <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: hasData ? color : "#d1d5db" }} />
-                          <span className={`font-semibold ${hasData ? "text-gray-800" : "text-gray-400"}`}>{s.symbol}</span>
-                          {s.name && <span className="text-gray-400 hidden sm:inline">{s.name}</span>}
-                          {!hasData && <span className="text-gray-400 italic">(no data)</span>}
+                        <div key={s.symbol} className="flex items-center gap-1.5 text-xs" style={{ color: hasData ? 'rgba(255,255,255,0.60)' : 'rgba(255,255,255,0.30)' }}>
+                          <span className="w-3 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: hasData ? color : 'rgba(255,255,255,0.15)' }} />
+                          <span className="font-semibold" style={{ color: hasData ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.30)' }}>{s.symbol}</span>
+                          {s.name && <span className="hidden sm:inline" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.name}</span>}
+                          {!hasData && <span className="italic" style={{ color: 'rgba(255,255,255,0.30)' }}>(no data)</span>}
                         </div>
                       );
                     })}
                   </div>
-                  <div className="ml-auto text-xs font-semibold text-gray-500">{metric.label}</div>
+                  <div className="ml-auto text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.40)' }}>{metric.label}</div>
                 </div>
 
                 {/* All-empty state */}
                 {allSeriesEmpty ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <div className="flex flex-col items-center justify-center py-16" style={{ color: 'rgba(255,255,255,0.35)' }}>
                     <div className="text-sm">No chartable data returned for these tickers. Try removing unsupported tickers or switching to 5Y.</div>
                   </div>
                 ) : (
@@ -1113,17 +1116,17 @@ export function StockCompareSection() {
                         data={chartData}
                         margin={{ top: 24, right: 48, left: 24, bottom: 16 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                         <XAxis
                           dataKey="year"
                           type="category"
                           allowDuplicatedCategory={false}
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
-                          axisLine={{ stroke: "#e5e7eb" }}
+                          tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
+                          axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
                           tickLine={false}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: "#9ca3af" }}
+                          tick={{ fontSize: 11, fill: "rgba(255,255,255,0.35)" }}
                           tickFormatter={(v: number) => formatValue(v, metric.unit)}
                           width={68}
                           axisLine={false}
