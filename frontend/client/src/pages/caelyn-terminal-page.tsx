@@ -11,8 +11,8 @@ import {
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C = {
-  bg: '#080c13', surface: '#0d1420', card: '#111927', border: '#1a2540',
-  text: '#dde6f0', dim: '#5e7a99', dimLow: '#2a3c55',
+  bg: '#020202', surface: '#060606', card: '#0a0a0a', border: '#1c1c1c',
+  text: '#f5f5f0', dim: '#a9aaa6', dimLow: '#111111',
   green: '#1fd073', red: '#f04d4d', amber: '#e8a020', teal: '#0ea5e9', purple: '#a78bfa',
   font: '"SF Mono","Fira Code","Consolas",monospace',
 };
@@ -203,7 +203,7 @@ function timeAgo(dateStr: string): string {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function CardHdr({ label, badge }: { label: string; badge?: string }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808' }}>
       <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>{label}</span>
       {badge && <span style={{ fontSize:9, fontWeight:700, letterSpacing:1, color:C.teal, textTransform:'uppercase', background:`${C.teal}18`, border:`1px solid ${C.teal}44`, borderRadius:3, padding:'1px 6px' }}>{badge}</span>}
     </div>
@@ -568,11 +568,11 @@ export default function CaelynTerminalPage() {
       )}
 
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 14px', height:46, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
+      <div style={{ background:'#030303', borderBottom:`1px solid ${C.border}`, padding:'0 14px', height:46, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
           <div style={{ fontSize:14, fontWeight:900, letterSpacing:2, color:C.text }}>PORTFOLIO</div>
           {/* ── View Toggle ── */}
-          <div style={{ display:'flex', background:'#0d1623', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:4 }}>
+          <div style={{ display:'flex', background:'#080808', borderRadius:5, padding:2, border:`1px solid ${C.border}`, marginLeft:4 }}>
             {(['TERMINAL','DASHBOARD','FUNDAMENTALS'] as const).map(v => {
               const isActive = view === v.toLowerCase();
               return (
@@ -672,7 +672,7 @@ export default function CaelynTerminalPage() {
         });
         const tapeReady = !ph && marketTapeData && marketTapeData.length > 0;
         return (
-          <div style={{ background:'#07101a', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
+          <div style={{ background:'#040404', borderBottom:`1px solid ${C.border}`, padding:'4px 0', display:'flex', alignItems:'center', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
             <div style={{ fontSize:9, fontWeight:800, color:C.red, background:`${C.red}22`, padding:'0 10px', height:'100%', display:'flex', alignItems:'center', letterSpacing:1.5, borderRight:`1px solid ${C.border}`, flexShrink:0, minHeight:22 }}>MARKETS</div>
             <div style={{ display:'flex', gap:20, padding:'0 14px', overflowX:'auto', scrollbarWidth:'none' }}>
               {tapeItems.map((t, i) => {
@@ -726,7 +726,7 @@ export default function CaelynTerminalPage() {
                       <col style={{ width:'22%' }} /><col style={{ width:'22%' }} /><col style={{ width:'19%' }} /><col style={{ width:'19%' }} /><col style={{ width:'18%' }} />
                     </colgroup>
                     <thead>
-                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#080808' }}>
                         {(['TICKER','PRICE','CHG%','VOLX','VOL_MC'] as const).map(h => (
                           <th key={h} style={thStyle(h)} onClick={mkHoldSort(h)}>{h === 'VOL_MC' ? 'VOL/MC' : h} <span style={{ fontSize:6, opacity:0.7 }}>{arrow(h)}</span></th>
                         ))}
@@ -808,7 +808,7 @@ export default function CaelynTerminalPage() {
                       <col style={{ width:'22%' }} /><col style={{ width:'20%' }} /><col style={{ width:'18%' }} /><col style={{ width:'22%' }} /><col style={{ width:'18%' }} />
                     </colgroup>
                     <thead>
-                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                      <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#080808' }}>
                         {(['TICKER','WTD','LAST','DATE','EST'] as const).map(h => (
                           <th key={h} style={thE(h)} onClick={mkEarnSort(h)}>{h} <span style={{ fontSize:6, opacity:0.7 }}>{arrE(h)}</span></th>
                         ))}
@@ -833,7 +833,7 @@ export default function CaelynTerminalPage() {
 
           {/* ── Investment Goals — anchored to bottom of LeftCol ── */}
           <div style={{ flex:'0 0 auto', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, maxHeight:175 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808', flexShrink:0 }}>
               <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Investment Goals</span>
               <button onClick={() => {
                 if (!editingGoals) {
@@ -863,7 +863,7 @@ export default function CaelynTerminalPage() {
                     </div>
                     {editingGoals ? (
                       <input type="number" value={editGoalVals.target_value} onChange={e => setEditGoalVals(v => ({ ...v, target_value: e.target.value }))}
-                        style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                        style={{ width:'100%', background:'#060606', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                         <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
@@ -887,7 +887,7 @@ export default function CaelynTerminalPage() {
                     </div>
                     {editingGoals ? (
                       <input type="number" value={editGoalVals.target_return} onChange={e => setEditGoalVals(v => ({ ...v, target_return: e.target.value }))}
-                        style={{ width:'100%', background:'#0a1020', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
+                        style={{ width:'100%', background:'#060606', border:`1px solid ${C.teal}55`, borderRadius:3, padding:'2px 6px', color:C.text, fontSize:9, fontFamily:C.font, outline:'none', boxSizing:'border-box' }} />
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                         <div style={{ flex:1, height:4, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
@@ -929,7 +929,7 @@ export default function CaelynTerminalPage() {
 
           {/* Performance Chart */}
           <div style={{ background:C.card, borderBottom:`1px solid ${C.border}`, flex:'0 0 auto' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Portfolio vs S&amp;P 500</span>
                 <div style={{ display:'flex', gap:12, marginLeft:6 }}>
@@ -1009,9 +1009,9 @@ export default function CaelynTerminalPage() {
 
           {/* Asset Allocation — three-tab: Asset Class | Sectors | Themes */}
           <div style={{ background:C.card, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808' }}>
               <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Asset Allocation</span>
-              <div style={{ display:'flex', gap:1, background:'#080c13', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
+              <div style={{ display:'flex', gap:1, background:'#020202', borderRadius:4, padding:2, border:`1px solid ${C.border}` }}>
                 {(['asset','sectors','themes','assets'] as const).map(tab => (
                   <button key={tab} onClick={() => setAllocTab(tab)} style={{
                     fontSize:8, fontWeight:700, padding:'2px 8px', borderRadius:3, border:'none', cursor:'pointer', letterSpacing:0.5,
@@ -1281,7 +1281,7 @@ export default function CaelynTerminalPage() {
 
         {/* ── PANEL 2: Top Performing Assets ── */}
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0 }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808', flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Top Performers</span>
           </div>
           <div style={{ flex:1, overflowY:'auto', padding:'6px 0' }}>
@@ -1315,7 +1315,7 @@ export default function CaelynTerminalPage() {
 
         {/* ── PANEL 3: Volatility (swapped here from top row) ── */}
         <div style={{ flex:'0 0 200px', borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Volatility</span>
             <span style={{ fontSize:8, color:C.dim }}>Annualized</span>
           </div>
@@ -1345,7 +1345,7 @@ export default function CaelynTerminalPage() {
 
         {/* ── PANEL 4: Options (swapped here from top row) ── */}
         <div style={{ flex:1, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', background:C.card, minWidth:0 }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>Options</span>
             <span style={{ fontSize:8, color:C.dim }}>Flow</span>
           </div>
@@ -1405,7 +1405,7 @@ export default function CaelynTerminalPage() {
                     <col style={{ width:'12%', minWidth:60 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'9%', minWidth:46 }} /><col style={{ width:'10%', minWidth:50 }} /><col style={{ width:'26%', minWidth:120 }} /><col style={{ width:'16%', minWidth:62 }} />
                   </colgroup>
                   <thead>
-                    <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#0d1623' }}>
+                    <tr style={{ borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, background:'#080808' }}>
                       {(['TICKER','SCORE','P/C','IV','EM','VOL','SIGNAL','RISK'] as const).map(h => (
                         <th key={h} style={thO(h)} onClick={mkSort(h)}>{h} <span style={{ fontSize:7, opacity:0.7 }}>{arrO(h)}</span></th>
                       ))}
@@ -1468,7 +1468,7 @@ export default function CaelynTerminalPage() {
 
         {/* ── PANEL 5: AI Portfolio Review ── */}
         <div style={{ flex:'0 0 280px', display:'flex', flexDirection:'column', overflow:'hidden', background:C.card }}>
-          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#0d1623', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ padding:'7px 10px', borderBottom:`1px solid ${C.border}`, background:'#080808', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <span style={{ fontFamily:C.font, fontSize:10, fontWeight:700, letterSpacing:1.5, color:'#fff', textTransform:'uppercase' }}>AI Portfolio Review</span>
             {aiReview && !aiLoading && (
               <button onClick={() => setAiReviewExpanded(true)} title="Expand review"
@@ -1539,7 +1539,7 @@ export default function CaelynTerminalPage() {
           <div onClick={() => setAiReviewExpanded(false)}
             style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(4,8,16,0.85)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
             <div onClick={e => e.stopPropagation()}
-              style={{ background:'#0d1623', border:`1px solid ${C.border}`, borderRadius:12, width:'100%', maxWidth:860, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.75)', overflow:'hidden' }}>
+              style={{ background:'#080808', border:`1px solid ${C.border}`, borderRadius:12, width:'100%', maxWidth:860, maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.75)', overflow:'hidden' }}>
 
               {/* Header */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 18px', borderBottom:`1px solid ${C.border}`, background:'#0a1420', flexShrink:0 }}>
@@ -1647,7 +1647,7 @@ export default function CaelynTerminalPage() {
                         {d?.watchlist_swaps?.length > 0 ? (
                           <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                             {d.watchlist_swaps.map((sw: any, i: number) => (
-                              <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 12px' }}>
+                              <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:'#060606', border:`1px solid ${C.border}`, borderRadius:6, padding:'8px 12px' }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                                   <span style={{ fontSize:11, fontWeight:700, color:C.red, fontFamily:C.font }}>{sw.drop}</span>
                                   <span style={{ fontSize:9, color:C.dim }}>→</span>
@@ -1658,7 +1658,7 @@ export default function CaelynTerminalPage() {
                             ))}
                           </div>
                         ) : (
-                          <div style={{ fontSize:10, color:C.dim, lineHeight:1.5, padding:'8px 12px', background:'#0a1220', border:`1px solid ${C.border}22`, borderRadius:6 }}>
+                          <div style={{ fontSize:10, color:C.dim, lineHeight:1.5, padding:'8px 12px', background:'#060606', border:`1px solid ${C.border}22`, borderRadius:6 }}>
                             No swap recommendations — current holdings compare favorably to watchlist alternatives at this time.
                           </div>
                         )}
@@ -1671,7 +1671,7 @@ export default function CaelynTerminalPage() {
                         <div style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:1.4, textTransform:'uppercase', marginBottom:8 }}>Holding-Level Analysis</div>
                         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                           {d.asset_reviews.map((ar: any, i: number) => (
-                            <div key={i} style={{ background:'#0a1220', border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
+                            <div key={i} style={{ background:'#060606', border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', borderBottom:`1px solid ${C.border}22`, background:'#080e1a' }}>
                                 <span style={{ fontSize:12, fontWeight:700, color:'#fff', fontFamily:C.font }}>{ar.ticker}</span>
                                 {ar.company && ar.company !== ar.ticker && <span style={{ fontSize:10, color:C.dim }}>{ar.company}</span>}
@@ -1709,7 +1709,7 @@ export default function CaelynTerminalPage() {
       })()}
 
       {/* ── NEWS TICKER ──────────────────────────────────────────────── */}
-      <div style={{ background:'#060b14', borderTop:`1px solid ${C.border}`, height:26, display:'flex', alignItems:'center', overflow:'hidden', flexShrink:0 }}>
+      <div style={{ background:'#030303', borderTop:`1px solid ${C.border}`, height:26, display:'flex', alignItems:'center', overflow:'hidden', flexShrink:0 }}>
         <div style={{ fontSize:9, fontWeight:800, color:C.amber, background:`${C.amber}22`, padding:'0 10px', height:'100%', display:'flex', alignItems:'center', letterSpacing:1, borderRight:`1px solid ${C.border}`, flexShrink:0 }}>NEWS</div>
         <div style={{ flex:1, overflow:'hidden' }}>
           <div style={{ display:'flex', gap:40, animation:'ctscroll 60s linear infinite', whiteSpace:'nowrap' }}>
@@ -1738,7 +1738,7 @@ export default function CaelynTerminalPage() {
             left: Math.min(allocHover.x, window.innerWidth - 210),
             top: Math.max(4, Math.min(allocHover.y, window.innerHeight - (rowCount * 22 + 48))),
             zIndex:9999,
-            background:'#0d1623',
+            background:'#080808',
             border:`1px solid ${accentColor}50`,
             borderTop:`2px solid ${accentColor}`,
             borderRadius:6,
