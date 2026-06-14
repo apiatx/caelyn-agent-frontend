@@ -16,8 +16,8 @@ import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
-  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
-  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
+  bg: '#020202', card: '#0a0a0a', card2: '#060606',
+  border: 'rgba(255,255,255,0.10)', text: '#f5f5f0', dim: '#a9aaa6',
   teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
   amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
   font: "'JetBrains Mono','Fira Code',monospace",
@@ -408,7 +408,7 @@ function AnalysisLoadingOverlay() {
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 10,
-      background: 'rgba(8,12,19,0.85)',
+      background: 'rgba(2,2,2,0.90)',
       borderRadius: 8,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
@@ -418,14 +418,14 @@ function AnalysisLoadingOverlay() {
       <div style={{ position: 'relative', width: 48, height: 48 }}>
         <div className="wl-spin" style={{
           position: 'absolute', inset: 0,
-          border: `2px solid ${C.teal}15`,
-          borderTopColor: C.teal,
+          border: '2px solid rgba(255,255,255,0.08)',
+          borderTopColor: 'rgba(255,255,255,0.55)',
           borderRadius: '50%',
         }} />
         <div className="wl-spin" style={{
           position: 'absolute', inset: 6,
-          border: `2px solid ${C.purple}15`,
-          borderBottomColor: C.purple,
+          border: '2px solid rgba(255,255,255,0.05)',
+          borderBottomColor: 'rgba(255,255,255,0.30)',
           borderRadius: '50%',
           animationDuration: '1.5s',
           animationDirection: 'reverse',
@@ -435,7 +435,7 @@ function AnalysisLoadingOverlay() {
       {/* stage text */}
       <div style={{ textAlign: 'center' }}>
         <div style={{
-          fontSize: 12, fontWeight: 700, color: C.teal,
+          fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
           fontFamily: C.font, letterSpacing: '0.04em',
           marginBottom: 8,
         }}>
@@ -460,9 +460,9 @@ function AnalysisLoadingOverlay() {
             key={i}
             style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: i <= stageIdx ? C.teal : `${C.border}`,
+              background: i <= stageIdx ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.12)',
               transition: 'background 0.3s',
-              boxShadow: i === stageIdx ? `0 0 6px ${C.teal}60` : 'none',
+              boxShadow: i === stageIdx ? '0 0 6px rgba(255,255,255,0.25)' : 'none',
             }}
           />
         ))}
@@ -1344,7 +1344,7 @@ export default function WatchlistPage() {
                 }}
                 style={{
                   width: 120, padding: '1px 4px', borderRadius: 2,
-                  background: C.bg, border: `1px solid ${C.teal}`,
+                  background: C.bg, border: '1px solid rgba(255,255,255,0.35)',
                   color: C.text, fontFamily: C.font, fontSize: 11,
                   outline: 'none',
                 }}
@@ -1428,7 +1428,7 @@ export default function WatchlistPage() {
           border: `1px solid ${showAddPanel ? C.border : 'transparent'}`,
           borderBottom: showAddPanel ? `1px solid ${C.card}` : '1px solid transparent',
           cursor: 'pointer', marginBottom: -1,
-          color: showAddPanel ? C.teal : '#475569',
+          color: showAddPanel ? 'rgba(255,255,255,0.70)' : '#475569',
           fontSize: 16, fontWeight: 700,
           transition: 'color 0.15s',
           fontFamily: C.font,
@@ -1440,8 +1440,8 @@ export default function WatchlistPage() {
 
       {uploadLoading && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', marginBottom: -1 }}>
-          <div className="wl-spin" style={{ width: 12, height: 12, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
-          <span style={{ fontSize: 10, color: C.teal }}>{uploadStage}</span>
+          <div className="wl-spin" style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%' }} />
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{uploadStage}</span>
         </div>
       )}
     </div>
@@ -1473,7 +1473,7 @@ export default function WatchlistPage() {
             color: C.text, fontFamily: C.font, fontSize: 11,
             outline: 'none',
           }}
-          onFocus={e => e.currentTarget.style.borderColor = C.teal}
+          onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'}
           onBlur={e => e.currentTarget.style.borderColor = C.border}
         />
       </div>
@@ -1489,10 +1489,10 @@ export default function WatchlistPage() {
           transition: 'border-color 0.15s',
         }}
           onClick={() => csvInputRef.current?.click()}
-          onMouseEnter={e => e.currentTarget.style.borderColor = C.teal}
+          onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'}
           onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
         >
-          <Upload size={20} style={{ color: C.teal }} />
+          <Upload size={20} style={{ color: 'rgba(255,255,255,0.55)' }} />
           <div style={{ fontSize: 11, fontWeight: 700, color: C.text }}>Upload CSV File</div>
           <div style={{ fontSize: 10, color: C.dim, textAlign: 'center' }}>
             Drag & drop or click to select a .csv file with stock tickers and data
@@ -1520,7 +1520,7 @@ export default function WatchlistPage() {
               color: C.text, fontFamily: C.font, fontSize: 11,
               resize: 'vertical', outline: 'none',
             }}
-            onFocus={e => e.currentTarget.style.borderColor = C.purple}
+            onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'}
             onBlur={e => e.currentTarget.style.borderColor = C.border}
           />
           <button
@@ -1589,9 +1589,9 @@ export default function WatchlistPage() {
                 padding: '3px 10px', borderRadius: 4,
                 fontSize: 10, fontWeight: 600,
                 fontFamily: C.sansFont,
-                color: C.teal,
-                background: `${C.teal}10`,
-                border: `1px solid ${C.teal}20`,
+                color: 'rgba(255,255,255,0.60)',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -1613,12 +1613,12 @@ export default function WatchlistPage() {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 16, padding: '10px 20px',
-        background: `linear-gradient(90deg, ${C.teal}08, ${C.purple}08)`,
+        background: 'rgba(255,255,255,0.025)',
         borderBottom: `1px solid ${C.border}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           {isUpgrading ? (
-            <div className="wl-spin" style={{ width: 14, height: 14, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%', flexShrink: 0 }} />
+            <div className="wl-spin" style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%', flexShrink: 0 }} />
           ) : (
             <span style={{ fontSize: 14 }}>{'\u26A1'}</span>
           )}
@@ -1645,12 +1645,12 @@ export default function WatchlistPage() {
               flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '6px 18px', borderRadius: 5,
-              background: `linear-gradient(135deg, ${C.teal}, ${C.blue})`,
-              border: 'none',
-              color: '#fff', fontSize: 10, fontWeight: 800,
+              background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#f5f5f0', fontSize: 10, fontWeight: 800,
               fontFamily: C.font, cursor: 'pointer',
               letterSpacing: '0.05em',
-              boxShadow: `0 0 12px ${C.teal}30`,
+              boxShadow: '0 0 12px rgba(255,255,255,0.06)',
             }}
           >
             <RefreshCw style={{ width: 11, height: 11 }} />
@@ -1805,7 +1805,7 @@ export default function WatchlistPage() {
               UPCOMING EARNINGS
             </span>
             {earningsLoading ? (
-              <div className="wl-spin" style={{ width: 10, height: 10, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
+              <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
             ) : (
               <span style={{ fontSize: 9, color: C.dim }}>({events.length} in watchlist)</span>
             )}
@@ -1834,7 +1834,7 @@ export default function WatchlistPage() {
                       minWidth: 148,
                       transition: 'background 0.1s',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     {/* ticker + importance badge */}
@@ -1978,7 +1978,7 @@ export default function WatchlistPage() {
                     onClick={() => { if (col.key) handleSortClick(col.key); }}
                     style={{
                       cursor: sortable ? 'pointer' : 'default',
-                      color: active ? C.teal : C.dim,
+                      color: active ? '#f5f5f0' : C.dim,
                       userSelect: 'none' as const,
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       overflow: 'hidden', whiteSpace: 'nowrap' as const,
@@ -2017,7 +2017,7 @@ export default function WatchlistPage() {
                     opacity: isPending ? 0.55 : 1,
                     gap: 6,
                   }}
-                  onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = `${C.teal}0c`; }}
+                  onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
@@ -2042,7 +2042,7 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
                   </span>
-                  <span style={{ fontSize: 10, color: C.teal, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || ''}>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || ''}>
                     {stock.canonical_theme_name || stock.section_title || DASH}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
@@ -2165,7 +2165,7 @@ export default function WatchlistPage() {
               transition: 'background 0.1s',
               alignItems: 'center',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = `${C.teal}0c`}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
             onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -2222,7 +2222,7 @@ export default function WatchlistPage() {
   if (wlLoading && !wlMetas?.length) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="wl-spin" style={{ width: 24, height: 24, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%' }} />
+        <div className="wl-spin" style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%' }} />
       </div>
     );
   }
@@ -2235,9 +2235,9 @@ export default function WatchlistPage() {
         {renderAddPanel()}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
           <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
-            <div><span style={{ color: C.teal }}>&gt;</span> No watchlist loaded.</div>
-            <div><span style={{ color: C.teal }}>&gt;</span> Click <span style={{ color: C.teal }}>+</span> above to add one, or upload a CSV in AI Terminal.</div>
-            <div><span style={{ color: C.teal }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
+            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> No watchlist loaded.</div>
+            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> Click <span style={{ color: 'rgba(255,255,255,0.70)' }}>+</span> above to add one, or upload a CSV in AI Terminal.</div>
+            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
           </div>
         </div>
       </div>
