@@ -15,10 +15,10 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 
-/* ── Color tokens — Watchlist palette ──────────────────────────────────── */
+/* ── Color tokens — premium black/silver/white palette ─────────────────── */
 const C = {
-  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
-  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
+  bg: '#020202', card: '#0a0a0a', card2: '#060606',
+  border: 'rgba(255,255,255,0.10)', text: '#f5f5f0', dim: '#a9aaa6',
   teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
   amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
   font: "'JetBrains Mono','Fira Code',monospace",
@@ -302,7 +302,13 @@ function Skel({ w = "100%", h = 16, className = "" }: { w?: string | number; h?:
 // ─── Shared primitives ────────────────────────────────────────────────────────
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={className} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12 }}>
+    <div className={className} style={{
+      background: C.card,
+      border: `1px solid ${C.border}`,
+      borderRadius: 12,
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.55)',
+      position: 'relative',
+    }}>
       {children}
     </div>
   );
@@ -310,16 +316,12 @@ function GlassCard({ children, className = "" }: { children: React.ReactNode; cl
 function SectionHeader({ icon: Icon, title, badge, right, color = "teal" }: {
   icon: any; title: string; badge?: string; right?: React.ReactNode; color?: string;
 }) {
-  const grad: Record<string, string> = {
-    teal: "from-teal-500 to-cyan-500", purple: "from-purple-500 to-pink-500",
-    blue: "from-blue-500 to-indigo-500", amber: "from-amber-500 to-orange-500",
-    green: "from-green-500 to-emerald-500",
-  };
   return (
     <div className="flex items-center justify-between mb-5 gap-3">
       <div className="flex items-center gap-2.5">
-        <div className={`w-6 h-6 bg-gradient-to-r ${grad[color] ?? grad.teal} rounded-full flex items-center justify-center flex-shrink-0`}>
-          <Icon className="w-3.5 h-3.5 text-white" />
+        <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.13)' }}>
+          <Icon className="w-3.5 h-3.5" style={{ color: '#a9aaa6' }} />
         </div>
         <h3 className="text-base font-semibold text-white">{title}</h3>
         {badge && <Badge className="bg-white/10 text-gray-300 border-white/10 text-xs">{badge}</Badge>}
@@ -343,9 +345,10 @@ function ViewModeToggle({ mode, setMode }: { mode: ViewMode; setMode: (m: ViewMo
         <button key={o.val} onClick={() => setMode(o.val)}
           className={`px-2.5 py-1 rounded text-[10px] font-medium tracking-wide transition-colors whitespace-nowrap ${
             mode === o.val
-              ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+              ? "border border-white/20 text-white/90"
               : "text-white/35 hover:text-white/60"
-          }`}>
+          }`}
+          style={mode === o.val ? { background: 'rgba(255,255,255,0.08)' } : {}}>
           {o.label}
         </button>
       ))}
@@ -442,7 +445,7 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
               <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip
-                contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
+                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, fontSize: 11 }}
                 labelStyle={{ color: "#94a3b8" }}
                 labelFormatter={(lbl: string) => `${lbl}${lbl === tf ? " ◀ selected" : ""}`}
                 formatter={(v: any, id: string) => {
@@ -874,7 +877,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                 tick={{ fontSize: 9, fill: "#94a3b8", fontFamily: "monospace", fontWeight: 600 }}
                 tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ background: "#0d1623", border: "1px solid #1a2540", borderRadius: 6, fontSize: 11 }}
+                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, fontSize: 11 }}
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
                 formatter={(v: any, _name: any, props: any) => {
                   const d = props.payload;
@@ -1973,9 +1976,9 @@ export default function StocksSectorsPage() {
         .sectors-themes-page .text-gray-400 { color: #94a3b8 !important; }
         .sectors-themes-page .text-gray-500 { color: #64748b !important; }
         .sectors-themes-page .text-gray-600 { color: #475569 !important; }
-        .sectors-themes-page thead tr { border-bottom: 1px solid #1a2540 !important; }
-        .sectors-themes-page tbody tr { border-bottom: 1px solid rgba(26,37,64,0.4) !important; }
-        .sectors-themes-page tbody tr:hover { background: rgba(14,165,233,0.04) !important; }
+        .sectors-themes-page thead tr { border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+        .sectors-themes-page tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04) !important; }
+        .sectors-themes-page tbody tr:hover { background: rgba(255,255,255,0.03) !important; }
       `}</style>
       <main className="max-w-[95vw] mx-auto px-2 sm:px-3 py-4 space-y-4 lg:space-y-6">
 
