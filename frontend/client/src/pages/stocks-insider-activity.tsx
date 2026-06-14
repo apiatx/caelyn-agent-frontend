@@ -300,7 +300,7 @@ function InsiderStatsBar({ stats, loading, onRefresh, refreshing }: {
         </div>
       ))}
       <button onClick={onRefresh} disabled={refreshing}
-        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-xs text-teal-300 transition-colors disabled:opacity-50 flex-shrink-0">
+        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] border border-white/20 text-xs text-white/70 transition-colors disabled:opacity-50 flex-shrink-0">
         <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}/>
         {refreshing ? "Refreshing…" : "Refresh"}
       </button>
@@ -359,14 +359,14 @@ function InsiderQuickFilters({ active, onChange, clusterSub, onClusterSub }: {
 interface InsiderFilters { search: string; type: string; sector: string; timeframe: string; min_score: string; }
 function InsiderFilterRow({ filters, onChange }: { filters: InsiderFilters; onChange: (f:InsiderFilters)=>void }) {
   const upd = (k: keyof InsiderFilters) => (e: React.ChangeEvent<HTMLInputElement|HTMLSelectElement>) => onChange({ ...filters, [k]: e.target.value });
-  const sel = "bg-[#0d1117] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-teal-500/50 cursor-pointer";
+  const sel = "bg-[#080808] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-white/30 cursor-pointer";
   const isFiltered = !!(filters.search || filters.type || filters.sector || filters.min_score);
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <div className="relative flex-1 min-w-[180px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600"/>
         <input value={filters.search} onChange={upd("search")} placeholder="Search ticker, company, insider…"
-          className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-teal-500/50"/>
+          className="w-full bg-[#080808] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-white/30"/>
       </div>
       <select value={filters.type} onChange={upd("type")} className={sel}>
         <option value="">All Types</option><option value="P">Buys</option><option value="S">Sales</option>
@@ -384,7 +384,7 @@ function InsiderFilterRow({ filters, onChange }: { filters: InsiderFilters; onCh
         <option value="">Any Score</option><option value="80">80+</option>
         <option value="70">70+</option><option value="60">60+</option><option value="50">50+</option>
       </select>
-      {isFiltered && <span className="text-[10px] font-semibold text-teal-400 border border-teal-500/30 rounded-full px-2.5 py-1 bg-teal-500/[0.07]">Filtered</span>}
+      {isFiltered && <span className="text-[10px] font-semibold text-white/60 border border-white/20 rounded-full px-2.5 py-1 bg-white/[0.05]">Filtered</span>}
     </div>
   );
 }
@@ -436,7 +436,7 @@ function InsiderTable({ rows, loading, sortKey, sortDir, onSort, onRowClick, sel
             const sel   = selectedId===row.accession_number;
             return (
               <tr key={row.accession_number} onClick={()=>onRowClick(row)}
-                className={`border-b border-white/[0.04] cursor-pointer transition-colors ${sel ? "bg-teal-500/[0.08]" : idx%2===0 ? "bg-transparent hover:bg-white/[0.025]" : "bg-white/[0.012] hover:bg-white/[0.03]"}`}>
+                className={`border-b border-white/[0.04] cursor-pointer transition-colors ${sel ? "bg-white/[0.05]" : idx%2===0 ? "bg-transparent hover:bg-white/[0.025]" : "bg-white/[0.012] hover:bg-white/[0.03]"}`}>
                 <td className="px-3 py-2 w-[120px]"><ScoreCell score={row.score}/></td>
                 <td className="px-3 py-2"><span className={`font-mono font-bold text-sm tracking-wide ${isBuy?"text-emerald-400":isSale?"text-red-400":"text-white"}`}>{row.ticker}</span></td>
                 <td className="px-3 py-2 text-xs text-gray-500 max-w-[140px] truncate">{row.company_name}</td>
@@ -498,7 +498,7 @@ function InsiderDetailPanel({ accession, onClose }: { accession:string; onClose:
   });
   const type = detail ? normType(detail.transaction_type) : "";
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] z-50 flex flex-col bg-[#06080f] border-l border-white/[0.08] shadow-2xl overflow-hidden">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] z-50 flex flex-col bg-[#020202] border-l border-white/[0.08] shadow-2xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07] flex-shrink-0">
         {detail ? <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-white font-mono tracking-wide">{detail.ticker}</span>
@@ -631,7 +631,7 @@ function CongressStatsBar({ stats, loading, onRefresh, refreshing }: {
         </div>
       ))}
       <button onClick={onRefresh} disabled={refreshing}
-        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/30 text-xs text-teal-300 transition-colors disabled:opacity-50 flex-shrink-0">
+        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] border border-white/20 text-xs text-white/70 transition-colors disabled:opacity-50 flex-shrink-0">
         <RefreshCw className={`w-3.5 h-3.5 ${refreshing?"animate-spin":""}`}/>
         {refreshing ? "Refreshing…" : "Refresh"}
       </button>
@@ -664,14 +664,14 @@ function CongressQuickFilters({ active, onChange }: { active:CongressQuick; onCh
 interface CongressFilters { search:string; type:string; chamber:string; party:string; timeframe:string; min_amount:string; }
 function CongressFilterRow({ filters, onChange }: { filters:CongressFilters; onChange:(f:CongressFilters)=>void }) {
   const upd = (k:keyof CongressFilters)=>(e:React.ChangeEvent<HTMLInputElement|HTMLSelectElement>)=>onChange({...filters,[k]:e.target.value});
-  const sel = "bg-[#0d1117] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-teal-500/50 cursor-pointer";
+  const sel = "bg-[#080808] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-white/30 cursor-pointer";
   const isFiltered = !!(filters.search||filters.type||filters.chamber||filters.party||filters.min_amount);
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <div className="relative flex-1 min-w-[180px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-600"/>
         <input value={filters.search} onChange={upd("search")} placeholder="Search politician, ticker, company…"
-          className="w-full bg-[#0d1117] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-teal-500/50"/>
+          className="w-full bg-[#080808] border border-white/[0.08] rounded-lg pl-8 pr-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-white/30"/>
       </div>
       <select value={filters.type} onChange={upd("type")} className={sel}>
         <option value="">All Types</option><option value="purchase">Purchase</option>
@@ -692,7 +692,7 @@ function CongressFilterRow({ filters, onChange }: { filters:CongressFilters; onC
         <option value="">Any Amount</option><option value="100000">$100K+</option>
         <option value="500000">$500K+</option><option value="1000000">$1M+</option><option value="5000000">$5M+</option>
       </select>
-      {isFiltered && <span className="text-[10px] font-semibold text-teal-400 border border-teal-500/30 rounded-full px-2.5 py-1 bg-teal-500/[0.07]">Filtered</span>}
+      {isFiltered && <span className="text-[10px] font-semibold text-white/60 border border-white/20 rounded-full px-2.5 py-1 bg-white/[0.05]">Filtered</span>}
     </div>
   );
 }
@@ -788,7 +788,7 @@ function CongressDetailPanel({ trade, onClose }: { trade:CongressionalTrade; onC
   const dtf     = trade.days_to_file;
   const isLate  = (dtf ?? 0) > 45 || trade.is_late_filing;
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] z-50 flex flex-col bg-[#06080f] border-l border-white/[0.08] shadow-2xl overflow-hidden">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[440px] z-50 flex flex-col bg-[#020202] border-l border-white/[0.08] shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07] flex-shrink-0">
         <div>
@@ -1125,7 +1125,7 @@ export default function InsiderActivityPage() {
   const handleCSort = (k:CongressSortKey) => { if(k===cSortKey) setCSortDir(d=>d==="asc"?"desc":"asc"); else{setCSortKey(k);setCSortDir("desc");} setCOffset(0); };
 
   return (
-    <div className="min-h-screen bg-[#06080f] p-3 sm:p-4 lg:p-6 space-y-4">
+    <div className="min-h-screen bg-[#020202] p-3 sm:p-4 lg:p-6 space-y-4">
 
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between gap-4 flex-wrap">

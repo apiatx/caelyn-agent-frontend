@@ -277,7 +277,7 @@ function ReturnsTab({ whaleName }: { whaleName: string }) {
   const customTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-[#0d0e14] border border-white/[0.08] rounded-lg p-2.5 text-xs shadow-xl">
+      <div className="bg-[#080808] border border-white/[0.08] rounded-lg p-2.5 text-xs shadow-xl">
         <div className="text-white/50 mb-1.5 font-medium">{label}</div>
         {payload.map((p: any) => (
           <div key={p.name} className="flex items-center gap-2">
@@ -372,7 +372,7 @@ function WhaleModal({ whale, onClose }: { whale: Whale; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl border border-white/[0.08] shadow-2xl overflow-hidden" style={{ background: "#0a0b0f" }}>
+      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl border border-white/[0.08] shadow-2xl overflow-hidden" style={{ background: "#080808" }}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
           <div className="flex items-center gap-3">
             <Waves className="w-5 h-5 text-[hsl(200,90%,58%)]" />
@@ -618,7 +618,7 @@ export default function WhaleWatchPage() {
   }, [sorted, sortKey, sortDir, selected, lastUpdated, famousInvestors]);
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: "#050608" }}>
+    <div className="min-h-screen p-4 md:p-6" style={{ background: "#020202" }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>

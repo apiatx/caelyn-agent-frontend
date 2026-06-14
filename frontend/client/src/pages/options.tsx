@@ -54,13 +54,13 @@ function authHeaders(): Record<string, string> {
 }
 
 const C = {
-  bg: "#050510",
-  card: "#08080f",
-  cardAlt: "#0c0c1a",
-  border: "#1a1a30",
-  bright: "#e2e8f0",
-  text: "#94a3b8",
-  dim: "#475569",
+  bg: "#020202",
+  card: "#0a0a0a",
+  cardAlt: "#060606",
+  border: "#1c1c1c",
+  bright: "#f5f5f0",
+  text: "#a9aaa6",
+  dim: "#6b6b68",
   blue: "#38bdf8",
   green: "#4ade80",
   red: "#ef4444",
