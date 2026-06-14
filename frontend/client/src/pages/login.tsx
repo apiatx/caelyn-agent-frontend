@@ -325,8 +325,17 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom — wordmark */}
+        {/* Bottom — avatar + tagline */}
         <div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <img src={caelynFairy} alt="CaelynAI"
+              style={{
+                width: 200, height: 200,
+                borderRadius: '50%', objectFit: 'cover',
+                border: '1px solid rgba(255,255,255,0.10)',
+                boxShadow: '0 0 50px rgba(255,255,250,0.07), 0 0 100px rgba(0,0,0,0.6)',
+              }} />
+          </div>
           <div style={{
             width: 34, height: 1,
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
