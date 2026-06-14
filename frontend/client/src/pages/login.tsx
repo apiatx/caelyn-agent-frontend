@@ -268,14 +268,8 @@ export default function LoginPage() {
 
         {/* Top section */}
         <div>
-          {/* Logo */}
-          <div style={{ maxWidth: 240, marginBottom: '2.25rem' }}>
-            <img src={caelynLogo} alt="CaelynAI"
-              style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.90 }} />
-          </div>
-
           {/* Badge */}
-          <div className="lp-pill">Cross-Asset Trading Intelligence</div>
+          <div className="lp-pill">Cross-Market Trading Intelligence</div>
 
           {/* Headline */}
           <h1 style={{
@@ -284,27 +278,27 @@ export default function LoginPage() {
             letterSpacing: '-0.03em', marginBottom: '1rem',
             color: 'var(--lp-text-primary)',
           }}>
-            One agent.<br />Every market.<br />
-            <span className="lp-gradient-text">Institutional-grade signal.</span>
+            One cockpit.<br />Every signal.<br />
+            <span className="lp-gradient-text">Clear trade context.</span>
           </h1>
 
           <p style={{
             color: 'var(--lp-text-muted)', fontSize: '0.88rem',
-            lineHeight: 1.72, maxWidth: 380,
+            lineHeight: 1.72, maxWidth: 400,
           }}>
-            19 live data sources. Deterministic scoring. Specific trade plans with entry, stop, and target — not market commentary.
+            CaelynAI tracks the catalysts, flows, risk shifts, and market narratives moving stocks, crypto, options, and macro — then turns them into ranked opportunities with levels, risk, and next actions.
           </p>
 
           {/* Feature list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.78rem', marginTop: '1.75rem' }}>
             {[
-              { label: 'Real-time Data',    desc: '19 providers aggregated per request'          },
-              { label: 'AI Synthesis',      desc: 'Claude-powered trade plans with full context' },
-              { label: 'Cross-asset',       desc: 'Stocks, crypto & commodities in one view'     },
-              { label: 'HyperLiquid Perps', desc: 'Live funding rates, OI, squeeze candidates'   },
+              { label: 'Live Market Data',  desc: 'Watchlists, portfolios, prices, volume, options, macro, crypto, and catalysts' },
+              { label: 'Signal Ranking',    desc: 'Deterministic scoring across flow, momentum, news, risk, and theme strength'   },
+              { label: 'Trade Context',     desc: 'Entries, stops, targets, earnings, catalysts, and what can invalidate the setup' },
+              { label: 'Cross-Asset Radar', desc: 'Stocks, options, crypto, perps, macro, social, and prediction markets in one view' },
             ].map(f => (
-              <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div className="lp-dot" />
+              <div key={f.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                <div className="lp-dot" style={{ marginTop: '0.35rem' }} />
                 <div>
                   <span style={{
                     fontFamily: "'JetBrains Mono', monospace",
@@ -322,7 +316,7 @@ export default function LoginPage() {
 
           {/* Signal capability chips */}
           <div className="lp-chips">
-            {['Unusual Options Flow', 'Macro Radar', 'Hyperliquid Screener', 'Whale Tracker', 'Prophetik Signals'].map(c => (
+            {['Unusual Options Flow', 'Macro Risk Radar', 'Catalyst Watch', 'Theme Screener', 'Portfolio Intelligence'].map(c => (
               <div key={c} className="lp-chip">
                 <span className="lp-chip-dot" />
                 {c}
@@ -331,34 +325,17 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom — avatar + tagline */}
+        {/* Bottom — wordmark */}
         <div>
-          <div style={{ position: 'relative', height: 140, marginBottom: '0.75rem', overflow: 'hidden' }}>
-            <svg width="100%" height="140" viewBox="0 0 400 140" preserveAspectRatio="none"
-              style={{ position: 'absolute', bottom: 0, left: 0, opacity: 0.10 }}>
-              <path d="M0,100 Q100,60 200,80 T400,70"  fill="none" stroke="#d8d8d2" strokeWidth="0.8" />
-              <path d="M0,120 Q120,90 240,100 T400,90" fill="none" stroke="#d8d8d2" strokeWidth="0.5" />
-              <path d="M0,80  Q80,40  200,60 T400,50"  fill="none" stroke="#d8d8d2" strokeWidth="0.4" />
-            </svg>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <img src={caelynFairy} alt="CaelynAI"
-                style={{
-                  width: 118, height: 118,
-                  borderRadius: '50%', objectFit: 'cover',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  boxShadow: '0 0 30px rgba(255,255,250,0.06), 0 0 80px rgba(0,0,0,0.55)',
-                }} />
-            </div>
-          </div>
           <div style={{
             width: 34, height: 1,
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)',
-            margin: '0 auto 0.9rem',
+            marginBottom: '0.9rem',
           }} />
           <p style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: '0.67rem', color: 'var(--lp-text-muted)',
-            letterSpacing: '0.06em', textAlign: 'center',
+            letterSpacing: '0.06em',
           }}>
             <span style={{ color: 'var(--lp-silver)', fontWeight: 600 }}>CaelynAI</span> — Signal over noise.
           </p>
