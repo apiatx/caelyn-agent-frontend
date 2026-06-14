@@ -64,7 +64,7 @@ function buildTvUrl(symbol: string, interval: string): string {
     `&interval=${tvInterval}` +
     `&range=3M` +
     `&style=1` +
-    `&toolbar_bg=0d1623` +
+    `&toolbar_bg=080808` +
     `&theme=dark` +
     `&timezone=exchange` +
     `&withdateranges=true` +

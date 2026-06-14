@@ -122,7 +122,7 @@ function buildTvUrl(symbol: string, _chartId: string): string {
     `&interval=D` +
     `&range=3M` +
     `&style=1` +
-    `&toolbar_bg=0d1623` +
+    `&toolbar_bg=080808` +
     `&theme=dark` +
     `&timezone=exchange` +
     `&withdateranges=true` +
@@ -193,10 +193,10 @@ function ChartCard({ slot, autoFocus, isDraggingAny, dragHandleProps, onSymbolCh
   return (
     <div
       className="flex flex-col rounded-xl border border-white/10 overflow-hidden"
-      style={{ background: "#0d1623", minHeight: 380 }}
+      style={{ background: "#080808", minHeight: 380 }}
     >
       {/* Card header */}
-      <div className="flex items-center gap-2 px-2 py-2 border-b border-white/8" style={{ background: "#0a1020" }}>
+      <div className="flex items-center gap-2 px-2 py-2 border-b border-white/8" style={{ background: "#060606" }}>
         {/* Drag handle */}
         <div
           {...dragHandleProps}
@@ -251,7 +251,7 @@ function ChartCard({ slot, autoFocus, isDraggingAny, dragHandleProps, onSymbolCh
               title={slot.symbol}
               allowFullScreen
               className="absolute inset-0 w-full h-full border-0"
-              style={{ background: "#0d1623" }}
+              style={{ background: "#080808" }}
             />
             {/* Transparent overlay while dragging */}
             {isDraggingAny && (
@@ -504,7 +504,7 @@ export default function MultiChartsPage({ isActive = true, onCurated }: { isActi
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="min-h-screen text-white" style={{ background: "#080c13" }}>
+      <div className="min-h-screen text-white" style={{ background: "#020202" }}>
         <div className="max-w-[98vw] mx-auto px-2 sm:px-4 py-4 space-y-4">
 
           {/* ── Control Bar ── */}
@@ -596,7 +596,7 @@ export default function MultiChartsPage({ isActive = true, onCurated }: { isActi
             </div>
 
             {/* Columns selector */}
-            <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5" style={{ background: "#0a1020" }}>
+            <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5" style={{ background: "#060606" }}>
               {COLS_OPTIONS.map((n) => (
                 <button
                   key={n}
