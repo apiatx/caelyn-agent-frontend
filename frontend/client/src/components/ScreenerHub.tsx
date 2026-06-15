@@ -298,15 +298,15 @@ function TvChartModal({ symbol, onClose }: { symbol: string; onClose: () => void
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%", maxWidth: 1100, height: "min(680px, calc(100vh - 80px))",
-          background: "#070310", borderRadius: 12,
-          border: "1px solid rgba(168,85,247,0.35)",
-          boxShadow: "0 8px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(168,85,247,0.15)",
+          background: "#0a0a0a", borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.10)",
+          boxShadow: "0 8px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)",
           display: "flex", flexDirection: "column", overflow: "hidden",
         }}
       >
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 16px", borderBottom: "1px solid rgba(168,85,247,0.2)", flexShrink: 0,
+          padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0,
         }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: "#e2d9f3", letterSpacing: "0.02em" }}>
             {symbol}
@@ -1012,11 +1012,11 @@ export default function ScreenerHub() {
       return (
         <button
           onClick={onOpenChart}
-          className="flex items-center gap-1.5 font-semibold text-white hover:text-purple-300 transition-colors group"
+          className="flex items-center gap-1.5 font-semibold text-white hover:text-white/80 transition-colors group"
           title={`Open chart for ${sym}`}
         >
           {sym}
-          <BarChart2 className="w-3 h-3 text-purple-400/50 group-hover:text-purple-300 flex-shrink-0" />
+          <BarChart2 className="w-3 h-3 text-white/30 group-hover:text-white/60 flex-shrink-0" />
         </button>
       );
     }
@@ -1165,7 +1165,7 @@ export default function ScreenerHub() {
       return (
         <span className={classNames(
           "inline-block px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums",
-          high ? "bg-purple-500/25 text-purple-200" : mid ? "bg-blue-500/20 text-blue-300" : "text-white/60",
+          high ? "bg-white/10 text-white/85" : mid ? "bg-blue-500/20 text-blue-300" : "text-white/60",
         )}>
           {n.toFixed(0)}
         </span>
@@ -1189,7 +1189,7 @@ export default function ScreenerHub() {
       return (
         <span className={classNames(
           "inline-block px-2 py-0.5 rounded text-[11px] font-semibold tabular-nums",
-          high ? "bg-purple-600/30 text-purple-200 border border-purple-400/30"
+          high ? "bg-white/10 text-white/85 border border-white/15"
                : mid  ? "bg-blue-600/20 text-blue-300 border border-blue-400/20"
                : "text-white/60",
         )}>
@@ -1268,17 +1268,17 @@ export default function ScreenerHub() {
               }}
             >
               <SelectTrigger
-                className="w-[200px] bg-black/40 border-purple-500/20 text-white"
+                className="w-[200px] bg-black/40 border-white/10 text-white"
                 data-testid="screener-hub-theme"
               >
                 <SelectValue placeholder={themes.length ? "Select theme" : "Loading…"} />
               </SelectTrigger>
-              <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
+              <SelectContent className="bg-[#0a0a0a] border-white/12 text-white">
                 {themes.map((t) => (
                   <SelectItem key={t.id} value={t.id} data-testid={`screener-hub-theme-option-${t.id}`}>
                     <span className="inline-flex items-center gap-1.5">
                       {t.id === defaultThemeId && (
-                        <span className="text-[9px] text-purple-400 shrink-0">★</span>
+                        <span className="text-[9px] text-white/40 shrink-0">★</span>
                       )}
                       <span>{t.label}</span>
                       {t.state && (
@@ -1303,10 +1303,10 @@ export default function ScreenerHub() {
               value={pendingMcapPreset}
               onValueChange={(v) => setPendingMcapPreset(v as McapPreset)}
             >
-              <SelectTrigger className="w-[130px] bg-black/40 border-purple-500/20 text-white">
+              <SelectTrigger className="w-[130px] bg-black/40 border-white/10 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
+              <SelectContent className="bg-[#0a0a0a] border-white/12 text-white">
                 {MCAP_PRESETS.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
                 ))}
@@ -1323,7 +1323,7 @@ export default function ScreenerHub() {
               placeholder="Min $"
               value={pendingMcapCustomMin}
               onChange={(e) => setPendingMcapCustomMin(e.target.value)}
-              className="w-[88px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+              className="w-[88px] bg-black/40 border border-white/10 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-white/25"
             />
             <span className="text-white/35 text-xs">–</span>
             <input
@@ -1331,7 +1331,7 @@ export default function ScreenerHub() {
               placeholder="Max $"
               value={pendingMcapCustomMax}
               onChange={(e) => setPendingMcapCustomMax(e.target.value)}
-              className="w-[88px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+              className="w-[88px] bg-black/40 border border-white/10 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-white/25"
             />
           </div>
         )}
@@ -1345,7 +1345,7 @@ export default function ScreenerHub() {
               placeholder="e.g. 500000"
               value={pendingMinVolume}
               onChange={(e) => setPendingMinVolume(e.target.value)}
-              className="w-[110px] bg-black/40 border border-purple-500/20 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-purple-400/50"
+              className="w-[110px] bg-black/40 border border-white/10 rounded text-white text-xs px-2 py-1 placeholder-white/25 focus:outline-none focus:border-white/25"
             />
           </div>
         )}
@@ -1358,10 +1358,10 @@ export default function ScreenerHub() {
               value={pendingExchange || "__all__"}
               onValueChange={(v) => setPendingExchange(v === "__all__" ? "" : v)}
             >
-              <SelectTrigger className="w-[96px] bg-black/40 border-purple-500/20 text-white">
+              <SelectTrigger className="w-[96px] bg-black/40 border-white/10 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#0c0717] border-purple-500/30 text-white">
+              <SelectContent className="bg-[#0a0a0a] border-white/12 text-white">
                 <SelectItem value="__all__">All</SelectItem>
                 <SelectItem value="NYSE">NYSE</SelectItem>
                 <SelectItem value="NASDAQ">NASDAQ</SelectItem>
@@ -1399,10 +1399,10 @@ export default function ScreenerHub() {
           className={classNames(
             "border-0 text-white transition-colors",
             savedMode
-              ? "bg-purple-600/80 hover:bg-purple-500"
+              ? "bg-white/20 hover:bg-white/30"
               : hasPendingChanges
                 ? "bg-amber-500/80 hover:bg-amber-400"
-                : "bg-purple-600/80 hover:bg-purple-500",
+                : "bg-white/20 hover:bg-white/30",
           )}
         >
           {savedMode ? "Apply & Go Live" : "Apply"}
@@ -1413,7 +1413,7 @@ export default function ScreenerHub() {
           <Button
             type="button" onClick={copyTable}
             data-testid="screener-hub-copy" variant="outline" size="sm"
-            className="bg-black/40 border-purple-500/30 text-white hover:bg-purple-500/20"
+            className="bg-black/40 border-white/12 text-white hover:bg-white/10"
           >
             {copied ? <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
             {copied ? "Copied" : "Copy"}
@@ -1427,14 +1427,14 @@ export default function ScreenerHub() {
               type="button" variant="outline" size="sm"
               onClick={toggleSavedList}
               className={classNames(
-                "bg-black/40 border-purple-500/30 text-white hover:bg-purple-500/20",
-                showSavedList && "bg-purple-500/15 border-purple-400/50",
+                "bg-black/40 border-white/12 text-white hover:bg-white/10",
+                showSavedList && "bg-white/8 border-white/20",
               )}
             >
               <BookOpen className="w-3.5 h-3.5 mr-1.5" />
               Daily Screens
               {savedList.length > 0 && (
-                <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-purple-500/30 text-purple-200 leading-none">
+                <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-white/12 text-white/75 leading-none">
                   {savedList.length}
                 </span>
               )}
@@ -1442,12 +1442,12 @@ export default function ScreenerHub() {
             </Button>
 
             {showSavedList && (
-              <div className="absolute right-0 top-full mt-1 z-50 w-[320px] bg-[#0c0717] border border-purple-500/25 rounded-xl shadow-2xl overflow-hidden">
+              <div className="absolute right-0 top-full mt-1 z-50 w-[320px] bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
                 <div className="px-3 py-2 border-b border-white/8 flex items-center justify-between">
                   <span className="text-xs font-medium text-white/60">Daily Screens · Last 60 Days</span>
                   <button
                     onClick={toggleInsights}
-                    className="flex items-center gap-1 text-[11px] text-purple-300/60 hover:text-purple-200 transition-colors"
+                    className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors"
                   >
                     <Lightbulb className="w-3 h-3" />
                     Daily Insights
@@ -1468,8 +1468,8 @@ export default function ScreenerHub() {
                       <div
                         key={s.id}
                         className={classNames(
-                          "flex items-start gap-2 px-3 py-2.5 border-b border-white/5 hover:bg-purple-500/8 transition-colors",
-                          currentSavedId === s.id && savedMode && "bg-purple-600/10",
+                          "flex items-start gap-2 px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-colors",
+                          currentSavedId === s.id && savedMode && "bg-white/6",
                         )}
                       >
                         <button onClick={() => openSavedScreen(s.id)} className="flex-1 text-left min-w-0">
@@ -1483,7 +1483,7 @@ export default function ScreenerHub() {
                             {s.row_count != null && <span>· {s.row_count} rows</span>}
                           </div>
                           {s.top_symbols && s.top_symbols.length > 0 && (
-                            <div className="text-[11px] text-purple-300/40 mt-0.5 truncate">
+                            <div className="text-[11px] text-white/25 mt-0.5 truncate">
                               {s.top_symbols.slice(0, 5).join(" · ")}
                             </div>
                           )}
@@ -1539,7 +1539,7 @@ export default function ScreenerHub() {
             </span>
             {/* Use backend is_default_theme when available; fall back to isDefaultScreen */}
             {(responseIsDefault ?? isDefaultScreen) ? (
-              <span className="px-1 py-px rounded text-[10px] bg-purple-500/15 text-purple-300/70 border border-purple-400/20 leading-tight">
+              <span className="px-1 py-px rounded text-[10px] bg-white/6 text-white/50 border border-white/10 leading-tight">
                 Daily default
               </span>
             ) : (
@@ -1627,7 +1627,7 @@ export default function ScreenerHub() {
 
   return (
     <Card
-      className="bg-gradient-to-b from-[#0c0717] to-[#070310] border-purple-500/20 text-white"
+      className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border-white/8 text-white"
       data-testid="screener-hub-root"
     >
       <div className="p-4 sm:p-5 lg:p-6 space-y-4">
@@ -1635,7 +1635,7 @@ export default function ScreenerHub() {
         <Tabs value={tab} onValueChange={(v) => switchTab(v as TabKey)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <TabsList
-              className="bg-black/40 border border-purple-500/20 h-auto p-1 flex-wrap"
+              className="bg-black/40 border border-white/10 h-auto p-1 flex-wrap"
               data-testid="screener-hub-tabs"
             >
               {(Object.keys(TAB_LABELS) as TabKey[]).map((k) => (
@@ -1643,7 +1643,7 @@ export default function ScreenerHub() {
                   key={k}
                   value={k}
                   data-testid={`screener-hub-tab-${k}`}
-                  className="data-[state=active]:bg-purple-600/30 data-[state=active]:text-white text-white/70"
+                  className="data-[state=active]:bg-white/12 data-[state=active]:text-white text-white/70"
                 >
                   {TAB_LABELS[k]}
                 </TabsTrigger>
@@ -1771,10 +1771,10 @@ export default function ScreenerHub() {
 
               {/* Saved Insights panel */}
               {showInsights && (
-                <div className="rounded-xl border border-purple-500/20 bg-black/40 p-4 space-y-3">
+                <div className="rounded-xl border border-white/10 bg-black/40 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-purple-400" />
+                      <Lightbulb className="w-4 h-4 text-white/50" />
                       <span className="text-sm font-semibold text-white/90">Daily Insights</span>
                       <span className="text-[11px] text-white/30">last 60 days · auto-saved daily</span>
                     </div>
@@ -1893,12 +1893,12 @@ export default function ScreenerHub() {
 
               {/* Table */}
               <div
-                className="rounded-lg border border-purple-500/20 bg-black/40 overflow-hidden"
+                className="rounded-lg border border-white/10 bg-black/40 overflow-hidden"
                 data-testid="screener-hub-table-container"
               >
                 <div className="max-h-[640px] overflow-auto">
                   <table className="w-full text-xs">
-                    <thead className="bg-purple-950 sticky top-0 z-10">
+                    <thead className="bg-[#0a0a0a] sticky top-0 z-10">
                       <tr>
                         {visibleColumns.map((c) => {
                           const isSorted = sortKey === c.key;
@@ -1910,9 +1910,9 @@ export default function ScreenerHub() {
                               title={c.tooltip}
                               className={classNames(
                                 "text-left px-3 py-2 font-medium text-white/70 whitespace-nowrap cursor-pointer select-none hover:text-white",
-                                isSorted && "text-purple-200",
+                                isSorted && "text-white/90",
                                 c.tooltip && "cursor-help",
-                                c.key === "symbol" && "sticky left-0 z-20 bg-purple-950 border-r border-purple-500/20",
+                                c.key === "symbol" && "sticky left-0 z-20 bg-[#0a0a0a] border-r border-white/10",
                               )}
                             >
                               <span className="inline-flex items-center gap-1">
@@ -1963,13 +1963,13 @@ export default function ScreenerHub() {
                         {sortedRows.map((row, i) => {
                           const sym = (getField(row, "symbol", ["ticker", "stock"]) as string) ?? `row-${i}`;
                           return (
-                            <tr key={sym} className="group border-t border-white/5 hover:bg-purple-500/5 transition-colors">
+                            <tr key={sym} className="group border-t border-white/5 hover:bg-white/4 transition-colors">
                               {visibleColumns.map((c) => (
                                 <td
                                   key={c.key}
                                   className={classNames(
                                     "px-3 py-2 whitespace-nowrap text-white/90",
-                                    c.key === "symbol" && "sticky left-0 z-[1] bg-[#0c0717] group-hover:bg-[#100b1f] border-r border-purple-500/10",
+                                    c.key === "symbol" && "sticky left-0 z-[1] bg-[#0a0a0a] group-hover:bg-[#151515] border-r border-white/8",
                                   )}
                                   data-testid={`screener-hub-cell-${c.key}-${i}`}
                                 >
@@ -2010,12 +2010,12 @@ export default function ScreenerHub() {
           onClick={() => setShowSaveModal(false)}
         >
           <div
-            className="w-full max-w-[420px] bg-[#0c0717] border border-purple-500/30 rounded-xl p-6 space-y-4"
+            className="w-full max-w-[420px] bg-[#0a0a0a] border border-white/12 rounded-xl p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Save className="w-4 h-4 text-purple-400" />
+                <Save className="w-4 h-4 text-white/50" />
                 <h3 className="text-sm font-semibold text-white">Save Manual Snapshot</h3>
               </div>
               <button onClick={() => setShowSaveModal(false)} className="text-white/30 hover:text-white/70 transition-colors">
@@ -2031,7 +2031,7 @@ export default function ScreenerHub() {
                 onChange={(e) => setSaveName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
                 placeholder="e.g. AI Infrastructure — Jun 11"
-                className="w-full bg-black/50 border border-purple-500/25 rounded-lg text-white text-sm px-3 py-2 placeholder-white/20 focus:outline-none focus:border-purple-400/60"
+                className="w-full bg-black/50 border border-white/10 rounded-lg text-white text-sm px-3 py-2 placeholder-white/20 focus:outline-none focus:border-white/30"
               />
             </div>
 
@@ -2058,7 +2058,7 @@ export default function ScreenerHub() {
                 type="button" size="sm"
                 onClick={doSave}
                 disabled={saving || !saveName.trim()}
-                className="bg-purple-600/80 hover:bg-purple-500 border-0 text-white disabled:opacity-50"
+                className="bg-white/20 hover:bg-white/30 border-0 text-white disabled:opacity-50"
               >
                 {saving ? (
                   <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
