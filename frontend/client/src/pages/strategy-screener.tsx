@@ -14,18 +14,18 @@ import {
 
 /* ── Design tokens ──────────────────────────────────────────────── */
 const C = {
-  bg:          '#07090f',
-  surface:     '#0c1120',
-  card:        '#0f1628',
-  border:      '#1c2a45',
-  borderFaint: '#141e33',
+  bg:          '#050505',
+  surface:     '#080808',
+  card:        '#0a0a0a',
+  border:      '#1c1c1c',
+  borderFaint: '#111111',
   text:        '#e2e8f0',
   dim:         '#64748b',
-  muted:       '#3d4f6b',
-  bright:      '#f8fafc',
-  indigo:      '#6366f1',
-  indigoFg:    '#a5b4fc',
-  indigoSub:   'rgba(99,102,241,0.08)',
+  muted:       '#2a2a2a',
+  bright:      '#f5f5f0',
+  indigo:      '#d8d8d2',
+  indigoFg:    '#a9aaa6',
+  indigoSub:   'rgba(255,255,255,0.04)',
   green:       '#22c55e',
   amber:       '#f59e0b',
   blue:        '#38bdf8',
@@ -188,7 +188,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <p style={{ fontFamily:C.sans, fontSize:14, color:C.dim, maxWidth:380 }}>{message}</p>
       <button
         onClick={onRetry}
-        style={{ padding:'7px 20px', background:C.indigoSub, border:`1px solid rgba(99,102,241,0.3)`, borderRadius:6, color:C.indigoFg, fontFamily:C.font, fontSize:11, cursor:'pointer' }}
+        style={{ padding:'7px 20px', background:C.indigoSub, border:`1px solid rgba(255,255,255,0.12)`, borderRadius:6, color:C.indigoFg, fontFamily:C.font, fontSize:11, cursor:'pointer' }}
       >
         Retry
       </button>
@@ -581,7 +581,7 @@ function SmartOptionsTab() {
       {/* Market banner */}
       {market && (
         <div style={{
-          background: '#0c1120', border: `1px solid ${C.border}`, borderRadius: 10,
+          background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
           padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'flex-start',
           gap: 14,
         }}>
@@ -724,7 +724,7 @@ function SmartOptionsTab() {
 
                   {/* HL column */}
                   <div style={{
-                    background: '#07090f', border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
+                    background: C.bg, border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
                   }}>
                     <div style={{ color: '#38bdf8', fontFamily: C.font, fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
@@ -769,9 +769,9 @@ function SmartOptionsTab() {
 
                   {/* Actual column */}
                   <div style={{
-                    background: '#07090f', border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
+                    background: C.bg, border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
                   }}>
-                    <div style={{ color: '#a78bfa', fontFamily: C.font, fontSize: 9, fontWeight: 700,
+                    <div style={{ color: C.indigoFg, fontFamily: C.font, fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                       Equity Market
                     </div>
@@ -1285,15 +1285,15 @@ const CC = {
   vix:   '#f87171',
   yield: '#fbbf24',
   c7:    '#38bdf8',
-  c30:   '#a78bfa',
+  c30:   '#94a3b8',
   c63:   '#fb923c',
 };
 
 const TF_ROWS: Record<string, number> = { '7D': 10, '90D': 66, '1Y': 252, '5Y': 9999 };
 
 const TT: CSSProperties = {
-  background: '#07090f',
-  border: '1px solid #1c2a45',
+  background: '#050505',
+  border: '1px solid #1c1c1c',
   borderRadius: 6,
   fontFamily: 'monospace',
   fontSize: 10,
