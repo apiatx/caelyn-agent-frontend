@@ -1165,7 +1165,7 @@ function GrokSocialAgent() {
   return (
     <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 1.5rem 2rem', position: 'relative', zIndex: 1 }}>
       <div style={{
-        background: '#0a0b1e',
+        background: 'rgba(10,12,18,0.85)',
         border: '1px solid rgba(255,255,255,0.06)',
         borderRadius: 12,
         padding: '1.5rem',
@@ -1175,10 +1175,11 @@ function GrokSocialAgent() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
           <div style={{
             width: 32, height: 32,
-            background: 'linear-gradient(135deg, #2090d0 0%, #3b82f6 50%, #80d8f8 100%)',
+            background: 'rgba(92,200,240,0.12)',
+            border: '1px solid rgba(92,200,240,0.22)',
             borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.9rem', fontWeight: 700, color: '#fff',
+            fontSize: '0.9rem', fontWeight: 700, color: '#5cc8f0',
           }}>𝕏</div>
           <div>
             <h3 style={{
@@ -1188,7 +1189,7 @@ function GrokSocialAgent() {
             }}>Ask Caelyn</h3>
             <p style={{
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: '0.62rem', color: '#475569',
+              fontSize: '0.62rem', color: '#64748b',
               margin: 0, letterSpacing: '0.02em',
             }}>Real-time X/Twitter sentiment</p>
           </div>
@@ -1216,18 +1217,18 @@ function GrokSocialAgent() {
               transition: 'border-color 0.2s',
               opacity: loading ? 0.5 : 1,
             }}
-            onFocus={e => { e.currentTarget.style.borderColor = '#3b82f6'; }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'rgba(92,200,240,0.45)'; }}
             onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
             style={{
-              background: 'linear-gradient(135deg, #2090d0 0%, #3b82f6 100%)',
-              border: 'none',
+              background: 'rgba(92,200,240,0.14)',
+              border: '1px solid rgba(92,200,240,0.28)',
               borderRadius: 8,
               padding: '0.65rem 1rem',
-              color: '#fff',
+              color: '#5cc8f0',
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: '0.72rem',
               fontWeight: 600,
@@ -1297,8 +1298,8 @@ function GrokSocialAgent() {
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: '0.65rem',
                   color: '#64748b',
-                  background: 'rgba(32,144,208,0.06)',
-                  border: '1px solid rgba(32,144,208,0.2)',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 100,
                   padding: '0.35rem 0.75rem',
                   cursor: loading ? 'not-allowed' : 'pointer',
@@ -1308,15 +1309,15 @@ function GrokSocialAgent() {
                 }}
                 onMouseOver={e => {
                   if (!loading) {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.15)';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)';
                     (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.4)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.15)';
                   }
                 }}
                 onMouseOut={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.06)';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)';
                   (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.2)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)';
                 }}
               >{prompt}</button>
             ))}
@@ -1335,8 +1336,8 @@ function GrokSocialAgent() {
           }}>
             {messages.map((msg, i) => (
               <div key={i} style={{
-                background: msg.role === 'user' ? 'rgba(32,144,208,0.08)' : '#0d0e22',
-                border: `1px solid ${msg.role === 'user' ? 'rgba(32,144,208,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                background: msg.role === 'user' ? 'rgba(255,255,255,0.04)' : 'rgba(10,12,18,0.85)',
+                border: `1px solid ${msg.role === 'user' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: 8,
                 padding: '0.75rem 1rem',
               }}>
@@ -1346,14 +1347,14 @@ function GrokSocialAgent() {
                   fontWeight: 700,
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.1em',
-                  color: msg.role === 'user' ? '#80d8f8' : '#5cc8f0',
+                  color: msg.role === 'user' ? '#94a3b8' : '#5cc8f0',
                   marginBottom: '0.4rem',
                 }}>{msg.role === 'user' ? 'YOU' : 'GROK'}</div>
                 <div style={{
                   fontFamily: msg.role === 'assistant' ? "'JetBrains Mono', monospace" : "'Outfit', sans-serif",
                   fontSize: msg.role === 'assistant' ? '0.74rem' : '0.8rem',
                   lineHeight: 1.65,
-                  color: msg.role === 'user' ? '#c7d2fe' : '#94a3b8',
+                  color: msg.role === 'user' ? '#e2e8f0' : '#94a3b8',
                 }}>
                   {msg.role === 'assistant'
                     ? isConsensusBriefing(msg.structured)
@@ -1369,7 +1370,7 @@ function GrokSocialAgent() {
             ))}
             {loading && (
               <div style={{
-                background: '#0d0e22',
+                background: 'rgba(10,12,18,0.85)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 8,
                 padding: '0.75rem 1rem',
@@ -1377,7 +1378,7 @@ function GrokSocialAgent() {
                 <div style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: '0.74rem',
-                  color: '#475569',
+                  color: '#64748b',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
@@ -1385,8 +1386,8 @@ function GrokSocialAgent() {
                   <span style={{
                     display: 'inline-block',
                     width: 12, height: 12,
-                    border: '2px solid #3b82f6',
-                    borderTopColor: 'transparent',
+                    border: '2px solid rgba(92,200,240,0.4)',
+                    borderTopColor: '#5cc8f0',
                     borderRadius: '50%',
                     animation: 'spin 0.8s linear infinite',
                   }} />
@@ -1448,8 +1449,8 @@ function GrokSocialAgent() {
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: '0.65rem',
                     color: '#64748b',
-                    background: 'rgba(32,144,208,0.06)',
-                    border: '1px solid rgba(32,144,208,0.2)',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 100,
                     padding: '0.35rem 0.75rem',
                     cursor: loading ? 'not-allowed' : 'pointer',
@@ -1459,15 +1460,15 @@ function GrokSocialAgent() {
                   }}
                   onMouseOver={e => {
                     if (!loading) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.15)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)';
                       (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.4)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.15)';
                     }
                   }}
                   onMouseOut={e => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(32,144,208,0.06)';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)';
                     (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(32,144,208,0.2)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)';
                   }}
                 >{prompt}</button>
               ))}
@@ -1478,7 +1479,7 @@ function GrokSocialAgent() {
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: '0.6rem',
-                color: '#334155',
+                color: 'rgba(255,255,255,0.18)',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -1486,8 +1487,8 @@ function GrokSocialAgent() {
                 transition: 'color 0.2s',
                 alignSelf: 'flex-start',
               }}
-              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
-              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = '#334155'; }}
+              onMouseOver={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.18)'; }}
             >Clear conversation</button>
           </div>
         )}
