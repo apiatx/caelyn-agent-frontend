@@ -391,18 +391,18 @@ export default function ScreenerHub() {
   // ── Pending state — user edits freely; does NOT trigger fetches ───────────────
   const [pendingTheme, setPendingTheme] = useState<string>("");
   const [pendingScoreMode, setPendingScoreMode] = useState<boolean>(true);
-  const [pendingMcapPreset, setPendingMcapPreset] = useState<McapPreset>("custom");
-  const [pendingMcapCustomMin, setPendingMcapCustomMin] = useState<string>("50000000");
-  const [pendingMcapCustomMax, setPendingMcapCustomMax] = useState<string>("10000000000");
+  const [pendingMcapPreset, setPendingMcapPreset] = useState<McapPreset>("all");
+  const [pendingMcapCustomMin, setPendingMcapCustomMin] = useState<string>("");
+  const [pendingMcapCustomMax, setPendingMcapCustomMax] = useState<string>("");
   const [pendingMinVolume, setPendingMinVolume] = useState<string>("");
   const [pendingExchange, setPendingExchange] = useState<string>("");
 
   // ── Applied state — what the last Apply committed; drives buildUrl + fetch ────
   const [appliedTheme, setAppliedTheme] = useState<string>("");
   const [appliedScoreMode, setAppliedScoreMode] = useState<boolean>(true);
-  const [appliedMcapPreset, setAppliedMcapPreset] = useState<McapPreset>("custom");
-  const [appliedMcapCustomMin, setAppliedMcapCustomMin] = useState<string>("50000000");
-  const [appliedMcapCustomMax, setAppliedMcapCustomMax] = useState<string>("10000000000");
+  const [appliedMcapPreset, setAppliedMcapPreset] = useState<McapPreset>("all");
+  const [appliedMcapCustomMin, setAppliedMcapCustomMin] = useState<string>("");
+  const [appliedMcapCustomMax, setAppliedMcapCustomMax] = useState<string>("");
   const [appliedMinVolume, setAppliedMinVolume] = useState<string>("");
   const [appliedExchange, setAppliedExchange] = useState<string>("");
 
@@ -789,9 +789,7 @@ export default function ScreenerHub() {
     defaultThemeId !== "" &&
     appliedTheme === defaultThemeId &&
     appliedScoreMode === true &&
-    appliedMcapPreset === "custom" &&
-    appliedMcapCustomMin === "50000000" &&
-    appliedMcapCustomMax === "10000000000" &&
+    appliedMcapPreset === "all" &&
     appliedMinVolume === "" &&
     appliedExchange === "",
   [tab, defaultThemeId, appliedTheme, appliedScoreMode, appliedMcapPreset, appliedMcapCustomMin, appliedMcapCustomMax, appliedMinVolume, appliedExchange]);
