@@ -43,10 +43,11 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "change_30d",             label: "30D %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["30d", "30D", "1M", "1m", "price_change_30d", "change_1m", "month_change"] },
   { key: "change_ytd",             label: "YTD %",        numeric: true,  tabs: ["social", "fundamentals"], aliases: ["ytd", "YTD", "price_change_ytd", "ytd_change", "ytdchange"] },
   { key: "change_1y",              label: "1Y %",         numeric: true,  tabs: ["social", "fundamentals"], aliases: ["1y", "1Y", "price_change_1y", "year_change", "change_1year", "oneYearChange"] },
-  { key: "volume",                 label: "Options Volume", numeric: true,  aliases: ["vol"] },
+  { key: "volume",                 label: "Volume",       numeric: true,  aliases: ["vol"] },
+  { key: "average_volume",         label: "Avg Vol",      numeric: true,  aliases: ["avg_volume", "averageVolume", "average_daily_volume", "avg_daily_volume"], tooltip: "Average daily trading volume." },
   { key: "dollar_volume",          label: "$ Volume",     numeric: true,  aliases: ["dollarVolume", "dv"] },
   { key: "volume_to_market_cap",   label: "Vol/MCap",     numeric: true,  aliases: ["volumeToMarketCap", "vol_to_mcap"],     tooltip: "Trading volume divided by market cap. Higher values can signal unusual activity relative to company size." },
-  { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge"],                tooltip: "Current volume versus recent average volume. Example: 3.0x means roughly 3 times normal volume." },
+  { key: "volume_surge",           label: "Vol Surge",    numeric: true,  aliases: ["vol_surge", "volSurge", "relative_volume", "relativeVolume"], tooltip: "Current volume versus recent average volume. Example: 3.0x means roughly 3 times normal volume." },
   { key: "accumulation",           label: "Accum",                        aliases: ["accum"],                                tooltip: "Accumulation signal from cached price/volume behavior. A check means the stock is showing accumulation-like behavior." },
   { key: "beta",                   label: "Beta",         numeric: true, tooltip: "Measures how volatile the stock is relative to the market. Beta above 1 means more volatile than the market; below 1 means less volatile." },
   { key: "options_oi",             label: "OI Contracts", numeric: true,  aliases: ["optionsOi", "options_open_interest", "previous_options_oi", "previousOptionsOi"], tooltip: "Open interest contracts from cached Tradier options data. Higher OI means more outstanding option contracts for this ticker." },
@@ -55,6 +56,8 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "role",                   label: "Role",                         aliases: ["supply_chain_role", "supplyChainRole"], tooltip: "Why the ticker appears in this screen, such as hidden gem, supply chain player, options confirmed, or social confirmed." },
   { key: "score",                  label: "Score",        numeric: true,  aliases: ["hidden_gem_score", "hiddenGemScore"],   tooltip: "Composite screener score for the selected tab. Higher is better within this screen." },
   { key: "exchange",               label: "Exchange" },
+  { key: "quote_source",           label: "Q.Source",                     aliases: ["quoteSource"],   tooltip: "Source of the live quote data and when it was last fetched." },
+  { key: "quote_is_stale",         label: "Stale",                        aliases: ["quoteIsStale", "is_stale"], tooltip: "Whether the quote data is stale (from cache or LKG fallback)." },
   // Fundamentals-only columns
   { key: "pe_ratio",        label: "P/E",        numeric: true, tabs: ["fundamentals"], aliases: ["pe", "priceEarnings", "price_to_earnings", "priceToEarningsRatio", "pe_ttm"] },
   { key: "eps",             label: "EPS",        numeric: true, tabs: ["fundamentals"], aliases: ["eps_ttm", "earningsPerShare", "eps_diluted"] },
@@ -65,6 +68,14 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "debt_to_equity",  label: "D/E",        numeric: true, tabs: ["fundamentals"], aliases: ["debtToEquity", "de_ratio", "debtEquityRatio", "totalDebtToEquity"] },
   { key: "revenue_growth",  label: "Rev Grwth",  numeric: true, tabs: ["fundamentals"], aliases: ["revenueGrowth", "revenue_growth_yoy", "revenue_growth_rate", "revenueGrowthYoy"] },
 ];
+
+// Snapshot / debug fields that must never appear as visible table columns.
+const BLOCKED_COLUMN_KEYS = new Set([
+  "snapshot_price",
+  "snapshot_change_percent_1d",
+  "snapshot_volume",
+  "snapshot_quote_fetched_at",
+]);
 
 // Signal toggles — identical set for every tab; gate the three optional columns.
 const SIGNALS = [
@@ -731,6 +742,7 @@ export default function ScreenerHub() {
   // ── Visible columns ───────────────────────────────────────────────────────────
   const visibleColumns = useMemo(() => {
     return ALL_COLUMNS.filter((c) => {
+      if (BLOCKED_COLUMN_KEYS.has(c.key)) return false;
       if (c.tabs && !c.tabs.includes(tab)) return false;
       const sig = SIGNALS.find((s) => s.col === c.key);
       if (sig) return signals[sig.key];
@@ -1234,6 +1246,56 @@ export default function ScreenerHub() {
       if (n === null) return <span className="text-white/40">—</span>;
       const high = n > 2;
       return <span className={high ? "text-rose-300" : ""}>{n.toFixed(2)}</span>;
+    }
+
+    if (c.key === "average_volume") {
+      return <span>{formatCompactNumber(v)}</span>;
+    }
+
+    if (c.key === "quote_source") {
+      if (v === null || v === undefined || v === "") return <span className="text-white/40">—</span>;
+      const isStale   = getField(row, "quote_is_stale", ["quoteIsStale", "is_stale"]);
+      const fetchedAt = getField(row, "quote_fetched_at", ["quoteFetchedAt"]);
+      let ageLabel: string | null = null;
+      if (fetchedAt != null && fetchedAt !== "") {
+        try {
+          const d = new Date(fetchedAt);
+          if (!isNaN(d.getTime())) {
+            const diffMin = Math.round((Date.now() - d.getTime()) / 60_000);
+            if      (diffMin < 1)  ageLabel = "just now";
+            else if (diffMin < 60) ageLabel = `${diffMin}m ago`;
+            else {
+              const diffH = Math.round(diffMin / 60);
+              ageLabel = diffH < 24 ? `${diffH}h ago` : `${Math.round(diffH / 24)}d ago`;
+            }
+          }
+        } catch { /* leave ageLabel null */ }
+      }
+      const stale = isStale === true || isStale === "true" || isStale === 1;
+      return (
+        <span className="inline-flex items-center gap-1">
+          <span className={classNames("text-[11px]", stale ? "text-amber-300/80" : "text-white/60")}>
+            {String(v)}
+          </span>
+          {stale && (
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400/70 flex-shrink-0" title="Stale quote" />
+          )}
+          {ageLabel && (
+            <span className="text-[9px] text-white/25 leading-none" title={`Fetched: ${fetchedAt}`}>
+              {ageLabel}
+            </span>
+          )}
+        </span>
+      );
+    }
+
+    if (c.key === "quote_is_stale") {
+      const stale = v === true || v === "true" || v === 1;
+      const absent = v === null || v === undefined || v === "";
+      if (absent) return <span className="text-white/40">—</span>;
+      return stale
+        ? <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] bg-amber-500/15 text-amber-300 border border-amber-400/25">stale</span>
+        : <span className="text-white/30 text-[11px]">live</span>;
     }
 
     // Generic fallbacks
