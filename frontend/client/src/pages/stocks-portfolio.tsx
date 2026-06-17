@@ -1306,9 +1306,13 @@ export default function StocksPortfolioPage() {
     } else {
       parts.push('No holdings loaded yet.');
     }
+    const optUnderlying: string[] = (faHoldingsData as any)?.option_underlying_symbols
+      ?? optionOpenPositions.map((op: any) => op.underlying ?? op.ticker ?? '').filter(Boolean)
+           .filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+    if (optUnderlying.length) parts.push(`Option underlyings: ${optUnderlying.join(', ')}`);
     parts.push('Use for portfolio review, position sizing, P&L analysis, risk exposure, and holding-level insights.');
     return parts.join('\n');
-  })(), [enrichedHoldings, totalPortfolioValue, totalDailyPL]);
+  })(), [enrichedHoldings, totalPortfolioValue, totalDailyPL, optionOpenPositions, faHoldingsData]);
 
   const sortedHoldings = useMemo(() => {
     const sorted = [...enrichedHoldings];
@@ -1399,12 +1403,23 @@ export default function StocksPortfolioPage() {
         shares: h.shares,
         avg_cost: h.avgCost,
       }));
+      const optionPositions = optionOpenPositions.map((op: any) => ({
+        underlying:     op.underlying ?? op.ticker,
+        option_type:    op.option_type ?? op.type,
+        expiration:     op.expiration ?? op.exp_date,
+        strike:         op.strike,
+        contracts:      op.contracts,
+        avg_premium:    op.avg_premium ?? op.avg_cost,
+        mark:           op.mark,
+        market_value:   op.market_value,
+        unrealized_pnl: op.unrealized_pnl,
+      }));
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
       const res = await fetch('/api/portfolio-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdings: holdingsPayload }),
+        body: JSON.stringify({ holdings: holdingsPayload, ...(optionPositions.length ? { option_positions: optionPositions } : {}) }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);

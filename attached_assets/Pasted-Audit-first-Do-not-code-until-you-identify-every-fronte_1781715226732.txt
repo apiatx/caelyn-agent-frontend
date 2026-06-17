@@ -1,0 +1,116 @@
+Audit first. Do not code until you identify every frontend component/hook/request used by:
+
+1. Portfolio Dashboard tab
+2. Portfolio Terminal tab
+3. Portfolio Fundamentals tab
+4. Shared portfolio header/top stats
+5. Any app_context / agent context / alert / screener helper that derives portfolio symbols from frontend state
+
+Backend has now been fixed so the canonical portfolio includes both equity positions and option positions.
+
+Expected backend fields now available include some or all of:
+
+* equity_position_count
+* option_position_count
+* total_position_count
+* unique_symbol_count
+* option_underlying_symbols
+* option_positions
+* unavailable_symbols
+* positions_count now representing total positions in Terminal
+* portfolio.options_cost_basis or equivalent option value fields
+
+Current expected sample portfolio:
+
+* 10 stock/core positions
+* 8 option positions
+* 18 total portfolio positions
+* Option underlyings: CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+
+Primary bug:
+Dashboard correctly shows stocks + options, but Terminal and Fundamentals visually still behave like the portfolio only has stock positions. Frontend must now consume the canonical backend fields instead of deriving stock-only counts/symbols locally.
+
+Rules:
+
+1. Do not redesign the page.
+2. Do not invent a new portfolio model.
+3. Do not duplicate backend aggregation math locally unless the existing frontend already has no backend field for the exact UI value.
+4. Do not count option contracts as positions.
+
+   * 8 option rows = 8 positions.
+   * 166 contracts is not the portfolio position count.
+5. Use option underlyings for fundamentals/news/context lookups.
+6. Never pass OCC option contract symbols into stock/fundamental/news lookups.
+7. Do not confuse actual user option holdings with the existing Options Flow scanner table. They are different things.
+
+Dashboard validation:
+
+* Dashboard should remain unchanged functionally.
+* It should still show:
+
+  * Core/stocks: 10 positions
+  * Options: 8 positions
+* Import CSV, add/edit/sell stock positions, and edit/sell option positions must keep working.
+
+Terminal requirements:
+
+* Header/summary/position count should show the true portfolio count:
+
+  * 18 positions
+  * or “10 stocks · 8 options”
+* Any AI Portfolio Review payload should include both stocks and actual option holdings.
+* Any portfolio tickers/context sent to the agent should include stock tickers plus option underlyings.
+* If Terminal displays actual holdings, keep stock holdings and actual option holdings visually distinct.
+* Do not label the options-flow scanner as user option holdings.
+* Actual user options should show fields like:
+
+  * underlying
+  * call/put
+  * expiration
+  * strike
+  * contracts
+  * avg premium
+  * mark
+  * market value
+  * unrealized P&L
+
+Fundamentals requirements:
+
+* Header should not say or imply only “10 holdings” when the actual portfolio has 18 positions.
+* Preferred display:
+
+  * “18 positions”
+  * secondary: “10 stocks · 8 options”
+  * optional helper text: “Fundamentals shown by underlying symbol”
+* Fundamentals table should include stock tickers plus option underlyings.
+* Use unique_symbol_count only for deduped fundamentals-row counts.
+* Use total_position_count for true portfolio position count.
+* Fix the warning rendering bug:
+
+  * Bad: “Fundamentals unavailable for: [object Object]”
+  * Good: “Fundamentals unavailable for: IQEPF”
+* Use unavailable_symbols if backend provides it as list[str].
+* Do not render unavailable object arrays directly.
+
+Shared frontend portfolio symbols:
+
+* Any helper that derives portfolio symbols for:
+
+  * agent context
+  * alerts
+  * screeners
+  * news
+  * catalysts
+  * cross-page portfolio-aware features
+    must include option underlyings in addition to stock holdings.
+
+Validation required before reporting done:
+
+1. Dashboard still shows 10 stock/core positions and 8 option positions.
+2. Terminal shows 18 total portfolio positions or “10 stocks · 8 options.”
+3. Terminal AI review/context payload includes actual option positions.
+4. Fundamentals shows 18 total portfolio positions and includes option underlyings CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO.
+5. Fundamentals warning no longer renders “[object Object].”
+6. Portfolio app_context / agent context includes stock tickers plus option underlyings.
+7. Actual option holdings are not confused with the Options Flow scanner table.
+8. Report exactly which components/hooks/request mappers were changed.

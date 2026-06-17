@@ -179,9 +179,15 @@ export default function PortfolioFundamentalsView() {
   }, [data]);
 
   const symbols: string[] = data?.symbols ?? [];
-  const unavailable: string[] = data?.unavailable ?? [];
+  const unavailableRaw: any[] = data?.unavailable_symbols ?? data?.unavailable ?? [];
+  const unavailable: string[] = unavailableRaw.map((s: any) =>
+    typeof s === 'string' ? s : (s?.symbol ?? s?.ticker ?? s?.name ?? String(s))
+  );
   const cacheInfo = data?.cache ?? data?.cache_info ?? null;
   const holdingsCount: number = data?.holdings_count ?? rows.length;
+  const totalPosCount: number = data?.total_position_count ?? holdingsCount;
+  const eqPosCount: number | null = data?.equity_position_count ?? null;
+  const optPosCount: number | null = data?.option_position_count ?? null;
 
   // Filter to columns that have ≥1 non-null value in the data
   const visibleColumns = useMemo<ColDef[]>(() => {
@@ -256,10 +262,12 @@ export default function PortfolioFundamentalsView() {
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-sm font-bold tracking-wide text-white">Portfolio Fundamentals</h2>
-            {holdingsCount > 0 && (
+            {totalPosCount > 0 && (
               <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                 style={{ background: 'rgba(92,200,240,0.12)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.25)' }}>
-                {holdingsCount} holding{holdingsCount !== 1 ? 's' : ''}
+                {eqPosCount != null && optPosCount != null
+                  ? `${eqPosCount} stocks · ${optPosCount} options`
+                  : `${totalPosCount} position${totalPosCount !== 1 ? 's' : ''}`}
               </span>
             )}
             {unavailable.length > 0 && (
@@ -271,7 +279,7 @@ export default function PortfolioFundamentalsView() {
             )}
           </div>
           <p className="text-[11px] mt-0.5" style={{ color: '#475569' }}>
-            Fundamentals for current open portfolio holdings
+            Fundamentals shown by underlying symbol · stocks + option underlyings
           </p>
         </div>
 

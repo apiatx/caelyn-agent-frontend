@@ -64,6 +64,11 @@ interface CaelynTerminalData {
     sentiment: string; market_status: string;
   };
   positions_count: N;
+  equity_position_count?: N;
+  option_position_count?: N;
+  total_position_count?: N;
+  unique_symbol_count?: N;
+  option_underlying_symbols?: string[];
   holdings: CTHolding[];
   performance_chart?: CTChartPoint[];
   performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
@@ -392,12 +397,23 @@ export default function CaelynTerminalPage() {
     const iv = setInterval(() => { idx++; if (idx < stages.length) setAiStage(stages[idx]); }, 2000);
     try {
       const holdingsPayload = dashboardHoldings.map(h => ({ ticker: h.ticker, shares: h.shares, avg_cost: h.avgCost }));
+      const optionPositions = (portfolioHoldingsData?.option_open_positions ?? []).map((op: any) => ({
+        underlying:     op.underlying ?? op.ticker,
+        option_type:    op.option_type ?? op.type,
+        expiration:     op.expiration ?? op.exp_date,
+        strike:         op.strike,
+        contracts:      op.contracts,
+        avg_premium:    op.avg_premium ?? op.avg_cost,
+        mark:           op.mark,
+        market_value:   op.market_value,
+        unrealized_pnl: op.unrealized_pnl,
+      }));
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000);
       const res = await fetch('/api/portfolio-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdings: holdingsPayload }),
+        body: JSON.stringify({ holdings: holdingsPayload, ...(optionPositions.length ? { option_positions: optionPositions } : {}) }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -487,8 +503,12 @@ export default function CaelynTerminalPage() {
     } else {
       parts.push('Portfolio analytics terminal — shows holdings, performance, risk metrics, investment style, goals, news, and earnings calendar for the connected portfolio.');
     }
+    const optUnderlying: string[] = d.option_underlying_symbols
+      ?? (portfolioHoldingsData?.option_open_positions ?? []).map((op: any) => op.underlying ?? op.ticker ?? '').filter(Boolean)
+           .filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+    if (optUnderlying.length) parts.push(`Option underlyings: ${optUnderlying.join(', ')}`);
     return parts.join('\n');
-  })(), [d, ph]);
+  })(), [d, ph, portfolioHoldingsData]);
   const p   = d.portfolio;
 
   // ── Derived values for new panels ────────────────────────────────────────
@@ -552,7 +572,14 @@ export default function CaelynTerminalPage() {
   const chartPoints = d.performance_charts?.[perfPeriod] ?? d.performance_chart ?? (ph ? PH_CHART : []);
   const hasChartData = (chartPoints as any[]).length >= 2;
 
-  const posLabel  = (ph || isNull(d.positions_count)) ? '— Positions' : `${d.positions_count} Positions`;
+  const eqCount  = d.equity_position_count ?? null;
+  const optCount = d.option_position_count ?? null;
+  const totCount = d.total_position_count ?? d.positions_count;
+  const posLabel  = (ph || isNull(totCount))
+    ? '— Positions'
+    : (eqCount != null && optCount != null)
+      ? `${eqCount} stocks · ${optCount} options`
+      : `${totCount} Positions`;
   const liveColor = (isLoading || isFetching) ? C.amber : ph ? C.red : C.green;
   const liveLabel = (isLoading || isFetching) ? 'CONNECTING' : ph ? 'OFFLINE' : 'LIVE';
 
