@@ -2331,7 +2331,7 @@ function TenYearSpxTab() {
    Strategy Page — five-tab wrapper
    ═══════════════════════════════════════════════════════════════════ */
 export default function StrategyScreenerPage() {
-  const [tab, setTab] = useState<'screener' | 'smart-options' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('screener');
+  const [tab, setTab] = useState<'screener' | 'smart-options' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('smart-options');
 
   const tabStyle = (active: boolean): CSSProperties => ({
     padding: '8px 20px',
@@ -2351,11 +2351,11 @@ export default function StrategyScreenerPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
       <div style={{ borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 0, padding: '0 24px', background: C.surface }}>
-        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>Chain Reaction</button>
         <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>Smart Options</button>
         <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>VIX Risk Regime</button>
         <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>Weekly Movements</button>
         <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>10Y Yield vs SPX</button>
+        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>AI Bottlenecks</button>
       </div>
 
       {tab === 'screener' && <StrategyScreenerInner />}
