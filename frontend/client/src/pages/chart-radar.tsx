@@ -53,7 +53,7 @@ interface FlatGroup extends RadarGroup {
   filteredSymbols: RadarSymbol[];
 }
 
-/* ── TradingView URL — exact same params as MultiCharts page ────────────── */
+/* ── TradingView URL — stripped-down config for fast radar cards ─────────── */
 function buildTvUrl(symbol: string, interval: string): string {
   const tvInterval = interval === '30m' ? '30' : interval === '1h' ? '60' : interval;
   const enc = encodeURIComponent(symbol.trim().toUpperCase());
@@ -67,15 +67,18 @@ function buildTvUrl(symbol: string, interval: string): string {
     `&toolbar_bg=080808` +
     `&theme=dark` +
     `&timezone=exchange` +
-    `&withdateranges=true` +
+    `&withdateranges=false` +
     `&hide_side_toolbar=true` +
-    `&hide_top_toolbar=false` +
-    `&allow_symbol_change=true` +
+    `&hide_top_toolbar=true` +
+    `&allow_symbol_change=false` +
     `&enable_publishing=false` +
     `&calendar=false` +
+    `&details=false` +
+    `&hotlist=false` +
     `&studies=%5B%5D` +
+    `&compareSymbols=%5B%5D` +
     `&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D` +
-    `&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%5D`
+    `&enabled_features=%5B%22use_localstorage_for_settings%22%5D`
   );
 }
 
@@ -93,6 +96,69 @@ function fmtRelvol(r?: number | null): string {
 const MKT_CAP_ORDER: Record<string, number> = {
   Mega: 0, Large: 1, Mid: 2, Small: 3, Micro: 4, Nano: 5,
 };
+
+/* ── TradingView load queue — max 2 concurrent iframes ─────────────────── */
+// Shared module-level singleton: prevents 20+ TV scripts firing at once.
+const TV_MAX_CONCURRENT   = 2;
+const TV_SLOT_TIMEOUT_MS  = 5_000; // auto-release slot after 5 s if onLoad never fires
+let _tvActive = 0;
+const _tvPending: Array<() => void> = [];
+
+interface TvSlot { cancel: () => void; release: () => void; }
+
+function tvRequestSlot(onGranted: () => void): TvSlot {
+  let cancelled = false;
+  let released  = false;
+
+  const release = () => {
+    if (released) return;
+    released = true;
+    _tvActive = Math.max(0, _tvActive - 1);
+    const next = _tvPending.shift();
+    if (next) { _tvActive++; next(); }
+  };
+
+  const grant = () => {
+    if (cancelled) { _tvActive = Math.max(0, _tvActive - 1); return; }
+    onGranted();
+  };
+
+  const cancel = () => {
+    cancelled = true;
+    const idx = _tvPending.indexOf(grant);
+    if (idx >= 0) _tvPending.splice(idx, 1);
+  };
+
+  if (_tvActive < TV_MAX_CONCURRENT) {
+    _tvActive++;
+    grant();
+  } else {
+    _tvPending.push(grant);
+  }
+
+  return { cancel, release };
+}
+
+/* ── Dev performance tracker ────────────────────────────────────────────── */
+const _DEV = import.meta.env.DEV;
+const _radarT0 = _DEV ? performance.now() : 0;
+let _firstIframeMounted = false;
+let _mountedIframeCount = 0;
+
+function _trackMount(sym: string) {
+  if (!_DEV) return;
+  _mountedIframeCount++;
+  if (!_firstIframeMounted) {
+    _firstIframeMounted = true;
+    console.log(`[ChartRadar] ⚡ First iframe mounted: ${sym} +${(performance.now() - _radarT0).toFixed(0)}ms`);
+  }
+  console.log(`[ChartRadar] 📊 Iframes currently mounted: ${_mountedIframeCount}`);
+}
+
+function _trackFirstLoad(sym: string) {
+  if (!_DEV) return;
+  console.log(`[ChartRadar] ✅ First iframe loaded (onLoad): ${sym} +${(performance.now() - _radarT0).toFixed(0)}ms`);
+}
 
 /* ── Button helpers ─────────────────────────────────────────────────────── */
 const btnBase: React.CSSProperties = {
@@ -126,43 +192,93 @@ interface RadarChartCardProps {
   staggerIndex: number;
 }
 
+// Stable key for iframe — only changes if symbol or interval changes
+function makeStableKey(tvSym: string, interval: string) {
+  return `${tvSym}||${interval}`;
+}
+
 const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, source, staggerIndex }: RadarChartCardProps) {
-  const tvSym = sym.tradingview_symbol || sym.ticker;
-  const rvCol = sym.relative_volume == null ? C.dim
+  const tvSym  = sym.tradingview_symbol || sym.ticker;
+  const rvCol  = sym.relative_volume == null ? C.dim
     : sym.relative_volume >= 2   ? C.amber
     : sym.relative_volume >= 1.5 ? C.teal : C.dim;
+  const stableKey = makeStableKey(tvSym, interval);
 
-  /* ── IntersectionObserver + stagger: iframe mounts 1s apart top-to-bottom */
-  const cardRef        = useRef<HTMLDivElement>(null);
+  const cardRef         = useRef<HTMLDivElement>(null);
   const [iframeMounted, setIframeMounted] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slotRef         = useRef<TvSlot | null>(null);
+  const autoReleaseRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevKeyRef      = useRef('');
+  const firstLoadLogRef = useRef(false);
 
-  /* Reset when symbol or interval changes so stale iframe doesn't persist */
-  const prevKeyRef = useRef('');
-  const stableKey  = `${tvSym}||${interval}`;
+  /* ── Reset when symbol / interval changes so stale iframe never persists */
   if (prevKeyRef.current !== stableKey) {
     prevKeyRef.current = stableKey;
     if (iframeMounted) setIframeMounted(false);
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (slotRef.current)       { slotRef.current.cancel(); slotRef.current = null; }
+    if (autoReleaseRef.current){ clearTimeout(autoReleaseRef.current); autoReleaseRef.current = null; }
+    firstLoadLogRef.current = false;
   }
 
+  /* ── Request a slot from the global queue, then set iframeMounted ──────── */
+  const doMount = useCallback(() => {
+    if (slotRef.current) return; // already queued or granted
+    const slot = tvRequestSlot(() => {
+      setIframeMounted(true);
+      _trackMount(sym.ticker);
+    });
+    slotRef.current = slot;
+    // Fallback: release slot after timeout in case onLoad never fires
+    autoReleaseRef.current = setTimeout(() => {
+      slot.release();
+      autoReleaseRef.current = null;
+    }, TV_SLOT_TIMEOUT_MS);
+  // refs are stable — no real deps needed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sym.ticker]);
+
+  /* ── Eager: first 4 visible cards mount immediately (above fold desktop) */
   useEffect(() => {
+    if (staggerIndex >= 4) return;
+    doMount();
+  // Re-run only when stableKey or staggerIndex changes (symbol/interval swap)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableKey, staggerIndex]);
+
+  /* ── Lazy: remaining cards via IntersectionObserver (1500px ahead) ──────── */
+  useEffect(() => {
+    if (staggerIndex < 4) return; // handled by eager effect above
     const el = cardRef.current;
     if (!el || iframeMounted) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          obs.disconnect();
-          /* Stagger: each card waits staggerIndex × 1 000 ms before mounting */
-          timerRef.current = setTimeout(() => setIframeMounted(true), staggerIndex * 1000);
-        }
+        if (!entry.isIntersecting) return;
+        obs.disconnect();
+        doMount();
       },
-      { rootMargin: '300px 0px' },
+      { rootMargin: '1500px 0px', threshold: 0.01 },
     );
     obs.observe(el);
-    return () => { obs.disconnect(); if (timerRef.current) clearTimeout(timerRef.current); };
-  /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [stableKey, iframeMounted, staggerIndex]);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stableKey, iframeMounted, staggerIndex, doMount]);
+
+  /* ── Cleanup on unmount ─────────────────────────────────────────────────── */
+  useEffect(() => () => {
+    slotRef.current?.cancel();
+    if (autoReleaseRef.current) clearTimeout(autoReleaseRef.current);
+  }, []);
+
+  /* ── iframe onLoad: release slot early + timing log ────────────────────── */
+  const handleLoad = useCallback(() => {
+    if (!firstLoadLogRef.current) {
+      firstLoadLogRef.current = true;
+      _trackFirstLoad(sym.ticker);
+    }
+    slotRef.current?.release();
+    if (autoReleaseRef.current) { clearTimeout(autoReleaseRef.current); autoReleaseRef.current = null; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sym.ticker]);
 
   return (
     <div style={{
@@ -265,21 +381,22 @@ const RadarChartCard = memo(function RadarChartCard({ sym, interval, compact, so
         )}
       </div>
 
-      {/* TradingView iframe — mounted only when card enters viewport */}
+      {/* Fixed-height container prevents layout thrash before iframe loads */}
       <div
         ref={cardRef}
         style={{ height: compact ? 210 : 340, position: 'relative', flexShrink: 0, background: C.card2 }}
       >
         {iframeMounted ? (
           <iframe
-            key={`${sym.ticker}-${interval}`}
+            key={`tv-${tvSym}-${interval}`}
             src={buildTvUrl(tvSym, interval)}
             title={sym.ticker}
+            onLoad={handleLoad}
             allowFullScreen
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
           />
         ) : (
-          /* Lightweight placeholder until IntersectionObserver fires */
+          /* Lightweight placeholder until queue grants a slot */
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -566,6 +683,28 @@ export default function ChartRadarPage() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [groupLimits,    setGroupLimits]    = useState<Record<string, number>>({});
 
+  /* ── Preconnect to TradingView hosts for faster widget loads ────────── */
+  useEffect(() => {
+    const hosts = [
+      'https://s.tradingview.com',
+      'https://www.tradingview.com',
+      'https://s3.tradingview.com',
+    ];
+    hosts.forEach(href => {
+      if (!document.querySelector(`link[rel="preconnect"][href="${href}"]`)) {
+        const el = document.createElement('link');
+        el.rel = 'preconnect'; el.href = href; el.crossOrigin = 'anonymous';
+        document.head.appendChild(el);
+      }
+      const dns = href.replace('https:', '');
+      if (!document.querySelector(`link[rel="dns-prefetch"][href="${dns}"]`)) {
+        const el = document.createElement('link');
+        el.rel = 'dns-prefetch'; el.href = dns;
+        document.head.appendChild(el);
+      }
+    });
+  }, []);
+
   /* Page context for AI chatbot */
   useSetPageContext(
     `[Chart Radar] source:${source} group_by:${groupBy}`,
@@ -628,25 +767,14 @@ export default function ChartRadarPage() {
     setGroupLimits(prev => ({ ...prev, [key]: (prev[key] ?? 6) + 6 }));
   }, []);
 
-  /* ── Performance log (dev) ──────────────────────────────────────────── */
+  /* ── Dev-only: log visible card count on expand/sort changes ─────────── */
   useEffect(() => {
-    if (!data) return;
-    const expandedArr = Array.from(expandedGroups);
+    if (!_DEV || !data) return;
+    const expandedArr  = Array.from(expandedGroups);
     const visibleCards = filteredGroups
       .filter(g => expandedArr.includes(g.key))
       .reduce((sum, g) => sum + Math.min(g.filteredSymbols.length, groupLimits[g.key] ?? 6), 0);
-    const firstExpanded = filteredGroups.find(g => expandedArr.includes(g.key));
-    const firstSym      = firstExpanded?.filteredSymbols[0];
-    const firstIframeSrc = firstSym
-      ? buildTvUrl(firstSym.tradingview_symbol || firstSym.ticker, 'D')
-      : null;
-    console.log('[CHART_RADAR_RENDER]', {
-      groups:        filteredGroups.length,
-      expandedGroups: expandedArr,
-      visibleCards,
-      mountedIframes: 'lazy — IntersectionObserver gated per card',
-      firstIframeSrc,
-    });
+    console.log('[ChartRadar] visible card slots:', visibleCards, '| groups expanded:', expandedArr.length);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedGroups, filteredGroups, groupLimits]);
 

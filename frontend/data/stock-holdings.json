@@ -1,102 +1,92 @@
 [
   {
-    "id": "mqi7evvaom3u",
+    "id": "mqi8nyfod2ra",
     "ticker": "LPTH",
     "shares": 695,
     "avgCost": 12.646367,
     "assetType": "stock",
     "addedAt": "2026-03-25",
-    "date_added": "2026-03-25",
-    "entry_date": "2026-03-25"
+    "date_added": "2026-03-25"
   },
   {
-    "id": "mqi7evvbd4xq",
+    "id": "mqi8nyfo80vm",
     "ticker": "IQEPF",
     "shares": 13181,
     "avgCost": 0.545,
     "assetType": "stock",
     "addedAt": "2026-03-25",
-    "date_added": "2026-03-25",
-    "entry_date": "2026-03-25"
+    "date_added": "2026-03-25"
   },
   {
-    "id": "mqi7evvb43o9",
+    "id": "mqi8nyfor75a",
     "ticker": "OUST",
     "shares": 368,
     "avgCost": 27.116436,
     "assetType": "stock",
     "addedAt": "2026-03-16",
-    "date_added": "2026-03-16",
-    "entry_date": "2026-03-16"
+    "date_added": "2026-03-16"
   },
   {
-    "id": "mqi7evvb0ky5",
+    "id": "mqi8nyfoeqdi",
     "ticker": "AOSL",
     "shares": 259,
     "avgCost": 38.555,
     "assetType": "stock",
     "addedAt": "2026-05-15",
-    "date_added": "2026-05-15",
-    "entry_date": "2026-05-15"
+    "date_added": "2026-05-15"
   },
   {
-    "id": "mqi7evvb10dz",
+    "id": "mqi8nyfogfwq",
     "ticker": "SLNH",
     "shares": 18957,
     "avgCost": 1.998941,
     "assetType": "stock",
     "addedAt": "2026-05-12",
-    "date_added": "2026-05-12",
-    "entry_date": "2026-05-12"
+    "date_added": "2026-05-12"
   },
   {
-    "id": "mqi7evvb0yps",
+    "id": "mqi8nyfo8cw3",
     "ticker": "SIVEF",
     "shares": 2996,
     "avgCost": 1.236996,
     "assetType": "stock",
     "addedAt": "2026-03-23",
-    "date_added": "2026-03-23",
-    "entry_date": "2026-03-23"
+    "date_added": "2026-03-23"
   },
   {
-    "id": "mqi7evvb4f24",
+    "id": "mqi8nyfomqji",
     "ticker": "NBIS",
     "shares": 76,
     "avgCost": 91.49125,
     "assetType": "stock",
     "addedAt": "2026-01-05",
-    "date_added": "2026-01-05",
-    "entry_date": "2026-01-05"
+    "date_added": "2026-01-05"
   },
   {
-    "id": "mqi7evvb6o2u",
+    "id": "mqi8nyfosvs0",
     "ticker": "PENG",
     "shares": 184,
     "avgCost": 35.47,
     "assetType": "stock",
     "addedAt": "2026-05-05",
-    "date_added": "2026-05-05",
-    "entry_date": "2026-05-05"
+    "date_added": "2026-05-05"
   },
   {
-    "id": "mqi7evvbuov8",
+    "id": "mqi8nyfome8r",
     "ticker": "AMPG",
     "shares": 2314,
     "avgCost": 4.3199,
     "assetType": "stock",
     "addedAt": "2026-05-20",
-    "date_added": "2026-05-20",
-    "entry_date": "2026-05-20"
+    "date_added": "2026-05-20"
   },
   {
-    "id": "mqi7evvbclnz",
+    "id": "mqi8nyfpase2",
     "ticker": "FLNC",
     "shares": 608,
     "avgCost": 19.744613,
     "assetType": "stock",
     "addedAt": "2026-05-15",
-    "date_added": "2026-05-15",
-    "entry_date": "2026-05-15"
+    "date_added": "2026-05-15"
   }
 ]

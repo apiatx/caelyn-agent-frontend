@@ -1,0 +1,43 @@
+Audit Chart Radar frontend first. The backend endpoint is already live:
+
+GET /api/chart-radar/snapshots?symbols=AAPL,MSFT&interval=15m&range=10d
+
+Goal: make Chart Radar visually load immediately by replacing the default wall of TradingView iframes with instant cached lightweight chart previews.
+
+Hard requirements:
+
+1. Do not remove existing Chart Radar tabs, filters, grouping, ticker source logic, selected radar list, or layout behavior.
+2. Find the current Chart Radar page/component and identify every place TradingView iframes/widgets are mounted.
+3. The default grid must mount ZERO TradingView iframes on initial page load.
+4. Install/use `lightweight-charts` for the default chart cards.
+5. Fetch OHLC previews from `/api/chart-radar/snapshots`.
+6. Render each chart card from `bars: [[ts_ms, open, high, low, close, volume], ...]`.
+7. Use cached backend data exactly as returned. Do not call FMP directly from frontend.
+8. If `missing: true`, show a clean placeholder card: “Chart warming…” and do not block the page.
+9. If `stale: true`, still render the chart and show a subtle “stale” / “updated X min ago” label.
+10. Add an explicit action like “Open full chart” or clicking/expanding a card that mounts the TradingView widget only for that selected ticker.
+11. Hard-cap active TradingView iframes to 1–3 mounted at once. When a new full chart opens beyond the cap, unmount the oldest one.
+12. Do not lazy-load TradingView just because a card scrolls into view. Scrolling should only render lightweight preview charts.
+13. Use virtualization or visible-window rendering if the page can show many tickers.
+14. Preserve mobile/responsive behavior.
+15. Add lightweight frontend perf logging:
+
+* time to page shell rendered
+* time to first lightweight chart rendered
+* time to all visible lightweight charts rendered
+* number of TradingView iframes mounted
+
+Recommended UI:
+
+* Default card: ticker, price/% if already available from existing data, lightweight candlestick preview, stale/missing badge, “Open full chart”.
+* Full TradingView chart should open in modal, drawer, expanded panel, or pinned comparison area — but not inside every grid card by default.
+
+Acceptance criteria:
+
+* Initial page load mounts 0 TradingView iframes.
+* Visible lightweight chart previews render in under 1 second when backend cache is warm.
+* Missing/cold symbols do not freeze the page.
+* Opening one full chart mounts exactly one TradingView iframe.
+* Scrolling the page does not create a flood of TradingView iframes.
+* Existing Chart Radar filters/groupings still work.
+* No backend changes unless a frontend integration bug reveals a required response-shape adjustment.

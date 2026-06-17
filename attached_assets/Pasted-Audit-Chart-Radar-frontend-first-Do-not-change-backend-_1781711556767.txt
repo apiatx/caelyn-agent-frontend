@@ -1,0 +1,67 @@
+Audit Chart Radar frontend first. Do not change backend. Do not create custom charts. Do not use FMP candles. Chart Radar must continue using real TradingView Advanced Chart widgets/iframes.
+
+Goal:
+Make Chart Radar feel instant by optimizing how TradingView widgets are mounted, prioritized, lazy-loaded, and preserved.
+
+Important:
+The user wants real TradingView widgets/iframes, not custom lightweight charts. Do not install or use `lightweight-charts`.
+
+Tasks:
+
+1. Find the Chart Radar page/component and every TradingView widget component used there.
+2. Identify whether widgets are being remounted on page state changes, filter changes, tab changes, sort changes, theme changes, or parent re-renders.
+3. Fix unstable React keys. Use a stable key like `${exchange}:${symbol}:${interval}`. Never use `Date.now()`, random IDs, or array index if sorting/filtering can change.
+4. Memoize the TradingView widget card/component so existing iframes are not destroyed/recreated unless symbol or interval actually changes.
+5. Above the fold, eagerly mount only the first visible row of charts:
+
+   * desktop: first 4 charts
+   * tablet/mobile: first 1–2 charts
+6. Do not mount all TradingView widgets on initial page load.
+7. Implement aggressive lazy preloading for below-the-fold widgets using IntersectionObserver:
+
+   * rootMargin: `1500px 0px` initially
+   * threshold: `0.01`
+   * load before the user reaches the chart, not after.
+8. Add a widget-load queue with max concurrency of 2. Do not inject 20 TradingView scripts at once.
+9. Preserve already-loaded widgets when the user scrolls away and back, unless memory becomes a proven issue. Do not constantly unmount/remount while scrolling.
+10. Add TradingView host preconnect/dns-prefetch tags in the appropriate Next.js head/layout:
+
+    * `https://s3.tradingview.com`
+    * `https://www.tradingview.com`
+    * any additional TradingView iframe/widget host confirmed in DevTools Network.
+11. Load the TradingView embed script correctly for each widget. If using the official script-embed approach, make sure React is not duplicating scripts on every render.
+12. Strip the radar widget config down:
+
+    * `allow_symbol_change: false`
+    * `calendar: false`
+    * `details: false`
+    * `hotlist: false`
+    * `withdateranges: false`
+    * `studies: []`
+    * `compareSymbols: []`
+    * hide side toolbar
+    * consider hiding top toolbar for compact radar cards
+13. Ensure every widget container has a fixed height before loading so layout does not thrash.
+14. Add loading instrumentation:
+
+    * time to Chart Radar shell
+    * time to first TradingView iframe inserted
+    * time to first TradingView iframe loaded
+    * number of TradingView widgets mounted initially
+    * number of TradingView widgets currently mounted
+    * whether any widget remounted unexpectedly
+15. Add visible debug logs temporarily during validation, then remove noisy logs or gate them behind a dev flag.
+
+Acceptance criteria:
+
+1. Initial Chart Radar page renders immediately.
+2. Initial mount creates only the first visible 1–4 TradingView widgets, not the entire list.
+3. First visible TradingView widget starts loading immediately.
+4. Scrolling near the next charts triggers preload before they are visible.
+5. No more than 2 new TradingView widgets are created concurrently.
+6. Changing filters/sorting does not remount unchanged ticker widgets.
+7. Returning to a previously loaded chart does not reload it unnecessarily.
+8. Existing Chart Radar tabs, filters, grouping, ticker source logic, and layout are preserved.
+9. No backend changes.
+10. No FMP candle calls.
+11. No lightweight/custom chart implementation.
