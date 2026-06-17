@@ -1,0 +1,113 @@
+Audit first. Do not code until you inspect the live browser network responses for:
+
+1. GET /api/portfolio/fundamentals
+2. GET /api/caelyn-terminal
+3. The Dashboard holdings/options endpoint already used by stocks-portfolio.tsx
+
+Backend status:
+The backend has now validated:
+
+* /api/portfolio/fundamentals returns hydrated fundamentals for option underlyings:
+  CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+* These option underlyings have real values such as company_name, market_cap, sector, ratios, gross_margin, debt/equity, P/E where FMP supports them.
+* unavailable_symbols is a clean list[str], currently expected to include SIVEF only.
+* /api/portfolio/fundamentals now supports force_refresh=true.
+* Normal load should use cached fundamentals indefinitely.
+* Manual refresh should call force_refresh=true.
+* /api/caelyn-terminal returns option_positions with 8 actual user option rows and canonical aliases:
+  underlying_symbol, call_put, expiration, strike, contracts, avg_premium, mark, market_value, unrealized_pnl
+
+Current frontend bugs:
+
+1. Fundamentals tab shows option underlyings as tickers, but the fundamental data cells are blank.
+2. Portfolio Terminal tab still does not visibly show actual user option holdings.
+3. Previous frontend work added options to context/AI payload, but did not render actual options holdings in the Terminal UI.
+
+Bug 1 — Fundamentals blank rows:
+Inspect one actual option-underlying row from /api/portfolio/fundamentals in the Network tab and map the table columns to the real backend keys.
+
+Likely issue:
+The frontend table is using field names that do not match backend response keys, or it is treating data_quality="partial" as unavailable.
+
+Required behavior:
+
+1. Do not treat data_quality="partial" as unavailable.
+2. Only show a row as unavailable if backend unavailable_symbols includes that symbol, or if the row truly has no usable values.
+3. Use unavailable_symbols list[str].
+4. Never render unavailable object arrays directly.
+5. Table should show hydrated values for option underlyings:
+
+   * company name
+   * market cap
+   * sector
+   * P/E if available
+   * gross margin
+   * debt/equity
+   * any existing fields already shown for stock holdings
+6. SIVEF can remain unavailable if backend says unavailable_symbols=["SIVEF"].
+7. No "[object Object]" anywhere.
+
+Manual Refresh:
+
+1. Normal Fundamentals tab load must call /api/portfolio/fundamentals without force_refresh.
+2. Manual Refresh button must call /api/portfolio/fundamentals?force_refresh=true or append force_refresh=true to the existing query.
+3. Do not force refresh on every tab open/page load.
+
+Header/count behavior:
+
+* Show true portfolio position count:
+  "18 positions"
+  or "10 stocks · 8 options"
+* Optional helper text:
+  "Fundamentals shown by underlying symbol"
+* If also showing table rows, use unique_symbol_count for deduped fundamentals rows, not as the total portfolio position count.
+
+Bug 2 — Terminal missing actual option holdings:
+Add a visible section in the Portfolio Terminal tab for the user's actual option holdings.
+
+Required behavior:
+
+1. Use /api/caelyn-terminal option_positions as the primary source.
+2. If terminal option_positions is missing or if mark/market_value/unrealized_pnl are null, fallback/merge from the Dashboard option_open_positions source if it has richer live values.
+3. Add a clearly labeled section:
+   "Options Holdings" or "Portfolio Options"
+4. Keep this separate from the existing Options Flow scanner table.
+5. Do not confuse actual user option holdings with options-flow scanner rows.
+6. Actual option holdings table should show:
+
+   * underlying
+   * call/put
+   * expiration
+   * strike
+   * contracts
+   * avg premium
+   * mark
+   * market value
+   * unrealized P&L
+7. If mark, market_value, or unrealized_pnl are null, render "—" instead of blank, NaN, undefined, or hiding the row.
+8. Terminal header/count should show:
+   "18 positions"
+   or "10 stocks · 8 options"
+
+AI/context requirements:
+
+1. AI Portfolio Review payload must include actual option_positions, not just underlying symbols.
+2. Page/app context must include stock tickers plus option underlyings.
+3. Use underlying symbols only.
+4. Never pass OCC option contract IDs into stock/fundamental/news context.
+
+Validation required before reporting done:
+
+1. Dashboard still shows 10 stock/core positions and 8 option positions.
+2. Fundamentals table shows populated data for CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO.
+3. SIVEF can show unavailable if backend returns it in unavailable_symbols.
+4. No "[object Object]" appears.
+5. Manual Fundamentals Refresh sends force_refresh=true.
+6. Normal Fundamentals load does not send force_refresh=true.
+7. Terminal visibly shows an Options Holdings section with 8 rows:
+   CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+8. Null option marks/values/P&L render as "—".
+9. Terminal count shows 18 positions or "10 stocks · 8 options."
+10. Options Holdings and Options Flow scanner remain separate.
+11. AI Review payload includes actual option_positions.
+12. Report exact files/components/hooks changed.

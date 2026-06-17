@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUp, ArrowDown, ArrowUpDown, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 
@@ -151,6 +151,7 @@ export default function PortfolioFundamentalsView() {
   const [sortKey, setSortKey] = useState<string>('symbol');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const t0 = useMemo(() => Date.now(), []);
+  const forceRefreshNextRef = useRef(false);
 
   const {
     data,
@@ -162,7 +163,12 @@ export default function PortfolioFundamentalsView() {
   } = useQuery({
     queryKey: ['portfolio-fundamentals'],
     queryFn: async () => {
-      const res = await fetch('/api/portfolio/fundamentals', { credentials: 'include' });
+      const force = forceRefreshNextRef.current;
+      forceRefreshNextRef.current = false;
+      const url = force
+        ? '/api/portfolio/fundamentals?force_refresh=true'
+        : '/api/portfolio/fundamentals';
+      const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
@@ -297,7 +303,11 @@ export default function PortfolioFundamentalsView() {
             </span>
           )}
           <button
-            onClick={() => { queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] }); refetch(); }}
+            onClick={() => {
+              forceRefreshNextRef.current = true;
+              queryClient.invalidateQueries({ queryKey: ['portfolio-fundamentals'] });
+              refetch();
+            }}
             disabled={isFetching}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
             style={{ background: 'rgba(92,200,240,0.08)', color: '#5cc8f0', border: '1px solid rgba(92,200,240,0.2)', opacity: isFetching ? 0.5 : 1 }}>

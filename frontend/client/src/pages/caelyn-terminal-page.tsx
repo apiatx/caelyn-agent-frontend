@@ -69,6 +69,7 @@ interface CaelynTerminalData {
   total_position_count?: N;
   unique_symbol_count?: N;
   option_underlying_symbols?: string[];
+  option_positions?: any[];
   holdings: CTHolding[];
   performance_chart?: CTChartPoint[];
   performance_charts?: { '1D': CTChartPoint[]; '5D': CTChartPoint[]; '1M': CTChartPoint[]; '6M': CTChartPoint[]; '1Y': CTChartPoint[] };
@@ -142,6 +143,7 @@ const PLACEHOLDER: CaelynTerminalData = {
     sentiment: '—', market_status: '—',
   },
   positions_count: 0,
+  option_positions: [],
   holdings: ['NVDA','OSS','BUZZ','GOLD','BTC'].map(t => ({ ticker: t, price: 0, change: 0, change_pct: 0, allocation_pct: 0 })),
   performance_chart: PH_CHART,
   performance_charts: PH_CHARTS,
@@ -784,6 +786,84 @@ export default function CaelynTerminalPage() {
                           })()}
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Options Holdings ──────────────────────────────── */}
+          {(() => {
+            const ctOpts: any[] = d.option_positions ?? [];
+            if (ctOpts.length === 0 && ph) return null;
+            const dashOpts: any[] = (portfolioHoldingsData as any)?.option_open_positions ?? [];
+            const mergedOpts = ctOpts.map((op: any) => {
+              const u = op.underlying_symbol ?? op.underlying ?? '';
+              const dashRow = dashOpts.find((r: any) =>
+                (r.underlying ?? r.ticker ?? '') === u &&
+                String(r.strike ?? '') === String(op.strike ?? '') &&
+                (r.expiration ?? r.exp_date ?? '') === (op.expiration ?? op.expiration_date ?? '')
+              );
+              return {
+                underlying: u,
+                type: (op.call_put ?? op.option_type ?? '').slice(0, 1),
+                expiration: op.expiration ?? op.expiration_date ?? '',
+                strike: op.strike,
+                contracts: op.contracts_open ?? op.contracts,
+                avg_premium: op.avg_premium,
+                mark: op.mark ?? dashRow?.mark ?? dashRow?.last ?? null,
+                market_value: op.market_value ?? dashRow?.market_value ?? dashRow?.current_value ?? null,
+                unrealized_pnl: op.unrealized_pnl ?? dashRow?.unrealized_pnl ?? dashRow?.unrealized_pl ?? null,
+              };
+            });
+            if (mergedOpts.length === 0) return null;
+            const fmtExp = (s: string) => { const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[2]}/${m[3]}` : s; };
+            const pnlFmt = (n: any) => {
+              if (n == null) return { txt: '—', clr: C.dim };
+              const v = Number(n);
+              return { txt: `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`, clr: v >= 0 ? C.green : C.red };
+            };
+            const th = (align: 'left'|'right' = 'right') => ({ padding: '3px 2px', color: C.dim, fontWeight: 600, textAlign: align, fontSize: 7, letterSpacing: 0.2, whiteSpace: 'nowrap' as const });
+            const td = (extra: any = {}) => ({ padding: '3px 2px', color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, fontSize: 9, ...extra });
+            return (
+              <div style={{ background: C.card, flex: '2 1 0', minHeight: 0, borderBottom: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <CardHdr label="Options Holdings" badge={`${mergedOpts.length}`} />
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                    <colgroup>
+                      <col style={{ width: '17%' }} /><col style={{ width: '7%' }} /><col style={{ width: '14%' }} />
+                      <col style={{ width: '12%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} />
+                      <col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: '#080808' }}>
+                        <th style={th('left')}>TICKER</th>
+                        <th style={th()}>T</th>
+                        <th style={th()}>EXP</th>
+                        <th style={th()}>STR</th>
+                        <th style={th()}>QTY</th>
+                        <th style={th()}>PREM</th>
+                        <th style={th()}>MARK</th>
+                        <th style={th()}>P&amp;L</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mergedOpts.map((op, i) => {
+                        const pnl = pnlFmt(op.unrealized_pnl);
+                        return (
+                          <tr key={i} style={{ borderBottom: `1px solid ${C.dimLow}22` }}>
+                            <td style={td({ color: C.teal, fontWeight: 700 })}>{op.underlying}</td>
+                            <td style={td({ textAlign: 'right', color: op.type === 'C' ? C.green : C.red })}>{op.type}</td>
+                            <td style={td({ textAlign: 'right', color: C.dim })}>{fmtExp(op.expiration)}</td>
+                            <td style={td({ textAlign: 'right' })}>{op.strike != null ? `$${op.strike}` : '—'}</td>
+                            <td style={td({ textAlign: 'right' })}>{op.contracts ?? '—'}</td>
+                            <td style={td({ textAlign: 'right', color: C.dim })}>{op.avg_premium != null ? `$${Number(op.avg_premium).toFixed(2)}` : '—'}</td>
+                            <td style={td({ textAlign: 'right' })}>{op.mark != null ? `$${Number(op.mark).toFixed(2)}` : '—'}</td>
+                            <td style={td({ textAlign: 'right', color: pnl.clr, fontWeight: 600 })}>{pnl.txt}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
