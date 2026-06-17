@@ -1,0 +1,124 @@
+Add the Options Flow ticker lookup UI using the backend endpoints that now exist.
+
+Backend endpoints:
+
+* Autocomplete: GET /api/options-flow/symbols?q=<prefix>
+* Single ticker signal: GET /api/options/screener/{symbol}
+
+Goal:
+Add a compact ticker search bar at the top of the Options Flow page. When the user starts typing, show a dropdown of matching tickers. When the user selects a ticker or presses Enter, open a popup/modal showing that ticker’s full options signal.
+
+Critical constraints:
+
+* Do not redesign the Options Flow page.
+* Do not move existing sections.
+* Do not change the existing options screener/table/rankings/cards/filters/sorting/refresh behavior.
+* Do not change existing API calls for the main Options Flow page.
+* Do not create frontend scoring logic.
+* Do not create a new options engine.
+* Do not add LLM calls.
+* Do not add broad data fetching.
+* This is only a lookup feature.
+
+UI placement:
+
+* Add the search bar at the top of the Options Flow page, above the current content.
+* Keep it visually consistent with existing Options Flow styling.
+* Placeholder: “Search ticker options signal...”
+* Input should visually uppercase ticker text.
+* Dropdown should appear after 1–2 characters.
+* Debounce autocomplete requests.
+* Cancel stale autocomplete requests when typing quickly.
+* Do not call the single-ticker signal endpoint on every keystroke. Only call it when selecting a ticker or pressing Enter.
+
+Autocomplete behavior:
+
+* Call GET /api/options-flow/symbols?q=<prefix>
+* Show symbol and any label/name/score metadata returned by the endpoint.
+* Keep dropdown compact.
+* Keyboard support:
+
+  * Arrow up/down moves highlighted result.
+  * Enter selects highlighted result, or searches current typed symbol if nothing is highlighted.
+  * Escape closes dropdown.
+
+Modal behavior:
+
+* On ticker select or Enter, call GET /api/options/screener/{symbol}
+* Open a modal/popup with loading state while fetching.
+* Modal can close with X, Escape, or backdrop click.
+* Closing modal should not reset or disturb the existing Options Flow page state.
+
+Modal content:
+Display the backend response fields if present. Do not require every field to exist. Use graceful fallbacks.
+
+Suggested modal sections:
+
+1. Header
+
+   * ticker
+   * company/name if available
+   * underlying_price
+   * price_change_pct
+   * updated_at / data_source / data_quality if available
+
+2. Main signal
+
+   * composite_score
+   * primary_signal
+   * confidence / confidence_score
+   * side_bias
+   * thesis
+   * risks
+
+3. Flow breakdown
+
+   * call_volume
+   * put_volume
+   * pc_ratio
+   * avg_call_iv
+   * premium
+   * premium_display
+   * premium_breakdown
+   * call_put_breakdown
+   * otm_breakdown
+
+4. Best/top contract
+
+   * option_type
+   * expiry
+   * days_to_expiry
+   * strike
+   * bid / ask / mid if available
+   * volume
+   * open_interest
+   * delta / gamma / theta / vega / rho if available
+
+5. Top contracts
+
+   * top_contracts
+   * top_calls
+   * top_puts
+     Render these as compact rows/cards if arrays are returned.
+
+Error states:
+
+* HTTP 400 invalid ticker: show “Enter a valid ticker symbol.”
+* HTTP 404/no data/no options: show “No options signal found for this ticker.”
+* Other backend error: show “Couldn’t load options signal. Try again.”
+* Do not crash the page.
+
+Validation checklist:
+
+* Existing Options Flow content looks and behaves the same except for the new search bar.
+* Search dropdown appears when typing “NV”.
+* Selecting NVDA or AAPL opens the modal.
+* Pressing Enter with a valid ticker opens the modal.
+* Bad ticker shows clean error.
+* Modal closes cleanly.
+* Existing Options Flow ranking/list still loads.
+* No console errors.
+* No unrelated files changed.
+
+Important:
+This is a lookup feature only. Wire the frontend to the existing backend endpoints and preserve every existing Options Flow path.

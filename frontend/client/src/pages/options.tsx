@@ -22,6 +22,7 @@ import {
   Clock,
   Eye,
   BookOpen,
+  Search,
 } from "lucide-react";
 import {
   BarChart,
@@ -2432,6 +2433,486 @@ function OptionsGuideModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Ticker lookup search bar + signal modal ────────────────────────────────────
+// Self-contained — no parent state is read or mutated.
+interface AcSuggestion { symbol: string; name?: string; score?: number | null; }
+
+function TickerSignalModal({ symbol, data, loading, error, onClose }: {
+  symbol: string;
+  data: TickerResult | null;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+}) {
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const t = data;
+  const conf = t ? getConfidence(t.confidence, t.confidence_score) : null;
+  const signalColor = t?.primary_signal ? getSignalColor(t.primary_signal) : C.blue;
+
+  const renderContracts = (contracts: OptionContract[] | null | undefined, side: "call" | "put") => {
+    if (!contracts?.length) return null;
+    const color = sideColor(side);
+    return (
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ color, fontSize: 9, fontFamily: font, textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
+          Top {side}s
+        </div>
+        <div style={{ overflowX: "auto", borderRadius: 7, border: `1px solid ${color}20` }}>
+          <div style={{ minWidth: 400, background: C.cardAlt, borderRadius: 7, overflow: "hidden" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "60px 55px 60px 60px 50px 50px 45px", padding: "5px 10px", background: `${color}08`, fontSize: 9, fontFamily: font, textTransform: "uppercase", color: C.dim }}>
+              <span>Strike</span><span>Expiry</span><span style={{ textAlign: "right" }}>Vol</span><span style={{ textAlign: "right" }}>OI</span><span style={{ textAlign: "right" }}>V/OI</span><span style={{ textAlign: "right" }}>IV</span><span style={{ textAlign: "right" }}>Δ</span>
+            </div>
+            {contracts.slice(0, 5).map((raw, i) => {
+              const c = normalizeContract(raw);
+              return (
+                <div key={`${c.contract_symbol || c.symbol || i}`} style={{ display: "grid", gridTemplateColumns: "60px 55px 60px 60px 50px 50px 45px", padding: "4px 10px", borderTop: `1px solid ${C.border}`, fontSize: 11, fontFamily: font }}>
+                  <span style={{ color, fontWeight: 700 }}>${c.strike}</span>
+                  <span style={{ color: C.dim, fontSize: 10 }}>{compactDate(c.expiration)}</span>
+                  <span style={{ textAlign: "right", color: C.bright }}>{fmtVol(c.volume)}</span>
+                  <span style={{ textAlign: "right", color: C.text }}>{fmtVol(c.openInterest)}</span>
+                  <span style={{ textAlign: "right", color: C.yellow }}>{c.volumeToOi != null ? `${fmtNum(c.volumeToOi, 1)}×` : "—"}</span>
+                  <span style={{ textAlign: "right", color: C.yellow }}>{c.iv != null ? fmtIV(c.iv) : "—"}</span>
+                  <span style={{ textAlign: "right", color: C.text }}>{c.delta != null ? fmtNum(c.delta, 2) : "—"}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 2000, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 32, paddingBottom: 32 }}
+      onClick={onClose}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.78)" }} />
+      <div
+        style={{ position: "relative", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, width: "94%", maxWidth: 660, maxHeight: "calc(100vh - 64px)", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Sticky header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 18px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.bg, zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Activity className="w-4 h-4" style={{ color: signalColor }} />
+            <span style={{ color: C.bright, fontSize: 15, fontWeight: 800, fontFamily: font, letterSpacing: "-0.01em" }}>
+              {symbol}
+            </span>
+            {t?.category && <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>{t.category.toUpperCase()}</span>}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", padding: 4, display: "flex" }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "16px 18px", display: "grid", gap: 16 }}>
+          {/* Loading */}
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "40px 0", color: C.dim, fontSize: 12, fontFamily: font }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading options signal for {symbol}…
+            </div>
+          )}
+
+          {/* Error */}
+          {!loading && error && (
+            <div style={{ padding: "30px 0", textAlign: "center" }}>
+              <CircleAlert className="w-5 h-5 mx-auto mb-2" style={{ color: C.red }} />
+              <div style={{ color: C.red, fontSize: 12, fontFamily: font }}>{error}</div>
+            </div>
+          )}
+
+          {/* Content */}
+          {!loading && !error && t && (
+            <>
+              {/* ── 1. Header row ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
+                {t.underlying_price != null && (
+                  <MetricBlock label="Price" value={fmtMoney(t.underlying_price)} color={C.bright} />
+                )}
+                {t.price_change_pct != null && (
+                  <MetricBlock
+                    label="1D Change"
+                    value={fmtSmartPct(t.price_change_pct)}
+                    color={safeNum(t.price_change_pct) != null ? (safeNum(t.price_change_pct)! >= 0 ? C.green : C.red) : C.dim}
+                  />
+                )}
+                {t.data_quality?.confidence_score != null && (
+                  <MetricBlock label="Confidence" value={conf?.label ?? "—"} color={conf?.color ?? C.dim} />
+                )}
+                {t.composite_score != null && (
+                  <MetricBlock label="Score" value={`${Math.round(normalizeScore(t.composite_score) ?? 0)}`} color={scoreColor(normalizeScore(t.composite_score))} />
+                )}
+              </div>
+
+              {/* Meta line */}
+              {(t as any).updated_at || (t as any).data_source || (t as any).data_quality?.flags?.length ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  {(t as any).updated_at && (
+                    <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>
+                      Updated: {String((t as any).updated_at).slice(0, 19).replace("T", " ")}
+                    </span>
+                  )}
+                  {(t as any).data_source && (
+                    <span style={{ color: C.dim, fontSize: 10, fontFamily: font }}>· {(t as any).data_source}</span>
+                  )}
+                  {t.data_quality?.flags?.map((f, i) => (
+                    <Badge key={i} color={C.yellow} sm>{f}</Badge>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* ── 2. Main signal ── */}
+              {(t.primary_signal || t.thesis || t.risks || t.confidence || t.side_bias) && (
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>Signal</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: t.thesis || t.risks ? 12 : 0 }}>
+                    {t.primary_signal && (
+                      <MetricBlock label="Primary Signal" value={toTitleCase(t.primary_signal)} color={signalColor} />
+                    )}
+                    {t.confidence && (
+                      <MetricBlock label="Confidence" value={conf?.label ?? t.confidence} color={conf?.color ?? C.dim} />
+                    )}
+                    {(t as any).side_bias && (
+                      <MetricBlock label="Side Bias" value={String((t as any).side_bias).toUpperCase()} color={sideColor((t as any).side_bias)} />
+                    )}
+                    {t.composite_score != null && (
+                      <MetricBlock label="Composite Score" value={`${Math.round(normalizeScore(t.composite_score) ?? 0)}`} color={scoreColor(normalizeScore(t.composite_score))} />
+                    )}
+                  </div>
+                  {t.thesis && (
+                    <div style={{ marginBottom: t.risks ? 8 : 0 }}>
+                      <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", marginBottom: 4 }}>Thesis</div>
+                      <div style={{ color: C.text, fontSize: 12, fontFamily: sans, lineHeight: 1.6 }}>
+                        {ensureArray(t.thesis).map((line, i) => <div key={i}>{line}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {t.risks && (
+                    <div>
+                      <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", marginBottom: 4 }}>Risks</div>
+                      <div style={{ color: C.text, fontSize: 12, fontFamily: sans, lineHeight: 1.6 }}>
+                        {ensureArray(t.risks).map((line, i) => <div key={i}>{line}</div>)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── 3. Flow breakdown ── */}
+              {(t.call_volume != null || t.put_volume != null || t.pc_ratio != null || t.avg_call_iv != null || (t as any).premium != null) && (
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>Flow Breakdown</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
+                    {t.call_volume != null && <MetricBlock label="Call Vol" value={fmtVol(t.call_volume)} color={C.green} />}
+                    {t.put_volume != null && <MetricBlock label="Put Vol" value={fmtVol(t.put_volume)} color={C.red} />}
+                    {t.pc_ratio != null && <MetricBlock label="P/C Ratio" value={fmtNum(t.pc_ratio, 2)} color={pcColor(safeNum(t.pc_ratio))} />}
+                    {t.avg_call_iv != null && <MetricBlock label="Avg Call IV" value={fmtIV(t.avg_call_iv)} color={C.yellow} />}
+                    {(t as any).avg_put_iv != null && <MetricBlock label="Avg Put IV" value={fmtIV((t as any).avg_put_iv)} color={C.orange} />}
+                    {(t as any).premium != null && (
+                      <MetricBlock label="Premium" value={fmtCurrencyShort((t as any).premium)} color={C.gold} />
+                    )}
+                    {(t as any).premium_display && (
+                      <MetricBlock label="Premium" value={String((t as any).premium_display)} color={C.gold} />
+                    )}
+                  </div>
+                  {(t as any).premium_breakdown && (
+                    <div style={{ marginTop: 8, color: C.dim, fontSize: 11, fontFamily: font }}>{String((t as any).premium_breakdown)}</div>
+                  )}
+                  {(t as any).call_put_breakdown && (
+                    <div style={{ marginTop: 6, color: C.dim, fontSize: 11, fontFamily: font }}>{String((t as any).call_put_breakdown)}</div>
+                  )}
+                  {(t as any).otm_breakdown && (
+                    <div style={{ marginTop: 6, color: C.dim, fontSize: 11, fontFamily: font }}>{String((t as any).otm_breakdown)}</div>
+                  )}
+                </div>
+              )}
+
+              {/* ── 4. Best / top contract ── */}
+              {(() => {
+                const best: OptionContract | null =
+                  (t as any).best_contract ??
+                  (t as any).top_contract ??
+                  t.top_contracts?.[0] ??
+                  t.top_calls?.[0] ??
+                  t.top_puts?.[0] ??
+                  null;
+                if (!best) return null;
+                const bc = normalizeContract(best);
+                const bcColor = sideColor(bc.side);
+                return (
+                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
+                      Best Contract
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 8 }}>
+                      <MetricBlock label="Type" value={(bc.side || "—").toUpperCase()} color={bcColor} />
+                      {bc.strike != null && <MetricBlock label="Strike" value={`$${bc.strike}`} color={bcColor} />}
+                      {bc.expiration && <MetricBlock label="Expiry" value={compactDate(bc.expiration)} color={C.text} />}
+                      {bc.dte != null && <MetricBlock label="DTE" value={String(bc.dte)} color={C.dim} />}
+                      {bc.bid != null && bc.ask != null && <MetricBlock label="Bid / Ask" value={`${fmtMoney(bc.bid)} / ${fmtMoney(bc.ask)}`} color={C.text} />}
+                      {bc.volume != null && <MetricBlock label="Volume" value={fmtVol(bc.volume)} color={C.blue} />}
+                      {bc.openInterest != null && <MetricBlock label="Open Int" value={fmtVol(bc.openInterest)} color={C.text} />}
+                      {bc.iv != null && <MetricBlock label="IV" value={fmtIV(bc.iv)} color={C.yellow} />}
+                      {bc.delta != null && <MetricBlock label="Δ Delta" value={fmtNum(bc.delta, 3)} color={C.text} />}
+                      {bc.gamma != null && <MetricBlock label="Γ Gamma" value={fmtNum(bc.gamma, 4)} color={C.text} />}
+                      {bc.theta != null && <MetricBlock label="Θ Theta" value={fmtNum(bc.theta, 4)} color={C.red} />}
+                      {bc.vega != null && <MetricBlock label="V Vega" value={fmtNum(bc.vega, 3)} color={C.text} />}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── 5. Top contracts lists ── */}
+              {(t.top_contracts?.length || t.top_calls?.length || t.top_puts?.length) ? (
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ color: C.dim, fontSize: 9, fontFamily: font, textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
+                    Top Contracts
+                  </div>
+                  {t.top_contracts?.length ? renderContracts(t.top_contracts, "call") : null}
+                  {!t.top_contracts?.length && renderContracts(t.top_calls, "call")}
+                  {!t.top_contracts?.length && renderContracts(t.top_puts, "put")}
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TickerLookupBar() {
+  const [query, setQuery]               = useState("");
+  const [suggestions, setSuggestions]   = useState<AcSuggestion[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
+  const [acLoading, setAcLoading]       = useState(false);
+  const [modalSymbol, setModalSymbol]   = useState<string | null>(null);
+  const [modalData, setModalData]       = useState<TickerResult | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError]     = useState<string | null>(null);
+
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef     = useRef<AbortController | null>(null);
+  const inputRef     = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ── Autocomplete fetch ────────────────────────────────────────────────────
+  const fetchSuggestions = useCallback((q: string) => {
+    if (abortRef.current) abortRef.current.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setAcLoading(true);
+    fetch(`/api/options-flow/symbols?q=${encodeURIComponent(q)}`, { headers: authHeaders(), signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        if (ctrl.signal.aborted) return;
+        const raw: any[] = Array.isArray(data) ? data
+          : Array.isArray(data?.symbols)  ? data.symbols
+          : Array.isArray(data?.results)  ? data.results
+          : Array.isArray(data?.items)    ? data.items
+          : [];
+        const items: AcSuggestion[] = raw.slice(0, 10).map(item =>
+          typeof item === "string"
+            ? { symbol: item }
+            : { symbol: String(item?.symbol ?? item?.ticker ?? item), name: item?.name ?? item?.label ?? item?.company_name ?? undefined, score: item?.score ?? null }
+        ).filter(s => s.symbol && s.symbol.length > 0);
+        setSuggestions(items);
+        setDropdownOpen(items.length > 0);
+        setHighlightIdx(-1);
+        setAcLoading(false);
+      })
+      .catch(e => { if (e.name !== "AbortError") setAcLoading(false); });
+  }, []);
+
+  // ── Signal modal fetch ────────────────────────────────────────────────────
+  const openModal = useCallback((sym: string) => {
+    const upper = sym.trim().toUpperCase();
+    if (!upper) return;
+    setModalSymbol(upper);
+    setModalData(null);
+    setModalError(null);
+    setModalLoading(true);
+    setDropdownOpen(false);
+
+    fetch(`${API_BASE}/screener/${encodeURIComponent(upper)}`, { headers: authHeaders() })
+      .then(async r => {
+        const json = await r.json().catch(() => null);
+        if (r.status === 400) throw { code: 400 };
+        if (r.status === 404) throw { code: 404 };
+        if (!r.ok) throw { code: r.status };
+        return json;
+      })
+      .then(json => {
+        // Backend may wrap as { response: TickerResult } or { ticker: TickerResult } or return array
+        let ticker: TickerResult | null = null;
+        if (json?.response && typeof json.response === "object" && !Array.isArray(json.response)) {
+          ticker = json.response;
+        } else if (json?.ticker && typeof json.ticker === "object") {
+          ticker = json.ticker;
+        } else if (Array.isArray(json?.tickers) && json.tickers.length > 0) {
+          ticker = json.tickers[0];
+        } else if (Array.isArray(json) && json.length > 0) {
+          ticker = json[0];
+        } else if (json && typeof json === "object" && (json.ticker || json.symbol || json.composite_score != null)) {
+          ticker = json;
+        }
+        if (!ticker) throw { code: 404 };
+        setModalData(ticker);
+        setModalLoading(false);
+      })
+      .catch((e: any) => {
+        const code = e?.code ?? 0;
+        setModalError(
+          code === 400 ? "Enter a valid ticker symbol." :
+          code === 404 ? `No options signal found for ${upper}.` :
+          "Couldn't load options signal. Try again."
+        );
+        setModalLoading(false);
+      });
+  }, []);
+
+  // ── Input handlers ────────────────────────────────────────────────────────
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (val.length < 1) { setSuggestions([]); setDropdownOpen(false); return; }
+    debounceRef.current = setTimeout(() => { if (val.length >= 1) fetchSuggestions(val); }, 250);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") { setDropdownOpen(false); setHighlightIdx(-1); return; }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIdx(i => Math.min(i + 1, suggestions.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIdx(i => Math.max(i - 1, -1));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (dropdownOpen && highlightIdx >= 0 && suggestions[highlightIdx]) {
+        const sym = suggestions[highlightIdx].symbol;
+        setQuery(sym);
+        openModal(sym);
+      } else {
+        openModal(query);
+      }
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node))
+        setDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <>
+      <div ref={containerRef} style={{ position: "relative", maxWidth: 380 }}>
+        {/* Input */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <Search className="w-3.5 h-3.5" style={{ position: "absolute", left: 10, color: C.dim, pointerEvents: "none", flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => { if (query.length >= 1 && suggestions.length > 0) setDropdownOpen(true); }}
+            placeholder="Search ticker options signal…"
+            autoCorrect="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            style={{
+              width: "100%",
+              padding: "7px 32px 7px 30px",
+              background: C.cardAlt,
+              border: `1px solid ${C.border}`,
+              borderRadius: 7,
+              color: C.bright,
+              fontSize: 12,
+              fontFamily: font,
+              textTransform: "uppercase",
+              outline: "none",
+              letterSpacing: "0.04em",
+            }}
+          />
+          {acLoading && (
+            <Loader2 className="w-3 h-3 animate-spin" style={{ position: "absolute", right: 10, color: C.dim }} />
+          )}
+        </div>
+
+        {/* Dropdown */}
+        {dropdownOpen && suggestions.length > 0 && (
+          <div style={{
+            position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0, zIndex: 1500,
+            background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.55)", overflow: "hidden",
+          }}>
+            {suggestions.map((s, i) => (
+              <div
+                key={s.symbol}
+                onMouseDown={() => { setQuery(s.symbol); openModal(s.symbol); }}
+                onMouseEnter={() => setHighlightIdx(i)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "7px 12px", cursor: "pointer",
+                  background: i === highlightIdx ? `${C.blue}14` : "transparent",
+                  borderTop: i > 0 ? `1px solid ${C.border}` : "none",
+                  transition: "background 0.08s",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: C.bright, fontFamily: font, fontSize: 12, fontWeight: 700, letterSpacing: "0.04em" }}>
+                    {s.symbol}
+                  </span>
+                  {s.name && (
+                    <span style={{ color: C.dim, fontFamily: sans, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
+                      {s.name}
+                    </span>
+                  )}
+                </div>
+                {s.score != null && (
+                  <span style={{ color: scoreColor(normalizeScore(s.score)), fontSize: 10, fontFamily: font, fontWeight: 700 }}>
+                    {Math.round(normalizeScore(s.score) ?? 0)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Signal modal */}
+      {modalSymbol && (
+        <TickerSignalModal
+          symbol={modalSymbol}
+          data={modalData}
+          loading={modalLoading}
+          error={modalError}
+          onClose={() => { setModalSymbol(null); setModalData(null); setModalError(null); }}
+        />
+      )}
+    </>
+  );
+}
+
 // ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
   // ── Thematic context (global macro strip) ─────────────────────────────────
@@ -2612,6 +3093,11 @@ export default function OptionsPage() {
           <RegimeContextStrip context={thematicContext} />
         </div>
       )}
+
+      {/* Ticker lookup — search any ticker's options signal */}
+      <div style={{ padding: "10px 16px 0" }}>
+        <TickerLookupBar />
+      </div>
 
       {/* Master screener — /api/options/screener, client-side filter + sort */}
       <MasterScreener
