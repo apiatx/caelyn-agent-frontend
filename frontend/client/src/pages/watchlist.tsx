@@ -1909,7 +1909,7 @@ export default function WatchlistPage() {
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
     const tableTitle = opts?.title ?? 'TICKERS';
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 44px 62px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -1917,8 +1917,8 @@ export default function WatchlistPage() {
       { key: 'price', label: 'Price' },
       { key: 'chg', label: 'Chg %' },
       { key: 'volume', label: 'Volume' },
-      { key: 'relVol', label: 'Rel Vol' },
-      { key: 'rvRankMove', label: 'REL VOL RANK MOVE' },
+      { key: 'relVol', label: 'VOLX' },
+      { key: 'rvRankMove', label: 'VOL RANK' },
       { key: 'volMc', label: 'Vol/MC' },
     ];
     return (
