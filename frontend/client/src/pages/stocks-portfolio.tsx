@@ -2314,18 +2314,24 @@ export default function StocksPortfolioPage() {
                       <div className="rounded-xl p-3" style={{ background: '#0d1623', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#94a3b8' }}>Options Signal</div>
                         {sig ? (
-                          <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-col gap-2">
                             {sig.signal && (
-                              <div className="text-sm font-bold mb-1" style={{ color: '#5cc8f0' }}>{sig.signal}</div>
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span className="text-sm font-bold" style={{ color: '#5cc8f0' }}>{sig.signal}</span>
+                                {sig.confidence && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(92,200,240,0.08)', color: '#64748b', border: '1px solid rgba(92,200,240,0.2)' }}>{String(sig.confidence).toUpperCase()}</span>}
+                                {sig.put_call_direction && sig.put_call_direction !== 'neutral' && (
+                                  <span className="text-[10px]" style={{ color: sig.put_call_direction === 'calls' ? '#4ade80' : '#f87171' }}>
+                                    {sig.put_call_direction === 'calls' ? '↑ calls dominant' : '↓ puts dominant'}
+                                  </span>
+                                )}
+                              </div>
                             )}
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-4 gap-1.5">
                               {[
                                 { label: 'Score', val: sig.score != null ? String(sig.score) : '—' },
-                                { label: 'P/C', val: sig.p_c ?? sig.put_call ?? '—' },
+                                { label: 'P/C Ratio', val: sig.p_c != null || sig.put_call != null ? Number(sig.p_c ?? sig.put_call).toFixed(3) : '—' },
                                 { label: 'IV', val: sig.iv != null ? `${(Number(sig.iv) * 100).toFixed(1)}%` : '—' },
-                                { label: 'Exp Move', val: sig.em ?? sig.expected_move ?? '—' },
-                                { label: 'Volume', val: sig.vol ?? sig.volume != null ? String(sig.vol ?? sig.volume) : '—' },
-                                { label: 'Source', val: sig.source ?? '—' },
+                                { label: 'Exp Move', val: sig.em != null || sig.expected_move != null ? `${sig.em ?? sig.expected_move}%` : '—' },
                               ].map(({ label, val }) => (
                                 <div key={label} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                                   <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>{label}</div>
@@ -2333,6 +2339,31 @@ export default function StocksPortfolioPage() {
                                 </div>
                               ))}
                             </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {[
+                                { label: 'Volume', val: sig.vol != null || sig.volume != null ? Number(sig.vol ?? sig.volume).toLocaleString() : '—' },
+                                { label: 'Call Vol', val: sig.call_volume != null ? Number(sig.call_volume).toLocaleString() : '—' },
+                                { label: 'Put Vol', val: sig.put_volume != null ? Number(sig.put_volume).toLocaleString() : '—' },
+                              ].map(({ label, val }) => (
+                                <div key={label} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                  <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>{label}</div>
+                                  <div className="text-xs font-mono" style={{ color: '#e2e8f0' }}>{val}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {[
+                                { label: 'Open Int', val: sig.open_interest != null ? Number(sig.open_interest).toLocaleString() : '—' },
+                                { label: 'Call OI', val: sig.call_open_interest != null ? Number(sig.call_open_interest).toLocaleString() : '—' },
+                                { label: 'Put OI', val: sig.put_open_interest != null ? Number(sig.put_open_interest).toLocaleString() : '—' },
+                              ].map(({ label, val }) => (
+                                <div key={label} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                  <div className="text-[9px] mb-0.5" style={{ color: '#64748b' }}>{label}</div>
+                                  <div className="text-xs font-mono" style={{ color: '#e2e8f0' }}>{val}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="text-[9px] mt-0.5" style={{ color: '#334155' }}>Source: {sig.source ?? '—'}</div>
                           </div>
                         ) : (
                           <div className="text-xs" style={{ color: '#475569' }}>Options signal unavailable.</div>

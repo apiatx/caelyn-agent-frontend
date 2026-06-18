@@ -1,0 +1,184 @@
+Audit first. Do not code until you inspect the live browser network responses for:
+
+1. GET /api/portfolio/options-position-detail/{underlying}
+2. GET /api/caelyn-terminal
+3. Dashboard option-position popup component
+4. Terminal Holdings section
+5. The temporary/new Terminal "Options Holdings" section
+6. Terminal Options Flow section
+
+Backend status:
+The backend has now fixed the bad "NO OPTIONS" behavior.
+
+Expected backend behavior:
+
+* /api/portfolio/options-position-detail/{underlying} returns existing position detail plus enriched portfolio_options_signal fields.
+* /api/caelyn-terminal returns:
+
+  * option_positions with row_type: "option"
+  * portfolio_options_all with all 18 canonical portfolio symbols
+  * open option underlyings tagged with has_open_option_position=true
+  * held option underlyings should NOT show "NO OPTIONS"
+  * held option underlyings may show full flow data or a partial held-position state like "CONTRACT DATA ONLY" / "POSITION OPEN · FLOW STALE"
+
+Expected portfolio:
+Stocks:
+SLNH, AMPG, NBIS, OUST, LPTH, PENG, FLNC, AOSL, IQEPF, SIVEF
+
+Open option underlyings:
+CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+
+Task 1 — Dashboard option popup enrichment:
+The popup currently has good data:
+
+* chart
+* open position details
+* contracts
+* avg premium
+* cost basis
+* mark
+* bid / ask / last
+* market value
+* unrealized P&L
+* current IV risk/options signal/risk assessment
+
+Do not remove any of that.
+
+Add richer options-flow intelligence from portfolio_options_signal, using whatever fields backend provides:
+
+* score
+* signal
+* risk / confidence
+* put-call ratio
+* IV
+* expected move
+* volume
+* open interest
+* call volume
+* put volume
+* call open interest
+* put open interest
+* put_call_direction / directional bias
+* has_open_option_position
+* has_options
+* reason/risk bullets if present
+
+Rules:
+
+* Reuse existing Options Flow page formatters/helpers where possible.
+* Do not invent values.
+* Null/missing values should render as "—" or be omitted for that small metric.
+* Keep current popup styling.
+* The popup should clearly show more than just IV risk.
+
+Task 2 — Terminal Holdings section:
+Remove the separate "Options Holdings" section entirely.
+
+There should be one main Holdings section containing:
+
+* stock/spot rows
+* option rows
+
+Use option_positions from /api/caelyn-terminal and merge those rows into the existing Holdings table.
+
+For option rows:
+
+* Ticker column:
+  show underlying symbol and contract detail underneath:
+  CRWV
+  CALL 12/18/2026 $105 · 4 contracts
+
+* Shares column:
+  show contracts, e.g. "4 contracts"
+
+* Avg Price:
+  avg premium
+
+* Price:
+  mark or "—"
+
+* Invested:
+  cost basis
+
+* Value:
+  market value or "—"
+
+* Daily P&L:
+  "—" if unavailable
+
+* Total P&L:
+  unrealized P&L or "—"
+
+* Weight:
+  option market-value weight if backend provides it, otherwise "—"
+
+Visuals:
+
+* Keep the existing Holdings table styling.
+* Option rows should be distinguishable with a small CALL/PUT badge or subtle marker.
+* Do not create a second table.
+* Do not count option contracts as positions.
+
+Header/count:
+
+* Holdings should show:
+  "18 positions"
+  or "10 stocks · 8 options"
+
+Task 3 — Terminal Options Flow:
+The Terminal Options Flow section must use portfolio_options_all, not the old filtered portfolio_options list.
+
+Required behavior:
+
+* Render one row per canonical portfolio symbol/underlying.
+
+* Expected rows include:
+  SLNH, AMPG, NBIS, OUST, LPTH, PENG, FLNC, AOSL, IQEPF, SIVEF,
+  CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+
+* Do not hide low-score rows.
+
+* Do not hide partial held-position rows.
+
+* Do not hide NO DATA rows.
+
+* Do not convert null score/IV/EM into blank disappearing rows.
+
+* Keep columns:
+  Ticker, Score, P/C, IV, EM, Vol, Signal, Risk
+
+Held option underlyings:
+
+* If has_open_option_position=true, show a small "HELD" badge or similar.
+* If full flow metrics exist, render them normally.
+* If only partial contract/position fallback exists, render the backend signal label, e.g. "CONTRACT DATA ONLY" or "POSITION OPEN · FLOW STALE."
+* Do not show "NO OPTIONS" for held option underlyings.
+
+Important distinction:
+
+* Holdings section = actual user positions.
+* Options Flow section = options-signal intelligence across the whole portfolio universe.
+* Keep them separate.
+
+AI/context:
+
+* AI Review payload should still include actual option_positions.
+* Page context should include stock tickers + option underlyings.
+* Use underlying symbols only.
+* Never pass OCC contract IDs into stock/fundamental/news context.
+
+Validation required before reporting done:
+
+1. Dashboard option popup for CRWV keeps all existing position detail fields.
+2. Dashboard popup now shows enriched options-flow metrics beyond IV risk.
+3. Terminal no longer has a separate "Options Holdings" section.
+4. Terminal main Holdings section shows 10 stock rows + 8 option rows.
+5. Holdings count shows 18 positions or "10 stocks · 8 options."
+6. Option rows clearly show contract details.
+7. Terminal Options Flow uses portfolio_options_all.
+8. Terminal Options Flow shows all 18 symbols.
+9. CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO do not show "NO OPTIONS."
+10. Held option underlyings show a HELD/position state when full flow data is unavailable.
+11. NO DATA / NO OPTIONS rows remain visible for non-held symbols where appropriate.
+12. Existing standalone Options Flow page behavior is not broken.
+13. Report exact files/components/hooks changed.

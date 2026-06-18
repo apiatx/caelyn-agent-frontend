@@ -42,7 +42,11 @@ interface CTOptionsRow {
   iv?: N;
   em?: N; expected_move?: N;
   vol?: N; volume?: N;
+  call_volume?: N; put_volume?: N;
+  open_interest?: N; call_open_interest?: N; put_open_interest?: N;
   signal?: string | null;
+  put_call_direction?: string | null;
+  confidence?: string | null;
   optionable?: boolean | null;
   data_available?: boolean | null;
   unavailable_reason?: string | null;
@@ -97,6 +101,7 @@ interface CaelynTerminalData {
   news_ticker: CTNewsItem[];
   ticker_tape: CTTickerItem[];
   portfolio_options?: CTOptionsRow[];
+  portfolio_options_all?: CTOptionsRow[];
   options_available_count?: N;
   options_unavailable_count?: N;
   options_unavailable_reasons_by_symbol?: Record<string, string>;
@@ -786,81 +791,30 @@ export default function CaelynTerminalPage() {
                           })()}
                         </tr>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Options Holdings ──────────────────────────────── */}
-          {(() => {
-            const ctOpts: any[] = d.option_positions ?? [];
-            if (ctOpts.length === 0 && ph) return null;
-            const dashOpts: any[] = (portfolioHoldingsData as any)?.option_open_positions ?? [];
-            const mergedOpts = ctOpts.map((op: any) => {
-              const u = op.underlying_symbol ?? op.underlying ?? '';
-              const dashRow = dashOpts.find((r: any) =>
-                (r.underlying ?? r.ticker ?? '') === u &&
-                String(r.strike ?? '') === String(op.strike ?? '') &&
-                (r.expiration ?? r.exp_date ?? '') === (op.expiration ?? op.expiration_date ?? '')
-              );
-              return {
-                underlying: u,
-                type: (op.call_put ?? op.option_type ?? '').slice(0, 1),
-                expiration: op.expiration ?? op.expiration_date ?? '',
-                strike: op.strike,
-                contracts: op.contracts_open ?? op.contracts,
-                avg_premium: op.avg_premium,
-                mark: op.mark ?? dashRow?.mark ?? dashRow?.last ?? null,
-                market_value: op.market_value ?? dashRow?.market_value ?? dashRow?.current_value ?? null,
-                unrealized_pnl: op.unrealized_pnl ?? dashRow?.unrealized_pnl ?? dashRow?.unrealized_pl ?? null,
-              };
-            });
-            if (mergedOpts.length === 0) return null;
-            const fmtExp = (s: string) => { const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[2]}/${m[3]}` : s; };
-            const pnlFmt = (n: any) => {
-              if (n == null) return { txt: '—', clr: C.dim };
-              const v = Number(n);
-              return { txt: `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`, clr: v >= 0 ? C.green : C.red };
-            };
-            const th = (align: 'left'|'right' = 'right') => ({ padding: '3px 2px', color: C.dim, fontWeight: 600, textAlign: align, fontSize: 7, letterSpacing: 0.2, whiteSpace: 'nowrap' as const });
-            const td = (extra: any = {}) => ({ padding: '3px 2px', color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, fontSize: 9, ...extra });
-            return (
-              <div style={{ background: C.card, flex: '2 1 0', minHeight: 0, borderBottom: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <CardHdr label="Options Holdings" badge={`${mergedOpts.length}`} />
-                <div style={{ overflowY: 'auto', flex: 1 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                    <colgroup>
-                      <col style={{ width: '17%' }} /><col style={{ width: '7%' }} /><col style={{ width: '14%' }} />
-                      <col style={{ width: '12%' }} /><col style={{ width: '8%' }} /><col style={{ width: '14%' }} />
-                      <col style={{ width: '14%' }} /><col style={{ width: '14%' }} />
-                    </colgroup>
-                    <thead>
-                      <tr style={{ borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: '#080808' }}>
-                        <th style={th('left')}>TICKER</th>
-                        <th style={th()}>T</th>
-                        <th style={th()}>EXP</th>
-                        <th style={th()}>STR</th>
-                        <th style={th()}>QTY</th>
-                        <th style={th()}>PREM</th>
-                        <th style={th()}>MARK</th>
-                        <th style={th()}>P&amp;L</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mergedOpts.map((op, i) => {
-                        const pnl = pnlFmt(op.unrealized_pnl);
+                      {/* Option rows merged into main Holdings table */}
+                      {!ph && (d.option_positions ?? []).map((op: any, optI: number) => {
+                        const u = op.underlying_symbol ?? op.underlying ?? '';
+                        const cpType = (op.call_put ?? op.option_type ?? '').toUpperCase();
+                        const cpColor = cpType.startsWith('C') ? C.green : C.red;
+                        const expStr = op.expiration ?? op.expiration_date ?? '';
+                        const expFmt = expStr.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+                          ? `${expStr.slice(5,7)}/${expStr.slice(8,10)}/${expStr.slice(0,4)}`
+                          : expStr;
+                        const contracts = op.contracts_open ?? op.contracts ?? 0;
+                        const detail = `${cpType} ${expFmt} $${op.strike} · ${contracts}x`;
+                        const mark = op.mark ?? null;
+                        const pnlPct = op.unrealized_pnl_pct ?? null;
+                        const costBasis = op.cost_basis ?? null;
                         return (
-                          <tr key={i} style={{ borderBottom: `1px solid ${C.dimLow}22` }}>
-                            <td style={td({ color: C.teal, fontWeight: 700 })}>{op.underlying}</td>
-                            <td style={td({ textAlign: 'right', color: op.type === 'C' ? C.green : C.red })}>{op.type}</td>
-                            <td style={td({ textAlign: 'right', color: C.dim })}>{fmtExp(op.expiration)}</td>
-                            <td style={td({ textAlign: 'right' })}>{op.strike != null ? `$${op.strike}` : '—'}</td>
-                            <td style={td({ textAlign: 'right' })}>{op.contracts ?? '—'}</td>
-                            <td style={td({ textAlign: 'right', color: C.dim })}>{op.avg_premium != null ? `$${Number(op.avg_premium).toFixed(2)}` : '—'}</td>
-                            <td style={td({ textAlign: 'right' })}>{op.mark != null ? `$${Number(op.mark).toFixed(2)}` : '—'}</td>
-                            <td style={td({ textAlign: 'right', color: pnl.clr, fontWeight: 600 })}>{pnl.txt}</td>
+                          <tr key={`opt-${optI}`} style={{ borderBottom: `1px solid ${C.dimLow}22`, background: `${cpColor}06` }}>
+                            <td style={{ padding:'4px 3px', overflow:'hidden', whiteSpace:'nowrap' }}>
+                              <span style={{ color:C.teal, fontWeight:700, display:'block', fontSize:9 }}>{u}</span>
+                              <span style={{ color:cpColor, fontSize:7, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', opacity:0.9 }}>{detail}</span>
+                            </td>
+                            <td style={{ padding:'4px 3px', textAlign:'right', color: mark != null ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{mark != null ? `$${Number(mark).toFixed(2)}` : '—'}</td>
+                            <td style={{ padding:'4px 3px', textAlign:'right', color: pnlPct != null ? pctClr(pnlPct as number) : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pnlPct != null ? `${(pnlPct as number) >= 0 ? '+' : ''}${fmtN(pnlPct as number, 1)}%` : '—'}</td>
+                            <td style={{ padding:'4px 3px', textAlign:'right', color:cpColor, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{contracts ? `${contracts}x` : '—'}</td>
+                            <td style={{ padding:'4px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{costBasis != null ? `$${((costBasis as number)/1000).toFixed(1)}K` : '—'}</td>
                           </tr>
                         );
                       })}
@@ -870,6 +824,7 @@ export default function CaelynTerminalPage() {
               </div>
             );
           })()}
+
 
           {/* Earnings */}
           {(() => {
@@ -1457,7 +1412,8 @@ export default function CaelynTerminalPage() {
             <span style={{ fontSize:8, color:C.dim }}>Flow</span>
           </div>
           {(() => {
-            const backendRows: CTOptionsRow[] = data?.portfolio_options ?? [];
+            const backendRows: CTOptionsRow[] = data?.portfolio_options_all ?? data?.portfolio_options ?? [];
+            const heldUnderlyings = new Set((d.option_positions ?? []).map((op: any) => (op.underlying_symbol ?? op.underlying ?? '') as string));
             const dir = optSort.dir === 'asc' ? 1 : -1;
             const numCmp = (a: any, b: any) => {
               const av = a == null ? -Infinity : Number(a);
@@ -1481,7 +1437,7 @@ export default function CaelynTerminalPage() {
             const fieldsSeen = backendRows.length > 0 ? Object.keys(backendRows[0]) : [];
             const unavailableRows = backendRows.filter(r => r.data_available === false);
             console.log('[portfolio-options-ui]', JSON.stringify({
-              source: 'caelyn-terminal.portfolio_options',
+              source: 'caelyn-terminal.portfolio_options_all',
               duplicateOptionsFetchesRemoved: true,
               renderedRows: sorted.length,
               backendRows: backendRows.length,
@@ -1521,6 +1477,7 @@ export default function CaelynTerminalPage() {
                   <tbody>
                     {sorted.map((t, i) => {
                       const unavailable = t.data_available === false;
+                      const isHeld = heldUnderlyings.has(t.ticker);
                       const scoreVal = t.score ?? t.composite_score ?? null;
                       const score = scoreVal != null ? fmtN(scoreVal as number, 0) : '—';
                       const scoreColor = scoreVal != null && (scoreVal as number) >= 70 ? C.green : scoreVal != null && (scoreVal as number) >= 50 ? C.amber : C.dim;
@@ -1537,8 +1494,11 @@ export default function CaelynTerminalPage() {
                       const sigLower = sig.toLowerCase();
                       const sigColor = sigLower.includes('unusual') ? C.amber : sigLower.includes('gamma') ? C.purple : sigLower.includes('asym') ? C.green : sigLower.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
                       return (
-                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22`, opacity: unavailable ? 0.45 : 1 }}>
-                          <td style={{ padding:'5px 6px', color: unavailable ? C.dim : C.teal, fontWeight:700 }}>{t.ticker}</td>
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.dimLow}22`, opacity: unavailable && !isHeld ? 0.45 : 1 }}>
+                          <td style={{ padding:'5px 6px', color: unavailable ? C.dim : C.teal, fontWeight:700 }}>
+                            {t.ticker}
+                            {isHeld && <span style={{ fontSize:7, fontWeight:700, padding:'1px 4px', borderRadius:3, background:`${C.teal}20`, color:C.teal, border:`1px solid ${C.teal}50`, marginLeft:4, verticalAlign:'middle' }}>HELD</span>}
+                          </td>
                           <td style={{ padding:'5px 6px', textAlign:'right', color:scoreColor, fontWeight:700 }}>{score}</td>
                           <td style={{ padding:'5px 6px', textAlign:'right', color:cpColor }}>{cpStr}</td>
                           <td style={{ padding:'5px 6px', textAlign:'right', color: ivVal != null ? C.amber : C.dimLow }}>{ivStr}</td>
