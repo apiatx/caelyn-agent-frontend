@@ -1,0 +1,103 @@
+Audit first. Do not code until you inspect the current Portfolio Terminal tab rendering for:
+
+1. The compact left-side Holdings section
+2. The merged option rows recently added into that Holdings section
+3. The Options Flow section at the bottom
+4. The /api/caelyn-terminal response fields used for stock holdings, option_positions, option_underlying_symbols, portfolio_options_all, and quote/market metrics
+
+Current bug:
+The Portfolio Terminal Holdings section now includes the user's option tickers, which is good, but they are rendered using option contract fields. That is wrong for this section.
+
+In the screenshot, option rows show:
+
+* price = —
+* chg% = —
+* volx = 4x / 42x / 6x / etc. from contracts
+* vol/mc = $11.7K / $10.5K / etc. from option cost basis
+
+That is incorrect.
+
+Required behavior:
+The Terminal Holdings section is a market snapshot table with columns:
+
+* Ticker
+* Price
+* Chg%
+* VolX
+* Vol/MC
+
+Every row in this section must use the same market/underlying quote data format.
+
+For option holdings:
+
+* Show the option underlying ticker as a normal ticker row.
+* Use the underlying stock/equity market data:
+
+  * current underlying price
+  * underlying 1D change %
+  * underlying VolX / relative volume
+  * underlying Vol/MC
+* Do NOT show option contract data in this section.
+* Do NOT show contracts in VolX.
+* Do NOT show option cost basis in Vol/MC.
+* Do NOT show option expiration/strike/contract detail under the ticker in this compact Holdings table.
+* Do NOT render option mark, option market value, or option P&L in this compact Holdings table.
+
+The lower Options Flow section already tracks options data for these tickers. Keep options-specific metrics there.
+
+Expected UI:
+The Holdings section can still show the badge:
+"10 stocks · 8 options"
+
+But the rows should look consistent:
+AOSL   $43.15   -4.47%   5.2x   1.7%
+CRWV   $115.21  +/-%     x.x    x.x%
+DGXX   $...     +/-%     x.x    x.x%
+
+If quote data for an option underlying is missing:
+
+* render "—" for that specific market field
+* do not fallback to option contract fields
+
+Implementation guidance:
+
+1. Keep the option underlyings included in the Holdings section.
+2. But when building rows for the compact Holdings table, normalize both stock holdings and option holdings into the same "market row" shape:
+   {
+   ticker,
+   price,
+   change_pct,
+   vol_x,
+   vol_mc
+   }
+3. For stock holdings, use the existing stock row market fields.
+4. For option holdings, look up the underlying ticker's market fields from the same quote/market data source used for stock rows.
+5. If /api/caelyn-terminal already returns the underlying ticker quote fields somewhere, use those.
+6. If the frontend currently only has option_positions with contract fields, do not map those contract fields into market columns.
+7. If backend is missing quote rows for option underlyings, report that clearly instead of inventing data.
+
+Do not change:
+
+* Dashboard options positions table
+* Dashboard option popup
+* Options Flow section at the bottom
+* AI Review payload
+* Portfolio counts
+* Standalone Options Flow page
+
+Validation required:
+
+1. Terminal Holdings still includes 10 stock rows + 8 option underlying rows.
+2. Holdings header still shows "10 stocks · 8 options" or equivalent.
+3. Option underlying rows in Holdings use only underlying market data:
+
+   * Price
+   * Chg%
+   * VolX
+   * Vol/MC
+4. Option rows no longer show contracts under VolX.
+5. Option rows no longer show option cost basis under Vol/MC.
+6. Option rows no longer show contract expiration/strike details in this compact Holdings section.
+7. Options Flow section still shows held badges and options signal metrics for option underlyings.
+8. Existing Dashboard option popup still works.
+9. Report exact components/hooks changed.

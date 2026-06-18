@@ -791,33 +791,34 @@ export default function CaelynTerminalPage() {
                           })()}
                         </tr>
                       ))}
-                      {/* Option rows merged into main Holdings table */}
-                      {!ph && (d.option_positions ?? []).map((op: any, optI: number) => {
-                        const u = op.underlying_symbol ?? op.underlying ?? '';
-                        const cpType = (op.call_put ?? op.option_type ?? '').toUpperCase();
-                        const cpColor = cpType.startsWith('C') ? C.green : C.red;
-                        const expStr = op.expiration ?? op.expiration_date ?? '';
-                        const expFmt = expStr.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-                          ? `${expStr.slice(5,7)}/${expStr.slice(8,10)}/${expStr.slice(0,4)}`
-                          : expStr;
-                        const contracts = op.contracts_open ?? op.contracts ?? 0;
-                        const detail = `${cpType} ${expFmt} $${op.strike} · ${contracts}x`;
-                        const mark = op.mark ?? null;
-                        const pnlPct = op.unrealized_pnl_pct ?? null;
-                        const costBasis = op.cost_basis ?? null;
-                        return (
-                          <tr key={`opt-${optI}`} style={{ borderBottom: `1px solid ${C.dimLow}22`, background: `${cpColor}06` }}>
-                            <td style={{ padding:'4px 3px', overflow:'hidden', whiteSpace:'nowrap' }}>
-                              <span style={{ color:C.teal, fontWeight:700, display:'block', fontSize:9 }}>{u}</span>
-                              <span style={{ color:cpColor, fontSize:7, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', opacity:0.9 }}>{detail}</span>
-                            </td>
-                            <td style={{ padding:'4px 3px', textAlign:'right', color: mark != null ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{mark != null ? `$${Number(mark).toFixed(2)}` : '—'}</td>
-                            <td style={{ padding:'4px 3px', textAlign:'right', color: pnlPct != null ? pctClr(pnlPct as number) : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pnlPct != null ? `${(pnlPct as number) >= 0 ? '+' : ''}${fmtN(pnlPct as number, 1)}%` : '—'}</td>
-                            <td style={{ padding:'4px 3px', textAlign:'right', color:cpColor, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{contracts ? `${contracts}x` : '—'}</td>
-                            <td style={{ padding:'4px 3px', textAlign:'right', color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{costBasis != null ? `$${((costBasis as number)/1000).toFixed(1)}K` : '—'}</td>
-                          </tr>
-                        );
-                      })}
+                      {/* Option underlying rows — one deduplicated row per underlying using equity market data only */}
+                      {!ph && (() => {
+                        const seenU = new Set<string>();
+                        const uniqUnderlyings = (d.option_positions ?? [])
+                          .map((op: any) => (op.underlying_symbol ?? op.underlying ?? '') as string)
+                          .filter(u => u && !seenU.has(u) && !!seenU.add(u));
+                        const holdByTicker = new Map<string, CTHolding>((d.holdings ?? []).map(h => [h.ticker, h]));
+                        return uniqUnderlyings.map((u, optI) => {
+                          const h = holdByTicker.get(u) ?? null;
+                          const vx = h ? (h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null)) : null;
+                          const isUnusual = vx != null && vx >= 2.5;
+                          const vxClr = vx == null ? C.dim : isUnusual ? C.amber : C.text;
+                          const pct = h?.vol_mc_pct != null ? Number(h.vol_mc_pct) : null;
+                          const lbl = h?.vol_mc_label ?? '';
+                          const vmcClr = pct == null ? C.dim : lbl === 'high' ? C.amber : lbl === 'elevated' ? C.teal : lbl === 'low' ? C.dim : C.text;
+                          return (
+                            <tr key={`opt-${optI}`} style={{ borderBottom: `1px solid ${C.dimLow}22` }}>
+                              <td style={{ padding:'4px 3px', color:C.teal, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                {u}<span style={{ fontSize:6, fontWeight:700, padding:'0 2px', borderRadius:2, background:`${C.purple}15`, color:C.purple, border:`1px solid ${C.purple}30`, marginLeft:3, verticalAlign:'middle' }}>OPT</span>
+                              </td>
+                              <td style={{ padding:'4px 3px', textAlign:'right', color: h?.price != null ? C.text : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{D$(h?.price ?? null)}</td>
+                              <td style={{ padding:'4px 3px', textAlign:'right', color: h?.change_pct != null ? pctClr(h.change_pct as number) : C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{DPct(h?.change_pct ?? null)}</td>
+                              <td title={isUnusual ? 'Unusual: ≥ 2.5× average volume' : 'Volume vs 30-day average'} style={{ padding:'4px 3px', textAlign:'right', color: vxClr, fontWeight: isUnusual ? 700 : 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{vx != null ? `${fmtN(vx, 1)}×` : '—'}</td>
+                              <td title={h?.vol_mc_unavailable_reason ?? lbl ?? undefined} style={{ padding:'4px 3px', textAlign:'right', color: vmcClr, fontWeight: lbl === 'high' || lbl === 'elevated' ? 700 : 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pct != null ? `${fmtN(pct, 1)}%` : '—'}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>
