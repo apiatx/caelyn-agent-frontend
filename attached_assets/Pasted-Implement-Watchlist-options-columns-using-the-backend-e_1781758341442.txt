@@ -1,0 +1,172 @@
+Implement Watchlist options columns using the backend endpoint that is now validated.
+
+Backend endpoint:
+`GET /api/watchlist/{id}/options-signals`
+
+Response shape:
+
+```ts
+{
+  signals: {
+    [ticker: string]: {
+      ticker: string;
+      options_score?: number;
+      options_signal?: string;
+      options_put_call_ratio?: number;
+      options_iv?: number;
+      options_expected_move?: number;
+      options_volume?: number;
+      options_open_interest?: number;
+      options_call_volume?: number;
+      options_put_volume?: number;
+      options_stale?: boolean;
+      options_data_available?: boolean;
+      options_risk_score?: number;
+      options_risk_level?: string;
+      options_source?: string;
+      options_unavailable_reason?: string;
+      options_updated_at?: string;
+    }
+  };
+  options_meta: {
+    symbols_requested: number;
+    cache_hits: number;
+    master_hits: number;
+    lkg_hits: number;
+    cache_misses: number;
+    live_calls_enqueued: number;
+    already_inflight: number;
+    scan_in_progress: number;
+    rate_limited_or_deferred: number;
+    scope: "watchlist";
+    ttl_seconds: number;
+    elapsed_ms: number;
+  };
+}
+```
+
+Hard constraints:
+
+* Do NOT touch the Options Flow page.
+* Do NOT touch Portfolio Terminal behavior.
+* Do NOT make any Tradier calls from the frontend.
+* Do NOT create a new Watchlist options section.
+* Add options fields as columns inside the existing Watchlist Tickers section/table.
+* Close Watch/favorites must automatically show the same columns because it uses the same ticker table data.
+* Do not block the Watchlist page while options data is building.
+
+Audit first:
+
+1. Open `frontend/client/src/pages/watchlist.tsx`.
+2. Find:
+
+   * `allTickerSymbols`
+   * `baseMergedTickers`
+   * `useRealtimeQuotes`
+   * `mergedTickers`
+   * `sortedTickers`
+   * `closeWatchTickers`
+   * existing Tickers section table renderer
+3. Open the Portfolio page Terminal tab frontend file.
+4. Inspect the Portfolio Options section columns/labels/styles.
+5. Copy the Portfolio Options column naming/formatting conventions as closely as possible.
+
+Implementation:
+
+1. Add a React Query call in Watchlist page:
+
+```ts
+const { data: optionsResp, isLoading: optionsLoading } = useQuery({
+  queryKey: ['watchlist-options-signals', activeId],
+  queryFn: async () => {
+    const r = await fetch(`/api/watchlist/${activeId}/options-signals`);
+    if (!r.ok) throw new Error(`watchlist options: ${r.status}`);
+    return r.json();
+  },
+  enabled: !!activeId && (innerView === 'tickers' || innerView === 'close-watch'),
+  staleTime: 120_000,
+  refetchOnWindowFocus: false,
+  retry: 1,
+});
+```
+
+2. Build:
+
+```ts
+const optionsSignalsByTicker = optionsResp?.signals ?? {};
+const optionsMeta = optionsResp?.options_meta;
+```
+
+3. Merge options data into ticker rows after realtime quote hydration:
+
+```ts
+const mergedTickers = useMemo(() => baseMergedTickers.map((t) => {
+  const sym = (t.ticker || '').toString().toUpperCase();
+  const rt = sym ? realtimeQuotes[sym] : undefined;
+  const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
+  const opt = sym ? optionsSignalsByTicker[sym] : undefined;
+  return opt ? { ...quoteMerged, ...opt } : quoteMerged;
+}), [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker]);
+```
+
+Important:
+If `mergeRealtimeQuote()` strips unknown fields or returns a narrow object, update it so it preserves all original row fields. Options fields must not disappear when live quotes update.
+
+4. Add columns to the existing Tickers table. Use exact Portfolio Terminal labels if they differ. Otherwise use:
+
+* Opt Score
+* Opt Signal
+* P/C
+* IV
+* EM
+* Opt Vol
+* OI
+
+5. Formatting:
+
+* Missing/unavailable: `—`
+* `options_score`: one decimal or rounded integer
+* `options_signal`: compact badge, same/similar Portfolio color logic
+* `options_put_call_ratio`: compact decimal, e.g. `0.35`
+* `options_iv`: match Portfolio IV format
+* `options_expected_move`: match Portfolio EM format
+* `options_volume`: compact K/M
+* `options_open_interest`: compact K/M
+* `options_stale`: subtle dim stale marker or tooltip only
+* `options_data_available === false`: show `—`, optionally tooltip `options_unavailable_reason`
+
+6. Add sort support:
+   Extend `sortKey` with:
+
+* `optionsScore`
+* `optionsPutCall`
+* `optionsIv`
+* `optionsExpectedMove`
+* `optionsVolume`
+* `optionsOi`
+
+Missing values sort to bottom.
+
+7. Loading behavior:
+
+* Do not full-page block the Watchlist page.
+* While options are loading, option cells show `—` or subtle `…`.
+* If `optionsMeta?.live_calls_enqueued > 0 || optionsMeta?.scan_in_progress > 0`, optionally show a tiny note near the Tickers header:
+  `Options scan warming — cached rows shown first`
+* Do not add a new card/section.
+
+8. Layout:
+   The Watchlist table is already dense. Add horizontal scrolling or widen carefully.
+   Do not recreate the Rel Vol / VolMC overlap issue.
+   Keep existing columns readable.
+
+9. Validation:
+
+* Primary Watchlist Tickers section shows new options columns.
+* Close Watch tab shows the same options columns for favorited tickers.
+* Existing realtime quote fields still update.
+* Existing sort fields still work.
+* New options sort fields work.
+* Browser network tab shows no direct Tradier requests.
+* Options Flow page unchanged.
+* Portfolio Terminal unchanged.

@@ -749,7 +749,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
@@ -932,6 +932,21 @@ export default function WatchlistPage() {
     },
     staleTime: 5 * 60_000,
   });
+
+  const { data: optionsResp, isLoading: optionsLoading } = useQuery({
+    queryKey: ['watchlist-options-signals', activeId],
+    queryFn: async () => {
+      const r = await fetch(`/api/watchlist/${activeId}/options-signals`);
+      if (!r.ok) throw new Error(`watchlist options: ${r.status}`);
+      return r.json();
+    },
+    enabled: !!activeId && (innerView === 'tickers' || innerView === 'close-watch'),
+    staleTime: 120_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+  const optionsSignalsByTicker = (optionsResp?.signals ?? {}) as Record<string, any>;
+  const optionsMeta = optionsResp?.options_meta as Record<string, any> | undefined;
 
   useEffect(() => {
     if (favoritesData?.favorites) {
@@ -1212,8 +1227,10 @@ export default function WatchlistPage() {
   const mergedTickers = useMemo(() => baseMergedTickers.map((t) => {
     const sym = (t.ticker || '').toString().toUpperCase();
     const rt = sym ? realtimeQuotes[sym] : undefined;
-    return rt ? mergeRealtimeQuote(t, rt) : t;
-  }), [baseMergedTickers, realtimeQuotes]);
+    const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
+    const opt = sym ? optionsSignalsByTicker[sym] : undefined;
+    return opt ? { ...quoteMerged, ...opt } : quoteMerged;
+  }), [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker]);
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
@@ -1264,6 +1281,12 @@ export default function WatchlistPage() {
         if (delta == null || !Number.isFinite(Number(delta))) return { v: 0, missing: true };
         return { v: Number(delta), missing: false };
       }
+      case 'optionsScore': { const n = Number(stock.options_score); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsPutCall': { const n = Number(stock.options_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsIv': { const n = Number(stock.options_iv); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsExpectedMove': { const n = Number(stock.options_expected_move); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsVolume': { const n = Number(stock.options_volume); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsOi': { const n = Number(stock.options_open_interest); return { v: n, missing: !Number.isFinite(n) }; }
     }
   }
 
@@ -1909,7 +1932,7 @@ export default function WatchlistPage() {
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
     const tableTitle = opts?.title ?? 'TICKERS';
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -1920,6 +1943,13 @@ export default function WatchlistPage() {
       { key: 'relVol', label: 'VOLX' },
       { key: 'rvRankMove', label: 'VOL RANK' },
       { key: 'volMc', label: 'Vol/MC' },
+      { key: 'optionsScore', label: 'Opt Score' },
+      { label: 'Opt Signal' },
+      { key: 'optionsPutCall', label: 'P/C' },
+      { key: 'optionsIv', label: 'IV' },
+      { key: 'optionsExpectedMove', label: 'EM' },
+      { key: 'optionsVolume', label: 'Opt Vol' },
+      { key: 'optionsOi', label: 'OI' },
     ];
     return (
       <div style={{
@@ -1952,11 +1982,16 @@ export default function WatchlistPage() {
               {pendingCount} PENDING ANALYSIS
             </span>
           )}
+          {optionsMeta && ((optionsMeta.live_calls_enqueued ?? 0) > 0 || (optionsMeta.scan_in_progress ?? 0) > 0) && (
+            <span style={{ fontSize: 7, color: C.amber, opacity: 0.75, letterSpacing: '0.03em' }}>
+              Options scan warming — cached rows shown first
+            </span>
+          )}
         </div>
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
-          <div style={{ minWidth: 840 }}>
+          <div style={{ minWidth: 1280 }}>
             {/* table header */}
             <div style={{
               display: 'grid',
@@ -2106,6 +2141,48 @@ export default function WatchlistPage() {
                   >
                     {formatVolMcPct(stock.vol_mc_pct)}
                   </span>
+                  {/* Options columns */}
+                  {(() => {
+                    const unavail = stock.options_data_available === false;
+                    const stale = stock.options_stale === true;
+                    const hasData = !optionsLoading || !!optionsResp;
+                    const loadStr = optionsLoading && !optionsResp ? '…' : DASH;
+                    // Score
+                    const scoreVal = unavail ? null : (stock.options_score != null ? Number(stock.options_score) : null);
+                    const scoreStr = scoreVal != null && Number.isFinite(scoreVal) ? (scoreVal >= 10 ? Math.round(scoreVal).toString() : scoreVal.toFixed(1)) : (hasData ? DASH : loadStr);
+                    const scoreClr = scoreVal != null && scoreVal >= 70 ? C.green : scoreVal != null && scoreVal >= 50 ? C.amber : C.dim;
+                    // Signal
+                    const sig = unavail ? '' : (stock.options_signal ?? '');
+                    const sigLower = sig.toLowerCase();
+                    const sigClr = sigLower.includes('unusual') ? C.amber : sigLower.includes('gamma') ? '#a78bfa' : sigLower.includes('asym') ? C.green : sigLower.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
+                    const sigStr = hasData ? (unavail ? DASH : (sig || DASH)) : loadStr;
+                    const sigTitle = unavail ? (stock.options_unavailable_reason ?? 'Options data unavailable') : stale ? 'Stale options data' : undefined;
+                    // P/C
+                    const cp = unavail ? null : (stock.options_put_call_ratio != null ? Number(stock.options_put_call_ratio) : null);
+                    const cpStr = cp != null && Number.isFinite(cp) ? cp.toFixed(2) : (hasData ? DASH : loadStr);
+                    const cpClr = cp != null ? (cp < 0.7 ? C.green : cp > 1.3 ? C.red : C.dim) : C.dimLow;
+                    // IV
+                    const ivVal = unavail ? null : (stock.options_iv != null ? Number(stock.options_iv) : null);
+                    const ivStr = ivVal != null && Number.isFinite(ivVal) ? `${(ivVal > 5 ? ivVal : ivVal * 100).toFixed(0)}%` : (hasData ? DASH : loadStr);
+                    // EM
+                    const emVal = unavail ? null : (stock.options_expected_move != null ? Number(stock.options_expected_move) : null);
+                    const emStr = emVal != null && Number.isFinite(emVal) ? `${emVal.toFixed(1)}%` : (hasData ? DASH : loadStr);
+                    // Opt Vol / OI
+                    const optVol = unavail ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
+                    const oi = unavail ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
+                    const dimOpacity = stale ? 0.6 : 1;
+                    return (
+                      <>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:scoreClr, opacity:dimOpacity }} title={stale ? 'Stale options data' : undefined}>{scoreStr}</span>
+                        <span style={{ fontSize:9, fontFamily:C.font, color:sigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:dimOpacity }} title={sigTitle}>{sigStr}</span>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:cpClr, opacity:dimOpacity }}>{cpStr}</span>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: ivVal != null ? C.amber : C.dimLow, opacity:dimOpacity }}>{ivStr}</span>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: emVal != null ? '#a78bfa' : C.dimLow, opacity:dimOpacity }}>{emStr}</span>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{optVol != null ? formatVolume(optVol) : (hasData ? DASH : loadStr)}</span>
+                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
+                      </>
+                    );
+                  })()}
                 </div>
               );
             })}
