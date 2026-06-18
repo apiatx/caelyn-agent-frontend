@@ -1,0 +1,89 @@
+Audit first. Do not code until you inspect the live /api/caelyn-terminal response and confirm the new field:
+
+option_underlying_quotes
+
+Backend status:
+The backend now exposes option_underlying_quotes in /api/caelyn-terminal.
+
+Expected option_underlying_quotes rows include:
+CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO
+
+Each row uses underlying equity market data, not option contract data, with fields like:
+
+* ticker
+* price
+* change_pct
+* volume
+* avg_volume
+* vol_x
+* vol_mc_pct
+* vol_mc_label
+* vol_mc_unavailable_reason
+* company_name
+* sector
+* market_cap
+
+Current frontend status:
+The compact Portfolio Terminal Holdings table already stopped rendering option contract fields into the market columns. Good.
+
+Remaining issue:
+Option-only underlyings currently show:
+Price: —
+Chg%: —
+VolX: —
+Vol/MC: —
+
+because frontend only looks in d.holdings for market data, and d.holdings only contains actual stock/share positions.
+
+Required fix:
+In caelyn-terminal-page.tsx, update the compact Holdings table option-underlying row rendering so it uses market data lookup order:
+
+1. d.holdings map by ticker, if the underlying is also a stock holding
+2. d.option_underlying_quotes map by ticker, for option-only underlyings
+3. fallback to "—" per missing field
+
+Do not use option contract fields for this compact Holdings table.
+
+For option-underlying rows:
+
+* Price = underlying quote price
+* Chg% = underlying 1D change %
+* VolX = underlying vol_x / relative volume
+* Vol/MC = underlying vol_mc_pct / vol_mc_label
+* Keep small OPT badge if desired
+* Do not show contracts under VolX
+* Do not show option cost basis under Vol/MC
+* Do not show expiration/strike/contract detail in this compact Holdings section
+* Do not show option mark, option value, or option P&L here
+
+Expected UI:
+The Holdings section still shows:
+10 stocks · 8 options
+
+Rows should be consistent:
+AOSL   $43.15    -4.47%   5.2x   1.7%
+CRWV   $115.21   -1.56%   0.9x   5.1%
+VELO   $25.56    +2.08%   1.0x   21.8%
+
+Use backend-provided values. Do not invent values.
+
+Do not change:
+
+* Dashboard options positions table
+* Dashboard option popup
+* Options Flow section
+* AI Review payload
+* Portfolio counts
+* Standalone Options Flow page
+
+Validation required:
+
+1. Terminal Holdings still includes 10 stock rows + 8 option underlying rows.
+2. Holdings header still shows "10 stocks · 8 options" or equivalent.
+3. CRWV, DGXX, IREN, MRAM, QCOM, TE, VELO, VIVO show underlying market Price/Chg%/VolX/VolMC where backend provides it.
+4. Option rows no longer show contracts under VolX.
+5. Option rows no longer show option cost basis under Vol/MC.
+6. Option rows no longer show expiration/strike details in the compact Holdings table.
+7. Options Flow section remains unchanged and still shows option-specific data/HELD badges.
+8. Dashboard option popup remains unchanged.
+9. Report exact component/file changed.

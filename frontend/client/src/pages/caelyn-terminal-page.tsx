@@ -102,6 +102,7 @@ interface CaelynTerminalData {
   ticker_tape: CTTickerItem[];
   portfolio_options?: CTOptionsRow[];
   portfolio_options_all?: CTOptionsRow[];
+  option_underlying_quotes?: CTHolding[];
   options_available_count?: N;
   options_unavailable_count?: N;
   options_unavailable_reasons_by_symbol?: Record<string, string>;
@@ -798,8 +799,9 @@ export default function CaelynTerminalPage() {
                           .map((op: any) => (op.underlying_symbol ?? op.underlying ?? '') as string)
                           .filter(u => u && !seenU.has(u) && !!seenU.add(u));
                         const holdByTicker = new Map<string, CTHolding>((d.holdings ?? []).map(h => [h.ticker, h]));
+                        const ouqByTicker = new Map<string, CTHolding>((d.option_underlying_quotes ?? []).map(h => [h.ticker, h]));
                         return uniqUnderlyings.map((u, optI) => {
-                          const h = holdByTicker.get(u) ?? null;
+                          const h = holdByTicker.get(u) ?? ouqByTicker.get(u) ?? null;
                           const vx = h ? (h.vol_x != null ? (h.vol_x as number) : (h.volume && h.avg_volume ? (h.volume as number) / (h.avg_volume as number) : null)) : null;
                           const isUnusual = vx != null && vx >= 2.5;
                           const vxClr = vx == null ? C.dim : isUnusual ? C.amber : C.text;
