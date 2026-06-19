@@ -1,0 +1,128 @@
+Audit first. Do not touch backend and do not add API calls.
+
+Goal:
+Update the Watchlist main Tickers table stage column.
+
+Current issue:
+The column header is currently `S`. Rename it to:
+
+Stage
+
+Also, sorting by this column should sort by the actual stage lifecycle order, not by score.
+
+Data source:
+Use existing fields only:
+
+stage_analysis: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+Fallback only if needed:
+
+stage2_breakout: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+Display:
+Keep displaying the backend label exactly as-is:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+* — for missing/null
+
+Change only the column header from `S` to `Stage`.
+
+Sorting:
+When the user clicks the Stage column header, sort by stage order, not score.
+
+Ascending stage order should be:
+
+1. S1 Base
+2. S1-2 Watch
+3. S2 Breakout
+4. S2-S3 Advance
+5. S3 Momentum
+6. S3-S4 Top
+7. S4 Decline
+8. null / —
+
+Descending stage order should be the reverse:
+
+1. S4 Decline
+2. S3-S4 Top
+3. S3 Momentum
+4. S2-S3 Advance
+5. S2 Breakout
+6. S1-2 Watch
+7. S1 Base
+8. null / —
+
+Important:
+Null / missing stage values should always sort last in both ascending and descending.
+
+Implementation:
+
+1. Rename the column label from `S` to `Stage`.
+2. Keep the existing sort key if useful, but update its sort logic.
+3. Do not sort the Stage column by `stage_analysis.score`.
+4. Use a deterministic rank map based on the label.
+
+Suggested rank map:
+
+const STAGE_SORT_RANK = {
+"S1 Base": 1,
+"S1-2 Watch": 2,
+"S2 Breakout": 3,
+"S2-S3 Advance": 4,
+"S3 Momentum": 5,
+"S3-S4 Top": 6,
+"S4 Decline": 7,
+};
+
+Sort value:
+
+* Get label from `row.stage_analysis?.label || row.stage2_breakout?.label`
+* Look up rank in `STAGE_SORT_RANK`
+* Unknown/missing labels should be treated as missing/null and sorted last
+
+Do not:
+
+* remap labels
+* convert labels to READY / SETUP / WATCH
+* calculate stages in frontend
+* fetch anything
+* change bottom tabs
+* change Live News
+* change ticker popup
+* break Hide Foreign
+* break Add ticker
+
+Validation:
+
+1. Column header says `Stage`, not `S`.
+2. Labels still display as:
+
+   * S1 Base
+   * S1-2 Watch
+   * S2 Breakout
+   * S2-S3 Advance
+   * S3 Momentum
+   * S3-S4 Top
+   * S4 Decline
+3. Clicking Stage sort ascending orders rows from S1 → S4.
+4. Clicking Stage sort descending orders rows from S4 → S1.
+5. Null / — rows stay last in both directions.
+6. No READY / SETUP / WATCH labels appear.
+7. No new API/provider calls are added.
+8. Hide Foreign still works.
+9. Add ticker still works.
+10. Row click still opens StockDetailModal.

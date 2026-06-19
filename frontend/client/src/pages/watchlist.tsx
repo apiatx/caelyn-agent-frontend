@@ -1402,10 +1402,15 @@ export default function WatchlistPage() {
       case 'optionsVolume': { const n = Number(stock.options_volume); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsOi': { const n = Number(stock.options_open_interest); return { v: n, missing: !Number.isFinite(n) }; }
       case 'stage2': {
+        const STAGE_SORT_RANK: Record<string, number> = {
+          'S1 Base': 1, 'S1-2 Watch': 2, 'S2 Breakout': 3,
+          'S2-S3 Advance': 4, 'S3 Momentum': 5, 'S3-S4 Top': 6, 'S4 Decline': 7,
+        };
         const sa = (stock as any).stage_analysis;
         const s2 = stock.stage2_breakout;
-        const raw = sa?.score != null ? Number(sa.score) : s2?.score != null ? Number(s2.score) : null;
-        return { v: raw ?? -1, missing: raw == null };
+        const lbl: string | null = sa?.label ?? s2?.label ?? null;
+        const rank = lbl != null ? (STAGE_SORT_RANK[lbl] ?? null) : null;
+        return { v: rank ?? 999, missing: rank == null };
       }
     }
   }
@@ -2075,7 +2080,7 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
-      { key: 'stage2', label: 'S' },
+      { key: 'stage2', label: 'Stage' },
     ];
     return (
       <div style={{
