@@ -2056,7 +2056,7 @@ export default function WatchlistPage() {
       ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px 60px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px 80px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -2074,7 +2074,7 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
-      { key: 'stage2', label: 'Stage 2' },
+      { key: 'stage2', label: 'S' },
     ];
     return (
       <div style={{
@@ -2326,28 +2326,28 @@ export default function WatchlistPage() {
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: emVal != null ? '#a78bfa' : C.dimLow, opacity:dimOpacity }}>{emStr}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{optVol != null ? formatVolume(optVol) : (hasData ? DASH : loadStr)}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
-                        {/* Stage 2 column */}
+                        {/* Stage column */}
                         {(() => {
                           const s2 = stock.stage2_breakout;
-                          const score = s2?.score != null ? Number(s2.score) : null;
-                          const label = s2?.label ?? null;
+                          const rawLabel = s2?.label ?? null;
                           const reason = s2?.reason ?? null;
-                          let badge: string | null = null;
-                          let badgeColor = C.dim;
-                          let badgeBg = 'transparent';
-                          let badgeBorder = C.border;
-                          if (score != null) {
-                            if (score >= 80) { badge = 'READY'; badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`; }
-                            else if (score >= 60) { badge = 'SETUP'; badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`; }
-                            else if (score >= 40) { badge = 'WATCH'; badgeColor = '#94a3b8'; badgeBg = 'rgba(148,163,184,0.08)'; badgeBorder = 'rgba(148,163,184,0.25)'; }
-                          } else if (label) {
-                            if (/Stage 2|Advance/i.test(label)) { badge = 'READY'; badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`; }
-                            else if (/Base|Setup|Consolidation/i.test(label)) { badge = 'SETUP'; badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`; }
-                            else if (/Watch|Early/i.test(label)) { badge = 'WATCH'; badgeColor = '#94a3b8'; badgeBg = 'rgba(148,163,184,0.08)'; badgeBorder = 'rgba(148,163,184,0.25)'; }
-                            else { badge = label.slice(0, 6).toUpperCase(); }
-                          }
-                          if (!badge) {
-                            return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
+                          const norm = rawLabel ? rawLabel.replace(/^Stage\s+/i, 'S') : null;
+                          if (!norm) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
+                          let badgeColor: string;
+                          let badgeBg: string;
+                          let badgeBorder: string;
+                          if (/Advance/i.test(norm)) {
+                            badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`;
+                          } else if (/Watch/i.test(norm)) {
+                            badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`;
+                          } else if (/Base/i.test(norm)) {
+                            badgeColor = '#60a5fa'; badgeBg = 'rgba(96,165,250,0.10)'; badgeBorder = 'rgba(96,165,250,0.30)';
+                          } else if (/Danger/i.test(norm)) {
+                            badgeColor = '#fb923c'; badgeBg = 'rgba(251,146,60,0.10)'; badgeBorder = 'rgba(251,146,60,0.30)';
+                          } else if (/Decline/i.test(norm)) {
+                            badgeColor = C.red; badgeBg = `${C.red}15`; badgeBorder = `${C.red}40`;
+                          } else {
+                            badgeColor = C.dim; badgeBg = 'transparent'; badgeBorder = C.border;
                           }
                           return (
                             <span
@@ -2358,12 +2358,12 @@ export default function WatchlistPage() {
                                 padding: '2px 5px', borderRadius: 3,
                                 color: badgeColor, background: badgeBg,
                                 border: `1px solid ${badgeBorder}`,
-                                textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                                textTransform: 'uppercase' as const, letterSpacing: '0.05em',
                                 whiteSpace: 'nowrap' as const, lineHeight: 1.4,
                                 cursor: reason ? 'help' : 'default',
                               }}
                             >
-                              {badge}
+                              {norm}
                             </span>
                           );
                         })()}

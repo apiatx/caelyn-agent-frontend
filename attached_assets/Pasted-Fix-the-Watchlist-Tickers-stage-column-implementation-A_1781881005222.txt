@@ -1,0 +1,155 @@
+Fix the Watchlist Tickers stage column implementation. Audit first, then make the minimal correction.
+
+Current issue:
+The new Watchlist Tickers column was added, but it uses the wrong display labels:
+
+* READY
+* SETUP
+* WATCH
+
+It also labels the column:
+
+* Stage 2
+
+That is not what we want.
+
+Goal:
+Use compact stage-analysis labels consistent with the Themes page, compressed with “S” instead of spelling out “Stage”.
+
+Column label:
+S
+
+Do not label the column “Stage 2”.
+
+Data source:
+Keep using the existing backend field:
+
+stage2_breakout: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+Do not add API calls.
+Do not create frontend scoring logic.
+Do not fetch anything.
+Do not touch backend.
+
+Display labels:
+Use these exact compact labels in the Watchlist Tickers table:
+
+* S1 Base
+* S1-2 Watch
+* S2 Advance
+* S3-S4 Danger
+* S4 Decline
+* — for null/missing
+
+Important:
+Remove all READY / SETUP / WATCH display logic.
+
+Label normalization:
+The backend may return labels like:
+
+* S1 Base
+* S1-2 Watch
+* Stage 2 Advance
+* S3-S4 Danger
+* Stage 4 Decline
+
+Normalize backend labels for display only:
+
+* Stage 2 Advance → S2 Advance
+* Stage 4 Decline → S4 Decline
+* Stage 1 Base → S1 Base
+* Stage 1-2 Watch → S1-2 Watch
+* Stage 3-4 Danger → S3-S4 Danger
+* Any generic “Stage X” prefix should become “SX”
+* Already compact labels should stay compact
+
+Examples:
+
+* “Stage 2 Advance” displays as “S2 Advance”
+* “Stage 4 Decline” displays as “S4 Decline”
+* “S1 Base” stays “S1 Base”
+* “S1-2 Watch” stays “S1-2 Watch”
+* “S3-S4 Danger” stays “S3-S4 Danger”
+
+Cell behavior:
+
+* If `stock.stage2_breakout.label` exists, display the compact normalized label.
+* If label is missing/null, show muted `—`.
+* Do not use score thresholds to rename the label.
+* Score should only be used for sorting, not for display naming.
+
+Tooltip:
+Keep using `stage2_breakout.reason` as the title tooltip if available.
+
+Sorting:
+Keep the column sortable.
+
+Preferred sort:
+Use `stock.stage2_breakout.score` descending.
+
+Null handling:
+Null/missing scores go last.
+
+Fallback label sort order:
+
+1. S2 Advance
+2. S1-2 Watch
+3. S1 Base
+4. S3-S4 Danger
+5. S4 Decline
+6. —
+
+Styling:
+Reuse the existing badge style, but update the colors by actual stage label:
+
+* S2 Advance: teal/green, strongest
+* S1-2 Watch: amber/blue constructive
+* S1 Base: muted/blue neutral
+* S3-S4 Danger: orange/red warning
+* S4 Decline: red/danger
+* —: muted text
+
+Scope:
+Only change the Watchlist main Tickers table stage column.
+
+Do not change:
+
+* backend
+* Live News
+* bottom Themes tab
+* bottom Market Cap tab
+* bottom Fundamentals tab
+* StockDetailModal / ticker popup
+* Add ticker behavior
+* Hide Foreign behavior
+
+Implementation checklist:
+
+1. Rename tickerColumns entry from label “Stage 2” to label “S”.
+2. Keep sort key as `stage2` if already wired.
+3. Replace the READY / SETUP / WATCH cell IIFE logic with a label-normalization helper.
+4. Display the normalized backend label directly.
+5. Keep sorting by score.
+6. Keep tooltip reason.
+7. Make sure the grid width still works. If 60px is too tight for “S3-S4 Danger”, widen only this final track enough to prevent ugly clipping.
+
+Validation:
+
+1. Column header shows `S`, not `Stage 2`.
+2. No READY / SETUP / WATCH badges appear anywhere in the Watchlist Tickers table.
+3. Backend label `Stage 2 Advance` displays as `S2 Advance`.
+4. Backend label `Stage 4 Decline` displays as `S4 Decline`.
+5. Backend label `S1 Base` stays `S1 Base`.
+6. Backend label `S1-2 Watch` stays `S1-2 Watch`.
+7. Backend label `S3-S4 Danger` stays `S3-S4 Danger`.
+8. Null rows show `—`.
+9. Sorting still works by backend score descending.
+10. Tooltip still shows reason.
+11. Hide Foreign still works.
+12. Add ticker still works.
+13. Row click still opens StockDetailModal.
+14. No new API/provider calls are added.
