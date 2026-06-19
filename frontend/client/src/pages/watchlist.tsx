@@ -3911,7 +3911,7 @@ export default function WatchlistPage() {
             )}
 
             {/* ── Bottom Section View Switcher ── */}
-            <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+            <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 5 }}>
               {/* SETUPS group */}
               <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Setups</span>
               {(['golden', 'gromo', 'hciz', 'hctz'] as const).map(v => {
@@ -3931,10 +3931,10 @@ export default function WatchlistPage() {
                   </button>
                 );
               })}
-              {/* divider */}
-              <span style={{ width: 1, height: 14, background: C.border, flexShrink: 0, margin: '0 3px', opacity: 0.6 }} />
+              {/* spacer pushes performance group to the right */}
+              <span style={{ flex: 1 }} />
               {/* PERFORMANCE GROUPINGS group */}
-              <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Performance</span>
+              <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Performance Groupings</span>
               {(['fundGrouping', 'themes', 'marketcap'] as const).map(v => {
                 const isActive = bottomView === v;
                 const ac = C.teal;
@@ -3948,7 +3948,7 @@ export default function WatchlistPage() {
                     border: `1px solid ${isActive ? `${ac}60` : C.border}`,
                     transition: 'all 0.12s',
                   }}>
-                    {v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'themes' ? 'Theme Grouping' : 'Market Cap Grouping'}
+                    {v === 'fundGrouping' ? 'Fundamental' : v === 'themes' ? 'Theme' : 'Market Cap'}
                   </button>
                 );
               })}
