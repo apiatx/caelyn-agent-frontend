@@ -2778,7 +2778,7 @@ export default function WatchlistPage() {
 
         {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamental' ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: '4px 8px' }} className="wl-scrollbar">
-            {renderFundamentalScreenerContent(rows)}
+            {renderFundamentalScreenerContent(visibleRows)}
           </div>
         ) : (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
