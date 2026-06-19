@@ -3914,7 +3914,7 @@ export default function WatchlistPage() {
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 5 }}>
               {/* SETUPS group */}
               <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Setups</span>
-              {(['golden', 'gromo', 'hciz', 'hctz'] as const).map(v => {
+              {(['golden', 'hciz', 'hctz', 'gromo'] as const).map(v => {
                 const isActive = bottomView === v;
                 const ac = v === 'golden' ? '#f59e0b' : v === 'gromo' ? '#3b82f6' : v === 'hciz' ? '#a855f7' : '#22c55e';
                 return (
