@@ -848,7 +848,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals'>('themes');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
@@ -1401,6 +1401,11 @@ export default function WatchlistPage() {
       case 'optionsExpectedMove': { const n = Number(stock.options_expected_move); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsVolume': { const n = Number(stock.options_volume); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsOi': { const n = Number(stock.options_open_interest); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'stage2': {
+        const s2 = stock.stage2_breakout;
+        const n = s2?.score != null ? Number(s2.score) : null;
+        return { v: n ?? -1, missing: n == null };
+      }
     }
   }
 
@@ -2051,7 +2056,7 @@ export default function WatchlistPage() {
       ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px 60px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -2069,6 +2074,7 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
+      { key: 'stage2', label: 'Stage 2' },
     ];
     return (
       <div style={{
@@ -2320,6 +2326,47 @@ export default function WatchlistPage() {
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: emVal != null ? '#a78bfa' : C.dimLow, opacity:dimOpacity }}>{emStr}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{optVol != null ? formatVolume(optVol) : (hasData ? DASH : loadStr)}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
+                        {/* Stage 2 column */}
+                        {(() => {
+                          const s2 = stock.stage2_breakout;
+                          const score = s2?.score != null ? Number(s2.score) : null;
+                          const label = s2?.label ?? null;
+                          const reason = s2?.reason ?? null;
+                          let badge: string | null = null;
+                          let badgeColor = C.dim;
+                          let badgeBg = 'transparent';
+                          let badgeBorder = C.border;
+                          if (score != null) {
+                            if (score >= 80) { badge = 'READY'; badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`; }
+                            else if (score >= 60) { badge = 'SETUP'; badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`; }
+                            else if (score >= 40) { badge = 'WATCH'; badgeColor = '#94a3b8'; badgeBg = 'rgba(148,163,184,0.08)'; badgeBorder = 'rgba(148,163,184,0.25)'; }
+                          } else if (label) {
+                            if (/Stage 2|Advance/i.test(label)) { badge = 'READY'; badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`; }
+                            else if (/Base|Setup|Consolidation/i.test(label)) { badge = 'SETUP'; badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`; }
+                            else if (/Watch|Early/i.test(label)) { badge = 'WATCH'; badgeColor = '#94a3b8'; badgeBg = 'rgba(148,163,184,0.08)'; badgeBorder = 'rgba(148,163,184,0.25)'; }
+                            else { badge = label.slice(0, 6).toUpperCase(); }
+                          }
+                          if (!badge) {
+                            return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
+                          }
+                          return (
+                            <span
+                              title={reason ?? undefined}
+                              style={{
+                                display: 'inline-block',
+                                fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                                padding: '2px 5px', borderRadius: 3,
+                                color: badgeColor, background: badgeBg,
+                                border: `1px solid ${badgeBorder}`,
+                                textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                                whiteSpace: 'nowrap' as const, lineHeight: 1.4,
+                                cursor: reason ? 'help' : 'default',
+                              }}
+                            >
+                              {badge}
+                            </span>
+                          );
+                        })()}
                       </>
                     );
                   })()}

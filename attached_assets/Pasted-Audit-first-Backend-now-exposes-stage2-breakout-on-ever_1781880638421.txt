@@ -1,0 +1,94 @@
+Audit first. Backend now exposes `stage2_breakout` on every Watchlist ticker row.
+
+Goal:
+Add a compact Stage 2 column to the main Watchlist Tickers table.
+
+Scope:
+
+* Main Watchlist Tickers section only.
+* Do not change Live News.
+* Do not change bottom Themes / Market Cap / Fundamentals tabs.
+* Do not change the ticker popup.
+* Do not add API calls.
+* Do not create new Stage 2 logic in frontend.
+
+Data:
+Use the existing backend field on each ticker row:
+
+stage2_breakout: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+Column:
+Add a new sortable column labeled:
+
+Stage 2
+
+Cell display:
+
+* If `row.stage2_breakout.score` or `row.stage2_breakout.label` exists, show a compact badge.
+* If missing/null, show muted `—`.
+
+Badge mapping:
+Use score first if available:
+
+* score >= 80: `READY`
+* score >= 60: `SETUP`
+* score >= 40: `WATCH`
+* otherwise: `—`
+
+If score is null but label exists:
+
+* label includes “Stage 2” or “Advance”: `READY`
+* label includes “Base”, “Setup”, or “Consolidation”: `SETUP`
+* label includes “Watch” or “Early”: `WATCH`
+* otherwise show the compacted label or `—`
+
+Tooltip:
+Use `row.stage2_breakout.reason` as the `title` tooltip if available.
+If no reason exists, no tooltip is needed.
+
+Sorting:
+Make the Stage 2 column sortable.
+Sort by `row.stage2_breakout.score` descending.
+Nulls always go last.
+
+Styling:
+
+* Match existing Watchlist table badge styling.
+* READY should look strong/positive using the existing teal/green accent.
+* SETUP should be amber/constructive.
+* WATCH should be muted/neutral.
+* `—` should be muted.
+* Keep the column compact.
+
+Important:
+Do not run frontend Stage 2 calculations.
+Do not fetch historical bars.
+Do not call any provider.
+Do not call the backend again just for this column.
+Just render the field already present in the loaded Watchlist response.
+
+Compatibility:
+
+* Must respect active saved watchlist tab.
+* Must work with Primary.
+* Must work with Close Watch/Favorites.
+* Must still work when Hide Foreign is on.
+* Must not break Add ticker.
+* Must not break row click opening StockDetailModal.
+
+Validation:
+
+1. Watchlist Tickers table shows new Stage 2 column.
+2. Rows with backend `stage2_breakout.score` show READY/SETUP/WATCH badges.
+3. Null rows show `—`.
+4. Sorting Stage 2 puts strongest scores first and nulls last.
+5. Hover tooltip shows the backend reason when available.
+6. Hide Foreign toggle still filters rows correctly.
+7. Add ticker bar still works.
+8. Clicking rows still opens the existing popup.
+9. Bottom Themes / Market Cap / Fundamentals tabs still work.
+10. Network tab shows no new provider/API calls just from rendering or sorting the column.
