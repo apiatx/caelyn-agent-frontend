@@ -2074,7 +2074,7 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
-      { key: 'stage2', label: 'S' },
+      { key: 'stage2', label: 'Stage' },
     ];
     return (
       <div style={{
