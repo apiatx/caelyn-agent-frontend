@@ -2063,6 +2063,8 @@ export default function WatchlistPage() {
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px';
+    // 17 tracks × min widths (1232px) + 16 gaps × 6px (96px) + padding 14+14 (28px) = 1356px
+    const TICKER_TABLE_MIN_WIDTH = 1356;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -2143,11 +2145,12 @@ export default function WatchlistPage() {
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
-          <div style={{ minWidth: 1280 }}>
+          <div style={{ minWidth: TICKER_TABLE_MIN_WIDTH }}>
             {/* table header */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: TICKER_GRID,
+              minWidth: TICKER_TABLE_MIN_WIDTH,
               padding: '6px 14px',
               borderBottom: `1px solid ${C.border}`,
               position: 'sticky' as const, top: 0, zIndex: 2,
@@ -2233,6 +2236,7 @@ export default function WatchlistPage() {
                   style={{
                     display: 'grid',
                     gridTemplateColumns: TICKER_GRID,
+                    minWidth: TICKER_TABLE_MIN_WIDTH,
                     padding: '7px 14px',
                     borderBottom: `1px solid ${C.border}`,
                     background: i % 2 === 0 ? 'transparent' : `${C.border}08`,

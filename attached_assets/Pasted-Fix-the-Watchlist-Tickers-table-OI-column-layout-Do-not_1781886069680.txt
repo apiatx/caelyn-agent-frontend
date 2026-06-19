@@ -1,0 +1,92 @@
+Fix the Watchlist Tickers table OI column layout. Do not touch backend. Do not add API calls. Do not change Stage logic.
+
+Important:
+Stop working on z-index, fragments, IIFEs, or row child counts. The screenshot shows the real issue: the alternating row background stops before the OI column, while OI values render outside that painted row area. That means the grid content is overflowing outside the row/header container width.
+
+Root cause to fix:
+The header/body grid template may match, but the actual grid container box is not wide enough to include the OI column. The OI cell is rendering in overflow beyond the row background.
+
+Goal:
+Make the OI column part of the same full-width table/grid surface as every other column.
+
+Required fix:
+
+1. Define one shared explicit table content width / minWidth for the Tickers table.
+2. Apply that exact width/minWidth to:
+
+   * the sticky header row
+   * every body row
+   * any inner table/grid wrapper if one exists
+3. The row background must paint behind every column, including OI and Stage.
+4. The header background must paint behind every header cell, including OI and Stage.
+5. OI must no longer sit in a black detached strip outside the alternating row bands.
+
+Implementation guidance:
+Find:
+
+* TICKER_GRID
+* tickerColumns
+* scroll container
+* sticky header row
+* ticker body row grid
+
+If TICKER_GRID uses fixed pixel columns, create a matching constant:
+
+const TICKER_TABLE_MIN_WIDTH = <sum of all grid column widths>;
+
+Then apply:
+
+style={{
+display: 'grid',
+gridTemplateColumns: TICKER_GRID,
+minWidth: TICKER_TABLE_MIN_WIDTH,
+width: TICKER_TABLE_MIN_WIDTH,
+}}
+
+to both:
+
+* header grid row
+* every body grid row
+
+If there is an inner wrapper around header/body rows, also give that wrapper the same minWidth/width.
+
+If TICKER_GRID uses `fr`, `auto`, or mixed flexible tracks that allow overflow, replace the problematic far-right tracks with explicit fixed widths so the table has a deterministic total width.
+
+Do not rely on `width: 100%` for the row grid if the grid columns are wider than the visible scroll container. `width: 100%` is likely why the background stops before OI.
+
+The scroll container should be the thing that scrolls horizontally:
+
+* outer container: overflowX: auto
+* inner header/body row width: explicit full table width
+
+Validation with DOM geometry:
+Add a temporary console/debug check if needed:
+
+* bodyRow.getBoundingClientRect().right must be >= oiCell.getBoundingClientRect().right
+* headerRow.getBoundingClientRect().right must be >= oiHeaderCell.getBoundingClientRect().right
+
+If the OI cell’s right edge is outside the row/header right edge, the bug is not fixed.
+
+Visual validation:
+
+1. OI header aligns with OI values.
+2. OI values sit inside the same alternating black/gray row backgrounds as all other columns.
+3. Hovering a row highlights the OI cell with the rest of the row.
+4. Scrolling does not make OI overlap or detach from the header.
+5. Stage column still works.
+6. Row click still opens StockDetailModal.
+7. No console errors.
+8. No API/provider calls are added.
+
+Do not change:
+
+* backend
+* API calls
+* Stage labels
+* Stage sorting
+* Fundamental tabs
+* Market Cap tab
+* Live News
+* Add ticker
+* Hide Foreign
+* ticker popup
