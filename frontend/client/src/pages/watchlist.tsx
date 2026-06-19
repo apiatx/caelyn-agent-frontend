@@ -751,6 +751,7 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [bottomView, setBottomView] = useState<'themes' | 'marketcap'>('themes');
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2854,13 +2855,136 @@ export default function WatchlistPage() {
               </div>
             )}
 
-            {/* ── Canonical theme section cards ── */}
-            <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending ? 280 : undefined }}>
-              {refreshMut.isPending && <AnalysisLoadingOverlay />}
-              {newFmt
-                ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
-                : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
-              }
+            {/* ── Bottom Section View Switcher ── */}
+            <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
+              {(['themes', 'marketcap'] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setBottomView(v)}
+                  style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                    padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
+                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    background: bottomView === v ? `${C.teal}22` : 'transparent',
+                    color: bottomView === v ? C.teal : C.dim,
+                    border: `1px solid ${bottomView === v ? `${C.teal}60` : C.border}`,
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {v === 'themes' ? 'Themes' : 'Market Cap'}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Canonical theme section cards / Market Cap buckets ── */}
+            <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending && bottomView === 'themes' ? 280 : undefined }}>
+              {bottomView === 'themes' ? (
+                <>
+                  {refreshMut.isPending && <AnalysisLoadingOverlay />}
+                  {newFmt
+                    ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
+                    : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
+                  }
+                </>
+              ) : (() => {
+                const mcTickers = (innerView === 'close-watch' ? closeWatchTickers : sortedTickers)
+                  .filter(s => {
+                    const mc = Number(s.market_cap);
+                    return Number.isFinite(mc) && mc > 0;
+                  });
+                const buckets: { label: string; sub: string; min: number; max: number }[] = [
+                  { label: 'Large Cap',  sub: '$100B+',       min: 100_000_000_000, max: Infinity },
+                  { label: 'Mid-Cap',    sub: '$10B–$100B',   min: 10_000_000_000,  max: 100_000_000_000 },
+                  { label: 'Small Cap',  sub: '$1B–$10B',     min: 1_000_000_000,   max: 10_000_000_000 },
+                  { label: 'Micro Cap',  sub: '<$1B',         min: 0,               max: 1_000_000_000 },
+                ];
+                return (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
+                    {buckets.map(bucket => {
+                      const rows = mcTickers
+                        .filter(s => {
+                          const mc = Number(s.market_cap);
+                          return mc >= bucket.min && mc < bucket.max;
+                        })
+                        .sort((a, b) => Number(b.market_cap) - Number(a.market_cap));
+                      return (
+                        <div
+                          key={bucket.label}
+                          style={{
+                            flex: '1 1 200px', minWidth: 180,
+                            background: C.card, border: `1px solid ${C.border}`,
+                            borderRadius: 6, overflow: 'hidden',
+                          }}
+                        >
+                          {/* bucket header */}
+                          <div style={{
+                            padding: '8px 12px', borderBottom: `1px solid ${C.border}`,
+                            display: 'flex', alignItems: 'baseline', gap: 6,
+                          }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>
+                              {bucket.label}
+                            </span>
+                            <span style={{ fontSize: 8, color: C.dim }}>{bucket.sub}</span>
+                            <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto' }}>{rows.length}</span>
+                          </div>
+                          {/* column header row */}
+                          <div style={{
+                            display: 'grid', gridTemplateColumns: '52px 1fr 52px 42px',
+                            padding: '4px 10px', gap: 4,
+                            fontSize: 7, fontWeight: 700, color: C.dim,
+                            letterSpacing: '0.07em', textTransform: 'uppercase' as const,
+                            borderBottom: `1px solid ${C.border}22`,
+                          }}>
+                            <span>Ticker</span>
+                            <span style={{ textAlign: 'right' as const }}>Price</span>
+                            <span style={{ textAlign: 'right' as const }}>Chg%</span>
+                            <span style={{ textAlign: 'right' as const }}>VolX</span>
+                          </div>
+                          {/* rows */}
+                          <div style={{ maxHeight: 320, overflowY: 'auto' }} className="wl-scrollbar">
+                            {rows.length === 0 ? (
+                              <div style={{ padding: '12px 10px', fontSize: 9, color: C.dim, textAlign: 'center' as const }}>No tickers</div>
+                            ) : rows.map((s, ri) => {
+                              const chg = s.change_pct ?? s.change_pct_1d;
+                              const cClr = changeColor(chg);
+                              const vx = formatRelVol(s.volume, s.average_volume, s.relative_volume);
+                              return (
+                                <div
+                                  key={`${s.ticker}-${ri}`}
+                                  onClick={() => s.ticker && handleTickerClick(s.ticker)}
+                                  style={{
+                                    display: 'grid', gridTemplateColumns: '52px 1fr 52px 42px',
+                                    padding: '5px 10px', gap: 4,
+                                    borderBottom: `1px solid ${C.border}18`,
+                                    background: ri % 2 === 0 ? 'transparent' : `${C.border}06`,
+                                    cursor: s.ticker ? 'pointer' : 'default',
+                                    alignItems: 'center',
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
+                                >
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                                    {s.ticker || DASH}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
+                                    {formatPrice(s.price)}
+                                  </span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
+                                    {formatChgPct(chg)}
+                                  </span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
+                                    {vx}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </>

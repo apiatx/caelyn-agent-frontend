@@ -1,0 +1,106 @@
+Audit first. Do not redesign the Watchlist page, do not create a new watchlist system, and do not touch unrelated pages.
+
+Goal:
+Add a bottom-section view switcher on the Watchlist page so the user can switch the bottom ticker section between the existing Themes view and a new Market Cap view.
+
+Current page behavior:
+- The top/main Watchlist area has saved watchlist tabs, Add tickers, Refresh, theme chips, the main Tickers table, and Live News.
+- The bottom of the page currently shows theme/category ticker sections sorted by % change.
+- Keep all of that existing behavior intact.
+
+New UI:
+Add a compact segmented control directly between:
+1. the main Tickers + Live News section
+2. the bottom theme/category cards section
+
+Control labels:
+- Themes
+- Market Cap
+
+Default:
+- Default to Themes.
+- Themes must preserve the current bottom section exactly.
+- Switching to Market Cap should only replace the bottom section.
+- The main Tickers table, Live News, saved watchlist tabs, top theme chips, Add tickers, Refresh, and ticker tape must not change.
+
+Market Cap view:
+When the user clicks Market Cap, replace the bottom theme/category cards with exactly 4 side-by-side market-cap columns:
+
+1. Large Cap — $100B+
+2. Mid-Cap — $10B–$100B
+3. Small Cap — $1B–$10B
+4. Micro Cap — <$1B
+
+Bucket rules:
+- Large Cap: market_cap >= 100_000_000_000
+- Mid-Cap: 10_000_000_000 <= market_cap < 100_000_000_000
+- Small Cap: 1_000_000_000 <= market_cap < 10_000_000_000
+- Micro Cap: market_cap < 1_000_000_000
+
+Important:
+Only show those 4 categories. Do not add an Unknown category. If market_cap is missing, null, 0, or invalid, omit that ticker from the Market Cap view. Do not mix missing-market-cap tickers into Micro Cap.
+
+Data source:
+Use the existing loaded watchlist data. The user-uploaded CSV already provides market cap as a starting point for watchlist tickers, and ticker fundamentals popups already use that data. Reuse existing fields/caches/payloads wherever possible.
+
+If the existing frontend payload already includes market cap, make this frontend-only.
+If market cap is not available in the frontend payload, minimally add it to the existing backend watchlist response using existing saved watchlist metadata / uploaded CSV / cached fundamentals data only.
+
+Do not:
+- make new FMP calls
+- make new Tradier calls
+- call the backend again just to switch tabs
+- add LLM categorization
+- rewrite the existing theme/category logic
+- change the main Tickers table
+- change Live News
+- change saved watchlist behavior
+
+Market Cap row design:
+Each row inside the Market Cap columns should be compact and show only:
+- ticker symbol
+- price
+- % change
+- VolX
+
+Do not show:
+- company description
+- thesis text
+- RSI text
+- theme label
+- market cap text
+- long notes
+- fundamentals summary
+
+Sorting:
+Inside each market-cap column, sort by market cap descending.
+
+Filtering:
+The Market Cap view must respect the currently selected saved watchlist tab.
+Examples:
+- Primary shows only Primary tickers
+- Close Watch shows only Close Watch tickers
+- Any future saved watchlist tab shows only that saved watchlist’s tickers
+
+Do not accidentally group all Primary tickers when the user is on Close Watch.
+
+Styling:
+Match the current dark terminal/card aesthetic.
+Desktop should show 4 columns side by side.
+On smaller screens, allow wrapping to 2 columns or 1 column.
+Keep rows dense so the view fits many tickers.
+
+Optional:
+Persist the selected bottom view in localStorage per watchlist tab, but do not overbuild this.
+
+Validation:
+1. Watchlist still opens with the existing Themes bottom section by default.
+2. Clicking Market Cap changes only the bottom section.
+3. Clicking Themes restores the original bottom theme/category cards.
+4. Main Tickers table remains unchanged.
+5. Live News remains unchanged.
+6. Primary groups only Primary tickers.
+7. Close Watch groups only Close Watch tickers.
+8. No new provider/API calls fire when toggling Themes ↔ Market Cap.
+9. Market Cap rows show only symbol, price, % change, and VolX.
+10. Only the 4 requested buckets exist: Large Cap, Mid-Cap, Small Cap, Micro Cap.
