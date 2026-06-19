@@ -1,0 +1,166 @@
+Audit first. Do not add backend calls, do not call FMP/Tradier, and do not create new data fetching.
+
+Problem:
+In the Watchlist bottom Fundamentals tab, most columns are working, but these columns are blank:
+
+* 52W Low
+* 52W High
+* % vs MA20
+* % vs MA50
+* % vs MA200
+* RSI
+* ATR
+
+Important context:
+These values already exist in the existing ticker popup / StockDetailModal Fundamentals tab. The screenshot shows these fields populated there. So this is not a provider/data availability issue. It is almost certainly a frontend field accessor / key mapping / merge issue in the new bottom Fundamentals table.
+
+Goal:
+Fix the blank columns by reusing the exact existing popup fundamentals data keys and making the bottom Fundamentals table read those values correctly.
+
+Audit requirements:
+
+1. Open the existing StockDetailModal / FundamentalsTab code.
+2. Identify the exact keys used/displayed for:
+
+   * 52-Week Low Price
+   * 52-Week High Price
+   * Price Change 20-Day MA
+   * Price Change 50-Day MA
+   * Price Change 200-Day MA
+   * Relative Strength Index (RSI)
+   * Average True Range (ATR)
+3. Inspect one real row from watchlist.csv_data and one merged fundamentals row with Object.keys(...) to verify the exact field names.
+4. Check whether the current FUND_COLS definitions are using keys that do not match the actual CSV/modal keys.
+5. Check whether the merge order is accidentally overwriting populated CSV values with undefined/null/blank values from sortedTickers.
+
+Fix requirements:
+
+1. Do not fetch new data.
+2. Do not add a backend endpoint.
+3. Do not call the popup endpoint one ticker at a time.
+4. Fix the frontend column accessors.
+
+Implement a robust accessor helper for Fundamentals columns:
+
+* Each column should support multiple aliases.
+* Matching should tolerate:
+
+  * case differences
+  * spaces vs underscores
+  * hyphens/en-dashes
+  * parentheses
+  * labels like “52-Week Low Price” vs “52w_low” vs “52_week_low_price”
+  * labels like “Price Change 20-Day MA” vs “price_change_20_day_ma” vs “pct_vs_ma20”
+  * labels like “Relative Strength Index (RSI)” vs “rsi”
+  * labels like “Average True Range (ATR)” vs “atr”
+
+Suggested aliases:
+
+52W Low:
+
+* 52-Week Low Price
+* 52 Week Low Price
+* 52W Low
+* 52w_low
+* 52_week_low
+* 52_week_low_price
+* low_52_week
+* year_low
+* price_low_52w
+
+52W High:
+
+* 52-Week High Price
+* 52 Week High Price
+* 52W High
+* 52w_high
+* 52_week_high
+* 52_week_high_price
+* high_52_week
+* year_high
+* price_high_52w
+
+% vs MA20:
+
+* Price Change 20-Day MA
+* Price Change 20 Day MA
+* price_change_20_day_ma
+* pct_vs_ma20
+* percent_vs_ma20
+* vs_ma20
+* ma20_change
+* change_vs_ma20
+
+% vs MA50:
+
+* Price Change 50-Day MA
+* Price Change 50 Day MA
+* price_change_50_day_ma
+* pct_vs_ma50
+* percent_vs_ma50
+* vs_ma50
+* ma50_change
+* change_vs_ma50
+
+% vs MA200:
+
+* Price Change 200-Day MA
+* Price Change 200 Day MA
+* price_change_200_day_ma
+* pct_vs_ma200
+* percent_vs_ma200
+* vs_ma200
+* ma200_change
+* change_vs_ma200
+
+RSI:
+
+* Relative Strength Index (RSI)
+* Relative Strength Index
+* RSI
+* rsi
+* relative_strength_index
+
+ATR:
+
+* Average True Range (ATR)
+* Average True Range
+* ATR
+* atr
+* average_true_range
+
+Merge rule:
+When merging csvRow with sortedTickers / live quote row, do not let undefined/null/empty string values overwrite populated CSV fundamentals fields.
+
+Use a non-empty merge strategy:
+
+* start with csvRow fundamentals
+* overlay live ticker fields only when the live value is not undefined, null, or empty string
+* price/change/volume/volx can still come from the live row
+* technical/fundamental fields should keep CSV/modal values unless the live row has a real value
+
+Formatting:
+
+* 52W Low and 52W High: price format
+* % vs MA20 / MA50 / MA200: percent format, color green/red like other percent columns
+* RSI: number with reasonable decimals
+* ATR: number with reasonable decimals
+* Missing values still show —
+
+Validation:
+
+1. Open Watchlist → Fundamentals bottom tab.
+2. Confirm these columns are no longer blank:
+
+   * 52W Low
+   * 52W High
+   * % vs MA20
+   * % vs MA50
+   * % vs MA200
+   * RSI
+   * ATR
+3. Confirm values match the existing ticker popup Fundamentals tab for the same ticker.
+4. Confirm no new network/provider calls fire when switching to Fundamentals.
+5. Confirm the popup still works unchanged.
+6. Confirm other Fundamentals columns still work.
+7. Confirm sorting still works for these fixed columns.
