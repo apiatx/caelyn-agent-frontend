@@ -2203,6 +2203,8 @@ export default function WatchlistPage() {
                     alignItems: 'center',
                     opacity: isPending ? 0.55 : 1,
                     gap: 6,
+                    position: 'relative' as const,
+                    zIndex: 0,
                   }}
                   onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
