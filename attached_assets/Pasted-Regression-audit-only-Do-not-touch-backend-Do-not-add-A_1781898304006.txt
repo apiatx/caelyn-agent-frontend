@@ -1,0 +1,159 @@
+Regression audit only. Do not touch backend. Do not add API/provider calls. Do not use an LLM.
+
+Problem:
+After adding the new `Growth Momentum` tab, the existing `HC Trade Zone` tab changed from showing several qualifying rows to only one row.
+
+The market is closed, so the underlying live trade data should not have changed. This is almost certainly a frontend regression from the Growth Momentum edit.
+
+Goal:
+Restore `HC Trade Zone` behavior exactly as it was after the weighted-scoring fix, while keeping the new `Growth Momentum` tab working.
+
+Do not rewrite HC Trade Zone from scratch.
+Do not tighten its rules.
+Do not make it depend on Growth Momentum.
+Do not make it depend on fundamental groups.
+Do not require growth metrics for HC Trade Zone.
+
+Expected HC Trade Zone logic:
+HC Trade Zone is a trade-signal confluence tab.
+
+It should use:
+
+* stage_analysis.label / stage2_breakout.label
+* options_score / opt_score / flow_score
+* options_signal
+* relative_volume / rel_vol / volx
+* vol_mc_pct
+* vol_mc_ratio
+* volume / market_cap fallback
+
+It should NOT use:
+
+* Fundamental Grouping bucket
+* Market Leader / High Growth / Speculative Future Growth classification
+* revenue growth
+* EPS growth
+* forecast growth
+* Growth Momentum score
+* Growth Momentum gates
+* options score >= 25 gate from Growth Momentum
+* VolX >= 1.5 gate from Growth Momentum as a hard rule
+* any fundamental CSV merge requirement
+
+HC Trade Zone allowed stages:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+HC Trade Zone disallowed stages:
+
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+HC Trade Zone scoring should remain the weighted logic:
+
+* VolX strength: 35%
+* Vol / Market Cap strength: 25%
+* Options score / options signal strength: 25%
+* Stage quality: 15%
+
+HC Trade Zone qualification should remain:
+
+1. allowed early stage is mandatory
+2. at least one loud signal is required:
+
+   * VolX top 15% or VolX >= 2.0
+   * OR Vol/MC top 15%
+   * OR options score >= 50
+   * OR options signal clearly positive/unusual
+3. Then pass either:
+
+   * tradeConvictionScore >= 55
+   * OR top 10 early-stage candidates by tradeConvictionScore with score >= 45
+4. Must have at least one positive signal tag
+5. High IV alone cannot qualify
+
+Audit tasks:
+
+1. Read the Growth Momentum diff and identify anything that changed shared helpers used by HC Trade Zone.
+2. Specifically inspect:
+
+   * buildTradeContext
+   * tradePctile
+   * getOptionsScore
+   * getVolXVal
+   * getVolMcPct
+   * scoreTradeConfluence
+   * getTradeSignalTags
+   * HC Trade Zone rendering branch
+   * active tab guard / early return order
+   * srcTickers derivation
+3. Confirm HC Trade Zone still computes from the full active watchlist `srcTickers`, not from:
+
+   * fundRows
+   * growthMomentumRows
+   * hcInvestmentRows
+   * goldenZoneRows
+   * filtered fundamental group rows
+4. Confirm Growth Momentum did not alter the HC Trade Zone allowed-stage list.
+5. Confirm Growth Momentum did not replace HC Trade Zone’s threshold logic with:
+
+   * options score >= 25
+   * VolX >= 1.5
+   * growth gate
+   * fundamental group gate
+
+Add temporary validation logs only during debugging:
+For HC Trade Zone, log counts:
+
+* total srcTickers
+* early-stage allowed count
+* loud signal count
+* score >= 55 count
+* top10 fallback count
+* final qualifying count
+* top 15 candidates with:
+
+  * symbol
+  * stage
+  * tradeConvictionScore
+  * options score
+  * VolX
+  * Vol/MC percentile
+  * hasLoudSignal
+  * positive tags
+  * pass/fail reason
+
+Use these logs to find exactly where the rows disappeared.
+
+After fixing, remove noisy logs or leave them behind a clearly disabled debug flag.
+
+Likely bug patterns to check:
+
+* HC Trade branch accidentally calls Growth Momentum helper
+* shared `getOptionsScore` changed to require options >= 25
+* shared `getVolX` changed to require VolX >= 1.5
+* shared stage helper changed from HC Trade early stages to Growth Momentum stages
+* HC Trade context is now built from `fundRows` or growth-filtered rows instead of `srcTickers`
+* top-10 fallback now runs after an overly strict filter
+* positive tags are missing because tag helper changed, causing rows to be filtered out
+* tab guard order causes wrong render branch or narrowed data path
+
+Fix requirement:
+Restore HC Trade Zone to its previous weighted behavior while leaving Growth Momentum intact.
+
+Validation:
+
+1. HC Trade Zone row count returns to the expected several rows, assuming the same closed-market data.
+2. HC Trade Zone does not require fundamental group membership.
+3. HC Trade Zone does not require growth metrics.
+4. HC Trade Zone does not require options score >= 25.
+5. HC Trade Zone does not require VolX >= 1.5 unless it is part of weighted scoring/tagging, not a hard universal gate.
+6. HC Trade Zone uses active watchlist `srcTickers`.
+7. Growth Momentum still works with its own stricter rules.
+8. Golden Zone still works.
+9. No new API/provider calls fire.
+10. No console errors.
