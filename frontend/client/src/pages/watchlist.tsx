@@ -2704,6 +2704,31 @@ export default function WatchlistPage() {
           <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'CLOSE WATCH' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
             {tableTitle}
           </span>
+          {tableTitle !== 'CLOSE WATCH' && (
+            <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+              {(['technical', 'fundamental'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    setScreenerMode(mode);
+                    try { localStorage.setItem('wl_screener_mode', mode); } catch {}
+                  }}
+                  style={{
+                    fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                    padding: '3px 9px', cursor: 'pointer',
+                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    background: screenerMode === mode ? `${C.teal}22` : 'transparent',
+                    color: screenerMode === mode ? C.teal : C.dim,
+                    border: 'none',
+                    borderRight: mode === 'technical' ? `1px solid ${C.border}` : 'none',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {mode === 'technical' ? 'Technical' : 'Fundamental'}
+                </button>
+              ))}
+            </div>
+          )}
           <span style={{ fontSize: 9, color: C.dim }}>
             {opts?.rows !== undefined
               ? (hideForeignTickers && foreignHidden > 0
@@ -2732,49 +2757,22 @@ export default function WatchlistPage() {
             </span>
           )}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            {tableTitle !== 'CLOSE WATCH' && (
-              <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-                {(['technical', 'fundamental'] as const).map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => {
-                      setScreenerMode(mode);
-                      try { localStorage.setItem('wl_screener_mode', mode); } catch {}
-                    }}
-                    style={{
-                      fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
-                      padding: '3px 9px', cursor: 'pointer',
-                      textTransform: 'uppercase' as const, fontFamily: C.font,
-                      background: screenerMode === mode ? `${C.teal}22` : 'transparent',
-                      color: screenerMode === mode ? C.teal : C.dim,
-                      border: 'none',
-                      borderRight: mode === 'technical' ? `1px solid ${C.border}` : 'none',
-                      transition: 'all 0.12s',
-                    }}
-                  >
-                    {mode === 'technical' ? 'Technical' : 'Fundamental'}
-                  </button>
-                ))}
-              </div>
-            )}
-            {(tableTitle === 'CLOSE WATCH' || screenerMode === 'technical') && (
-              <button
-                onClick={toggleHideForeign}
-                style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
-                  padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
-                  textTransform: 'uppercase' as const, fontFamily: C.font,
-                  background: hideForeignTickers ? `${C.teal}22` : 'transparent',
-                  color: hideForeignTickers ? C.teal : C.dim,
-                  border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
-                  transition: 'all 0.12s',
-                  flexShrink: 0,
-                }}
-                title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":") '}
-              >
-                {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
-              </button>
-            )}
+            <button
+              onClick={toggleHideForeign}
+              style={{
+                fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+                textTransform: 'uppercase' as const, fontFamily: C.font,
+                background: hideForeignTickers ? `${C.teal}22` : 'transparent',
+                color: hideForeignTickers ? C.teal : C.dim,
+                border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
+                transition: 'all 0.12s',
+                flexShrink: 0,
+              }}
+              title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":")'}
+            >
+              {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
+            </button>
           </div>
         </div>
 
