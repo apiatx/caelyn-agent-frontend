@@ -1,0 +1,184 @@
+Audit first. Do not add API/provider calls. Do not use an LLM. Do not re-run theme classification.
+
+Problem:
+On the Watchlist page, the new Screener toggle works, but the `Technical` and `Fundamental` views show different category labels for the same ticker.
+
+Example:
+
+* Technical view shows the AI-enhanced Watchlist theme/category.
+* Fundamental view shows the original CSV `industry`.
+
+This is wrong.
+
+Requirement:
+The AI-enhanced Watchlist theme must be the canonical display category across the entire Watchlist page.
+
+CSV `industry` is raw metadata only. It should never override the AI-enhanced theme/category in Watchlist display tables, grouping tabs, or future CSV uploads.
+
+Goal:
+Make theme/category labels consistent across:
+
+* Screener → Technical mode
+* Screener → Fundamental mode
+* Fundamental Grouping
+* Theme Performance
+* any Watchlist bottom tab that displays or groups by theme/category
+* future CSV upload merges
+
+Canonical rule:
+For any Watchlist row, displayed theme/category should resolve in this priority order:
+
+1. AI-enhanced watchlist theme/category
+2. persisted watchlist theme/category
+3. existing technical-table theme/category
+4. CSV industry only as a fallback if no watchlist theme exists
+
+CSV industry should not replace an existing AI-enhanced theme.
+
+Suggested helper:
+Create/use one canonical display helper for the Watchlist page:
+
+getWatchlistTheme(row)
+
+Priority examples:
+
+* row.ai_theme
+* row.enhanced_theme
+* row.watchlist_theme
+* row.theme
+* row.category
+* row.sector_theme
+* row.theme_label
+* row.mapped_theme
+* row.csv_theme only if it is explicitly the enhanced watchlist theme
+* row.industry only as last fallback
+
+Important:
+If `row.theme` is already the AI-enhanced label used by the Technical table, then it should be the preferred source.
+
+Do not let:
+
+* row.industry
+* row.csv_industry
+* row.fmp_industry
+* row.original_industry
+  overwrite the AI-enhanced theme.
+
+Technical Screener:
+No visual behavior change except make sure it uses getWatchlistTheme(row) if it does not already.
+
+Fundamental Screener mode:
+Change the `Industry` column to `Theme`.
+
+The value should match the Technical view’s theme for the same ticker.
+
+Example:
+If Technical shows:
+
+* AAOI → Photonics / Lasers
+
+Then Fundamental must also show:
+
+* AAOI → Photonics / Lasers
+
+Not:
+
+* Communication Equipment
+
+Column header:
+Change:
+`INDUSTRY`
+
+to:
+`THEME`
+
+Only if there is a separate raw industry column intentionally needed later, add it as a secondary optional column. Do not do that in this pass.
+
+CSV/fundamental merge:
+Audit the row merge order.
+
+Likely bug:
+The fundamental/CSV row is being spread after the watchlist row, causing CSV `industry` or category-like fields to overwrite the enhanced theme.
+
+Bad pattern:
+{ ...watchlistRow, ...csvRow }
+
+if csvRow contains industry/theme/category fields and overwrites display theme.
+
+Fix pattern:
+
+* preserve canonical watchlist theme before/after merging
+* or namespace CSV industry as raw metadata
+
+Suggested pattern:
+const canonicalTheme = getWatchlistTheme(watchlistRow)
+
+const mergedRow = {
+...csvRow,
+...watchlistRow,
+...otherLiveOverlays,
+theme: canonicalTheme,
+watchlist_theme: canonicalTheme,
+csv_industry: csvRow.industry ?? csvRow.csv_industry,
+}
+
+If existing architecture requires watchlistRow first, still explicitly restore canonical theme after all spreads.
+
+Critical:
+Do not destroy the raw CSV industry value if it is useful for fundamentals.
+Store it separately as:
+
+* csv_industry
+* raw_industry
+* fmp_industry
+
+But display/grouping should use canonical AI-enhanced theme.
+
+Future CSV uploads:
+Audit the CSV upload/import merge path.
+
+If a future CSV upload contains `Industry`, `Sector`, `Theme`, or similar fields:
+
+* do not overwrite an existing AI-enhanced Watchlist theme
+* only fill theme/category if the ticker has no existing enhanced theme
+* preserve uploaded industry as raw metadata
+
+If this logic is frontend-only in the upload flow, fix it there.
+If the backend persists CSV uploads and overwrites watchlist themes, stop and report the exact backend file/function needed before changing backend.
+
+Rules for future uploads:
+
+* Existing AI-enhanced theme wins.
+* Uploaded CSV industry is stored as raw industry.
+* Uploaded CSV industry may be used only as fallback when no AI-enhanced theme exists.
+* Do not re-run LLM classification.
+* Do not call any provider.
+
+Affected views:
+Search the Watchlist page for any direct usage of:
+
+* industry
+* csv_industry
+* sector
+* category
+* theme
+* group
+* theme_label
+
+Replace display/grouping usages with getWatchlistTheme(row) where appropriate.
+
+Do not replace true fundamental metric usage if raw industry is intentionally part of fundamentals, but on the Watchlist page display buckets must be consistent.
+
+Validation:
+
+1. Technical mode and Fundamental mode show the same Theme value for the same ticker.
+2. Fundamental mode header says `THEME`, not `INDUSTRY`.
+3. AAOI and other tickers match the Technical view theme labels.
+4. CSV industry no longer overrides AI-enhanced theme.
+5. Raw CSV industry is preserved separately if needed.
+6. Fundamental Grouping and Theme Performance use the canonical AI-enhanced theme where they display/group themes.
+7. Future CSV upload merge does not overwrite existing AI-enhanced themes.
+8. No new API/provider calls are added.
+9. No LLM calls are added.
+10. Active saved watchlist filtering still works.
+11. No console errors.

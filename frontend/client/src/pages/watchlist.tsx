@@ -740,7 +740,7 @@ interface FundColDef { key: string; label: string; aliases?: string[]; fmt: Fund
 
 const FUND_COLS: FundColDef[] = [
   { key: 'ticker',           label: 'Symbol',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
-  { key: 'sector',           label: 'Industry',      aliases: ['industry', 'category'],                                            fmt: 'str'     },
+  { key: 'canonical_theme_name', label: 'Theme',     aliases: ['section_title', 'watchlist_theme', 'ai_theme', 'enhanced_theme', 'theme_label', 'mapped_theme'], fmt: 'str' },
   { key: 'market_cap',       label: 'Mkt Cap',       aliases: ['marketCap', 'market_capitalization'],                              fmt: 'compact' },
   { key: 'price',            label: 'Price',         aliases: ['last', 'lastPrice', 'close'],                                      fmt: 'price'   },
   { key: 'volume',           label: 'Volume',        aliases: ['vol'],                                                             fmt: 'vol'     },
@@ -783,6 +783,16 @@ function fundGetField(row: any, key: string, aliases: string[] = []): any {
     if (wants.includes(canonical(k))) return row[k];
   }
   return undefined;
+}
+
+/* ── canonical display theme for any Watchlist row ───────────────────────
+   Priority: AI-enhanced name → section title → persisted theme fields.
+   CSV industry / raw sector must NEVER be returned here.              */
+function getWatchlistTheme(row: any): string | undefined {
+  if (!row) return undefined;
+  return row.canonical_theme_name || row.section_title ||
+         row.watchlist_theme || row.ai_theme || row.enhanced_theme ||
+         row.theme_label || row.mapped_theme || undefined;
 }
 
 function fundFmtCompact(v: any): string {
@@ -3041,6 +3051,8 @@ export default function WatchlistPage() {
     const fundRows = srcRows.map(s => {
       const tkKey = (s.ticker || '').toString().toUpperCase();
       const csv = csvMap[tkKey] || {};
+      // Snapshot canonical theme before any merge so CSV cannot overwrite it
+      const canonicalTheme = getWatchlistTheme(s);
       const merged: Record<string, any> = { ...csv };
       for (const [k, v] of Object.entries(s)) {
         if (v !== undefined && v !== null && v !== '') {
@@ -3049,6 +3061,11 @@ export default function WatchlistPage() {
           merged[k] = v;
         }
       }
+      // Restore AI-enhanced theme — always wins over any CSV industry/sector/category
+      if (canonicalTheme) merged['canonical_theme_name'] = canonicalTheme;
+      // Preserve raw CSV industry separately in case it is useful for future reference
+      if (csv.industry != null) merged['csv_industry'] = csv.industry;
+      else if (csv.sector != null) merged['csv_industry'] = csv.sector;
       return merged;
     });
 
@@ -4209,6 +4226,8 @@ export default function WatchlistPage() {
                 const fundRows = srcTickers.map(s => {
                   const tkKey = (s.ticker || '').toString().toUpperCase();
                   const csv = csvMap[tkKey] || {};
+                  // Snapshot canonical theme before any merge so CSV cannot overwrite it
+                  const canonicalTheme = getWatchlistTheme(s);
                   const merged: Record<string, any> = { ...csv };
                   for (const [k, v] of Object.entries(s)) {
                     if (v !== undefined && v !== null && v !== '') {
@@ -4218,6 +4237,11 @@ export default function WatchlistPage() {
                       merged[k] = v;
                     }
                   }
+                  // Restore AI-enhanced theme — always wins over any CSV industry/sector/category
+                  if (canonicalTheme) merged['canonical_theme_name'] = canonicalTheme;
+                  // Preserve raw CSV industry separately in case it is useful for future reference
+                  if (csv.industry != null) merged['csv_industry'] = csv.industry;
+                  else if (csv.sector != null) merged['csv_industry'] = csv.sector;
                   return merged;
                 });
 
