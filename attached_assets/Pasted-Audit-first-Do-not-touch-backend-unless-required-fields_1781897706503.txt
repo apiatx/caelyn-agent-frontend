@@ -1,0 +1,387 @@
+Audit first. Do not touch backend unless required fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Add a new bottom tab on the Watchlist page called:
+
+Growth Momentum
+
+This tab should show tickers with strong growth fundamentals and momentum confirmation.
+
+Important distinction:
+This is different from Golden Zone.
+
+* Golden Zone = early entry / breakout setup, usually S1 Base, S1-2 Watch, or S2 Breakout
+* Growth Momentum = stocks already in motion, specifically S2 Breakout, S2-S3 Advance, or S3 Momentum
+
+This tab should identify high-quality or high-growth names that are already moving and still have strong revenue/EPS/fundamental momentum plus trading confirmation.
+
+Scope:
+Only update Watchlist bottom-section tabs.
+
+Do not change:
+
+* backend unless required loaded fields are missing
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* Themes tab
+* Market Cap tab
+* Fundamental Screener tab
+* Fundamental Grouping tab
+* Golden Zone tab
+* High Conviction Investment Zone tab
+* High Conviction Trade Zone tab
+
+Tab:
+Add a new tab:
+
+Growth Momentum
+
+Do not make it the default tab.
+Golden Zone should remain the first/default tab if already implemented that way.
+
+Data:
+Use only existing loaded Watchlist data already available to:
+
+* Fundamental Screener
+* Fundamental Grouping
+* High Conviction Investment Zone
+* High Conviction Trade Zone
+* stage_analysis / stage2_breakout
+
+Do not fetch new data.
+Do not call FMP.
+Do not call Tradier.
+Do not call analyst endpoints.
+Do not call options endpoints.
+Do not use LLM classification.
+
+Active watchlist rule:
+The tab must respect the currently selected saved watchlist:
+
+* Primary shows only Primary tickers
+* Close Watch/Favorites shows only those tickers
+* future saved watchlist tabs show only their own tickers
+
+Use active watchlist percentiles only.
+
+Do not calculate percentiles against Primary when another saved watchlist tab is active.
+
+Eligibility:
+A ticker qualifies for Growth Momentum only if all of these are true:
+
+1. It belongs to one of these fundamental groups:
+
+* Market Leaders
+* High Growth
+* Speculative Future Growth Leaders
+
+Use the same deterministic grouping helper already used by `Fundamental Grouping`.
+
+Do not include:
+
+* High Speculation
+* Avoid / weak fundamental names
+
+2. It is in one of these momentum stages:
+   Use:
+   row.stage_analysis?.label || row.stage2_breakout?.label
+
+Allowed stages:
+
+* S2 Breakout
+* S2-S3 Advance
+* S3 Momentum
+
+Do not include:
+
+* S1 Base
+* S1-2 Watch
+* S3-S4 Top
+* S4 Decline
+
+3. It has strong growth/fundamental momentum.
+
+Require a strong mix of the following:
+
+* big revenue
+* increasing revenue
+* positive EPS where available
+* EPS growth
+* revenue growth
+* gross margin strength
+* FCF margin strength
+* future revenue growth forecasts
+* future EPS growth forecasts
+
+Primary emphasis:
+
+* revenue growth
+* EPS growth
+* future revenue growth
+* future EPS growth
+* margin expansion if available
+
+4. It has options score >= 25.
+
+Use existing loaded options fields only.
+
+Possible aliases:
+
+* options_score
+* option_score
+* optionsScore
+* opt_score
+* flow_score
+* options_activity_score
+* unusual_options_score
+
+If no options score exists, ticker does not qualify.
+
+5. It has high VolX.
+
+Use existing loaded VolX / relative volume fields:
+
+* relative_volume
+* rel_vol
+* volx
+* vol_x
+
+High VolX should mean either:
+
+* VolX >= 1.5
+  OR
+* top 25% VolX among the active watchlist
+
+Stronger tags:
+
+* VolX >= 2.0 = High VolX
+* VolX >= 5.0 = Elite VolX
+* top 15% active watchlist = Rel Vol Leader
+* top 5% active watchlist = Elite Rel Vol
+
+This tab should not require extreme VolX if the stock has very strong growth and strong stage momentum, but it should not include quiet names with no volume signal.
+
+Do not force every ticker into this tab.
+Only show tickers that clearly qualify.
+
+Scoring:
+Create a deterministic `growthMomentumScore`.
+
+Suggested weights:
+
+* Growth/fundamental momentum: 40%
+* Stage momentum: 25%
+* VolX strength: 20%
+* Options score: 15%
+
+Stage score:
+
+* S2 Breakout = 90
+* S2-S3 Advance = 100
+* S3 Momentum = 85
+
+Reason:
+S2-S3 Advance is usually the cleanest growth momentum zone.
+S2 Breakout is earlier and powerful.
+S3 Momentum is strong but more mature/extended, so still useful but slightly lower.
+
+Growth/fundamental momentum score:
+Use all available relevant fields:
+
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+* Operating Income
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* Debt / Equity
+* Net Debt / EBITDA
+
+Do not use technical-only fields:
+
+* 52W Low
+* 52W High
+* % vs MA20
+* % vs MA50
+* % vs MA200
+* RSI
+* ATR
+
+Growth gates:
+A ticker should generally have at least one of:
+
+* Revenue Growth (Q) in top 25% of active watchlist
+* Revenue Growth (YoY) in top 25%
+* EPS Growth in top 25%
+* Revenue Growth forecast in top 25%
+* EPS Growth forecast in top 25%
+* very large revenue base plus positive EPS and positive growth
+* Market Leader with positive EPS, positive revenue trend, and high VolX
+
+For High Growth and Speculative Future Growth Leaders, prefer top 15% current or forecast growth metrics when available.
+
+Market Leaders can qualify with less explosive growth if they have:
+
+* big revenue
+* positive EPS
+* positive EPS growth
+* positive revenue growth
+* strong VolX
+* allowed momentum stage
+
+Speculative Future Growth Leaders can qualify if:
+
+* future revenue/EPS forecasts are very strong
+* current revenue is ramping
+* VolX is high
+* options score >= 25
+* stage is S2 Breakout, S2-S3 Advance, or S3 Momentum
+
+Disqualify:
+
+* High Speculation / Avoid names
+* negative or collapsing revenue without strong future forecasts
+* negative EPS with weak forecasts
+* weak/missing growth metrics
+* options score below 25
+* quiet volume / low VolX
+* S3-S4 Top
+* S4 Decline
+
+UI:
+Render a compact table or card list.
+
+Suggested columns:
+
+* Symbol
+* Group
+* Stage
+* Growth Momentum Score
+* Revenue Growth
+* EPS Growth
+* Forecast Growth
+* VolX
+* Options
+* Price
+* % Change
+* Tags
+
+Group values:
+
+* Market Leader
+* High Growth
+* Spec. Future Growth
+
+Tags:
+Show 1–4 compact tags explaining why the ticker qualifies.
+
+Positive tags:
+
+* Growth Momentum
+* Market Leader
+* High Growth
+* Future Growth
+* S2 Breakout
+* S2-S3 Advance
+* S3 Momentum
+* Top Rev Growth
+* Top EPS Growth
+* Top Forecasts
+* Positive EPS
+* Big Revenue
+* High VolX
+* Elite VolX
+* Options > 25
+* Options > 50
+* Revenue Ramp
+* Margin Expansion
+
+Risk tags are allowed only if the overall score still qualifies:
+
+* Expensive
+* Debt Funding Growth
+* Not FCF Positive
+* Mature Momentum
+* Watch Extension
+
+Do not let risk tags be the reason a ticker qualifies.
+
+Sorting:
+Sort strongest Growth Momentum setups first:
+
+1. growthMomentumScore descending
+2. S2-S3 Advance first
+3. S2 Breakout second
+4. S3 Momentum third
+5. revenue growth / EPS growth strength
+6. VolX descending
+7. options score descending
+
+Empty state:
+If no tickers qualify, show:
+
+No Growth Momentum setups right now.
+
+Subtext:
+Requires strong growth fundamentals, S2/S2-S3/S3 stage momentum, options score >= 25, and elevated VolX.
+
+Rows:
+Rows should be clickable and open the existing StockDetailModal.
+
+Implementation guidance:
+Reuse existing helpers from Fundamental Grouping, High Conviction Investment Zone, and High Conviction Trade Zone.
+
+Suggested helpers:
+
+* getStageLabel(row)
+* getFundamentalGroup(row)
+* getGrowthMetrics(row)
+* getOptionsScore(row)
+* getVolX(row)
+* getActiveWatchlistPercentiles(rows)
+* scoreGrowthMomentum(row, ctx)
+* getGrowthMomentumTags(row, ctx)
+* getGrowthMomentumRows(rows)
+
+Do not duplicate broad parsing logic if helpers already exist.
+
+Validation:
+
+1. New tab appears: `Growth Momentum`.
+2. Golden Zone remains first/default if already implemented.
+3. Growth Momentum uses only already-loaded Watchlist data.
+4. No new API/provider calls fire when switching to the tab.
+5. No LLM calls are added.
+6. Only Market Leaders, High Growth, and Speculative Future Growth Leaders qualify.
+7. High Speculation / Avoid names do not qualify.
+8. Only stages S2 Breakout, S2-S3 Advance, and S3 Momentum qualify.
+9. S1 Base and S1-2 Watch do not qualify.
+10. S3-S4 Top and S4 Decline do not qualify.
+11. Options score must be >= 25.
+12. VolX must be elevated.
+13. Rows show clear growth and momentum tags.
+14. Rows sort by strongest growth momentum setup first.
+15. Rows open StockDetailModal.
+16. Active saved watchlist filtering works.
+17. Empty state appears if no rows qualify.
+18. Existing Golden Zone, HC Investment Zone, and HC Trade Zone remain unchanged.
+19. No console errors.

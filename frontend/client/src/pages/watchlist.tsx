@@ -1264,6 +1264,88 @@ function getTradeSignalTags(row: any, ctx: TradeCtx,
   return hasPosTag ? tags.slice(0, 4) : [];
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   GROWTH MOMENTUM HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+const GM_ALLOWED_STAGES = ['S2 Breakout', 'S2-S3 Advance', 'S3 Momentum'] as const;
+function isGroMoStage(label: string): boolean {
+  return GM_ALLOWED_STAGES.some(s => label.startsWith(s));
+}
+
+function gmGrowthScore(row: any, ctx: FgContext): number {
+  const currentKeys = ['revenue_growth', 'revenue_growth_q', 'eps_growth', 'gross_margin', 'fcf_margin'] as const;
+  const forecastKeys = ['revenue_growth_est', 'rev_growth_next_year', 'eps_growth_est', 'eps_growth_ny'] as const;
+  let bestCurrent = 0;
+  for (const k of currentKeys) {
+    const v = fgParseMetric(row, k);
+    if (v !== null) { const p = getMetricPercentile(v, ctx.pctMap.get(k) ?? []); if (p > bestCurrent) bestCurrent = p; }
+  }
+  let bestForecast = 0;
+  for (const k of forecastKeys) {
+    const v = fgParseMetric(row, k);
+    if (v !== null) { const p = getMetricPercentile(v, ctx.pctMap.get(k) ?? []); if (p > bestForecast) bestForecast = p; }
+  }
+  return bestCurrent * 0.6 + bestForecast * 0.4;
+}
+
+function gmHasGrowthGate(row: any, ctx: FgContext, bucket: FgBucket): boolean {
+  const gateKeys = ['revenue_growth', 'revenue_growth_q', 'eps_growth',
+    'revenue_growth_est', 'rev_growth_next_year', 'eps_growth_est', 'eps_growth_ny'] as const;
+  for (const k of gateKeys) {
+    const v = fgParseMetric(row, k);
+    if (v !== null && getMetricPercentile(v, ctx.pctMap.get(k) ?? []) >= 75) return true;
+  }
+  if (bucket === 'Market Leaders') {
+    const eps = fgParseMetric(row, 'eps_growth'), rev = fgParseMetric(row, 'revenue_growth');
+    if (eps !== null && eps > 0 && rev !== null && rev > 0) return true;
+  }
+  return false;
+}
+
+function scoreGrowthMomentum(row: any, fgCtx: FgContext, tCtx: TradeCtx): number {
+  const stageLabel = getStageLabel(row);
+  const stageStr = stageLabel.startsWith('S2-S3 Advance') ? 100 : stageLabel.startsWith('S2 Breakout') ? 90 : 85;
+  const growthStr = gmGrowthScore(row, fgCtx);
+  const volxVal = getVolXVal(row);
+  const volxPct = volxVal !== null ? tradePctile(volxVal, tCtx.volxSorted) * 100 : 0;
+  const volxStr = volxVal !== null ? Math.min(100, volxPct * 0.6 + Math.min(volxVal * 15, 40)) : 0;
+  const optScore = getOptionsScore(row);
+  const optStr = optScore !== null ? Math.min(optScore, 100) : 0;
+  return growthStr * 0.40 + stageStr * 0.25 + volxStr * 0.20 + optStr * 0.15;
+}
+
+function getGroMoTags(row: any, ctx: FgContext, tCtx: TradeCtx, bucket: FgBucket): Array<{label: string; pos: boolean}> {
+  const tags: Array<{label: string; pos: boolean}> = [];
+  const stageLabel = getStageLabel(row);
+  if (stageLabel.startsWith('S2-S3 Advance')) tags.push({ label: 'S2-S3 Advance', pos: true });
+  else if (stageLabel.startsWith('S2 Breakout')) tags.push({ label: 'S2 Breakout', pos: true });
+  else tags.push({ label: 'S3 Momentum', pos: true });
+  if (bucket === 'Market Leaders') tags.push({ label: 'Market Leader', pos: true });
+  else if (bucket === 'High Growth') tags.push({ label: 'High Growth', pos: true });
+  else tags.push({ label: 'Future Growth', pos: true });
+  if (isTop15('revenue_growth', row, ctx) || isTop15('revenue_growth_q', row, ctx)) tags.push({ label: 'Top Rev Growth', pos: true });
+  if (isTop15('eps_growth', row, ctx)) tags.push({ label: 'Top EPS Growth', pos: true });
+  const hasFcTop = (['revenue_growth_est', 'rev_growth_next_year', 'eps_growth_est', 'eps_growth_ny'] as const).some(k => isTop15(k, row, ctx));
+  if (hasFcTop) tags.push({ label: 'Top Forecasts', pos: true });
+  const revQ = fgParseMetric(row, 'revenue_growth_q'), revY = fgParseMetric(row, 'revenue_growth');
+  if (revQ !== null && revQ > 30 && revY !== null && revY > 20) tags.push({ label: 'Revenue Ramp', pos: true });
+  const volxVal = getVolXVal(row);
+  const volxPct = volxVal !== null ? tradePctile(volxVal, tCtx.volxSorted) : 0;
+  if (volxVal !== null && volxVal >= 5) tags.push({ label: 'Elite VolX', pos: true });
+  else if (volxVal !== null && volxVal >= 2) tags.push({ label: 'High VolX', pos: true });
+  else if (volxPct >= 0.85) tags.push({ label: 'Rel Vol Leader', pos: true });
+  const optScore = getOptionsScore(row);
+  if (optScore !== null && optScore >= 70) tags.push({ label: 'Options > 70', pos: true });
+  else if (optScore !== null && optScore >= 50) tags.push({ label: 'Options > 50', pos: true });
+  else if (optScore !== null && optScore >= 25) tags.push({ label: 'Options > 25', pos: true });
+  const fcfm = fgParseMetric(row, 'fcf_margin');
+  if (fcfm !== null && fcfm < 0) tags.push({ label: 'Not FCF Positive', pos: false });
+  const de = fgParseMetric(row, 'debt_to_equity');
+  if (de !== null && de > 3) tags.push({ label: 'Debt Funding Growth', pos: false });
+  if (stageLabel.startsWith('S3 Momentum')) tags.push({ label: 'Mature Momentum', pos: false });
+  return tags.slice(0, 5);
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1288,7 +1370,7 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'golden' | 'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
+  const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
@@ -3493,9 +3575,9 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['golden', 'hciz', 'hctz', 'fundamentals', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
+              {(['golden', 'gromo', 'hciz', 'hctz', 'fundamentals', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
                 const isActive = bottomView === v;
-                const ac = v === 'golden' ? '#f59e0b' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
+                const ac = v === 'golden' ? '#f59e0b' : v === 'gromo' ? '#3b82f6' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
                 <button
                   key={v}
@@ -3510,7 +3592,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'golden' ? 'Golden Zone' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
+                  {v === 'golden' ? 'Golden Zone' : v === 'gromo' ? 'Growth Momentum' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
                 </button>
                 );
               })}
@@ -3653,7 +3735,7 @@ export default function WatchlistPage() {
                 } /* end marketcap */
 
                 /* ── FUNDAMENTALS ── */
-                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz' && bottomView !== 'golden') return null;
+                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz' && bottomView !== 'golden' && bottomView !== 'gromo') return null;
 
                 const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
 
@@ -4046,6 +4128,184 @@ export default function WatchlistPage() {
                     </div>
                   );
                 } /* end golden */
+
+                /* ── GROWTH MOMENTUM ── strong growth + S2/S2-S3/S3 stage + vol + options */
+                if (bottomView === 'gromo') {
+                  const gmFgCtx = buildFgContext(fundRows);
+                  const gmTCtx = buildTradeContext(fundRows);
+
+                  type GmRow = typeof fundRows[0] & {
+                    _bucket: FgBucket; _stageLabel: string; _gmScore: number;
+                    _revGrowth: number | null; _epsGrowth: number | null; _fcastGrowth: number | null;
+                    _volxVal: number | null; _optScore: number | null;
+                    _tags: Array<{label: string; pos: boolean}>;
+                  };
+                  const gmRows: GmRow[] = [];
+
+                  for (const r of fundRows) {
+                    const bucket = assignFundamentalGroups(r, gmFgCtx);
+                    if (bucket !== 'Market Leaders' && bucket !== 'High Growth' && bucket !== 'Speculative Future Growth Leaders') continue;
+                    const stageLabel = getStageLabel(r);
+                    if (!isGroMoStage(stageLabel)) continue;
+                    const optScore = getOptionsScore(r);
+                    if (optScore === null || optScore < 25) continue;
+                    const volxVal = getVolXVal(r);
+                    const volxPctile = volxVal !== null ? tradePctile(volxVal, gmTCtx.volxSorted) : 0;
+                    const hasVolX = (volxVal !== null && volxVal >= 1.5) || volxPctile >= 0.75;
+                    if (!hasVolX) continue;
+                    if (!gmHasGrowthGate(r, gmFgCtx, bucket)) continue;
+                    const gmScore = scoreGrowthMomentum(r, gmFgCtx, gmTCtx);
+                    const bestFc = (['revenue_growth_est','rev_growth_next_year','eps_growth_est','eps_growth_ny'] as const)
+                      .map(k => fgParseMetric(r, k)).filter((v): v is number => v !== null)
+                      .reduce((best, v) => Math.max(best, v), 0) || null;
+                    gmRows.push({
+                      ...r,
+                      _bucket: bucket,
+                      _stageLabel: stageLabel,
+                      _gmScore: gmScore,
+                      _revGrowth: fgParseMetric(r, 'revenue_growth') ?? fgParseMetric(r, 'revenue_growth_q'),
+                      _epsGrowth: fgParseMetric(r, 'eps_growth'),
+                      _fcastGrowth: bestFc,
+                      _volxVal: volxVal,
+                      _optScore: optScore,
+                      _tags: getGroMoTags(r, gmFgCtx, gmTCtx, bucket),
+                    });
+                  }
+
+                  // Sort: gmScore desc, then S2-S3 Advance first, then S2 Breakout, then S3
+                  const stageOrder = (s: string) => s.startsWith('S2-S3') ? 0 : s.startsWith('S2 Breakout') ? 1 : 2;
+                  gmRows.sort((a, b) => {
+                    if (Math.abs(b._gmScore - a._gmScore) > 2) return b._gmScore - a._gmScore;
+                    const so = stageOrder(a._stageLabel) - stageOrder(b._stageLabel);
+                    if (so !== 0) return so;
+                    return b._gmScore - a._gmScore;
+                  });
+
+                  const gmStageColor = (lbl: string) => {
+                    if (lbl.startsWith('S2-S3 Advance')) return { c: '#22c55e', bg: 'rgba(34,197,94,0.12)', bd: 'rgba(34,197,94,0.40)' };
+                    if (lbl.startsWith('S2 Breakout')) return { c: C.teal, bg: `${C.teal}18`, bd: `${C.teal}50` };
+                    return { c: C.amber, bg: `${C.amber}15`, bd: `${C.amber}45` };
+                  };
+                  const gmBucketShort = (b: FgBucket) => b === 'Market Leaders' ? 'ML' : b === 'High Growth' ? 'HG' : 'SFG';
+                  const gmBucketColor = (b: FgBucket) => b === 'Market Leaders' ? '#22c55e' : b === 'High Growth' ? '#0ea5e9' : '#a855f7';
+                  const GM_TH: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                    textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                    background: C.card, borderBottom: `1px solid ${C.border}`,
+                    fontFamily: C.font, color: C.dim,
+                  };
+                  const GM_TD: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    verticalAlign: 'middle' as const,
+                  };
+
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0 10px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#3b82f6', letterSpacing: '0.04em' }}>Growth Momentum</span>
+                        <span style={{ fontSize: 8, color: C.dim }}>— strong fundamentals · S2/S2-S3/S3 stage · options ≥ 25 · elevated VolX · {gmRows.length} qualifying</span>
+                      </div>
+                      {gmRows.length === 0 ? (
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                          No Growth Momentum setups right now.<br />
+                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires strong growth fundamentals, S2/S2-S3/S3 stage momentum, options score ≥ 25, and elevated VolX.</span>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', border: `1px solid #3b82f630`, borderRadius: 6, boxShadow: '0 0 12px rgba(59,130,246,0.06)' }} className="wl-scrollbar">
+                          <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+                            <thead>
+                              <tr>
+                                {['Symbol','Group','Stage','GM Score','Rev Growth','EPS Growth','Forecast','VolX','Options','Price','% Chg','Tags'].map((h, hi) => (
+                                  <th key={h} style={{ ...GM_TH, textAlign: 'left' as const,
+                                    ...(hi === 0 ? { position: 'sticky' as const, left: 0, zIndex: 2, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' } : {})
+                                  }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {gmRows.map((row, ri) => {
+                                const rowBg = ri % 2 === 0 ? '#08080c' : '#060c12';
+                                const rowHover = 'rgba(59,130,246,0.07)';
+                                const setTdBg = (el: HTMLTableRowElement, bg: string) =>
+                                  (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[]).forEach(td => { td.style.background = bg; });
+                                const chg = row.change_pct ?? row.change_pct_1d;
+                                const cClr = changeColor(chg);
+                                const sc = gmStageColor(row._stageLabel);
+                                const bClr = gmBucketColor(row._bucket);
+                                const fmtGrowth = (v: number | null) => v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(0)}%`;
+                                return (
+                                  <tr key={`${row.ticker}-${ri}`}
+                                    onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                                    style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                                    onMouseEnter={e => setTdBg(e.currentTarget, rowHover)}
+                                    onMouseLeave={e => setTdBg(e.currentTarget, rowBg)}
+                                  >
+                                    {/* Symbol */}
+                                    <td style={{ ...GM_TD, background: rowBg, fontWeight: 800, color: '#fff',
+                                      position: 'sticky' as const, left: 0, zIndex: 1, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' }}>
+                                      {row.ticker || DASH}
+                                    </td>
+                                    {/* Group */}
+                                    <td style={{ ...GM_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: bClr, background: `${bClr}15`, border: `1px solid ${bClr}35`, padding: '1px 5px', borderRadius: 2 }}>{gmBucketShort(row._bucket)}</span>
+                                    </td>
+                                    {/* Stage */}
+                                    <td style={{ ...GM_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: sc.c, background: sc.bg, border: `1px solid ${sc.bd}`, padding: '1px 6px', borderRadius: 3 }}>{row._stageLabel}</span>
+                                    </td>
+                                    {/* GM Score */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: '#3b82f6', fontWeight: 800, fontSize: 11 }}>
+                                      {Math.round(row._gmScore)}
+                                    </td>
+                                    {/* Rev Growth */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: row._revGrowth !== null && row._revGrowth > 20 ? '#22c55e' : C.text, fontWeight: row._revGrowth !== null && row._revGrowth > 20 ? 700 : 400 }}>
+                                      {fmtGrowth(row._revGrowth)}
+                                    </td>
+                                    {/* EPS Growth */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: row._epsGrowth !== null && row._epsGrowth > 0 ? '#22c55e' : row._epsGrowth !== null && row._epsGrowth < 0 ? '#ef4444' : C.text }}>
+                                      {fmtGrowth(row._epsGrowth)}
+                                    </td>
+                                    {/* Forecast */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: row._fcastGrowth !== null && row._fcastGrowth > 15 ? '#22c55e' : C.dim }}>
+                                      {fmtGrowth(row._fcastGrowth)}
+                                    </td>
+                                    {/* VolX */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: row._volxVal !== null && row._volxVal >= 2 ? '#22c55e' : C.dim }}>
+                                      {row._volxVal !== null ? `${row._volxVal.toFixed(1)}x` : '—'}
+                                    </td>
+                                    {/* Options */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: row._optScore !== null ? (row._optScore >= 70 ? '#22c55e' : row._optScore >= 50 ? C.amber : C.dim) : C.dim }}>
+                                      {row._optScore !== null ? String(Math.round(row._optScore)) : '—'}
+                                    </td>
+                                    {/* Price */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: C.text }}>{formatPrice(row.price)}</td>
+                                    {/* % Chg */}
+                                    <td style={{ ...GM_TD, background: rowBg, color: cClr, fontWeight: 700 }}>{formatChgPct(chg)}</td>
+                                    {/* Tags */}
+                                    <td style={{ ...GM_TD, background: rowBg, minWidth: 180 }}>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
+                                        {row._tags.map((tag, ti) => (
+                                          <span key={ti} style={{
+                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
+                                            color: tag.pos ? '#3b82f6' : '#ef4444',
+                                            background: tag.pos ? '#3b82f618' : '#ef444418',
+                                            border: `1px solid ${tag.pos ? '#3b82f635' : '#ef444430'}`,
+                                          }}>{tag.label}</span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } /* end gromo */
 
                 /* ── FUNDAMENTAL GROUPING ── */
                 if (bottomView === 'fundGrouping') {
