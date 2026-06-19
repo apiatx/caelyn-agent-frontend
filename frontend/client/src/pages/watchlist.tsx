@@ -2062,7 +2062,7 @@ export default function WatchlistPage() {
       ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px 80px';
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -2073,6 +2073,7 @@ export default function WatchlistPage() {
       { key: 'relVol', label: 'VOLX' },
       { key: 'rvRankMove', label: 'VOL RANK' },
       { key: 'volMc', label: 'Vol/MC' },
+      { key: 'stage2', label: 'Stage' },
       { key: 'optionsScore', label: 'Opt Score' },
       { label: 'Opt Signal' },
       { key: 'optionsPutCall', label: 'P/C' },
@@ -2080,7 +2081,6 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
-      { key: 'stage2', label: 'Stage' },
     ];
     return (
       <div style={{
@@ -2293,6 +2293,51 @@ export default function WatchlistPage() {
                   >
                     {formatVolMcPct(stock.vol_mc_pct)}
                   </span>
+                  {/* Stage column */}
+                  {(() => {
+                    const sa = (stock as any).stage_analysis;
+                    const s2 = stock.stage2_breakout;
+                    const label: string | null = sa?.label ?? s2?.label ?? null;
+                    const reason: string | null = sa?.reason ?? s2?.reason ?? null;
+                    if (!label) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
+                    let badgeColor: string;
+                    let badgeBg: string;
+                    let badgeBorder: string;
+                    if (/^S2 Breakout/i.test(label)) {
+                      badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`;
+                    } else if (/^S2-S3 Advance/i.test(label)) {
+                      badgeColor = '#22c55e'; badgeBg = 'rgba(34,197,94,0.10)'; badgeBorder = 'rgba(34,197,94,0.35)';
+                    } else if (/^S3 Momentum/i.test(label)) {
+                      badgeColor = '#818cf8'; badgeBg = 'rgba(129,140,248,0.10)'; badgeBorder = 'rgba(129,140,248,0.35)';
+                    } else if (/^S1-2 Watch/i.test(label)) {
+                      badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`;
+                    } else if (/^S1 Base/i.test(label)) {
+                      badgeColor = '#60a5fa'; badgeBg = 'rgba(96,165,250,0.10)'; badgeBorder = 'rgba(96,165,250,0.30)';
+                    } else if (/^S3-S4 Top/i.test(label)) {
+                      badgeColor = '#fb923c'; badgeBg = 'rgba(251,146,60,0.10)'; badgeBorder = 'rgba(251,146,60,0.30)';
+                    } else if (/^S4 Decline/i.test(label)) {
+                      badgeColor = C.red; badgeBg = `${C.red}15`; badgeBorder = `${C.red}40`;
+                    } else {
+                      badgeColor = C.dim; badgeBg = 'transparent'; badgeBorder = C.border;
+                    }
+                    return (
+                      <span
+                        title={reason ?? undefined}
+                        style={{
+                          display: 'inline-block',
+                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                          padding: '2px 5px', borderRadius: 3,
+                          color: badgeColor, background: badgeBg,
+                          border: `1px solid ${badgeBorder}`,
+                          textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+                          whiteSpace: 'nowrap' as const, lineHeight: 1.4,
+                          cursor: reason ? 'help' : 'default',
+                        }}
+                      >
+                        {label}
+                      </span>
+                    );
+                  })()}
                   {/* Options columns */}
                   {(() => {
                     const unavail = stock.options_data_available === false;
@@ -2332,51 +2377,6 @@ export default function WatchlistPage() {
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: emVal != null ? '#a78bfa' : C.dimLow, opacity:dimOpacity }}>{emStr}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{optVol != null ? formatVolume(optVol) : (hasData ? DASH : loadStr)}</span>
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
-                        {/* Stage column */}
-                        {(() => {
-                          const sa = (stock as any).stage_analysis;
-                          const s2 = stock.stage2_breakout;
-                          const label: string | null = sa?.label ?? s2?.label ?? null;
-                          const reason: string | null = sa?.reason ?? s2?.reason ?? null;
-                          if (!label) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
-                          let badgeColor: string;
-                          let badgeBg: string;
-                          let badgeBorder: string;
-                          if (/^S2 Breakout/i.test(label)) {
-                            badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`;
-                          } else if (/^S2-S3 Advance/i.test(label)) {
-                            badgeColor = '#22c55e'; badgeBg = 'rgba(34,197,94,0.10)'; badgeBorder = 'rgba(34,197,94,0.35)';
-                          } else if (/^S3 Momentum/i.test(label)) {
-                            badgeColor = '#818cf8'; badgeBg = 'rgba(129,140,248,0.10)'; badgeBorder = 'rgba(129,140,248,0.35)';
-                          } else if (/^S1-2 Watch/i.test(label)) {
-                            badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`;
-                          } else if (/^S1 Base/i.test(label)) {
-                            badgeColor = '#60a5fa'; badgeBg = 'rgba(96,165,250,0.10)'; badgeBorder = 'rgba(96,165,250,0.30)';
-                          } else if (/^S3-S4 Top/i.test(label)) {
-                            badgeColor = '#fb923c'; badgeBg = 'rgba(251,146,60,0.10)'; badgeBorder = 'rgba(251,146,60,0.30)';
-                          } else if (/^S4 Decline/i.test(label)) {
-                            badgeColor = C.red; badgeBg = `${C.red}15`; badgeBorder = `${C.red}40`;
-                          } else {
-                            badgeColor = C.dim; badgeBg = 'transparent'; badgeBorder = C.border;
-                          }
-                          return (
-                            <span
-                              title={reason ?? undefined}
-                              style={{
-                                display: 'inline-block',
-                                fontSize: 7, fontWeight: 800, fontFamily: C.font,
-                                padding: '2px 5px', borderRadius: 3,
-                                color: badgeColor, background: badgeBg,
-                                border: `1px solid ${badgeBorder}`,
-                                textTransform: 'uppercase' as const, letterSpacing: '0.05em',
-                                whiteSpace: 'nowrap' as const, lineHeight: 1.4,
-                                cursor: reason ? 'help' : 'default',
-                              }}
-                            >
-                              {label}
-                            </span>
-                          );
-                        })()}
                       </>
                     );
                   })()}
