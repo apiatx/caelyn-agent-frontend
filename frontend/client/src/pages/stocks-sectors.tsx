@@ -1023,7 +1023,7 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
       width: "100%",
       height: 550,
       symbol: symbol || `AMEX:${ticker}`,
-      interval: "D",
+      interval: "W",
       timezone: "Etc/UTC",
       theme: "dark",
       style: "1",
@@ -1037,8 +1037,8 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
       enabled_features: ["use_localstorage_for_settings","study_templates","header_indicators","header_compare","header_undo_redo","header_screenshot","header_chart_type","header_settings","header_resolutions","header_fullscreen_button","left_toolbar","drawing_templates"],
       disabled_features: ["volume_force_overlay","create_volume_indicator_by_default"],
       timeframes: [
-        {text:"1m",resolution:"1"},{text:"15m",resolution:"15"},{text:"30m",resolution:"30"},
-        {text:"1h",resolution:"60"},{text:"4h",resolution:"240"},{text:"1d",resolution:"D"},{text:"1w",resolution:"W"},
+        {text:"1m",resolution:"1"},{text:"30m",resolution:"30"},
+        {text:"1h",resolution:"60"},{text:"4h",resolution:"240"},{text:"D",resolution:"D"},{text:"W",resolution:"W"},
       ],
     });
     ref.current.appendChild(script);
