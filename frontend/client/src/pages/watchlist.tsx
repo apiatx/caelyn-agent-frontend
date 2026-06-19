@@ -2784,7 +2784,7 @@ export default function WatchlistPage() {
         </div>
 
         {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamental' ? (
-          <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: '4px 8px' }} className="wl-scrollbar">
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(visibleRows)}
           </div>
         ) : (
@@ -3093,39 +3093,48 @@ export default function WatchlistPage() {
     const fArr   = (key: string) => fundSort.key === key ? (fundSort.dir === 'asc' ? '▲' : '▼') : '';
 
     const TH: React.CSSProperties = {
-      padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+      padding: '6px 14px', fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
       textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
       cursor: 'pointer', userSelect: 'none' as const,
       background: C.card, borderBottom: `1px solid ${C.border}`,
       fontFamily: C.font,
     };
     const TD: React.CSSProperties = {
-      padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-      borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+      padding: '7px 14px', fontSize: 10, whiteSpace: 'nowrap' as const,
+      borderBottom: `1px solid ${C.border}`, fontFamily: C.font,
     };
 
     return (
-      <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
+      <div style={{ overflowX: 'auto' }} className="wl-scrollbar">
         <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
           <thead>
             <tr>
-              {FUND_COLS.map((col, ci) => (
+              {FUND_COLS.map((col, ci) => {
+                const isActive = fundSort.key === col.key;
+                return (
                 <th
                   key={col.key}
                   onClick={() => handleFundSortLocal(col.key)}
                   style={{
                     ...TH,
-                    color: fThClr(col.key),
+                    color: isActive ? '#f5f5f0' : C.dim,
                     textAlign: ci === 0 ? 'left' as const : 'right' as const,
                     ...(ci === 0 ? {
                       position: 'sticky' as const, left: 0, zIndex: 2,
+                      background: C.card,
                       boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
                     } : { position: 'sticky' as const, top: 0, zIndex: 1 }),
                   }}
                 >
-                  {col.label}{fundSort.key === col.key ? <span style={{ fontSize: 6, marginLeft: 2 }}>{fArr(col.key)}</span> : null}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    {col.label}
+                    <span style={{ fontSize: 8, opacity: isActive ? 1 : 0.3 }}>
+                      {isActive ? (fundSort.dir === 'asc' ? '▲' : '▼') : '↕'}
+                    </span>
+                  </span>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -3136,8 +3145,8 @@ export default function WatchlistPage() {
                 </td>
               </tr>
             ) : sortedFundRows.map((row, ri) => {
-              const rowBg    = ri % 2 === 0 ? '#08080c' : '#0d1420';
-              const rowHover = 'rgba(14,165,233,0.07)';
+              const rowBg    = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
+              const rowHover = 'rgba(255,255,255,0.03)';
               const setAllTdBg = (el: HTMLTableRowElement, bg: string) => {
                 (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
                   .forEach(td => { td.style.background = bg; });
@@ -3146,7 +3155,7 @@ export default function WatchlistPage() {
               <tr
                 key={`${row.ticker}-${ri}`}
                 onClick={() => row.ticker && handleTickerClick(row.ticker)}
-                style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                style={{ cursor: row.ticker ? 'pointer' : 'default', transition: 'background 0.1s' }}
                 onMouseEnter={e => setAllTdBg(e.currentTarget, rowHover)}
                 onMouseLeave={e => setAllTdBg(e.currentTarget, rowBg)}
               >
