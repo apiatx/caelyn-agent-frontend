@@ -3493,7 +3493,7 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['golden', 'themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz', 'hctz'] as const).map(v => {
+              {(['golden', 'hciz', 'hctz', 'fundamentals', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
                 const isActive = bottomView === v;
                 const ac = v === 'golden' ? '#f59e0b' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
