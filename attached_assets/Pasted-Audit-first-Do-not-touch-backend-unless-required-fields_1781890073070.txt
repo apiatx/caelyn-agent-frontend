@@ -1,0 +1,271 @@
+Audit first. Do not touch backend unless required fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Add a new bottom tab on the Watchlist page called:
+
+High Conviction Investment Zone
+
+This tab should identify the strongest watchlist names sitting at the intersection of:
+
+1. elite current or future fundamental growth
+2. constructive early technical stage
+
+Scope:
+Only update the Watchlist bottom-section tabs.
+
+Do not change:
+
+* backend
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* Themes tab
+* Market Cap tab
+* Fundamental Screener tab
+* existing Fundamental Grouping behavior except sharing helper logic
+
+Tabs should now include:
+
+* Themes
+* Market Cap
+* Fundamental Screener
+* Fundamental Grouping
+* High Conviction Investment Zone
+
+Data:
+Use only existing loaded Watchlist data already available to:
+
+* Fundamental Screener
+* Fundamental Grouping
+* ticker popup Fundamentals tab
+* stage_analysis / stage2_breakout
+
+Do not fetch new data.
+Do not call FMP.
+Do not call Tradier.
+Do not call analyst endpoints live.
+Do not call options endpoints.
+Do not use LLM classification.
+
+Dependency:
+This tab should reuse the same deterministic helper logic created for `Fundamental Grouping`.
+
+Important:
+Do not duplicate the entire fundamental classification logic separately.
+Create/reuse shared local helpers so `Fundamental Grouping` and `High Conviction Investment Zone` agree.
+
+Suggested shared helpers:
+
+* getFundamentalMetrics(row)
+* getActiveWatchlistPercentiles(rows)
+* getExtremeMetricTags(row)
+* scoreHighGrowth(row)
+* scoreSpecFutureGrowth(row)
+* assignFundamentalGroups(row)
+* isHighConvictionInvestmentZone(row)
+
+Eligibility:
+A ticker qualifies for `High Conviction Investment Zone` only if all of these are true:
+
+1. It qualifies as either:
+
+   * High Growth
+   * Speculative Future Growth Leaders
+
+Use the same logic/bucket assignment from the `Fundamental Grouping` tab.
+
+2. It has elite growth characteristics.
+
+For High Growth:
+Must have at least one of these current growth/quality metrics in the top 15% of the active watchlist:
+
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* EPS Growth
+* Gross Margin
+* FCF Margin
+
+Primary emphasis:
+
+* highest revenue growth
+* highest EPS growth
+
+For Speculative Future Growth Leaders:
+Must have at least one of these future/forecast metrics in the top 15% of the active watchlist:
+
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+* margin increase forecast fields, if available
+
+Primary emphasis:
+
+* highest future revenue growth forecasts
+* highest future EPS growth forecasts
+* highest future margin improvement forecasts, if available
+
+3. It is in one of these constructive early stages:
+   Use:
+   row.stage_analysis?.label || row.stage2_breakout?.label
+
+Allowed stage labels:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+Do not include:
+
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+Reason:
+This tab is for names that are fundamentally compelling and still early enough technically to be actionable.
+
+Percentile logic:
+Calculate top 15% thresholds only within the currently active saved watchlist.
+
+Examples:
+
+* Primary uses Primary tickers only
+* Close Watch/Favorites uses only Close Watch/Favorites tickers
+* future saved watchlist tabs use only their own tickers
+
+Do not calculate percentiles against all Primary tickers when another watchlist tab is active.
+
+UI:
+Render a compact table or card list.
+
+Suggested columns:
+
+* Symbol
+* Group
+* Stage
+* Price
+* % Change
+* Market Cap
+* Growth Driver
+* Score
+* Reason Tags
+
+Group should be either:
+
+* High Growth
+* Spec. Future Growth
+
+Stage should show:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+Growth Driver examples:
+
+* Top 15% Rev Growth
+* Top 15% EPS Growth
+* Top 15% Rev Forecast
+* Top 15% EPS Forecast
+* Top 15% Margin Forecast
+* Huge Rev Ramp
+* Forecast-Led Growth
+
+Reason Tags:
+Show 1–4 compact tags explaining why the ticker qualifies.
+
+Positive tags:
+
+* High Growth
+* Future Growth
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+* Top 15% Rev Growth
+* Top 15% EPS Growth
+* Top 15% Forecasts
+* Top 15% Margin Expansion
+* Strong FCF Mgn
+* Strong Gross Mgn
+* Huge Rev Ramp
+
+Risk tags are allowed only if the ticker is in Speculative Future Growth Leaders:
+
+* Negative FCF
+* Debt Funding Growth
+* Not Profitable Yet
+* Margin Pressure
+
+Do not include High Speculation / Avoid names.
+
+Sorting:
+Sort by highest conviction first.
+
+Suggested sort priority:
+
+1. S2 Breakout first
+2. S1-2 Watch second
+3. S1 Base third
+4. highest growth/forecast percentile score
+5. High Growth before Speculative Future Growth Leaders
+6. market cap descending as final tie-breaker
+
+Alternative:
+Create a `convictionScore` using:
+
+* growth percentile score
+* forecast percentile score
+* stage score
+* fundamental group score
+* red flag penalty
+
+But keep it deterministic and explainable.
+
+Stage scoring suggestion:
+
+* S2 Breakout: highest
+* S1-2 Watch: medium-high
+* S1 Base: early watch
+
+Empty state:
+If no tickers qualify, show:
+
+No High Conviction Investment Zone setups right now.
+
+Do not loosen the rules automatically just to fill the tab.
+
+Rows:
+Rows should be clickable and open the existing StockDetailModal.
+
+Active watchlist:
+The tab must respect the currently selected saved watchlist:
+
+* Primary shows only Primary tickers
+* Close Watch/Favorites shows only those tickers
+* future saved watchlist tabs show only their own tickers
+
+Validation:
+
+1. New bottom tab appears: `High Conviction Investment Zone`.
+2. Tab uses only already-loaded Watchlist data.
+3. No new API/provider calls fire when switching to the tab.
+4. No LLM calls are added.
+5. Only High Growth and Speculative Future Growth Leaders can qualify.
+6. High Speculation / Avoid names never qualify.
+7. Market Leaders do not qualify unless they also meet High Growth criteria through the shared grouping helper.
+8. Only stages S1 Base, S1-2 Watch, and S2 Breakout qualify.
+9. S2-S3 Advance, S3 Momentum, S3-S4 Top, and S4 Decline do not qualify.
+10. Top 15% growth/forecast thresholds are calculated from the active watchlist only.
+11. Rows show clear growth driver and reason tags.
+12. Rows open StockDetailModal.
+13. Empty state appears if no rows qualify.
+14. No console errors.

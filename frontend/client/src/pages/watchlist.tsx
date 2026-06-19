@@ -835,8 +835,8 @@ function fundFmtDate(v: any): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FUNDAMENTAL GROUPING — percentile-based, active-watchlist-relative scoring
-   No LLM, no API calls. Context built from fundRows for the active tab only.
+   FUNDAMENTAL GROUPING + HIGH CONVICTION ZONE — shared helpers
+   Percentile-based, active-watchlist-relative. No LLM, no API calls.
    ═══════════════════════════════════════════════════════════════════════════ */
 type FgBucket = 'Market Leaders' | 'High Growth' | 'Speculative Future Growth Leaders' | 'High Speculation';
 type FgContext = { pctMap: Map<string, number[]> };
@@ -1062,6 +1062,60 @@ function getExtremeMetricTags(row: any, ctx: FgContext, bucket: FgBucket): Array
   return (bucket === 'Speculative Future Growth Leaders' ? [...neg, ...pos] : [...pos, ...neg]).slice(0, 3);
 }
 
+/* ── High Conviction Investment Zone helpers ── */
+const HCIZ_ALLOWED_STAGES = ['S1 Base', 'S1-2 Watch', 'S2 Breakout'];
+
+function getStageLabel(row: any): string {
+  return (
+    row.stage_analysis?.label ?? row.stage2_breakout?.label ??
+    row.stage_analysis?.stage ?? row.stage2_breakout?.stage ?? ''
+  );
+}
+
+function isHcizStage(label: string): boolean {
+  return HCIZ_ALLOWED_STAGES.some(s => label.startsWith(s));
+}
+
+function getGrowthDriver(row: any, ctx: FgContext, bucket: FgBucket): string {
+  if (bucket === 'High Growth') {
+    if (isTop15('revenue_growth', row, ctx) || isTop15('revenue_growth_q', row, ctx)) return 'Top 15% Rev Growth';
+    if (isTop15('eps_growth', row, ctx)) return 'Top 15% EPS Growth';
+    if (isTop15('gross_margin', row, ctx)) return 'Top 15% Gross Mgn';
+    if (isTop15('fcf_margin', row, ctx)) return 'Top 15% FCF Mgn';
+    const rgy = fgParseMetric(row, 'revenue_growth');
+    if (rgy !== null && rgy > 40) return 'Huge Rev Ramp';
+    return 'Strong Growth';
+  }
+  const revFcastTop = ['revenue_growth_est','rev_growth_next_quarter','rev_growth_next_year'].some(k => isTop15(k, row, ctx));
+  const epsFcastTop = ['eps_growth_est','eps_growth_tq','eps_growth_nq','eps_growth_ty','eps_growth_ny'].some(k => isTop15(k, row, ctx));
+  if (revFcastTop) return 'Top 15% Rev Forecast';
+  if (epsFcastTop) return 'Top 15% EPS Forecast';
+  const rgy = fgParseMetric(row, 'revenue_growth');
+  if (rgy !== null && rgy > 30) return 'Huge Rev Ramp';
+  return 'Forecast-Led Growth';
+}
+
+function convictionScore(row: any, ctx: FgContext, bucket: FgBucket, stageLabel: string): number {
+  const stageScore = stageLabel.startsWith('S2 Breakout') ? 30 : stageLabel.startsWith('S1-2 Watch') ? 20 : 10;
+  const growthScore = bucket === 'High Growth' ? scoreHighGrowth(row, ctx) : scoreSpecFutureGrowth(row, ctx) * 0.8;
+  const groupBonus = bucket === 'High Growth' ? 10 : 0;
+  const mc = fgParseMetric(row, 'market_cap') ?? 1e9;
+  const mcScore = Math.log10(Math.max(mc / 1e6, 1)) * 0.5;
+  return stageScore + growthScore + groupBonus + mcScore;
+}
+
+function isHighConvictionInvestmentZone(
+  row: any, ctx: FgContext
+): { qualifies: boolean; bucket: FgBucket | null; stageLabel: string } {
+  const bucket = assignFundamentalGroups(row, ctx);
+  if (bucket !== 'High Growth' && bucket !== 'Speculative Future Growth Leaders') {
+    return { qualifies: false, bucket: null, stageLabel: '' };
+  }
+  const stageLabel = getStageLabel(row);
+  if (!isHcizStage(stageLabel)) return { qualifies: false, bucket, stageLabel };
+  return { qualifies: true, bucket, stageLabel };
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1086,7 +1140,7 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping'>('themes');
+  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz'>('themes');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
@@ -3291,7 +3345,10 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['themes', 'marketcap', 'fundamentals', 'fundGrouping'] as const).map(v => (
+              {(['themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz'] as const).map(v => {
+                const isActive = bottomView === v;
+                const isHciz = v === 'hciz';
+                return (
                 <button
                   key={v}
                   onClick={() => setBottomView(v)}
@@ -3299,15 +3356,16 @@ export default function WatchlistPage() {
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                     padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
                     textTransform: 'uppercase' as const, fontFamily: C.font,
-                    background: bottomView === v ? `${C.teal}22` : 'transparent',
-                    color: bottomView === v ? C.teal : C.dim,
-                    border: `1px solid ${bottomView === v ? `${C.teal}60` : C.border}`,
+                    background: isActive ? (isHciz ? '#a855f718' : `${C.teal}22`) : 'transparent',
+                    color: isActive ? (isHciz ? '#a855f7' : C.teal) : C.dim,
+                    border: `1px solid ${isActive ? (isHciz ? '#a855f760' : `${C.teal}60`) : C.border}`,
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : v === 'fundamentals' ? 'Fundamental Screener' : 'Fundamental Grouping'}
+                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : 'High Conviction Zone'}
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             {/* ── Canonical theme section cards / Market Cap buckets / Fundamentals ── */}
@@ -3447,7 +3505,7 @@ export default function WatchlistPage() {
                 } /* end marketcap */
 
                 /* ── FUNDAMENTALS ── */
-                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping') return null;
+                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz') return null;
 
                 const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
 
@@ -3576,6 +3634,144 @@ export default function WatchlistPage() {
                     </div>
                   );
                 } /* end fundGrouping */
+
+                /* ── HIGH CONVICTION INVESTMENT ZONE ── */
+                if (bottomView === 'hciz') {
+                  const hcizCtx = buildFgContext(fundRows);
+                  type HcizRow = typeof fundRows[0] & {
+                    _bucket: FgBucket; _stageLabel: string; _convScore: number;
+                    _driver: string; _tags: Array<{label: string; pos: boolean}>;
+                  };
+                  const hcizRows: HcizRow[] = [];
+                  for (const r of fundRows) {
+                    const { qualifies, bucket, stageLabel } = isHighConvictionInvestmentZone(r, hcizCtx);
+                    if (!qualifies || !bucket) continue;
+                    hcizRows.push({
+                      ...r,
+                      _bucket: bucket,
+                      _stageLabel: stageLabel,
+                      _convScore: convictionScore(r, hcizCtx, bucket, stageLabel),
+                      _driver: getGrowthDriver(r, hcizCtx, bucket),
+                      _tags: getExtremeMetricTags(r, hcizCtx, bucket),
+                    });
+                  }
+                  hcizRows.sort((a, b) => b._convScore - a._convScore);
+
+                  const stageColor = (lbl: string) => {
+                    if (lbl.startsWith('S2 Breakout')) return { c: C.teal, bg: `${C.teal}18`, bd: `${C.teal}50` };
+                    if (lbl.startsWith('S1-2 Watch')) return { c: C.amber, bg: `${C.amber}15`, bd: `${C.amber}45` };
+                    return { c: '#60a5fa', bg: 'rgba(96,165,250,0.10)', bd: 'rgba(96,165,250,0.30)' };
+                  };
+                  const bucketColor = (b: FgBucket) => b === 'High Growth' ? '#0ea5e9' : '#a855f7';
+                  const bucketLabel = (b: FgBucket) => b === 'High Growth' ? 'High Growth' : 'Spec. Future Growth';
+
+                  const HCIZ_TH: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                    textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                    background: C.card, borderBottom: `1px solid ${C.border}`,
+                    fontFamily: C.font, color: C.dim,
+                  };
+                  const HCIZ_TD: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    verticalAlign: 'middle' as const,
+                  };
+
+                  return (
+                    <div>
+                      {/* header strip */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0 10px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#a855f7', letterSpacing: '0.04em' }}>High Conviction Investment Zone</span>
+                        <span style={{ fontSize: 8, color: C.dim }}>— fundamentally elite · technically early · {hcizRows.length} qualifying</span>
+                      </div>
+                      {hcizRows.length === 0 ? (
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                          No High Conviction Investment Zone setups right now.<br />
+                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Rules are not loosened to fill this tab — only genuine setups appear.</span>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
+                          <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+                            <thead>
+                              <tr>
+                                {['Symbol','Group','Stage','Price','% Chg','Mkt Cap','Growth Driver','Reason Tags'].map((h, hi) => (
+                                  <th key={h} style={{ ...HCIZ_TH, textAlign: hi === 0 ? 'left' as const : 'left' as const,
+                                    ...(hi === 0 ? { position: 'sticky' as const, left: 0, zIndex: 2, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' } : {})
+                                  }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {hcizRows.map((row, ri) => {
+                                const rowBg    = ri % 2 === 0 ? '#08080c' : '#0d1420';
+                                const rowHover = 'rgba(168,85,247,0.07)';
+                                const setTdBg = (el: HTMLTableRowElement, bg: string) =>
+                                  (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[]).forEach(td => { td.style.background = bg; });
+                                const chg = row.change_pct ?? row.change_pct_1d;
+                                const cClr = changeColor(chg);
+                                const mcStr = fundFmtCompact(row.market_cap ?? row.marketCap);
+                                const sc = stageColor(row._stageLabel);
+                                const bc = bucketColor(row._bucket);
+                                return (
+                                  <tr key={`${row.ticker}-${ri}`}
+                                    onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                                    style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                                    onMouseEnter={e => setTdBg(e.currentTarget, rowHover)}
+                                    onMouseLeave={e => setTdBg(e.currentTarget, rowBg)}
+                                  >
+                                    {/* Symbol */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, fontWeight: 800, color: '#fff',
+                                      position: 'sticky' as const, left: 0, zIndex: 1, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' }}>
+                                      {row.ticker || DASH}
+                                    </td>
+                                    {/* Group */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: bc, background: `${bc}18`,
+                                        border: `1px solid ${bc}40`, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap' as const }}>
+                                        {bucketLabel(row._bucket)}
+                                      </span>
+                                    </td>
+                                    {/* Stage */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: sc.c, background: sc.bg,
+                                        border: `1px solid ${sc.bd}`, padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap' as const }}>
+                                        {row._stageLabel}
+                                      </span>
+                                    </td>
+                                    {/* Price */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, color: C.text }}>{formatPrice(row.price)}</td>
+                                    {/* % Chg */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, color: cClr, fontWeight: 700 }}>{formatChgPct(chg)}</td>
+                                    {/* Mkt Cap */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, color: C.dim }}>{mcStr}</td>
+                                    {/* Growth Driver */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, color: '#a855f7', fontWeight: 600, fontSize: 9 }}>
+                                      {row._driver}
+                                    </td>
+                                    {/* Reason Tags */}
+                                    <td style={{ ...HCIZ_TD, background: rowBg, minWidth: 180 }}>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
+                                        {row._tags.map((tag, ti) => (
+                                          <span key={ti} style={{
+                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
+                                            color: tag.pos ? '#22c55e' : '#ef4444',
+                                            background: tag.pos ? '#22c55e18' : '#ef444418',
+                                            border: `1px solid ${tag.pos ? '#22c55e30' : '#ef444430'}`,
+                                          }}>{tag.label}</span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } /* end hciz */
 
                 // Sort
                 const fDir = fundSort.dir === 'asc' ? 1 : -1;
