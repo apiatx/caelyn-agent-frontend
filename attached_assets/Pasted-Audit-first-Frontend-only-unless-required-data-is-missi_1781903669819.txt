@@ -1,0 +1,242 @@
+Audit first. Frontend-only unless required data is missing from the already-loaded Watchlist payload. Do not touch backend. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Cleanly separate the Watchlist bottom tabs into two visual groups:
+
+1. Setups
+2. Performance Groupings
+
+Then add daily average price-change performance to each Performance Grouping bucket/card header.
+
+Current bottom tabs include:
+
+* Golden Zone
+* Growth Momentum
+* HC Investment Zone
+* HC Trade Zone
+* Fundamental Grouping
+* Theme Performance
+* Market Cap Grouping
+
+Desired visual segmentation:
+The bottom tab strip should clearly separate:
+
+SETUPS:
+
+* Golden Zone
+* Growth Momentum
+* HC Investment Zone
+* HC Trade Zone
+
+PERFORMANCE GROUPINGS:
+
+* Fundamental Grouping
+* Theme Grouping / Theme Performance
+* Market Cap Grouping
+
+Important:
+Do not add another full row of bulky UI if avoidable. Keep it clean and compact.
+
+Suggested layout:
+Use small inline section labels inside the tab strip:
+
+SETUPS
+[Golden Zone] [Growth Momentum] [HC Investment Zone] [HC Trade Zone]
+
+PERFORMANCE GROUPINGS
+[Fundamental Grouping] [Theme Grouping] [Market Cap Grouping]
+
+The visual divider can be:
+
+* small muted uppercase label
+* subtle vertical divider
+* slight spacing gap
+* different accent outline
+
+Do not make it noisy.
+
+Naming:
+Current tab says `Theme Performance`.
+
+Either:
+
+* keep `Theme Performance` if that is already established,
+  OR
+* rename it to `Theme Grouping` for consistency with the new section.
+
+Preferred:
+Rename `Theme Performance` to `Theme Grouping`, since it is part of the Performance Groupings section.
+
+Do not change the logic of the theme grouping tab.
+
+Performance calculation requirement:
+Every Performance Grouping card/bucket header must show the average daily price change % of the tickers inside that bucket.
+
+This applies to:
+
+1. Fundamental Grouping
+   Buckets:
+
+* Market Leaders
+* High Growth
+* Speculative Future Growth
+* High Speculation
+
+Each bucket header should show:
+
+* bucket name
+* count
+* average day price change % of every ticker listed in that bucket
+
+Example:
+Market Leaders     22     +2.14%
+
+2. Market Cap Grouping
+   Buckets:
+
+* Large Cap
+* Mid Cap
+* Small Cap
+* Micro Cap
+
+Each bucket header should show:
+
+* bucket name
+* count
+* average day price change % of every ticker listed in that bucket
+
+Example:
+Small Cap     84     +1.73%
+
+3. Theme Grouping / Theme Performance
+   This already appears to show group performance.
+   Audit it and preserve that behavior.
+   If needed, make sure it uses the same shared average daily % helper for consistency.
+
+Average daily % calculation:
+Use the existing loaded per-row daily change % field.
+
+Possible aliases:
+
+* change_percent
+* changePct
+* change_pct
+* changesPercentage
+* day_change_percent
+* price_change_percent
+* chg_percent
+* chgPct
+
+Create a shared helper:
+
+* getDailyChangePct(row)
+* avgDailyChangePct(rows)
+
+Rules:
+
+* Only include valid numeric values.
+* Ignore null, undefined, empty string, NaN, and non-numeric values.
+* Do not count missing values as 0.
+* 0 is valid and should be included.
+* Average should be arithmetic mean of listed tickers in that bucket.
+* Use only tickers actually displayed/listed in that bucket.
+* If no valid values exist, show `—`.
+
+Formatting:
+
+* positive: `+1.23%`
+* negative: `-1.23%`
+* zero: `0.00%`
+* missing: `—`
+
+Color:
+Use existing green/red/neutral styling:
+
+* positive green
+* negative red
+* zero/missing muted
+
+Important:
+For Fundamental Grouping, average the tickers actually listed in each bucket, not omitted watchlist tickers.
+
+For Market Cap Grouping, average all tickers listed in that market-cap bucket.
+
+For Theme Grouping, average all tickers listed in that theme bucket.
+
+Active watchlist:
+All calculations must respect the currently selected saved watchlist:
+
+* Primary
+* Close Watch/Favorites
+* future saved watchlist tabs
+
+Do not calculate averages from Primary when another watchlist tab is active.
+
+Do not fetch:
+
+* FMP
+* Tradier
+* options endpoints
+* backend refresh endpoints
+* LLMs
+
+Reuse existing data only.
+
+Implementation guidance:
+Create one shared helper for bucket performance:
+
+const getBucketAvgChange = (rows) => {
+const vals = rows
+.map(getDailyChangePct)
+.filter(isValidNumber)
+if (!vals.length) return null
+return vals.reduce((a, b) => a + b, 0) / vals.length
+}
+
+Then use it in:
+
+* Fundamental Grouping bucket headers
+* Market Cap Grouping bucket headers
+* Theme Grouping bucket headers if needed
+
+Do not create three separate average formulas.
+
+UI details:
+Performance badge should sit in the top-right of each bucket/card header, like the Theme Performance cards already do.
+
+Example header:
+High Growth     Strong Growth     18     +3.41%
+
+Or:
+High Growth
+Strong Growth
+18
++3.41%
+
+Keep it compact and aligned.
+
+Validation:
+
+1. Bottom tabs are visually segmented into `SETUPS` and `PERFORMANCE GROUPINGS`.
+2. Setups group includes:
+
+   * Golden Zone
+   * Growth Momentum
+   * HC Investment Zone
+   * HC Trade Zone
+3. Performance Groupings includes:
+
+   * Fundamental Grouping
+   * Theme Grouping / Theme Performance
+   * Market Cap Grouping
+4. Fundamental Grouping bucket headers show average daily % change.
+5. Market Cap Grouping bucket headers show average daily % change.
+6. Theme Grouping still shows average daily % change and uses consistent formatting.
+7. Averages are calculated only from tickers displayed in each bucket.
+8. Missing daily change values are ignored, not counted as zero.
+9. 0% is treated as a valid value.
+10. Active saved watchlist filtering is respected.
+11. No new API/provider calls are added.
+12. No LLM calls are added.
+13. Existing setup tabs still work unchanged.
+14. No console errors.

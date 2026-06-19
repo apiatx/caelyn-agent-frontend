@@ -289,6 +289,27 @@ function formatChgPct(c: any): string {
   return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
 }
 
+function getDailyChangePct(row: any): number | null {
+  const v = row.change_pct ?? row.change_pct_1d ?? row.change_percent ?? row.changePct ??
+    row.changesPercentage ?? row.day_change_percent ?? row.price_change_percent ??
+    row.chg_percent ?? row.chgPct ?? null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function avgDailyChangePct(rows: any[]): number | null {
+  const vals = rows.map(getDailyChangePct).filter((v): v is number => v !== null);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function fmtAvgChg(avg: number | null): { text: string; color: string } {
+  if (avg === null) return { text: DASH, color: 'inherit' };
+  const text = `${avg > 0 ? '+' : ''}${avg.toFixed(2)}%`;
+  const color = avg > 0 ? C.green : avg < 0 ? C.red : C.dim;
+  return { text, color };
+}
+
 function formatVolume(v: any): string {
   if (v == null || !Number.isFinite(Number(v))) return DASH;
   const n = Number(v);
@@ -3890,15 +3911,14 @@ export default function WatchlistPage() {
             )}
 
             {/* ── Bottom Section View Switcher ── */}
-            <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['golden', 'gromo', 'hciz', 'hctz', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
+            <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+              {/* SETUPS group */}
+              <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Setups</span>
+              {(['golden', 'gromo', 'hciz', 'hctz'] as const).map(v => {
                 const isActive = bottomView === v;
-                const ac = v === 'golden' ? '#f59e0b' : v === 'gromo' ? '#3b82f6' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
+                const ac = v === 'golden' ? '#f59e0b' : v === 'gromo' ? '#3b82f6' : v === 'hciz' ? '#a855f7' : '#22c55e';
                 return (
-                <button
-                  key={v}
-                  onClick={() => setBottomView(v)}
-                  style={{
+                  <button key={v} onClick={() => setBottomView(v)} style={{
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                     padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
                     textTransform: 'uppercase' as const, fontFamily: C.font,
@@ -3906,10 +3926,30 @@ export default function WatchlistPage() {
                     color: isActive ? ac : C.dim,
                     border: `1px solid ${isActive ? `${ac}60` : C.border}`,
                     transition: 'all 0.12s',
-                  }}
-                >
-                  {v === 'golden' ? 'Golden Zone' : v === 'gromo' ? 'Growth Momentum' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
-                </button>
+                  }}>
+                    {v === 'golden' ? 'Golden Zone' : v === 'gromo' ? 'Growth Momentum' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
+                  </button>
+                );
+              })}
+              {/* divider */}
+              <span style={{ width: 1, height: 14, background: C.border, flexShrink: 0, margin: '0 3px', opacity: 0.6 }} />
+              {/* PERFORMANCE GROUPINGS group */}
+              <span style={{ fontSize: 7, fontWeight: 700, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, opacity: 0.5 }}>Performance</span>
+              {(['fundGrouping', 'themes', 'marketcap'] as const).map(v => {
+                const isActive = bottomView === v;
+                const ac = C.teal;
+                return (
+                  <button key={v} onClick={() => setBottomView(v)} style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                    padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
+                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    background: isActive ? `${ac}18` : 'transparent',
+                    color: isActive ? ac : C.dim,
+                    border: `1px solid ${isActive ? `${ac}60` : C.border}`,
+                    transition: 'all 0.12s',
+                  }}>
+                    {v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'themes' ? 'Theme Grouping' : 'Market Cap Grouping'}
+                  </button>
                 );
               })}
             </div>
@@ -3979,16 +4019,22 @@ export default function WatchlistPage() {
                       const rows = mcTickers
                         .filter(s => { const mc = Number(s.market_cap); return mc >= bucket.min && mc < bucket.max; })
                         .sort(mcSortFn);
+                      const mcAvg = fmtAvgChg(avgDailyChangePct(rows));
                       return (
                         <div
                           key={bucket.label}
                           style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}
                         >
                           {/* bucket header */}
-                          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>{bucket.label}</span>
-                            <span style={{ fontSize: 8, color: C.dim }}>{bucket.sub}</span>
-                            <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto' }}>{rows.length}</span>
+                          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>{bucket.label}</span>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: mcAvg.color, fontFamily: C.font, flexShrink: 0 }}>{mcAvg.text}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 8, color: C.dim }}>{bucket.sub}</span>
+                              <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto' }}>{rows.length}</span>
+                            </div>
                           </div>
                           {/* sortable column headers */}
                           <div style={{
@@ -4665,11 +4711,15 @@ export default function WatchlistPage() {
                           const rows = fgQRows
                             .filter(r => r._bucket === bDef.id)
                             .sort((a, b) => b._score - a._score);
+                          const fgAvg = fmtAvgChg(avgDailyChangePct(rows));
                           return (
                             <div key={bDef.id} style={{ flex: '1 1 200px', minWidth: 190, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
                               {/* bucket header */}
                               <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bDef.color}10` }}>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: bDef.color, letterSpacing: '0.05em', marginBottom: 1 }}>{bDef.label}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: bDef.color, letterSpacing: '0.05em' }}>{bDef.label}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: fgAvg.color, fontFamily: C.font, flexShrink: 0 }}>{fgAvg.text}</span>
+                                </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <span style={{ fontSize: 7.5, color: C.dim, letterSpacing: '0.04em' }}>{bDef.sub}</span>
                                   <span style={{ fontSize: 9, fontWeight: 700, color: bDef.color }}>{rows.length}</span>
