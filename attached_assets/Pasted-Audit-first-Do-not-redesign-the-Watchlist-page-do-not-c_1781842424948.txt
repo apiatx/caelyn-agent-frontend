@@ -1,0 +1,136 @@
+Audit first. Do not redesign the Watchlist page, do not create a new fundamentals system, and do not touch unrelated pages.
+
+Context:
+The ticker fundamentals view already exists. When the user clicks a ticker on the Watchlist page, a popup/modal opens with tabs including Fundamentals. The screenshot provided shows that existing Fundamentals popup view. Reuse that existing modal’s fundamentals field names, data accessors, formatting helpers, and labels wherever possible.
+
+Goal:
+Add a third bottom-section view tab on the Watchlist page next to the existing Themes and Market Cap bottom tabs.
+
+Bottom view tabs should be:
+
+* Themes
+* Market Cap
+* Fundamentals
+
+Default:
+
+* Default remains Themes.
+* Themes must preserve the current bottom section exactly.
+* Market Cap must preserve the current Market Cap implementation exactly.
+* Fundamentals should only replace the bottom section.
+* The main Tickers table, Live News, saved watchlist tabs, top theme chips, Add tickers, Refresh, and ticker tape must not change.
+
+Placement:
+Use the same segmented control that currently switches Themes / Market Cap.
+Add Fundamentals as the third option.
+
+Important data rule:
+The Fundamentals bottom view must reuse existing watchlist/popup fundamentals data. Do not invent new fields, do not create new provider calls, and do not fetch every ticker one-by-one from the popup endpoint unless that endpoint is already bulk-loaded/cached for the current watchlist.
+
+Audit requirements:
+
+1. Find the existing StockDetailModal / ticker popup component.
+2. Find the existing Fundamentals tab inside that popup.
+3. Identify the exact field names and formatting helpers used by the popup.
+4. Check whether those same values already exist on the loaded Watchlist ticker rows.
+5. If the loaded Watchlist payload already includes the fields, build this frontend-only.
+6. If the fields are only available through an existing backend endpoint, stop and report the exact data gap before adding any backend calls.
+7. Do not add a new backend endpoint unless absolutely necessary.
+8. Do not call FMP, Tradier, or any provider when switching to the Fundamentals tab.
+
+Fundamentals view design:
+Render a dense, horizontally scrollable table in the bottom section.
+
+Rows:
+
+* One row per ticker in the currently selected saved watchlist.
+* Primary shows only Primary tickers.
+* Close Watch/Favorites shows only Close Watch/Favorites tickers.
+* Any future saved watchlist tab shows only that saved watchlist’s tickers.
+
+Columns:
+Use the fundamental metrics shown in the existing popup screenshot:
+
+* Symbol
+* Industry
+* Market Cap
+* Stock Price
+* Volume
+* Relative Volume
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+* Operating Income
+* EBIT
+* PE Ratio
+* PS Ratio
+* EV/EBITDA
+* EPS Growth
+* Debt / Equity
+* Net Debt / EBITDA
+* Shares Insiders
+* Earnings Date
+* 52-Week Low Price
+* 52-Week High Price
+* Price Change 20-Day MA
+* Price Change 50-Day MA
+* Price Change 200-Day MA
+* Relative Strength Index (RSI)
+* Average True Range (ATR)
+
+Use the exact existing field labels from the popup where they already exist. If the code uses slightly different internal field names, map them carefully but keep the user-facing labels consistent.
+
+Formatting:
+Reuse existing popup/watchlist formatting helpers where available.
+
+* Market Cap compact: $1.2B / $450M / etc.
+* Stock Price: currency format
+* Percent fields: percentage format
+* Ratios: 2 decimals where reasonable
+* Dates: existing date format
+* Missing values: show —
+* Do not show raw huge numbers like 132083534000000 unless the existing popup already does and no formatter exists. Prefer readable compact formatting.
+
+Table behavior:
+
+* Keep the table dense and terminal-style.
+* Sticky first column for Symbol if easy.
+* Horizontal scroll is acceptable because this is a wide fundamentals table.
+* Rows should be clickable and open the existing StockDetailModal for that ticker.
+* Do not duplicate the full popup UI inside the bottom section.
+* This is a scan table, not another modal.
+
+Sorting:
+Add simple clickable sorting if the existing table patterns already support it.
+Default sort:
+
+* Market Cap descending if available.
+  Fallback:
+* Symbol ascending.
+
+Do not overbuild filters in this pass.
+
+No new API calls:
+Switching Themes ↔ Market Cap ↔ Fundamentals must not trigger new provider calls.
+If a local React state change causes no network call, that is correct.
+If a backend call is required because the existing page payload lacks fundamentals, report before implementing and explain exactly which fields are missing.
+
+Validation:
+
+1. Watchlist still opens with Themes selected by default.
+2. Market Cap tab still works exactly as before.
+3. Fundamentals tab appears next to Themes and Market Cap.
+4. Clicking Fundamentals changes only the bottom section.
+5. Main Tickers table remains unchanged.
+6. Live News remains unchanged.
+7. Primary Fundamentals view shows only Primary tickers.
+8. Close Watch/Favorites Fundamentals view shows only Close Watch/Favorites tickers.
+9. Rows open the existing StockDetailModal.
+10. Fundamentals columns match the existing popup fundamentals metrics.
+11. Missing values render as —.
+12. No FMP/Tradier/provider calls fire when switching tabs.
+13. No one-by-one 302 ticker fetch storm is introduced.
+14. Existing popup still works exactly as before.

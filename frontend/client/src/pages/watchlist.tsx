@@ -157,6 +157,11 @@ function extractAllStocks(analysis: any): any[] {
       if (Array.isArray(section.tickers)) {
         for (const t of section.tickers) {
           stocks.push({
+            // Spread full backend ticker object first so any fundamentals fields
+            // (revenue, pe_ratio, margins, etc.) the backend sends pass through.
+            ...t,
+            // Explicit overrides / aliases ensure correct field names regardless of
+            // what the backend chose to call them.
             ticker: t.symbol || t.ticker,
             company: t.name || t.company,
             price: t.price,
@@ -727,6 +732,107 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
 /* ═══════════════════════════════════════════════════════════════════════
    WATCHLIST PAGE — Bloomberg Terminal Style
    ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   FUNDAMENTALS SCAN TABLE — helpers & column definitions
+   ═══════════════════════════════════════════════════════════════════ */
+type FundColFmt = 'symbol' | 'str' | 'price' | 'compact' | 'pct' | 'ratio' | 'vol' | 'relvol' | 'date';
+interface FundColDef { key: string; label: string; aliases?: string[]; fmt: FundColFmt }
+
+const FUND_COLS: FundColDef[] = [
+  { key: 'ticker',           label: 'Symbol',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
+  { key: 'sector',           label: 'Industry',      aliases: ['industry', 'category'],                                            fmt: 'str'     },
+  { key: 'market_cap',       label: 'Mkt Cap',       aliases: ['marketCap', 'market_capitalization'],                              fmt: 'compact' },
+  { key: 'price',            label: 'Price',         aliases: ['last', 'lastPrice', 'close'],                                      fmt: 'price'   },
+  { key: 'volume',           label: 'Volume',        aliases: ['vol'],                                                             fmt: 'vol'     },
+  { key: 'relative_volume',  label: 'Rel Vol',       aliases: ['rel_vol', 'relVol', 'volx'],                                       fmt: 'relvol'  },
+  { key: 'revenue',          label: 'Revenue',       aliases: ['revenue_ttm', 'total_revenue', 'totalRevenue', 'annualRevenue'],   fmt: 'compact' },
+  { key: 'revenue_growth_q', label: 'Rev Grwth (Q)', aliases: ['revenueGrowthQ', 'revenue_growth_quarter', 'revenue_growth_qoq'], fmt: 'pct'     },
+  { key: 'revenue_growth',   label: 'Rev Grwth (Y)', aliases: ['revenue_growth_yoy', 'revenueGrowth', 'revenueGrowthYoy'],        fmt: 'pct'     },
+  { key: 'gross_margin',     label: 'Gross Mgn',     aliases: ['grossMargin', 'gross_profit_margin'],                             fmt: 'pct'     },
+  { key: 'fcf_margin',       label: 'FCF Mgn',       aliases: ['freeCashFlowMargin', 'fcfMargin', 'fcf_margin_pct'],              fmt: 'pct'     },
+  { key: 'free_cash_flow',   label: 'Free CF',       aliases: ['fcf', 'freeCashFlow', 'free_cashflow', 'freeCashFlowTTM'],        fmt: 'compact' },
+  { key: 'operating_income', label: 'Op. Income',    aliases: ['operatingIncome', 'operating_profit', 'operatingProfit'],         fmt: 'compact' },
+  { key: 'ebit',             label: 'EBIT',          aliases: ['earningsBeforeInterestTax', 'ebit_ttm'],                          fmt: 'compact' },
+  { key: 'pe_ratio',         label: 'P/E',           aliases: ['pe', 'priceEarnings', 'priceToEarningsRatio', 'pe_ttm'],          fmt: 'ratio'   },
+  { key: 'ps_ratio',         label: 'P/S',           aliases: ['priceToSales', 'ps', 'price_to_sales', 'ps_ttm'],                 fmt: 'ratio'   },
+  { key: 'ev_ebitda',        label: 'EV/EBITDA',     aliases: ['evToEbitda', 'ev_to_ebitda', 'enterpriseValueEbitda'],            fmt: 'ratio'   },
+  { key: 'eps_growth',       label: 'EPS Grwth',     aliases: ['epsGrowth', 'eps_growth_yoy', 'epsGrowthYoy'],                    fmt: 'pct'     },
+  { key: 'debt_to_equity',   label: 'D/E',           aliases: ['debtToEquity', 'debt_equity', 'debtEquityRatio', 'de_ratio'],     fmt: 'ratio'   },
+  { key: 'net_debt_ebitda',  label: 'ND/EBITDA',     aliases: ['netDebtToEbitda', 'net_debt_to_ebitda', 'netDebtEbitda'],         fmt: 'ratio'   },
+  { key: 'shares_insiders',  label: 'Insider %',     aliases: ['insiderOwnership', 'insider_ownership', 'insidersPercentHeld'],   fmt: 'pct'     },
+  { key: 'earnings_date',    label: 'Earn. Date',    aliases: ['nextEarningsDate', 'next_earnings_date', 'earnings_next_date'],   fmt: 'date'    },
+  { key: 'week_52_low',      label: '52W Low',       aliases: ['low_52w', 'fiftyTwoWeekLow', 'fiftytwoWeekLow', '52_week_low'],   fmt: 'price'   },
+  { key: 'week_52_high',     label: '52W High',      aliases: ['high_52w', 'fiftyTwoWeekHigh', 'fiftytwoWeekHigh', '52_week_high'], fmt: 'price' },
+  { key: 'price_vs_ma20',    label: '% vs MA20',     aliases: ['pct_from_ma20', 'change_from_ma20', 'pctVsMA20', 'ma20_pct_diff'], fmt: 'pct'   },
+  { key: 'price_vs_ma50',    label: '% vs MA50',     aliases: ['pct_from_ma50', 'change_from_ma50', 'pctVsMA50', 'ma50_pct_diff'], fmt: 'pct'   },
+  { key: 'price_vs_ma200',   label: '% vs MA200',    aliases: ['pct_from_ma200', 'change_from_ma200', 'pctVsMA200', 'ma200_pct_diff'], fmt: 'pct' },
+  { key: 'rsi',              label: 'RSI',           aliases: ['rsi_14', 'relStrengthIndex', 'relative_strength_index'],          fmt: 'ratio'   },
+  { key: 'atr',              label: 'ATR',           aliases: ['atr_14', 'averageTrueRange', 'average_true_range'],               fmt: 'ratio'   },
+];
+
+function fundGetField(row: any, key: string, aliases: string[] = []): any {
+  if (!row) return undefined;
+  if (row[key] !== undefined && row[key] !== null) return row[key];
+  for (const a of aliases) {
+    if (row[a] !== undefined && row[a] !== null) return row[a];
+  }
+  const canonical = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const wants = [key, ...aliases].map(canonical);
+  for (const k of Object.keys(row)) {
+    if (wants.includes(canonical(k))) return row[k];
+  }
+  return undefined;
+}
+
+function fundFmtCompact(v: any): string {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return '—';
+  const abs = Math.abs(n), sign = n < 0 ? '-' : '';
+  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9)  return `${sign}$${(abs / 1e9).toFixed(abs >= 100e9 ? 1 : 2)}B`;
+  if (abs >= 1e6)  return `${sign}$${(abs / 1e6).toFixed(abs >= 100e6 ? 1 : 2)}M`;
+  if (abs >= 1e3)  return `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}$${abs.toFixed(2)}`;
+}
+
+function fundFmtPrice(v: any): string {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return Number.isFinite(n) ? `$${n.toFixed(2)}` : '—';
+}
+
+function fundFmtPct(v: any): { text: string; clr: string } {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
+  const pct = Math.abs(n) <= 1.5 ? n * 100 : n;
+  const sign = pct > 0 ? '+' : '';
+  return {
+    text: `${sign}${pct.toFixed(2)}%`,
+    clr: pct > 0 ? '#22c55e' : pct < 0 ? '#ef4444' : '#64748b',
+  };
+}
+
+function fundFmtRatio(v: any): string {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return Number.isFinite(n) ? n.toFixed(2) : '—';
+}
+
+function fundFmtVol(v: any): string {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n) || n === 0) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return n.toFixed(0);
+}
+
+function fundFmtDate(v: any): string {
+  if (!v) return '—';
+  const d = new Date(String(v));
+  if (!isNaN(d.getTime())) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+  return String(v).slice(0, 10) || '—';
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -751,8 +857,9 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'themes' | 'marketcap'>('themes');
+  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals'>('themes');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
+  const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2858,7 +2965,7 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['themes', 'marketcap'] as const).map(v => (
+              {(['themes', 'marketcap', 'fundamentals'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => setBottomView(v)}
@@ -2872,22 +2979,29 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Themes' : 'Market Cap'}
+                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : 'Fundamentals'}
                 </button>
               ))}
             </div>
 
-            {/* ── Canonical theme section cards / Market Cap buckets ── */}
+            {/* ── Canonical theme section cards / Market Cap buckets / Fundamentals ── */}
             <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending && bottomView === 'themes' ? 280 : undefined }}>
-              {bottomView === 'themes' ? (
-                <>
-                  {refreshMut.isPending && <AnalysisLoadingOverlay />}
-                  {newFmt
-                    ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
-                    : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
-                  }
-                </>
-              ) : (() => {
+              {(() => {
+                /* ── THEMES ── */
+                if (bottomView === 'themes') {
+                  return (
+                    <>
+                      {refreshMut.isPending && <AnalysisLoadingOverlay />}
+                      {newFmt
+                        ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
+                        : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
+                      }
+                    </>
+                  );
+                }
+
+                /* ── MARKET CAP ── */
+                if (bottomView === 'marketcap') {
                 const mcTickers = (innerView === 'close-watch' ? closeWatchTickers : sortedTickers)
                   .filter(s => {
                     const mc = Number(s.market_cap);
@@ -3002,6 +3116,172 @@ export default function WatchlistPage() {
                         </div>
                       );
                     })}
+                  </div>
+                );
+                } /* end marketcap */
+
+                /* ── FUNDAMENTALS ── */
+                const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
+
+                // Build CSV lookup from already-loaded watchlist.csv_data — no new fetch
+                const csvMap: Record<string, any> = {};
+                for (const row of (watchlist?.csv_data || [])) {
+                  const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
+                  if (t) csvMap[t] = row;
+                }
+
+                // Per-row merge: stock row (realtime) + csv row (fundamentals); stock wins for shared keys
+                const fundRows = srcTickers.map(s => {
+                  const key = (s.ticker || '').toString().toUpperCase();
+                  const csv = csvMap[key] || {};
+                  // CSV fills in blanks; stock's defined keys override CSV for realtime fields
+                  return { ...csv, ...s };
+                });
+
+                // Sort
+                const fDir = fundSort.dir === 'asc' ? 1 : -1;
+                const fColDef = FUND_COLS.find(c => c.key === fundSort.key);
+                const sortedFundRows = [...fundRows].sort((a, b) => {
+                  if (!fColDef) return 0;
+                  const av = fundGetField(a, fColDef.key, fColDef.aliases);
+                  const bv = fundGetField(b, fColDef.key, fColDef.aliases);
+                  if (fColDef.fmt === 'symbol' || fColDef.fmt === 'str' || fColDef.fmt === 'date') {
+                    return fDir * String(av ?? '').localeCompare(String(bv ?? ''));
+                  }
+                  const an = typeof av === 'number' ? av : parseFloat(av);
+                  const bn = typeof bv === 'number' ? bv : parseFloat(bv);
+                  const af = Number.isFinite(an) ? an : (fundSort.dir === 'asc' ? Infinity : -Infinity);
+                  const bf = Number.isFinite(bn) ? bn : (fundSort.dir === 'asc' ? Infinity : -Infinity);
+                  return fDir * (af - bf);
+                });
+
+                const handleFundSort = (key: string) => {
+                  const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
+                  setFundSort(prev => prev.key === key
+                    ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+                    : { key, dir: (colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc' });
+                };
+
+                const fThClr = (key: string) => fundSort.key === key ? C.teal : C.dim;
+                const fArr   = (key: string) => fundSort.key === key ? (fundSort.dir === 'asc' ? '▲' : '▼') : '';
+
+                const TH: React.CSSProperties = {
+                  padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                  textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                  cursor: 'pointer', userSelect: 'none' as const,
+                  background: C.card, borderBottom: `1px solid ${C.border}`,
+                  fontFamily: C.font,
+                };
+                const TD: React.CSSProperties = {
+                  padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+                  borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                };
+
+                return (
+                  <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
+                    <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+                      <thead>
+                        <tr>
+                          {FUND_COLS.map((col, ci) => (
+                            <th
+                              key={col.key}
+                              onClick={() => handleFundSort(col.key)}
+                              style={{
+                                ...TH,
+                                color: fThClr(col.key),
+                                textAlign: ci === 0 ? 'left' as const : 'right' as const,
+                                ...(ci === 0 ? {
+                                  position: 'sticky' as const, left: 0, zIndex: 2,
+                                  boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
+                                } : { position: 'sticky' as const, top: 0, zIndex: 1 }),
+                              }}
+                            >
+                              {col.label}{fundSort.key === col.key ? <span style={{ fontSize: 6, marginLeft: 2 }}>{fArr(col.key)}</span> : null}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedFundRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={FUND_COLS.length} style={{ ...TD, textAlign: 'center' as const, color: C.dim, padding: 16 }}>
+                              No tickers
+                            </td>
+                          </tr>
+                        ) : sortedFundRows.map((row, ri) => (
+                          <tr
+                            key={`${row.ticker}-${ri}`}
+                            onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                            style={{ cursor: row.ticker ? 'pointer' : 'default', background: ri % 2 === 0 ? 'transparent' : `${C.border}06` }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
+                          >
+                            {FUND_COLS.map((col, ci) => {
+                              const isFirst = ci === 0;
+                              const stickyStyle: React.CSSProperties = isFirst ? {
+                                position: 'sticky' as const, left: 0, zIndex: 1,
+                                background: ri % 2 === 0 ? C.bg : '#0c1525',
+                                boxShadow: '2px 0 4px rgba(0,0,0,0.4)',
+                              } : {};
+
+                              // RelVol uses existing formatRelVol helper
+                              if (col.fmt === 'relvol') {
+                                const vx = formatRelVol(row.volume, row.average_volume, row.relative_volume);
+                                return (
+                                  <td key={col.key} style={{ ...TD, ...stickyStyle, color: C.text, textAlign: 'right' as const }}>
+                                    {vx}
+                                  </td>
+                                );
+                              }
+
+                              const v = fundGetField(row, col.key, col.aliases);
+                              let content: React.ReactNode = '—';
+                              let color = C.dim;
+
+                              if (col.fmt === 'symbol') {
+                                const sym = String(v || row.ticker || '—');
+                                content = <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>;
+                                color = 'inherit';
+                              } else if (col.fmt === 'str') {
+                                content = v ? String(v) : '—';
+                                color = v ? C.text : C.dim;
+                              } else if (col.fmt === 'compact') {
+                                const r = fundFmtCompact(v);
+                                content = r; color = r === '—' ? C.dim : C.text;
+                              } else if (col.fmt === 'price') {
+                                const r = fundFmtPrice(v);
+                                content = r; color = r === '—' ? C.dim : C.text;
+                              } else if (col.fmt === 'vol') {
+                                const r = fundFmtVol(v);
+                                content = r; color = r === '—' ? C.dim : C.text;
+                              } else if (col.fmt === 'pct') {
+                                const r = fundFmtPct(v);
+                                content = r.text; color = r.clr;
+                              } else if (col.fmt === 'ratio') {
+                                const r = fundFmtRatio(v);
+                                content = r; color = r === '—' ? C.dim : C.text;
+                              } else if (col.fmt === 'date') {
+                                const r = fundFmtDate(v);
+                                content = r; color = r === '—' ? C.dim : C.text;
+                              }
+
+                              return (
+                                <td
+                                  key={col.key}
+                                  style={{
+                                    ...TD, ...stickyStyle, color,
+                                    textAlign: isFirst ? 'left' as const : 'right' as const,
+                                    fontWeight: isFirst ? 700 : 400,
+                                  }}
+                                >
+                                  {content}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 );
               })()}
