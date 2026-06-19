@@ -2142,7 +2142,7 @@ export default function WatchlistPage() {
         </div>
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
-        <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
+        <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
           <div style={{ minWidth: 1280 }}>
             {/* table header */}
             <div style={{
@@ -2150,7 +2150,7 @@ export default function WatchlistPage() {
               gridTemplateColumns: TICKER_GRID,
               padding: '6px 14px',
               borderBottom: `1px solid ${C.border}`,
-              position: 'sticky' as const, top: 0, zIndex: 10,
+              position: 'sticky' as const, top: 0, zIndex: 2,
               background: C.card,
               fontSize: 8, fontWeight: 700, color: C.dim,
               textTransform: 'uppercase' as const, letterSpacing: '0.08em',
