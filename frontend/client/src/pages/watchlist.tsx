@@ -752,6 +752,7 @@ export default function WatchlistPage() {
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'themes' | 'marketcap'>('themes');
+  const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2893,52 +2894,79 @@ export default function WatchlistPage() {
                     return Number.isFinite(mc) && mc > 0;
                   });
                 const buckets: { label: string; sub: string; min: number; max: number }[] = [
-                  { label: 'Large Cap',  sub: '$100B+',       min: 100_000_000_000, max: Infinity },
-                  { label: 'Mid-Cap',    sub: '$10B–$100B',   min: 10_000_000_000,  max: 100_000_000_000 },
-                  { label: 'Small Cap',  sub: '$1B–$10B',     min: 1_000_000_000,   max: 10_000_000_000 },
-                  { label: 'Micro Cap',  sub: '<$1B',         min: 0,               max: 1_000_000_000 },
+                  { label: 'Large Cap', sub: '$100B+',     min: 100_000_000_000, max: Infinity },
+                  { label: 'Mid-Cap',   sub: '$10B–$100B', min: 10_000_000_000,  max: 100_000_000_000 },
+                  { label: 'Small Cap', sub: '$1B–$10B',   min: 1_000_000_000,   max: 10_000_000_000 },
+                  { label: 'Micro Cap', sub: '<$1B',       min: 0,               max: 1_000_000_000 },
                 ];
+                const mcDir = mcSort.dir === 'asc' ? 1 : -1;
+                const numVolXOf = (s: any): number => {
+                  const pre = Number(s.relative_volume);
+                  if (Number.isFinite(pre) && pre > 0) return pre;
+                  const v = Number(s.volume), av = Number(s.average_volume);
+                  return (Number.isFinite(v) && Number.isFinite(av) && av > 0) ? v / av : -Infinity;
+                };
+                const mcSortFn = (a: any, b: any): number => {
+                  switch (mcSort.key) {
+                    case 'ticker': return mcDir * (a.ticker || '').toString().toUpperCase().localeCompare((b.ticker || '').toString().toUpperCase());
+                    case 'price': { const av = Number(a.price), bv = Number(b.price); return mcDir * ((Number.isFinite(av) ? av : -Infinity) - (Number.isFinite(bv) ? bv : -Infinity)); }
+                    case 'chg': { const av = Number(a.change_pct ?? a.change_pct_1d), bv = Number(b.change_pct ?? b.change_pct_1d); return mcDir * ((Number.isFinite(av) ? av : -Infinity) - (Number.isFinite(bv) ? bv : -Infinity)); }
+                    case 'volx': return mcDir * (numVolXOf(a) - numVolXOf(b));
+                    default: return Number(b.market_cap) - Number(a.market_cap);
+                  }
+                };
+                const handleMcSort = (key: typeof mcSort.key) => {
+                  setMcSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'ticker' ? 'asc' : 'desc' });
+                };
+                const mcThStyle = (key: typeof mcSort.key, align: 'left' | 'right' = 'right') => ({
+                  textAlign: align as 'left' | 'right',
+                  color: mcSort.key === key ? C.teal : C.dim,
+                  cursor: 'pointer' as const,
+                  userSelect: 'none' as const,
+                  display: 'inline-flex' as const,
+                  alignItems: 'center' as const,
+                  gap: 2,
+                  justifyContent: align === 'right' ? 'flex-end' as const : 'flex-start' as const,
+                });
+                const mcArr = (key: typeof mcSort.key) => mcSort.key === key ? (mcSort.dir === 'asc' ? '▲' : '▼') : '';
                 return (
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
                     {buckets.map(bucket => {
                       const rows = mcTickers
-                        .filter(s => {
-                          const mc = Number(s.market_cap);
-                          return mc >= bucket.min && mc < bucket.max;
-                        })
-                        .sort((a, b) => Number(b.market_cap) - Number(a.market_cap));
+                        .filter(s => { const mc = Number(s.market_cap); return mc >= bucket.min && mc < bucket.max; })
+                        .sort(mcSortFn);
                       return (
                         <div
                           key={bucket.label}
-                          style={{
-                            flex: '1 1 200px', minWidth: 180,
-                            background: C.card, border: `1px solid ${C.border}`,
-                            borderRadius: 6, overflow: 'hidden',
-                          }}
+                          style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}
                         >
                           {/* bucket header */}
-                          <div style={{
-                            padding: '8px 12px', borderBottom: `1px solid ${C.border}`,
-                            display: 'flex', alignItems: 'baseline', gap: 6,
-                          }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>
-                              {bucket.label}
-                            </span>
+                          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>{bucket.label}</span>
                             <span style={{ fontSize: 8, color: C.dim }}>{bucket.sub}</span>
                             <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto' }}>{rows.length}</span>
                           </div>
-                          {/* column header row */}
+                          {/* sortable column headers */}
                           <div style={{
                             display: 'grid', gridTemplateColumns: '52px 1fr 52px 42px',
                             padding: '4px 10px', gap: 4,
-                            fontSize: 7, fontWeight: 700, color: C.dim,
-                            letterSpacing: '0.07em', textTransform: 'uppercase' as const,
+                            fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                            textTransform: 'uppercase' as const,
                             borderBottom: `1px solid ${C.border}22`,
+                            position: 'sticky' as const, top: 0, background: C.card,
                           }}>
-                            <span>Ticker</span>
-                            <span style={{ textAlign: 'right' as const }}>Price</span>
-                            <span style={{ textAlign: 'right' as const }}>Chg%</span>
-                            <span style={{ textAlign: 'right' as const }}>VolX</span>
+                            <span style={mcThStyle('ticker', 'left')} onClick={() => handleMcSort('ticker')}>
+                              Ticker <span style={{ fontSize: 6 }}>{mcArr('ticker')}</span>
+                            </span>
+                            <span style={mcThStyle('price')} onClick={() => handleMcSort('price')}>
+                              Price <span style={{ fontSize: 6 }}>{mcArr('price')}</span>
+                            </span>
+                            <span style={mcThStyle('chg')} onClick={() => handleMcSort('chg')}>
+                              Chg% <span style={{ fontSize: 6 }}>{mcArr('chg')}</span>
+                            </span>
+                            <span style={mcThStyle('volx')} onClick={() => handleMcSort('volx')}>
+                              VolX <span style={{ fontSize: 6 }}>{mcArr('volx')}</span>
+                            </span>
                           </div>
                           {/* rows */}
                           <div style={{ maxHeight: 320, overflowY: 'auto' }} className="wl-scrollbar">
@@ -2963,18 +2991,10 @@ export default function WatchlistPage() {
                                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                                   onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
                                 >
-                                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                                    {s.ticker || DASH}
-                                  </span>
-                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
-                                    {formatPrice(s.price)}
-                                  </span>
-                                  <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
-                                    {formatChgPct(chg)}
-                                  </span>
-                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>
-                                    {vx}
-                                  </span>
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.ticker || DASH}</span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(s.price)}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{vx}</span>
                                 </div>
                               );
                             })}
