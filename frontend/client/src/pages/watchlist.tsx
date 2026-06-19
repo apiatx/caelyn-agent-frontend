@@ -1346,6 +1346,24 @@ function getGroMoTags(row: any, ctx: FgContext, tCtx: TradeCtx, bucket: FgBucket
   return tags.slice(0, 5);
 }
 
+/* ─── Signal LKG (last-known-valid) merge ──────────────────────────────────
+   When a background refetch returns null/undefined/empty for signal fields that
+   were previously populated (common after-hours), preserve the previous value.
+   Only applies to signal-derived fields; live quote fields always use fresh data.
+   ─────────────────────────────────────────────────────────────────────────── */
+const SIGNAL_LKG_FIELDS = [
+  'relative_volume', 'rel_vol', 'volx', 'vol_x',
+  'vol_mc_pct', 'vol_mc_ratio', 'volume_market_cap', 'vol_market_cap', 'volume_to_market_cap',
+  'options_score', 'opt_score', 'flow_score',
+  'options_signal', 'option_signal', 'opt_signal',
+  'options_volume', 'opt_vol',
+  'options_open_interest', 'oi',
+  'options_iv', 'iv',
+] as const;
+
+const isMissingSignalValue = (v: unknown): boolean =>
+  v === null || v === undefined || v === '' || (typeof v === 'number' && Number.isNaN(v));
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1364,6 +1382,8 @@ export default function WatchlistPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
+  const lkgSignalMapRef = useRef<Map<string, any>>(new Map());
+  const lkgActiveIdRef = useRef<string | null>(null);
   const [strategyPlaybooks, setStrategyPlaybooks] = useState<PlaybookSummary[]>([]);
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
@@ -1858,13 +1878,76 @@ export default function WatchlistPage() {
   }, [baseMergedTickers.map(t => t.ticker).join('|')]);
   const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(realtimeSymbols, { enabled: realtimeSymbols.length > 0 });
 
-  const mergedTickers = useMemo(() => baseMergedTickers.map((t) => {
-    const sym = (t.ticker || '').toString().toUpperCase();
-    const rt = sym ? realtimeQuotes[sym] : undefined;
-    const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
-    const opt = sym ? optionsSignalsByTicker[sym] : undefined;
-    return opt ? { ...quoteMerged, ...opt } : quoteMerged;
-  }), [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker]);
+  const mergedTickers = useMemo(() => {
+    // Clear LKG map when switching to a different watchlist
+    if (lkgActiveIdRef.current !== activeId) {
+      lkgSignalMapRef.current = new Map();
+      lkgActiveIdRef.current = activeId;
+    }
+    const prev = lkgSignalMapRef.current;
+
+    const result = baseMergedTickers.map((t) => {
+      const sym = (t.ticker || '').toString().toUpperCase();
+      const rt = sym ? realtimeQuotes[sym] : undefined;
+      const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
+      const opt = sym ? optionsSignalsByTicker[sym] : undefined;
+      const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
+
+      // LKG merge: when a refetch returns null/undefined/empty for a signal field,
+      // preserve the last-known-valid value from the previous payload.
+      // 0 is treated as a valid value and is NOT preserved over.
+      const prevRow = sym ? prev.get(sym) : undefined;
+      if (!prevRow) return next;
+      const merged: any = { ...next };
+      for (const field of SIGNAL_LKG_FIELDS) {
+        if (isMissingSignalValue(next[field]) && !isMissingSignalValue(prevRow[field])) {
+          merged[field] = prevRow[field];
+        }
+      }
+      return merged;
+    });
+
+    // ── LKG validation debug (set to true to diagnose signal data loss) ─────
+    const LKG_DEBUG = false;
+    if (LKG_DEBUG && prev.size > 0) {
+      const countNonNull = (arr: any[], field: string) =>
+        arr.filter(r => !isMissingSignalValue(r[field])).length;
+      const prevArr = [...prev.values()];
+      console.group('[LKG] Signal field coverage');
+      console.log('relative_volume — prev:', countNonNull(prevArr, 'relative_volume'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'relative_volume'), '/ merged:', countNonNull(result, 'relative_volume'));
+      console.log('vol_mc_pct      — prev:', countNonNull(prevArr, 'vol_mc_pct'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'vol_mc_pct'), '/ merged:', countNonNull(result, 'vol_mc_pct'));
+      console.log('options_score   — prev:', countNonNull(prevArr, 'options_score'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'options_score'), '/ merged:', countNonNull(result, 'options_score'));
+      const lkgRestored = result.filter(r => {
+        const s = (r.ticker || '').toString().toUpperCase();
+        const p = prev.get(s);
+        if (!p) return false;
+        return SIGNAL_LKG_FIELDS.some(f => isMissingSignalValue((baseMergedTickers as any[]).find(t => (t.ticker||'').toString().toUpperCase() === s)?.[f]) && !isMissingSignalValue(p[f]));
+      });
+      if (lkgRestored.length > 0) {
+        console.group('[LKG] Tickers that would have lost signal data (now preserved):');
+        for (const r of lkgRestored) {
+          const s = (r.ticker || '').toString().toUpperCase();
+          const p = prev.get(s)!;
+          const raw = (baseMergedTickers as any[]).find(t => (t.ticker||'').toString().toUpperCase() === s);
+          console.log(s, '| VolX prev:', p.relative_volume, '→ raw:', raw?.relative_volume, '→ merged:', r.relative_volume,
+            '| VolMC prev:', p.vol_mc_pct, '→ raw:', raw?.vol_mc_pct, '→ merged:', r.vol_mc_pct,
+            '| OptScore prev:', p.options_score, '→ raw:', raw?.options_score, '→ merged:', r.options_score);
+        }
+        console.groupEnd();
+      }
+      console.groupEnd();
+    }
+    // ── end LKG debug ─────────────────────────────────────────────────────
+
+    // Update LKG map so the next refetch can compare against current values
+    for (const row of result) {
+      const sym = (row.ticker || '').toString().toUpperCase();
+      if (sym) prev.set(sym, row);
+    }
+
+    return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId]);
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;

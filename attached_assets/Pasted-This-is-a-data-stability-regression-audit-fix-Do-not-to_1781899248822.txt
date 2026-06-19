@@ -1,0 +1,196 @@
+This is a data-stability regression audit/fix. Do not touch backend unless the frontend cannot solve it safely. Do not add provider/API calls. Do not change Growth Momentum logic. Do not rewrite HC Trade Zone scoring.
+
+Observed behavior:
+During the Growth Momentum/HCTZ debugging process, HC Trade Zone briefly showed 6–7 qualifying tickers, then after the final HMR/refetch it collapsed back to 1 ticker.
+
+The market is closed, so underlying market data should not have materially changed.
+
+This indicates a stale/refetch/null-overwrite bug:
+A later watchlist payload is replacing previously available non-null trade-signal fields with null/empty values, especially:
+
+* relative_volume / rel_vol / volx
+* vol_mc_pct
+* vol_mc_ratio
+* options_score / opt_score / flow_score
+* options_signal
+* options_volume
+* options_open_interest
+* options_iv
+
+Goal:
+Prevent HC Trade Zone and other signal tabs from collapsing just because a post-market/background refetch returns sparse/null fields.
+
+Important:
+This is not a request to loosen HC Trade Zone scoring.
+This is a request to preserve last-known valid signal data when a later payload has null/undefined/missing signal fields.
+
+Do not make weak tickers qualify.
+Do not invent values.
+Do not fetch new data.
+Do not call providers.
+Do not change score weights.
+
+Audit tasks:
+
+1. Inspect how Watchlist rows are stored/refetched with React Query.
+2. Inspect whether a background refetch replaces the full row object.
+3. Compare the row fields before and after refetch for tickers that disappeared from HC Trade Zone.
+4. Confirm whether incoming rows have null/undefined for fields that were previously non-null:
+
+   * relative_volume
+   * vol_mc_pct
+   * vol_mc_ratio
+   * options_score
+   * options_signal
+   * options_volume
+   * options_open_interest
+5. Identify where rows should be merged instead of blindly replaced.
+
+Frontend fix:
+Implement a safe last-known-valid merge for Watchlist signal fields.
+
+When a new watchlist payload arrives:
+
+* Match rows by symbol/ticker.
+* For normal fields like price/change, use the fresh payload.
+* For signal fields, preserve the previous non-null value if the fresh payload is null/undefined/missing.
+
+Signal fields to preserve:
+
+* relative_volume
+* rel_vol
+* volx
+* vol_x
+* vol_mc_pct
+* vol_mc_ratio
+* volume_market_cap
+* vol_market_cap
+* volume_to_market_cap
+* options_score
+* opt_score
+* flow_score
+* options_signal
+* option_signal
+* opt_signal
+* options_volume
+* opt_vol
+* options_open_interest
+* oi
+* options_iv
+* iv
+
+Rules:
+
+* Only preserve prior value when the incoming value is null, undefined, empty string, or NaN.
+* Do not preserve prior value when the incoming value is a valid number, including 0.
+* Do not preserve prior value when the symbol changed.
+* Do not mutate source rows in place.
+* Keep the merge deterministic.
+
+Suggested helper:
+
+* mergeWatchlistSignalLkgRows(previousRows, incomingRows)
+* mergeSignalField(prevRow, nextRow, fieldName)
+
+Pseudo logic:
+
+const isMissingSignalValue = (v) =>
+v === null || v === undefined || v === "" || Number.isNaN(v);
+
+For each incoming row:
+
+* find prior row by normalized symbol
+* create mergedRow = { ...priorRow, ...incomingRow }
+* for each signal field:
+
+  * if incomingRow[field] is missing and priorRow[field] is valid:
+
+    * mergedRow[field] = priorRow[field]
+
+Important:
+The spread order should not accidentally wipe fields:
+
+* Start with previous row
+* overlay incoming row
+* then restore signal fields only where incoming is missing
+
+Do not use this for all fields.
+Only preserve signal fields that are known to go sparse after-hours.
+
+Where to apply:
+Apply this at the Watchlist row normalization/query layer before bottom-tab derived helpers run, so these tabs all see stable rows:
+
+* Golden Zone
+* HC Trade Zone
+* Growth Momentum
+* HC Investment Zone, if it uses any signal fields
+
+If React Query is used:
+Use either:
+
+* select/transform layer
+* local memo merge against previous query data
+* queryClient.setQueryData merge after fetch
+  whichever matches existing architecture best.
+
+Do not create a separate hidden state fork that drifts from the real watchlist data.
+
+HCTZ validation:
+Add temporary debug logs only while validating:
+
+Before and after merge, for the active watchlist:
+
+* count rows with relative_volume non-null
+* count rows with vol_mc_pct or vol_mc_ratio non-null
+* count rows with options_score non-null
+* HC Trade early-stage count
+* loud signal count
+* final HC Trade qualifying count
+
+Also log disappearing tickers:
+
+* symbol
+* previous VolX / incoming VolX / merged VolX
+* previous VolMC / incoming VolMC / merged VolMC
+* previous options score / incoming options score / merged options score
+* previous HCTZ pass/fail
+* merged HCTZ pass/fail
+
+Remove noisy logs after validation or put behind a disabled debug flag.
+
+Expected behavior:
+If a background refetch returns sparse/null after-hours fields, HC Trade Zone should not collapse from 6–7 rows to 1 row.
+
+It should preserve the last-known valid signal values until a fresh valid value arrives.
+
+Do not preserve forever across unrelated watchlists:
+
+* preserve only within the active watchlist query/cache lifecycle
+* match by symbol
+* respect Primary vs Close Watch/Favorites/future saved watchlist scopes
+
+If localStorage/sessionStorage is already used for watchlist state, do not add persistence unless necessary.
+Session-level React Query/cache merge is enough for this pass.
+
+Do not alter:
+
+* HC Trade Zone scoring weights
+* HC Trade Zone stage gates
+* Growth Momentum gates
+* Golden Zone logic
+* tab order
+* backend routes
+* provider calls
+
+Validation checklist:
+
+1. Navigate to HC Trade Zone.
+2. Confirm several qualifying rows appear if they existed before refetch.
+3. Trigger/refetch/reload the Watchlist data.
+4. Confirm rows do not disappear just because incoming VolX/VolMC/options fields are null.
+5. Confirm valid fresh values still override old values.
+6. Confirm 0 values are treated as valid, not missing.
+7. Confirm Growth Momentum still works.
+8. Confirm Golden Zone still works.
+9. Confirm no new API/provider calls are added.
+10. Confirm no console errors.
