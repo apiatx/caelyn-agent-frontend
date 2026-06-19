@@ -2172,6 +2172,12 @@ export default function WatchlistPage() {
                       userSelect: 'none' as const,
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       overflow: 'hidden', whiteSpace: 'nowrap' as const,
+                      ...(col.key === 'ticker' ? {
+                        position: 'sticky' as const,
+                        left: 0,
+                        zIndex: 1,
+                        background: C.card,
+                      } : {}),
                     }}
                     title={sortable ? `Sort by ${col.label}` : col.label}
                   >
@@ -2251,7 +2257,7 @@ export default function WatchlistPage() {
                   onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', position: 'sticky' as const, left: 0, zIndex: 1, background: i % 2 === 0 ? C.bg : C.card, alignSelf: 'stretch' as const }}>
                     {!isPending && stock.ticker && (
                       <button
                         onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(stock.ticker!); }}
