@@ -1,0 +1,362 @@
+Audit first. Do not touch backend unless the required fundamental fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Update the Watchlist bottom-section tabs.
+
+Current bottom tabs include:
+
+* Themes
+* Market Cap
+* Fundamentals
+
+Change the `Fundamentals` tab label to:
+
+* Fundamental Screener
+
+Then add a new tab next to it called:
+
+* Fundamental Grouping
+
+Scope:
+Only change the Watchlist page bottom-section tabs.
+
+Do not change:
+
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* backend routes
+* saved watchlist data
+* Themes tab behavior
+* Market Cap tab behavior
+
+Important:
+Do not create new provider calls.
+Do not fetch FMP/Tradier/analyst data live.
+Do not call every ticker one-by-one.
+Use the same existing loaded data already powering:
+
+* Fundamental Screener
+* ticker popup Fundamentals tab
+* uploaded CSV fundamentals data
+
+Rename:
+Rename bottom tab:
+
+* `Fundamentals` → `Fundamental Screener`
+
+Do not rename the ticker popup’s Fundamentals tab.
+
+New tab:
+Add a new bottom tab:
+
+* Fundamental Grouping
+
+Fundamental Grouping should split the active watchlist tickers into exactly 4 side-by-side buckets, similar to the Market Cap tab layout.
+
+Buckets:
+
+1. Market Leaders
+2. High Growth
+3. Speculative Future Growth Leaders
+4. High Speculation
+
+Each ticker should appear in exactly one bucket.
+
+Active watchlist rule:
+All grouping must respect the currently selected saved watchlist.
+
+* Primary shows only Primary tickers
+* Close Watch/Favorites shows only those tickers
+* future saved watchlist tabs show only their own tickers
+
+Do not accidentally group all Primary tickers when another saved watchlist tab is active.
+
+Data:
+Use every available metric from the Fundamental Screener / CSV / popup fundamentals object when scoring, including but not limited to:
+
+Core fundamentals:
+
+* Market Cap
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+* Operating Income
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* EPS Growth
+* Debt / Equity
+* Net Debt / EBITDA
+* Insider %
+* Earnings Date
+
+Forecast / estimate metrics:
+
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+
+Do not include technical-only fields in the grouping score:
+
+* 52W Low
+* 52W High
+* % vs MA20
+* % vs MA50
+* % vs MA200
+* RSI
+* ATR
+
+Architecture:
+Create deterministic local scoring helpers. Do not use an LLM.
+
+Suggested helpers:
+
+* getFundamentalMetrics(row)
+* scoreFundamentals(row)
+* scoreCurrentGrowth(row)
+* scoreForecastGrowth(row)
+* scoreProfitability(row)
+* scoreBalanceSheet(row)
+* detectExtremeMetrics(row)
+* assignFundamentalBucket(row)
+
+Use robust alias lookup for field names because the data may come from CSV labels or normalized keys.
+
+Canonical bucket priority:
+
+1. Market Leaders
+2. High Growth
+3. Speculative Future Growth Leaders
+4. High Speculation
+
+Bucket definitions:
+
+Market Leaders:
+These are strongest fundamentals all around.
+Criteria:
+
+* usually market_cap >= 100_000_000_000
+* industry anchor / beast of industry
+* strong revenue base
+* no major negative fundamental metrics
+* positive or durable operating income / EBIT / free cash flow where available
+* strong gross margin / FCF margin where available
+* manageable debt metrics
+* should not have obvious red-flag metrics like negative revenue growth, deeply negative margins, weak cash flow, or extreme debt
+
+Important:
+Do not put a stock in Market Leaders just because market cap is over $100B. It also needs strong overall fundamentals.
+
+High Growth:
+Strong growth stocks with mostly solid fundamentals.
+Criteria:
+
+* strong revenue growth and/or accelerating revenue
+* strong positive fundamental metrics overall
+* increasing financials
+* positive gross margin preferred
+* EPS growth or margin growth helps but is not required
+* operating income / FCF can still be negative if revenue growth is very strong and other metrics are constructive
+* debt can exist, but should not be an extreme red flag
+* should not have multiple severe negative metrics
+
+These are companies with real current growth and strong tailwinds, even if profitability is not fully mature yet.
+
+Speculative Future Growth Leaders:
+Forward-looking growth names with strong forecast/estimate profile but less proven current fundamentals.
+Criteria:
+
+* high revenue/EPS forecast metrics
+* strong expected future growth
+* may not have much current revenue yet
+* may not be cash-flow positive
+* may have debt
+* may have weaker current profitability
+* must have enough future-growth evidence to separate it from pure speculation
+
+Use forecast fields heavily here:
+
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+
+High Speculation:
+Weakest fundamentals / least proven.
+Criteria:
+
+* weak current fundamentals
+* little revenue support
+* negative or missing profitability
+* weak or missing forecast support
+* high debt / negative FCF / negative operating income where available
+* mostly watchlist names added for speculation rather than proven fundamentals or credible forecasts
+
+Default bucket:
+If a ticker does not qualify for the first three buckets, put it in High Speculation.
+
+Scoring guidance:
+Use all available metrics, but do not require every field to exist.
+
+Suggested scoring dimensions:
+
+1. Scale / anchor score
+
+   * market cap
+   * revenue size
+   * industry leadership proxy
+
+2. Current growth score
+
+   * revenue growth Q
+   * revenue growth YoY
+   * EPS growth
+   * revenue growth acceleration if available
+
+3. Profitability / quality score
+
+   * gross margin
+   * FCF margin
+   * free cash flow
+   * operating income
+   * EBIT
+
+4. Balance sheet / risk score
+
+   * debt / equity
+   * net debt / EBITDA
+   * negative cash flow / negative income penalties
+
+5. Forecast score
+
+   * revenue growth estimates
+   * revenue growth next quarter
+   * revenue growth next year
+   * EPS growth estimates
+   * EPS growth this/next quarter
+   * EPS growth this/next year
+
+6. Red flag score
+
+   * negative revenue growth
+   * deeply negative margins
+   * negative FCF
+   * negative operating income
+   * extreme debt
+   * missing too many fundamentals
+   * very high valuation with weak growth
+
+Bucket assignment should be deterministic:
+
+* Market Leaders: high scale + strong quality + no severe red flags
+* High Growth: high current growth + acceptable quality + no severe red flags
+* Speculative Future Growth Leaders: high forecast score + weaker current quality allowed
+* High Speculation: default / weak fundamentals / insufficient proof
+
+Extreme metrics:
+On the Fundamental Grouping tab, highlight or tag extreme metrics for each ticker.
+
+Examples of positive extreme tags:
+
+* Huge Rev Growth
+* Strong FCF Margin
+* High Gross Margin
+* Big EPS Growth
+* Strong Forecasts
+* Insider Heavy
+* Cash Machine
+* $100B+ Anchor
+
+Examples of negative extreme tags:
+
+* Negative FCF
+* Negative Op Income
+* High Debt
+* Weak Forecasts
+* Revenue Decline
+* Margin Pressure
+* Expensive / Weak Growth
+* Missing Fundamentals
+
+Do not show long paragraphs. Use compact badges/tags.
+
+UI:
+Render 4 side-by-side cards/columns like the Market Cap tab:
+
+1. Market Leaders
+2. High Growth
+3. Speculative Future Growth Leaders
+4. High Speculation
+
+Each ticker row/card should show:
+
+* Symbol
+* Price
+* % Change
+* Market Cap
+* Fundamental score or bucket score
+* 1–3 compact reason/extreme metric tags
+
+Rows should be clickable and open the existing StockDetailModal.
+
+Sorting inside buckets:
+
+* Market Leaders: strongest fundamental score first, then market cap descending
+* High Growth: current growth score first, then quality score
+* Speculative Future Growth Leaders: forecast score first, then current growth score
+* High Speculation: highest speculative risk / weakest fundamentals first, or if easier, lowest fundamental score first
+
+Do not overbuild filters in this pass.
+
+Dedupe:
+Do not create duplicate visual columns or duplicate metrics.
+Multiple aliases should feed one canonical metric.
+
+Examples:
+
+* Market Cap / market_cap / MKT CAP = one metric
+* Revenue Growth (Q) / Rev Growth Q / revenue_growth_q = one metric
+* Revenue Growth (YoY) / Rev Growth Y / revenue_growth_yoy = one metric
+* EPS Growth / eps_growth = one metric
+* FCF Margin / Free Cash Flow Margin / fcf_margin = one metric
+* Insider % / Shares Insiders / insider_percent = one metric
+
+Validation:
+
+1. Bottom tab says `Fundamental Screener`, not `Fundamentals`.
+2. New `Fundamental Grouping` tab appears next to Fundamental Screener.
+3. Fundamental Grouping shows exactly 4 side-by-side buckets:
+
+   * Market Leaders
+   * High Growth
+   * Speculative Future Growth Leaders
+   * High Speculation
+4. Each ticker appears in exactly one bucket.
+5. All grouping respects the currently active saved watchlist.
+6. Market Leaders are not just high market cap; they also have strong fundamentals and no major negative metrics.
+7. High Growth includes strong growers even if operating income/FCF is not perfect, as long as red flags are not extreme.
+8. Speculative Future Growth Leaders are driven by forecast/estimate strength.
+9. High Speculation catches weak fundamentals / weak forecast names.
+10. Extreme metrics are highlighted with compact tags.
+11. Rows open StockDetailModal.
+12. No new API/provider calls fire when switching to the tab.
+13. No LLM calls are added.
+14. No console errors.
