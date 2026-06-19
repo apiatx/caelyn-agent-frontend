@@ -1167,67 +1167,101 @@ function getVolMcPct(row: any, ctx: TradeCtx): number {
 
 function scoreTradeConfluence(row: any, ctx: TradeCtx): {
   score: number; optStrength: number; volxStrength: number; volMcStrength: number;
-  optScore: number | null; volxVal: number | null; stageLabel: string; qualifies: boolean;
+  optScore: number | null; volxVal: number | null; stageLabel: string; hasLoudSignal: boolean;
 } {
   const stageLabel = getStageLabel(row);
   if (!isHcizStage(stageLabel)) {
-    return { score: 0, optStrength: 0, volxStrength: 0, volMcStrength: 0, optScore: null, volxVal: null, stageLabel, qualifies: false };
+    return { score: 0, optStrength: 0, volxStrength: 0, volMcStrength: 0, optScore: null, volxVal: null, stageLabel, hasLoudSignal: false };
   }
-  // Options
+
+  // Stage score (15% weight, expressed as 0–100)
+  const stageStrength = stageLabel.startsWith('S2 Breakout') ? 100 : stageLabel.startsWith('S1-2 Watch') ? 85 : 70;
+
+  // Options (25% weight)
   const optScore = getOptionsScore(row);
   const optSigStr = getOptionsSignalStr(row);
   let optStrength = 0;
-  if (optScore !== null) optStrength = Math.min(optScore, 100);
-  else if (optSigStr.includes('bullish') || optSigStr.includes('unusual') || optSigStr.includes('high')) optStrength = 65;
-  else if (optSigStr.includes('positive') || optSigStr.includes('active')) optStrength = 50;
+  if (optScore !== null) {
+    optStrength = Math.min(optScore, 100);
+  } else if (optSigStr.includes('unusual')) {
+    optStrength = 70;
+  } else if (optSigStr.includes('bullish') || optSigStr.includes('high')) {
+    optStrength = 60;
+  } else if (optSigStr.includes('positive') || optSigStr.includes('active')) {
+    optStrength = 50;
+  }
+  // Missing options data = 0, not a disqualifier
 
-  // VolX
+  // VolX (35% weight)
   const volxVal = getVolXVal(row);
   let volxStrength = 0;
   if (volxVal !== null) {
-    volxStrength = tradePctile(volxVal, ctx.volxSorted) * 100;
-    if (volxVal >= 5) volxStrength = Math.max(volxStrength, 90);
+    const pct = tradePctile(volxVal, ctx.volxSorted) * 100;
+    volxStrength = pct;
+    // Absolute thresholds as floor
+    if (volxVal >= 5) volxStrength = Math.max(volxStrength, 95);
+    else if (volxVal >= 3) volxStrength = Math.max(volxStrength, 80);
     else if (volxVal >= 2) volxStrength = Math.max(volxStrength, 70);
+    else if (volxVal >= 1.5) volxStrength = Math.max(volxStrength, 55);
   }
 
-  // Vol/MC
+  // Vol/MC (25% weight)
   const volMcStrength = getVolMcPct(row, ctx);
 
-  const optIsStrong = optStrength >= 50;
-  const volxIsStrong = volxStrength >= 70 || (volxVal !== null && volxVal >= 2.0);
-  const volMcIsStrong = volMcStrength >= 70;
-  const strongCount = (optIsStrong ? 1 : 0) + (volxIsStrong ? 1 : 0) + (volMcIsStrong ? 1 : 0);
-  const stageScore = stageLabel.startsWith('S2 Breakout') ? 10 : stageLabel.startsWith('S1-2 Watch') ? 7 : 4;
-  const score = optStrength * 0.40 + volxStrength * 0.25 + volMcStrength * 0.25 + stageScore;
-  const qualifies = strongCount >= 2 && score >= 60;
-  return { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, qualifies };
+  // Weighted score (0–100)
+  const score = (volxStrength * 0.35) + (volMcStrength * 0.25) + (optStrength * 0.25) + (stageStrength * 0.15);
+
+  // At least one loud signal is required (stage alone cannot qualify)
+  const volxLoud = volxStrength >= 70 || (volxVal !== null && volxVal >= 2.0);
+  const volMcLoud = volMcStrength >= 70; // top ~15% or above
+  const optLoud = optStrength >= 50;
+  const hasLoudSignal = volxLoud || volMcLoud || optLoud;
+
+  return { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, hasLoudSignal };
 }
 
 function getTradeSignalTags(row: any, ctx: TradeCtx,
-  optScore: number | null, volxVal: number | null, volxStrength: number, volMcStrength: number
+  optScore: number | null, volxVal: number | null, volxStrength: number, volMcStrength: number, optStrength: number
 ): Array<{ label: string; pos: boolean }> {
   const tags: Array<{ label: string; pos: boolean }> = [];
+
+  // VolX tags (lead with this — highest weight)
+  if (volxVal !== null) {
+    if (volxStrength >= 95 || volxVal >= 5) tags.push({ label: 'Elite VolX', pos: true });
+    else if (volxStrength >= 80 || volxVal >= 3) tags.push({ label: 'High VolX', pos: true });
+    else if (volxStrength >= 70 || volxVal >= 2) tags.push({ label: 'Rel Vol Leader', pos: true });
+    else if (volxStrength >= 55 || volxVal >= 1.5) tags.push({ label: 'Vol Surge', pos: true });
+  }
+
+  // Vol/MC tags
+  if (volMcStrength >= 95) tags.push({ label: 'Elite Vol/MC', pos: true });
+  else if (volMcStrength >= 85) tags.push({ label: 'Top Vol/MC', pos: true });
+  else if (volMcStrength >= 70) tags.push({ label: 'High Vol/MC', pos: true });
+
+  // Options tags
   if (optScore !== null) {
     if (optScore >= 85) tags.push({ label: 'Elite Options', pos: true });
     else if (optScore >= 70) tags.push({ label: 'Options > 70', pos: true });
     else if (optScore >= 50) tags.push({ label: 'Options > 50', pos: true });
-  } else {
+  } else if (optStrength > 0) {
     const sig = getOptionsSignalStr(row);
     if (sig.includes('unusual')) tags.push({ label: 'Unusual Activity', pos: true });
     else if (sig.includes('bullish') || sig.includes('high')) tags.push({ label: 'Bullish Flow', pos: true });
+  } else {
+    // Options truly missing — add risk tag but only if there's room and positive tags already exist
     const iv = Number(row.options_iv);
-    if (isFinite(iv) && iv > 80) tags.push({ label: 'High IV', pos: false });
+    if (isFinite(iv) && iv > 80 && tags.length > 0) tags.push({ label: 'High IV', pos: false });
   }
-  if (volxVal !== null) {
-    if (volxStrength >= 95 || volxVal >= 5) tags.push({ label: 'Elite VolX', pos: true });
-    else if (volxStrength >= 70 || volxVal >= 2) tags.push({ label: 'High VolX', pos: true });
+
+  // Combo tag
+  if (optStrength >= 50 && volxVal !== null && volxVal >= 2) {
+    const hasFlowTag = tags.some(t => t.label === 'Flow + Volume');
+    if (!hasFlowTag) tags.push({ label: 'Flow + Volume', pos: true });
   }
-  if (volMcStrength >= 95) tags.push({ label: 'Elite Vol/MC', pos: true });
-  else if (volMcStrength >= 70) tags.push({ label: 'High Vol/MC', pos: true });
-  if (optScore !== null && optScore >= 50 && volxVal !== null && volxVal >= 2) {
-    tags.push({ label: 'Flow + Volume', pos: true });
-  }
-  return tags.slice(0, 4);
+
+  // Only return if there's at least one positive tag
+  const hasPosTag = tags.some(t => t.pos);
+  return hasPosTag ? tags.slice(0, 4) : [];
 }
 
 export default function WatchlistPage() {
@@ -3628,15 +3662,17 @@ export default function WatchlistPage() {
                   const tCtx = buildTradeContext(srcTickers);
                   type TzRow = typeof srcTickers[0] & {
                     _score: number; _optScore: number | null; _volxVal: number | null;
-                    _stageLabel: string; _volxStr: number; _volMcStr: number;
+                    _stageLabel: string; _volxStr: number; _volMcStr: number; _optStr: number;
                     _tags: Array<{ label: string; pos: boolean }>;
                   };
-                  const tzRows: TzRow[] = [];
+                  // Score all early-stage candidates
+                  type Candidate = TzRow & { _hasLoudSignal: boolean };
+                  const candidates: Candidate[] = [];
                   for (const r of srcTickers) {
-                    const { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, qualifies } =
+                    const { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, hasLoudSignal } =
                       scoreTradeConfluence(r, tCtx);
-                    if (!qualifies) continue;
-                    tzRows.push({
+                    if (!isHcizStage(stageLabel)) continue; // stage mandatory
+                    candidates.push({
                       ...r,
                       _score: score,
                       _optScore: optScore,
@@ -3644,10 +3680,23 @@ export default function WatchlistPage() {
                       _stageLabel: stageLabel,
                       _volxStr: volxStrength,
                       _volMcStr: volMcStrength,
-                      _tags: getTradeSignalTags(r, tCtx, optScore, volxVal, volxStrength, volMcStrength),
+                      _optStr: optStrength,
+                      _hasLoudSignal: hasLoudSignal,
+                      _tags: [],
                     });
                   }
-                  tzRows.sort((a, b) => b._score - a._score);
+                  candidates.sort((a, b) => b._score - a._score);
+
+                  // Qualification: (loud signal + score >= 55) OR (top 10 with score >= 45)
+                  const tzRows: TzRow[] = [];
+                  candidates.forEach((c, idx) => {
+                    const passesScore = c._hasLoudSignal && c._score >= 55;
+                    const passesTop10 = idx < 10 && c._hasLoudSignal && c._score >= 45;
+                    if (!passesScore && !passesTop10) return;
+                    const tags = getTradeSignalTags(c, tCtx, c._optScore, c._volxVal, c._volxStr, c._volMcStr, c._optStr);
+                    if (tags.filter(t => t.pos).length === 0) return; // must have at least one positive tag
+                    tzRows.push({ ...c, _tags: tags });
+                  });
 
                   const tzStageColor = (lbl: string) => {
                     if (lbl.startsWith('S2 Breakout')) return { c: C.teal, bg: `${C.teal}18`, bd: `${C.teal}50` };
@@ -3676,7 +3725,7 @@ export default function WatchlistPage() {
                       {tzRows.length === 0 ? (
                         <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
                           No High Conviction Trade Zone setups right now.<br />
-                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires options signal + VolX + Vol/MC confluence with an early stage. Rules are not loosened.</span>
+                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires an early stage (S1/S1-2/S2) plus at least one loud signal — VolX, Vol/MC, or Options. Rules are not loosened automatically.</span>
                         </div>
                       ) : (
                         <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">

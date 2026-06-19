@@ -1,0 +1,230 @@
+Refine the `High Conviction Trade Zone` logic. Do not touch backend. Do not add API/provider calls. Do not use an LLM.
+
+Current issue:
+The tab is returning 0 qualifying rows because the qualification gate is too strict.
+
+Current gate appears to require:
+
+* allowed stage
+* at least 2 of 3 signal groups strong
+* conviction score >= 60
+
+That is too binary.
+
+Goal:
+Keep the tab honest, but make it weighted. A ticker does not need to check every signal box. It needs the best mix of trade signals relative to the active watchlist.
+
+Important:
+Do not label weak setups as high conviction.
+But also do not require every ticker to have options signal + VolX + Vol/MC all firing at once.
+
+Core rule:
+Allowed stage is mandatory.
+Signal confluence should be weighted and relative, not perfect-checklist based.
+
+Allowed stages:
+Use:
+row.stage_analysis?.label || row.stage2_breakout?.label
+
+Only these stages qualify:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+Do not include:
+
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+Signal fields:
+Use already-loaded fields only:
+
+* options_score / opt_score / flow_score
+* options_signal / opt_signal
+* relative_volume / rel_vol / volx
+* vol_mc_pct
+* vol_mc_ratio
+* volume / market_cap fallback
+* price
+* change percent
+
+Do not fetch anything.
+
+Revised scoring:
+Create a weighted `tradeConvictionScore` where missing/quiet signals reduce score but do not automatically disqualify.
+
+Suggested weights:
+
+* VolX strength: 35%
+* Vol / Market Cap strength: 25%
+* Options score / options signal strength: 25%
+* Stage quality: 15%
+
+Reason:
+VolX and Vol/MC often catch real-time setups even when options data is weak/missing. Options should boost conviction, not act as a hard requirement for every candidate.
+
+Stage score:
+
+* S2 Breakout = 100
+* S1-2 Watch = 85
+* S1 Base = 70
+
+VolX strength:
+Use active-watchlist percentiles plus absolute thresholds.
+
+Score high if:
+
+* VolX >= 5.0, or top 5% of active watchlist
+* VolX >= 2.0, or top 15% of active watchlist
+* VolX is meaningfully above normal
+
+Vol / MC strength:
+Use active-watchlist percentile.
+Score high if:
+
+* top 5% = elite
+* top 15% = strong
+* top 25% = notable
+
+Options strength:
+Use numeric options score if available.
+
+* > = 85 = elite
+* > = 70 = strong
+* > = 50 = useful
+  > If numeric score is missing, use options_signal / options activity fields if available.
+  > If options data is missing, do not auto-disqualify. Just give 0 for the options component.
+
+Qualification rules:
+A ticker qualifies if:
+
+1. It is in an allowed stage, AND
+
+2. It has at least one loud signal:
+
+   * VolX top 15% or VolX >= 2.0
+   * OR Vol/MC top 15%
+   * OR options score >= 50
+   * OR options signal is clearly positive/unusual
+
+AND
+
+3. It passes either:
+
+   * tradeConvictionScore >= 55
+   * OR it is in the top 10 ranked early-stage trade candidates by tradeConvictionScore, with score >= 45
+
+This keeps the tab selective but prevents it from going empty when the best setups are strong in only one or two dimensions.
+
+Important:
+Do not require at least 2 of 3 signal groups to be strong.
+Instead:
+
+* one elite signal + good stage can qualify
+* two solid signals + good stage can qualify
+* three decent signals can qualify
+* stage alone cannot qualify
+* high IV alone cannot qualify
+* options data missing does not automatically fail the row
+
+Examples that should qualify:
+
+* S2 Breakout + elite VolX + mediocre options + average Vol/MC
+* S1-2 Watch + top 5% Vol/MC + useful options score
+* S1 Base + VolX top 5% + high Vol/MC
+* S2 Breakout + options score > 70 + VolX above normal
+
+Examples that should not qualify:
+
+* S3 Momentum with great options
+* S4 Decline with high VolX
+* S1 Base with no signal strength
+* high IV only
+* high options activity but no VolX, no Vol/MC, weak stage context
+* missing all trade signal fields
+
+Tags:
+Update tags to reflect the weighted logic.
+
+Positive tags:
+
+* Elite VolX
+* High VolX
+* Top Vol/MC
+* Options > 50
+* Options > 70
+* Elite Options
+* S2 Breakout
+* S1-2 Watch
+* S1 Base
+* Flow + Volume
+* Volume Surge
+* Relative Volume Leader
+
+Risk tags:
+
+* High IV
+* Low OI
+* Thin Options
+* Options Missing
+
+Risk tags should never be the only reason a row qualifies.
+
+UI:
+Keep the existing table.
+
+Columns:
+
+* Symbol
+* Stage
+* Trade Score
+* Options
+* VolX
+* Vol/MC
+* Price
+* % Change
+* Signal Tags
+
+Sorting:
+Sort by:
+
+1. tradeConvictionScore descending
+2. stage priority:
+
+   * S2 Breakout
+   * S1-2 Watch
+   * S1 Base
+3. VolX percentile descending
+4. Vol/MC percentile descending
+5. options score descending
+
+Empty state:
+Keep the empty state if truly nothing qualifies.
+But with the revised weighted logic, do not return empty just because no ticker has 2 of 3 signal groups strong.
+
+Optional debug:
+During validation only, log or temporarily inspect:
+
+* number of early-stage tickers
+* top 20 early-stage tradeConvictionScore candidates
+* why each top candidate passed/failed
+
+Remove noisy console logs after validation.
+
+Validation:
+
+1. High Conviction Trade Zone uses weighted scoring, not a strict 2-of-3 gate.
+2. Allowed stage is still mandatory.
+3. One elite signal plus strong stage can qualify.
+4. Missing options score does not automatically disqualify if VolX/VolMC are strong.
+5. High IV alone does not qualify.
+6. S2-S3 Advance, S3 Momentum, S3-S4 Top, and S4 Decline never qualify.
+7. Rows are sorted by strongest weighted trade setup first.
+8. Signal tags clearly explain why each ticker qualifies.
+9. No new API/provider calls are added.
+10. No LLM calls are added.
+11. Rows still open StockDetailModal.
+12. Existing High Conviction Investment Zone remains unchanged.
