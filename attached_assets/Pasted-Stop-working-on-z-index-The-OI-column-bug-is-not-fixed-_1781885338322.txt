@@ -1,0 +1,98 @@
+Stop working on z-index. The OI column bug is not fixed by stacking context changes.
+
+Problem:
+On the Watchlist page main Tickers section, the far-right OI column is visually disconnected from the rest of the table. The OI values overlap/misalign with the header area and do not share the same alternating row background as the other columns.
+
+The OI column must behave exactly like every other column:
+
+* same row height
+* same alternating row background
+* same hover background
+* same header alignment
+* same sticky header behavior
+* same grid row continuation
+
+Scope:
+Only fix the Watchlist main Tickers table layout for the OI column / far-right columns.
+
+Do not change:
+
+* backend
+* API calls
+* Stage labels
+* Stage sorting
+* Fundamental tabs
+* Market Cap tabs
+* Live News
+* Add ticker
+* Hide Foreign
+* ticker popup
+
+Audit requirements:
+
+1. Inspect the Tickers table header grid and body row grid.
+2. Confirm the header and row use the exact same grid template.
+3. Confirm the number of header columns exactly matches the number of rendered row cells.
+4. Confirm OI is rendered inside the same row grid wrapper as every other column.
+5. Confirm OI is not rendered as an extra sibling outside the row background container.
+6. Confirm OI does not use position:absolute, transform, margin-left hacks, or a separate overlay layer.
+7. Confirm the row background is applied to the full row container that includes OI.
+8. Confirm the Stage column addition did not shift OI out of the grid.
+
+Likely root cause:
+The OI cell is probably outside the main row grid or the header/row grid templates are mismatched after adding the Stage column. Fix the grid structure, not z-index.
+
+Fix requirements:
+
+1. Define one shared grid template constant for the Tickers table.
+2. Use that exact same grid template for:
+
+   * header row
+   * every ticker body row
+3. Make sure the column order is identical in header and row cells.
+4. Make sure OI is a normal grid cell inside the row, not a positioned extra element.
+5. Make sure Stage is also a normal grid cell inside the same grid.
+6. Apply alternating row background to the full row grid container so it extends behind OI.
+7. Apply hover background to the full row grid container so it extends behind OI.
+8. Remove any special positioning/margin/absolute styling on the OI cell.
+9. If horizontal scrolling is needed, set the same minWidth on header and body rows.
+
+Expected column ending should be aligned like:
+
+* P/C
+* IV
+* EM
+* OPT VOL
+* OI
+* Stage
+
+Or if Stage is before OI in the current design, then both header and rows must use that exact same order. Do not let row order and header order differ.
+
+Implementation guidance:
+Look for:
+
+* `TICKER_GRID`
+* `tickerColumns`
+* header map
+* ticker row cell render order
+* OI cell render
+* Stage cell render
+
+Make sure:
+
+* `tickerColumns.length` equals the rendered row cell count.
+* The grid template has the same number of tracks as both.
+* OI is not appended outside the row grid.
+* There is no orphan `<span>` or `<div>` after the row grid for OI.
+
+Validation:
+
+1. OI header aligns directly above OI values.
+2. OI values are inside the same alternating black/gray row bands as the rest of the row.
+3. Scrolling does not cause OI values to overlap the header.
+4. Hovering a row highlights the OI cell with the rest of the row.
+5. Stage column still displays correctly.
+6. Stage sorting still works.
+7. Row click still opens StockDetailModal.
+8. No console errors.
+9. No API/provider calls are added.

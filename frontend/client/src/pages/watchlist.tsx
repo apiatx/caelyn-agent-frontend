@@ -2188,6 +2188,44 @@ export default function WatchlistPage() {
               const isPending = stock._pending;
               const chg1d = stock.change_pct ?? stock.change_pct_1d;
               const cCol = changeColor(chg1d);
+              // Stage (pre-computed)
+              const _sa = (stock as any).stage_analysis;
+              const _s2 = stock.stage2_breakout;
+              const _stageLabel: string | null = _sa?.label ?? _s2?.label ?? null;
+              const _stageReason: string | null = _sa?.reason ?? _s2?.reason ?? null;
+              let _sClr = C.dim, _sBg = 'transparent', _sBdr = C.border;
+              if (_stageLabel) {
+                if (/^S2 Breakout/i.test(_stageLabel)) { _sClr = C.teal; _sBg = `${C.teal}18`; _sBdr = `${C.teal}50`; }
+                else if (/^S2-S3 Advance/i.test(_stageLabel)) { _sClr = '#22c55e'; _sBg = 'rgba(34,197,94,0.10)'; _sBdr = 'rgba(34,197,94,0.35)'; }
+                else if (/^S3 Momentum/i.test(_stageLabel)) { _sClr = '#818cf8'; _sBg = 'rgba(129,140,248,0.10)'; _sBdr = 'rgba(129,140,248,0.35)'; }
+                else if (/^S1-2 Watch/i.test(_stageLabel)) { _sClr = C.amber; _sBg = `${C.amber}15`; _sBdr = `${C.amber}45`; }
+                else if (/^S1 Base/i.test(_stageLabel)) { _sClr = '#60a5fa'; _sBg = 'rgba(96,165,250,0.10)'; _sBdr = 'rgba(96,165,250,0.30)'; }
+                else if (/^S3-S4 Top/i.test(_stageLabel)) { _sClr = '#fb923c'; _sBg = 'rgba(251,146,60,0.10)'; _sBdr = 'rgba(251,146,60,0.30)'; }
+                else if (/^S4 Decline/i.test(_stageLabel)) { _sClr = C.red; _sBg = `${C.red}15`; _sBdr = `${C.red}40`; }
+              }
+              // Options (pre-computed)
+              const _oUn = stock.options_data_available === false;
+              const _oSt = stock.options_stale === true;
+              const _oHas = !optionsLoading || !!optionsResp;
+              const _oLd = optionsLoading && !optionsResp ? '…' : DASH;
+              const _oDim = _oSt ? 0.6 : 1;
+              const _scVal = _oUn ? null : (stock.options_score != null ? Number(stock.options_score) : null);
+              const _scStr = _scVal != null && Number.isFinite(_scVal) ? (_scVal >= 10 ? Math.round(_scVal).toString() : _scVal.toFixed(1)) : (_oHas ? DASH : _oLd);
+              const _scClr = _scVal != null && _scVal >= 70 ? C.green : _scVal != null && _scVal >= 50 ? C.amber : C.dim;
+              const _oSig = _oUn ? '' : (stock.options_signal ?? '');
+              const _oSigL = _oSig.toLowerCase();
+              const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dimLow;
+              const _oSigStr = _oHas ? (_oUn ? DASH : (_oSig || DASH)) : _oLd;
+              const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale options data' : undefined;
+              const _oCP = _oUn ? null : (stock.options_put_call_ratio != null ? Number(stock.options_put_call_ratio) : null);
+              const _oCPStr = _oCP != null && Number.isFinite(_oCP) ? _oCP.toFixed(2) : (_oHas ? DASH : _oLd);
+              const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dimLow;
+              const _oIV = _oUn ? null : (stock.options_iv != null ? Number(stock.options_iv) : null);
+              const _oIVStr = _oIV != null && Number.isFinite(_oIV) ? `${(_oIV > 5 ? _oIV : _oIV * 100).toFixed(0)}%` : (_oHas ? DASH : _oLd);
+              const _oEM = _oUn ? null : (stock.options_expected_move != null ? Number(stock.options_expected_move) : null);
+              const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
+              const _oVol = _oUn ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
+              const _oOI = _oUn ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
               return (
                 <div
                   key={`row-${stock.ticker}-${i}`}
@@ -2295,93 +2333,40 @@ export default function WatchlistPage() {
                   >
                     {formatVolMcPct(stock.vol_mc_pct)}
                   </span>
-                  {/* Stage column */}
-                  {(() => {
-                    const sa = (stock as any).stage_analysis;
-                    const s2 = stock.stage2_breakout;
-                    const label: string | null = sa?.label ?? s2?.label ?? null;
-                    const reason: string | null = sa?.reason ?? s2?.reason ?? null;
-                    if (!label) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
-                    let badgeColor: string;
-                    let badgeBg: string;
-                    let badgeBorder: string;
-                    if (/^S2 Breakout/i.test(label)) {
-                      badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`;
-                    } else if (/^S2-S3 Advance/i.test(label)) {
-                      badgeColor = '#22c55e'; badgeBg = 'rgba(34,197,94,0.10)'; badgeBorder = 'rgba(34,197,94,0.35)';
-                    } else if (/^S3 Momentum/i.test(label)) {
-                      badgeColor = '#818cf8'; badgeBg = 'rgba(129,140,248,0.10)'; badgeBorder = 'rgba(129,140,248,0.35)';
-                    } else if (/^S1-2 Watch/i.test(label)) {
-                      badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`;
-                    } else if (/^S1 Base/i.test(label)) {
-                      badgeColor = '#60a5fa'; badgeBg = 'rgba(96,165,250,0.10)'; badgeBorder = 'rgba(96,165,250,0.30)';
-                    } else if (/^S3-S4 Top/i.test(label)) {
-                      badgeColor = '#fb923c'; badgeBg = 'rgba(251,146,60,0.10)'; badgeBorder = 'rgba(251,146,60,0.30)';
-                    } else if (/^S4 Decline/i.test(label)) {
-                      badgeColor = C.red; badgeBg = `${C.red}15`; badgeBorder = `${C.red}40`;
-                    } else {
-                      badgeColor = C.dim; badgeBg = 'transparent'; badgeBorder = C.border;
-                    }
-                    return (
-                      <span
-                        title={reason ?? undefined}
-                        style={{
-                          display: 'inline-block',
-                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
-                          padding: '2px 5px', borderRadius: 3,
-                          color: badgeColor, background: badgeBg,
-                          border: `1px solid ${badgeBorder}`,
-                          textTransform: 'uppercase' as const, letterSpacing: '0.05em',
-                          whiteSpace: 'nowrap' as const, lineHeight: 1.4,
-                          cursor: reason ? 'help' : 'default',
-                        }}
-                      >
-                        {label}
-                      </span>
-                    );
-                  })()}
-                  {/* Options columns */}
-                  {(() => {
-                    const unavail = stock.options_data_available === false;
-                    const stale = stock.options_stale === true;
-                    const hasData = !optionsLoading || !!optionsResp;
-                    const loadStr = optionsLoading && !optionsResp ? '…' : DASH;
-                    // Score
-                    const scoreVal = unavail ? null : (stock.options_score != null ? Number(stock.options_score) : null);
-                    const scoreStr = scoreVal != null && Number.isFinite(scoreVal) ? (scoreVal >= 10 ? Math.round(scoreVal).toString() : scoreVal.toFixed(1)) : (hasData ? DASH : loadStr);
-                    const scoreClr = scoreVal != null && scoreVal >= 70 ? C.green : scoreVal != null && scoreVal >= 50 ? C.amber : C.dim;
-                    // Signal
-                    const sig = unavail ? '' : (stock.options_signal ?? '');
-                    const sigLower = sig.toLowerCase();
-                    const sigClr = sigLower.includes('unusual') ? C.amber : sigLower.includes('gamma') ? '#a78bfa' : sigLower.includes('asym') ? C.green : sigLower.includes('vol') ? C.amber : sig ? C.teal : C.dimLow;
-                    const sigStr = hasData ? (unavail ? DASH : (sig || DASH)) : loadStr;
-                    const sigTitle = unavail ? (stock.options_unavailable_reason ?? 'Options data unavailable') : stale ? 'Stale options data' : undefined;
-                    // P/C
-                    const cp = unavail ? null : (stock.options_put_call_ratio != null ? Number(stock.options_put_call_ratio) : null);
-                    const cpStr = cp != null && Number.isFinite(cp) ? cp.toFixed(2) : (hasData ? DASH : loadStr);
-                    const cpClr = cp != null ? (cp < 0.7 ? C.green : cp > 1.3 ? C.red : C.dim) : C.dimLow;
-                    // IV
-                    const ivVal = unavail ? null : (stock.options_iv != null ? Number(stock.options_iv) : null);
-                    const ivStr = ivVal != null && Number.isFinite(ivVal) ? `${(ivVal > 5 ? ivVal : ivVal * 100).toFixed(0)}%` : (hasData ? DASH : loadStr);
-                    // EM
-                    const emVal = unavail ? null : (stock.options_expected_move != null ? Number(stock.options_expected_move) : null);
-                    const emStr = emVal != null && Number.isFinite(emVal) ? `${emVal.toFixed(1)}%` : (hasData ? DASH : loadStr);
-                    // Opt Vol / OI
-                    const optVol = unavail ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
-                    const oi = unavail ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
-                    const dimOpacity = stale ? 0.6 : 1;
-                    return (
-                      <>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:scoreClr, opacity:dimOpacity }} title={stale ? 'Stale options data' : undefined}>{scoreStr}</span>
-                        <span style={{ fontSize:9, fontFamily:C.font, color:sigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:dimOpacity }} title={sigTitle}>{sigStr}</span>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:cpClr, opacity:dimOpacity }}>{cpStr}</span>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: ivVal != null ? C.amber : C.dimLow, opacity:dimOpacity }}>{ivStr}</span>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: emVal != null ? '#a78bfa' : C.dimLow, opacity:dimOpacity }}>{emStr}</span>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{optVol != null ? formatVolume(optVol) : (hasData ? DASH : loadStr)}</span>
-                        <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
-                      </>
-                    );
-                  })()}
+                  {/* Stage — col 10 */}
+                  {_stageLabel ? (
+                    <span
+                      title={_stageReason ?? undefined}
+                      style={{
+                        display: 'inline-block',
+                        fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                        padding: '2px 5px', borderRadius: 3,
+                        color: _sClr, background: _sBg,
+                        border: `1px solid ${_sBdr}`,
+                        textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+                        whiteSpace: 'nowrap' as const, lineHeight: 1.4,
+                        cursor: _stageReason ? 'help' : 'default',
+                      }}
+                    >
+                      {_stageLabel}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>
+                  )}
+                  {/* Opt Score — col 11 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
+                  {/* Opt Signal — col 12 */}
+                  <span style={{ fontSize:9, fontFamily:C.font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
+                  {/* P/C — col 13 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
+                  {/* IV — col 14 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dimLow, opacity:_oDim }}>{_oIVStr}</span>
+                  {/* EM — col 15 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dimLow, opacity:_oDim }}>{_oEMStr}</span>
+                  {/* Opt Vol — col 16 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
+                  {/* OI — col 17 */}
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
                 </div>
               );
             })}
