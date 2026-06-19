@@ -835,182 +835,231 @@ function fundFmtDate(v: any): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FUNDAMENTAL GROUPING — deterministic scoring helpers (no LLM, no fetch)
+   FUNDAMENTAL GROUPING — percentile-based, active-watchlist-relative scoring
+   No LLM, no API calls. Context built from fundRows for the active tab only.
    ═══════════════════════════════════════════════════════════════════════════ */
-function fgGet(row: any, key: string): any {
-  const col = FUND_COLS.find(c => c.key === key);
-  return fundGetField(row, key, col?.aliases ?? []);
-}
-function fgNum(row: any, key: string): number {
-  const v = fgGet(row, key);
-  const n = typeof v === 'number' ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : NaN;
-}
-function fgPct(row: any, key: string): number {
-  const n = fgNum(row, key);
-  if (isNaN(n)) return NaN;
-  return Math.abs(n) <= 1.5 ? n * 100 : n;
-}
-
-function fgScoreScale(row: any): number {
-  let s = 0;
-  const mc = fgNum(row, 'market_cap'), rev = fgNum(row, 'revenue');
-  if (!isNaN(mc)) {
-    if (mc >= 500e9) s += 50; else if (mc >= 100e9) s += 38;
-    else if (mc >= 20e9) s += 25; else if (mc >= 5e9) s += 15;
-    else if (mc >= 1e9) s += 8; else s += 2;
-  }
-  if (!isNaN(rev)) {
-    if (rev >= 50e9) s += 20; else if (rev >= 10e9) s += 14;
-    else if (rev >= 1e9) s += 8; else if (rev >= 100e6) s += 4;
-    else if (rev > 0) s += 1;
-  }
-  return s;
-}
-
-function fgScoreGrowth(row: any): number {
-  let s = 0;
-  const rgy = fgPct(row, 'revenue_growth'), rgq = fgPct(row, 'revenue_growth_q');
-  const epsg = fgPct(row, 'eps_growth');
-  if (!isNaN(rgy)) {
-    if (rgy > 50) s += 30; else if (rgy > 30) s += 22;
-    else if (rgy > 15) s += 15; else if (rgy > 5) s += 8;
-    else if (rgy > 0) s += 3; else if (rgy < -10) s -= 15;
-    else if (rgy < 0) s -= 5;
-  }
-  if (!isNaN(rgq)) {
-    if (rgq > 50) s += 20; else if (rgq > 25) s += 14;
-    else if (rgq > 10) s += 8; else if (rgq > 0) s += 3;
-    else if (rgq < -10) s -= 10; else if (rgq < 0) s -= 3;
-  }
-  if (!isNaN(epsg)) {
-    if (epsg > 50) s += 10; else if (epsg > 20) s += 7;
-    else if (epsg > 5) s += 4; else if (epsg < -20) s -= 8;
-    else if (epsg < 0) s -= 3;
-  }
-  return s;
-}
-
-function fgScoreProfit(row: any): number {
-  let s = 0;
-  const gm = fgPct(row, 'gross_margin'), fcfm = fgPct(row, 'fcf_margin');
-  const fcf = fgNum(row, 'free_cash_flow'), oi = fgNum(row, 'operating_income');
-  if (!isNaN(gm)) {
-    if (gm > 70) s += 25; else if (gm > 50) s += 18;
-    else if (gm > 30) s += 10; else if (gm > 15) s += 4;
-    else if (gm < 0) s -= 15;
-  }
-  if (!isNaN(fcfm)) {
-    if (fcfm > 30) s += 20; else if (fcfm > 15) s += 12;
-    else if (fcfm > 5) s += 6; else if (fcfm < -20) s -= 15;
-    else if (fcfm < 0) s -= 5;
-  } else if (!isNaN(fcf)) {
-    if (fcf > 1e9) s += 12; else if (fcf > 0) s += 5;
-    else if (fcf < -1e9) s -= 12; else if (fcf < 0) s -= 5;
-  }
-  if (!isNaN(oi)) { if (oi > 0) s += 5; else s -= 8; }
-  return s;
-}
-
-function fgScoreBS(row: any): number {
-  let s = 0;
-  const de = fgNum(row, 'debt_to_equity'), nde = fgNum(row, 'net_debt_ebitda');
-  if (!isNaN(de)) {
-    if (de < 0.3) s += 10; else if (de < 1) s += 5;
-    else if (de < 2) s += 0; else if (de < 4) s -= 8; else s -= 15;
-  }
-  if (!isNaN(nde)) {
-    if (nde < 0) s += 5; else if (nde < 2) s += 3;
-    else if (nde < 4) s -= 3; else if (nde < 7) s -= 10; else s -= 18;
-  }
-  return s;
-}
-
-function fgScoreForecast(row: any): number {
-  let s = 0, cnt = 0;
-  const keys = ['revenue_growth_est','rev_growth_next_quarter','rev_growth_next_year',
-    'eps_growth_est','eps_growth_tq','eps_growth_nq','eps_growth_ty','eps_growth_ny'];
-  for (const k of keys) {
-    const p = fgPct(row, k); if (isNaN(p)) continue; cnt++;
-    if (p > 50) s += 15; else if (p > 25) s += 10;
-    else if (p > 10) s += 6; else if (p > 0) s += 3;
-    else if (p < -20) s -= 8; else if (p < 0) s -= 3;
-  }
-  if (cnt >= 4) s += 5;
-  return s;
-}
-
-function fgRedFlags(row: any): number {
-  let f = 0;
-  const rgy = fgPct(row, 'revenue_growth'), fcfm = fgPct(row, 'fcf_margin');
-  const fcf = fgNum(row, 'free_cash_flow'), oi = fgNum(row, 'operating_income');
-  const de = fgNum(row, 'debt_to_equity'), nde = fgNum(row, 'net_debt_ebitda');
-  const gm = fgPct(row, 'gross_margin');
-  if (!isNaN(rgy) && rgy < -10) f++;
-  if (!isNaN(fcfm) && fcfm < -20) f++;
-  else if (!isNaN(fcf) && fcf < -1e9 && isNaN(fcfm)) f++;
-  if (!isNaN(oi) && oi < 0) f += 0.5;
-  if (!isNaN(de) && de > 4) f++;
-  if (!isNaN(nde) && nde > 7) f++;
-  if (!isNaN(gm) && gm < 0) f++;
-  return f;
-}
-
 type FgBucket = 'Market Leaders' | 'High Growth' | 'Speculative Future Growth Leaders' | 'High Speculation';
-function assignFgBucket(row: any): FgBucket {
-  const scale = fgScaleScore(row), growth = fgScoreGrowth(row), profit = fgScoreProfit(row);
-  const bs = fgScoreBS(row), forecast = fgScoreForecast(row), flags = fgRedFlags(row);
-  const total = scale + growth + profit + bs + forecast;
-  if (scale >= 38 && profit >= 15 && flags <= 1 && total >= 80) return 'Market Leaders';
-  if (growth >= 20 && flags <= 1.5 && total >= 40) return 'High Growth';
-  if (forecast >= 20 && (growth >= 5 || forecast >= 35)) return 'Speculative Future Growth Leaders';
-  return 'High Speculation';
-}
-function fgScaleScore(row: any): number { return fgScoreScale(row); }
+type FgContext = { pctMap: Map<string, number[]> };
 
-function fgBucketScore(row: any, bucket: FgBucket): number {
-  const scale = fgScoreScale(row), growth = fgScoreGrowth(row);
-  const profit = fgScoreProfit(row), bs = fgScoreBS(row), forecast = fgScoreForecast(row);
-  if (bucket === 'Market Leaders') return scale + profit + bs;
-  if (bucket === 'High Growth') return growth + profit;
-  if (bucket === 'Speculative Future Growth Leaders') return forecast + growth;
-  return -(scale + growth + profit + bs + forecast);
+const FG_CURRENT_KEYS  = ['revenue_growth','revenue_growth_q','eps_growth','gross_margin','fcf_margin'] as const;
+const FG_FORECAST_KEYS = ['revenue_growth_est','rev_growth_next_quarter','rev_growth_next_year',
+  'eps_growth_est','eps_growth_tq','eps_growth_nq','eps_growth_ty','eps_growth_ny'] as const;
+const FG_ALL_KEYS = [
+  'market_cap','revenue',...FG_CURRENT_KEYS,
+  'free_cash_flow','operating_income','ebit','pe_ratio','ps_ratio','ev_ebitda',
+  'debt_to_equity','net_debt_ebitda','shares_insiders',...FG_FORECAST_KEYS,
+] as const;
+
+function fgParseMetric(row: any, key: string): number | null {
+  const col = FUND_COLS.find(c => c.key === key);
+  const v = fundGetField(row, key, col?.aliases ?? []);
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return null;
+  if (col?.fmt === 'pct' && Math.abs(n) <= 1.5) return n * 100;
+  return n;
 }
 
-function fgTags(row: any): Array<{ label: string; pos: boolean }> {
-  const tags: Array<{ label: string; pos: boolean }> = [];
-  const mc = fgNum(row, 'market_cap'), fcf = fgNum(row, 'free_cash_flow');
-  const oi = fgNum(row, 'operating_income'), de = fgNum(row, 'debt_to_equity');
-  const nde = fgNum(row, 'net_debt_ebitda'), pe = fgNum(row, 'pe_ratio');
-  const rgy = fgPct(row, 'revenue_growth'), rgq = fgPct(row, 'revenue_growth_q');
-  const gm = fgPct(row, 'gross_margin'), fcfm = fgPct(row, 'fcf_margin');
-  const epsg = fgPct(row, 'eps_growth'), ins = fgPct(row, 'shares_insiders');
-  const fcast = fgScoreForecast(row);
+function buildFgContext(rows: any[]): FgContext {
+  const pctMap = new Map<string, number[]>();
+  for (const key of FG_ALL_KEYS) {
+    const vals: number[] = [];
+    for (const row of rows) { const v = fgParseMetric(row, key); if (v !== null) vals.push(v); }
+    pctMap.set(key, vals.sort((a, b) => a - b));
+  }
+  return { pctMap };
+}
+
+function getMetricPercentile(value: number, sortedVals: number[]): number {
+  if (!sortedVals.length) return 50;
+  let lo = 0, hi = sortedVals.length;
+  while (lo < hi) { const mid = (lo + hi) >>> 1; if (sortedVals[mid] <= value) lo = mid + 1; else hi = mid; }
+  return (lo / sortedVals.length) * 100;
+}
+
+function isTop15(key: string, row: any, ctx: FgContext): boolean {
+  const v = fgParseMetric(row, key); if (v === null) return false;
+  return getMetricPercentile(v, ctx.pctMap.get(key) ?? []) >= 85;
+}
+
+function hasSevereRedFlag(row: any): boolean {
+  const gm = fgParseMetric(row,'gross_margin'), fcfm = fgParseMetric(row,'fcf_margin');
+  const fcf = fgParseMetric(row,'free_cash_flow'), de = fgParseMetric(row,'debt_to_equity');
+  const nde = fgParseMetric(row,'net_debt_ebitda'), rgy = fgParseMetric(row,'revenue_growth');
+  return (gm !== null && gm < 0) || (fcfm !== null && fcfm < -30) ||
+    (fcf !== null && fcf < -5e9 && fcfm === null) || (de !== null && de > 10) ||
+    (nde !== null && nde > 15) || (rgy !== null && rgy < -30);
+}
+
+function hasAnyRedFlag(row: any): boolean {
+  const gm = fgParseMetric(row,'gross_margin'), fcfm = fgParseMetric(row,'fcf_margin');
+  const fcf = fgParseMetric(row,'free_cash_flow'), oi = fgParseMetric(row,'operating_income');
+  const ebit = fgParseMetric(row,'ebit'), de = fgParseMetric(row,'debt_to_equity');
+  const nde = fgParseMetric(row,'net_debt_ebitda'), rgy = fgParseMetric(row,'revenue_growth');
+  return (rgy !== null && rgy < -5) || (fcfm !== null && fcfm < -5) ||
+    (fcf !== null && fcf < 0 && fcfm === null) || (oi !== null && oi < 0) ||
+    (ebit !== null && ebit < 0) || (gm !== null && gm < 10) ||
+    (de !== null && de > 3) || (nde !== null && nde > 5);
+}
+
+function scoreMarketLeader(row: any): number {
+  return (fgParseMetric(row,'market_cap') ?? 0) / 1e9 * 0.5 +
+    (fgParseMetric(row,'gross_margin') ?? 0) + (fgParseMetric(row,'fcf_margin') ?? 0) +
+    (fgParseMetric(row,'free_cash_flow') ?? 0) / 1e9 * 0.1;
+}
+
+function scoreHighGrowth(row: any, ctx: FgContext): number {
+  return [...FG_CURRENT_KEYS].reduce((s, k) => {
+    const v = fgParseMetric(row, k); if (v === null) return s;
+    return s + getMetricPercentile(v, ctx.pctMap.get(k) ?? []);
+  }, 0);
+}
+
+function scoreSpecFutureGrowth(row: any, ctx: FgContext): number {
+  const fScore = [...FG_FORECAST_KEYS].reduce((s, k) => {
+    const v = fgParseMetric(row, k); if (v === null) return s;
+    return s + getMetricPercentile(v, ctx.pctMap.get(k) ?? []);
+  }, 0);
+  return fScore + (fgParseMetric(row,'revenue_growth') ?? 0);
+}
+
+function scoreHighSpeculation(row: any): number {
+  const rgy = fgParseMetric(row,'revenue_growth'), fcfm = fgParseMetric(row,'fcf_margin');
+  const oi = fgParseMetric(row,'operating_income');
+  return (rgy !== null && rgy < 0 ? Math.abs(rgy) * 2 : 0) +
+    (fcfm !== null && fcfm < 0 ? Math.abs(fcfm) : 0) + (oi !== null && oi < 0 ? 20 : 0);
+}
+
+function qualifiesMarketLeader(row: any, ctx: FgContext): boolean {
+  const mc = fgParseMetric(row,'market_cap'); if (mc === null || mc < 100e9) return false;
+  const rgy = fgParseMetric(row,'revenue_growth'), fcfm = fgParseMetric(row,'fcf_margin');
+  const fcf = fgParseMetric(row,'free_cash_flow'), oi = fgParseMetric(row,'operating_income');
+  const ebit = fgParseMetric(row,'ebit'), gm = fgParseMetric(row,'gross_margin');
+  const de = fgParseMetric(row,'debt_to_equity'), nde = fgParseMetric(row,'net_debt_ebitda');
+  if (rgy  !== null && rgy  < -5)  return false;
+  if (fcfm !== null && fcfm < 0)   return false;
+  if (fcf  !== null && fcf  < 0    && fcfm === null) return false;
+  if (oi   !== null && oi   < 0)   return false;
+  if (ebit !== null && ebit < 0)   return false;
+  if (gm   !== null && gm   < 10)  return false;
+  if (de   !== null && de   > 5)   return false;
+  if (nde  !== null && nde  > 7)   return false;
+  return true;
+}
+
+function qualifiesHighGrowth(row: any, ctx: FgContext): boolean {
+  const hasTop15 = (FG_CURRENT_KEYS as readonly string[]).some(k => isTop15(k, row, ctx));
+  if (!hasTop15) {
+    const above70 = [...FG_CURRENT_KEYS].filter(k => {
+      const v = fgParseMetric(row, k); if (v === null) return false;
+      return getMetricPercentile(v, ctx.pctMap.get(k) ?? []) >= 70;
+    }).length;
+    if (above70 < 3) return false;
+  }
+  const rgy = fgParseMetric(row,'revenue_growth'), rgq = fgParseMetric(row,'revenue_growth_q');
+  const gm = fgParseMetric(row,'gross_margin'), de = fgParseMetric(row,'debt_to_equity');
+  const nde = fgParseMetric(row,'net_debt_ebitda'), oi = fgParseMetric(row,'operating_income');
+  const fcf = fgParseMetric(row,'free_cash_flow'), fcfm = fgParseMetric(row,'fcf_margin');
+  if (rgy !== null && rgy < 0) return false;
+  if (rgy === null && rgq !== null && rgq < 0) return false;
+  if (gm  !== null && gm  < 10) return false;
+  if (de  !== null && de  > 7)  return false;
+  if (nde !== null && nde > 10) return false;
+  const oiNeg  = oi !== null && oi < 0;
+  const fcfNeg = (fcfm !== null && fcfm < -20) || (fcf !== null && fcf < 0 && fcfm === null);
+  if (oiNeg && fcfNeg && gm !== null && gm < 20) return false;
+  return true;
+}
+
+function qualifiesSpecFuture(row: any, ctx: FgContext): boolean {
+  if ((FG_FORECAST_KEYS as readonly string[]).some(k => isTop15(k, row, ctx))) return true;
+  const rgy = fgParseMetric(row,'revenue_growth'), rgq = fgParseMetric(row,'revenue_growth_q');
+  if (!((rgy !== null && rgy > 30) || (rgq !== null && rgq > 30))) return false;
+  const oi = fgParseMetric(row,'operating_income'), fcf = fgParseMetric(row,'free_cash_flow');
+  const fcfm = fgParseMetric(row,'fcf_margin'), de = fgParseMetric(row,'debt_to_equity');
+  const epsg = fgParseMetric(row,'eps_growth');
+  return (oi !== null && oi < 0) || (fcfm !== null && fcfm < 0) ||
+    (fcf !== null && fcf < 0 && fcfm === null) || (de !== null && de > 2) || (epsg !== null && epsg < 0);
+}
+
+function qualifiesHighSpeculation(row: any, ctx: FgContext): boolean {
+  if ([...FG_CURRENT_KEYS,...FG_FORECAST_KEYS].some(k => isTop15(k, row, ctx))) return false;
+  let neg = 0;
+  const rgy = fgParseMetric(row,'revenue_growth'), fcfm = fgParseMetric(row,'fcf_margin');
+  const fcf = fgParseMetric(row,'free_cash_flow'), oi = fgParseMetric(row,'operating_income');
+  const ebit = fgParseMetric(row,'ebit'), gm = fgParseMetric(row,'gross_margin');
+  const de = fgParseMetric(row,'debt_to_equity'), nde = fgParseMetric(row,'net_debt_ebitda');
+  const epsg = fgParseMetric(row,'eps_growth');
+  if (rgy  !== null && rgy  < -5)  neg++;
+  if (fcfm !== null && fcfm < -10) neg++;
+  else if (fcf !== null && fcf < 0 && fcfm === null) neg++;
+  if (oi   !== null && oi   < 0)   neg++;
+  if (ebit !== null && ebit < 0)   neg++;
+  if (gm   !== null && gm   < 15)  neg++;
+  if (de   !== null && de   > 3)   neg++;
+  if (nde  !== null && nde  > 5)   neg++;
+  if (epsg !== null && epsg < -20) neg++;
+  const dc = ['market_cap','revenue','revenue_growth','gross_margin','fcf_margin','operating_income']
+    .filter(k => fgParseMetric(row, k) !== null).length;
+  if (dc <= 1) neg += 2; else if (dc <= 2) neg++;
+  return neg >= 3;
+}
+
+function assignFundamentalGroups(row: any, ctx: FgContext): FgBucket | null {
+  if (qualifiesMarketLeader(row, ctx))    return 'Market Leaders';
+  if (qualifiesHighGrowth(row, ctx))      return 'High Growth';
+  if (qualifiesSpecFuture(row, ctx))      return 'Speculative Future Growth Leaders';
+  if (qualifiesHighSpeculation(row, ctx)) return 'High Speculation';
+  return null;
+}
+
+function getExtremeMetricTags(row: any, ctx: FgContext, bucket: FgBucket): Array<{label: string; pos: boolean}> {
+  const tags: Array<{label: string; pos: boolean}> = [];
+  const top15 = (k: string) => isTop15(k, row, ctx);
+  const mc = fgParseMetric(row,'market_cap'), rgy = fgParseMetric(row,'revenue_growth');
+  const rgq = fgParseMetric(row,'revenue_growth_q'), gm = fgParseMetric(row,'gross_margin');
+  const fcfm = fgParseMetric(row,'fcf_margin'), fcf = fgParseMetric(row,'free_cash_flow');
+  const oi = fgParseMetric(row,'operating_income'), ebit = fgParseMetric(row,'ebit');
+  const de = fgParseMetric(row,'debt_to_equity'), nde = fgParseMetric(row,'net_debt_ebitda');
+  const epsg = fgParseMetric(row,'eps_growth'), ins = fgParseMetric(row,'shares_insiders');
+
+  if (bucket === 'High Speculation') {
+    tags.push({ label: 'AVOID', pos: false });
+    if (rgy !== null && rgy < -5) tags.push({ label: 'Rev Decline', pos: false });
+    if (fcfm !== null && fcfm < -10) tags.push({ label: 'Negative FCF', pos: false });
+    else if (fcf !== null && fcf < 0 && fcfm === null) tags.push({ label: 'Negative FCF', pos: false });
+    if (oi !== null && oi < 0) tags.push({ label: 'Neg Op Income', pos: false });
+    if ((de !== null && de > 3) || (nde !== null && nde > 5)) tags.push({ label: 'High Debt', pos: false });
+    if (gm !== null && gm < 15) tags.push({ label: 'Weak Gross Mgn', pos: false });
+    const dc = ['market_cap','revenue','revenue_growth','gross_margin','fcf_margin','operating_income']
+      .filter(k => fgParseMetric(row, k) !== null).length;
+    if (dc <= 2) tags.push({ label: 'Missing Fundamentals', pos: false });
+    return tags.slice(0, 3);
+  }
   // Positive
-  if (!isNaN(mc) && mc >= 100e9) tags.push({ label: '$100B+', pos: true });
-  if (!isNaN(rgy) && rgy > 50) tags.push({ label: 'Huge Rev Growth', pos: true });
-  else if (!isNaN(rgq) && rgq > 50) tags.push({ label: 'Huge Rev Growth Q', pos: true });
-  if (!isNaN(gm) && gm > 60) tags.push({ label: 'High Gross Mgn', pos: true });
-  if (!isNaN(fcfm) && fcfm > 20) tags.push({ label: 'Strong FCF Mgn', pos: true });
-  else if (!isNaN(fcf) && fcf > 1e9 && isNaN(fcfm)) tags.push({ label: 'Cash Machine', pos: true });
-  if (!isNaN(epsg) && epsg > 50) tags.push({ label: 'Big EPS Growth', pos: true });
-  if (!isNaN(ins) && ins > 10) tags.push({ label: 'Insider Heavy', pos: true });
-  if (fcast >= 40) tags.push({ label: 'Strong Forecasts', pos: true });
-  // Negative
-  if (!isNaN(rgy) && rgy < -5) tags.push({ label: 'Rev Decline', pos: false });
-  if (!isNaN(fcfm) && fcfm < -10) tags.push({ label: 'Negative FCF', pos: false });
-  else if (!isNaN(fcf) && fcf < 0 && isNaN(fcfm)) tags.push({ label: 'Negative FCF', pos: false });
-  if (!isNaN(oi) && oi < 0) tags.push({ label: 'Neg Op Income', pos: false });
-  if ((!isNaN(de) && de > 2) || (!isNaN(nde) && nde > 5)) tags.push({ label: 'High Debt', pos: false });
-  if (!isNaN(gm) && gm < 10 && gm >= 0) tags.push({ label: 'Margin Pressure', pos: false });
-  if (!isNaN(pe) && pe > 60 && (isNaN(epsg) || epsg < 10)) tags.push({ label: 'Exp/Weak Growth', pos: false });
-  if (fcast < 0) tags.push({ label: 'Weak Forecasts', pos: false });
-  const defCount = ['market_cap','revenue','revenue_growth','gross_margin','fcf_margin','eps_growth']
-    .filter(k => !isNaN(fgNum(row, k))).length;
-  if (defCount <= 1) tags.push({ label: 'Missing Data', pos: false });
-  // Return up to 3: negative first (most important for risk), then positive
-  const neg = tags.filter(t => !t.pos), pos = tags.filter(t => t.pos);
-  return [...neg, ...pos].slice(0, 3);
+  if (mc !== null && mc >= 100e9) tags.push({ label: '$100B+ Anchor', pos: true });
+  if (top15('revenue_growth') || top15('revenue_growth_q')) tags.push({ label: 'Top 15% Rev Growth', pos: true });
+  else if (rgy !== null && rgy > 40) tags.push({ label: 'Huge Rev Growth', pos: true });
+  if (top15('eps_growth')) tags.push({ label: 'Top 15% EPS Growth', pos: true });
+  if (top15('gross_margin')) tags.push({ label: 'Top 15% Gross Mgn', pos: true });
+  if (top15('fcf_margin')) tags.push({ label: 'Top 15% FCF Mgn', pos: true });
+  else if (fcfm !== null && fcfm > 15) tags.push({ label: 'Strong FCF Mgn', pos: true });
+  const revFcastTop15 = ['revenue_growth_est','rev_growth_next_quarter','rev_growth_next_year'].some(k => top15(k));
+  const epsFcastTop15 = ['eps_growth_est','eps_growth_tq','eps_growth_nq','eps_growth_ty','eps_growth_ny'].some(k => top15(k));
+  if (revFcastTop15) tags.push({ label: 'Top 15% Rev Forecast', pos: true });
+  if (epsFcastTop15) tags.push({ label: 'Top 15% EPS Forecast', pos: true });
+  if (ebit !== null && ebit > 0 && bucket === 'Market Leaders') tags.push({ label: 'Positive EBIT', pos: true });
+  if (fcf !== null && fcf > 5e9 && bucket === 'Market Leaders') tags.push({ label: 'Strong FCF', pos: true });
+  if (ins !== null && ins > 10) tags.push({ label: 'Insider Heavy', pos: true });
+  // Negative (growth/spec buckets)
+  if (bucket !== 'Market Leaders') {
+    if (fcfm !== null && fcfm < -5) tags.push({ label: 'Negative FCF', pos: false });
+    else if (fcf !== null && fcf < 0 && fcfm === null) tags.push({ label: 'Negative FCF', pos: false });
+    if (oi !== null && oi < 0) tags.push({ label: 'Neg Op Income', pos: false });
+    if (de !== null && de > 2) tags.push({ label: 'Debt Funding Growth', pos: false });
+    if (epsg !== null && epsg < -10) tags.push({ label: 'EPS Pressure', pos: false });
+  }
+  const pos = tags.filter(t => t.pos), neg = tags.filter(t => !t.pos);
+  return (bucket === 'Speculative Future Growth Leaders' ? [...neg, ...pos] : [...pos, ...neg]).slice(0, 3);
 }
 
 export default function WatchlistPage() {
@@ -3429,87 +3478,101 @@ export default function WatchlistPage() {
 
                 /* ── FUNDAMENTAL GROUPING ── */
                 if (bottomView === 'fundGrouping') {
+                  // Build percentile context from active fundRows only (Primary vs Close Watch)
+                  const fgCtx = buildFgContext(fundRows);
                   const fgBucketDefs: { id: FgBucket; label: string; sub: string; color: string }[] = [
-                    { id: 'Market Leaders',                   label: 'Market Leaders',                   sub: 'Scale + Quality', color: '#22c55e' },
-                    { id: 'High Growth',                      label: 'High Growth',                      sub: 'Strong Growth',   color: '#0ea5e9' },
-                    { id: 'Speculative Future Growth Leaders', label: 'Spec. Future Growth',              sub: 'Forecast-Driven', color: '#a855f7' },
-                    { id: 'High Speculation',                 label: 'High Speculation',                 sub: 'Weak / Unproven', color: '#f59e0b' },
+                    { id: 'Market Leaders',                   label: 'Market Leaders',       sub: 'Proven Anchors — No Red Flags',       color: '#22c55e' },
+                    { id: 'High Growth',                      label: 'High Growth',          sub: 'Top 15% Current Growth Metrics',      color: '#0ea5e9' },
+                    { id: 'Speculative Future Growth Leaders', label: 'Spec. Future Growth',  sub: 'Forecast-Driven / Growth Investment',  color: '#a855f7' },
+                    { id: 'High Speculation',                 label: 'High Speculation',     sub: 'Avoid / Weak Fundamentals',           color: '#f59e0b' },
                   ];
-                  // Assign each row to exactly one bucket
-                  type FgRow = typeof fundRows[0] & { _fgBucket: FgBucket; _fgScore: number };
-                  const fgRows: FgRow[] = fundRows.map(r => {
-                    const bucket = assignFgBucket(r);
-                    return { ...r, _fgBucket: bucket, _fgScore: fgBucketScore(r, bucket) };
-                  });
+                  // Assign rows — rows that don't qualify for any bucket are omitted
+                  type FgQRow = typeof fundRows[0] & { _bucket: FgBucket; _score: number };
+                  const fgQRows: FgQRow[] = [];
+                  for (const r of fundRows) {
+                    const bucket = assignFundamentalGroups(r, fgCtx);
+                    if (bucket === null) continue;
+                    let score = 0;
+                    if (bucket === 'Market Leaders')                   score = scoreMarketLeader(r);
+                    else if (bucket === 'High Growth')                 score = scoreHighGrowth(r, fgCtx);
+                    else if (bucket === 'Speculative Future Growth Leaders') score = scoreSpecFutureGrowth(r, fgCtx);
+                    else                                               score = scoreHighSpeculation(r);
+                    fgQRows.push({ ...r, _bucket: bucket, _score: score });
+                  }
+                  const totalQualified = fgQRows.length;
                   return (
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
-                      {fgBucketDefs.map(bDef => {
-                        const rows = fgRows
-                          .filter(r => r._fgBucket === bDef.id)
-                          .sort((a, b) => b._fgScore - a._fgScore);
-                        return (
-                          <div key={bDef.id} style={{ flex: '1 1 200px', minWidth: 190, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
-                            {/* bucket header */}
-                            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bDef.color}10` }}>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                <span style={{ fontSize: 10, fontWeight: 800, color: bDef.color, letterSpacing: '0.05em' }}>{bDef.label}</span>
-                                <span style={{ fontSize: 8, color: C.dim }}>{bDef.sub}</span>
-                                <span style={{ fontSize: 8, color: C.dim, marginLeft: 'auto' }}>{rows.length}</span>
+                    <div>
+                      {/* summary bar */}
+                      <div style={{ padding: '6px 2px 10px', fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                        {totalQualified} of {fundRows.length} tickers qualify — the rest have mediocre or incomplete fundamentals and are omitted.
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
+                        {fgBucketDefs.map(bDef => {
+                          const rows = fgQRows
+                            .filter(r => r._bucket === bDef.id)
+                            .sort((a, b) => b._score - a._score);
+                          return (
+                            <div key={bDef.id} style={{ flex: '1 1 200px', minWidth: 190, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                              {/* bucket header */}
+                              <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bDef.color}10` }}>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: bDef.color, letterSpacing: '0.05em', marginBottom: 1 }}>{bDef.label}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: 7.5, color: C.dim, letterSpacing: '0.04em' }}>{bDef.sub}</span>
+                                  <span style={{ fontSize: 9, fontWeight: 700, color: bDef.color }}>{rows.length}</span>
+                                </div>
+                              </div>
+                              {/* col headers */}
+                              <div style={{ display: 'grid', gridTemplateColumns: '54px 48px 44px 54px', padding: '3px 10px', gap: 4, fontSize: 7, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const, color: C.dim, borderBottom: `1px solid ${C.border}22` }}>
+                                <span>Ticker</span>
+                                <span style={{ textAlign: 'right' as const }}>Price</span>
+                                <span style={{ textAlign: 'right' as const }}>Chg%</span>
+                                <span style={{ textAlign: 'right' as const }}>Mkt Cap</span>
+                              </div>
+                              {/* rows */}
+                              <div style={{ maxHeight: 400, overflowY: 'auto' }} className="wl-scrollbar">
+                                {rows.length === 0 ? (
+                                  <div style={{ padding: '16px 10px', fontSize: 9, color: C.dim, textAlign: 'center' as const }}>No qualifying tickers</div>
+                                ) : rows.map((r, ri) => {
+                                  const chg = r.change_pct ?? r.change_pct_1d;
+                                  const cClr = changeColor(chg);
+                                  const mcStr = fundFmtCompact(r.market_cap ?? r.marketCap);
+                                  const tags = getExtremeMetricTags(r, fgCtx, bDef.id);
+                                  return (
+                                    <div
+                                      key={`${r.ticker}-${ri}`}
+                                      onClick={() => r.ticker && handleTickerClick(r.ticker)}
+                                      style={{ borderBottom: `1px solid ${C.border}18`, cursor: r.ticker ? 'pointer' : 'default', background: ri % 2 === 0 ? 'transparent' : `${C.border}06` }}
+                                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
+                                    >
+                                      <div style={{ display: 'grid', gridTemplateColumns: '54px 48px 44px 54px', padding: '5px 10px 2px', gap: 4, alignItems: 'center' }}>
+                                        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.ticker || DASH}</span>
+                                        <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(r.price)}</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
+                                        <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{mcStr}</span>
+                                      </div>
+                                      {tags.length > 0 && (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, padding: '2px 10px 5px' }}>
+                                          {tags.map((tag, ti) => (
+                                            <span key={ti} style={{
+                                              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                              padding: '1px 5px', borderRadius: 3,
+                                              color: tag.pos ? '#22c55e' : '#ef4444',
+                                              background: tag.pos ? '#22c55e18' : '#ef444418',
+                                              border: `1px solid ${tag.pos ? '#22c55e30' : '#ef444430'}`,
+                                              whiteSpace: 'nowrap' as const,
+                                            }}>{tag.label}</span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
-                            {/* col headers */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '54px 48px 44px 54px', padding: '3px 10px', gap: 4, fontSize: 7, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const, color: C.dim, borderBottom: `1px solid ${C.border}22` }}>
-                              <span>Ticker</span>
-                              <span style={{ textAlign: 'right' as const }}>Price</span>
-                              <span style={{ textAlign: 'right' as const }}>Chg%</span>
-                              <span style={{ textAlign: 'right' as const }}>Mkt Cap</span>
-                            </div>
-                            {/* rows */}
-                            <div style={{ maxHeight: 400, overflowY: 'auto' }} className="wl-scrollbar">
-                              {rows.length === 0 ? (
-                                <div style={{ padding: '12px 10px', fontSize: 9, color: C.dim, textAlign: 'center' as const }}>No tickers</div>
-                              ) : rows.map((r, ri) => {
-                                const chg = r.change_pct ?? r.change_pct_1d;
-                                const cClr = changeColor(chg);
-                                const mcStr = fundFmtCompact(r.market_cap ?? r.marketCap);
-                                const tags = fgTags(r);
-                                return (
-                                  <div
-                                    key={`${r.ticker}-${ri}`}
-                                    onClick={() => r.ticker && handleTickerClick(r.ticker)}
-                                    style={{ borderBottom: `1px solid ${C.border}18`, cursor: r.ticker ? 'pointer' : 'default', background: ri % 2 === 0 ? 'transparent' : `${C.border}06` }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
-                                  >
-                                    {/* main row */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '54px 48px 44px 54px', padding: '5px 10px 2px', gap: 4, alignItems: 'center' }}>
-                                      <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.ticker || DASH}</span>
-                                      <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(r.price)}</span>
-                                      <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
-                                      <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{mcStr}</span>
-                                    </div>
-                                    {/* tags row */}
-                                    {tags.length > 0 && (
-                                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, padding: '2px 10px 5px' }}>
-                                        {tags.map((tag, ti) => (
-                                          <span key={ti} style={{
-                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
-                                            padding: '1px 5px', borderRadius: 3,
-                                            color: tag.pos ? '#22c55e' : '#ef4444',
-                                            background: tag.pos ? '#22c55e18' : '#ef444418',
-                                            border: `1px solid ${tag.pos ? '#22c55e30' : '#ef444430'}`,
-                                            whiteSpace: 'nowrap' as const,
-                                          }}>{tag.label}</span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 } /* end fundGrouping */

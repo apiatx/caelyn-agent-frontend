@@ -1,0 +1,420 @@
+Audit first. Do not touch backend unless required fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Refine the Watchlist `Fundamental Grouping` tab.
+
+Current problem:
+The current Fundamental Grouping tab appears to force every watchlist ticker into one of the four buckets. That is wrong.
+
+These four columns are not exhaustive categories. They are leaderboards / signal groups.
+
+Not every watchlist ticker needs to appear. Many tickers should appear in no column.
+
+Scope:
+Only update the Watchlist bottom `Fundamental Grouping` tab.
+
+Do not change:
+
+* backend
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* Themes tab
+* Market Cap tab
+* Fundamental Screener tab
+* Golden Zone tab, unless it directly reuses this grouping helper
+
+Tabs:
+Keep:
+
+* Themes
+* Market Cap
+* Fundamental Screener
+* Fundamental Grouping
+
+Fundamental Grouping columns:
+Keep exactly 4 side-by-side columns:
+
+1. Market Leaders
+2. High Growth
+3. Speculative Future Growth Leaders
+4. High Speculation
+
+Important behavior change:
+Do not force every ticker into a bucket.
+
+A ticker should appear only if it clearly qualifies for that specific category.
+
+If a ticker does not clearly qualify for any of the four categories, omit it from Fundamental Grouping entirely.
+
+No default bucket.
+
+High Speculation is not the default bucket.
+
+Data:
+Use every available metric from the loaded Fundamental Screener / CSV / popup fundamentals data, including:
+
+Core fundamentals:
+
+* Market Cap
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+* Operating Income
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* EPS Growth
+* Debt / Equity
+* Net Debt / EBITDA
+* Insider %
+* Earnings Date
+
+Forecast / estimate metrics:
+
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+
+Do not use technical-only fields in the fundamental grouping score:
+
+* 52W Low
+* 52W High
+* % vs MA20
+* % vs MA50
+* % vs MA200
+* RSI
+* ATR
+
+Percentile logic:
+Calculate percentiles only within the currently active watchlist ticker set.
+
+For example:
+
+* Primary percentiles use Primary tickers only
+* Close Watch/Favorites percentiles use only Close Watch/Favorites tickers
+* Future saved watchlist tabs use only their own tickers
+
+Use top 15% thresholds for “impressive” metrics.
+
+Top 15% means:
+
+* metric value is at or above the 85th percentile among active watchlist rows with valid values for that metric
+
+Do not compare against the whole market.
+Do not compare against all 302 Primary tickers if the user is on Close Watch.
+
+Create helper functions:
+
+* parseMetricValue(row, aliases)
+* getMetricPercentile(value, validValues)
+* isTop15(metricName, row)
+* hasSevereRedFlag(row)
+* hasAnyRedFlag(row)
+* getExtremeMetricTags(row)
+* scoreMarketLeader(row)
+* scoreHighGrowth(row)
+* scoreSpecFutureGrowth(row)
+* scoreHighSpeculation(row)
+* assignFundamentalGroups(row)
+
+Important:
+A row can qualify for at most one displayed group. Use priority order:
+
+1. Market Leaders
+2. High Growth
+3. Speculative Future Growth Leaders
+4. High Speculation
+
+But if it does not qualify for any, omit it.
+
+Market Leaders:
+These are proven anchors / beasts of industry.
+
+Requirements:
+
+* market_cap >= 100_000_000_000
+* strong revenue base
+* no negative fundamental red flags
+* no red tags
+* no severe red areas
+* positive or durable operating income
+* positive EBIT where available
+* positive free cash flow where available
+* positive FCF margin where available
+* positive gross margin
+* positive revenue growth or stable durable revenue profile
+* manageable debt metrics
+* not just high market cap
+
+Disqualify from Market Leaders if any of these are true:
+
+* revenue growth is meaningfully negative
+* FCF is negative
+* FCF margin is negative
+* operating income is negative
+* EBIT is negative
+* gross margin is weak or negative
+* debt/equity is extreme
+* net debt/EBITDA is extreme
+* multiple missing core metrics
+* any negative red flag tag would be shown
+
+Market Leaders should have zero red tags.
+
+Allowed tags:
+
+* $100B+ Anchor
+* Huge Revenue Base
+* Strong Gross Mgn
+* Strong FCF Mgn
+* Positive EBIT
+* Low Debt
+* Insider Heavy
+* Cash Machine
+
+High Growth:
+These are current growth leaders with impressive active growth metrics.
+
+Requirements:
+
+* must have at least one current growth metric in the top 15% of the active watchlist:
+
+  * Revenue Growth (Q)
+  * Revenue Growth (YoY)
+  * EPS Growth
+  * Gross Margin
+  * FCF Margin
+* OR an extremely strong combination of current growth metrics just below top 15%
+* strong positive fundamental profile overall
+* no severe red flags
+* no multiple major red flags
+* operating income / FCF can be negative if revenue growth is elite and other quality metrics are constructive
+* debt can exist, but must not be an extreme red flag
+
+Do not include a stock in High Growth just because it has one okay positive metric. It needs standout growth.
+
+Use top 15% as the primary gate.
+
+Good tags:
+
+* Top 15% Rev Growth
+* Huge Rev Growth
+* Top 15% EPS Growth
+* Top 15% Gross Mgn
+* Top 15% FCF Mgn
+* Strong Growth
+* Strong Quality
+
+Disqualify or downgrade if:
+
+* revenue growth is negative
+* EPS growth is deeply negative
+* gross margin is weak
+* FCF margin is deeply negative
+* operating income and FCF are both bad
+* debt is extreme
+* forecast metrics are weak and current fundamentals are also weak
+
+Speculative Future Growth Leaders:
+These are forward-looking leaders with impressive forecasts or growth investment profiles.
+
+Requirements:
+Must have at least one of these:
+
+A. Forecast strength:
+
+* Revenue Growth Est. in top 15%
+* Revenue Growth Next Quarter in top 15%
+* Revenue Growth Next Year in top 15%
+* EPS Growth Est. in top 15%
+* EPS Growth This Quarter in top 15%
+* EPS Growth Next Quarter in top 15%
+* EPS Growth This Year in top 15%
+* EPS Growth Next Year in top 15%
+
+OR
+
+B. Current revenue ramp with investment burden:
+
+* huge revenue growth / revenue acceleration
+* but also signs of investment burden, such as:
+
+  * increasing debt
+  * weak/negative FCF
+  * weak/negative operating income
+  * EPS decline
+  * margin pressure
+
+These are companies that may be setting up for big future growth/profitability but are still expensive, leveraged, or not fully proven.
+
+Do not include names that have weak current fundamentals and weak forecasts. Those belong in High Speculation only if they clearly qualify as avoids.
+
+Good tags:
+
+* Top 15% Forecasts
+* Top 15% Rev Forecast
+* Top 15% EPS Forecast
+* Huge Rev Ramp
+* Growth Investment
+* Future Leader
+* Forecast-Led
+
+Risk tags are allowed here:
+
+* Negative FCF
+* Debt Funding Growth
+* Margin Pressure
+* EPS Pressure
+* Not Profitable Yet
+
+High Speculation:
+These are avoid / weak-fundamental names.
+
+Column subtitle should include:
+
+* Avoid
+
+Rename subtitle:
+High Speculation — Avoid / Weak Fundamentals
+
+Requirements:
+Only include tickers that have weak fundamentals and do not have impressive future forecasts.
+
+Must have several negative indicators, such as:
+
+* revenue decline
+* weak or missing revenue
+* negative FCF
+* negative FCF margin
+* negative operating income
+* negative EBIT
+* weak gross margin
+* high debt
+* negative EPS growth
+* weak or missing forecasts
+* no top 15% future forecast metric
+* no top 15% current growth metric
+
+Important:
+Do not use High Speculation as a default catch-all.
+
+If a ticker simply lacks enough data but does not clearly show weak fundamentals, omit it instead of putting it in High Speculation.
+
+High Speculation rows should display an `AVOID` badge.
+
+Bad tags:
+
+* AVOID
+* Rev Decline
+* Negative FCF
+* Neg Op Income
+* Weak Gross Mgn
+* High Debt
+* Weak Forecasts
+* No Proof
+* Missing Fundamentals
+
+Extreme metric highlighting:
+Every displayed ticker should show 1–3 compact tags explaining why it is in that group.
+
+Tags should be based on actual extreme metrics.
+
+Positive extremes:
+
+* Top 15% Rev Growth
+* Top 15% EPS Growth
+* Top 15% Gross Mgn
+* Top 15% FCF Mgn
+* Top 15% Forecasts
+* $100B+ Anchor
+* Strong FCF
+* Strong EBIT
+* Insider Heavy
+
+Negative extremes:
+
+* AVOID
+* Negative FCF
+* Negative Op Income
+* High Debt
+* Revenue Decline
+* EPS Decline
+* Margin Pressure
+* Weak Forecasts
+* Missing Fundamentals
+
+UI:
+Keep the same four side-by-side card layout.
+
+Each card should show:
+
+* title
+* subtitle
+* count of qualifying tickers only
+
+Each ticker row should show:
+
+* symbol
+* price
+* % change
+* market cap
+* 1–3 reason/extreme metric tags
+
+Rows should be clickable and open the existing StockDetailModal.
+
+Sorting:
+Market Leaders:
+
+* strongest market leader score first
+* then market cap descending
+
+High Growth:
+
+* current growth score first
+* then quality score
+
+Speculative Future Growth Leaders:
+
+* forecast score first
+* then current revenue growth score
+* then risk-adjusted quality score
+
+High Speculation:
+
+* worst fundamental score first
+* strongest avoid signal first
+
+Expected result:
+Column counts should be much lower than before.
+It is okay if many watchlist tickers do not show in any Fundamental Grouping column.
+
+Validation:
+
+1. Fundamental Grouping no longer forces every ticker into a bucket.
+2. Many tickers can be omitted entirely.
+3. Market Leaders only includes $100B+ proven anchors with no red flags.
+4. Market Leaders has no red tags.
+5. High Growth only includes top current-growth names, generally top 15% on current growth/quality metrics.
+6. Speculative Future Growth Leaders only includes high forecast / future-growth names or huge revenue ramps with investment burden.
+7. High Speculation only includes clear avoid / weak-fundamental names.
+8. High Speculation column shows `AVOID` labels/tags.
+9. Tickers with mediocre but not terrible fundamentals are omitted, not forced into High Speculation.
+10. All scoring uses active watchlist percentiles.
+11. No new API/provider calls fire.
+12. No LLM calls are added.
+13. Rows still open StockDetailModal.
+14. No console errors.
