@@ -691,23 +691,52 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
 }
 
 // ─── Stage Analysis helpers ───────────────────────────────────────────────────
+
+// Canonical lifecycle rank — used for sorting (unknowns get 999 → always last)
+const STAGE_RANK: Record<string, number> = {
+  "S1 Base":       1,
+  "S1-2 Watch":    2,
+  "S2 Breakout":   3,
+  "S2-S3 Advance": 4,
+  "S3 Momentum":   5,
+  "S3-S4 Top":     6,
+  "S4 Decline":    7,
+};
+
+// Normalize legacy / stale-cache labels into canonical ones.
+// If the backend already sends a canonical label it passes through unchanged.
+function normalizeStageLabel(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.trim();
+  if (STAGE_RANK[s] !== undefined) return s; // already canonical
+  // Legacy → canonical map (compatibility fallback only)
+  if (/S3.*S4.*[Dd]anger|S3→S4|[Ss]tage.*3.*4.*[Dd]anger|[Ss]tage\s*3\s*→\s*4/i.test(s)) return "S3-S4 Top";
+  if (/[Ss]tage\s*4|S4.*[Dd]ecline/i.test(s))                                               return "S4 Decline";
+  if (/[Ss]tage\s*3.*[Tt]op|[Ss]tage\s*3.*[Rr]ange/i.test(s))                              return "S3-S4 Top";
+  if (/[Ss]tage\s*3/i.test(s))                                                               return "S3 Momentum";
+  if (/[Ss]tage\s*1.*2|S1.*2.*[Ww]atch|S1-2/i.test(s))                                     return "S1-2 Watch";
+  if (/S2.*[Bb]reakout|[Bb]reakout(?!.*[Ww]atch)/i.test(s))                                 return "S2 Breakout";
+  if (/S2.*S3|[Ss]tage\s*2.*[Aa]dv|[Ss]2.*[Aa]dv/i.test(s))                               return "S2-S3 Advance";
+  if (/[Ss]tage\s*2/i.test(s))                                                               return "S2-S3 Advance";
+  if (/[Ss]tage\s*1|S1.*[Bb]ase/i.test(s))                                                  return "S1 Base";
+  return null;
+}
+
 interface StageStyle { label: string; bg: string; clr: string; border: string }
-function stageStyle(stageLabel: string | null): StageStyle {
-  if (!stageLabel) return { label: "Stage n/a", bg: "rgba(55,65,81,0.25)", clr: "#475569", border: "rgba(55,65,81,0.35)" };
-  const s = stageLabel.toLowerCase();
-  if ((s.includes("1") && s.includes("2")) || s.includes("breakout") || s.includes("watch"))
-    return { label: "S1→S2 Watch", bg: "rgba(14,165,233,0.15)",  clr: "#0ea5e9", border: "rgba(14,165,233,0.3)"  };
-  if ((s.includes("3") && s.includes("4")) || (s.includes("3") && s.includes("danger")))
-    return { label: "S3→S4 Danger", bg: "rgba(249,115,22,0.15)", clr: "#f97316", border: "rgba(249,115,22,0.3)"  };
-  if (s.includes("stage 1") || (s.includes("1") && s.includes("base")))
-    return { label: "S1 Base",     bg: "rgba(100,116,139,0.15)", clr: "#94a3b8", border: "rgba(100,116,139,0.3)" };
-  if (s.includes("stage 2") || s.includes("advance"))
-    return { label: "S2 Advance",  bg: "rgba(34,197,94,0.15)",   clr: "#22c55e", border: "rgba(34,197,94,0.3)"   };
-  if (s.includes("stage 4") || s.includes("decline"))
-    return { label: "S4 Decline",  bg: "rgba(239,68,68,0.15)",   clr: "#ef4444", border: "rgba(239,68,68,0.3)"   };
-  if (s.includes("stage 3") || s.includes("top") || s.includes("range"))
-    return { label: "S3 Top/Range",bg: "rgba(245,158,11,0.15)",  clr: "#f59e0b", border: "rgba(245,158,11,0.3)"  };
-  return { label: "Stage n/a",     bg: "rgba(55,65,81,0.25)",    clr: "#475569", border: "rgba(55,65,81,0.35)"   };
+
+// Colors match Watchlist canonical stage badge colors exactly
+function stageStyle(rawLabel: string | null | undefined): StageStyle {
+  const label = normalizeStageLabel(rawLabel);
+  switch (label) {
+    case "S1 Base":       return { label: "S1 Base",       bg: "rgba(100,116,139,0.15)", clr: "#94a3b8", border: "rgba(100,116,139,0.30)" };
+    case "S1-2 Watch":    return { label: "S1-2 Watch",    bg: "rgba(96,165,250,0.10)",  clr: "#60a5fa", border: "rgba(96,165,250,0.30)"  };
+    case "S2 Breakout":   return { label: "S2 Breakout",   bg: "rgba(20,184,166,0.15)",  clr: "#14b8a6", border: "rgba(20,184,166,0.45)"  };
+    case "S2-S3 Advance": return { label: "S2-S3 Advance", bg: "rgba(34,197,94,0.10)",   clr: "#22c55e", border: "rgba(34,197,94,0.35)"   };
+    case "S3 Momentum":   return { label: "S3 Momentum",   bg: "rgba(129,140,248,0.10)", clr: "#818cf8", border: "rgba(129,140,248,0.35)" };
+    case "S3-S4 Top":     return { label: "S3-S4 Top",     bg: "rgba(251,146,60,0.10)",  clr: "#fb923c", border: "rgba(251,146,60,0.30)"  };
+    case "S4 Decline":    return { label: "S4 Decline",    bg: "rgba(239,68,68,0.15)",   clr: "#ef4444", border: "rgba(239,68,68,0.35)"   };
+    default:              return { label: "n/a",            bg: "rgba(55,65,81,0.25)",    clr: "#475569", border: "rgba(55,65,81,0.35)"   };
+  }
 }
 
 function StageBadge({ row }: { row: DisplayRow }) {
@@ -1373,6 +1402,15 @@ function UnifiedThemesCard({
   const rows = useMemo(() => allThemes.map((t, i) => normalizeThemeToRow(t, i)), [allThemes]);
 
   const sorted = useMemo(() => [...rows].sort((a, b) => {
+    // Stage column: sort by canonical lifecycle rank, unknowns always last
+    if (sortKey === "stage_score") {
+      const rankA = STAGE_RANK[normalizeStageLabel(a.stage_label) ?? ""] ?? 999;
+      const rankB = STAGE_RANK[normalizeStageLabel(b.stage_label) ?? ""] ?? 999;
+      if (rankA === 999 && rankB === 999) return 0;
+      if (rankA === 999) return 1;
+      if (rankB === 999) return -1;
+      return sortDir === "asc" ? rankA - rankB : rankB - rankA;
+    }
     const av = a[sortKey as keyof DisplayRow] as number | string | null;
     const bv = b[sortKey as keyof DisplayRow] as number | string | null;
     if (av == null && bv == null) return 0;

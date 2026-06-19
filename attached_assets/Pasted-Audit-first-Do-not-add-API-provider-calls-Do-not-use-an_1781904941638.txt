@@ -1,0 +1,189 @@
+Audit first. Do not add API/provider calls. Do not use an LLM. Do not create a new stage classifier.
+
+Problem:
+On the Themes page, in the Market Performance section, the Stage column is still using outdated stage labels/naming such as:
+
+* S3→S4 Danger
+
+This is inconsistent with the Watchlist page, which now uses the canonical stage system.
+
+Goal:
+Make the Themes page Market Performance section use the exact same stage logic, labels, colors, and sorting order as the individual stock stages on the Watchlist page.
+
+Canonical Watchlist stage labels:
+Use exactly these labels:
+
+1. S1 Base
+2. S1-2 Watch
+3. S2 Breakout
+4. S2-S3 Advance
+5. S3 Momentum
+6. S3-S4 Top
+7. S4 Decline
+
+Do not use old labels:
+
+* Stage 1 Base
+* Stage 1 → 2 Breakout Watch
+* Stage 2 Advance
+* Stage 3 Top/Range
+* S3→S4 Danger
+* Stage 3 → 4 Danger
+* Stage 4 Decline
+
+Scope:
+Fix the Themes page Market Performance section stage column.
+
+Do not change:
+
+* Watchlist page stage behavior
+* Watchlist stage logic
+* provider calls
+* LLM calls
+* theme generation
+* market performance scoring
+* unrelated Themes page sections
+
+Important:
+Do not solve this by only doing a display rename if the underlying stage logic is different.
+
+First audit where the Themes page Market Performance stage value comes from:
+
+* backend payload?
+* frontend local classifier?
+* old frontend label map?
+* cached theme performance data?
+* old stage helper copied into the Themes page?
+
+If the Themes page is not using the same shared stage logic as Watchlist, fix that.
+
+Backend rule:
+If backend is responsible for the stage field, Themes must use the same shared backend stage service/helper used by Watchlist.
+
+Use the existing canonical stage analysis source.
+
+Do not duplicate stage logic.
+
+If Watchlist uses:
+
+* stage_analysis.label
+* stage2_breakout.label as fallback
+
+Then Themes page rows should receive/use the same shape where possible:
+
+* row.stage_analysis?.label
+* row.stage2_breakout?.label
+
+Frontend rule:
+If the backend already sends canonical stage labels, frontend should display them directly.
+
+Do not remap canonical labels into old names.
+
+If the frontend has old label maps, replace them with the canonical map only.
+
+Display:
+The Themes page Market Performance Stage badges should match Watchlist naming exactly:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+Colors should match the Watchlist badge colors as closely as possible.
+
+Suggested color intent:
+
+* S1 Base: neutral / slate
+* S1-2 Watch: blue / cyan
+* S2 Breakout: green
+* S2-S3 Advance: green / teal
+* S3 Momentum: amber / gold
+* S3-S4 Top: orange
+* S4 Decline: red
+
+Sorting:
+Fix Stage column sorting in the Themes page Market Performance table.
+
+When the user clicks Stage ascending, rows should sort in lifecycle order:
+
+1. S1 Base
+2. S1-2 Watch
+3. S2 Breakout
+4. S2-S3 Advance
+5. S3 Momentum
+6. S3-S4 Top
+7. S4 Decline
+8. missing/null/unknown last
+
+When the user clicks Stage descending, rows should sort:
+
+1. S4 Decline
+2. S3-S4 Top
+3. S3 Momentum
+4. S2-S3 Advance
+5. S2 Breakout
+6. S1-2 Watch
+7. S1 Base
+8. missing/null/unknown last
+
+Important:
+Missing/null/unknown stages should always sort last, both ascending and descending.
+
+Do not alphabetically sort stages.
+Do not sort by old score.
+Do not sort by badge color.
+Use a deterministic rank map.
+
+Suggested frontend rank map:
+
+const STAGE_RANK = {
+"S1 Base": 1,
+"S1-2 Watch": 2,
+"S2 Breakout": 3,
+"S2-S3 Advance": 4,
+"S3 Momentum": 5,
+"S3-S4 Top": 6,
+"S4 Decline": 7,
+}
+
+For descending, reverse the rank comparison but keep unknown/null last.
+
+Legacy normalization:
+If old labels still appear from stale cache or old payloads, normalize them at the boundary as a compatibility fallback only.
+
+Legacy fallback examples:
+
+* "Stage 1 Base" → "S1 Base"
+* "Stage 1 → 2 Breakout Watch" → "S1-2 Watch"
+* "Stage 2 Advance" → "S2-S3 Advance" only if the underlying classifier truly meant advance, not breakout
+* "Stage 3 Top/Range" → "S3-S4 Top" only if it represents topping/range behavior
+* "S3→S4 Danger" → "S3-S4 Top"
+* "Stage 3 → 4 Danger" → "S3-S4 Top"
+* "Stage 4 Decline" → "S4 Decline"
+
+But do not rely on legacy normalization as the main fix. The main fix is to make Themes use the same canonical stage source as Watchlist.
+
+Validation:
+
+1. Themes page Market Performance Stage column no longer shows `S3→S4 Danger`.
+2. Themes page uses the same canonical labels as Watchlist:
+
+   * S1 Base
+   * S1-2 Watch
+   * S2 Breakout
+   * S2-S3 Advance
+   * S3 Momentum
+   * S3-S4 Top
+   * S4 Decline
+3. Themes page stage badge colors match Watchlist as closely as possible.
+4. Clicking the Stage column ascending sorts S1 → S4 lifecycle order.
+5. Clicking the Stage column descending sorts S4 → S1 lifecycle order.
+6. Missing/null stages always sort last.
+7. No alphabetic sorting.
+8. No new API/provider calls are added.
+9. No LLM calls are added.
+10. Watchlist stage behavior remains unchanged.
+11. No console errors.
