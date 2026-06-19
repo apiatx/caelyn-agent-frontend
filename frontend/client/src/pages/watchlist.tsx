@@ -3218,21 +3218,28 @@ export default function WatchlistPage() {
                               No tickers
                             </td>
                           </tr>
-                        ) : sortedFundRows.map((row, ri) => (
+                        ) : sortedFundRows.map((row, ri) => {
+                          const rowBg    = ri % 2 === 0 ? '#08080c' : '#0d1420';
+                          const rowHover = 'rgba(14,165,233,0.07)';
+                          const setAllTdBg = (el: HTMLTableRowElement, bg: string) => {
+                            (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
+                              .forEach(td => { td.style.background = bg; });
+                          };
+                          return (
                           <tr
                             key={`${row.ticker}-${ri}`}
                             onClick={() => row.ticker && handleTickerClick(row.ticker)}
-                            style={{ cursor: row.ticker ? 'pointer' : 'default', background: ri % 2 === 0 ? 'transparent' : `${C.border}06` }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
+                            style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                            onMouseEnter={e => setAllTdBg(e.currentTarget, rowHover)}
+                            onMouseLeave={e => setAllTdBg(e.currentTarget, rowBg)}
                           >
                             {FUND_COLS.map((col, ci) => {
                               const isFirst = ci === 0;
                               const stickyStyle: React.CSSProperties = isFirst ? {
                                 position: 'sticky' as const, left: 0, zIndex: 1,
-                                background: ri % 2 === 0 ? C.bg : '#0c1525',
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.4)',
-                              } : {};
+                                background: rowBg,
+                                boxShadow: '2px 0 4px rgba(0,0,0,0.5)',
+                              } : { background: rowBg };
 
                               // RelVol uses existing formatRelVol helper
                               if (col.fmt === 'relvol') {
@@ -3289,7 +3296,8 @@ export default function WatchlistPage() {
                               );
                             })}
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
