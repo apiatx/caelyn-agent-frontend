@@ -1062,7 +1062,7 @@ function getExtremeMetricTags(row: any, ctx: FgContext, bucket: FgBucket): Array
   return (bucket === 'Speculative Future Growth Leaders' ? [...neg, ...pos] : [...pos, ...neg]).slice(0, 3);
 }
 
-/* ── High Conviction Investment Zone helpers ── */
+/* ── High Conviction Investment Zone + Trade Zone helpers ── */
 const HCIZ_ALLOWED_STAGES = ['S1 Base', 'S1-2 Watch', 'S2 Breakout'];
 
 function getStageLabel(row: any): string {
@@ -1116,6 +1116,120 @@ function isHighConvictionInvestmentZone(
   return { qualifies: true, bucket, stageLabel };
 }
 
+/* ── High Conviction Trade Zone helpers ── */
+type TradeCtx = { volxSorted: number[]; volMcSorted: number[] };
+
+function buildTradeContext(rows: any[]): TradeCtx {
+  const volxSorted = rows
+    .map(r => { const v = Number(r.relative_volume ?? r.rel_vol ?? r.volx); return isFinite(v) && v > 0 ? v : null; })
+    .filter((v): v is number => v !== null).sort((a, b) => a - b);
+  const volMcSorted = rows
+    .map(r => { const v = Number(r.vol_mc_pct ?? r.vol_mc_ratio); return isFinite(v) && v > 0 ? v : null; })
+    .filter((v): v is number => v !== null).sort((a, b) => a - b);
+  return { volxSorted, volMcSorted };
+}
+
+function tradePctile(val: number, sorted: number[]): number {
+  if (sorted.length === 0) return 0;
+  let lo = 0, hi = sorted.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < val) lo = mid + 1; else hi = mid; }
+  return lo / sorted.length;
+}
+
+function getOptionsScore(row: any): number | null {
+  const v = Number(row.options_score ?? row.opt_score ?? row.flow_score);
+  return isFinite(v) ? v : null;
+}
+
+function getOptionsSignalStr(row: any): string {
+  return String(row.options_signal ?? row.option_signal ?? row.opt_signal ?? '').toLowerCase();
+}
+
+function getVolXVal(row: any): number | null {
+  const v = Number(row.relative_volume ?? row.rel_vol ?? row.volx);
+  return isFinite(v) && v > 0 ? v : null;
+}
+
+function getVolMcPct(row: any, ctx: TradeCtx): number {
+  // vol_mc_pct from backend is already a 0-100 percentile rank
+  const pre = Number(row.vol_mc_pct);
+  if (isFinite(pre) && pre > 0) return Math.min(pre, 100);
+  // fallback: compute from raw ratio vs peers
+  const ratio = Number(row.vol_mc_ratio);
+  if (isFinite(ratio) && ratio > 0) return tradePctile(ratio, ctx.volMcSorted) * 100;
+  // fallback: compute from volume / market_cap
+  const vol = Number(row.volume); const mc = Number(row.market_cap ?? row.marketCap);
+  if (isFinite(vol) && isFinite(mc) && mc > 0) {
+    const r = vol / mc; return tradePctile(r, ctx.volMcSorted) * 100;
+  }
+  return 0;
+}
+
+function scoreTradeConfluence(row: any, ctx: TradeCtx): {
+  score: number; optStrength: number; volxStrength: number; volMcStrength: number;
+  optScore: number | null; volxVal: number | null; stageLabel: string; qualifies: boolean;
+} {
+  const stageLabel = getStageLabel(row);
+  if (!isHcizStage(stageLabel)) {
+    return { score: 0, optStrength: 0, volxStrength: 0, volMcStrength: 0, optScore: null, volxVal: null, stageLabel, qualifies: false };
+  }
+  // Options
+  const optScore = getOptionsScore(row);
+  const optSigStr = getOptionsSignalStr(row);
+  let optStrength = 0;
+  if (optScore !== null) optStrength = Math.min(optScore, 100);
+  else if (optSigStr.includes('bullish') || optSigStr.includes('unusual') || optSigStr.includes('high')) optStrength = 65;
+  else if (optSigStr.includes('positive') || optSigStr.includes('active')) optStrength = 50;
+
+  // VolX
+  const volxVal = getVolXVal(row);
+  let volxStrength = 0;
+  if (volxVal !== null) {
+    volxStrength = tradePctile(volxVal, ctx.volxSorted) * 100;
+    if (volxVal >= 5) volxStrength = Math.max(volxStrength, 90);
+    else if (volxVal >= 2) volxStrength = Math.max(volxStrength, 70);
+  }
+
+  // Vol/MC
+  const volMcStrength = getVolMcPct(row, ctx);
+
+  const optIsStrong = optStrength >= 50;
+  const volxIsStrong = volxStrength >= 70 || (volxVal !== null && volxVal >= 2.0);
+  const volMcIsStrong = volMcStrength >= 70;
+  const strongCount = (optIsStrong ? 1 : 0) + (volxIsStrong ? 1 : 0) + (volMcIsStrong ? 1 : 0);
+  const stageScore = stageLabel.startsWith('S2 Breakout') ? 10 : stageLabel.startsWith('S1-2 Watch') ? 7 : 4;
+  const score = optStrength * 0.40 + volxStrength * 0.25 + volMcStrength * 0.25 + stageScore;
+  const qualifies = strongCount >= 2 && score >= 60;
+  return { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, qualifies };
+}
+
+function getTradeSignalTags(row: any, ctx: TradeCtx,
+  optScore: number | null, volxVal: number | null, volxStrength: number, volMcStrength: number
+): Array<{ label: string; pos: boolean }> {
+  const tags: Array<{ label: string; pos: boolean }> = [];
+  if (optScore !== null) {
+    if (optScore >= 85) tags.push({ label: 'Elite Options', pos: true });
+    else if (optScore >= 70) tags.push({ label: 'Options > 70', pos: true });
+    else if (optScore >= 50) tags.push({ label: 'Options > 50', pos: true });
+  } else {
+    const sig = getOptionsSignalStr(row);
+    if (sig.includes('unusual')) tags.push({ label: 'Unusual Activity', pos: true });
+    else if (sig.includes('bullish') || sig.includes('high')) tags.push({ label: 'Bullish Flow', pos: true });
+    const iv = Number(row.options_iv);
+    if (isFinite(iv) && iv > 80) tags.push({ label: 'High IV', pos: false });
+  }
+  if (volxVal !== null) {
+    if (volxStrength >= 95 || volxVal >= 5) tags.push({ label: 'Elite VolX', pos: true });
+    else if (volxStrength >= 70 || volxVal >= 2) tags.push({ label: 'High VolX', pos: true });
+  }
+  if (volMcStrength >= 95) tags.push({ label: 'Elite Vol/MC', pos: true });
+  else if (volMcStrength >= 70) tags.push({ label: 'High Vol/MC', pos: true });
+  if (optScore !== null && optScore >= 50 && volxVal !== null && volxVal >= 2) {
+    tags.push({ label: 'Flow + Volume', pos: true });
+  }
+  return tags.slice(0, 4);
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1140,7 +1254,7 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz'>('themes');
+  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('themes');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
@@ -3345,9 +3459,9 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz'] as const).map(v => {
+              {(['themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz', 'hctz'] as const).map(v => {
                 const isActive = bottomView === v;
-                const isHciz = v === 'hciz';
+                const ac = v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
                 <button
                   key={v}
@@ -3356,13 +3470,13 @@ export default function WatchlistPage() {
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                     padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
                     textTransform: 'uppercase' as const, fontFamily: C.font,
-                    background: isActive ? (isHciz ? '#a855f718' : `${C.teal}22`) : 'transparent',
-                    color: isActive ? (isHciz ? '#a855f7' : C.teal) : C.dim,
-                    border: `1px solid ${isActive ? (isHciz ? '#a855f760' : `${C.teal}60`) : C.border}`,
+                    background: isActive ? `${ac}18` : 'transparent',
+                    color: isActive ? ac : C.dim,
+                    border: `1px solid ${isActive ? `${ac}60` : C.border}`,
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : 'High Conviction Zone'}
+                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
                 </button>
                 );
               })}
@@ -3505,9 +3619,158 @@ export default function WatchlistPage() {
                 } /* end marketcap */
 
                 /* ── FUNDAMENTALS ── */
-                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz') return null;
+                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz') return null;
 
                 const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
+
+                /* ── HIGH CONVICTION TRADE ZONE ── early return; no CSV merge needed */
+                if (bottomView === 'hctz') {
+                  const tCtx = buildTradeContext(srcTickers);
+                  type TzRow = typeof srcTickers[0] & {
+                    _score: number; _optScore: number | null; _volxVal: number | null;
+                    _stageLabel: string; _volxStr: number; _volMcStr: number;
+                    _tags: Array<{ label: string; pos: boolean }>;
+                  };
+                  const tzRows: TzRow[] = [];
+                  for (const r of srcTickers) {
+                    const { score, optStrength, volxStrength, volMcStrength, optScore, volxVal, stageLabel, qualifies } =
+                      scoreTradeConfluence(r, tCtx);
+                    if (!qualifies) continue;
+                    tzRows.push({
+                      ...r,
+                      _score: score,
+                      _optScore: optScore,
+                      _volxVal: volxVal,
+                      _stageLabel: stageLabel,
+                      _volxStr: volxStrength,
+                      _volMcStr: volMcStrength,
+                      _tags: getTradeSignalTags(r, tCtx, optScore, volxVal, volxStrength, volMcStrength),
+                    });
+                  }
+                  tzRows.sort((a, b) => b._score - a._score);
+
+                  const tzStageColor = (lbl: string) => {
+                    if (lbl.startsWith('S2 Breakout')) return { c: C.teal, bg: `${C.teal}18`, bd: `${C.teal}50` };
+                    if (lbl.startsWith('S1-2 Watch')) return { c: C.amber, bg: `${C.amber}15`, bd: `${C.amber}45` };
+                    return { c: '#60a5fa', bg: 'rgba(96,165,250,0.10)', bd: 'rgba(96,165,250,0.30)' };
+                  };
+
+                  const TZ_TH: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                    textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                    background: C.card, borderBottom: `1px solid ${C.border}`,
+                    fontFamily: C.font, color: C.dim,
+                  };
+                  const TZ_TD: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    verticalAlign: 'middle' as const,
+                  };
+
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0 10px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#22c55e', letterSpacing: '0.04em' }}>High Conviction Trade Zone</span>
+                        <span style={{ fontSize: 8, color: C.dim }}>— signal confluence · early stage · {tzRows.length} qualifying</span>
+                      </div>
+                      {tzRows.length === 0 ? (
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                          No High Conviction Trade Zone setups right now.<br />
+                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires options signal + VolX + Vol/MC confluence with an early stage. Rules are not loosened.</span>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
+                          <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+                            <thead>
+                              <tr>
+                                {['Symbol','Stage','Score','Options','VolX','Vol/MC','Price','% Chg','Signal Tags'].map((h, hi) => (
+                                  <th key={h} style={{ ...TZ_TH, textAlign: 'left' as const,
+                                    ...(hi === 0 ? { position: 'sticky' as const, left: 0, zIndex: 2, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' } : {})
+                                  }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tzRows.map((row, ri) => {
+                                const rowBg = ri % 2 === 0 ? '#08080c' : '#0a120e';
+                                const rowHover = 'rgba(34,197,94,0.07)';
+                                const setTdBg = (el: HTMLTableRowElement, bg: string) =>
+                                  (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[]).forEach(td => { td.style.background = bg; });
+                                const chg = (row as any).change_pct ?? (row as any).change_pct_1d;
+                                const cClr = changeColor(chg);
+                                const sc = tzStageColor(row._stageLabel);
+                                const optDisplay = row._optScore !== null
+                                  ? String(Math.round(row._optScore))
+                                  : (getOptionsSignalStr(row) || '—');
+                                const volxDisplay = row._volxVal !== null ? `${row._volxVal.toFixed(1)}x` : '—';
+                                const volMcDisplay = (() => {
+                                  const pre = Number((row as any).vol_mc_pct);
+                                  if (isFinite(pre) && pre > 0) return `${Math.round(pre)}p`;
+                                  return (row as any).vol_mc_label ?? '—';
+                                })();
+                                return (
+                                  <tr key={`${(row as any).ticker}-${ri}`}
+                                    onClick={() => (row as any).ticker && handleTickerClick((row as any).ticker)}
+                                    style={{ cursor: (row as any).ticker ? 'pointer' : 'default' }}
+                                    onMouseEnter={e => setTdBg(e.currentTarget, rowHover)}
+                                    onMouseLeave={e => setTdBg(e.currentTarget, rowBg)}
+                                  >
+                                    {/* Symbol */}
+                                    <td style={{ ...TZ_TD, background: rowBg, fontWeight: 800, color: '#fff',
+                                      position: 'sticky' as const, left: 0, zIndex: 1, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' }}>
+                                      {(row as any).ticker || DASH}
+                                    </td>
+                                    {/* Stage */}
+                                    <td style={{ ...TZ_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: sc.c, background: sc.bg,
+                                        border: `1px solid ${sc.bd}`, padding: '1px 6px', borderRadius: 3 }}>
+                                        {row._stageLabel}
+                                      </span>
+                                    </td>
+                                    {/* Score */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: '#22c55e', fontWeight: 800 }}>
+                                      {Math.round(row._score)}
+                                    </td>
+                                    {/* Options */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: row._optScore !== null ? (row._optScore >= 70 ? '#22c55e' : row._optScore >= 50 ? C.amber : C.dim) : C.dim }}>
+                                      {optDisplay}
+                                    </td>
+                                    {/* VolX */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: row._volxVal !== null && row._volxVal >= 2 ? '#22c55e' : C.dim }}>
+                                      {volxDisplay}
+                                    </td>
+                                    {/* Vol/MC */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: row._volMcStr >= 85 ? '#22c55e' : row._volMcStr >= 70 ? C.amber : C.dim }}>
+                                      {volMcDisplay}
+                                    </td>
+                                    {/* Price */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: C.text }}>{formatPrice((row as any).price)}</td>
+                                    {/* % Chg */}
+                                    <td style={{ ...TZ_TD, background: rowBg, color: cClr, fontWeight: 700 }}>{formatChgPct(chg)}</td>
+                                    {/* Signal Tags */}
+                                    <td style={{ ...TZ_TD, background: rowBg, minWidth: 180 }}>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
+                                        {row._tags.map((tag, ti) => (
+                                          <span key={ti} style={{
+                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
+                                            color: tag.pos ? '#22c55e' : '#ef4444',
+                                            background: tag.pos ? '#22c55e18' : '#ef444418',
+                                            border: `1px solid ${tag.pos ? '#22c55e30' : '#ef444430'}`,
+                                          }}>{tag.label}</span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } /* end hctz */
 
                 // Build CSV lookup from already-loaded watchlist.csv_data — no new fetch
                 const csvMap: Record<string, any> = {};

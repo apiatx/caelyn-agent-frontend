@@ -1,0 +1,330 @@
+Audit first. Do not touch backend unless required fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Add a new bottom tab on the Watchlist page called:
+
+High Conviction Trade Zone
+
+This tab should show tickers with the best mix of trading indicators flashing, specifically:
+
+* strong options signal / options score
+* high VolX
+* high Vol / Market Cap
+* constructive early stage: S1 Base, S1-2 Watch, or S2 Breakout
+
+This is different from `High Conviction Investment Zone`.
+
+* Investment Zone = fundamentals + early stage
+* Trade Zone = flow/volume/liquidity signal confluence + early stage
+
+Scope:
+Only update the Watchlist bottom-section tabs.
+
+Do not change:
+
+* backend unless fields are truly missing
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* Themes tab
+* Market Cap tab
+* Fundamental Screener tab
+* Fundamental Grouping tab
+* High Conviction Investment Zone tab
+
+Tabs should include:
+
+* Themes
+* Market Cap
+* Fundamental Screener
+* Fundamental Grouping
+* High Conviction Investment Zone
+* High Conviction Trade Zone
+
+Data:
+Use only existing loaded Watchlist row fields already visible or available on the page.
+
+Relevant fields to audit:
+
+* stage_analysis.label
+* stage2_breakout.label
+* options_score
+* option_score
+* optionsScore
+* opt_score
+* flow_score
+* options_signal
+* opt_signal
+* option_signal
+* put_call_ratio
+* p_c
+* iv
+* implied_volatility
+* expected_move
+* em
+* option_volume
+* opt_vol
+* options_volume
+* open_interest
+* oi
+* volx
+* vol_x
+* relative_volume
+* rel_vol
+* volume_market_cap
+* vol_market_cap
+* vol_mc
+* volume_to_market_cap
+* price
+* change_percent
+* market_cap
+
+Do not fetch:
+
+* options chains
+* Tradier live options
+* FMP
+* analyst endpoints
+* any per-ticker endpoint
+* any provider data
+
+If a field is missing, render the row as ineligible or use available fields only. Do not invent a fetch.
+
+Eligibility:
+A ticker qualifies for `High Conviction Trade Zone` only if all of these are true:
+
+1. Constructive early stage:
+   Use:
+   row.stage_analysis?.label || row.stage2_breakout?.label
+
+Allowed stages:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+Do not include:
+
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+2. At least two of these three signal groups are strong:
+
+* Options signal
+* VolX
+* Vol / Market Cap
+
+3. It is not totally missing all trade-signal fields.
+
+Signal scoring:
+Calculate percentiles within the currently active saved watchlist only.
+
+Examples:
+
+* Primary percentiles use Primary tickers only
+* Close Watch/Favorites percentiles use only Close Watch/Favorites tickers
+* future saved tabs use only their own tickers
+
+Do not compare Close Watch against all Primary tickers.
+
+Options signal score:
+Use existing options score if available.
+
+Preferred:
+
+* options_score / opt_score / flow_score >= 50 qualifies as strong
+* > = 70 is very strong
+* > = 85 is elite
+
+If no numeric options score exists, use available options fields:
+
+* bullish / unusual / high activity option signal = positive
+* low activity / no signal = weak
+* high option volume percentile = positive
+* high OI percentile = positive
+* constructive put/call ratio if available
+* extreme IV alone should not qualify as bullish; tag it as risk
+
+VolX score:
+Use existing VolX / relative volume field.
+Strong:
+
+* VolX >= 2.0
+  or
+* top 15% VolX among active watchlist rows
+
+Elite:
+
+* VolX >= 5.0
+  or
+* top 5% VolX among active watchlist rows
+
+Vol / Market Cap score:
+Use existing Vol / Market Cap field if available.
+Strong:
+
+* top 15% among active watchlist rows
+
+Elite:
+
+* top 5% among active watchlist rows
+
+If Vol / Market Cap is not directly available but volume and market cap exist, compute:
+volMc = volume / market_cap
+
+Do not compute it if either volume or market cap is missing/invalid.
+
+Stage score:
+
+* S2 Breakout = strongest
+* S1-2 Watch = strong setup
+* S1 Base = early setup
+
+Conviction score:
+Create a deterministic `tradeConvictionScore` using:
+
+* options score / options signal strength
+* VolX percentile
+* Vol / Market Cap percentile
+* stage score
+* penalty for missing key fields
+
+Suggested weight:
+
+* Options signal: 40%
+* VolX: 25%
+* Vol / Market Cap: 25%
+* Stage: 10%
+
+Do not overfit. Keep it simple and explainable.
+
+Only show the best setups:
+This tab should not list every ticker.
+Only include tickers that pass eligibility and have real signal confluence.
+
+Suggested gate:
+
+* allowed stage
+* tradeConvictionScore >= 60
+* at least two strong signal groups
+
+If too many rows appear, tighten by requiring:
+
+* options score > 50
+  or
+* top 15% VolX and top 15% Vol / Market Cap
+
+Do not loosen rules automatically just to fill the tab.
+
+UI:
+Render a compact table or card list.
+
+Suggested columns:
+
+* Symbol
+* Stage
+* Trade Score
+* Options
+* VolX
+* Vol / MC
+* Price
+* % Change
+* Signal Tags
+
+Signal Tags:
+Show 1–4 compact tags explaining why the ticker qualifies.
+
+Positive tags:
+
+* Options > 50
+* Options > 70
+* Elite Options
+* High VolX
+* Elite VolX
+* High Vol/MC
+* S2 Breakout
+* S1-2 Watch
+* S1 Base
+* Flow + Volume
+* Unusual Activity
+
+Risk / caution tags:
+
+* High IV
+* Low OI
+* Wide Risk
+* Low Activity
+
+Do not include tickers with only risk tags and no positive signal tags.
+
+Sorting:
+Sort highest conviction first.
+
+Suggested sort priority:
+
+1. tradeConvictionScore descending
+2. options score descending
+3. VolX descending
+4. Vol / Market Cap descending
+5. stage priority:
+
+   * S2 Breakout
+   * S1-2 Watch
+   * S1 Base
+
+Empty state:
+If no tickers qualify, show:
+
+No High Conviction Trade Zone setups right now.
+
+Rows:
+Rows should be clickable and open the existing StockDetailModal.
+
+Active watchlist:
+The tab must respect the currently selected saved watchlist:
+
+* Primary shows only Primary tickers
+* Close Watch/Favorites shows only those tickers
+* future saved watchlist tabs show only their own tickers
+
+Implementation guidance:
+Reuse existing helper patterns where possible.
+
+Suggested helpers:
+
+* getStageLabel(row)
+* isAllowedTradeStage(row)
+* getOptionsScore(row)
+* getOptionsSignal(row)
+* getVolX(row)
+* getVolMarketCap(row)
+* getActiveWatchlistPercentiles(rows)
+* scoreTradeConfluence(row, percentiles)
+* getTradeSignalTags(row, percentiles)
+* getHighConvictionTradeZoneRows(rows)
+
+Do not duplicate broad data parsing if helpers already exist for Fundamental Grouping / Investment Zone.
+
+Validation:
+
+1. New bottom tab appears: `High Conviction Trade Zone`.
+2. Tab uses only already-loaded Watchlist data.
+3. No new API/provider calls fire when switching to the tab.
+4. No LLM calls are added.
+5. Only stages S1 Base, S1-2 Watch, and S2 Breakout qualify.
+6. S2-S3 Advance, S3 Momentum, S3-S4 Top, and S4 Decline do not qualify.
+7. Rows require signal confluence from options score/signal, VolX, and Vol / Market Cap.
+8. A ticker with only high IV but weak options/volume does not qualify.
+9. Percentiles are calculated from the active watchlist only.
+10. Rows show clear signal tags explaining why they qualify.
+11. Rows are sorted by strongest trade confluence first.
+12. Rows open StockDetailModal.
+13. Empty state appears if no rows qualify.
+14. Existing High Conviction Investment Zone still works unchanged.
+15. No console errors.
