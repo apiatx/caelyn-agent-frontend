@@ -1421,6 +1421,8 @@ export default function WatchlistPage() {
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
+  const [defiSort, setDefiSort] = useState<string>('ticker');
+  const [defiSortDir, setDefiSortDir] = useState<'asc' | 'desc'>('asc');
   const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental'>(() => {
     try { return (localStorage.getItem('wl_screener_mode') as 'technical' | 'fundamental') || 'technical'; }
     catch { return 'technical'; }
@@ -1434,7 +1436,7 @@ export default function WatchlistPage() {
     return next;
   });
   /* ── Close Watch / favorites ─────────────────────────────────────── */
-  const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
+  const [innerView, setInnerView] = useState<'tickers' | 'close-watch' | 'defiance-2x'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
 
   useEffect(() => { ensureBlinkStyle(); }, []);
@@ -1629,6 +1631,20 @@ export default function WatchlistPage() {
   });
   const optionsSignalsByTicker = (optionsResp?.signals ?? {}) as Record<string, any>;
   const optionsMeta = optionsResp?.options_meta as Record<string, any> | undefined;
+
+  const { data: defianceData, isLoading: defianceLoading, isError: defianceError } = useQuery({
+    queryKey: ['defiance-2x'],
+    queryFn: async () => {
+      const r = await fetch('/api/watchlist/defiance-2x');
+      if (!r.ok) throw new Error(`defiance-2x: ${r.status}`);
+      return r.json();
+    },
+    enabled: innerView === 'defiance-2x',
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+  const defianceRows: any[] = Array.isArray(defianceData) ? defianceData : (defianceData?.rows ?? defianceData?.tickers ?? []);
 
   useEffect(() => {
     if (favoritesData?.favorites) {
@@ -2195,6 +2211,28 @@ export default function WatchlistPage() {
         />
         <span>Close Watch</span>
         <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>({favoritesSet.size})</span>
+      </div>
+
+      {/* 2X Stock ETFs tab */}
+      <div
+        key="defiance-2x"
+        onClick={() => { setShowAddPanel(false); setInnerView(innerView === 'defiance-2x' ? 'tickers' : 'defiance-2x'); }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '5px 10px',
+          borderRadius: '4px 4px 0 0',
+          background: innerView === 'defiance-2x' ? C.card : 'transparent',
+          border: `1px solid ${innerView === 'defiance-2x' ? C.border : 'transparent'}`,
+          borderBottom: innerView === 'defiance-2x' ? `1px solid ${C.card}` : '1px solid transparent',
+          cursor: 'pointer', marginBottom: -1,
+          fontFamily: C.font, fontSize: 11,
+          color: innerView === 'defiance-2x' ? '#a78bfa' : '#475569',
+          transition: 'color 0.15s',
+          userSelect: 'none' as const,
+        }}
+        title="2X leveraged single-stock ETFs (Defiance)"
+      >
+        <span>2X Stock ETFs</span>
       </div>
 
       {/* + ADD TAB */}
@@ -3059,6 +3097,182 @@ export default function WatchlistPage() {
     );
   };
 
+  /* ── Defiance 2X leveraged ETF table ───────────────────────────────── */
+  const renderDefiance2xTable = () => {
+    const cardStyle: React.CSSProperties = {
+      background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+      overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%',
+    };
+    const dimCell: React.CSSProperties = { padding: '5px 10px', fontSize: 10, color: C.dim, fontFamily: C.font, whiteSpace: 'nowrap' };
+    const thStyle = (key: string, align: 'left' | 'right' = 'right'): React.CSSProperties => ({
+      padding: '6px 10px', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+      color: defiSort === key ? C.teal : C.dim, textAlign: align,
+      cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
+      borderBottom: `1px solid ${C.border}`, background: C.card,
+      position: 'sticky' as const, top: 0, zIndex: 2,
+    });
+    const fmtMc = (n: any) => {
+      const v = Number(n);
+      if (!Number.isFinite(v) || v <= 0) return DASH;
+      if (v >= 1e12) return `$${(v / 1e12).toFixed(1)}T`;
+      if (v >= 1e9)  return `$${(v / 1e9).toFixed(1)}B`;
+      if (v >= 1e6)  return `$${(v / 1e6).toFixed(0)}M`;
+      return `$${v.toFixed(0)}`;
+    };
+    const fmtRv = (row: any) => {
+      const pre = Number(row.relative_volume ?? row.rel_vol ?? row.volx);
+      return Number.isFinite(pre) && pre > 0 ? `${pre.toFixed(1)}×` : DASH;
+    };
+    const handleDefiSort = (key: string) => {
+      if (key === defiSort) setDefiSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      else { setDefiSort(key); setDefiSortDir(key === 'ticker' || key === 'etf' ? 'asc' : 'desc'); }
+    };
+    const sortArrow = (key: string) => defiSort === key ? (defiSortDir === 'asc' ? ' ▲' : ' ▼') : ' ↕';
+
+    if (defianceError) return (
+      <div style={cardStyle}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', letterSpacing: '0.08em' }}>2X STOCK ETFs</span>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: C.red, fontFamily: C.font }}>
+          Couldn't load Defiance 2X ETF map.
+        </div>
+      </div>
+    );
+    if (defianceLoading && defianceRows.length === 0) return (
+      <div style={cardStyle}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', letterSpacing: '0.08em' }}>2X STOCK ETFs</span>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+          Loading Defiance 2X ETF universe…
+        </div>
+      </div>
+    );
+
+    const sorted = [...defianceRows].sort((a, b) => {
+      const dir = defiSortDir === 'asc' ? 1 : -1;
+      if (defiSort === 'ticker') return dir * (a.ticker ?? '').localeCompare(b.ticker ?? '');
+      if (defiSort === 'etf')    return dir * ((a.defiance_etf?.symbol ?? '').localeCompare(b.defiance_etf?.symbol ?? ''));
+      if (defiSort === 'price')  { const av = Number(a.price), bv = Number(b.price); return dir * ((isFinite(av) ? av : -Infinity) - (isFinite(bv) ? bv : -Infinity)); }
+      if (defiSort === 'chg')    { const av = Number(a.change_pct ?? a.change_pct_1d), bv = Number(b.change_pct ?? b.change_pct_1d); return dir * ((isFinite(av) ? av : -Infinity) - (isFinite(bv) ? bv : -Infinity)); }
+      if (defiSort === 'mktcap') { const av = Number(a.market_cap), bv = Number(b.market_cap); return dir * ((isFinite(av) ? av : -Infinity) - (isFinite(bv) ? bv : -Infinity)); }
+      if (defiSort === 'volx')   { const av = Number(a.relative_volume ?? a.rel_vol ?? a.volx), bv = Number(b.relative_volume ?? b.rel_vol ?? b.volx); return dir * ((isFinite(av) ? av : -Infinity) - (isFinite(bv) ? bv : -Infinity)); }
+      return 0;
+    });
+
+    return (
+      <div style={cardStyle}>
+        {/* header */}
+        <div style={{ padding: '8px 14px', borderBottom: `1px solid ${C.border}`, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', letterSpacing: '0.08em' }}>2X STOCK ETFs</span>
+          <span style={{ fontSize: 9, color: '#a78bfa', background: '#a78bfa15', border: '1px solid #a78bfa35', borderRadius: 3, padding: '1px 6px', fontWeight: 700, letterSpacing: '0.04em' }}>DEFIANCE</span>
+          <span style={{ marginLeft: 'auto', fontSize: 9, color: C.dim, fontFamily: C.font, fontStyle: 'italic' }}>
+            Leveraged ETFs reset daily · intended for active trading
+          </span>
+          {defianceRows.length > 0 && (
+            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, flexShrink: 0 }}>({defianceRows.length})</span>
+          )}
+        </div>
+        {/* table */}
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto' }} className="wl-scrollbar">
+          {sorted.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+              No Defiance 2X long single-stock ETFs found.
+            </div>
+          ) : (
+            <table style={{ borderCollapse: 'collapse', minWidth: 'max-content', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th onClick={() => handleDefiSort('ticker')}  style={{ ...thStyle('ticker', 'left'),  position: 'sticky', left: 0, zIndex: 3 }}>UNDERLYING{sortArrow('ticker')}</th>
+                  <th onClick={() => handleDefiSort('etf')}     style={thStyle('etf', 'left')}>DEFIANCE ETF{sortArrow('etf')}</th>
+                  <th onClick={() => handleDefiSort('price')}   style={thStyle('price')}>PRICE{sortArrow('price')}</th>
+                  <th onClick={() => handleDefiSort('chg')}     style={thStyle('chg')}>1D %{sortArrow('chg')}</th>
+                  <th onClick={() => handleDefiSort('mktcap')}  style={thStyle('mktcap')}>MKT CAP{sortArrow('mktcap')}</th>
+                  <th onClick={() => handleDefiSort('volx')}    style={thStyle('volx')}>VOL×{sortArrow('volx')}</th>
+                  <th style={{ ...thStyle('stage', 'left'), cursor: 'default' }}>STAGE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((row, i) => {
+                  const etf = row.defiance_etf;
+                  const chg = Number(row.change_pct ?? row.change_pct_1d);
+                  const chgClr = changeColor(Number.isFinite(chg) ? chg : undefined);
+                  const sl: string | null = row.stage_analysis?.label ?? row.stage2_breakout?.label ?? null;
+                  let sClr = C.dim, sBg = 'transparent', sBdr = C.border;
+                  if (sl) {
+                    if (/^S2 Breakout/i.test(sl))   { sClr = C.teal;    sBg = `${C.teal}18`;                sBdr = `${C.teal}50`; }
+                    else if (/^S2-S3 Advance/i.test(sl)) { sClr = '#22c55e'; sBg = 'rgba(34,197,94,0.10)';   sBdr = 'rgba(34,197,94,0.35)'; }
+                    else if (/^S3 Momentum/i.test(sl))   { sClr = '#818cf8'; sBg = 'rgba(129,140,248,0.10)'; sBdr = 'rgba(129,140,248,0.35)'; }
+                    else if (/^S1-2 Watch/i.test(sl))    { sClr = C.amber;   sBg = `${C.amber}15`;           sBdr = `${C.amber}45`; }
+                    else if (/^S1 Base/i.test(sl))       { sClr = '#60a5fa'; sBg = 'rgba(96,165,250,0.10)';  sBdr = 'rgba(96,165,250,0.30)'; }
+                    else if (/^S3-S4 Top/i.test(sl))     { sClr = '#fb923c'; sBg = 'rgba(251,146,60,0.10)';  sBdr = 'rgba(251,146,60,0.30)'; }
+                    else if (/^S4 Decline/i.test(sl))    { sClr = C.red;     sBg = `${C.red}15`;             sBdr = `${C.red}40`; }
+                  }
+                  const rowBg = i % 2 === 0 ? 'transparent' : `${C.border}08`;
+                  return (
+                    <tr
+                      key={row.ticker ?? i}
+                      onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                      style={{ cursor: row.ticker ? 'pointer' : 'default', borderBottom: `1px solid ${C.border}`, background: rowBg }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
+                    >
+                      {/* Underlying ticker — sticky left */}
+                      <td style={{ ...dimCell, textAlign: 'left', position: 'sticky', left: 0, background: rowBg, zIndex: 1, fontWeight: 800, color: C.text, fontSize: 11 }}>
+                        {row.ticker ?? DASH}
+                      </td>
+                      {/* Defiance ETF badge */}
+                      <td style={{ ...dimCell, textAlign: 'left' }}>
+                        {etf ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                            color: '#a78bfa', background: '#a78bfa15',
+                            border: '1px solid #a78bfa35', borderRadius: 4,
+                            padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}
+                            title={etf.name ?? ''}
+                          >
+                            {etf.symbol} · {etf.leverage ?? 2}X Long
+                          </span>
+                        ) : <span style={{ color: C.dim }}>{DASH}</span>}
+                      </td>
+                      {/* Price */}
+                      <td style={{ ...dimCell, textAlign: 'right', color: C.text }}>
+                        {formatPrice(row.price)}
+                      </td>
+                      {/* 1D % */}
+                      <td style={{ ...dimCell, textAlign: 'right', color: chgClr, fontWeight: 700 }}>
+                        {Number.isFinite(chg) ? formatChgPct(chg) : DASH}
+                      </td>
+                      {/* Mkt Cap */}
+                      <td style={{ ...dimCell, textAlign: 'right' }}>
+                        {fmtMc(row.market_cap)}
+                      </td>
+                      {/* Vol× */}
+                      <td style={{ ...dimCell, textAlign: 'right' }}>
+                        {fmtRv(row)}
+                      </td>
+                      {/* Stage */}
+                      <td style={{ ...dimCell, textAlign: 'left' }}>
+                        {sl ? (
+                          <span style={{ fontSize: 9, fontWeight: 700, fontFamily: C.font, color: sClr, background: sBg, border: `1px solid ${sBdr}`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>
+                            {sl}
+                          </span>
+                        ) : <span style={{ color: C.dim }}>{DASH}</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
   const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers) => {
     const csvMap: Record<string, any> = {};
@@ -3587,9 +3801,11 @@ export default function WatchlistPage() {
             >
               {/* ── Ticker Table (wider) ── */}
               {/* Show new-format table whenever we have saved symbols — covers pending state (no sections yet) */}
-              {innerView === 'close-watch'
-                ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'CLOSE WATCH' })
-                : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
+              {innerView === 'defiance-2x'
+                ? renderDefiance2xTable()
+                : innerView === 'close-watch'
+                  ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'CLOSE WATCH' })
+                  : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
               }
 
               {/* ── Live News (narrower) ── */}

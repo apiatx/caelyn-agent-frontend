@@ -1,0 +1,77 @@
+Audit first. Backend has implemented GET /api/watchlist/defiance-2x for a new Watchlist tab.
+
+Goal:
+Add a new tab to the Watchlist page called “2X Stock ETFs” or “Leveraged Stocks”.
+
+This tab is a 2X leveraged stock screener. Rows represent the clean underlying stock ticker, while showing the matching Defiance ETF ticker so the user knows which underlying stocks have a Defiance 2X long ETF available.
+
+Critical behavior:
+- The primary row symbol is the UNDERLYING stock.
+- The chart must use the underlying stock ticker.
+- Price, 1D %, market cap, VolX, Vol/MC, theme, stage, and any existing Watchlist metrics must use the underlying stock ticker.
+- The Defiance ETF ticker is metadata only and should be displayed visibly in the row.
+- Do NOT use the Defiance ETF ticker for the main chart.
+- Do NOT fetch ETF quotes/charts separately.
+- Do NOT create a new page.
+- Do NOT redesign the Watchlist page.
+- Do NOT break existing tabs, Favorites, or table sorting.
+
+Backend endpoint:
+GET /api/watchlist/defiance-2x
+
+Expected row shape:
+Each row is underlying-centric and includes a nested object like:
+
+defiance_etf: {
+  symbol: "MSTX",
+  name: "Defiance Daily Target 2X Long MSTR ETF",
+  leverage: 2,
+  direction: "long",
+  source_url: "...",
+  last_seen_at: "..."
+}
+
+Frontend implementation:
+1. Find the existing Watchlist tab component/state.
+2. Add a new tab:
+   Label: “2X Stock ETFs”
+   Optional smaller helper text: “Clean underlying charts + Defiance 2X ETF ticker”
+3. Fetch GET /api/watchlist/defiance-2x when this tab is selected.
+4. Reuse the existing Watchlist table component if possible.
+5. Render columns similar to existing Watchlist rows:
+   - Underlying / Symbol
+   - Defiance ETF
+   - Price
+   - 1D %
+   - Market Cap
+   - VolX
+   - Vol/MC
+   - Theme / Category if available
+   - Stage if available
+6. The Defiance ETF should be visually obvious:
+   Example chip/badge:
+   “MSTX · 2X Long”
+7. Row click behavior:
+   - Clicking the row opens/loads the underlying ticker chart/details.
+   - Example: MSTR row with MSTX badge should open MSTR chart, not MSTX.
+8. Sorting:
+   - Existing table sorting should still work.
+   - Defiance ETF column should be sortable if easy, but do not overbuild.
+9. Loading state:
+   “Loading Defiance 2X ETF universe…”
+10. Empty state:
+   “No Defiance 2X long single-stock ETFs found.”
+11. Error state:
+   “Couldn’t load Defiance 2X ETF map.”
+12. Add a tiny risk note near the tab/table:
+   “Leveraged ETFs reset daily and are intended for active trading.”
+13. Validate:
+   - Existing Watchlist tabs still work.
+   - Favorites still work.
+   - New tab loads rows.
+   - Chart opens the underlying stock.
+   - Defiance ETF ticker is visible but not used as the main quote/chart symbol.
+   - No duplicate or broken rows.
+   - Mobile/table spacing does not break.
+
+Do this surgically. Preserve the existing Watchlist architecture and styling.
