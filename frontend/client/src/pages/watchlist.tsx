@@ -761,13 +761,6 @@ const FUND_COLS: FundColDef[] = [
   { key: 'net_debt_ebitda',  label: 'ND/EBITDA',     aliases: ['netDebtToEbitda', 'net_debt_to_ebitda', 'netDebtEbitda'],         fmt: 'ratio'   },
   { key: 'shares_insiders',  label: 'Insider %',     aliases: ['insiderOwnership', 'insider_ownership', 'insidersPercentHeld'],   fmt: 'pct'     },
   { key: 'earnings_date',    label: 'Earn. Date',    aliases: ['nextEarningsDate', 'next_earnings_date', 'earnings_next_date'],   fmt: 'date'    },
-  { key: 'week_52_low',      label: '52W Low',       aliases: ['52_week_low_price', '52_week_low', '52w_low', '52W_Low', 'low_52w', 'low_52_week', 'year_low', 'price_low_52w', 'fiftyTwoWeekLow', 'fiftytwoWeekLow', '52WeekLow'],   fmt: 'price'   },
-  { key: 'week_52_high',     label: '52W High',      aliases: ['52_week_high_price', '52_week_high', '52w_high', '52W_High', 'high_52w', 'high_52_week', 'year_high', 'price_high_52w', 'fiftyTwoWeekHigh', 'fiftytwoWeekHigh', '52WeekHigh'], fmt: 'price' },
-  { key: 'price_vs_ma20',    label: '% vs MA20',     aliases: ['price_change_20_day_ma', 'price_change_20day_ma', 'pct_vs_ma20', 'percent_vs_ma20', 'vs_ma20', 'ma20_change', 'change_vs_ma20', 'pct_from_ma20', 'change_from_ma20', 'pctVsMA20', 'ma20_pct_diff'], fmt: 'pct'   },
-  { key: 'price_vs_ma50',    label: '% vs MA50',     aliases: ['price_change_50_day_ma', 'price_change_50day_ma', 'pct_vs_ma50', 'percent_vs_ma50', 'vs_ma50', 'ma50_change', 'change_vs_ma50', 'pct_from_ma50', 'change_from_ma50', 'pctVsMA50', 'ma50_pct_diff'], fmt: 'pct'   },
-  { key: 'price_vs_ma200',   label: '% vs MA200',    aliases: ['price_change_200_day_ma', 'price_change_200day_ma', 'pct_vs_ma200', 'percent_vs_ma200', 'vs_ma200', 'ma200_change', 'change_vs_ma200', 'pct_from_ma200', 'change_from_ma200', 'pctVsMA200', 'ma200_pct_diff'], fmt: 'pct' },
-  { key: 'rsi',              label: 'RSI',           aliases: ['rsi_14', 'relative_strength_index_rsi', 'relative_strength_index', 'relStrengthIndex', 'RSI'],          fmt: 'ratio'   },
-  { key: 'atr',              label: 'ATR',           aliases: ['atr_14', 'average_true_range_atr', 'average_true_range', 'averageTrueRange', 'ATR'],               fmt: 'ratio'   },
 ];
 
 function fundGetField(row: any, key: string, aliases: string[] = []): any {
