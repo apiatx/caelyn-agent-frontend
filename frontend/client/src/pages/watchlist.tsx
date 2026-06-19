@@ -3493,7 +3493,7 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz', 'hctz'] as const).map(v => {
+              {(['hciz', 'hctz', 'themes', 'marketcap', 'fundamentals', 'fundGrouping'] as const).map(v => {
                 const isActive = bottomView === v;
                 const ac = v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
@@ -3510,7 +3510,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
+                  {v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
                 </button>
                 );
               })}
