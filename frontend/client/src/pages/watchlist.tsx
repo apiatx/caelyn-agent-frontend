@@ -1194,12 +1194,16 @@ export default function WatchlistPage() {
       if (!r.ok) throw new Error(data.error || `Error ${r.status}`);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setAddTickerInput('');
       setAddTickerStatus(data.added === 0 ? 'duplicate' : 'success');
       setTimeout(() => setAddTickerStatus(null), 2000);
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      // If adding from Close Watch tab, also star each newly added ticker so it appears there
+      if (innerView === 'close-watch' && data.added > 0) {
+        for (const t of variables) toggleFavorite(t);
+      }
       // Invalidate Calendar Earnings for watchlist scope so next visit refetches
       qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
       if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-add-tickers', invalidatedKeys: ['earnings+watchlist'] });
@@ -2490,14 +2494,16 @@ export default function WatchlistPage() {
 
             {/* Add tickers inline input */}
             {activeId && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <form
+                onSubmit={e => { e.preventDefault(); handleAddTickers(); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, margin: 0 }}
+              >
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <input
                     ref={addInputRef}
                     type="text"
                     value={addTickerInput}
                     onChange={e => { setAddTickerInput(e.target.value); setAddTickerStatus(null); }}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddTickers(); }}
                     placeholder="Add tickers"
                     disabled={addTickersMut.isPending}
                     style={{
@@ -2528,27 +2534,30 @@ export default function WatchlistPage() {
                     onFocus={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.teal; }}
                     onBlur={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.border; }}
                   />
-                  {/* Status icon or submit button inside the input */}
-                  <span style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    fontSize: 11, lineHeight: 1, pointerEvents: addTickersMut.isPending ? 'none' : 'auto',
-                    cursor: addTickerInput.trim() && !addTickersMut.isPending ? 'pointer' : 'default',
-                    color: addTickerStatus === 'success' ? C.green
-                      : addTickerStatus === 'error' ? C.red
-                      : addTickerStatus === 'duplicate' ? C.amber
-                      : addTickerInput.trim() ? C.teal : C.dim,
-                    transition: 'color 0.15s',
-                  }}
-                    onClick={handleAddTickers}
+                  {/* Submit button inside the input */}
+                  <button
+                    type="submit"
+                    disabled={!addTickerInput.trim() || addTickersMut.isPending}
+                    style={{
+                      position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 11, lineHeight: 1,
+                      background: 'none', border: 'none', padding: 0, margin: 0,
+                      cursor: addTickerInput.trim() && !addTickersMut.isPending ? 'pointer' : 'default',
+                      color: addTickerStatus === 'success' ? C.green
+                        : addTickerStatus === 'error' ? C.red
+                        : addTickerStatus === 'duplicate' ? C.amber
+                        : addTickerInput.trim() ? C.teal : C.dim,
+                      transition: 'color 0.15s',
+                    }}
                   >
                     {addTickersMut.isPending ? '…'
                       : addTickerStatus === 'success' ? '✓'
                       : addTickerStatus === 'duplicate' ? '='
                       : addTickerStatus === 'error' ? '✕'
                       : '+'}
-                  </span>
+                  </button>
                 </div>
-              </div>
+              </form>
             )}
 
             {/* Center: summary text */}

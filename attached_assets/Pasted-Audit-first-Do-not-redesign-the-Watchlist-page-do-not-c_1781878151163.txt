@@ -1,0 +1,100 @@
+Audit first. Do not redesign the Watchlist page, do not create a new watchlist system, and do not touch unrelated pages.
+
+Problem:
+On the Watchlist page, the “Add tickers” input bar exists, but when the user types a ticker and presses Enter, nothing happens. The ticker does not get added to the watchlist.
+
+Goal:
+Fix the Add ticker bar so users can add a ticker to the currently active saved watchlist by:
+
+1. typing a ticker
+2. pressing Enter
+
+Also make sure the existing + button beside the input uses the same add flow.
+
+Scope:
+This should affect only the Watchlist page Add ticker control.
+
+Audit requirements:
+
+1. Find the existing Add tickers input in watchlist.tsx.
+2. Find the current state variable for the input value.
+3. Find any existing handler for the + button.
+4. Find any existing API/mutation/function used to add tickers to a watchlist.
+5. Confirm whether Enter currently has no onKeyDown/onSubmit handler, or whether the handler is firing but failing silently.
+6. Confirm whether the app already has a backend endpoint/action for adding a ticker.
+7. Reuse the existing add-watchlist-ticker path if it exists. Do not invent a parallel storage system.
+
+Behavior requirements:
+
+1. When the user types a ticker and presses Enter, add that ticker to the currently active saved watchlist.
+2. When the user clicks the + button, do the exact same thing.
+3. The active watchlist matters:
+
+   * If the user is on Primary, add to Primary.
+   * If the user is on Close Watch/Favorites, add to Close Watch/Favorites.
+   * If there are other saved watchlist tabs, add to the currently active tab.
+4. After a successful add:
+
+   * clear the input
+   * update the visible Tickers table
+   * update any local watchlist state/query cache used by the page
+   * avoid requiring a full page reload
+5. If the backend mutation returns the updated watchlist, use it.
+6. If the backend mutation only returns success, invalidate/refetch the existing watchlist query using the existing query/cache pattern.
+
+Ticker normalization:
+
+* Trim whitespace.
+* Convert to uppercase.
+* Allow symbols with ":" because foreign tickers use that format, e.g. KRX:000660, ASX:XYZ, AIM:XYZ.
+* Do not reject tickers only because they contain ":".
+* Do not allow empty input.
+* Do not add duplicates to the same active watchlist.
+* If duplicate, show a small non-breaking message/toast or silently no-op, but do not crash.
+
+Do not:
+
+* add new provider calls just to add a ticker
+* call FMP/Tradier immediately unless the existing architecture already does that on add
+* rebuild the full watchlist system
+* mutate all saved watchlists
+* always add to Primary regardless of active tab
+* break the Hide Foreign toggle
+* break the Themes / Market Cap / Fundamentals bottom tabs
+
+Implementation guidance:
+Prefer wrapping the input and + button in a small form:
+
+* onSubmit={handleAddTicker}
+* preventDefault()
+* call the same add handler for Enter and + click
+
+The + button should be type="submit" if inside the form.
+
+The handler should roughly:
+
+1. const symbol = input.trim().toUpperCase()
+2. if (!symbol) return
+3. check current active watchlist rows for duplicate symbol
+4. call existing add ticker mutation/API for the active watchlist
+5. update local state or invalidate the existing watchlist query
+6. clear input
+7. surface error if the add fails
+
+Validation:
+
+1. Type NVDA and press Enter — it adds to the currently active watchlist.
+2. Type a ticker and click + — same behavior.
+3. Add on Primary — ticker appears in Primary only.
+4. Add on Close Watch/Favorites — ticker appears there only.
+5. Duplicate ticker does not create a duplicate row.
+6. Foreign-format ticker like KRX:000660 is accepted.
+7. Empty input does nothing.
+8. Input clears after successful add.
+9. No full page reload.
+10. Existing Hide Foreign toggle still works.
+11. Existing Themes / Market Cap / Fundamentals tabs still work.
+12. Existing ticker popup still opens for added ticker rows if enough data exists.
+13. Console has no errors.
+14. Network tab shows only the existing add-watchlist mutation/refetch path, not random provider calls.
+15. If no backend add endpoint exists, stop and report the exact missing endpoint/contract instead of inventing local-only persistence.
