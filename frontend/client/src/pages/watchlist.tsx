@@ -1402,9 +1402,10 @@ export default function WatchlistPage() {
       case 'optionsVolume': { const n = Number(stock.options_volume); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsOi': { const n = Number(stock.options_open_interest); return { v: n, missing: !Number.isFinite(n) }; }
       case 'stage2': {
+        const sa = (stock as any).stage_analysis;
         const s2 = stock.stage2_breakout;
-        const n = s2?.score != null ? Number(s2.score) : null;
-        return { v: n ?? -1, missing: n == null };
+        const raw = sa?.score != null ? Number(sa.score) : s2?.score != null ? Number(s2.score) : null;
+        return { v: raw ?? -1, missing: raw == null };
       }
     }
   }
@@ -2074,7 +2075,7 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
-      { key: 'stage2', label: 'Stage' },
+      { key: 'stage2', label: 'S' },
     ];
     return (
       <div style={{
@@ -2328,23 +2329,27 @@ export default function WatchlistPage() {
                         <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:dimOpacity }}>{oi != null ? formatVolume(oi) : (hasData ? DASH : loadStr)}</span>
                         {/* Stage column */}
                         {(() => {
+                          const sa = (stock as any).stage_analysis;
                           const s2 = stock.stage2_breakout;
-                          const rawLabel = s2?.label ?? null;
-                          const reason = s2?.reason ?? null;
-                          const norm = rawLabel ? rawLabel.replace(/^Stage\s+/i, 'S') : null;
-                          if (!norm) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
+                          const label: string | null = sa?.label ?? s2?.label ?? null;
+                          const reason: string | null = sa?.reason ?? s2?.reason ?? null;
+                          if (!label) return <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>;
                           let badgeColor: string;
                           let badgeBg: string;
                           let badgeBorder: string;
-                          if (/Advance/i.test(norm)) {
+                          if (/^S2 Breakout/i.test(label)) {
                             badgeColor = C.teal; badgeBg = `${C.teal}18`; badgeBorder = `${C.teal}50`;
-                          } else if (/Watch/i.test(norm)) {
+                          } else if (/^S2-S3 Advance/i.test(label)) {
+                            badgeColor = '#22c55e'; badgeBg = 'rgba(34,197,94,0.10)'; badgeBorder = 'rgba(34,197,94,0.35)';
+                          } else if (/^S3 Momentum/i.test(label)) {
+                            badgeColor = '#818cf8'; badgeBg = 'rgba(129,140,248,0.10)'; badgeBorder = 'rgba(129,140,248,0.35)';
+                          } else if (/^S1-2 Watch/i.test(label)) {
                             badgeColor = C.amber; badgeBg = `${C.amber}15`; badgeBorder = `${C.amber}45`;
-                          } else if (/Base/i.test(norm)) {
+                          } else if (/^S1 Base/i.test(label)) {
                             badgeColor = '#60a5fa'; badgeBg = 'rgba(96,165,250,0.10)'; badgeBorder = 'rgba(96,165,250,0.30)';
-                          } else if (/Danger/i.test(norm)) {
+                          } else if (/^S3-S4 Top/i.test(label)) {
                             badgeColor = '#fb923c'; badgeBg = 'rgba(251,146,60,0.10)'; badgeBorder = 'rgba(251,146,60,0.30)';
-                          } else if (/Decline/i.test(norm)) {
+                          } else if (/^S4 Decline/i.test(label)) {
                             badgeColor = C.red; badgeBg = `${C.red}15`; badgeBorder = `${C.red}40`;
                           } else {
                             badgeColor = C.dim; badgeBg = 'transparent'; badgeBorder = C.border;
@@ -2363,7 +2368,7 @@ export default function WatchlistPage() {
                                 cursor: reason ? 'help' : 'default',
                               }}
                             >
-                              {norm}
+                              {label}
                             </span>
                           );
                         })()}

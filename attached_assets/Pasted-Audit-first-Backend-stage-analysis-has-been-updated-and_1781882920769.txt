@@ -1,0 +1,123 @@
+Audit first. Backend stage analysis has been updated and now returns canonical labels.
+
+Goal:
+Update the Watchlist Tickers stage column to render the backend stage label directly.
+
+Backend fields:
+Each Watchlist ticker row may now include both:
+
+stage_analysis: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+stage2_breakout: {
+score: number | null,
+label: string | null,
+reason: string | null
+}
+
+Use `stage_analysis` first.
+Fallback to `stage2_breakout` only if `stage_analysis` is missing.
+
+Column label:
+S
+
+Canonical backend labels:
+Render these labels exactly as returned:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+Important:
+Do not remap labels.
+Do not normalize labels.
+Do not convert labels to READY / SETUP / WATCH.
+Do not convert labels to old names like Stage 2 Advance.
+Do not create frontend stage logic.
+Do not calculate anything from score except sorting.
+
+Cell behavior:
+
+* If `stage_analysis.label` exists, display it directly.
+* Else if `stage2_breakout.label` exists, display it directly.
+* Else show muted `—`.
+
+Tooltip:
+Use `stage_analysis.reason || stage2_breakout.reason` as the title tooltip if available.
+
+Sorting:
+Keep the S column sortable.
+Sort by `stage_analysis.score || stage2_breakout.score` descending.
+Null/missing scores go last.
+
+Fallback label sort order:
+
+1. S2 Breakout
+2. S2-S3 Advance
+3. S3 Momentum
+4. S1-2 Watch
+5. S1 Base
+6. S3-S4 Top
+7. S4 Decline
+8. —
+
+Styling:
+Use compact stage badges.
+
+Suggested colors:
+
+* S2 Breakout: strongest teal/green
+* S2-S3 Advance: green
+* S3 Momentum: blue/amber, strong but mature
+* S1-2 Watch: amber/constructive
+* S1 Base: muted/blue neutral
+* S3-S4 Top: orange warning
+* S4 Decline: red/danger
+* —: muted text
+
+Scope:
+Only update the Watchlist main Tickers table S column.
+
+Do not change:
+
+* backend
+* Live News
+* bottom Themes tab
+* bottom Market Cap tab
+* bottom Fundamentals tab
+* StockDetailModal / ticker popup
+* Add ticker behavior
+* Hide Foreign behavior
+
+Validation:
+
+1. Column header shows `S`.
+2. Watchlist table displays canonical labels exactly:
+
+   * S1 Base
+   * S1-2 Watch
+   * S2 Breakout
+   * S2-S3 Advance
+   * S3 Momentum
+   * S3-S4 Top
+   * S4 Decline
+3. No READY / SETUP / WATCH labels appear.
+4. No old labels appear:
+
+   * Stage 2 Advance
+   * Stage 4 Decline
+   * S3-S4 Danger
+5. Null rows show `—`.
+6. Sorting works by backend score descending.
+7. Tooltip shows backend reason.
+8. Hide Foreign still works.
+9. Add ticker still works.
+10. Row click still opens StockDetailModal.
+11. No new API/provider calls are added.
