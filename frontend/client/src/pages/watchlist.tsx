@@ -1390,9 +1390,13 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
+  const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
+  const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental'>(() => {
+    try { return (localStorage.getItem('wl_screener_mode') as 'technical' | 'fundamental') || 'technical'; }
+    catch { return 'technical'; }
+  });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
     try { return localStorage.getItem('wl_hide_foreign') === '1'; } catch { return false; }
   });
@@ -2659,7 +2663,7 @@ export default function WatchlistPage() {
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
-    const tableTitle = opts?.title ?? 'TICKERS';
+    const tableTitle = opts?.title ?? 'SCREENER';
     // Apply hide-foreign filter only to the ticker table rows (not bottom tabs)
     const visibleRows = hideForeignTickers
       ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
@@ -2711,7 +2715,7 @@ export default function WatchlistPage() {
                     ? `${mergedTickers.length} total · ${visibleRows.length} shown`
                     : `${mergedTickers.length} total`)}
           </span>
-          {!opts?.rows && pendingCount > 0 && (
+          {screenerMode === 'technical' && !opts?.rows && pendingCount > 0 && (
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: C.font,
               padding: '2px 6px', borderRadius: 3,
@@ -2722,31 +2726,63 @@ export default function WatchlistPage() {
               {pendingCount} PENDING ANALYSIS
             </span>
           )}
-          {optionsMeta && ((optionsMeta.live_calls_enqueued ?? 0) > 0 || (optionsMeta.scan_in_progress ?? 0) > 0) && (
+          {screenerMode === 'technical' && optionsMeta && ((optionsMeta.live_calls_enqueued ?? 0) > 0 || (optionsMeta.scan_in_progress ?? 0) > 0) && (
             <span style={{ fontSize: 7, color: C.amber, opacity: 0.75, letterSpacing: '0.03em' }}>
               Options scan warming — cached rows shown first
             </span>
           )}
-          <button
-            onClick={toggleHideForeign}
-            style={{
-              marginLeft: 'auto',
-              fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
-              padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
-              textTransform: 'uppercase' as const, fontFamily: C.font,
-              background: hideForeignTickers ? `${C.teal}22` : 'transparent',
-              color: hideForeignTickers ? C.teal : C.dim,
-              border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
-              transition: 'all 0.12s',
-              flexShrink: 0,
-            }}
-            title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":") '}
-          >
-            {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {tableTitle !== 'CLOSE WATCH' && (
+              <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                {(['technical', 'fundamental'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setScreenerMode(mode);
+                      try { localStorage.setItem('wl_screener_mode', mode); } catch {}
+                    }}
+                    style={{
+                      fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                      padding: '3px 9px', cursor: 'pointer',
+                      textTransform: 'uppercase' as const, fontFamily: C.font,
+                      background: screenerMode === mode ? `${C.teal}22` : 'transparent',
+                      color: screenerMode === mode ? C.teal : C.dim,
+                      border: 'none',
+                      borderRight: mode === 'technical' ? `1px solid ${C.border}` : 'none',
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    {mode === 'technical' ? 'Technical' : 'Fundamental'}
+                  </button>
+                ))}
+              </div>
+            )}
+            {(tableTitle === 'CLOSE WATCH' || screenerMode === 'technical') && (
+              <button
+                onClick={toggleHideForeign}
+                style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                  padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+                  textTransform: 'uppercase' as const, fontFamily: C.font,
+                  background: hideForeignTickers ? `${C.teal}22` : 'transparent',
+                  color: hideForeignTickers ? C.teal : C.dim,
+                  border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
+                  transition: 'all 0.12s',
+                  flexShrink: 0,
+                }}
+                title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":") '}
+              >
+                {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* scrollable area with horizontal overflow for narrow viewports */}
+        {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamental' ? (
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0, padding: '4px 8px' }} className="wl-scrollbar">
+            {renderFundamentalScreenerContent(rows)}
+          </div>
+        ) : (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
           <div style={{ minWidth: TICKER_TABLE_MIN_WIDTH }}>
             {/* table header */}
@@ -2992,6 +3028,182 @@ export default function WatchlistPage() {
             )}
           </div>
         </div>
+        )}
+      </div>
+    );
+  };
+
+  /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
+  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers) => {
+    const csvMap: Record<string, any> = {};
+    for (const row of (watchlist?.csv_data || [])) {
+      const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
+      if (t) csvMap[t] = row;
+    }
+    const fundRows = srcRows.map(s => {
+      const tkKey = (s.ticker || '').toString().toUpperCase();
+      const csv = csvMap[tkKey] || {};
+      const merged: Record<string, any> = { ...csv };
+      for (const [k, v] of Object.entries(s)) {
+        if (v !== undefined && v !== null && v !== '') {
+          merged[k] = v;
+        } else if (!(k in merged)) {
+          merged[k] = v;
+        }
+      }
+      return merged;
+    });
+
+    const fDir = fundSort.dir === 'asc' ? 1 : -1;
+    const fColDef = FUND_COLS.find(c => c.key === fundSort.key);
+    const sortedFundRows = [...fundRows].sort((a, b) => {
+      if (!fColDef) return 0;
+      const av = fundGetField(a, fColDef.key, fColDef.aliases);
+      const bv = fundGetField(b, fColDef.key, fColDef.aliases);
+      if (fColDef.fmt === 'symbol' || fColDef.fmt === 'str' || fColDef.fmt === 'date') {
+        return fDir * String(av ?? '').localeCompare(String(bv ?? ''));
+      }
+      const an = typeof av === 'number' ? av : parseFloat(av);
+      const bn = typeof bv === 'number' ? bv : parseFloat(bv);
+      const af = Number.isFinite(an) ? an : (fundSort.dir === 'asc' ? Infinity : -Infinity);
+      const bf = Number.isFinite(bn) ? bn : (fundSort.dir === 'asc' ? Infinity : -Infinity);
+      return fDir * (af - bf);
+    });
+
+    const handleFundSortLocal = (key: string) => {
+      const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
+      setFundSort(prev => prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: (colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc' });
+    };
+
+    const fThClr = (key: string) => fundSort.key === key ? C.teal : C.dim;
+    const fArr   = (key: string) => fundSort.key === key ? (fundSort.dir === 'asc' ? '▲' : '▼') : '';
+
+    const TH: React.CSSProperties = {
+      padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+      textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+      cursor: 'pointer', userSelect: 'none' as const,
+      background: C.card, borderBottom: `1px solid ${C.border}`,
+      fontFamily: C.font,
+    };
+    const TD: React.CSSProperties = {
+      padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+      borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+    };
+
+    return (
+      <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
+        <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+          <thead>
+            <tr>
+              {FUND_COLS.map((col, ci) => (
+                <th
+                  key={col.key}
+                  onClick={() => handleFundSortLocal(col.key)}
+                  style={{
+                    ...TH,
+                    color: fThClr(col.key),
+                    textAlign: ci === 0 ? 'left' as const : 'right' as const,
+                    ...(ci === 0 ? {
+                      position: 'sticky' as const, left: 0, zIndex: 2,
+                      boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
+                    } : { position: 'sticky' as const, top: 0, zIndex: 1 }),
+                  }}
+                >
+                  {col.label}{fundSort.key === col.key ? <span style={{ fontSize: 6, marginLeft: 2 }}>{fArr(col.key)}</span> : null}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedFundRows.length === 0 ? (
+              <tr>
+                <td colSpan={FUND_COLS.length} style={{ ...TD, textAlign: 'center' as const, color: C.dim, padding: 16 }}>
+                  No tickers
+                </td>
+              </tr>
+            ) : sortedFundRows.map((row, ri) => {
+              const rowBg    = ri % 2 === 0 ? '#08080c' : '#0d1420';
+              const rowHover = 'rgba(14,165,233,0.07)';
+              const setAllTdBg = (el: HTMLTableRowElement, bg: string) => {
+                (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
+                  .forEach(td => { td.style.background = bg; });
+              };
+              return (
+              <tr
+                key={`${row.ticker}-${ri}`}
+                onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                onMouseEnter={e => setAllTdBg(e.currentTarget, rowHover)}
+                onMouseLeave={e => setAllTdBg(e.currentTarget, rowBg)}
+              >
+                {FUND_COLS.map((col, ci) => {
+                  const isFirst = ci === 0;
+                  const stickyStyle: React.CSSProperties = isFirst ? {
+                    position: 'sticky' as const, left: 0, zIndex: 1,
+                    background: rowBg,
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.5)',
+                  } : { background: rowBg };
+
+                  if (col.fmt === 'relvol') {
+                    const vx = formatRelVol(row.volume, row.average_volume, row.relative_volume);
+                    return (
+                      <td key={col.key} style={{ ...TD, ...stickyStyle, color: C.text, textAlign: 'right' as const }}>
+                        {vx}
+                      </td>
+                    );
+                  }
+
+                  const v = fundGetField(row, col.key, col.aliases);
+                  let content: React.ReactNode = '—';
+                  let color = C.dim;
+
+                  if (col.fmt === 'symbol') {
+                    const sym = String(v || row.ticker || '—');
+                    content = <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>;
+                    color = 'inherit';
+                  } else if (col.fmt === 'str') {
+                    content = v ? String(v) : '—';
+                    color = v ? C.text : C.dim;
+                  } else if (col.fmt === 'compact') {
+                    const r = fundFmtCompact(v);
+                    content = r; color = r === '—' ? C.dim : C.text;
+                  } else if (col.fmt === 'price') {
+                    const r = fundFmtPrice(v);
+                    content = r; color = r === '—' ? C.dim : C.text;
+                  } else if (col.fmt === 'vol') {
+                    const r = fundFmtVol(v);
+                    content = r; color = r === '—' ? C.dim : C.text;
+                  } else if (col.fmt === 'pct') {
+                    const r = fundFmtPct(v);
+                    content = r.text; color = r.clr;
+                  } else if (col.fmt === 'ratio') {
+                    const r = fundFmtRatio(v);
+                    content = r; color = r === '—' ? C.dim : C.text;
+                  } else if (col.fmt === 'date') {
+                    const r = fundFmtDate(v);
+                    content = r; color = r === '—' ? C.dim : C.text;
+                  }
+
+                  return (
+                    <td
+                      key={col.key}
+                      style={{
+                        ...TD, ...stickyStyle, color,
+                        textAlign: isFirst ? 'left' as const : 'right' as const,
+                        fontWeight: isFirst ? 700 : 400,
+                      }}
+                    >
+                      {content}
+                    </td>
+                  );
+                })}
+              </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -3008,7 +3220,7 @@ export default function WatchlistPage() {
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-          TICKERS
+          SCREENER
         </span>
         <span style={{ fontSize: 9, color: C.dim }}>({allStocks.length})</span>
       </div>
@@ -3658,7 +3870,7 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['golden', 'gromo', 'hciz', 'hctz', 'fundamentals', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
+              {(['golden', 'gromo', 'hciz', 'hctz', 'fundGrouping', 'themes', 'marketcap'] as const).map(v => {
                 const isActive = bottomView === v;
                 const ac = v === 'golden' ? '#f59e0b' : v === 'gromo' ? '#3b82f6' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
@@ -3675,7 +3887,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'golden' ? 'Golden Zone' : v === 'gromo' ? 'Growth Momentum' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
+                  {v === 'golden' ? 'Golden Zone' : v === 'gromo' ? 'Growth Momentum' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
                 </button>
                 );
               })}
@@ -3818,7 +4030,7 @@ export default function WatchlistPage() {
                 } /* end marketcap */
 
                 /* ── FUNDAMENTALS ── */
-                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz' && bottomView !== 'golden' && bottomView !== 'gromo') return null;
+                if (bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz' && bottomView !== 'golden' && bottomView !== 'gromo') return null;
 
                 const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
 
@@ -4629,9 +4841,9 @@ export default function WatchlistPage() {
                   );
                 } /* end hciz */
 
-                // Sort
                 const fDir = fundSort.dir === 'asc' ? 1 : -1;
                 const fColDef = FUND_COLS.find(c => c.key === fundSort.key);
+                return null;
                 const sortedFundRows = [...fundRows].sort((a, b) => {
                   if (!fColDef) return 0;
                   const av = fundGetField(a, fColDef.key, fColDef.aliases);

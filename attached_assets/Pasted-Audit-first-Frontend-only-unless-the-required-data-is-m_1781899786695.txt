@@ -1,0 +1,200 @@
+Audit first. Frontend-only unless the required data is missing from the already-loaded Watchlist payload. Do not touch backend. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+On the Watchlist page, rename the top `Tickers` section to:
+
+Screener
+
+Then add a local toggle inside that renamed Screener section:
+
+Technical / Fundamental
+
+The current top `Tickers` table becomes the `Technical` mode.
+
+The existing bottom-tab `Fundamental Screener` table becomes the `Fundamental` mode inside this same renamed Screener section.
+
+In other words:
+
+* Top section title changes from `TICKERS` to `SCREENER`
+* Inside that section, user can toggle between:
+
+  * Technical
+  * Fundamental
+
+Current behavior:
+The top Tickers section currently shows the technical/live ticker table.
+The bottom tabs currently include `Fundamental Screener`.
+
+Desired behavior:
+The renamed top Screener section owns both:
+
+1. Technical screener
+2. Fundamental screener
+
+The bottom `Fundamental Screener` tab should be removed after its content is moved/reused inside the top Screener section.
+
+Do not duplicate the Fundamental Screener in both places.
+
+Scope:
+Only update the Watchlist page layout/rendering.
+
+Do not change:
+
+* backend
+* data fetching
+* provider calls
+* Live News
+* Golden Zone logic
+* Growth Momentum logic
+* HC Investment Zone logic
+* HC Trade Zone logic
+* Fundamental Grouping logic
+* Theme Performance logic
+* Market Cap Grouping logic
+* StockDetailModal
+* Add ticker
+* Hide Foreign behavior, except it should remain available in Technical mode if currently there
+
+Section rename:
+Change the top panel header:
+
+`TICKERS`
+
+to:
+
+`SCREENER`
+
+Keep the count text, but update wording if needed:
+
+Example:
+`SCREENER 302 total · 248 shown`
+
+Toggle:
+Add a compact segmented toggle in the Screener header area:
+
+Technical | Fundamental
+
+Default:
+
+* Technical should be the default mode unless a user has manually switched.
+* Optional: persist the selected Screener mode in localStorage.
+* Do not interfere with the bottom tab localStorage/default behavior.
+
+Technical mode:
+Render exactly the current Tickers table.
+
+Preserve:
+
+* current columns
+* current sorting
+* current sticky symbol behavior
+* star/favorite behavior
+* Hide Foreign button
+* existing row click behavior
+* current row styles
+* all current warnings/status text
+
+This should be a pure rename/wrapper around the current Tickers table.
+
+Fundamental mode:
+Render the existing Fundamental Screener table that currently lives in the bottom tabs.
+
+Reuse the existing Fundamental Screener data/helpers/component.
+Do not recreate a second independent version of the table.
+
+If the current Fundamental Screener is inline inside a bottom-tab render branch, extract it into a reusable component/helper such as:
+
+* `renderFundamentalScreenerTable()`
+  or
+* `<FundamentalScreenerTable rows={...} />`
+
+Then use it inside the top Screener section when mode === `fundamental`.
+
+Fundamental mode should preserve:
+
+* existing Fundamental Screener columns
+* existing formatting
+* existing sorting
+* existing row click behavior
+* active watchlist filtering
+* CSV/fundamental merge logic
+* no API calls
+* no LLM calls
+
+Layout:
+The Screener panel should remain in the same location and size as the current Tickers panel, beside Live News.
+
+When Fundamental mode is active:
+
+* render the Fundamental Screener table inside that same panel
+* allow horizontal scrolling inside the Screener panel if needed
+* do not break Live News layout
+* do not push the bottom tabs upward/downward in a janky way
+* keep row density compact
+
+Bottom tabs:
+Remove `Fundamental Screener` from the bottom tab strip.
+
+Current bottom tabs may be something like:
+
+* Golden Zone
+* Growth Momentum
+* HC Investment Zone
+* HC Trade Zone
+* Fundamental Screener
+* Fundamental Grouping
+* Theme Performance
+* Market Cap Grouping
+
+After this change, bottom tabs should be:
+
+* Golden Zone
+* Growth Momentum
+* HC Investment Zone
+* HC Trade Zone
+* Fundamental Grouping
+* Theme Performance
+* Market Cap Grouping
+
+Golden Zone should remain first/default if already implemented that way.
+
+Important:
+Do not delete the Fundamental Screener logic. Only move/reuse its rendering location.
+
+Active watchlist:
+Both Technical and Fundamental modes must respect the currently active saved watchlist:
+
+* Primary
+* Close Watch/Favorites
+* future saved watchlist tabs
+
+Do not show Primary fundamentals when another watchlist tab is active.
+
+Data:
+Use existing loaded data only.
+
+Do not call:
+
+* FMP
+* Tradier
+* options endpoints
+* analyst endpoints
+* backend refresh endpoints
+* LLMs
+
+Validation:
+
+1. Top panel title says `SCREENER`, not `TICKERS`.
+2. Screener panel has a `Technical / Fundamental` toggle.
+3. Technical mode shows the exact current Tickers table.
+4. Fundamental mode shows the existing Fundamental Screener table.
+5. Bottom `Fundamental Screener` tab is removed.
+6. Fundamental Grouping remains in bottom tabs.
+7. Golden Zone remains first/default.
+8. Live News layout is not broken.
+9. Hide Foreign still works in Technical mode.
+10. Rows still open StockDetailModal where they did before.
+11. Active saved watchlist filtering works in both modes.
+12. No new API/provider calls fire when toggling.
+13. No LLM calls are added.
+14. No console errors.
