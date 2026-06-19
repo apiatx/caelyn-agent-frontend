@@ -4023,7 +4023,7 @@ export default function WatchlistPage() {
                       return (
                         <div
                           key={bucket.label}
-                          style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}
+                          style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.teal}`, borderRadius: 6, overflow: 'hidden' }}
                         >
                           {/* bucket header */}
                           <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>
@@ -4713,7 +4713,7 @@ export default function WatchlistPage() {
                             .sort((a, b) => b._score - a._score);
                           const fgAvg = fmtAvgChg(avgDailyChangePct(rows));
                           return (
-                            <div key={bDef.id} style={{ flex: '1 1 200px', minWidth: 190, background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+                            <div key={bDef.id} style={{ flex: '1 1 200px', minWidth: 190, background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${bDef.color}`, borderRadius: 6, overflow: 'hidden' }}>
                               {/* bucket header */}
                               <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bDef.color}10` }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
