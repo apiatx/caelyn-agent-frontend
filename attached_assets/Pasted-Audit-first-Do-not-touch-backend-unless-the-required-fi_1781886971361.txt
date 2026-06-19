@@ -1,0 +1,330 @@
+Audit first. Do not touch backend unless the required fields are truly missing from the already-loaded Watchlist payload. Do not add API/provider calls.
+
+Goal:
+Update the Watchlist bottom tab `Fundamental Screener` so it includes all missing fundamental and forecast/estimate columns that already exist in the ticker popup / StockDetailModal Fundamentals view and/or uploaded CSV data.
+
+Context:
+The Watchlist `Fundamental Screener` table currently shows only part of the fundamentals dataset. The ticker popup / CSV data contains additional fundamental and forecast metrics that are not currently shown in the table.
+
+Important:
+Do not guess from only the current table. Compare against the actual popup/CSV fields.
+
+Scope:
+Only update the Watchlist bottom `Fundamental Screener` tab/table.
+
+Do not change:
+
+* backend unless fields are truly missing from loaded payload
+* main Tickers table
+* OI column/table layout
+* Stage column
+* Live News
+* Market Cap tab
+* Themes tab
+* Fundamental Grouping tab
+* Golden Zone tab
+* StockDetailModal / ticker popup
+* Add ticker
+* Hide Foreign
+
+Do not re-add technical columns we already removed:
+
+* 52W Low
+* 52W High
+* % vs MA20
+* % vs MA50
+* % vs MA200
+* RSI
+* ATR
+
+Only add fundamental, financial, estimate, and forecast columns.
+
+Audit requirements:
+
+1. Open the StockDetailModal / popup Fundamentals tab.
+2. Inspect the actual `csvRow || stock` object keys used by the popup.
+3. Print or inspect `Object.keys(csvRow)` for a real ticker with rich data.
+4. Open the Watchlist `Fundamental Screener` column definitions.
+5. Compare the popup/CSV field set against the current Watchlist Fundamental Screener columns.
+6. Add every missing non-technical fundamental/forecast field.
+7. If any requested field does not exist in the loaded payload, render `—` and report the exact missing field/key. Do not fetch it live.
+
+Current existing Fundamental Screener columns include:
+
+* Symbol
+* Industry
+* Market Cap
+* Price
+* Volume
+* Rel Vol
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (YoY)
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+
+Keep those.
+
+Add missing fundamental columns:
+
+* Operating Income
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* EPS Growth
+* Debt / Equity
+* Net Debt / EBITDA
+* Insider %
+* Earnings Date
+
+Add missing forecast / estimate columns:
+
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+
+Also add any other loaded CSV/popup columns that are clearly fundamental or forecast/estimate fields and are not technical-price columns.
+
+Do not add technical/price-action fields:
+
+* 52-week high/low
+* moving-average distance
+* RSI
+* ATR
+* price change vs MA
+* chart/technical-only metrics
+
+Suggested compact headers:
+
+* OP. INCOME
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* EPS GRWTH
+* D/E
+* ND/EBITDA
+* INSIDER %
+* EARN. DATE
+* REV GRWTH EST
+* REV GRWTH NQ
+* REV GRWTH NY
+* EPS GRWTH EST
+* EPS GRWTH TQ
+* EPS GRWTH NQ
+* EPS GRWTH TY
+* EPS GRWTH NY
+
+Field aliases:
+Use robust alias lookup because fields may come from uploaded CSV labels or normalized keys.
+
+Operating Income:
+
+* Operating Income
+* OP. Income
+* operating_income
+* operatingIncome
+
+EBIT:
+
+* EBIT
+* ebit
+
+P/E:
+
+* PE Ratio
+* P/E
+* pe_ratio
+* peRatio
+
+P/S:
+
+* PS Ratio
+* P/S
+* ps_ratio
+* psRatio
+
+EV/EBITDA:
+
+* EV/EBITDA
+* ev_ebitda
+* evToEbitda
+
+EPS Growth:
+
+* EPS Growth
+* eps_growth
+* epsGrowth
+
+Debt / Equity:
+
+* Debt / Equity
+* D/E
+* debt_equity
+* debtToEquity
+
+Net Debt / EBITDA:
+
+* Net Debt / EBITDA
+* ND/EBITDA
+* net_debt_ebitda
+* netDebtToEbitda
+
+Insider %:
+
+* Shares Insiders
+* Insider %
+* insider_percent
+* shares_insiders
+* sharesInsiders
+
+Earnings Date:
+
+* Earnings Date
+* earnings_date
+* earningsDate
+
+Revenue Growth Est.:
+
+* Revenue Growth Est.
+* Revenue Growth Estimate
+* Rev Growth Est.
+* revenue_growth_est
+* revenueGrowthEstimate
+* revGrowthEst
+* analyst_revenue_growth_est
+
+Revenue Growth Next Quarter:
+
+* Revenue Growth Next Quarter
+* Rev Growth Next Quarter
+* Revenue Growth NQ
+* Rev Growth NQ
+* revenue_growth_next_quarter
+* rev_growth_next_quarter
+* revenueGrowthNextQuarter
+* revGrowthNextQuarter
+
+Revenue Growth Next Year:
+
+* Revenue Growth Next Year
+* Rev Growth Next Year
+* Revenue Growth NY
+* Rev Growth NY
+* revenue_growth_next_year
+* rev_growth_next_year
+* revenueGrowthNextYear
+* revGrowthNextYear
+
+EPS Growth Est.:
+
+* EPS Growth Est.
+* EPS Growth Estimate
+* eps_growth_est
+* epsGrowthEstimate
+* epsGrowthEst
+* analyst_eps_growth_est
+
+EPS Growth This Quarter:
+
+* EPS Growth This Quarter
+* EPS Growth TQ
+* eps_growth_this_quarter
+* epsGrowthThisQuarter
+* eps_growth_tq
+
+EPS Growth Next Quarter:
+
+* EPS Growth Next Quarter
+* EPS Growth NQ
+* eps_growth_next_quarter
+* epsGrowthNextQuarter
+* eps_growth_nq
+
+EPS Growth This Year:
+
+* EPS Growth This Year
+* EPS Growth TY
+* eps_growth_this_year
+* epsGrowthThisYear
+* eps_growth_ty
+
+EPS Growth Next Year:
+
+* EPS Growth Next Year
+* EPS Growth NY
+* eps_growth_next_year
+* epsGrowthNextYear
+* eps_growth_ny
+
+Formatting:
+
+* Large money fields: compact currency, e.g. $77.38T, $5.43B, $900.0M
+* Percent fields: percent format, green/red coloring where appropriate
+* Ratio fields: 2 decimals where reasonable
+* Earnings Date: existing date format
+* Missing values: `—`
+* Do not show raw huge numbers if a compact formatter exists
+
+Layout:
+
+* The Fundamental Screener table can remain horizontally scrollable.
+* Keep sticky Symbol column if already implemented.
+* Make sure alternating row backgrounds extend across the full table width.
+* Header and body columns must align.
+* Use one shared grid/column definition or table layout so right-side columns do not visually detach.
+
+Sorting:
+If sortable behavior already exists, support sorting on the added columns.
+Numeric/percentage columns should sort numerically.
+Date column should sort by date.
+Missing values should go last.
+
+Validation:
+
+1. Watchlist bottom tab label says `Fundamental Screener`.
+2. Existing columns still render.
+3. Added fundamental columns render:
+
+   * OP. INCOME
+   * EBIT
+   * P/E
+   * P/S
+   * EV/EBITDA
+   * EPS GRWTH
+   * D/E
+   * ND/EBITDA
+   * INSIDER %
+   * EARN. DATE
+4. Added forecast/estimate columns render:
+
+   * REV GRWTH EST
+   * REV GRWTH NQ
+   * REV GRWTH NY
+   * EPS GRWTH EST
+   * EPS GRWTH TQ
+   * EPS GRWTH NQ
+   * EPS GRWTH TY
+   * EPS GRWTH NY
+5. Do not re-add removed technical columns:
+
+   * 52W Low
+   * 52W High
+   * % vs MA20
+   * % vs MA50
+   * % vs MA200
+   * RSI
+   * ATR
+6. Values match the ticker popup/CSV data for the same ticker where available.
+7. Missing values render as `—`.
+8. Sorting still works.
+9. Rows remain clickable and open StockDetailModal.
+10. No new API/provider calls fire when switching to or sorting the tab.
+11. No console errors.

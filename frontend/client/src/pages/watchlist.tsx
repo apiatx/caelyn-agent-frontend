@@ -761,6 +761,14 @@ const FUND_COLS: FundColDef[] = [
   { key: 'net_debt_ebitda',  label: 'ND/EBITDA',     aliases: ['netDebtToEbitda', 'net_debt_to_ebitda', 'netDebtEbitda'],         fmt: 'ratio'   },
   { key: 'shares_insiders',  label: 'Insider %',     aliases: ['insiderOwnership', 'insider_ownership', 'insidersPercentHeld'],   fmt: 'pct'     },
   { key: 'earnings_date',    label: 'Earn. Date',    aliases: ['nextEarningsDate', 'next_earnings_date', 'earnings_next_date'],   fmt: 'date'    },
+  { key: 'revenue_growth_est',        label: 'Rev Grwth Est',   aliases: ['Revenue Growth Est.', 'Revenue Growth Estimate', 'Rev Growth Est.', 'revenueGrowthEstimate', 'revGrowthEst', 'analyst_revenue_growth_est'],                                           fmt: 'pct' },
+  { key: 'rev_growth_next_quarter',   label: 'Rev Grwth NQ',    aliases: ['Revenue Growth Next Quarter', 'Rev Growth Next Quarter', 'Revenue Growth NQ', 'Rev Growth NQ', 'revenue_growth_next_quarter', 'revenueGrowthNextQuarter', 'revGrowthNextQuarter'],     fmt: 'pct' },
+  { key: 'rev_growth_next_year',      label: 'Rev Grwth NY',    aliases: ['Revenue Growth Next Year', 'Rev Growth Next Year', 'Revenue Growth NY', 'Rev Growth NY', 'revenue_growth_next_year', 'revenueGrowthNextYear', 'revGrowthNextYear'],                    fmt: 'pct' },
+  { key: 'eps_growth_est',            label: 'EPS Grwth Est',   aliases: ['EPS Growth Est.', 'EPS Growth Estimate', 'epsGrowthEstimate', 'epsGrowthEst', 'analyst_eps_growth_est'],                                                                              fmt: 'pct' },
+  { key: 'eps_growth_tq',             label: 'EPS Grwth TQ',    aliases: ['EPS Growth This Quarter', 'EPS Growth TQ', 'eps_growth_this_quarter', 'epsGrowthThisQuarter'],                                                                                        fmt: 'pct' },
+  { key: 'eps_growth_nq',             label: 'EPS Grwth NQ',    aliases: ['EPS Growth Next Quarter', 'EPS Growth NQ', 'eps_growth_next_quarter', 'epsGrowthNextQuarter'],                                                                                        fmt: 'pct' },
+  { key: 'eps_growth_ty',             label: 'EPS Grwth TY',    aliases: ['EPS Growth This Year', 'EPS Growth TY', 'eps_growth_this_year', 'epsGrowthThisYear'],                                                                                                 fmt: 'pct' },
+  { key: 'eps_growth_ny',             label: 'EPS Grwth NY',    aliases: ['EPS Growth Next Year', 'EPS Growth NY', 'eps_growth_next_year', 'epsGrowthNextYear'],                                                                                                 fmt: 'pct' },
 ];
 
 function fundGetField(row: any, key: string, aliases: string[] = []): any {
@@ -3069,7 +3077,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : 'Fundamentals'}
+                  {v === 'themes' ? 'Themes' : v === 'marketcap' ? 'Market Cap' : 'Fundamental Screener'}
                 </button>
               ))}
             </div>
