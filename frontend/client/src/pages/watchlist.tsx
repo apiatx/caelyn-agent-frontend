@@ -853,6 +853,14 @@ export default function WatchlistPage() {
   const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals'>('themes');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
+  const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
+    try { return localStorage.getItem('wl_hide_foreign') === '1'; } catch { return false; }
+  });
+  const toggleHideForeign = () => setHideForeignTickers(v => {
+    const next = !v;
+    try { localStorage.setItem('wl_hide_foreign', next ? '1' : '0'); } catch {}
+    return next;
+  });
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2034,6 +2042,11 @@ export default function WatchlistPage() {
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
     const tableTitle = opts?.title ?? 'TICKERS';
+    // Apply hide-foreign filter only to the ticker table rows (not bottom tabs)
+    const visibleRows = hideForeignTickers
+      ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
+      : rows;
+    const foreignHidden = rows.length - visibleRows.length;
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 52px 80px 48px 52px 52px 60px 56px';
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
@@ -2068,10 +2081,14 @@ export default function WatchlistPage() {
           </span>
           <span style={{ fontSize: 9, color: C.dim }}>
             {opts?.rows !== undefined
-              ? `${rows.length} ticker${rows.length !== 1 ? 's' : ''}`
+              ? (hideForeignTickers && foreignHidden > 0
+                  ? `${rows.length} tickers · ${visibleRows.length} shown`
+                  : `${rows.length} ticker${rows.length !== 1 ? 's' : ''}`)
               : pendingCount > 0
                 ? `${analyzedCount} analyzed · ${pendingCount} pending`
-                : `${mergedTickers.length} total`}
+                : (hideForeignTickers && foreignHidden > 0
+                    ? `${mergedTickers.length} total · ${visibleRows.length} shown`
+                    : `${mergedTickers.length} total`)}
           </span>
           {!opts?.rows && pendingCount > 0 && (
             <span style={{
@@ -2089,6 +2106,23 @@ export default function WatchlistPage() {
               Options scan warming — cached rows shown first
             </span>
           )}
+          <button
+            onClick={toggleHideForeign}
+            style={{
+              marginLeft: 'auto',
+              fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+              padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+              textTransform: 'uppercase' as const, fontFamily: C.font,
+              background: hideForeignTickers ? `${C.teal}22` : 'transparent',
+              color: hideForeignTickers ? C.teal : C.dim,
+              border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
+              transition: 'all 0.12s',
+              flexShrink: 0,
+            }}
+            title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":") '}
+          >
+            {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
+          </button>
         </div>
 
         {/* scrollable area with horizontal overflow for narrow viewports */}
@@ -2134,7 +2168,7 @@ export default function WatchlistPage() {
             </div>
 
             {/* table rows */}
-            {rows.map((stock, i) => {
+            {visibleRows.map((stock, i) => {
               const isPending = stock._pending;
               const chg1d = stock.change_pct ?? stock.change_pct_1d;
               const cCol = changeColor(chg1d);
@@ -2288,7 +2322,7 @@ export default function WatchlistPage() {
                 </div>
               );
             })}
-            {rows.length === 0 && (
+            {visibleRows.length === 0 && (
               <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
                 {tableTitle === 'CLOSE WATCH'
                   ? 'No Close Watch tickers yet. Star tickers from the Tickers tab to add them here.'

@@ -1,0 +1,90 @@
+Audit first. Do not touch backend, do not add API calls, and do not change saved watchlist data.
+
+Goal:
+Add a small toggle button to the Watchlist page Tickers section that lets the user hide foreign tickers from the visible Tickers table.
+
+Definition of foreign ticker:
+A foreign ticker is any ticker symbol containing a colon ":".
+
+Examples:
+
+* AIM:XYZ
+* ASX:XYZ
+* CSE:XYZ
+* APA:XYZ
+* KRX:000660
+
+Detection rule:
+Use a simple symbol includes colon check:
+symbol.includes(":")
+
+Do not build a country/exchange mapping system. Do not overthink this. If the symbol has ":", treat it as foreign.
+
+Scope:
+This toggle should affect only the main Watchlist Tickers section/table.
+
+Do not filter:
+
+* saved watchlist data itself
+* Live News
+* bottom Themes tab
+* Market Cap tab
+* Fundamentals tab
+* earnings/catalyst sections
+* ticker popup behavior
+* backend payloads
+
+UI:
+Add a compact toggle/button in or near the Tickers section header, close to the existing “TICKERS 302 total” label or table controls.
+
+Suggested label:
+
+* Hide Foreign
+
+Behavior:
+
+* Default: off
+* When off: show all tickers normally
+* When on: hide rows where ticker symbol includes ":"
+* Toggle should be instant and frontend-only
+* Do not trigger a refetch
+* Do not mutate sortedTickers or closeWatchTickers globally
+* Create a derived visibleTickers array for the Tickers table only
+
+Persistence:
+Optional but preferred:
+Persist the toggle in localStorage, ideally per Watchlist page globally. Do not overbuild per-user backend persistence.
+
+Important implementation details:
+
+1. Find the existing array used to render the Tickers table.
+2. Add state:
+   hideForeignTickers: boolean
+3. Create a derived array only for the Tickers table:
+   visibleTickerRows = hideForeignTickers
+   ? tickerRows.filter(row => !String(row.symbol || row.ticker || "").includes(":"))
+   : tickerRows
+4. Make sure the filter works for both Primary and Close Watch / Favorites views.
+5. Do not accidentally apply this filter to the bottom section tabs.
+6. Do not remove foreign tickers from the saved watchlist.
+7. Foreign tickers should still be available again immediately when the toggle is switched off.
+
+Counts:
+If the Tickers header currently shows total count, preserve the total count but optionally add a small visible count when the toggle is on.
+
+Example:
+TICKERS 302 total · 247 shown
+
+Do not change the saved watchlist count itself.
+
+Validation:
+
+1. With Hide Foreign off, all existing ticker rows show.
+2. With Hide Foreign on, any ticker containing ":" is hidden from the main Tickers table.
+3. Examples like KRX:000660, ASX:..., AIM:..., CSE:..., APA:... are hidden.
+4. Normal tickers like NVEC, MRVL, ANET, AMD remain visible.
+5. Toggling does not trigger new network/API/provider calls.
+6. Toggling does not affect Live News.
+7. Toggling does not affect bottom Themes, Market Cap, or Fundamentals tabs.
+8. Toggling does not alter saved watchlist data.
+9. Close Watch/Favorites still works and only filters the currently visible ticker table rows for that tab.
