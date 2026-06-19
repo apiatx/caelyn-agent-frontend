@@ -1288,7 +1288,7 @@ export default function WatchlistPage() {
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [bottomView, setBottomView] = useState<'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('themes');
+  const [bottomView, setBottomView] = useState<'golden' | 'themes' | 'marketcap' | 'fundamentals' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
@@ -3493,9 +3493,9 @@ export default function WatchlistPage() {
 
             {/* ── Bottom Section View Switcher ── */}
             <div style={{ padding: '10px 20px 2px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {(['hciz', 'hctz', 'themes', 'marketcap', 'fundamentals', 'fundGrouping'] as const).map(v => {
+              {(['golden', 'themes', 'marketcap', 'fundamentals', 'fundGrouping', 'hciz', 'hctz'] as const).map(v => {
                 const isActive = bottomView === v;
-                const ac = v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
+                const ac = v === 'golden' ? '#f59e0b' : v === 'hciz' ? '#a855f7' : v === 'hctz' ? '#22c55e' : C.teal;
                 return (
                 <button
                   key={v}
@@ -3510,7 +3510,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
+                  {v === 'golden' ? 'Golden Zone' : v === 'themes' ? 'Theme Performance' : v === 'marketcap' ? 'Market Cap Grouping' : v === 'fundamentals' ? 'Fundamental Screener' : v === 'fundGrouping' ? 'Fundamental Grouping' : v === 'hciz' ? 'HC Investment Zone' : 'HC Trade Zone'}
                 </button>
                 );
               })}
@@ -3653,7 +3653,7 @@ export default function WatchlistPage() {
                 } /* end marketcap */
 
                 /* ── FUNDAMENTALS ── */
-                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz') return null;
+                if (bottomView !== 'fundamentals' && bottomView !== 'fundGrouping' && bottomView !== 'hciz' && bottomView !== 'hctz' && bottomView !== 'golden') return null;
 
                 const srcTickers = innerView === 'close-watch' ? closeWatchTickers : sortedTickers;
 
@@ -3845,6 +3845,207 @@ export default function WatchlistPage() {
                   }
                   return merged;
                 });
+
+                /* ── GOLDEN ZONE ── intersection of Investment Zone + Trade Zone */
+                if (bottomView === 'golden') {
+                  const gzFgCtx = buildFgContext(fundRows);
+                  const gzTCtx = buildTradeContext(fundRows);
+
+                  // Trade zone: score every early-stage row, apply same 2-tier gate as HCTZ
+                  type TScored = { ticker: string; score: number; hasLoud: boolean; optScore: number | null; volxVal: number | null; volxStr: number; volMcStr: number; optStr: number };
+                  const tradeScoredList: TScored[] = [];
+                  for (const r of fundRows) {
+                    const { score, hasLoudSignal, optScore, volxVal, volxStrength, volMcStrength, optStrength, stageLabel } = scoreTradeConfluence(r, gzTCtx);
+                    if (!isHcizStage(stageLabel)) continue;
+                    tradeScoredList.push({ ticker: (r.ticker || '').toUpperCase(), score, hasLoud: hasLoudSignal, optScore, volxVal, volxStr: volxStrength, volMcStr: volMcStrength, optStr: optStrength });
+                  }
+                  tradeScoredList.sort((a, b) => b.score - a.score);
+                  const tradePassMap = new Map<string, TScored>();
+                  tradeScoredList.forEach((ts, idx) => {
+                    if ((ts.hasLoud && ts.score >= 55) || (idx < 10 && ts.hasLoud && ts.score >= 45)) {
+                      tradePassMap.set(ts.ticker, ts);
+                    }
+                  });
+
+                  // Investment zone: classify each fundRow using shared helpers
+                  type GzRow = typeof fundRows[0] & {
+                    _bucket: FgBucket; _stageLabel: string; _investScore: number;
+                    _tradeScore: number; _goldenScore: number;
+                    _investDriver: string; _tradeTs: TScored;
+                    _tags: Array<{ label: string; pos: boolean }>;
+                  };
+                  const strictRows: GzRow[] = [];
+                  for (const r of fundRows) {
+                    const bucket = assignFundamentalGroups(r, gzFgCtx);
+                    if (bucket !== 'High Growth' && bucket !== 'Speculative Future Growth Leaders') continue;
+                    const stageLabel = getStageLabel(r);
+                    if (!isHcizStage(stageLabel)) continue;
+                    const ticker = (r.ticker || '').toUpperCase();
+                    const ts = tradePassMap.get(ticker);
+                    if (!ts) continue; // not in Trade Zone
+                    const investScore = convictionScore(r, gzFgCtx, bucket, stageLabel);
+                    const stageStr = stageLabel.startsWith('S2 Breakout') ? 100 : stageLabel.startsWith('S1-2 Watch') ? 85 : 70;
+                    const goldenScore = investScore * 0.5 + ts.score * 0.4 + stageStr * 0.1;
+                    const investTags = getExtremeMetricTags(r, gzFgCtx, bucket);
+                    const tradeTags = getTradeSignalTags(r, gzTCtx, ts.optScore, ts.volxVal, ts.volxStr, ts.volMcStr, ts.optStr);
+                    // Merge: investment tags first, then trade tags, no dupes, max 4
+                    const merged: Array<{ label: string; pos: boolean }> = [];
+                    const seen = new Set<string>();
+                    for (const t of [...investTags, ...tradeTags]) {
+                      if (!seen.has(t.label)) { seen.add(t.label); merged.push(t); }
+                    }
+                    strictRows.push({ ...r, _bucket: bucket, _stageLabel: stageLabel, _investScore: investScore, _tradeScore: ts.score, _goldenScore: goldenScore, _investDriver: getGrowthDriver(r, gzFgCtx, bucket), _tradeTs: ts, _tags: merged.slice(0, 4) });
+                  }
+                  strictRows.sort((a, b) => b._goldenScore - a._goldenScore);
+
+                  // Fallback: investment-eligible + any loud trade signal (softer gate)
+                  let gzRows: GzRow[] = strictRows;
+                  if (gzRows.length < 3) {
+                    const fallbackRows: GzRow[] = [];
+                    const seenTickers = new Set(strictRows.map(r => (r.ticker || '').toUpperCase()));
+                    tradeScoredList.forEach((ts, idx) => {
+                      if (seenTickers.has(ts.ticker)) return;
+                      if (!ts.hasLoud || ts.score < 40) return;
+                      const r = fundRows.find(f => (f.ticker || '').toUpperCase() === ts.ticker);
+                      if (!r) return;
+                      const bucket = assignFundamentalGroups(r, gzFgCtx);
+                      if (bucket !== 'High Growth' && bucket !== 'Speculative Future Growth Leaders') return;
+                      const stageLabel = getStageLabel(r);
+                      if (!isHcizStage(stageLabel)) return;
+                      const investScore = convictionScore(r, gzFgCtx, bucket, stageLabel);
+                      const stageStr = stageLabel.startsWith('S2 Breakout') ? 100 : stageLabel.startsWith('S1-2 Watch') ? 85 : 70;
+                      const goldenScore = investScore * 0.5 + ts.score * 0.4 + stageStr * 0.1;
+                      const investTags = getExtremeMetricTags(r, gzFgCtx, bucket);
+                      const tradeTags = getTradeSignalTags(r, gzTCtx, ts.optScore, ts.volxVal, ts.volxStr, ts.volMcStr, ts.optStr);
+                      const merged: Array<{ label: string; pos: boolean }> = [];
+                      const seen = new Set<string>();
+                      for (const t of [...investTags, ...tradeTags]) {
+                        if (!seen.has(t.label)) { seen.add(t.label); merged.push(t); }
+                      }
+                      fallbackRows.push({ ...r, _bucket: bucket, _stageLabel: stageLabel, _investScore: investScore, _tradeScore: ts.score, _goldenScore: goldenScore, _investDriver: getGrowthDriver(r, gzFgCtx, bucket), _tradeTs: ts, _tags: merged.slice(0, 4) });
+                    });
+                    fallbackRows.sort((a, b) => b._goldenScore - a._goldenScore);
+                    gzRows = [...strictRows, ...fallbackRows];
+                  }
+
+                  const gzStageColor = (lbl: string) => {
+                    if (lbl.startsWith('S2 Breakout')) return { c: C.teal, bg: `${C.teal}18`, bd: `${C.teal}50` };
+                    if (lbl.startsWith('S1-2 Watch')) return { c: C.amber, bg: `${C.amber}15`, bd: `${C.amber}45` };
+                    return { c: '#60a5fa', bg: 'rgba(96,165,250,0.10)', bd: 'rgba(96,165,250,0.30)' };
+                  };
+                  const GZ_TH: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
+                    textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                    background: C.card, borderBottom: `1px solid ${C.border}`,
+                    fontFamily: C.font, color: C.dim,
+                  };
+                  const GZ_TD: React.CSSProperties = {
+                    padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    verticalAlign: 'middle' as const,
+                  };
+
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0 10px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em' }}>Golden Zone</span>
+                        <span style={{ fontSize: 8, color: C.dim }}>— A+ setups · investment + trade confluence · early stage · {gzRows.length} qualifying</span>
+                      </div>
+                      {gzRows.length === 0 ? (
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                          No Golden Zone setups right now.<br />
+                          <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires both high-conviction investment strength and high-conviction trade confluence in an early stage.</span>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', border: `1px solid #f59e0b30`, borderRadius: 6, boxShadow: '0 0 12px rgba(245,158,11,0.06)' }} className="wl-scrollbar">
+                          <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+                            <thead>
+                              <tr>
+                                {['Symbol','Stage','Golden Score','Investment Signal','Trade Signal','VolX','Options','Price','% Chg','Tags'].map((h, hi) => (
+                                  <th key={h} style={{ ...GZ_TH, textAlign: 'left' as const,
+                                    ...(hi === 0 ? { position: 'sticky' as const, left: 0, zIndex: 2, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' } : {})
+                                  }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {gzRows.map((row, ri) => {
+                                const rowBg = ri % 2 === 0 ? '#08080c' : '#120e04';
+                                const rowHover = 'rgba(245,158,11,0.07)';
+                                const setTdBg = (el: HTMLTableRowElement, bg: string) =>
+                                  (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[]).forEach(td => { td.style.background = bg; });
+                                const chg = row.change_pct ?? row.change_pct_1d;
+                                const cClr = changeColor(chg);
+                                const sc = gzStageColor(row._stageLabel);
+                                const volxDisplay = row._tradeTs.volxVal !== null ? `${row._tradeTs.volxVal.toFixed(1)}x` : '—';
+                                const optDisplay = row._tradeTs.optScore !== null ? String(Math.round(row._tradeTs.optScore)) : (getOptionsSignalStr(row) || '—');
+                                const bucketShort = row._bucket === 'High Growth' ? 'HG' : 'SFG';
+                                const bucketClr = row._bucket === 'High Growth' ? '#0ea5e9' : '#a855f7';
+                                return (
+                                  <tr key={`${row.ticker}-${ri}`}
+                                    onClick={() => row.ticker && handleTickerClick(row.ticker)}
+                                    style={{ cursor: row.ticker ? 'pointer' : 'default' }}
+                                    onMouseEnter={e => setTdBg(e.currentTarget, rowHover)}
+                                    onMouseLeave={e => setTdBg(e.currentTarget, rowBg)}
+                                  >
+                                    {/* Symbol */}
+                                    <td style={{ ...GZ_TD, background: rowBg, fontWeight: 800, color: '#fff',
+                                      position: 'sticky' as const, left: 0, zIndex: 1, boxShadow: '2px 0 4px rgba(0,0,0,0.4)' }}>
+                                      <span>{row.ticker || DASH}</span>
+                                      <span style={{ marginLeft: 5, fontSize: 7, fontWeight: 700, color: bucketClr, background: `${bucketClr}15`, border: `1px solid ${bucketClr}35`, padding: '0px 4px', borderRadius: 2 }}>{bucketShort}</span>
+                                    </td>
+                                    {/* Stage */}
+                                    <td style={{ ...GZ_TD, background: rowBg }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, color: sc.c, background: sc.bg, border: `1px solid ${sc.bd}`, padding: '1px 6px', borderRadius: 3 }}>{row._stageLabel}</span>
+                                    </td>
+                                    {/* Golden Score */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: '#f59e0b', fontWeight: 800, fontSize: 11 }}>
+                                      {Math.round(row._goldenScore)}
+                                    </td>
+                                    {/* Investment Signal */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: '#a855f7', fontWeight: 600, fontSize: 9, maxWidth: 140 }}>
+                                      {row._investDriver}
+                                    </td>
+                                    {/* Trade Signal */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: '#22c55e', fontWeight: 600, fontSize: 9, maxWidth: 120 }}>
+                                      {row._tags.find(t => t.pos && (t.label.includes('VolX') || t.label.includes('Vol/MC') || t.label.includes('Options') || t.label.includes('Flow') || t.label.includes('Volume')))?.label ?? '—'}
+                                    </td>
+                                    {/* VolX */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: row._tradeTs.volxVal !== null && row._tradeTs.volxVal >= 2 ? '#22c55e' : C.dim }}>
+                                      {volxDisplay}
+                                    </td>
+                                    {/* Options */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: row._tradeTs.optScore !== null ? (row._tradeTs.optScore >= 70 ? '#22c55e' : row._tradeTs.optScore >= 50 ? C.amber : C.dim) : C.dim }}>
+                                      {optDisplay}
+                                    </td>
+                                    {/* Price */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: C.text }}>{formatPrice(row.price)}</td>
+                                    {/* % Chg */}
+                                    <td style={{ ...GZ_TD, background: rowBg, color: cClr, fontWeight: 700 }}>{formatChgPct(chg)}</td>
+                                    {/* Tags */}
+                                    <td style={{ ...GZ_TD, background: rowBg, minWidth: 180 }}>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
+                                        {row._tags.map((tag, ti) => (
+                                          <span key={ti} style={{
+                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
+                                            color: tag.pos ? '#f59e0b' : '#ef4444',
+                                            background: tag.pos ? '#f59e0b18' : '#ef444418',
+                                            border: `1px solid ${tag.pos ? '#f59e0b35' : '#ef444430'}`,
+                                          }}>{tag.label}</span>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } /* end golden */
 
                 /* ── FUNDAMENTAL GROUPING ── */
                 if (bottomView === 'fundGrouping') {

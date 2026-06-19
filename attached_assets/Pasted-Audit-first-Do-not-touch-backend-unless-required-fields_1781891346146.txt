@@ -1,0 +1,288 @@
+Audit first. Do not touch backend unless required fields are missing from the already-loaded Watchlist payload. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Add a new bottom tab on the Watchlist page called:
+
+Golden Zone
+
+This tab should be the first tab in the bottom section and should be selected by default when the user visits the Watchlist page.
+
+Golden Zone should show the highest-quality setups that appear strong from both:
+
+1. High Conviction Investment Zone
+2. High Conviction Trade Zone
+
+These are A+ setups:
+
+* strong current/future fundamental growth
+* constructive early technical stage
+* strong trading signal confluence
+* good candidate for either a high-conviction trade or a long-term entry
+
+Tabs:
+Reorder bottom tabs so `Golden Zone` is first.
+
+Expected order:
+
+1. Golden Zone
+2. Themes
+3. Market Cap
+4. Fundamental Screener
+5. Fundamental Grouping
+6. High Conviction Investment Zone
+7. High Conviction Trade Zone
+
+Default:
+
+* `Golden Zone` should be the default selected bottom tab on Watchlist page load.
+* If localStorage currently remembers another bottom tab, either clear/update that behavior or only use localStorage after the user manually changes tabs.
+* The user should land on Golden Zone by default.
+
+Scope:
+Only update Watchlist bottom-section tabs.
+
+Do not change:
+
+* backend
+* main Tickers table
+* Live News
+* Stage column
+* OI column/table layout
+* Add ticker
+* Hide Foreign
+* StockDetailModal / ticker popup
+* existing High Conviction Investment Zone logic except making its derived rows reusable
+* existing High Conviction Trade Zone logic except making its derived rows reusable
+
+Architecture:
+Do not create a third independent scoring formula from scratch.
+
+Reuse the existing derived logic from:
+
+* High Conviction Investment Zone
+* High Conviction Trade Zone
+
+If those tabs currently compute rows inside render branches, extract/reuse helpers so Golden Zone can consume the same results.
+
+Suggested shared helpers:
+
+* getHighConvictionInvestmentRows(rows)
+* getHighConvictionTradeRows(rows)
+* getGoldenZoneRows(rows)
+
+Golden Zone eligibility:
+A ticker qualifies for Golden Zone if:
+
+1. It qualifies for High Conviction Investment Zone
+   AND
+2. It qualifies for High Conviction Trade Zone
+
+Preferred strict intersection:
+
+* Use tickers that appear in both derived row sets.
+
+Fallback if strict intersection is too empty:
+
+* Include names that strongly qualify for one side and are near-qualifying on the other side.
+* But only if they still have:
+
+  * allowed early stage
+  * at least one elite investment/fundamental growth signal
+  * at least one loud trade signal
+
+Do not loosen rules just to fill the tab with mediocre names.
+
+Allowed stages:
+Golden Zone must only include:
+
+* S1 Base
+* S1-2 Watch
+* S2 Breakout
+
+Do not include:
+
+* S2-S3 Advance
+* S3 Momentum
+* S3-S4 Top
+* S4 Decline
+
+Investment-side signals:
+Golden Zone names should have strong current or future fundamental growth such as:
+
+* high revenue growth
+* high EPS growth
+* high revenue growth forecast
+* high EPS forecast
+* high future margin improvement forecast, if available
+* High Growth classification
+* Speculative Future Growth classification with strong forecast/ramp evidence
+
+Trade-side signals:
+Golden Zone names should also have a strong trade setup mix:
+
+* high VolX
+* high Vol / Market Cap
+* strong options score/signal
+* constructive early stage
+* weighted trade confluence score from High Conviction Trade Zone
+
+Scoring:
+Create a blended `goldenZoneScore`.
+
+Suggested weights:
+
+* Investment score: 50%
+* Trade score: 40%
+* Stage quality: 10%
+
+If Investment Zone and Trade Zone already produce scores, reuse them:
+
+* investmentConvictionScore
+* tradeConvictionScore
+
+If names are strict intersection:
+goldenZoneScore = investmentScore * 0.5 + tradeScore * 0.4 + stageScore * 0.1
+
+Stage score:
+
+* S2 Breakout = 100
+* S1-2 Watch = 85
+* S1 Base = 70
+
+Sorting:
+Sort strongest Golden Zone setups first:
+
+1. goldenZoneScore descending
+2. S2 Breakout first
+3. tradeConvictionScore descending
+4. investmentConvictionScore descending
+5. VolX descending
+6. options score descending
+
+UI:
+Render a compact premium-looking table or card list.
+
+Suggested columns:
+
+* Symbol
+* Stage
+* Golden Score
+* Investment Signal
+* Trade Signal
+* VolX
+* Vol / MC
+* Options
+* Price
+* % Change
+* Tags
+
+Investment Signal examples:
+
+* High Growth
+* Future Growth
+* Top 15% Rev Growth
+* Top 15% EPS Growth
+* Top 15% Forecasts
+* Huge Rev Ramp
+
+Trade Signal examples:
+
+* Elite VolX
+* Top Vol/MC
+* Options > 50
+* Options > 70
+* S2 Breakout
+* Flow + Volume
+
+Tags:
+Show compact tags explaining why the ticker qualifies.
+
+Positive tags:
+
+* Golden Zone
+* A+ Setup
+* High Growth
+* Future Growth
+* S2 Breakout
+* S1-2 Watch
+* S1 Base
+* Top Rev Growth
+* Top EPS Growth
+* Top Forecasts
+* Elite VolX
+* Top Vol/MC
+* Strong Options
+* Flow + Volume
+
+Risk tags are allowed only if the overall setup still qualifies:
+
+* Negative FCF
+* Debt Funding Growth
+* Not Profitable Yet
+* High IV
+
+Do not let risk tags be the reason a row qualifies.
+
+Empty state:
+If no tickers qualify, show:
+
+No Golden Zone setups right now.
+
+Subtext:
+Requires both high-conviction investment strength and high-conviction trade confluence in an early stage.
+
+Do not loosen automatically just to fill the tab.
+
+Active watchlist rule:
+Golden Zone must respect the currently selected saved watchlist:
+
+* Primary shows Primary tickers only
+* Close Watch/Favorites shows only those tickers
+* future saved watchlist tabs show only their own tickers
+
+Use active watchlist percentiles only.
+
+Do not calculate percentiles against Primary when another saved watchlist tab is active.
+
+Rows:
+Rows should be clickable and open the existing StockDetailModal.
+
+Performance:
+Do not duplicate expensive CSV merges or repeated calculations unnecessarily.
+If Investment Zone already needs the CSV/fundamental merge and Trade Zone uses live row fields, compute shared derived data once and pass it into all three tabs.
+
+No new data fetching:
+Do not call:
+
+* FMP
+* Tradier
+* options endpoints
+* analyst endpoints
+* per-ticker endpoints
+* backend refresh endpoints
+* LLMs
+
+Validation:
+
+1. New `Golden Zone` tab appears as the first bottom tab.
+2. Golden Zone is selected by default on Watchlist page load.
+3. Existing tabs still work:
+
+   * Themes
+   * Market Cap
+   * Fundamental Screener
+   * Fundamental Grouping
+   * High Conviction Investment Zone
+   * High Conviction Trade Zone
+4. Golden Zone pulls from/reuses the existing Investment Zone and Trade Zone derived logic.
+5. Strict intersection names from both zones appear first.
+6. Only stages S1 Base, S1-2 Watch, and S2 Breakout qualify.
+7. S2-S3 Advance, S3 Momentum, S3-S4 Top, and S4 Decline do not qualify.
+8. Rows show both investment and trade signal evidence.
+9. Rows are sorted by strongest blended Golden Zone score.
+10. Rows open StockDetailModal.
+11. Active saved watchlist filtering works.
+12. No new API/provider calls fire when switching to Golden Zone.
+13. No LLM calls are added.
+14. Empty state appears if no tickers qualify.
+15. No console errors.
