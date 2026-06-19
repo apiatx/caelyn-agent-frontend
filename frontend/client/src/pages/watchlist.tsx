@@ -664,9 +664,9 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, background: `${accent}10` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
               {displayTitle}
             </div>
             {hasAvg && (
@@ -3977,11 +3977,11 @@ export default function WatchlistPage() {
                     const mc = Number(s.market_cap);
                     return Number.isFinite(mc) && mc > 0;
                   });
-                const buckets: { label: string; sub: string; min: number; max: number }[] = [
-                  { label: 'Large Cap', sub: '$100B+',     min: 100_000_000_000, max: Infinity },
-                  { label: 'Mid-Cap',   sub: '$10B–$100B', min: 10_000_000_000,  max: 100_000_000_000 },
-                  { label: 'Small Cap', sub: '$1B–$10B',   min: 1_000_000_000,   max: 10_000_000_000 },
-                  { label: 'Micro Cap', sub: '<$1B',       min: 0,               max: 1_000_000_000 },
+                const buckets: { label: string; sub: string; min: number; max: number; color: string }[] = [
+                  { label: 'Large Cap', sub: '$100B+',     min: 100_000_000_000, max: Infinity,          color: '#22c55e' },
+                  { label: 'Mid-Cap',   sub: '$10B–$100B', min: 10_000_000_000,  max: 100_000_000_000,   color: '#3b82f6' },
+                  { label: 'Small Cap', sub: '$1B–$10B',   min: 1_000_000_000,   max: 10_000_000_000,    color: '#a855f7' },
+                  { label: 'Micro Cap', sub: '<$1B',       min: 0,               max: 1_000_000_000,     color: '#f59e0b' },
                 ];
                 const mcDir = mcSort.dir === 'asc' ? 1 : -1;
                 const numVolXOf = (s: any): number => {
@@ -4023,12 +4023,12 @@ export default function WatchlistPage() {
                       return (
                         <div
                           key={bucket.label}
-                          style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.teal}`, borderRadius: 6, overflow: 'hidden' }}
+                          style={{ flex: '1 1 200px', minWidth: 180, background: C.card, border: `1px solid ${C.border}`, borderLeft: `3px solid ${bucket.color}`, borderRadius: 6, overflow: 'hidden' }}
                         >
                           {/* bucket header */}
-                          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}` }}>
+                          <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bucket.color}10` }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
-                              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em' }}>{bucket.label}</span>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: bucket.color, letterSpacing: '0.06em' }}>{bucket.label}</span>
                               <span style={{ fontSize: 10, fontWeight: 800, color: mcAvg.color, fontFamily: C.font, flexShrink: 0 }}>{mcAvg.text}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
