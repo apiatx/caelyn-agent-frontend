@@ -2150,7 +2150,7 @@ export default function WatchlistPage() {
               gridTemplateColumns: TICKER_GRID,
               padding: '6px 14px',
               borderBottom: `1px solid ${C.border}`,
-              position: 'sticky' as const, top: 0, zIndex: 1,
+              position: 'sticky' as const, top: 0, zIndex: 10,
               background: C.card,
               fontSize: 8, fontWeight: 700, color: C.dim,
               textTransform: 'uppercase' as const, letterSpacing: '0.08em',
