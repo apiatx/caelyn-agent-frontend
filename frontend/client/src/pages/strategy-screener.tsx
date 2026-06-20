@@ -2496,31 +2496,40 @@ function DefianceTab() {
                   return (
                     <tr
                       key={row.symbol}
-                      onClick={() => setTvTicker(chartSym)}
-                      style={{ cursor: 'pointer', background: rowBg, transition: 'background 0.1s' }}
+                      style={{ background: rowBg, transition: 'background 0.1s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = rowBg; }}
                     >
-                      {/* Underlying — sticky left */}
-                      <td style={{
-                        ...TD, textAlign: 'left', fontWeight: 800, color: C.bright, fontSize: 12,
-                        position: 'sticky', left: 0, background: rowBg, zIndex: 1,
-                      }}>
-                        {row.symbol}
+                      {/* Underlying — sticky left, click opens underlying chart */}
+                      <td
+                        onClick={() => setTvTicker(chartSym)}
+                        style={{
+                          ...TD, textAlign: 'left', fontWeight: 800, color: C.bright, fontSize: 12,
+                          position: 'sticky', left: 0, background: rowBg, zIndex: 1,
+                          cursor: 'pointer',
+                        }}
+                        title={`Open ${chartSym} chart`}
+                      >
+                        <span style={{ borderBottom: `1px dashed ${C.bright}50` }}>{row.symbol}</span>
                         {!etf && (
                           <span style={{ marginLeft: 6, fontSize: 8, color: C.red, fontFamily: C.sans }}>mapping error</span>
                         )}
                       </td>
-                      {/* Defiance ETF chip */}
+                      {/* Defiance ETF chip — click opens ETF chart */}
                       <td style={{ ...TD, textAlign: 'left' }}>
                         {etf?.symbol ? (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            fontSize: 10, fontWeight: 700, fontFamily: C.font,
-                            color: '#a78bfa', background: '#a78bfa15',
-                            border: '1px solid #a78bfa35', borderRadius: 4,
-                            padding: '2px 8px', whiteSpace: 'nowrap',
-                          }} title={etf.name ?? ''}>
+                          <span
+                            onClick={() => setTvTicker(etf.symbol)}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                              color: '#a78bfa', background: '#a78bfa15',
+                              border: '1px solid #a78bfa35', borderRadius: 4,
+                              padding: '2px 8px', whiteSpace: 'nowrap',
+                              cursor: 'pointer',
+                            }}
+                            title={`Open ${etf.symbol} chart`}
+                          >
                             {etf.symbol} · 2X Long
                           </span>
                         ) : <span style={{ color: C.dim }}>—</span>}
