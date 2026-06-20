@@ -1,0 +1,150 @@
+Frontend only.
+
+Backend is ready. Update the existing Chain Reaction / Bottlenecks page to support curated anchor tabs.
+
+Critical constraints:
+
+* Do NOT redesign the page.
+* Do NOT create a new page.
+* Do NOT change the existing Chain Reaction table layout.
+* Do NOT change the existing detail drawer layout.
+* Do NOT change TradingView chart behavior.
+* Do NOT change row styling, grade badges, colors, typography, spacing, or visual language.
+* Do NOT touch unrelated pages.
+* Do NOT trigger LLM/web research from the frontend.
+* Reuse the existing Chain Reaction table/detail drawer renderers.
+
+Backend compatibility note:
+The backend confirmed curated anchor rows are now a superset of the existing `/api/bottlenecks/current` row shape.
+
+Current row keys:
+anchor_theme, anchor_ticker, bottleneckReason, bottleneck_score, bottleneck_ticker, bottleneck_type, change_percent_1d, company_name, country, discovery_sources, evidence, exchange, final_score, fundamental_score, lastUpdated, layer, marketCap, marketCapBucket, market_cap, momentum_score, options_score, revenueSignal, social_score, supply_chain_role, theme, theme_alignment_score, themes, volume_score
+
+Curated rows include all of those plus extras:
+anchor_key, anchor_name, confidence, evidence_grade, evidence_grade_reason, giant_anchors, last_curated_at, layer_name, manual_added, relationship_specificity, relationship_type, source_type, source_urls, tradingview_symbol, what_would_break_thesis, why_hidden, why_it_matters, why_now
+
+So:
+
+* Do not create a separate curated table renderer.
+* Use the existing renderer.
+* Use `bottleneck_ticker` as the matching/display ticker where the current page does.
+* Use `tradingview_symbol` for charts only if the current chart component supports it; otherwise keep current chart behavior.
+
+Available endpoints:
+
+* `GET /api/bottlenecks/current`
+* `GET /api/bottlenecks/anchors`
+* `GET /api/bottlenecks/anchor/{anchor_key}`
+* `GET /api/bottlenecks/anchor-overlap`
+* `POST /api/admin/bottlenecks/manual-node`
+* `GET /api/admin/bottlenecks/manual-nodes`
+* `PUT /api/admin/bottlenecks/manual-node/{id}`
+* `DELETE /api/admin/bottlenecks/manual-node/{id}`
+
+Tabs:
+Add tabs above the existing Bottlenecks table:
+
+* Current / All
+* SPCX / SpaceX
+* ANTHROPIC / Anthropic
+* NVDA / NVIDIA
+* OPENAI / OpenAI
+* TSM / TSMC
+* GOOG / Google / Alphabet
+
+Behavior:
+
+1. Default tab should preserve the current page behavior and call `/api/bottlenecks/current`.
+2. Anchor tabs should call `/api/bottlenecks/anchor/{anchor_key}`.
+3. Render anchor tab rows using the exact same existing Chain Reaction table/detail drawer.
+4. Do not special-case curated rows unless needed for small badges.
+
+Multi-anchor overlap:
+
+1. Fetch `GET /api/bottlenecks/anchor-overlap`.
+2. Add a compact “Multi-anchor bottlenecks” strip/card near the top of the Bottlenecks area.
+3. Keep it small and visually consistent.
+4. Show tickers appearing in 2+ anchors.
+5. Example:
+   `TSM — SPCX, ANTHROPIC, NVDA, OPENAI, GOOG`
+6. Add a small row-level badge for rows whose ticker appears in the overlap response:
+   `Multi-anchor`
+   or
+   `Multi-anchor: SPCX, NVDA, OPENAI`
+7. Do not let this dominate the page.
+
+Manual add:
+Add an `Add Bottleneck` button near the anchor tabs or table controls.
+
+Modal fields:
+
+* Anchor
+* Ticker
+* Company name
+* TradingView symbol
+* Supply-chain role
+* Bottleneck score
+* Evidence grade: A / B / C
+* Relationship specificity
+* Evidence text
+* Source URL
+* Deal signed date
+* Notes
+
+Submit:
+`POST /api/admin/bottlenecks/manual-node`
+
+On success:
+
+* close modal
+* refresh active anchor tab
+* refresh overlap data
+* show success toast if the app already has toast behavior
+
+Manual rows:
+
+* render inside the same table
+* show a small `Manual` badge
+* use the same detail drawer and TradingView chart behavior
+* do not render in a separate list
+
+Edit/disable manual rows:
+If straightforward and backend supports it:
+
+* add small edit/disable controls only for manual rows
+* use `PUT /api/admin/bottlenecks/manual-node/{id}`
+* use `DELETE /api/admin/bottlenecks/manual-node/{id}`
+  If this risks scope creep, leave edit/disable for a follow-up and only implement add now.
+
+Error/empty states:
+
+* If an anchor endpoint returns no rows, show the existing-style empty state.
+* If a request fails, show the existing page’s error style.
+* Do not crash the page.
+
+Validation:
+
+* Existing Current / All tab renders exactly like current page.
+* SPCX tab renders curated SpaceX rows.
+* ANTHROPIC tab renders curated Anthropic rows.
+* NVDA tab renders curated NVDA rows.
+* OPENAI tab renders curated OpenAI rows.
+* TSM tab renders curated TSM rows.
+* GOOG tab renders curated Google rows.
+* Existing detail drawer opens from all tabs.
+* TradingView chart still renders.
+* Multi-anchor overlap section renders.
+* Row-level multi-anchor badge renders.
+* Manual add creates a row and it appears in the selected anchor tab.
+* No frontend call triggers LLM/web research.
+* No unrelated pages changed.
+
+Deliverable:
+Report:
+
+* files changed
+* existing components reused
+* tab behavior
+* overlap behavior
+* manual add behavior
+* validation results

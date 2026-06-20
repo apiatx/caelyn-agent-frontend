@@ -102,3 +102,61 @@ export async function fetchScreenerConfig(): Promise<ScreenerConfig> {
   }
   return parseJsonSafely<ScreenerConfig>(res, path);
 }
+
+export async function fetchAnchorRows(anchorKey: string): Promise<ScreenerSnapshot> {
+  const path = `/api/bottlenecks/anchor/${encodeURIComponent(anchorKey)}`;
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<ScreenerSnapshot>(res, path);
+}
+
+export async function fetchAnchorOverlap(): Promise<any> {
+  const path = '/api/bottlenecks/anchor-overlap';
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}
+
+export async function createManualNode(payload: Record<string, unknown>): Promise<any> {
+  const path = '/api/admin/bottlenecks/manual-node';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: screenerHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}
+
+export async function putManualNode(id: string, payload: Record<string, unknown>): Promise<any> {
+  const path = `/api/admin/bottlenecks/manual-node/${encodeURIComponent(id)}`;
+  const res = await fetch(path, {
+    method: 'PUT',
+    headers: screenerHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}
+
+export async function deleteManualNode(id: string): Promise<any> {
+  const path = `/api/admin/bottlenecks/manual-node/${encodeURIComponent(id)}`;
+  const res = await fetch(path, { method: 'DELETE', headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}

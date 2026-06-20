@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ArrowLeft, AlertCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
-import { fetchLatestSnapshot, fetchReport, refreshSnapshot } from '@/lib/screener';
+import { fetchLatestSnapshot, fetchReport, refreshSnapshot, fetchAnchorRows, fetchAnchorOverlap, createManualNode } from '@/lib/screener';
 import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ThematicSection } from '@/components/ui/ticker-thematic';
@@ -75,8 +75,8 @@ function normaliseEntries(snap: ScreenerSnapshot): ScreenerEntry[] {
     snap.candidates || (snap as any).rows || [];
   return rawRows.map((r: any, i: number) => ({
     ...r,
-    ticker:           r.ticker || r.symbol || '',
-    symbol:           r.symbol || r.ticker || '',
+    ticker:           r.ticker || r.symbol || r.bottleneck_ticker || '',
+    symbol:           r.symbol || r.ticker || r.bottleneck_ticker || '',
     market_cap_usd:   r.market_cap_usd ?? r.marketCap ?? r.market_cap,
     market_cap_bucket: r.market_cap_bucket || r.marketCapBucket || '',
     layer_depth:      r.layer_depth ?? (typeof r.layer === 'number' ? r.layer : undefined),
@@ -277,6 +277,7 @@ function looksLikeOtcAdr(tk: string): boolean {
 }
 
 function buildTVSymbol(entry: ScreenerEntry): string {
+  if ((entry as any).tradingview_symbol) return String((entry as any).tradingview_symbol);
   const tk = (entry.ticker || entry.symbol || '').toUpperCase();
   if (!tk) return '';
   const usTicker = entry.adr_ticker || entry.adr_proxy || entry.us_access_proxy;
@@ -901,6 +902,220 @@ function SmartOptionsTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Anchor tab definitions
+   ═══════════════════════════════════════════════════════════════════ */
+const ANCHOR_TABS = [
+  { key: 'current',   label: 'Current / All' },
+  { key: 'SPCX',      label: 'SPCX / SpaceX' },
+  { key: 'ANTHROPIC', label: 'Anthropic' },
+  { key: 'NVDA',      label: 'NVDA / NVIDIA' },
+  { key: 'OPENAI',    label: 'OpenAI' },
+  { key: 'TSM',       label: 'TSM / TSMC' },
+  { key: 'GOOG',      label: 'GOOG / Google' },
+] as const;
+type AnchorTabKey = typeof ANCHOR_TABS[number]['key'];
+
+/* ═══════════════════════════════════════════════════════════════════
+   Manual Add Modal
+   ═══════════════════════════════════════════════════════════════════ */
+const EMPTY_FORM = {
+  anchor_key: '',
+  ticker: '',
+  company_name: '',
+  tradingview_symbol: '',
+  supply_chain_role: '',
+  bottleneck_score: '',
+  evidence_grade: 'B' as 'A' | 'B' | 'C',
+  relationship_specificity: '',
+  evidence: '',
+  source_url: '',
+  deal_signed_date: '',
+  notes: '',
+};
+
+function ManualAddModal({
+  defaultAnchorKey,
+  onClose,
+  onSuccess,
+}: {
+  defaultAnchorKey: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [form, setForm] = useState({ ...EMPTY_FORM, anchor_key: defaultAnchorKey });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState('');
+
+  const set = (k: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async () => {
+    if (!form.ticker.trim()) { setErr('Ticker is required'); return; }
+    if (!form.anchor_key.trim()) { setErr('Anchor is required'); return; }
+    setSubmitting(true); setErr('');
+    try {
+      const score = form.bottleneck_score ? Number(form.bottleneck_score) : undefined;
+      await createManualNode({
+        anchor_key:               form.anchor_key.trim().toUpperCase(),
+        ticker:                   form.ticker.trim().toUpperCase(),
+        company_name:             form.company_name.trim() || undefined,
+        tradingview_symbol:       form.tradingview_symbol.trim() || undefined,
+        supply_chain_role:        form.supply_chain_role.trim() || undefined,
+        bottleneck_score:         Number.isFinite(score) ? score : undefined,
+        evidence_grade:           form.evidence_grade,
+        relationship_specificity: form.relationship_specificity.trim() || undefined,
+        evidence:                 form.evidence.trim() || undefined,
+        source_url:               form.source_url.trim() || undefined,
+        deal_signed_date:         form.deal_signed_date || undefined,
+        notes:                    form.notes.trim() || undefined,
+        manual_added:             true,
+        source_type:              'manual',
+      });
+      onSuccess();
+      onClose();
+    } catch (e: any) {
+      setErr(e?.message || 'Submission failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const INP: CSSProperties = {
+    width: '100%', boxSizing: 'border-box',
+    background: C.bg, border: `1px solid ${C.border}`, borderRadius: 5,
+    color: C.text, fontFamily: C.font, fontSize: 11,
+    padding: '6px 10px', outline: 'none',
+  };
+  const LBL: CSSProperties = {
+    fontFamily: C.font, fontSize: 9, color: C.dim,
+    textTransform: 'uppercase', letterSpacing: '0.07em',
+    display: 'block', marginBottom: 4,
+  };
+  const ROW2: CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 };
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, backdropFilter: 'blur(3px)' }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        width: 'min(560px, 94vw)', maxHeight: '90vh', overflowY: 'auto',
+        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12,
+        zIndex: 301, padding: '24px 28px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: C.bright, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Add Bottleneck
+          </span>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, padding: 4 }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Anchor + Ticker */}
+        <div style={ROW2}>
+          <div>
+            <label style={LBL}>Anchor *</label>
+            <select value={form.anchor_key} onChange={set('anchor_key')} style={INP}>
+              <option value="">— select —</option>
+              {ANCHOR_TABS.filter(t => t.key !== 'current').map(t => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={LBL}>Ticker *</label>
+            <input value={form.ticker} onChange={set('ticker')} style={INP} placeholder="e.g. TSM" autoFocus />
+          </div>
+        </div>
+
+        {/* Company + TV Symbol */}
+        <div style={ROW2}>
+          <div>
+            <label style={LBL}>Company Name</label>
+            <input value={form.company_name} onChange={set('company_name')} style={INP} placeholder="Full company name" />
+          </div>
+          <div>
+            <label style={LBL}>TradingView Symbol</label>
+            <input value={form.tradingview_symbol} onChange={set('tradingview_symbol')} style={INP} placeholder="e.g. TSE:6723" />
+          </div>
+        </div>
+
+        {/* Role + Score */}
+        <div style={ROW2}>
+          <div>
+            <label style={LBL}>Supply-Chain Role</label>
+            <input value={form.supply_chain_role} onChange={set('supply_chain_role')} style={INP} placeholder="e.g. Wafer supplier" />
+          </div>
+          <div>
+            <label style={LBL}>Bottleneck Score (0–100)</label>
+            <input type="number" min={0} max={100} value={form.bottleneck_score} onChange={set('bottleneck_score')} style={INP} placeholder="e.g. 78" />
+          </div>
+        </div>
+
+        {/* Grade + Specificity */}
+        <div style={ROW2}>
+          <div>
+            <label style={LBL}>Evidence Grade</label>
+            <select value={form.evidence_grade} onChange={set('evidence_grade')} style={INP}>
+              <option value="A">A — High confidence</option>
+              <option value="B">B — Medium confidence</option>
+              <option value="C">C — Low confidence</option>
+            </select>
+          </div>
+          <div>
+            <label style={LBL}>Relationship Specificity</label>
+            <input value={form.relationship_specificity} onChange={set('relationship_specificity')} style={INP} placeholder="e.g. Direct contract" />
+          </div>
+        </div>
+
+        {/* Evidence text */}
+        <div style={{ marginBottom: 12 }}>
+          <label style={LBL}>Evidence</label>
+          <textarea value={form.evidence} onChange={set('evidence')} rows={3} style={{ ...INP, resize: 'vertical' }} placeholder="Key evidence or reasoning…" />
+        </div>
+
+        {/* Source URL + Deal Date */}
+        <div style={ROW2}>
+          <div>
+            <label style={LBL}>Source URL</label>
+            <input value={form.source_url} onChange={set('source_url')} style={INP} placeholder="https://…" />
+          </div>
+          <div>
+            <label style={LBL}>Deal Signed Date</label>
+            <input type="date" value={form.deal_signed_date} onChange={set('deal_signed_date')} style={INP} />
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={LBL}>Notes</label>
+          <textarea value={form.notes} onChange={set('notes')} rows={2} style={{ ...INP, resize: 'vertical' }} placeholder="Any additional context…" />
+        </div>
+
+        {err && (
+          <div style={{ fontFamily: C.font, fontSize: 10, color: C.amber, marginBottom: 12, padding: '6px 10px', background: `${C.amber}10`, border: `1px solid ${C.amber}30`, borderRadius: 5 }}>
+            {err}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '7px 18px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: C.font, fontSize: 11, cursor: 'pointer' }}>
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            style={{ padding: '7px 18px', background: C.indigoSub, border: `1px solid ${C.indigo}55`, borderRadius: 6, color: C.indigoFg, fontFamily: C.font, fontSize: 11, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}
+          >
+            {submitting ? 'Saving…' : 'Add Bottleneck'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Chain Reaction Screener (existing page — unchanged)
    ═══════════════════════════════════════════════════════════════════ */
 function StrategyScreenerInner() {
@@ -908,13 +1123,26 @@ function StrategyScreenerInner() {
   const [refreshMsg,    setRefreshMsg]    = useState<string>('');
   const [sortCol,       setSortCol]       = useState<SortCol>('#');
   const [sortDir,       setSortDir]       = useState<'asc' | 'desc'>('asc');
+  const [anchorTab,     setAnchorTab]     = useState<AnchorTabKey>('current');
+  const [showAddModal,  setShowAddModal]  = useState(false);
   const qc = useQueryClient();
 
+  const qKey = anchorTab === 'current'
+    ? ['strategy-screener-latest']
+    : ['bottlenecks-anchor', anchorTab];
+
   const { data: snap, isLoading, error, refetch } = useQuery<ScreenerSnapshot>({
-    queryKey: ['strategy-screener-latest'],
-    queryFn:  () => fetchLatestSnapshot(),
+    queryKey: qKey,
+    queryFn:  () => anchorTab === 'current' ? fetchLatestSnapshot() : fetchAnchorRows(anchorTab),
     staleTime: 5 * 60 * 1000,
     retry: 0,
+  });
+
+  const { data: overlapData } = useQuery<any>({
+    queryKey: ['bottlenecks-anchor-overlap'],
+    queryFn:  fetchAnchorOverlap,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 
   const refreshMut = useMutation({
@@ -979,6 +1207,25 @@ function StrategyScreenerInner() {
       return `${diffDays} days ago`;
     } catch { return null; }
   }, [snap]);
+
+  const overlapMap = useMemo((): Map<string, string[]> => {
+    if (!overlapData) return new Map();
+    const rows: any[] = overlapData.overlaps ?? overlapData.rows ?? overlapData.tickers ?? [];
+    if (!Array.isArray(rows)) return new Map();
+    const map = new Map<string, string[]>();
+    for (const r of rows) {
+      const tk = (r.ticker || r.bottleneck_ticker || r.symbol || '').toUpperCase();
+      const anchors: string[] = r.anchors ?? r.anchor_keys ?? r.anchor_names ?? [];
+      if (tk && anchors.length >= 2) map.set(tk, anchors);
+    }
+    return map;
+  }, [overlapData]);
+
+  const overlapList = useMemo(() => {
+    const out: { ticker: string; anchors: string[] }[] = [];
+    overlapMap.forEach((anchors, ticker) => out.push({ ticker, anchors }));
+    return out.sort((a, b) => b.anchors.length - a.anchors.length);
+  }, [overlapMap]);
 
   const handleColSort = useCallback((col: SortCol) => {
     setSortCol(prev => {
@@ -1098,6 +1345,42 @@ function StrategyScreenerInner() {
           </div>
         </div>
 
+        {/* ── Anchor tabs + Add button ────────────────────── */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`1px solid ${C.border}`, marginBottom:0, flexWrap:'wrap', gap:8 }}>
+          <div style={{ display:'flex', gap:0, overflowX:'auto' }}>
+            {ANCHOR_TABS.map(t => {
+              const active = anchorTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => { setAnchorTab(t.key as AnchorTabKey); setSelectedEntry(null); }}
+                  style={{
+                    padding:'10px 16px', background:'transparent', border:'none',
+                    borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+                    color: active ? C.bright : C.dim,
+                    fontFamily: C.font, fontSize:10, fontWeight: active ? 700 : 400,
+                    cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.12s',
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              display:'flex', alignItems:'center', gap:6,
+              padding:'6px 14px', background:C.indigoSub,
+              border:`1px solid ${C.indigo}40`, borderRadius:6,
+              color:C.indigoFg, fontFamily:C.font, fontSize:10,
+              fontWeight:700, cursor:'pointer', marginRight:4, whiteSpace:'nowrap',
+            }}
+          >
+            + Add Bottleneck
+          </button>
+        </div>
+
         {/* ── Content ─────────────────────────────────────── */}
         {isLoading && !snap && <LoadingState />}
         {error && !snap && (
@@ -1115,6 +1398,28 @@ function StrategyScreenerInner() {
 
         {snap && !snap.error && (
           <>
+            {/* ── Multi-anchor overlap strip ─────────────────── */}
+            {overlapList.length > 0 && (
+              <div style={{
+                margin:'12px 0 4px', padding:'10px 16px',
+                background:`${C.amber}08`, border:`1px solid ${C.amber}20`,
+                borderRadius:8, display:'flex', flexWrap:'wrap', alignItems:'flex-start', gap:8,
+              }}>
+                <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.amber, textTransform:'uppercase', letterSpacing:'0.07em', flexShrink:0, marginTop:2 }}>
+                  Multi-anchor bottlenecks
+                </span>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {overlapList.map(({ ticker, anchors }) => (
+                    <span key={ticker} style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>
+                      <span style={{ color:C.bright, fontWeight:700 }}>{ticker}</span>
+                      {' — '}
+                      <span style={{ color:C.amber }}>{anchors.join(', ')}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {entries.length === 0 ? (
               <div style={{ padding:'60px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
                 No entries in this snapshot.
@@ -1191,6 +1496,16 @@ function StrategyScreenerInner() {
                               </div>
                             )}
                             <AccessBadge entry={e} />
+                            {((e as any).manual_added === true || (e as any).source_type === 'manual') && (
+                              <span style={{ display:'inline-block', marginTop:3, padding:'1px 5px', background:`${C.blue}12`, border:`1px solid ${C.blue}30`, borderRadius:3, color:C.blue, fontFamily:C.font, fontSize:8, fontWeight:700 }}>
+                                Manual
+                              </span>
+                            )}
+                            {overlapMap.has(tk.toUpperCase()) && (
+                              <div style={{ fontFamily:C.font, fontSize:8, color:C.amber, marginTop:3 }}>
+                                Multi-anchor: {overlapMap.get(tk.toUpperCase())!.join(', ')}
+                              </div>
+                            )}
                           </td>
 
                           {/* Company / Role */}
@@ -1269,6 +1584,18 @@ function StrategyScreenerInner() {
             onClose={() => setSelectedEntry(null)}
           />
         </>
+      )}
+
+      {/* ── Manual add modal ─────────────────────────────── */}
+      {showAddModal && (
+        <ManualAddModal
+          defaultAnchorKey={anchorTab === 'current' ? '' : anchorTab}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            qc.invalidateQueries({ queryKey: qKey });
+            qc.invalidateQueries({ queryKey: ['bottlenecks-anchor-overlap'] });
+          }}
+        />
       )}
     </div>
   );
