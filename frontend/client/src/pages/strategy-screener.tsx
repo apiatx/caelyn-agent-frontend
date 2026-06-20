@@ -2385,8 +2385,8 @@ function DefianceTab() {
         case 'chg':     return dir * (num(a, 'change_pct') - num(b, 'change_pct'));
         case 'mktcap':  return dir * (num(a, 'market_cap') - num(b, 'market_cap'));
         case 'volx':    return dir * (num(a, 'vol_x') - num(b, 'vol_x'));
-        case 'volmc':   return dir * (num(a, 'vol_market_cap') - num(b, 'vol_market_cap'));
-        case 'stage':   return dir * (defiStageRank(a.stage) - defiStageRank(b.stage));
+        case 'volmc':   return dir * (num(a, 'vol_mc_ratio') - num(b, 'vol_mc_ratio'));
+        case 'stage':   return dir * (defiStageRank(a.stage_analysis?.label) - defiStageRank(b.stage_analysis?.label));
         default:        return 0;
       }
     });
@@ -2501,7 +2501,7 @@ function DefianceTab() {
                   const etf = row.defiance_etf;
                   const chartSym = row.chart_symbol || row.symbol;
                   if (!row.symbol) return null;
-                  const sc = defiStageColor(row.stage);
+                  const sc = defiStageColor(row.stage_analysis?.label);
                   const rowBg = i % 2 === 0 ? 'transparent' : `${C.border}08`;
                   return (
                     <tr
@@ -2544,15 +2544,15 @@ function DefianceTab() {
                       {/* Vol× */}
                       <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_x)}</td>
                       {/* Vol/MC */}
-                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_market_cap, 2)}</td>
+                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_mc_ratio, 2)}</td>
                       {/* Stage */}
                       <td style={{ ...TD, textAlign: 'left' }}>
-                        {row.stage ? (
+                        {row.stage_analysis?.label ? (
                           <span style={{
                             fontSize: 9, fontWeight: 700, fontFamily: C.font,
                             color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`,
                             borderRadius: 3, padding: '1px 6px', whiteSpace: 'nowrap',
-                          }}>{row.stage}</span>
+                          }}>{row.stage_analysis.label}</span>
                         ) : <span style={{ color: C.dim }}>—</span>}
                       </td>
                       {/* Theme */}

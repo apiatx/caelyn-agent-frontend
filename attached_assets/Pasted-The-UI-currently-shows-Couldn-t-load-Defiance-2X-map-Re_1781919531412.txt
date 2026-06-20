@@ -1,0 +1,77 @@
+The UI currently shows: “Couldn't load Defiance 2X map. Retry”
+
+So the previous frontend validation is not complete. The tab exists, but the actual request is failing.
+
+Audit and debug the live request path end-to-end. Do not make cosmetic changes until the failing request is identified.
+
+Required validation steps:
+
+1. Open the browser/dev console or inspect logs for the Defiance tab request.
+2. Identify the exact request URL being called by the frontend.
+3. Capture:
+
+   * HTTP status
+   * response body
+   * frontend thrown error
+   * proxy logs if applicable
+
+Then run these checks from the frontend/Replit shell:
+
+A. Test frontend proxy route:
+curl -i http://localhost:<FRONTEND_PORT>/api/strategy/defiance
+
+B. Test backend route directly using the backend base URL configured in the frontend proxy:
+curl -i <BACKEND_BASE_URL>/api/strategy/defiance
+
+C. If the backend route direct works but the frontend proxy fails:
+
+* Fix the Express proxy route in routes.ts.
+* Confirm it forwards to exactly:
+  /api/strategy/defiance
+* Confirm it uses the same proxy/helper pattern as the working Smart Options route.
+* Confirm route order does not allow another /api/strategy/* route or catch-all to intercept it.
+* Confirm query params are forwarded if any exist.
+* Confirm errors include backend response body in logs.
+
+D. If the backend route direct fails:
+
+* Stop frontend work.
+* Report that backend route is not reachable from the frontend environment.
+* Include the exact backend URL, status, and body.
+* Do not fake the data or switch back to the watchlist alias.
+
+E. If both curl tests work but the React tab still errors:
+
+* Inspect the React query function.
+* Confirm it parses the real backend response shape.
+* Do not assume the response is a raw array unless it actually is.
+* Support likely shapes safely:
+  response.rows
+  response.data
+  raw array
+* Add temporary console logging only during debugging:
+  console.log("Defiance response", response)
+* Remove noisy logs after fix.
+
+Expected frontend behavior:
+
+* Defiance tab calls GET /api/strategy/defiance only.
+* It must not call /api/watchlist/defiance-2x.
+* Loading state transitions to table rows, not error.
+* Underlying column shows row.symbol.
+* Defiance ETF chip shows row.defiance_etf.symbol · 2X Long.
+* Clicking row opens row.chart_symbol || row.symbol.
+
+Important:
+Do not mark this complete until the actual browser UI loads rows successfully.
+
+Final proof required:
+
+* Paste the successful curl result summary for the frontend proxy route.
+* Paste the successful curl result summary for the backend direct route, or explain why only the proxy route is applicable.
+* Confirm the browser Network tab shows 200 for /api/strategy/defiance.
+* Confirm the Strategy > Defiance tab renders rows.
+* Confirm one sample row:
+  underlying = AMAT
+  ETF badge = AMA · 2X Long
+  row click opens AMAT chart, not AMA.
