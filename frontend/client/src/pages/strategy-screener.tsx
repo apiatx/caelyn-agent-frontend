@@ -2328,10 +2328,297 @@ function TenYearSpxTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Defiance 2X Tab
+   ═══════════════════════════════════════════════════════════════════ */
+
+const DEFI_STAGE_RANK: Record<string, number> = {
+  'S1 Base': 1, 'S1-2 Watch': 2, 'S2 Breakout': 3, 'S2-S3 Advance': 4,
+  'S3 Momentum': 5, 'S3-S4 Top': 6, 'S4 Decline': 7,
+};
+function defiStageRank(s?: string | null): number {
+  if (!s) return 99;
+  for (const [k, v] of Object.entries(DEFI_STAGE_RANK)) {
+    if (s.startsWith(k)) return v;
+  }
+  const m = s.match(/S(\d)/); return m ? Number(m[1]) * 10 : 99;
+}
+function defiStageColor(s?: string | null): { color: string; bg: string; border: string } {
+  if (!s) return { color: C.dim, bg: 'transparent', border: C.border };
+  if (/^S2 Breakout/i.test(s))    return { color: '#14b8a6', bg: 'rgba(20,184,166,0.12)',   border: 'rgba(20,184,166,0.40)' };
+  if (/^S2-S3 Advance/i.test(s))  return { color: '#22c55e', bg: 'rgba(34,197,94,0.10)',    border: 'rgba(34,197,94,0.35)' };
+  if (/^S3 Momentum/i.test(s))    return { color: '#818cf8', bg: 'rgba(129,140,248,0.10)',  border: 'rgba(129,140,248,0.35)' };
+  if (/^S1-2 Watch/i.test(s))     return { color: C.amber,   bg: `${C.amber}18`,            border: `${C.amber}50` };
+  if (/^S1 Base/i.test(s))        return { color: '#60a5fa', bg: 'rgba(96,165,250,0.10)',   border: 'rgba(96,165,250,0.30)' };
+  if (/^S3-S4 Top/i.test(s))      return { color: '#fb923c', bg: 'rgba(251,146,60,0.10)',   border: 'rgba(251,146,60,0.30)' };
+  if (/^S4 Decline/i.test(s))     return { color: C.red,     bg: `${C.red}15`,              border: `${C.red}40` };
+  return { color: C.dim, bg: 'transparent', border: C.border };
+}
+
+type DefiSortKey = 'symbol' | 'etf' | 'price' | 'chg' | 'mktcap' | 'volx' | 'volmc' | 'stage';
+
+function DefianceTab() {
+  const { data, isLoading, error, refetch } = useQuery<any>({
+    queryKey: ['defiance-2x-strategy'],
+    queryFn: () => fetch('/api/strategy/defiance').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    staleTime: 5 * 60_000,
+    gcTime:    15 * 60_000,
+    retry: 1,
+  });
+
+  const [tvTicker, setTvTicker] = useState<string | null>(null);
+  const [sortKey, setSortKey]   = useState<DefiSortKey>('symbol');
+  const [sortDir, setSortDir]   = useState<'asc' | 'desc'>('asc');
+
+  const rawRows: any[] = useMemo(() => {
+    const arr: any[] = Array.isArray(data) ? data : (data?.rows ?? data?.tickers ?? []);
+    return arr.filter((r: any) => r.symbol && String(r.symbol).trim() !== '');
+  }, [data]);
+
+  const rows = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...rawRows].sort((a, b) => {
+      const num = (x: any, field: string) => { const v = Number(x[field]); return Number.isFinite(v) ? v : -Infinity; };
+      switch (sortKey) {
+        case 'symbol':  return dir * (a.symbol ?? '').localeCompare(b.symbol ?? '');
+        case 'etf':     return dir * ((a.defiance_etf?.symbol ?? '').localeCompare(b.defiance_etf?.symbol ?? ''));
+        case 'price':   return dir * (num(a, 'price') - num(b, 'price'));
+        case 'chg':     return dir * (num(a, 'change_pct') - num(b, 'change_pct'));
+        case 'mktcap':  return dir * (num(a, 'market_cap') - num(b, 'market_cap'));
+        case 'volx':    return dir * (num(a, 'vol_x') - num(b, 'vol_x'));
+        case 'volmc':   return dir * (num(a, 'vol_market_cap') - num(b, 'vol_market_cap'));
+        case 'stage':   return dir * (defiStageRank(a.stage) - defiStageRank(b.stage));
+        default:        return 0;
+      }
+    });
+  }, [rawRows, sortKey, sortDir]);
+
+  const handleSort = (key: DefiSortKey) => {
+    if (key === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir(key === 'symbol' || key === 'etf' || key === 'stage' ? 'asc' : 'desc'); }
+  };
+  const arr = (key: DefiSortKey) => sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+  const fmtPrice = (v?: any) => {
+    const n = Number(v); if (!Number.isFinite(n) || n <= 0) return '—';
+    return n >= 100 ? `$${n.toFixed(2)}` : `$${n.toFixed(2)}`;
+  };
+  const fmtPct = (v?: any) => {
+    const n = Number(v); if (!Number.isFinite(n)) return '—';
+    return `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
+  };
+  const fmtCap2 = (v?: any) => {
+    const n = Number(v); if (!Number.isFinite(n) || n <= 0) return '—';
+    if (n >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
+    if (n >= 1e9)  return `$${(n / 1e9).toFixed(1)}B`;
+    if (n >= 1e6)  return `$${(n / 1e6).toFixed(0)}M`;
+    return `$${n.toFixed(0)}`;
+  };
+  const fmtX = (v?: any, dec = 1) => {
+    const n = Number(v); return Number.isFinite(n) && n > 0 ? `${n.toFixed(dec)}×` : '—';
+  };
+  const chgClr = (v?: any) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return C.dim;
+    return n > 0 ? C.green : n < 0 ? C.red : C.dim;
+  };
+
+  const TH = (key: DefiSortKey, label: string, align: 'left' | 'right' = 'right'): CSSProperties => ({
+    padding: '7px 12px', fontSize: 9, fontWeight: 700, letterSpacing: '0.07em',
+    textTransform: 'uppercase', color: sortKey === key ? C.bright : C.dim,
+    textAlign: align, cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
+    borderBottom: `1px solid ${C.border}`, background: C.surface,
+    position: 'sticky', top: 0, zIndex: 2,
+  });
+  const TD: CSSProperties = { padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap', borderBottom: `1px solid ${C.border}`, fontFamily: C.font };
+
+  return (
+    <div style={{ padding: '24px 0', minHeight: 400 }}>
+
+      {/* Disclaimer strip */}
+      <div style={{
+        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
+        padding: '10px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 800, letterSpacing: '0.06em', fontFamily: C.font }}>DEFIANCE 2×</span>
+        <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>
+          Leveraged ETFs reset daily and are intended for active trading.
+        </span>
+        {rawRows.length > 0 && (
+          <span style={{ marginLeft: 'auto', color: C.dim, fontFamily: C.font, fontSize: 10 }}>
+            {rawRows.length} mapped
+          </span>
+        )}
+      </div>
+
+      {/* Loading */}
+      {isLoading && !rawRows.length && (
+        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+          <div style={{ marginBottom: 12, fontSize: 20 }}>⏳</div>
+          Loading Defiance 2X universe…
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !isLoading && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: C.sans, fontSize: 13 }}>
+          Couldn't load Defiance 2X map.{' '}
+          <button onClick={() => refetch()} style={{ color: C.blue, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Retry</button>
+        </div>
+      )}
+
+      {/* Empty */}
+      {!isLoading && !error && rawRows.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+          No mapped Defiance 2X long single-stock ETFs found.
+        </div>
+      )}
+
+      {/* Table */}
+      {rows.length > 0 && (
+        <div style={{
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+          overflow: 'hidden',
+        }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('symbol')} style={{ ...TH('symbol', 'UNDERLYING', 'left'), position: 'sticky', left: 0, zIndex: 3 }}>
+                    Underlying{arr('symbol')}
+                  </th>
+                  <th onClick={() => handleSort('etf')}    style={TH('etf',    'DEFIANCE ETF', 'left')}>Defiance ETF{arr('etf')}</th>
+                  <th onClick={() => handleSort('price')}  style={TH('price',  'PRICE')}>Price{arr('price')}</th>
+                  <th onClick={() => handleSort('chg')}    style={TH('chg',    '1D %')}>1D %{arr('chg')}</th>
+                  <th onClick={() => handleSort('mktcap')} style={TH('mktcap', 'MKT CAP')}>Mkt Cap{arr('mktcap')}</th>
+                  <th onClick={() => handleSort('volx')}   style={TH('volx',   'VOL×')}>Vol×{arr('volx')}</th>
+                  <th onClick={() => handleSort('volmc')}  style={TH('volmc',  'VOL/MC')}>Vol/MC{arr('volmc')}</th>
+                  <th onClick={() => handleSort('stage')}  style={TH('stage',  'STAGE', 'left')}>Stage{arr('stage')}</th>
+                  <th style={{ ...TH('symbol', 'THEME', 'left'), cursor: 'default', color: C.dim }}>Theme</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => {
+                  const etf = row.defiance_etf;
+                  const chartSym = row.chart_symbol || row.symbol;
+                  if (!row.symbol) return null;
+                  const sc = defiStageColor(row.stage);
+                  const rowBg = i % 2 === 0 ? 'transparent' : `${C.border}08`;
+                  return (
+                    <tr
+                      key={row.symbol}
+                      onClick={() => setTvTicker(chartSym)}
+                      style={{ cursor: 'pointer', background: rowBg, transition: 'background 0.1s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = rowBg; }}
+                    >
+                      {/* Underlying — sticky left */}
+                      <td style={{
+                        ...TD, textAlign: 'left', fontWeight: 800, color: C.bright, fontSize: 12,
+                        position: 'sticky', left: 0, background: rowBg, zIndex: 1,
+                      }}>
+                        {row.symbol}
+                        {!etf && (
+                          <span style={{ marginLeft: 6, fontSize: 8, color: C.red, fontFamily: C.sans }}>mapping error</span>
+                        )}
+                      </td>
+                      {/* Defiance ETF chip */}
+                      <td style={{ ...TD, textAlign: 'left' }}>
+                        {etf?.symbol ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                            color: '#a78bfa', background: '#a78bfa15',
+                            border: '1px solid #a78bfa35', borderRadius: 4,
+                            padding: '2px 8px', whiteSpace: 'nowrap',
+                          }} title={etf.name ?? ''}>
+                            {etf.symbol} · 2X Long
+                          </span>
+                        ) : <span style={{ color: C.dim }}>—</span>}
+                      </td>
+                      {/* Price */}
+                      <td style={{ ...TD, textAlign: 'right', color: C.text }}>{fmtPrice(row.price)}</td>
+                      {/* 1D % */}
+                      <td style={{ ...TD, textAlign: 'right', color: chgClr(row.change_pct), fontWeight: 700 }}>{fmtPct(row.change_pct)}</td>
+                      {/* Mkt Cap */}
+                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtCap2(row.market_cap)}</td>
+                      {/* Vol× */}
+                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_x)}</td>
+                      {/* Vol/MC */}
+                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_market_cap, 2)}</td>
+                      {/* Stage */}
+                      <td style={{ ...TD, textAlign: 'left' }}>
+                        {row.stage ? (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, fontFamily: C.font,
+                            color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`,
+                            borderRadius: 3, padding: '1px 6px', whiteSpace: 'nowrap',
+                          }}>{row.stage}</span>
+                        ) : <span style={{ color: C.dim }}>—</span>}
+                      </td>
+                      {/* Theme */}
+                      <td style={{ ...TD, textAlign: 'left', color: C.dim, fontStyle: 'italic', fontSize: 10 }}>
+                        {row.theme ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TradingView chart modal — opens on underlying ticker only */}
+      {tvTicker && (
+        <>
+          <div onClick={() => setTvTicker(null)} style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)',
+            zIndex: 200, backdropFilter: 'blur(3px)',
+          }} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'min(900px, 92vw)', height: 'min(560px, 80vh)',
+            background: C.card, border: `1px solid ${C.border}`,
+            borderRadius: 12, zIndex: 201,
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
+              background: C.surface, flexShrink: 0,
+            }}>
+              <span style={{ color: C.bright, fontFamily: C.font, fontSize: 13, fontWeight: 700 }}>{tvTicker}</span>
+              <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>TradingView Chart</span>
+              <a href={`https://www.tradingview.com/chart/?symbol=${tvTicker}`} target="_blank" rel="noopener noreferrer"
+                style={{ marginLeft: 'auto', color: C.blue, fontFamily: C.font, fontSize: 10, textDecoration: 'none', border: `1px solid ${C.blue}40`, borderRadius: 4, padding: '3px 9px' }}>
+                Open full chart ↗
+              </a>
+              <button onClick={() => setTvTicker(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, fontSize: 18, lineHeight: 1, padding: '0 2px' }}>
+                ×
+              </button>
+            </div>
+            <iframe
+              key={tvTicker}
+              src={`https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=100%25&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=America%2FNew_York&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvTicker)}`}
+              style={{ flex: 1, border: 'none', width: '100%' }}
+              allowFullScreen
+              title={`TradingView chart — ${tvTicker}`}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Strategy Page — five-tab wrapper
    ═══════════════════════════════════════════════════════════════════ */
 export default function StrategyScreenerPage() {
-  const [tab, setTab] = useState<'screener' | 'smart-options' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('smart-options');
+  const [tab, setTab] = useState<'screener' | 'smart-options' | 'defiance' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('smart-options');
 
   const tabStyle = (active: boolean): CSSProperties => ({
     padding: '8px 20px',
@@ -2352,6 +2639,7 @@ export default function StrategyScreenerPage() {
     <div style={{ background: C.bg, minHeight: '100vh' }}>
       <div style={{ borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 0, padding: '0 24px', background: C.surface }}>
         <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>Smart Options</button>
+        <button style={tabStyle(tab === 'defiance')} onClick={() => setTab('defiance')}>Defiance 2×</button>
         <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>VIX Risk Regime</button>
         <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>Weekly Movements</button>
         <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>10Y Yield vs SPX</button>
@@ -2362,6 +2650,11 @@ export default function StrategyScreenerPage() {
       {tab === 'smart-options' && (
         <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
           <SmartOptionsTab />
+        </div>
+      )}
+      {tab === 'defiance' && (
+        <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto' }}>
+          <DefianceTab />
         </div>
       )}
       {tab === 'vix-risk-regime' && (

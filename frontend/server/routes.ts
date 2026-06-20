@@ -5734,6 +5734,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/strategy/defiance', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 35_000);
+      const r = await fetch(`${PB_URL}/api/strategy/defiance`, { headers: pbHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: 'defiance failed' });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[strategy/defiance] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/strategy/vix-risk-regime', async (req, res) => {
     try {
       const ctrl = new AbortController();

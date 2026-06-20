@@ -1,0 +1,127 @@
+Audit first. Backend is now corrected and validated.
+
+Current backend contract:
+Canonical endpoint:
+GET /api/strategy/defiance
+
+Legacy alias still exists:
+GET /api/watchlist/defiance-2x
+
+Use the Strategy endpoint only.
+
+Backend row shape now includes:
+
+* symbol = clean underlying stock ticker
+* chart_symbol = underlying stock ticker
+* quote_source_symbol = underlying stock ticker
+* defiance_etf.symbol = Defiance leveraged ETF ticker
+* is_already_tracked
+* quote_reused
+* price
+* change_pct
+* market_cap
+* vol_x
+* vol_market_cap
+* theme
+* stage
+
+Goal:
+Move the Defiance 2X ETF feature out of Watchlist and into the Strategy page.
+
+Placement:
+
+* Strategy page
+* New tab called “Defiance”
+* It must be the second tab, directly to the right of “Smart Options”
+
+Remove from Watchlist:
+
+* Remove the “2X Stock ETFs” tab from the Watchlist page.
+* Remove Watchlist-specific state/query/rendering added for this feature.
+* Do not touch existing Watchlist tabs, Favorites, news, earnings, bottom groupings, or table behavior.
+
+Strategy tab behavior:
+This is a Defiance 2X leveraged stock screener.
+
+Critical rendering rules:
+
+* Underlying column must show row.symbol.
+* Chart popup must open row.chart_symbol || row.symbol.
+* Price, 1D %, market cap, VolX, Vol/MC, theme, and stage are all for the underlying stock.
+* Defiance ETF column must show row.defiance_etf.symbol as a visible chip/badge.
+* Do NOT use defiance_etf.symbol for the row symbol.
+* Do NOT use defiance_etf.symbol for chart popup.
+* Do NOT fetch ETF quotes/charts on the frontend.
+* Do NOT substitute the ETF ticker when row.symbol is blank. If symbol is blank, exclude the row or show a mapping error state.
+
+Columns:
+
+* Underlying
+* Defiance ETF
+* Price
+* 1D %
+* Market Cap
+* VolX
+* Vol/MC
+* Stage
+* Theme/category if available
+
+Defiance ETF chip:
+Format:
+{ETF_SYMBOL} · 2X Long
+
+Example:
+AMA · 2X Long
+
+But the underlying column for that same row should show:
+AMAT
+
+Chart behavior:
+
+* Clicking the AMAT row opens the AMAT chart/details popup.
+* It must not open AMA.
+* Use existing Strategy/chart popup patterns if they exist.
+* Do not invent a new chart system.
+
+UI:
+
+* Reuse existing Strategy tab styling.
+* Do not redesign the Strategy page.
+* Do not use the Watchlist split layout/news pane.
+* Add small note near the table:
+  “Leveraged ETFs reset daily and are intended for active trading.”
+* Display total count if easy, using backend row count.
+
+States:
+
+* Loading: “Loading Defiance 2X universe…”
+* Empty: “No mapped Defiance 2X long single-stock ETFs found.”
+* Error: “Couldn’t load Defiance 2X map.”
+* Mapping error: “Defiance ETF loaded, but underlying mapping is missing.”
+
+Sorting:
+
+* Underlying alphabetical
+* Defiance ETF alphabetical
+* Price numeric
+* 1D % numeric
+* Market Cap numeric
+* VolX numeric
+* Vol/MC numeric
+* Stage should sort S1 → S2 → S3 → S4 if sortable; otherwise display-only is fine.
+
+Validation checklist:
+
+1. Watchlist page no longer shows “2X Stock ETFs”.
+2. Strategy page shows “Defiance” as the second tab directly after “Smart Options”.
+3. The tab calls GET /api/strategy/defiance, not the Watchlist alias.
+4. Underlying column shows real underlying tickers like AMAT, AMKR, etc.
+5. Defiance ETF chip shows ETF tickers like AMA, AMKL, etc.
+6. No row shows “—” in the underlying column if backend symbol exists.
+7. Clicking a row opens the underlying chart popup.
+8. No chart opens the Defiance ETF ticker.
+9. Existing Smart Options tab still works.
+10. Existing Strategy tabs still work.
+11. Existing Watchlist tabs and Favorites still work.
+12. No frontend fetch loop or duplicate request storm.
+13. No ETF ticker is used as the primary symbol, quote symbol, or chart symbol.
