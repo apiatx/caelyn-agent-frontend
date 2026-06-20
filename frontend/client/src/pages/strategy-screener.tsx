@@ -70,17 +70,28 @@ function fmtDate(d?: string): string {
 }
 
 function normaliseEntries(snap: ScreenerSnapshot): ScreenerEntry[] {
-  const rawRows =
-    snap.results || snap.entries || snap.ranked_list ||
-    snap.candidates || (snap as any).rows || [];
+  /* Try every key shape the backend might use — never drop rows silently */
+  const s = snap as any;
+  const rawRows: any[] =
+    s.results       ||
+    s.entries       ||
+    s.ranked_list   ||
+    s.candidates    ||
+    s.rows          ||
+    s.bottlenecks   ||
+    s.nodes         ||
+    s.tickers       ||
+    s.data          ||
+    s.items         ||
+    [];
   return rawRows.map((r: any, i: number) => ({
     ...r,
-    ticker:           r.ticker || r.symbol || r.bottleneck_ticker || '',
-    symbol:           r.symbol || r.ticker || r.bottleneck_ticker || '',
-    market_cap_usd:   r.market_cap_usd ?? r.marketCap ?? r.market_cap,
+    ticker:            r.ticker           || r.symbol          || r.bottleneck_ticker || '',
+    symbol:            r.symbol           || r.ticker          || r.bottleneck_ticker || '',
+    market_cap_usd:    r.market_cap_usd   ?? r.marketCap       ?? r.market_cap        ?? null,
     market_cap_bucket: r.market_cap_bucket || r.marketCapBucket || '',
-    layer_depth:      r.layer_depth ?? (typeof r.layer === 'number' ? r.layer : undefined),
-    rank:             r.rank ?? i + 1,
+    layer_depth:       r.layer_depth      ?? (typeof r.layer === 'number' ? r.layer : undefined),
+    rank:              r.rank != null ? r.rank : (r.bottleneck_score != null ? -(r.bottleneck_score) : i),
   }));
 }
 
@@ -1210,7 +1221,15 @@ function StrategyScreenerInner() {
 
   const overlapMap = useMemo((): Map<string, string[]> => {
     if (!overlapData) return new Map();
-    const rows: any[] = overlapData.overlaps ?? overlapData.rows ?? overlapData.tickers ?? [];
+    /* Try every possible key the backend might use for the row array */
+    const rows: any[] =
+      overlapData.overlaps ??
+      overlapData.rows     ??
+      overlapData.tickers  ??
+      overlapData.items    ??
+      overlapData.data     ??
+      overlapData.results  ??
+      [];
     if (!Array.isArray(rows)) return new Map();
     const map = new Map<string, string[]>();
     for (const r of rows) {
@@ -1353,7 +1372,7 @@ function StrategyScreenerInner() {
               return (
                 <button
                   key={t.key}
-                  onClick={() => { setAnchorTab(t.key as AnchorTabKey); setSelectedEntry(null); }}
+                  onClick={() => { setAnchorTab(t.key as AnchorTabKey); setSelectedEntry(null); setSortCol('#'); setSortDir('asc'); }}
                   style={{
                     padding:'10px 16px', background:'transparent', border:'none',
                     borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
@@ -1420,12 +1439,24 @@ function StrategyScreenerInner() {
               </div>
             )}
 
+            {/* ── Row count label ────────────────────────────── */}
+            {allEntries.length > 0 && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'10px 0 4px' }}>
+                <span style={{ fontFamily:C.font, fontSize:9, color:C.muted, fontWeight:600 }}>
+                  {allEntries.length} {anchorTab === 'current' ? 'bottlenecks' : 'curated bottlenecks'}
+                </span>
+                {isLoading && (
+                  <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>updating…</span>
+                )}
+              </div>
+            )}
+
             {entries.length === 0 ? (
               <div style={{ padding:'60px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
                 No entries in this snapshot.
               </div>
             ) : (
-              <div style={{ marginTop:16, overflowX:'auto' }}>
+              <div style={{ marginTop:8, overflowX:'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse', tableLayout:'auto' }}>
                   <thead>
                     <tr>

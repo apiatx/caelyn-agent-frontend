@@ -110,7 +110,24 @@ export async function fetchAnchorRows(anchorKey: string): Promise<ScreenerSnapsh
     const body = await res.text().catch(() => '');
     throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
   }
-  return parseJsonSafely<ScreenerSnapshot>(res, path);
+  const data = await parseJsonSafely<any>(res, path);
+  /* Log the response shape so we can confirm which key holds the rows */
+  const d = data as any;
+  const rowCount = (
+    d.rows?.length       ??
+    d.entries?.length    ??
+    d.results?.length    ??
+    d.ranked_list?.length??
+    d.candidates?.length ??
+    d.bottlenecks?.length??
+    d.nodes?.length      ??
+    d.tickers?.length    ??
+    d.items?.length      ??
+    d.data?.length       ??
+    '?'
+  );
+  console.log(`[screener] anchor/${anchorKey} → top-level keys:`, Object.keys(d).join(', '), '| row count:', rowCount);
+  return data as ScreenerSnapshot;
 }
 
 export async function fetchAnchorOverlap(): Promise<any> {

@@ -1,0 +1,200 @@
+Frontend only.
+
+Issue:
+The Chain Reaction / Bottlenecks anchor tabs are not showing all curated bottleneck stocks, especially smaller/niche players.
+
+Backend will expand the curated static data. Your job is to make sure the frontend displays every row returned by the backend and does not silently filter, slice, hide, or drop rows.
+
+Critical constraints:
+
+* Do NOT redesign the page.
+* Do NOT create a new page.
+* Do NOT change the existing table/detail drawer/TradingView design.
+* Do NOT trigger LLM/web research.
+* Do NOT hide rows because market cap, quote, exchange, country, FMP profile, or TradingView symbol is missing.
+* Do NOT filter out foreign tickers.
+* Do NOT filter out OTC tickers.
+* Do NOT limit to top 20/top 40/top 50 unless there is explicit pagination or “show all.”
+* Missing market data should render as `—`, not remove the row.
+
+Audit:
+
+1. Inspect the Chain Reaction / Bottlenecks page component.
+2. Inspect the data fetch for anchor tabs:
+
+   * `/api/bottlenecks/anchor/SPCX`
+   * `/api/bottlenecks/anchor/ANTHROPIC`
+   * `/api/bottlenecks/anchor/NVDA`
+   * `/api/bottlenecks/anchor/OPENAI`
+   * `/api/bottlenecks/anchor/TSM`
+   * `/api/bottlenecks/anchor/GOOG`
+3. Check whether the frontend:
+
+   * slices rows
+   * limits rows to top N
+   * filters rows with null marketCap
+   * filters rows with null quote fields
+   * filters rows without exchange/country
+   * filters foreign ticker formats
+   * filters OTC symbols
+   * applies default search/filter state that hides small names
+   * drops rows because of missing TradingView symbol
+   * only renders first page without obvious pagination
+
+Fix:
+
+* Every row returned by the backend for an anchor tab must be visible somewhere in the table.
+* If many rows exist, use the existing table scroll or pagination pattern.
+* If pagination exists, show total row count and allow access to all rows.
+* If no pagination exists, render all rows in the scrollable table.
+* Default sort should be bottleneck_score/final_score descending, but all rows must remain accessible.
+* Rows with missing data should show `—`.
+
+Add visible count:
+Near the tab/table header, show a small count label:
+`{N} curated bottlenecks`
+
+This count should match the backend row count for the active anchor.
+
+Tabs:
+
+* Current / All should remain unchanged and call `/api/bottlenecks/current`.
+* Anchor tabs should show all rows returned by:
+
+  * SPCX → `/api/bottlenecks/anchor/SPCX`
+  * ANTHROPIC → `/api/bottlenecks/anchor/ANTHROPIC`
+  * NVDA → `/api/bottlenecks/anchor/NVDA`
+  * OPENAI → `/api/bottlenecks/anchor/OPENAI`
+  * TSM → `/api/bottlenecks/anchor/TSM`
+  * GOOG → `/api/bottlenecks/anchor/GOOG`
+
+Validation:
+For each anchor tab, compare:
+
+* backend returned row count
+* frontend displayed row count
+
+They must match.
+
+Validate smaller/niche names are visible:
+
+SPCX:
+
+* Filtronic
+* Wistron NeWeb
+* Chin-Poon
+* Universal Microwave
+* Shenmao
+* Compeq
+* Tong Hsing
+* Meiko
+* Kinpo
+
+NVDA:
+
+* Ajinomoto
+* Ibiden
+* Unimicron
+* Nan Ya PCB
+* Kinsus
+* AT&S
+* Camtek
+* Onto
+* Nova
+* DISCO
+* Auras
+* Browave
+* Eoptolink
+* Innolight
+
+OPENAI:
+
+* CRDO
+* ALAB
+* FN
+* AAOI
+* MOD
+* POWL
+* Hammond Power
+* CAMT
+* NVMI
+* FORM
+* ONTO
+* UCTT
+* ICHR
+* VAT Group
+* AEHR
+* TTMI
+* SIMO
+* Phison
+
+TSM:
+
+* Taiwan Puritic
+* Marketech
+* Scientech
+* Jentech
+* Topco
+* All Ring
+* C Sun
+* United Integrated Services
+* Organo
+* Technoprobe
+* Shibaura
+* Ebara
+* Kokusai
+* ULVAC
+
+GOOG:
+
+* Envicool
+* Victory Giant
+* Auras
+* Inventec
+* Eoptolink
+* Innolight
+* Delta Electronics
+* Credo
+* Fabrinet
+* EMCOR
+* Comfort Systems
+* Powell
+* IES Holdings
+* MYR Group
+* Primoris
+* Sterling Infrastructure
+
+ANTHROPIC:
+
+* WULF
+* CIFR
+* POWL
+* MOD
+* PENG
+* CAMT
+* NVMI
+* ONTO
+* FORM
+* UCTT
+* TTMI
+* FN
+* LITE
+* COHR
+* Kinsus
+* Nan Ya PCB
+
+Also validate:
+
+* detail drawer still opens for small/foreign names
+* TradingView chart attempts to render using existing logic
+* rows with missing market data show `—`
+* multi-anchor overlap still works
+* manual-added rows still appear
+* no unrelated pages changed
+
+Required report:
+Return a table:
+
+Anchor | Backend rows | Frontend displayed rows | Missing visible names fixed | Remaining issues
+
+Do not mark complete until frontend displayed count matches backend row count for every anchor.
