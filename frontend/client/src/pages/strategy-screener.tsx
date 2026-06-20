@@ -2354,7 +2354,7 @@ function defiStageColor(s?: string | null): { color: string; bg: string; border:
   return { color: C.dim, bg: 'transparent', border: C.border };
 }
 
-type DefiSortKey = 'symbol' | 'etf' | 'price' | 'chg' | 'mktcap' | 'volx' | 'volmc' | 'stage';
+type DefiSortKey = 'symbol' | 'etf' | 'price' | 'chg' | 'volx' | 'stage';
 
 function DefianceTab() {
   const { data, isLoading, error, refetch } = useQuery<any>({
@@ -2383,9 +2383,7 @@ function DefianceTab() {
         case 'etf':     return dir * ((a.defiance_etf?.symbol ?? '').localeCompare(b.defiance_etf?.symbol ?? ''));
         case 'price':   return dir * (num(a, 'price') - num(b, 'price'));
         case 'chg':     return dir * (num(a, 'change_pct') - num(b, 'change_pct'));
-        case 'mktcap':  return dir * (num(a, 'market_cap') - num(b, 'market_cap'));
         case 'volx':    return dir * (num(a, 'vol_x') - num(b, 'vol_x'));
-        case 'volmc':   return dir * (num(a, 'vol_mc_ratio') - num(b, 'vol_mc_ratio'));
         case 'stage':   return dir * (defiStageRank(a.stage_analysis?.label) - defiStageRank(b.stage_analysis?.label));
         default:        return 0;
       }
@@ -2406,13 +2404,7 @@ function DefianceTab() {
     const n = Number(v); if (!Number.isFinite(n)) return '—';
     return `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
   };
-  const fmtCap2 = (v?: any) => {
-    const n = Number(v); if (!Number.isFinite(n) || n <= 0) return '—';
-    if (n >= 1e12) return `$${(n / 1e12).toFixed(1)}T`;
-    if (n >= 1e9)  return `$${(n / 1e9).toFixed(1)}B`;
-    if (n >= 1e6)  return `$${(n / 1e6).toFixed(0)}M`;
-    return `$${n.toFixed(0)}`;
-  };
+
   const fmtX = (v?: any, dec = 1) => {
     const n = Number(v); return Number.isFinite(n) && n > 0 ? `${n.toFixed(dec)}×` : '—';
   };
@@ -2489,9 +2481,7 @@ function DefianceTab() {
                   <th onClick={() => handleSort('etf')}    style={TH('etf',    'DEFIANCE ETF', 'left')}>Defiance ETF{arr('etf')}</th>
                   <th onClick={() => handleSort('price')}  style={TH('price',  'PRICE')}>Price{arr('price')}</th>
                   <th onClick={() => handleSort('chg')}    style={TH('chg',    '1D %')}>1D %{arr('chg')}</th>
-                  <th onClick={() => handleSort('mktcap')} style={TH('mktcap', 'MKT CAP')}>Mkt Cap{arr('mktcap')}</th>
                   <th onClick={() => handleSort('volx')}   style={TH('volx',   'VOL×')}>Vol×{arr('volx')}</th>
-                  <th onClick={() => handleSort('volmc')}  style={TH('volmc',  'VOL/MC')}>Vol/MC{arr('volmc')}</th>
                   <th onClick={() => handleSort('stage')}  style={TH('stage',  'STAGE', 'left')}>Stage{arr('stage')}</th>
                   <th style={{ ...TH('symbol', 'THEME', 'left'), cursor: 'default', color: C.dim }}>Theme</th>
                 </tr>
@@ -2539,12 +2529,8 @@ function DefianceTab() {
                       <td style={{ ...TD, textAlign: 'right', color: C.text }}>{fmtPrice(row.price)}</td>
                       {/* 1D % */}
                       <td style={{ ...TD, textAlign: 'right', color: chgClr(row.change_pct), fontWeight: 700 }}>{fmtPct(row.change_pct)}</td>
-                      {/* Mkt Cap */}
-                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtCap2(row.market_cap)}</td>
                       {/* Vol× */}
                       <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_x)}</td>
-                      {/* Vol/MC */}
-                      <td style={{ ...TD, textAlign: 'right', color: C.dim }}>{fmtX(row.vol_mc_ratio, 2)}</td>
                       {/* Stage */}
                       <td style={{ ...TD, textAlign: 'left' }}>
                         {row.stage_analysis?.label ? (
