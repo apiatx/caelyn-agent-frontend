@@ -1,0 +1,117 @@
+Frontend QA / sync pass only.
+
+Do not redesign the page again unless required to fix visible issues.
+Do not edit backend.
+Do not touch unrelated pages.
+Do not call `/api/bottlenecks/current`.
+Do not make market-data calls.
+Do not trigger LLM/web research.
+
+Backend has now expanded the Phase-1 anchor datasets. Refresh the Chain Reaction / Bottlenecks page against the latest backend counts.
+
+Expected backend anchor row counts after latest rebuild:
+
+* X / X Ecosystem: 58
+* ANTHROPIC: 68
+* NVDA: 71
+* OPENAI: 74
+* TSM: 60
+* GOOG: 67
+* AAPL: 139
+* AMD: 117
+* AVGO: 132
+* MSFT: 119
+* META: 120
+* AMZN: 145
+
+Tasks:
+
+1. Verify the frontend is still using the correct default Multi-anchor endpoint:
+
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Do not use the unfiltered/default endpoint for the visible default tab.
+
+2. Verify the default tab is still:
+
+`Multi-anchor bottlenecks`
+
+The old `Current / All` tab should remain gone.
+
+3. Verify no individual anchor tab renders the old repeated “Multi-anchor bottlenecks” section.
+
+Multi-anchor overlap belongs only on the Multi-anchor tab.
+
+4. Verify every anchor tab displays the updated backend row count.
+
+Report:
+
+Tab | Backend rows | Frontend displayed rows | Match? | Drawer works? | Notes
+
+Expected:
+
+* X displayed rows = 58
+* ANTHROPIC displayed rows = 68
+* NVDA displayed rows = 71
+* OPENAI displayed rows = 74
+* TSM displayed rows = 60
+* GOOG displayed rows = 67
+* AAPL displayed rows = 139
+* AMD displayed rows = 117
+* AVGO displayed rows = 132
+* MSFT displayed rows = 119
+* META displayed rows = 120
+* AMZN displayed rows = 145
+
+5. Verify the Multi-anchor tab row count equals the backend response from:
+
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Make sure it is not accidentally capped at 500 if backend has more rows available.
+
+6. Verify dense screener layout still holds with the larger datasets:
+
+* compact rows
+* sticky header
+* no card wall
+* no giant glass cards per stock
+* no giant glass cards per category
+* category chips/filtering still usable
+* sorting still works
+* search still works
+* score filter still works
+* confidence/category filter still works
+
+7. Verify drawer behavior:
+   Open sample rows from:
+
+* Multi-anchor tab: TSM
+* X tab: STM or Samsung
+* NVDA tab: TSM or SK hynix
+* ANTHROPIC tab: AMZN or AVGO
+* AMD tab: TSM or Tongfu
+* META tab: GOOGL or MXL
+* AMZN tab: SAIA or MRVL
+
+Drawer should show:
+
+* TradingView chart attempt
+* ticker/company
+* category/layer
+* bottleneck score
+* supply-chain role
+* evidence / why it matters
+* cross-anchor appearances when applicable
+
+8. Missing market data:
+   Rows with missing price/market cap must still render with `—`.
+   Do not hide foreign/OTC rows.
+
+9. Final browser check:
+
+* no console errors
+* no failed frontend proxy calls
+* no TypeScript errors
+* no unrelated pages changed
+
+Do not mark complete until frontend visible row counts match backend row counts for every tab.
