@@ -125,6 +125,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           path: '/app/strategy-screener'
         },
         {
+          id: 'bottlenecks',
+          label: 'Bottlenecks',
+          icon: <Layers className="w-4 h-4" />,
+          path: '/app/bottlenecks'
+        },
+        {
           id: 'stocks-fundamentals',
           label: 'Compare',
           icon: <TrendingUp className="w-4 h-4" />,

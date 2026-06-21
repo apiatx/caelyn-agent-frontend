@@ -916,11 +916,11 @@ function SmartOptionsTab() {
    Static anchor fallback list (used by ManualAddModal only)
    ═══════════════════════════════════════════════════════════════════ */
 const STATIC_ANCHORS = [
-  { key: 'SPCX',      label: 'X / X Ecosystem' },
-  { key: 'NVDA',      label: 'NVIDIA' },
+  { key: 'NVDA',      label: 'Nvidia' },
+  { key: 'SPCX',      label: 'X Ecosystem' },
   { key: 'AMZN',      label: 'Amazon' },
   { key: 'MSFT',      label: 'Microsoft' },
-  { key: 'GOOG',      label: 'Google / Alphabet' },
+  { key: 'GOOG',      label: 'Google' },
   { key: 'META',      label: 'Meta' },
   { key: 'AAPL',      label: 'Apple' },
   { key: 'TSM',       label: 'TSMC' },
@@ -1306,7 +1306,20 @@ function StrategyScreenerInner() {
     staleTime: 15 * 60 * 1000,
     retry: 1,
   });
-  const anchors: any[] = useMemo(() => anchorsData?.anchors ?? [], [anchorsData]);
+  const LABEL_OVERRIDES: Record<string, string> = {
+    SPCX: 'X Ecosystem',
+    GOOG: 'Google',
+  };
+  const anchors: any[] = useMemo(() => {
+    const raw: any[] = (anchorsData?.anchors ?? []).map((a: any) =>
+      LABEL_OVERRIDES[a.anchor_key]
+        ? { ...a, visible_name: LABEL_OVERRIDES[a.anchor_key] }
+        : a
+    );
+    const nvda = raw.find((a: any) => a.anchor_key === 'NVDA');
+    const rest = raw.filter((a: any) => a.anchor_key !== 'NVDA');
+    return nvda ? [nvda, ...rest] : raw;
+  }, [anchorsData]);
 
   const tabQKey = activeTab === 'multi-anchor'
     ? ['bottlenecks-multi-anchor']
@@ -1462,7 +1475,7 @@ function StrategyScreenerInner() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.indigo, display: 'inline-block', flexShrink: 0 }} />
                 <span style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Chain Reaction · Bottlenecks
+                  Bottlenecks
                 </span>
               </div>
               <h1 style={{ fontFamily: C.sans, fontSize: 22, fontWeight: 700, color: C.bright, margin: '0 0 4px', letterSpacing: '-0.01em' }}>

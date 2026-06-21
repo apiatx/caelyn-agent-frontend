@@ -197,6 +197,7 @@ function Router() {
       <Route path="/chart-radar" component={ChartRadarPage} />
       <Route path="/app/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/strategy-screener" component={StrategyScreenerPage} />
+      <Route path="/app/bottlenecks" component={StrategyScreenerPage} />
       <Route path="/app/about" component={AboutPage} />
       <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
