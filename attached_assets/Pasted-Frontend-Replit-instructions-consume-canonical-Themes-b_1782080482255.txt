@@ -1,0 +1,88 @@
+Frontend Replit instructions — consume canonical Themes backend output
+
+Backend is now ready. The backend merge layer has been validated and the Themes API should now return the enriched/canonical theme universe. Your job is frontend-only.
+
+Goal:
+Update the Themes page to correctly display the backend’s canonical/enriched theme universe without rebuilding the Themes logic and without touching the Watchlist page.
+
+Critical constraints:
+
+1. Start with an audit before writing code.
+2. Do not touch Watchlist page files, Watchlist API usage, Watchlist theme logic, or Watchlist UI.
+3. Do not merge, classify, rename, or calculate theme baskets in the frontend.
+4. Do not fetch the user’s watchlist from the Themes page.
+5. Do not create any frontend-only theme mapping unless needed only for backward-compatible selected-state/URL alias handling.
+6. Do not change the existing Themes page layout unless a tiny display fix is required.
+7. Do not add new data fetch loops.
+8. Do not create new AI/LLM calls.
+
+Audit first:
+Find:
+
+* The Themes page component(s).
+* The Themes API endpoint currently used.
+* Where theme display names are rendered.
+* Where theme slug/id is used for React keys, selected state, sorting, tabs/cards, charts, or URL state.
+* Whether any local frontend theme-name map currently overrides backend names.
+* Whether the page assumes static old theme IDs or old display names.
+
+Expected backend behavior:
+The backend has already merged watchlist theme tickers into the performance-driving `proxy_symbols` field. The frontend should simply display the final Themes API response.
+
+Frontend implementation rules:
+
+1. Use the backend-provided final display name for visible theme titles.
+
+   * Prefer fields like `display_name`, `name`, `label`, or whatever the live API returns as the canonical visible name.
+   * Do not hardcode old names.
+2. Use stable backend theme id/slug for keys and selected state.
+
+   * Prefer canonical slug/id if provided.
+   * Do not use display name as the primary key.
+3. Preserve existing performance rendering:
+
+   * daily / weekly / monthly / YTD / 1Y / 5Y
+   * relative strength
+   * stages
+   * leaders / laggards
+   * sorting
+   * cards/tables/charts
+4. Preserve existing stage naming and stage sorting behavior.
+5. If old selected theme slugs/names are stored in URL/local state and backend provides aliases, resolve them to the canonical theme when possible.
+6. Do not show duplicate old + new theme names if the backend has canonicalized them.
+7. If the backend exposes debug-only merge fields, do not clutter the UI with them unless already supported by an existing tooltip/debug mode.
+8. The Themes page should remain universal for all users.
+
+Validation required:
+
+1. Themes page loads cleanly.
+2. It renders exactly the final backend theme list, not a stale hardcoded/local list.
+3. Canonical display names appear correctly:
+
+   * Data Center Infrastructure
+   * Uranium & Nuclear Energy
+   * Photonics / Lasers
+   * Memory & Storage
+   * Power / Cooling
+4. No duplicate visible rows appear from old aliases.
+5. Daily/weekly/monthly/etc performance still renders.
+6. Sorting still works.
+7. Stage sorting still works.
+8. Theme selection/tabs/cards/charts still work.
+9. Watchlist page files were not modified.
+10. Watchlist page still loads unchanged.
+
+Helpful backend debug endpoint:
+GET /api/themes/merge-debug
+
+Use it only for validation/debugging. The production Themes page should continue using the normal Themes API endpoint unless the existing frontend already uses another intended endpoint.
+
+Deliverable:
+After implementation, report:
+
+* Files audited.
+* Files changed.
+* Which API fields are used for theme id and visible display name.
+* Whether any local theme-name map was removed or bypassed.
+* Confirmation that Watchlist files were untouched.
+* Screenshot/console validation showing canonical theme names rendering on the Themes page.
