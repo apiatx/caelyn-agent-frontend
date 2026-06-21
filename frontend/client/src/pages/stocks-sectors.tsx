@@ -167,6 +167,8 @@ interface ThemeRow {
   breadth_rising_30w_ma_pct: number | null;
   breakout_watch:            boolean | null;
   danger_zone:               boolean | null;
+  representative_symbol:        string | null;
+  representative_symbol_source: string | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -639,7 +641,7 @@ function normalizeThemeStatus(state: string | null): string | null {
 }
 
 function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
-  const ticker    = theme.proxy_symbols_used?.[0] ?? theme.proxy_symbols?.[0] ?? theme.theme_id;
+  const ticker    = theme.representative_symbol ?? theme.proxy_symbols_used?.[0] ?? theme.proxy_symbols?.[0] ?? theme.theme_id;
   const p         = theme.performance;
   const ch7       = p?.["7D"] ?? null;
   const spkPrices = buildThemeSparkline(theme);
@@ -819,7 +821,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const barData = useMemo(() => {
     return selectedThemes
       .map(t => ({
-        name:        t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6),
+        name:        t.representative_symbol ?? t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6),
         displayName: t.display_name,
         value:       pctForItem(t) ?? 0,
         hasData:     pctForItem(t) != null,
@@ -852,7 +854,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
             <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
               <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
-                {r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
+                {r.representative_symbol ?? r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
               </span>
               <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
               <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
@@ -865,7 +867,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
             <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
               <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
-                {r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
+                {r.representative_symbol ?? r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
               </span>
               <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
               <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>

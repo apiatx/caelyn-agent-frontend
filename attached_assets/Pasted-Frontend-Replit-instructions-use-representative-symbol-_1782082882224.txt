@@ -1,0 +1,100 @@
+Frontend Replit instructions — use representative_symbol for Themes Ticker column and TradingView popup
+
+Backend is done. Every theme row from GET /api/themes/relative-strength now includes:
+
+* representative_symbol
+* representative_symbol_source
+
+The backend validated:
+
+* 60 themes returned
+* 0 representative_symbol values are CUSTOM or null
+* 0 watchlist-added individual stocks are used as representative symbols
+* performance basket remains unchanged
+* Watchlist files were untouched
+
+Goal:
+Update the Themes page so the visible Ticker column and TradingView popup use `representative_symbol`.
+
+Important:
+Do not change theme performance calculations.
+Do not change backend logic.
+Do not touch Watchlist page files.
+Do not remove component chips under theme names.
+Do not use proxy_symbols[0] or lead_proxy for the visible Ticker column anymore.
+
+Audit first:
+
+1. Open the Themes page file. Backend audit previously found it is likely:
+
+   * frontend/client/src/pages/stocks-sectors.tsx
+2. Find the row normalization function, likely normalizeThemeToRow.
+3. Find where the row ticker is assigned.
+4. Find where `CUSTOM` is generated or displayed.
+5. Find where the TradingView popup/chart symbol is assigned.
+6. Confirm the live API row includes `representative_symbol`.
+
+Required frontend behavior:
+
+1. Ticker column must display `theme.representative_symbol`.
+2. TradingView popup must open using `theme.representative_symbol`.
+3. Never display `CUSTOM` in the Ticker column.
+4. Do not derive the Ticker column from:
+
+   * lead_proxy
+   * proxy_symbols[0]
+   * first component chip
+   * first performance basket symbol
+5. Keep `lead_proxy` available if the existing code still uses it for price/history display, but do not use it as the visible chart/display ticker.
+6. Preserve existing performance values:
+
+   * 1D
+   * 7D
+   * 30D
+   * YTD
+   * 1Y
+   * 5Y
+   * score
+   * trend
+   * status
+   * stage
+7. Preserve existing sorting.
+8. Preserve existing stage sorting.
+9. Preserve existing theme tabs/classification filters.
+10. Do not touch Watchlist page files.
+
+Expected before/after examples:
+
+* Substrates / Packaging: CUSTOM → SOXX
+* AI Networking: CUSTOM → SMH
+* Semiconductor Equipment: CUSTOM → SOXX
+* Power / Cooling: CUSTOM → GRID
+* Quantum Computing: CUSTOM → QTUM
+* Photonics / Lasers: CUSTOM → ROBO
+* Data Center Infrastructure: ADEA → DTCR
+* Clean Energy: ARRY → ICLN
+* Uranium & Nuclear Energy: ASPI → URA
+* Defense: AIR → ITA
+
+Validation required:
+
+1. Themes page loads cleanly.
+2. Ticker column has zero CUSTOM rows.
+3. Ticker column uses backend representative_symbol.
+4. TradingView popup opens with backend representative_symbol.
+5. The component chips under the theme name still show the basket/components as before.
+6. Performance columns are unchanged.
+7. Sorting still works.
+8. Stage sorting still works.
+9. Watchlist page files were not modified.
+10. Browser console has no new errors or warnings.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Exact field used for visible ticker.
+* Exact field used for TradingView popup.
+* Confirmation that CUSTOM no longer appears in the Ticker column.
+* Confirmation that Watchlist files were untouched.
