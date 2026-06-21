@@ -1,0 +1,130 @@
+Frontend fix only.
+
+The previous change was wrong.
+
+Problem:
+`/app/bottlenecks` was routed to `StrategyScreenerPage`, which duplicated the entire Strategy page. That is not what I wanted.
+
+I only wanted the old `AI Bottlenecks` tab/content from the Strategy page moved into its own standalone page called `Bottlenecks`.
+
+Fix the architecture.
+
+Do not edit backend.
+Do not touch unrelated pages.
+Do not redesign the Bottlenecks screener again.
+Do not change the backend endpoints.
+Do not fix the unrelated Maximum update depth warning in WeeklyPriceMovementsTab unless it directly blocks this page.
+
+Required outcome:
+
+1. `/app/strategy`
+   Should show the Strategy page only.
+
+It should NOT render the AI Bottlenecks / Chain Reaction screener tab anymore if that content has been moved.
+
+It should NOT duplicate the Bottlenecks page inside Strategy.
+
+2. `/app/bottlenecks`
+   Should show only the Bottlenecks page.
+
+It should render only the AI Bottlenecks / Chain Reaction screener content that was previously the AI Bottlenecks tab.
+
+It should NOT render:
+
+* Strategy page header
+* Strategy tab bar
+* Smart Options tab
+* Defiance tab
+* Weekly Price Movements
+* Strategy screener sections
+* any other Strategy page tabs/components
+
+3. Create a dedicated page/component if needed.
+
+Preferred structure:
+
+* Extract the Bottlenecks screener content into a standalone component, for example:
+
+  * `BottlenecksPage`
+  * `BottlenecksScreener`
+  * `ChainReactionBottlenecksPage`
+
+Then:
+
+* `/app/bottlenecks` renders that standalone Bottlenecks page/component
+* `/app/strategy` renders the Strategy page without the AI Bottlenecks content
+
+Do not route `/app/bottlenecks` to the full `StrategyScreenerPage`.
+
+4. Preserve the Bottlenecks page UI from the recent rebuild:
+
+* default tab: `Multi-anchor Bottlenecks`
+* endpoint: `/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+* anchor tabs: Nvidia first, then X Ecosystem, then the rest
+* labels:
+
+  * `X Ecosystem`, not `X / X Ecosystem`
+  * `Google`, not `Google / Alphabet`
+* dense screener tables
+* drawer behavior
+* TradingView chart behavior
+* filters/sorting
+* no old Current / All tab
+* no repeated Multi-anchor section on every anchor tab
+
+5. Header text on `/app/bottlenecks`:
+   The page header should be:
+
+Eyebrow / top label:
+`Bottlenecks`
+
+Main title / subtitle:
+`Chain Reaction`
+
+Do not show:
+`Chain Reaction · Bottlenecks`
+
+6. Sidebar:
+   Keep the new sidebar item:
+   `Bottlenecks`
+   under or near Strategy.
+
+It should link to:
+`/app/bottlenecks`
+
+7. Route cleanup:
+   Find and remove the bad route pattern:
+
+`/app/bottlenecks -> StrategyScreenerPage`
+
+Replace it with:
+
+`/app/bottlenecks -> BottlenecksPage`
+
+8. Validation:
+   Open `/app/strategy` and confirm:
+
+* Strategy page is not duplicated
+* Bottlenecks screener is not rendered as a full Strategy duplicate
+* no new sidebar duplication
+
+Open `/app/bottlenecks` and confirm:
+
+* only Bottlenecks / Chain Reaction screener is visible
+* no Strategy tabs or unrelated Strategy content
+* Multi-anchor Bottlenecks is default
+* Nvidia tab is first after Multi-anchor
+* X label is `X Ecosystem`
+* Google label is `Google`
+* drawer still opens
+* no failed proxy calls
+* no TypeScript errors
+* no browser console errors caused by this page
+
+Report exactly:
+
+* files changed
+* what component was extracted or reused
+* what route now powers `/app/bottlenecks`
+* whether AI Bottlenecks was removed from Strategy tab rendering
+* validation screenshots/logs if available

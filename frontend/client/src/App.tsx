@@ -64,7 +64,7 @@ import InsiderActivityPage from "@/pages/stocks-insider-activity";
 import WhaleWatchPage from "@/pages/whale-watch";
 import AboutPage from "@/pages/about";
 import WatchlistPage from "@/pages/watchlist";
-import StrategyScreenerPage from "@/pages/strategy-screener";
+import StrategyScreenerPage, { BottlenecksPage } from "@/pages/strategy-screener";
 import MultiChartsPage from "@/pages/multicharts";
 import ChartRadarPage from "@/pages/chart-radar";
 
@@ -197,7 +197,7 @@ function Router() {
       <Route path="/chart-radar" component={ChartRadarPage} />
       <Route path="/app/strategy-screener" component={StrategyScreenerPage} />
       <Route path="/strategy-screener" component={StrategyScreenerPage} />
-      <Route path="/app/bottlenecks" component={StrategyScreenerPage} />
+      <Route path="/app/bottlenecks" component={BottlenecksPage} />
       <Route path="/app/about" component={AboutPage} />
       <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />

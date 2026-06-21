@@ -1419,7 +1419,7 @@ function StrategyScreenerInner() {
     else                        { setSortCol('score');        setSortDir('desc'); }
   }, []);
 
-  useSetPageContext('[Page: Chain Reaction Bottlenecks — Multi-anchor supply chain intelligence screener]');
+  useSetPageContext('[Page: Chain Reaction Bottlenecks — Multi-anchor supply chain intelligence screener]', []);
 
   const tkOf   = (r: any) => r.ticker || r.bottleneck_ticker || '';
   const nameOf = (r: any) => r.company_name || tkOf(r);
@@ -3059,8 +3059,12 @@ function DefianceTab() {
 /* ═══════════════════════════════════════════════════════════════════
    Strategy Page — five-tab wrapper
    ═══════════════════════════════════════════════════════════════════ */
+export function BottlenecksPage() {
+  return <StrategyScreenerInner />;
+}
+
 export default function StrategyScreenerPage() {
-  const [tab, setTab] = useState<'screener' | 'smart-options' | 'defiance' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('smart-options');
+  const [tab, setTab] = useState<'smart-options' | 'defiance' | 'vix-risk-regime' | 'weekly-price-movements' | 'ten-year-spx'>('smart-options');
 
   const tabStyle = (active: boolean): CSSProperties => ({
     padding: '8px 20px',
@@ -3085,10 +3089,8 @@ export default function StrategyScreenerPage() {
         <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>VIX Risk Regime</button>
         <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>Weekly Movements</button>
         <button style={tabStyle(tab === 'ten-year-spx')} onClick={() => setTab('ten-year-spx')}>10Y Yield vs SPX</button>
-        <button style={tabStyle(tab === 'screener')} onClick={() => setTab('screener')}>AI Bottlenecks</button>
       </div>
 
-      {tab === 'screener' && <StrategyScreenerInner />}
       {tab === 'smart-options' && (
         <div style={{ padding: '0 24px', maxWidth: 1100, margin: '0 auto' }}>
           <SmartOptionsTab />
