@@ -1,0 +1,83 @@
+Frontend Replit follow-up — CUSTOM still showing in Themes Ticker column
+
+The previous change did not fully fix the UI. The live Themes page still shows `CUSTOM` in the Ticker column for:
+
+* Substrates / Packaging
+* AI Networking
+* Semiconductor Equipment
+* Power / Cooling
+* Photonics / Lasers
+
+This means the frontend probably updated normalizeThemeToRow, but the actual Ticker cell render still has a conditional branch that displays a `CUSTOM` badge when proxy_type/classification/custom basket is detected.
+
+Important clarification:
+The Ticker column must show the backend `representative_symbol` for every row. Always. No exceptions.
+
+The `CUSTOM` badge should never appear in the Ticker column.
+
+Audit first:
+
+1. Re-open `frontend/client/src/pages/stocks-sectors.tsx`.
+2. Find the actual table cell rendering for the Ticker column.
+3. Search for all occurrences of:
+
+   * `CUSTOM`
+   * `custom`
+   * `proxy_type`
+   * `proxyType`
+   * `isCustom`
+   * `ticker`
+   * `lead_proxy`
+   * `proxy_symbols_used`
+4. Identify the exact render branch still outputting `CUSTOM`.
+5. Confirm whether the table cell ignores `row.ticker` when the row is custom/hybrid.
+
+Required fix:
+
+1. In the Ticker column cell, always render the row’s representative ticker:
+
+   * `row.ticker`, if normalizeThemeToRow already maps `theme.representative_symbol` into `row.ticker`
+   * or directly `theme.representative_symbol`, depending on component structure.
+2. Remove/disable the special Ticker-column branch that displays `CUSTOM`.
+3. Keep any component chips under the theme name unchanged.
+4. Keep any internal proxy_type/classification logic used for filtering unchanged.
+5. Do not touch Watchlist files.
+6. Do not change theme performance calculations.
+7. Do not use `lead_proxy`, `proxy_symbols_used[0]`, or first basket component as the visible Ticker column value.
+8. TradingView popup should use the same representative symbol shown in the Ticker column.
+
+Important:
+It is okay if two themes use the same representative ETF/chart ticker, such as SOXX. That ticker is only the TradingView representative symbol. The 1D/7D/30D/YTD/1Y/5Y performance columns must continue to come from the backend’s merged theme performance basket, not from the representative ETF alone.
+
+Also verify Semiconductors:
+The Semiconductors row should not show AMD as the representative ticker if the backend provides a representative ETF like SMH/SOXX/SOXQ. If it still shows AMD, the frontend is still using old lead_proxy/first-proxy display logic somewhere.
+
+Validation must be visual, not API-only:
+
+1. Open the authenticated app page, not just the API.
+2. Confirm the Ticker column visibly shows:
+
+   * Substrates / Packaging → SOXX
+   * AI Networking → SMH
+   * Semiconductor Equipment → SOXX
+   * Power / Cooling → GRID
+   * Quantum Computing → QTUM
+   * Photonics / Lasers → ROBO
+   * Data Center Infrastructure → DTCR
+   * Clean Energy → ICLN
+   * Uranium & Nuclear Energy → URA
+   * Defense → ITA
+3. Confirm zero visible `CUSTOM` values in the Ticker column.
+4. Confirm the component chips under the theme name still show the basket symbols.
+5. Confirm TradingView popup opens using the representative symbol.
+6. Confirm performance columns still render unchanged.
+7. Confirm Watchlist files were untouched.
+
+Deliverable:
+Report:
+
+* Exact render branch that was still showing CUSTOM.
+* Files changed.
+* Screenshot/visual confirmation from authenticated Themes page.
+* Confirmation that no performance math was changed.
+* Confirmation that Watchlist files were untouched.

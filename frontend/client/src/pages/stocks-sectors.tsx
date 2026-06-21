@@ -1518,15 +1518,7 @@ function UnifiedThemesCard({
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                          {row.proxy_type === "custom" ? (
-                            row.key === "pre_ipo" ? (
-                              <span className="font-mono font-bold text-white text-sm">VCX</span>
-                            ) : (
-                              <span className="text-[8px] font-bold tracking-wider px-1 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/30">CUSTOM</span>
-                            )
-                          ) : (
-                            <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
-                          )}
+                          <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
