@@ -1,0 +1,319 @@
+Frontend only.
+
+Rebuild the Chain Reaction / Bottlenecks page into a tight screener-style page using the new backend endpoints.
+
+Do not edit backend.
+Do not touch unrelated pages.
+Do not trigger LLM/web research.
+Do not make new market-data calls from frontend.
+Do not use `/api/bottlenecks/current` for the visible default tab.
+Keep the existing TradingView chart behavior in the drawer/popup.
+Missing market data should render as `—`, not hide rows.
+
+Backend endpoints now available:
+
+1. Multi-anchor screener:
+   `GET /api/bottlenecks/multi-anchor-screener`
+
+Important:
+For the default Multi-anchor tab, call it with:
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Do not use the unfiltered endpoint for the default tab. The default tab should show only tickers appearing in 2+ anchors.
+
+2. Anchor detail:
+   `GET /api/bottlenecks/anchor/{anchor_key}`
+
+3. Ticker drawer detail:
+   `GET /api/bottlenecks/anchor/{anchor_key}/ticker/{ticker}`
+
+4. Anchor list:
+   `GET /api/bottlenecks/anchors`
+
+Page architecture:
+
+1. Remove the old `Current / All` tab label.
+
+Replace it with:
+`Multi-anchor bottlenecks`
+
+This should be the default tab.
+
+It should not show the old outdated weekly screener rows from `/api/bottlenecks/current`.
+
+2. Remove the repeated “Multi-anchor bottlenecks” section from every individual anchor tab.
+
+Multi-anchor overlap belongs only on the `Multi-anchor bottlenecks` tab.
+
+3. Keep the anchor tabs using backend anchor metadata.
+
+Visible tabs should be:
+
+* Multi-anchor bottlenecks
+* X
+* Anthropic
+* NVDA
+* OpenAI
+* TSM
+* Google
+* Apple
+* AMD
+* Broadcom
+* Microsoft
+* Meta
+* Amazon
+
+Use backend `visible_name`, `subtitle`, and `display_order` where available.
+
+Important X behavior:
+
+* Use anchor key `X` for the visible tab if supported.
+* Backend also aliases `SPCX`, but the frontend display should say `X / X Ecosystem`.
+* Subtitle should show `SpaceX / Tesla / xAI` if available.
+
+Visual direction:
+
+Make this feel like a serious bottleneck screener / trading terminal, not a card wall.
+
+Primary display should be a dense table.
+
+Do not use:
+
+* giant stock cards
+* huge glass-card rows
+* one big card per category
+* repeated multi-anchor cards on every tab
+* oversized row spacing
+
+Use:
+
+* compact rows
+* sticky table header
+* sortable columns
+* quick filters
+* anchor badges
+* category chips
+* clean dark/glass styling consistent with the rest of the app
+
+Multi-anchor tab:
+
+Endpoint:
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Header text:
+`{N} multi-anchor bottlenecks across {M} anchors`
+
+Default sort:
+
+1. anchor_count desc
+2. max_bottleneck_score desc
+3. avg_bottleneck_score desc
+
+Columns:
+
+* Ticker
+* Company
+* Anchors
+* Anchor Count
+* Primary Layer / Category
+* Role
+* Max Score
+* Avg Score
+* Directness / Confidence
+* Market Cap
+* 1D %
+* VolX / momentum if available
+* Options / flow score if available
+* Why it matters preview
+
+Backend row fields may include:
+
+* ticker
+* bottleneck_ticker
+* tradingview_symbol
+* company_name
+* anchor_count
+* anchors
+* anchor_names
+* anchor_badges
+* categories
+* categories_by_anchor
+* roles_by_anchor
+* scores_by_anchor
+* max_bottleneck_score
+* avg_bottleneck_score
+* overlap_score
+* best_evidence_grade
+* layers
+* themes
+* marketCap
+* market_cap
+* price
+* change_percent_1d
+* volume_score
+* momentum_score
+* fundamental_score
+* options_score
+
+Some market fields may be null. Display `—`.
+
+Anchor tabs:
+
+Endpoint:
+`/api/bottlenecks/anchor/{anchor_key}`
+
+Each anchor tab should be a tight screener table.
+
+Header text:
+`{N} bottlenecks across {M} categories`
+
+Default sort:
+
+1. bottleneck_score desc
+2. category_order asc
+
+Columns:
+
+* Ticker
+* Company
+* Category / Layer
+* Role
+* Bottleneck Score
+* Directness / Confidence
+* Basket / Tier if available
+* Market Cap
+* 1D %
+* VolX / momentum if available
+* Options / flow score if available
+* Why it matters preview
+
+Backend row fields may include:
+
+* ticker
+* bottleneck_ticker
+* tradingview_symbol
+* company_name
+* category_name
+* category_order
+* category_rank
+* layer
+* layer_name
+* supply_chain_role
+* bottleneck_score
+* final_score
+* directness
+* status
+* confidence
+* relationship_specificity
+* relationship_type
+* evidence
+* why_it_matters
+* why_hidden
+* why_now
+* what_would_break_thesis
+* basket_tier
+* basket_name
+* trade_grade
+* risk_notes
+* invalidation_notes
+* marketCap
+* market_cap
+* price
+* change_percent_1d
+* volume_score
+* momentum_score
+* fundamental_score
+* options_score
+* manual_added
+
+Category display:
+
+Do not make category cards.
+
+Use either:
+
+* compact category chips above the table
+* category divider rows inside the table
+* optional grouped table sections expanded by default
+
+Every row must remain visible unless filtered by the user.
+
+Filters:
+
+At top of the table:
+
+* Search ticker/company
+* Category dropdown/chips
+* Score range
+* Directness/confidence
+* Market cap bucket if available
+* Anchor count filter on Multi-anchor tab
+* “Small / asymmetric names” toggle if supported by backend fields
+* “Confirmed/direct only” toggle if supported by backend fields
+
+Filters must not silently hide rows on initial page load.
+
+Initial page load should show all rows for the active tab.
+
+Drawer / popup:
+
+Clicking a row opens the existing detail drawer/popup.
+
+For anchor tabs, fetch:
+`/api/bottlenecks/anchor/{anchor_key}/ticker/{ticker}`
+
+For Multi-anchor rows:
+
+* Use the ticker’s strongest/primary anchor if backend provides one.
+* If not, use the first anchor in the row’s `anchors` array.
+* Then fetch `/api/bottlenecks/anchor/{anchor_key}/ticker/{ticker}`.
+* The drawer should also display `cross_anchor_appearances` if returned.
+
+Drawer should show:
+
+* TradingView chart using existing logic
+* ticker/company/header
+* anchor badges
+* bottleneck score
+* directness/confidence
+* category/layer
+* supply-chain role
+* why it matters
+* why hidden
+* why now
+* evidence bullets
+* source URLs if present
+* what would break thesis
+* related anchors / cross-anchor appearances
+* trade overlay / risk overlay if returned
+
+Do not cram full research into the table. Table is for ranking/filtering. Drawer is for full research.
+
+Remove old behavior:
+
+* Do not render old `Current / All` weekly screener rows.
+* Do not render the old weak “Multi-anchor bottlenecks” box section on every anchor tab.
+* Do not call `/api/bottlenecks/current` for this page’s visible table.
+* Do not remove the backend route; just stop using it in frontend.
+
+Validation:
+
+For each tab, compare backend count to frontend displayed count.
+
+Report:
+Tab | Backend rows | Frontend displayed rows | Filters work? | Drawer works? | Missing rows?
+
+Required:
+
+* Multi-anchor displayed rows equals `/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000` row count.
+* Every anchor tab displayed rows equals backend `row_count`.
+* No rows vanish because market data is missing.
+* Foreign/OTC rows remain visible.
+* Detail drawer opens for every row type.
+* TradingView chart still attempts to render using existing logic.
+* Old repeated Multi-anchor section is removed from individual tabs.
+* Old `Current / All` tab is gone.
+* Default tab is `Multi-anchor bottlenecks`.
+* No unrelated pages changed.
+
+Do not mark complete until the page feels like a clean screener, not a card wall.

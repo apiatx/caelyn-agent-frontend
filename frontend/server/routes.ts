@@ -6444,6 +6444,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/bottlenecks/multi-anchor-screener', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    try {
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const url = `${SH_URL}/api/bottlenecks/multi-anchor-screener${qs ? `?${qs}` : ''}`;
+      const r = await fetch(url, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
+  app.get('/api/bottlenecks/anchor/:anchor_key/ticker/:ticker', async (req, res) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    try {
+      const url = `${SH_URL}/api/bottlenecks/anchor/${encodeURIComponent(req.params.anchor_key)}/ticker/${encodeURIComponent(req.params.ticker)}`;
+      const r = await fetch(url, { headers: shHdr(), signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      return res.json(await r.json());
+    } catch (e: any) {
+      clearTimeout(timer);
+      return res.status(500).json({ error: e?.name === 'AbortError' ? 'Request timed out' : (e?.message || 'Fetch failed') });
+    }
+  });
+
   app.get('/api/bottlenecks/anchor/:anchor_key', async (req, res) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30_000);

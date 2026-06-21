@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ArrowLeft, AlertCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
-import { fetchLatestSnapshot, fetchReport, refreshSnapshot, fetchAnchorRows, fetchAnchorOverlap, createManualNode } from '@/lib/screener';
+import { fetchLatestSnapshot, fetchReport, refreshSnapshot, fetchAnchorRows, fetchAnchorOverlap, createManualNode, fetchMultiAnchorScreener, fetchAnchorList, fetchAnchorTickerDetail } from '@/lib/screener';
 import type { ScreenerSnapshot, ScreenerEntry, ScreenerReport } from '@/types/screener';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ThematicSection } from '@/components/ui/ticker-thematic';
@@ -913,18 +913,22 @@ function SmartOptionsTab() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Anchor tab definitions
+   Static anchor fallback list (used by ManualAddModal only)
    ═══════════════════════════════════════════════════════════════════ */
-const ANCHOR_TABS = [
-  { key: 'current',   label: 'Current / All' },
-  { key: 'SPCX',      label: 'SPCX / SpaceX' },
-  { key: 'ANTHROPIC', label: 'Anthropic' },
-  { key: 'NVDA',      label: 'NVDA / NVIDIA' },
+const STATIC_ANCHORS = [
+  { key: 'SPCX',      label: 'X / X Ecosystem' },
+  { key: 'NVDA',      label: 'NVIDIA' },
+  { key: 'AMZN',      label: 'Amazon' },
+  { key: 'MSFT',      label: 'Microsoft' },
+  { key: 'GOOG',      label: 'Google / Alphabet' },
+  { key: 'META',      label: 'Meta' },
+  { key: 'AAPL',      label: 'Apple' },
+  { key: 'TSM',       label: 'TSMC' },
+  { key: 'AVGO',      label: 'Broadcom' },
+  { key: 'AMD',       label: 'AMD' },
   { key: 'OPENAI',    label: 'OpenAI' },
-  { key: 'TSM',       label: 'TSM / TSMC' },
-  { key: 'GOOG',      label: 'GOOG / Google' },
-] as const;
-type AnchorTabKey = typeof ANCHOR_TABS[number]['key'];
+  { key: 'ANTHROPIC', label: 'Anthropic' },
+];
 
 /* ═══════════════════════════════════════════════════════════════════
    Manual Add Modal
@@ -946,10 +950,12 @@ const EMPTY_FORM = {
 
 function ManualAddModal({
   defaultAnchorKey,
+  anchorOptions,
   onClose,
   onSuccess,
 }: {
   defaultAnchorKey: string;
+  anchorOptions?: any[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -1028,7 +1034,10 @@ function ManualAddModal({
             <label style={LBL}>Anchor *</label>
             <select value={form.anchor_key} onChange={set('anchor_key')} style={INP}>
               <option value="">— select —</option>
-              {ANCHOR_TABS.filter(t => t.key !== 'current').map(t => (
+              {(anchorOptions && anchorOptions.length > 0
+                ? anchorOptions.map(a => ({ key: a.anchor_key, label: a.visible_name || a.anchor_name || a.anchor_key }))
+                : STATIC_ANCHORS
+              ).map(t => (
                 <option key={t.key} value={t.key}>{t.label}</option>
               ))}
             </select>
@@ -1127,505 +1136,572 @@ function ManualAddModal({
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Chain Reaction Screener (existing page — unchanged)
+   Table cell / header styles
+   ═══════════════════════════════════════════════════════════════════ */
+const TH_STYLE: CSSProperties = {
+  padding: '7px 10px', background: C.surface, borderBottom: `1px solid ${C.border}`,
+  fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.dim,
+  textTransform: 'uppercase', letterSpacing: '0.06em',
+  position: 'sticky', top: 0, zIndex: 2, userSelect: 'none', whiteSpace: 'nowrap',
+};
+const TD: CSSProperties = { padding: '9px 10px', verticalAlign: 'middle' };
+
+function ColHeader({ col, label, right, sortCol, sortDir, onSort }: {
+  col: string; label: string; right?: boolean;
+  sortCol: string; sortDir: 'asc' | 'desc';
+  onSort: (c: string) => void;
+}) {
+  const active = sortCol === col;
+  return (
+    <th
+      onClick={() => onSort(col)}
+      style={{
+        ...TH_STYLE, cursor: 'pointer',
+        textAlign: right ? 'right' : 'left',
+        color: active ? C.bright : C.dim,
+      }}
+    >
+      {label}
+      {active && <span style={{ marginLeft: 4 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>}
+    </th>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Bottleneck Drawer
+   ═══════════════════════════════════════════════════════════════════ */
+function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
+  ticker: string; primaryAnchor: string; tvSymbol?: string; onClose: () => void;
+}) {
+  const { data, isLoading } = useQuery<any>({
+    queryKey: ['bn-drawer', primaryAnchor, ticker],
+    queryFn: () => fetchAnchorTickerDetail(primaryAnchor, ticker),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: !!(primaryAnchor && ticker),
+  });
+  const row: any  = (data as any)?.row || {};
+  const cross: any[] = (data as any)?.cross_anchor_appearances || [];
+  const sym  = tvSymbol || row.tradingview_symbol || ticker;
+  const name = (data as any)?.company_name || row.company_name || ticker;
+
+  const sections: [string, string][] = [
+    ['Why It Matters',          row.why_it_matters],
+    ['Supply Chain Role',       row.supply_chain_role],
+    ['Why Now',                 row.why_now],
+    ['Why Hidden',              row.why_hidden],
+    ['What Would Break Thesis', row.what_would_break_thesis],
+    ['Evidence',                Array.isArray(row.evidence) ? (row.evidence as string[]).join('\n\n') : row.evidence],
+    ['Risk Notes',              row.risk_notes],
+  ].filter(([, v]) => v) as [string, string][];
+
+  const confClr = (c: string) => c === 'high' ? C.green : c === 'medium' ? C.amber : C.dim;
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(700px,100vw)', background: C.surface, borderLeft: `1px solid ${C.border}`, zIndex: 201, display: 'flex', flexDirection: 'column', boxShadow: '-12px 0 48px rgba(0,0,0,0.7)' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, padding: '3px 6px', borderRadius: 4, fontFamily: C.font, fontSize: 10 }}>
+            <ArrowLeft size={13} /> Back
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: C.font, fontSize: 15, fontWeight: 700, color: C.bright }}>{ticker}</span>
+              {row.bottleneck_score != null && (
+                <span style={{ fontFamily: C.font, fontSize: 10, color: C.amber }}>score {row.bottleneck_score}</span>
+              )}
+              {row.confidence && (
+                <span style={{ padding: '1px 6px', background: `${confClr(row.confidence)}15`, border: `1px solid ${confClr(row.confidence)}35`, borderRadius: 3, fontFamily: C.font, fontSize: 9, color: confClr(row.confidence) }}>
+                  {row.confidence}
+                </span>
+              )}
+              {row.evidence_grade && <GradeBadge grade={row.evidence_grade} />}
+            </div>
+            <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, cursor: 'pointer', padding: 4 }}>
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Meta strip */}
+        <div style={{ display: 'flex', gap: 14, padding: '7px 20px', borderBottom: `1px solid ${C.borderFaint}`, background: C.indigoSub, flexShrink: 0, flexWrap: 'wrap' }}>
+          {primaryAnchor && <span style={{ fontFamily: C.font, fontSize: 9, color: C.indigoFg }}>via {primaryAnchor}</span>}
+          {row.layer_name   && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{row.layer_name}</span>}
+          {row.category_name && <span style={{ fontFamily: C.font, fontSize: 9, color: C.blue }}>{row.category_name}</span>}
+          {(row.market_cap || row.marketCap) && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{fmtCap(row.market_cap || row.marketCap)}</span>}
+          {cross.length > 0 && <span style={{ fontFamily: C.font, fontSize: 9, color: C.amber }}>in {cross.length + 1} anchors</span>}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <TradingViewChart symbol={sym} />
+          <div style={{ padding: '20px 22px' }}>
+            {isLoading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '30px 0', color: C.dim }}>
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontFamily: C.font, fontSize: 11 }}>Loading research…</span>
+              </div>
+            )}
+            {sections.map(([title, content]) => (
+              <ReportSection key={title} title={title} content={content} />
+            ))}
+            {Array.isArray(row.source_urls) && (row.source_urls as string[]).length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Sources</div>
+                {(row.source_urls as string[]).map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'block', fontFamily: C.font, fontSize: 10, color: C.blue, marginBottom: 4, wordBreak: 'break-all' }}>
+                    {url}
+                  </a>
+                ))}
+              </div>
+            )}
+            {cross.length > 0 && (
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                  Also in {cross.length} other anchor{cross.length !== 1 ? 's' : ''}
+                </div>
+                {cross.map((c: any, i: number) => (
+                  <div key={c.anchor_key || i} style={{ marginBottom: 10, paddingLeft: 12, borderLeft: `2px solid ${C.border}` }}>
+                    <div style={{ fontFamily: C.font, fontSize: 10, fontWeight: 700, color: C.bright, marginBottom: 2 }}>
+                      {c.anchor_name || c.anchor_key}
+                      {c.bottleneck_score != null && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginLeft: 8 }}>score {c.bottleneck_score}</span>}
+                    </div>
+                    {c.supply_chain_role && (
+                      <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, lineHeight: 1.6 }}>{c.supply_chain_role}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Chain Reaction — Bottleneck Screener (rebuilt)
    ═══════════════════════════════════════════════════════════════════ */
 function StrategyScreenerInner() {
-  const [selectedEntry, setSelectedEntry] = useState<ScreenerEntry | null>(null);
-  const [refreshMsg,    setRefreshMsg]    = useState<string>('');
-  const [sortCol,       setSortCol]       = useState<SortCol>('#');
-  const [sortDir,       setSortDir]       = useState<'asc' | 'desc'>('asc');
-  const [anchorTab,     setAnchorTab]     = useState<AnchorTabKey>('current');
-  const [showAddModal,  setShowAddModal]  = useState(false);
+  const [activeTab,    setActiveTab]    = useState<string>('multi-anchor');
+  const [sortCol,      setSortCol]      = useState<string>('anchor_count');
+  const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
+  const [search,       setSearch]       = useState('');
+  const [catFilter,    setCatFilter]    = useState('all');
+  const [scoreMin,     setScoreMin]     = useState(0);
+  const [directFilter, setDirectFilter] = useState('all');
+  const [selectedRow,  setSelectedRow]  = useState<{ ticker: string; primaryAnchor: string; tvSymbol?: string } | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const qc = useQueryClient();
 
-  const qKey = anchorTab === 'current'
-    ? ['strategy-screener-latest']
-    : ['bottlenecks-anchor', anchorTab];
+  const { data: anchorsData } = useQuery<any>({
+    queryKey: ['bottlenecks-anchors'],
+    queryFn:  fetchAnchorList,
+    staleTime: 15 * 60 * 1000,
+    retry: 1,
+  });
+  const anchors: any[] = useMemo(() => anchorsData?.anchors ?? [], [anchorsData]);
 
-  const { data: snap, isLoading, error, refetch } = useQuery<ScreenerSnapshot>({
-    queryKey: qKey,
-    queryFn:  () => anchorTab === 'current' ? fetchLatestSnapshot() : fetchAnchorRows(anchorTab),
+  const tabQKey = activeTab === 'multi-anchor'
+    ? ['bottlenecks-multi-anchor']
+    : ['bottlenecks-anchor', activeTab];
+
+  const { data: tabData, isLoading, error } = useQuery<any>({
+    queryKey: tabQKey,
+    queryFn:  activeTab === 'multi-anchor'
+      ? () => fetchMultiAnchorScreener({ min_anchors: 2, limit: 1000 })
+      : () => fetchAnchorRows(activeTab),
     staleTime: 5 * 60 * 1000,
     retry: 0,
   });
 
-  const { data: overlapData } = useQuery<any>({
-    queryKey: ['bottlenecks-anchor-overlap'],
-    queryFn:  fetchAnchorOverlap,
-    staleTime: 10 * 60 * 1000,
-    retry: 1,
-  });
+  const rawRows: any[] = useMemo(() => {
+    if (!tabData) return [];
+    return activeTab === 'multi-anchor' ? (tabData.items ?? []) : (tabData.rows ?? []);
+  }, [tabData, activeTab]);
 
-  const refreshMut = useMutation({
-    mutationFn: refreshSnapshot,
-    onSuccess: (data) => {
-      const genuinelyChanged =
-        (data as any).snapshot_changed ??
-        (data as any).diagnostics?.snapshot_genuinely_changed ??
-        true;
-      if (genuinelyChanged === false) {
-        setRefreshMsg(
-          (data as any).diagnostics?.snapshot_genuinely_changed_reason ||
-          (data as any).reason ||
-          data.message ||
-          'Already up to date'
-        );
-      } else {
-        setRefreshMsg(data.message || data.status || 'Snapshot refreshed');
-      }
-      setTimeout(() => setRefreshMsg(''), 6000);
-      qc.invalidateQueries({ queryKey: ['strategy-screener-latest'] });
-    },
-    onError: (err: any) => {
-      setRefreshMsg(`Refresh error: ${err?.message || 'Unknown error'}`);
-      setTimeout(() => setRefreshMsg(''), 5000);
-    },
-  });
+  const backendCount: number = useMemo(() => {
+    if (!tabData) return 0;
+    if (activeTab === 'multi-anchor') return tabData.count ?? rawRows.length;
+    return tabData.total_count ?? tabData.curated_count ?? rawRows.length;
+  }, [tabData, activeTab, rawRows.length]);
 
-  const allEntries = useMemo(
-    () => snap ? normaliseEntries(snap) : [],
-    [snap],
-  );
-
-  const entries = useMemo(
-    () => sortEntries(allEntries, sortCol, sortDir),
-    [allEntries, sortCol, sortDir],
-  );
-
-  const sid = useMemo(() => snap ? snapId(snap) : 'latest', [snap]);
-
-  const derivedTopThemes = useMemo(() => {
-    if (snap?.top_themes?.length) return (snap.top_themes as string[]).slice(0, 4);
-    const active = snap?.regime_context?.active_themes as string[] | undefined;
-    if (active?.length) return active.slice(0, 4);
-    if (!allEntries.length) return [] as string[];
-    const counts = new Map<string, number>();
-    for (const e of allEntries) {
-      const t = e.theme || e.themes?.[0] || '';
-      if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const categories: string[] = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rawRows) {
+      const c = r.category_name || r.themes?.[0] || '';
+      if (c) s.add(c);
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t]) => t);
-  }, [snap, allEntries]);
+    return ['all', ...Array.from(s).sort()];
+  }, [rawRows]);
 
-  const snapshotAgeLabel = useMemo(() => {
-    const ts = snap?.generated_at || snap?.created_at;
-    if (!ts) return null;
-    try {
-      const diffMs   = Date.now() - new Date(ts as string).getTime();
-      const diffDays = Math.floor(diffMs / 86_400_000);
-      if (diffDays === 0) return 'today';
-      if (diffDays === 1) return '1 day ago';
-      return `${diffDays} days ago`;
-    } catch { return null; }
-  }, [snap]);
-
-  const overlapMap = useMemo((): Map<string, string[]> => {
-    if (!overlapData) return new Map();
-    /* Try every possible key the backend might use for the row array */
-    const rows: any[] =
-      overlapData.overlaps ??
-      overlapData.rows     ??
-      overlapData.tickers  ??
-      overlapData.items    ??
-      overlapData.data     ??
-      overlapData.results  ??
-      [];
-    if (!Array.isArray(rows)) return new Map();
-    const map = new Map<string, string[]>();
-    for (const r of rows) {
-      const tk = (r.ticker || r.bottleneck_ticker || r.symbol || '').toUpperCase();
-      const anchors: string[] = r.anchors ?? r.anchor_keys ?? r.anchor_names ?? [];
-      if (tk && anchors.length >= 2) map.set(tk, anchors);
-    }
-    return map;
-  }, [overlapData]);
-
-  const overlapList = useMemo(() => {
-    const out: { ticker: string; anchors: string[] }[] = [];
-    overlapMap.forEach((anchors, ticker) => out.push({ ticker, anchors }));
-    return out.sort((a, b) => b.anchors.length - a.anchors.length);
-  }, [overlapMap]);
-
-  const handleColSort = useCallback((col: SortCol) => {
+  const doSort = useCallback((col: string) => {
     setSortCol(prev => {
-      if (prev === col) {
-        setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-        return col;
-      }
-      setSortDir('asc');
+      if (prev === col) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); return col; }
+      setSortDir('desc');
       return col;
     });
   }, []);
 
-  const handleRowClick = useCallback((e: ScreenerEntry) => {
-    setSelectedEntry(e);
+  const displayRows: any[] = useMemo(() => {
+    let rows = [...rawRows];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter(r =>
+        (r.ticker || r.bottleneck_ticker || '').toLowerCase().includes(q) ||
+        (r.company_name || '').toLowerCase().includes(q)
+      );
+    }
+    if (catFilter !== 'all') {
+      rows = rows.filter(r => {
+        const cat = r.category_name || r.themes?.[0] || '';
+        return cat.toLowerCase().includes(catFilter.toLowerCase());
+      });
+    }
+    if (scoreMin > 0) {
+      rows = rows.filter(r => {
+        const sc = activeTab === 'multi-anchor'
+          ? (r.max_bottleneck_score ?? 0)
+          : (r.bottleneck_score ?? r.final_score ?? 0);
+        return sc >= scoreMin;
+      });
+    }
+    if (directFilter !== 'all') {
+      rows = rows.filter(r =>
+        (r.confidence || r.directness || '').toLowerCase() === directFilter.toLowerCase()
+      );
+    }
+    rows.sort((a, b) => {
+      let cmp = 0;
+      if (activeTab === 'multi-anchor') {
+        if      (sortCol === 'anchor_count') cmp = (a.anchor_count ?? 0)           - (b.anchor_count ?? 0);
+        else if (sortCol === 'max_score')    cmp = (a.max_bottleneck_score ?? 0)    - (b.max_bottleneck_score ?? 0);
+        else if (sortCol === 'avg_score')    cmp = (a.avg_bottleneck_score ?? 0)    - (b.avg_bottleneck_score ?? 0);
+        else if (sortCol === 'mktcap')       cmp = (a.market_cap ?? 0)              - (b.market_cap ?? 0);
+        else if (sortCol === 'change')       cmp = (a.change_percent_1d ?? -999)    - (b.change_percent_1d ?? -999);
+        else if (sortCol === 'ticker')       cmp = (a.ticker || '').localeCompare(b.ticker || '');
+      } else {
+        if      (sortCol === 'score')    cmp = (a.bottleneck_score ?? a.final_score ?? 0) - (b.bottleneck_score ?? b.final_score ?? 0);
+        else if (sortCol === 'category') cmp = (a.category_order ?? 99) - (b.category_order ?? 99);
+        else if (sortCol === 'mktcap')   cmp = (a.market_cap ?? a.marketCap ?? 0) - (b.market_cap ?? b.marketCap ?? 0);
+        else if (sortCol === 'change')   cmp = (a.change_percent_1d ?? -999) - (b.change_percent_1d ?? -999);
+        else if (sortCol === 'ticker')   cmp = (a.bottleneck_ticker || a.ticker || '').localeCompare(b.bottleneck_ticker || b.ticker || '');
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return rows;
+  }, [rawRows, search, catFilter, scoreMin, directFilter, sortCol, sortDir, activeTab]);
+
+  const switchTab = useCallback((key: string) => {
+    setActiveTab(key);
+    setSearch(''); setCatFilter('all'); setScoreMin(0); setDirectFilter('all');
+    setSelectedRow(null);
+    if (key === 'multi-anchor') { setSortCol('anchor_count'); setSortDir('desc'); }
+    else                        { setSortCol('score');        setSortDir('desc'); }
   }, []);
 
-  useSetPageContext((() => {
-    const parts = ['[Page: Chain Reaction Bottlenecks — Cross-Theme Supply Chain Intelligence]'];
-    if (allEntries.length) {
-      const top = allEntries.slice(0, 15)
-        .map(e => `${tickerOf(e)}${gradeOf(e) ? `(${gradeOf(e)})` : ''}`)
-        .filter(Boolean);
-      parts.push(`Entries (${allEntries.length}): ${top.join(', ')}`);
-      if (derivedTopThemes.length) parts.push(`Themes: ${derivedTopThemes.join(', ')}`);
-      const anchors = allEntries.filter(isAnchor).map(e => tickerOf(e));
-      if (anchors.length) parts.push(`Anchors: ${anchors.join(', ')}`);
+  useSetPageContext('[Page: Chain Reaction Bottlenecks — Multi-anchor supply chain intelligence screener]');
+
+  const tkOf   = (r: any) => r.ticker || r.bottleneck_ticker || '';
+  const nameOf = (r: any) => r.company_name || tkOf(r);
+  const tvOf   = (r: any) => r.tradingview_symbol || tkOf(r);
+
+  const activeAnchorMeta = anchors.find(a => a.anchor_key === activeTab);
+
+  const headerLine = useMemo(() => {
+    if (activeTab === 'multi-anchor') {
+      const anchorSet = new Set<string>();
+      for (const r of rawRows) (r.anchors || []).forEach((a: string) => anchorSet.add(a));
+      return `${backendCount} multi-anchor bottlenecks across ${anchorSet.size} anchors`;
     }
-    parts.push('Diversity-gated bottleneck names across nuclear, rare earth, defense, semicap, energy and semiconductor supply chains.');
-    return parts.join('\n');
-  })(), [allEntries, derivedTopThemes]);
+    const catSet = new Set<string>();
+    for (const r of rawRows) { const c = r.category_name || ''; if (c) catSet.add(c); }
+    return `${backendCount} bottlenecks${catSet.size > 0 ? ` across ${catSet.size} categories` : ''}`;
+  }, [activeTab, backendCount, rawRows]);
+
+  const fmtChange = (v?: number | null) => {
+    if (v == null) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 10 }}>—</span>;
+    const clr = v > 0 ? C.green : v < 0 ? C.red : C.dim;
+    return <span style={{ color: clr, fontFamily: C.font, fontSize: 10 }}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>;
+  };
+  const fmtScore = (v?: number | null) => {
+    if (v == null) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 10 }}>—</span>;
+    const clr = v >= 85 ? C.red : v >= 65 ? C.amber : v >= 45 ? C.blue : C.dim;
+    return <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: clr }}>{Math.round(v)}</span>;
+  };
+  const confBadge = (conf?: string) => {
+    if (!conf) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 9 }}>—</span>;
+    const clr = conf === 'high' ? C.green : conf === 'medium' ? C.amber : C.dim;
+    return (
+      <span style={{ padding: '1px 6px', background: `${clr}15`, border: `1px solid ${clr}30`, borderRadius: 3, fontFamily: C.font, fontSize: 9, color: clr }}>
+        {conf}
+      </span>
+    );
+  };
 
   return (
-    <div style={{ minHeight:'100vh', background:C.bg, color:C.text }}>
+    <div style={{ minHeight: '100vh', background: C.bg, color: C.text }}>
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .ss-row:hover { background: rgba(99,102,241,0.05) !important; cursor: pointer; }
-        .ss-row td { border-bottom: 1px solid ${C.borderFaint}; }
-        .ss-th:hover { color: ${C.indigoFg} !important; }
+        @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        .bn-row:hover { background:rgba(255,255,255,0.03)!important; cursor:pointer; }
+        .bn-row td { border-bottom:1px solid ${C.borderFaint}; }
       `}</style>
 
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px 80px' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 20px 80px' }}>
 
-        {/* ── Hero header ─────────────────────────────────── */}
-        <div style={{ padding:'40px 0 28px', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16, flexWrap:'wrap' }}>
+        {/* ── Hero ─────────────────────────────────────────────── */}
+        <div style={{ padding: '28px 0 16px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-                <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', background:C.indigo }} />
-                <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.1em' }}>
-                  Chain Reaction Bottlenecks
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.indigo, display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Chain Reaction · Bottlenecks
                 </span>
-                {snap?.cadence_label && (
-                  <>
-                    <span style={{ color:C.muted, fontSize:9, fontFamily:C.font }}>·</span>
-                    <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>{snap.cadence_label as string}</span>
-                  </>
-                )}
               </div>
-
-              <h1 style={{ fontFamily:C.sans, fontSize:28, fontWeight:700, color:C.bright, margin:'0 0 8px', letterSpacing:'-0.01em' }}>
+              <h1 style={{ fontFamily: C.sans, fontSize: 22, fontWeight: 700, color: C.bright, margin: '0 0 4px', letterSpacing: '-0.01em' }}>
                 Chain Reaction
               </h1>
-              <p style={{ fontFamily:C.sans, fontSize:13, color:C.dim, margin:'0 0 14px', maxWidth:620, lineHeight:1.65 }}>
-                Chain Reaction maps the market anchors driving today's biggest themes, then surfaces the suppliers, scarce enablers, and bottleneck companies positioned around them.
+              <p style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, margin: 0, maxWidth: 520, lineHeight: 1.55 }}>
+                Anchor companies driving today's major themes — and the suppliers, scarce enablers, and bottleneck plays around them.
               </p>
-
-              <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                {snap?.generated_at && (
-                  <span style={{ fontFamily:C.font, fontSize:10, color:C.muted }}>
-                    Generated {fmtDate(snap.generated_at as string)}
-                    {snapshotAgeLabel && snapshotAgeLabel !== 'today' && (
-                      <span style={{ color:C.amber, marginLeft:6 }}>({snapshotAgeLabel})</span>
-                    )}
-                  </span>
-                )}
-                {derivedTopThemes.length > 0 && (
-                  <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-                    {derivedTopThemes.map(t => (
-                      <span key={t} style={{ padding:'2px 8px', background:'rgba(56,189,248,0.07)', border:'1px solid rgba(56,189,248,0.18)', borderRadius:4, fontFamily:C.font, fontSize:9, color:C.blue }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
-
-            {/* Refresh button */}
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
-              <button
-                onClick={() => refreshMut.mutate()}
-                disabled={refreshMut.isPending || isLoading}
-                style={{
-                  display:'flex', alignItems:'center', gap:7, padding:'8px 16px',
-                  background: refreshMut.isPending ? C.indigoSub : 'transparent',
-                  border: `1px solid ${refreshMut.isPending ? C.indigo : C.border}`,
-                  borderRadius: 6,
-                  color: refreshMut.isPending ? C.indigoFg : C.dim,
-                  fontFamily: C.font, fontSize:10,
-                  cursor: refreshMut.isPending ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <RefreshCw size={12} style={{ animation: refreshMut.isPending ? 'spin 1s linear infinite' : 'none' }} />
-                {refreshMut.isPending ? 'Refreshing…' : 'Refresh'}
-              </button>
-              {refreshMsg && (
-                <span style={{
-                  fontFamily: C.font, fontSize:9,
-                  color: (refreshMsg.toLowerCase().includes('error') || refreshMsg.toLowerCase().includes('fail'))
-                    ? C.amber : C.green,
-                }}>
-                  {refreshMsg}
-                </span>
-              )}
-            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{ padding: '6px 14px', background: C.indigoSub, border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: C.font, fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              + Add Entry
+            </button>
           </div>
         </div>
 
-        {/* ── Anchor tabs + Add button ────────────────────── */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`1px solid ${C.border}`, marginBottom:0, flexWrap:'wrap', gap:8 }}>
-          <div style={{ display:'flex', gap:0, overflowX:'auto' }}>
-            {ANCHOR_TABS.map(t => {
-              const active = anchorTab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => { setAnchorTab(t.key as AnchorTabKey); setSelectedEntry(null); setSortCol('#'); setSortDir('asc'); }}
-                  style={{
-                    padding:'10px 16px', background:'transparent', border:'none',
-                    borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
-                    color: active ? C.bright : C.dim,
-                    fontFamily: C.font, fontSize:10, fontWeight: active ? 700 : 400,
-                    cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.12s',
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              display:'flex', alignItems:'center', gap:6,
-              padding:'6px 14px', background:C.indigoSub,
-              border:`1px solid ${C.indigo}40`, borderRadius:6,
-              color:C.indigoFg, fontFamily:C.font, fontSize:10,
-              fontWeight:700, cursor:'pointer', marginRight:4, whiteSpace:'nowrap',
-            }}
-          >
-            + Add Bottleneck
-          </button>
-        </div>
-
-        {/* ── Content ─────────────────────────────────────── */}
-        {isLoading && !snap && <LoadingState />}
-        {error && !snap && (
-          <ErrorState
-            message={`Could not load data: ${(error as Error).message || 'Unknown error'}`}
-            onRetry={() => refetch()}
-          />
-        )}
-        {snap?.error && (
-          <ErrorState
-            message={String(snap.error)}
-            onRetry={() => refetch()}
-          />
-        )}
-
-        {snap && !snap.error && (
-          <>
-            {/* ── Multi-anchor overlap strip ─────────────────── */}
-            {overlapList.length > 0 && (
-              <div style={{
-                margin:'12px 0 4px', padding:'10px 16px',
-                background:`${C.amber}08`, border:`1px solid ${C.amber}20`,
-                borderRadius:8, display:'flex', flexWrap:'wrap', alignItems:'flex-start', gap:8,
+        {/* ── Tab bar ──────────────────────────────────────────── */}
+        <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, overflowX: 'auto' }}>
+          {(() => {
+            const active = activeTab === 'multi-anchor';
+            return (
+              <button key="multi-anchor" onClick={() => switchTab('multi-anchor')} style={{
+                padding: '10px 16px', background: 'transparent', border: 'none',
+                borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+                color: active ? C.bright : C.dim,
+                fontFamily: C.font, fontSize: 10, fontWeight: active ? 700 : 400,
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               }}>
-                <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.amber, textTransform:'uppercase', letterSpacing:'0.07em', flexShrink:0, marginTop:2 }}>
-                  Multi-anchor bottlenecks
-                </span>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {overlapList.map(({ ticker, anchors }) => (
-                    <span key={ticker} style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>
-                      <span style={{ color:C.bright, fontWeight:700 }}>{ticker}</span>
-                      {' — '}
-                      <span style={{ color:C.amber }}>{anchors.join(', ')}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Row count label ────────────────────────────── */}
-            {allEntries.length > 0 && (
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'10px 0 4px' }}>
-                <span style={{ fontFamily:C.font, fontSize:9, color:C.muted, fontWeight:600 }}>
-                  {allEntries.length} {anchorTab === 'current' ? 'bottlenecks' : 'curated bottlenecks'}
-                </span>
-                {isLoading && (
-                  <span style={{ fontFamily:C.font, fontSize:9, color:C.dim }}>updating…</span>
+                Multi-anchor bottlenecks
+                {active && backendCount > 0 && (
+                  <span style={{ marginLeft: 5, color: C.indigoFg, fontSize: 9 }}>({backendCount})</span>
                 )}
-              </div>
-            )}
+              </button>
+            );
+          })()}
+          <div style={{ width: 1, background: C.border, margin: '8px 0', flexShrink: 0 }} />
+          {anchors.map(a => {
+            const active = activeTab === a.anchor_key;
+            return (
+              <button key={a.anchor_key} onClick={() => switchTab(a.anchor_key)} style={{
+                padding: '10px 14px', background: 'transparent', border: 'none',
+                borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+                color: active ? C.bright : C.dim,
+                fontFamily: C.font, fontSize: 10, fontWeight: active ? 700 : 400,
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                {a.visible_name || a.anchor_name || a.anchor_key}
+                {active && backendCount > 0 && (
+                  <span style={{ marginLeft: 5, color: C.indigoFg, fontSize: 9 }}>({backendCount})</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-            {entries.length === 0 ? (
-              <div style={{ padding:'60px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
-                No entries in this snapshot.
-              </div>
-            ) : (
-              <div style={{ marginTop:8, overflowX:'auto' }}>
-                <table style={{ width:'100%', borderCollapse:'collapse', tableLayout:'auto' }}>
-                  <thead>
-                    <tr>
-                      {(
-                        [
-                          { label: '#',             col: '#'      as SortCol },
-                          { label: 'Ticker',        col: 'ticker' as SortCol },
-                          { label: 'Company / Role',col: 'name'   as SortCol },
-                          { label: 'Theme',         col: 'theme'  as SortCol },
-                          { label: 'Mkt Cap',       col: 'mktcap' as SortCol },
-                          { label: 'Layer',         col: 'layer'  as SortCol },
-                          { label: 'Market',        col: 'market' as SortCol },
-                          { label: 'Grade',         col: 'grade'  as SortCol },
-                        ] as { label: string; col: SortCol }[]
-                      ).map(h => (
-                        <SortableHeader
-                          key={h.col}
-                          label={h.label}
-                          col={h.col}
-                          active={sortCol === h.col}
-                          dir={sortDir}
-                          onClick={handleColSort}
-                        />
-                      ))}
-                      <th style={{ width:20, borderBottom:`1px solid ${C.border}` }} />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((e, idx) => {
-                      const tk    = tickerOf(e);
-                      const score = scoreOf(e);
-                      const anchor = isAnchor(e);
-                      const role   = (e as any).role_type as string | undefined;
-                      const roleLabel = anchor
-                        ? 'Anchor'
-                        : (e.role || e.chain_role_type || role || null);
-
-                      return (
-                        <tr
-                          key={tk || idx}
-                          className="ss-row"
-                          onClick={() => handleRowClick(e)}
-                          style={{
-                            background: anchor
-                              ? 'rgba(99,102,241,0.04)'
-                              : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.007)',
-                            transition: 'background 0.1s',
-                          }}
-                        >
-                          {/* # */}
-                          <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.muted, width:36 }}>
-                            {e.rank ?? idx + 1}
-                          </td>
-
-                          {/* Ticker */}
-                          <td style={{ padding:'12px 12px', whiteSpace:'nowrap' }}>
-                            <div style={{ fontFamily:C.font, fontSize:13, fontWeight:700, color: anchor ? C.indigoFg : C.bright }}>
-                              {tk || '—'}
-                            </div>
-                            {anchor && (
-                              <div style={{ fontFamily:C.font, fontSize:8, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.08em', opacity:0.75, marginTop:2 }}>
-                                Anchor
-                              </div>
-                            )}
-                            {score != null && !anchor && (
-                              <div style={{ fontFamily:C.font, fontSize:8, color:C.muted, marginTop:2 }}>
-                                {Math.round(score)}
-                              </div>
-                            )}
-                            <AccessBadge entry={e} />
-                            {((e as any).manual_added === true || (e as any).source_type === 'manual') && (
-                              <span style={{ display:'inline-block', marginTop:3, padding:'1px 5px', background:`${C.blue}12`, border:`1px solid ${C.blue}30`, borderRadius:3, color:C.blue, fontFamily:C.font, fontSize:8, fontWeight:700 }}>
-                                Manual
-                              </span>
-                            )}
-                            {overlapMap.has(tk.toUpperCase()) && (
-                              <div style={{ fontFamily:C.font, fontSize:8, color:C.amber, marginTop:3 }}>
-                                Multi-anchor: {overlapMap.get(tk.toUpperCase())!.join(', ')}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Company / Role */}
-                          <td style={{ padding:'12px 12px', maxWidth:220 }}>
-                            <div style={{ fontFamily:C.sans, fontSize:12, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                              {nameOf(e)}
-                            </div>
-                            {roleLabel && (
-                              <div style={{ fontFamily:C.font, fontSize:9, color: anchor ? C.indigoFg : C.dim, marginTop:2, opacity: anchor ? 0.85 : 1 }}>
-                                {anchor ? `Anchor · ${e.role || e.chain_role_type || 'market driver'}` : roleLabel}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Theme */}
-                          <td style={{ padding:'12px 12px', whiteSpace:'nowrap' }}>
-                            <span style={{ fontFamily:C.font, fontSize:10, color:C.blue }}>{themeOf(e)}</span>
-                          </td>
-
-                          {/* Mkt Cap */}
-                          <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.dim, whiteSpace:'nowrap' }}>
-                            {fmtCap(e.market_cap_usd)}
-                          </td>
-
-                          {/* Layer */}
-                          <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.dim, whiteSpace:'nowrap' }}>
-                            {layerOf(e)}
-                          </td>
-
-                          {/* Market */}
-                          <td style={{ padding:'12px 12px', fontFamily:C.font, fontSize:10, color:C.dim, whiteSpace:'nowrap' }}>
-                            {e.exchange || e.market || e.country || '—'}
-                          </td>
-
-                          {/* Grade */}
-                          <td style={{ padding:'12px 12px' }}>
-                            <GradeBadge grade={gradeOf(e)} />
-                          </td>
-
-                          {/* Chevron */}
-                          <td style={{ padding:'12px 8px', color:C.muted }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div style={{ padding:'12px 0', fontFamily:C.font, fontSize:9, color:C.muted }}>
-                  {entries.length} entries · sorted by {sortCol === '#' ? 'rank' : sortCol} {sortDir}
-                </div>
-              </div>
-            )}
-          </>
+        {/* ── Anchor subtitle ──────────────────────────────────── */}
+        {activeAnchorMeta?.subtitle && (
+          <div style={{ padding: '5px 2px 0', fontFamily: C.font, fontSize: 9, color: C.dim }}>
+            {activeAnchorMeta.subtitle}
+          </div>
         )}
 
-        {!isLoading && !error && !snap && (
-          <div style={{ padding:'64px 0', textAlign:'center', color:C.dim, fontFamily:C.sans, fontSize:14 }}>
-            No data available. Use the Refresh button to generate a snapshot.
+        {/* ── Filter bar ───────────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: 8, padding: '10px 0 6px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search ticker / company…"
+            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none', minWidth: 180 }}
+          />
+          {categories.length > 2 && (
+            <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
+              style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }}>
+              {categories.map(c => <option key={c} value={c}>{c === 'all' ? 'All categories' : c}</option>)}
+            </select>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>Score ≥</span>
+            <input type="number" min={0} max={100} value={scoreMin || ''} onChange={e => setScoreMin(e.target.value ? Number(e.target.value) : 0)} placeholder="0"
+              style={{ width: 46, padding: '5px 8px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }} />
           </div>
+          <select value={directFilter} onChange={e => setDirectFilter(e.target.value)}
+            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }}>
+            <option value="all">All confidence</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          {(search || catFilter !== 'all' || scoreMin > 0 || directFilter !== 'all') && (
+            <button onClick={() => { setSearch(''); setCatFilter('all'); setScoreMin(0); setDirectFilter('all'); }}
+              style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontFamily: C.font, fontSize: 9, cursor: 'pointer' }}>
+              Clear
+            </button>
+          )}
+          <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginLeft: 'auto' }}>
+            {displayRows.length !== backendCount
+              ? `${displayRows.length} of ${backendCount} rows`
+              : headerLine}
+          </span>
+        </div>
+
+        {/* ── States ───────────────────────────────────────────── */}
+        {isLoading && !tabData && <LoadingState />}
+        {error && !tabData && (
+          <ErrorState
+            message={`Could not load: ${(error as Error).message || 'Unknown error'}`}
+            onRetry={() => qc.invalidateQueries({ queryKey: tabQKey })}
+          />
+        )}
+
+        {/* ── Table ────────────────────────────────────────────── */}
+        {tabData && (
+          displayRows.length === 0 ? (
+            <div style={{ padding: '60px 0', textAlign: 'center', color: C.dim, fontFamily: C.sans, fontSize: 14 }}>
+              {rawRows.length === 0 ? 'No data available for this anchor.' : 'No rows match your filters — clear to see all rows.'}
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', marginTop: 2 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
+                <thead>
+                  <tr>
+                    {activeTab === 'multi-anchor' ? (<>
+                      <ColHeader col="ticker"       label="Ticker"     sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
+                      <ColHeader col="name"         label="Company"    sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
+                      <th style={{ ...TH_STYLE, textAlign: 'left' }}>Anchors</th>
+                      <ColHeader col="anchor_count" label="# Anchors"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <ColHeader col="max_score"    label="Max Score"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <ColHeader col="avg_score"    label="Avg Score"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <th style={{ ...TH_STYLE, textAlign: 'left' }}>Grade</th>
+                      <ColHeader col="mktcap"       label="Mkt Cap"    sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <ColHeader col="change"       label="1D%"        sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 200 }}>Primary Role</th>
+                    </>) : (<>
+                      <ColHeader col="ticker"   label="Ticker"    sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
+                      <ColHeader col="name"     label="Company"   sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
+                      <ColHeader col="category" label="Category"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
+                      <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 160 }}>Role</th>
+                      <ColHeader col="score"    label="Score"     sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <th style={{ ...TH_STYLE, textAlign: 'left' }}>Confidence</th>
+                      <ColHeader col="mktcap"   label="Mkt Cap"   sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <ColHeader col="change"   label="1D%"       sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
+                      <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 200 }}>Why it matters</th>
+                    </>)}
+                    <th style={{ ...TH_STYLE, width: 18 }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayRows.map((r, idx) => {
+                    const tk = tkOf(r);
+                    const primaryAnchor = activeTab === 'multi-anchor'
+                      ? (r.anchors?.[0] || '')
+                      : activeTab;
+                    return (
+                      <tr
+                        key={`${activeTab}-${tk}-${idx}`}
+                        className="bn-row"
+                        onClick={() => setSelectedRow({ ticker: tk, primaryAnchor, tvSymbol: tvOf(r) })}
+                        style={{ background: 'transparent' }}
+                      >
+                        {activeTab === 'multi-anchor' ? (<>
+                          <td style={TD}>
+                            <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
+                            {r.manual_added && <span style={{ display: 'block', fontFamily: C.font, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
+                          </td>
+                          <td style={{ ...TD, maxWidth: 180 }}>
+                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
+                          </td>
+                          <td style={{ ...TD, maxWidth: 260 }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                              {(r.anchor_names || r.anchors || []).slice(0, 7).map((an: string, i: number) => (
+                                <span key={i} style={{ padding: '1px 5px', background: C.indigoSub, border: `1px solid ${C.border}`, borderRadius: 3, fontFamily: C.font, fontSize: 8, color: C.indigoFg, whiteSpace: 'nowrap' }}>{an}</span>
+                              ))}
+                              {(r.anchor_names || r.anchors || []).length > 7 && (
+                                <span style={{ fontFamily: C.font, fontSize: 8, color: C.dim }}>+{(r.anchor_names || r.anchors || []).length - 7}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ ...TD, textAlign: 'right' }}>
+                            <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: C.amber }}>{r.anchor_count ?? '—'}</span>
+                          </td>
+                          <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.max_bottleneck_score)}</td>
+                          <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.avg_bottleneck_score)}</td>
+                          <td style={TD}><GradeBadge grade={r.best_evidence_grade} /></td>
+                          <td style={{ ...TD, textAlign: 'right' }}><span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{fmtCap(r.market_cap ?? r.marketCap)}</span></td>
+                          <td style={{ ...TD, textAlign: 'right' }}>{fmtChange(r.change_percent_1d)}</td>
+                          <td style={{ ...TD, maxWidth: 280 }}>
+                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {(r.roles_by_anchor && (Object.values(r.roles_by_anchor)[0] as string)) || '—'}
+                            </span>
+                          </td>
+                        </>) : (<>
+                          <td style={TD}>
+                            <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
+                            {r.manual_added && <span style={{ display: 'block', fontFamily: C.font, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
+                          </td>
+                          <td style={{ ...TD, maxWidth: 180 }}>
+                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
+                          </td>
+                          <td style={TD}><span style={{ fontFamily: C.font, fontSize: 10, color: C.blue }}>{r.category_name || r.themes?.[0] || '—'}</span></td>
+                          <td style={{ ...TD, maxWidth: 200 }}>
+                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.supply_chain_role || '—'}</span>
+                          </td>
+                          <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.bottleneck_score ?? r.final_score)}</td>
+                          <td style={TD}>{confBadge(r.confidence)}</td>
+                          <td style={{ ...TD, textAlign: 'right' }}><span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{fmtCap(r.market_cap ?? r.marketCap)}</span></td>
+                          <td style={{ ...TD, textAlign: 'right' }}>{fmtChange(r.change_percent_1d)}</td>
+                          <td style={{ ...TD, maxWidth: 280 }}>
+                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.why_it_matters || '—'}</span>
+                          </td>
+                        </>)}
+                        <td style={{ ...TD, color: C.dim, fontSize: 14, textAlign: 'center', width: 18 }}>›</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
       </div>
 
-      {/* ── Report panel overlay ─────────────────────────── */}
-      {selectedEntry && snap && (
-        <>
-          <div
-            onClick={() => setSelectedEntry(null)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:79, backdropFilter:'blur(2px)' }}
-          />
-          <ReportPanel
-            entry={selectedEntry}
-            snapshotId={sid}
-            onClose={() => setSelectedEntry(null)}
-          />
-        </>
+      {/* ── Drawer ───────────────────────────────────────────── */}
+      {selectedRow && (
+        <BottleneckDrawer
+          ticker={selectedRow.ticker}
+          primaryAnchor={selectedRow.primaryAnchor}
+          tvSymbol={selectedRow.tvSymbol}
+          onClose={() => setSelectedRow(null)}
+        />
       )}
 
-      {/* ── Manual add modal ─────────────────────────────── */}
+      {/* ── Manual add modal ────────────────────────────────── */}
       {showAddModal && (
         <ManualAddModal
-          defaultAnchorKey={anchorTab === 'current' ? '' : anchorTab}
+          defaultAnchorKey={activeTab === 'multi-anchor' ? '' : activeTab}
+          anchorOptions={anchors}
           onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
-            qc.invalidateQueries({ queryKey: qKey });
-            qc.invalidateQueries({ queryKey: ['bottlenecks-anchor-overlap'] });
-          }}
+          onSuccess={() => { qc.invalidateQueries({ queryKey: tabQKey }); }}
         />
       )}
     </div>

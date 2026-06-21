@@ -130,6 +130,42 @@ export async function fetchAnchorRows(anchorKey: string): Promise<ScreenerSnapsh
   return data as ScreenerSnapshot;
 }
 
+export async function fetchMultiAnchorScreener(params: { min_anchors?: number; limit?: number; min_score?: number } = {}): Promise<any> {
+  const p = new URLSearchParams();
+  if (params.min_anchors) p.set('min_anchors', String(params.min_anchors));
+  if (params.limit)       p.set('limit',       String(params.limit));
+  if (params.min_score)   p.set('min_score',   String(params.min_score));
+  const path = `/api/bottlenecks/multi-anchor-screener${p.toString() ? `?${p}` : ''}`;
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  const data = await parseJsonSafely<any>(res, path);
+  console.log('[screener] multi-anchor-screener → items:', data.items?.length, '| count:', data.count);
+  return data;
+}
+
+export async function fetchAnchorList(): Promise<any> {
+  const path = '/api/bottlenecks/anchors';
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}
+
+export async function fetchAnchorTickerDetail(anchorKey: string, ticker: string): Promise<any> {
+  const path = `/api/bottlenecks/anchor/${encodeURIComponent(anchorKey)}/ticker/${encodeURIComponent(ticker)}`;
+  const res = await fetch(path, { headers: screenerHeaders() });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`${path} failed: ${res.status} — ${body.slice(0, 120)}`);
+  }
+  return parseJsonSafely<any>(res, path);
+}
+
 export async function fetchAnchorOverlap(): Promise<any> {
   const path = '/api/bottlenecks/anchor-overlap';
   const res = await fetch(path, { headers: screenerHeaders() });
