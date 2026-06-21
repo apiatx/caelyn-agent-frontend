@@ -3127,7 +3127,7 @@ export default function WatchlistPage() {
     };
 
     return (
-      <div style={{ overflowX: 'auto' }} className="wl-scrollbar">
+      <div style={{ width: '100%' }}>
         <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
           <thead>
             <tr>
@@ -3141,11 +3141,14 @@ export default function WatchlistPage() {
                     ...TH,
                     color: isActive ? '#f5f5f0' : C.dim,
                     textAlign: ci === 0 ? 'left' as const : 'right' as const,
+                    position: 'sticky' as const,
+                    top: 0,
+                    zIndex: ci === 0 ? 3 : 2,
                     ...(ci === 0 ? {
-                      position: 'sticky' as const, left: 0, zIndex: 2,
+                      left: 0,
                       background: C.card,
                       boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
-                    } : { position: 'sticky' as const, top: 0, zIndex: 1 }),
+                    } : {}),
                   }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
