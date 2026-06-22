@@ -1,0 +1,106 @@
+Frontend Replit instructions — fix basket stock chart symbols and remove collapsed-row chips
+
+There are two frontend fixes.
+
+Fix 1:
+Individual stock ticker charts inside expanded Theme Basket chips are broken because they use the wrong TradingView prefix, often AMEX. These are stock tickers, not theme ETF representative symbols.
+
+Fix 2:
+Collapsed Market Performance rows show mini ticker chips under the theme name, e.g. AI Networking shows ALAB, ANET, AVGO, CRDO, MRVL before expansion. Remove those from the collapsed row. Individual tickers should only show after the user expands the theme.
+
+Do not touch backend.
+Do not touch Watchlist files.
+Do not change theme performance math.
+Do not change theme membership/editor behavior.
+Do not change theme-level representative_symbol/tv_symbol chart behavior.
+
+Audit first:
+
+1. Open frontend/client/src/pages/stocks-sectors.tsx.
+2. Find ThemeBasketPanel.
+3. Find TickerChartModal.
+4. Find the chart helper used when clicking individual basket ticker chips.
+5. Find how other pages open TradingView charts for individual stock tickers:
+
+   * Watchlist page
+   * Portfolio page
+   * Options popup
+   * any existing ticker chart modal/helper
+6. Find the collapsed Market Performance row render where proxy_symbols_used/theme_holdings chips are shown under the theme name.
+7. Confirm theme-level chart uses row.tvSymbol from backend.
+8. Confirm basket chip chart should use individual stock chart logic, not ETF representative symbol logic.
+
+Fix 1 — individual stock chip chart mapping:
+Required behavior:
+
+1. Clicking a Theme Basket chip opens a TradingView chart for that stock.
+2. Do not default individual stock tickers to AMEX.
+3. Reuse the same stock chart symbol helper/path used by working pages.
+4. If working pages pass bare tickers directly to TradingView, do that here.
+5. If working pages use exchange/profile metadata, reuse that same helper.
+6. Do not use THEME_ETF_TV for individual stock chips.
+7. Do not use representative_symbol for individual stock chips.
+8. Edit buttons inside chips must keep stopPropagation.
+
+Must validate these chip charts:
+
+* MRAM
+* ALAB
+* ANET
+* AVGO
+* MRVL
+* AMKR
+* ASX
+* PENG
+* IREN
+* VRT
+
+Correct separation:
+
+* row.tvSymbol = theme-level chart, usually ETF/proxy.
+* basket chip click = individual stock chart.
+* leader_symbol = badge only.
+* representative_symbol = not used for chip chart.
+
+Fix 2 — remove collapsed-row basket chips:
+Required behavior:
+
+1. In collapsed Market Performance table rows, remove the mini basket chips under the theme name.
+2. Keep theme name.
+3. Keep classification subtitle.
+4. Keep colored dot in the Theme column.
+5. Do not remove chips from expanded Theme Basket panel.
+6. Expanded Theme Basket panel should still show all tickers.
+7. Admin edit controls remain in expanded view only.
+8. Basket chip chart popups remain in expanded view only.
+
+Validation:
+
+1. Collapsed AI Networking row no longer shows ALAB/ANET/AVGO/CRDO/MRVL chips.
+2. Expanded AI Networking still shows those tickers in Theme Basket.
+3. Clicking ANET opens a valid ANET TradingView chart.
+4. Clicking AMKR opens a valid AMKR TradingView chart.
+5. Clicking MRAM opens a valid MRAM TradingView chart.
+6. No individual stock chip chart receives AMEX unless that ticker truly requires AMEX and the shared helper says so.
+7. Theme-level charts still work:
+
+   * Memory & Storage → NASDAQ:SMH
+   * Substrates / Packaging → NASDAQ:SOXX
+   * Clean Energy → NASDAQ:ICLN
+8. Add/remove/leader buttons still work.
+9. Performance columns unchanged.
+10. Relative Strength and Performance Curve labels still use display_name, not slugs.
+11. Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Existing stock chart helper/path reused from other pages.
+* Exact field used for theme-level chart.
+* Exact symbol format used for individual stock chip charts.
+* Where collapsed-row chips were removed.
+* Screenshot validation.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist files untouched.

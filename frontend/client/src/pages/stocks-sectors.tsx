@@ -1084,7 +1084,9 @@ function TickerChartModal({ ticker, onClose }: { ticker: string; onClose: () => 
           >×</button>
         </div>
         <div className="p-3">
-          <TVTickerChart ticker={ticker} />
+          {/* Pass bare ticker as symbol — TradingView resolves US stocks without exchange prefix.
+              Do NOT use AMEX default here; basket chips are individual stocks, not ETFs. */}
+          <TVTickerChart ticker={ticker} symbol={ticker} />
         </div>
       </div>
     </div>
@@ -1958,13 +1960,7 @@ function UnifiedThemesCard({
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
                           <div>
                             <div className="text-xs text-white truncate max-w-[180px]">{row.name}</div>
-                            {row.proxy_type === "custom" && row.proxy_symbols_used.length > 0 ? (
-                              <div className="flex flex-wrap gap-0.5 mt-1">
-                                {row.proxy_symbols_used.map((sym: string) => (
-                                  <span key={sym} className="text-[9px] px-1 py-0 rounded bg-white/[0.06] border border-white/[0.08] text-white/50 font-mono">{sym}</span>
-                                ))}
-                              </div>
-                            ) : row.classification ? (
+                            {row.classification ? (
                               <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace(/_/g, " ")}</div>
                             ) : null}
                           </div>
