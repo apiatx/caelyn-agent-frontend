@@ -1,0 +1,49 @@
+Audit first. Do not redesign the Themes page or replace existing components.
+
+Backend is now returning:
+- working 5Y theme return values
+- members on each theme row:
+  [{ symbol, price, change_pct, return_pct }]
+- performance_curve on each theme row:
+  [{ date, value_pct }]
+with points ordered oldest → newest and normalized to start near 0%.
+
+Your job is frontend-only wiring/polish.
+
+Fix the Themes page:
+
+1) Market Performance table
+- If 5Y values are present, render the 5Y column like the other return columns.
+- Format positive green, negative red, percent with the same precision as other columns.
+- Sorting by 5Y should work.
+- Do not show a dead dash column if the backend ever returns all null 5Y values; hide it in that fallback case.
+
+2) Relative Strength tab tooltip
+- Fix tooltip text contrast: dark background is fine, but all text must be white/light gray/readable.
+- On hover over a theme bar, show:
+  - theme name
+  - selected lookback return
+  - ticker cards/chips from row.members
+- Each ticker card should show:
+  - symbol
+  - return_pct if available
+  - price/change_pct only if non-null
+- If many members exist, show the first 8–12 and “+N more”.
+- Do not fetch anything on hover.
+
+3) Performance Curve tab
+- Stop plotting lookback buckets like 1D/7D/30D/YTD/1Y/5Y as x-axis points.
+- Use row.performance_curve instead.
+- X-axis = dates, oldest → newest.
+- Y-axis = value_pct normalized cumulative return.
+- The selected timeframe buttons should control which backend payload/timeframe is shown.
+- Tooltip should show date, theme, and return %.
+- Keep existing theme chips/toggles if they already exist.
+- Default to top leaders only if all 51 lines make the chart unreadable.
+- Preserve styling and layout.
+
+Validation:
+- Themes → Market Performance: 5Y shows real numbers and sorts.
+- Themes → Relative Strength: hovering bars shows readable tooltip with ticker chips/cards.
+- Themes → Performance Curve: chart is a normal historical progression over dates, not bucket labels.
+- Confirm no console errors, no layout overflow, and no extra network calls on hover.

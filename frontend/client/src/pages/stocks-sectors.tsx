@@ -171,6 +171,8 @@ interface ThemeRow {
   representative_symbol_source: string | null;
   holdings_display_mode:        string | null;
   theme_holdings:               string[] | null;
+  members:         Array<{ symbol: string; price: number | null; change_pct: number | null; return_pct: number | null }> | null;
+  performance_curve: Array<{ date: string; value_pct: number }> | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -361,15 +363,28 @@ function ViewModeToggle({ mode, setMode }: { mode: ViewMode; setMode: (m: ViewMo
 }
 
 // ─── Line Graph view ──────────────────────────────────────────────────────────
-const LINE_TFS: ThemeTf[] = ["1D", "7D", "30D", "YTD", "1Y", "5Y"];
+// Default: show top N leaders to keep chart readable when all 50+ themes are present
+const LINE_CURVE_DEFAULT_N = 8;
 
 function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap: Record<string, string>; tf: ThemeTf }) {
+  // Sort by selected-TF performance so chips and default selection both match rank order
+  const sortedByTf = useMemo(() =>
+    [...themes].sort((a, b) => (b.performance?.[tf] ?? -Infinity) - (a.performance?.[tf] ?? -Infinity)),
+    [themes, tf]
+  );
+
+  // Default to top N leaders; reset when TF or theme list changes
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(themes.map(t => t.theme_id))
+    () => new Set(sortedByTf.slice(0, LINE_CURVE_DEFAULT_N).map(t => t.theme_id))
   );
   useEffect(() => {
-    setSelectedIds(new Set(themes.map(t => t.theme_id)));
-  }, [themes.length]);
+    setSelectedIds(new Set(
+      [...themes]
+        .sort((a, b) => (b.performance?.[tf] ?? -Infinity) - (a.performance?.[tf] ?? -Infinity))
+        .slice(0, LINE_CURVE_DEFAULT_N)
+        .map(t => t.theme_id)
+    ));
+  }, [themes.length, tf]);
 
   const toggleId = (id: string) => setSelectedIds(prev => {
     const next = new Set(prev);
@@ -377,43 +392,52 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
     return next;
   });
 
-  // Chips sorted by selected-TF value (best first) so the ordering matches the chart
-  const sortedThemes = useMemo(() =>
-    [...themes].sort((a, b) =>
-      (b.performance?.[tf] ?? -Infinity) - (a.performance?.[tf] ?? -Infinity)
-    ),
-    [themes, tf]
-  );
-
-  const lineData = useMemo(() =>
-    LINE_TFS.map(tfKey => {
-      const pt: Record<string, any> = { tf: tfKey };
-      themes.forEach(t => {
-        if (selectedIds.has(t.theme_id)) {
-          const v = t.performance?.[tfKey];
-          if (v != null) pt[t.theme_id] = +v.toFixed(3);
-        }
-      });
-      return pt;
-    }),
-    [themes, selectedIds]
-  );
-
   const visibleThemes = useMemo(
-    () => themes.filter(t => selectedIds.has(t.theme_id)),
-    [themes, selectedIds]
+    () => sortedByTf.filter(t => selectedIds.has(t.theme_id)),
+    [sortedByTf, selectedIds]
   );
+
+  // Build unified date-indexed chart data from performance_curve on each visible theme
+  const lineData = useMemo(() => {
+    const dateSet = new Set<string>();
+    for (const t of visibleThemes) {
+      if (!t.performance_curve?.length) continue;
+      for (const pt of t.performance_curve) dateSet.add(pt.date.slice(0, 10));
+    }
+    const dates = [...dateSet].sort();
+    if (!dates.length) return [];
+
+    return dates.map(date => {
+      const pt: Record<string, any> = { date };
+      for (const t of visibleThemes) {
+        if (!t.performance_curve?.length) continue;
+        const found = t.performance_curve.find(p => p.date.slice(0, 10) === date);
+        if (found != null) pt[t.theme_id] = +found.value_pct.toFixed(3);
+      }
+      return pt;
+    });
+  }, [visibleThemes]);
+
+  const hasCurveData = lineData.length > 0;
+
+  // Thin out x-axis ticks so labels don't overlap
+  const tickInterval = lineData.length > 0 ? Math.max(0, Math.floor(lineData.length / 8) - 1) : 0;
+
+  const fmtDateLabel = (d: string) => {
+    if (!d || d.length < 10) return d;
+    return `${d.slice(5, 7)}/${d.slice(8, 10)}`; // MM/DD
+  };
 
   return (
     <>
       <p className="text-[10px] text-gray-500 mb-3 -mt-1">
-        Cumulative returns by lookback window · selected lookback highlighted · toggle items below to show/hide
+        Normalized cumulative return · dates oldest → newest · toggle themes below · switch timeframe above
       </p>
+      {/* Theme chips — sorted best → worst by selected TF */}
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-        {sortedThemes.map((t, i) => {
+        {sortedByTf.map((t, i) => {
           const on    = selectedIds.has(t.theme_id);
           const color = colorMap[t.theme_id] ?? THEME_PALETTE[i % THEME_PALETTE.length];
-          const label = t.display_name;
           const tfVal = t.performance?.[tf];
           const tip   = `${t.display_name} · ${tf}: ${tfVal != null ? `${tfVal > 0 ? "+" : ""}${tfVal.toFixed(2)}%` : "n/a"}`;
           return (
@@ -423,7 +447,7 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
               }`}
               style={on ? { background: `${color}25`, borderColor: `${color}50` } : {}}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
-              {label}
+              {t.display_name}
               {on && tfVal != null && (
                 <span className={`ml-0.5 ${tfVal >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                   {tfVal >= 0 ? "+" : ""}{tfVal.toFixed(1)}%
@@ -433,43 +457,44 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
           );
         })}
       </div>
+
       {visibleThemes.length === 0 ? (
-        <div className="h-[280px] flex items-center justify-center text-gray-600 text-sm">Select items above to display</div>
+        <div className="h-[280px] flex items-center justify-center text-gray-600 text-sm">Select themes above to display</div>
+      ) : !hasCurveData ? (
+        <div className="h-[280px] flex items-center justify-center text-gray-500 text-sm">
+          No performance curve data for {tf} — try a different timeframe
+        </div>
       ) : (
         <div style={{ height: Math.max(260, Math.min(400, visibleThemes.length * 6 + 200)) }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={lineData} margin={{ top: 4, right: 16, left: -12, bottom: 0 }}>
-              <XAxis dataKey="tf" tick={({ x, y, payload }) => (
-                <text x={x} y={y + 12} textAnchor="middle" fontSize={10}
-                  fill={payload.value === tf ? "#38bdf8" : "#64748b"}
-                  fontWeight={payload.value === tf ? 700 : 400}>
-                  {payload.value}
-                </text>
-              )} tickLine={false} axisLine={false} />
+              <XAxis dataKey="date"
+                tick={{ fontSize: 9, fill: "#64748b" }}
+                tickLine={false} axisLine={false}
+                interval={tickInterval}
+                tickFormatter={fmtDateLabel}
+              />
               <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip
-                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, fontSize: 11 }}
-                labelStyle={{ color: "#94a3b8" }}
-                labelFormatter={(lbl: string) => `${lbl}${lbl === tf ? " ◀ selected" : ""}`}
+                contentStyle={{ background: "#0f1117", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 6, fontSize: 11 }}
+                labelStyle={{ color: "#e2e8f0", fontWeight: 600, marginBottom: 4 }}
+                labelFormatter={(lbl: string) => fmtDateLabel(lbl)}
                 formatter={(v: any, id: string) => {
-                  const t = themes.find(x => x.theme_id === id);
+                  const t = visibleThemes.find(x => x.theme_id === id);
                   const pct = Number(v);
-                  return [`${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`, t?.display_name ?? id];
+                  return [
+                    `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`,
+                    t?.display_name ?? id,
+                  ];
                 }}
+                itemStyle={{ color: "#e2e8f0" }}
               />
               <ReferenceLine y={0} stroke="#475569" strokeWidth={1} />
-              <ReferenceLine x={tf} stroke="#38bdf8" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.6} />
               {visibleThemes.map(t => (
                 <Line key={t.theme_id} type="monotone" dataKey={t.theme_id}
-                  dot={(props: any) => {
-                    const isSel = props.payload?.tf === tf;
-                    const col = colorMap[t.theme_id] ?? "#64748b";
-                    return <circle key={props.key} cx={props.cx} cy={props.cy}
-                      r={isSel ? 5 : 2.5} fill={isSel ? col : col}
-                      stroke={isSel ? "#fff" : "none"} strokeWidth={isSel ? 1.5 : 0} />;
-                  }}
-                  activeDot={{ r: 5 }}
+                  dot={false}
+                  activeDot={{ r: 4, fill: colorMap[t.theme_id] ?? "#64748b", strokeWidth: 0 }}
                   strokeWidth={1.5} stroke={colorMap[t.theme_id] ?? "#64748b"}
                   strokeOpacity={0.9} connectNulls />
               ))}
@@ -835,6 +860,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
         stateReason: t.state_reason ?? "",
         rsSpy:       t.rs_vs_spy,
         rsQqq:       t.rs_vs_qqq,
+        members:     t.members ?? [],
       }))
       .sort((a, b) => b.value - a.value);
   }, [selectedThemes, tf]);
@@ -908,17 +934,73 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                 tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 500 }}
                 tickLine={false} axisLine={false} />
               <Tooltip
-                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, fontSize: 11 }}
                 cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                formatter={(v: any, _name: any, props: any) => {
-                  const d = props.payload;
-                  if (!d?.hasData) return ["No data", d?.displayName ?? ""];
-                  const lines: string[] = [
-                    `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}% (${tfLabel})`,
-                  ];
-                  if (d?.rsSpy != null) lines.push(`vs SPY: ${d.rsSpy > 0 ? "+" : ""}${d.rsSpy.toFixed(2)}%`);
-                  if (d?.rsQqq != null) lines.push(`vs QQQ: ${d.rsQqq > 0 ? "+" : ""}${d.rsQqq.toFixed(2)}%`);
-                  return [lines.join(" · "), d?.displayName ?? ""];
+                content={({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  if (!d) return null;
+                  const pct = Number(d.value);
+                  const MAX_CHIPS = 10;
+                  const members: { symbol: string; price: number | null; change_pct: number | null; return_pct: number | null }[] = d.members ?? [];
+                  const shown = members.slice(0, MAX_CHIPS);
+                  const extra = members.length - shown.length;
+                  return (
+                    <div style={{
+                      background: "#0f1117", border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 8, overflow: "hidden", minWidth: 200, maxWidth: 340, fontSize: 11,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                    }}>
+                      {/* Header: name + return */}
+                      <div style={{ padding: "9px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div style={{ fontWeight: 700, color: "#f1f5f9", marginBottom: 3, fontSize: 12 }}>{d.displayName}</div>
+                        {d.hasData ? (
+                          <div style={{ color: pct >= 0 ? "#4ade80" : "#f87171", fontWeight: 600, fontSize: 13 }}>
+                            {pct > 0 ? "+" : ""}{pct.toFixed(2)}%
+                            <span style={{ color: "#64748b", fontWeight: 400, fontSize: 10, marginLeft: 5 }}>({tfLabel})</span>
+                          </div>
+                        ) : (
+                          <div style={{ color: "#64748b" }}>No data</div>
+                        )}
+                        {(d.rsSpy != null || d.rsQqq != null) && (
+                          <div style={{ color: "#94a3b8", fontSize: 10, marginTop: 2 }}>
+                            {d.rsSpy != null && `vs SPY: ${d.rsSpy >= 0 ? "+" : ""}${d.rsSpy.toFixed(2)}%`}
+                            {d.rsSpy != null && d.rsQqq != null && "  "}
+                            {d.rsQqq != null && `vs QQQ: ${d.rsQqq >= 0 ? "+" : ""}${d.rsQqq.toFixed(2)}%`}
+                          </div>
+                        )}
+                      </div>
+                      {/* Member chips */}
+                      {shown.length > 0 && (
+                        <div style={{ padding: "8px 12px" }}>
+                          <div style={{ color: "#64748b", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Members</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {shown.map((m: any) => (
+                              <div key={m.symbol} style={{
+                                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+                                borderRadius: 4, padding: "3px 6px", display: "inline-flex", flexDirection: "column", gap: 1,
+                              }}>
+                                <span style={{ fontWeight: 700, fontFamily: "monospace", color: "#f1f5f9", fontSize: 10, lineHeight: 1 }}>{m.symbol}</span>
+                                {m.return_pct != null && (
+                                  <span style={{ fontSize: 9, color: m.return_pct >= 0 ? "#4ade80" : "#f87171", lineHeight: 1 }}>
+                                    {m.return_pct > 0 ? "+" : ""}{m.return_pct.toFixed(1)}%
+                                  </span>
+                                )}
+                                {m.price != null && (
+                                  <span style={{ fontSize: 9, color: "#94a3b8", lineHeight: 1 }}>
+                                    ${m.price < 10 ? m.price.toFixed(3) : m.price.toFixed(2)}
+                                    {m.change_pct != null ? ` (${m.change_pct >= 0 ? "+" : ""}${m.change_pct.toFixed(1)}%)` : ""}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                            {extra > 0 && (
+                              <span style={{ fontSize: 9, color: "#64748b", alignSelf: "center" }}>+{extra} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
                 }}
               />
               <ReferenceLine x={0} stroke="#475569" strokeWidth={1} />
@@ -1817,11 +1899,13 @@ function UnifiedThemesCard({
   const [sortDir, setSortDir]         = useState<"asc" | "desc">("desc");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-  // Single fetch — performance{} has all 5 TFs, shared across all 3 view modes
-  const apiCls = cls === "sectors" ? "sector" : "all";
+  // Table view: lock to "7D" so all 6 TF columns (incl. 5Y) always have data.
+  // RS / Line view: use the user-selected tf — RS reads performance[tf]; Line reads performance_curve.
+  const apiCls  = cls === "sectors" ? "sector" : "all";
+  const queryTf = viewMode === "table" ? "7D" : tf;
   const { data: raw, isLoading, isError } = useQuery<{ themes: ThemeRow[] }>({
-    queryKey: ["themes-unified", cls],
-    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=1D&classification=${apiCls}`)
+    queryKey: ["themes-unified", cls, queryTf],
+    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=${queryTf}&classification=${apiCls}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 5 * 60_000,
     retry: 1,
@@ -1842,6 +1926,9 @@ function UnifiedThemesCard({
   };
 
   const rows = useMemo(() => allThemes.map((t, i) => normalizeThemeToRow(t, i)), [allThemes]);
+
+  // Hide 5Y column entirely when backend returns no 5Y values
+  const has5Y = useMemo(() => rows.some(r => r.change_5y != null), [rows]);
 
   const sorted = useMemo(() => [...rows].sort((a, b) => {
     // Stage column: sort by canonical lifecycle rank, unknowns always last
@@ -1925,7 +2012,8 @@ function UnifiedThemesCard({
                 <Th label="#" /><Th label="Theme" k="name" />
                 <Th label="1D" k="change_1d" /><Th label="7D" k="change_7d" />
                 <Th label="30D" k="change_30d" /><Th label="YTD" k="change_ytd" />
-                <Th label="1Y" k="change_1y" /><Th label="5Y" k="change_5y" />
+                <Th label="1Y" k="change_1y" />
+                {has5Y && <Th label="5Y" k="change_5y" />}
                 <Th label="Score" k="rotation_score" /><Th label="Trend" /><Th label="Status" />
                 <Th label="Stage" k="stage_score" />
               </tr>
@@ -1971,7 +2059,7 @@ function UnifiedThemesCard({
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_30d)} ${tfClsActive("change_30d")}`}>{fmtPct(row.change_30d)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_ytd)} ${tfClsActive("change_ytd")}`}>{fmtPct(row.change_ytd)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1y)} ${tfClsActive("change_1y")}`}>{fmtPct(row.change_1y)}</td>
-                      <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_5y)}`}>{fmtPct(row.change_5y)}</td>
+                      {has5Y && <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_5y)}`}>{fmtPct(row.change_5y)}</td>}
                       <td className="px-3 py-2.5">
                         {row.rotation_score != null ? (
                           <div className="flex items-center gap-2 min-w-[68px]">
@@ -1994,7 +2082,7 @@ function UnifiedThemesCard({
                     </tr>
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
-                        <td colSpan={12} className="px-4 py-4">
+                        <td colSpan={has5Y ? 12 : 11} className="px-4 py-4">
                           <ThemeBasketPanel
                             tvSymbol={row.tvSymbol || undefined}
                             dotColor={color}
@@ -2009,7 +2097,7 @@ function UnifiedThemesCard({
                 );
               })}
               {sorted.length === 0 && !isLoading && (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500 text-sm">No data available</td></tr>
+                <tr><td colSpan={has5Y ? 12 : 11} className="px-3 py-8 text-center text-gray-500 text-sm">No data available</td></tr>
               )}
             </tbody>
           </table>
