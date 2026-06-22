@@ -1,0 +1,85 @@
+Audit first. Do not redesign the Themes page and do not rewrite the chart system. Fix the current implementation in place.
+
+We have three remaining Themes page issues:
+
+1. Relative Strength tooltip/list formatting:
+
+* In the Relative Strength tab, make the theme names in the hover tooltip/list color-coded to match the exact color of their RS bar.
+* Do not cram multiple theme names into one tight line.
+* Each theme/member row should be its own readable row.
+* Keep dark tooltip styling, but all text must be readable.
+* For member chips/cards, use:
+
+  * symbol/name in the theme color or a readable light color
+  * return % green/red
+  * optional price/change fields only if non-null
+* No new network calls on hover.
+
+2. Performance Curve tooltip:
+
+* In the Performance Curve hover tooltip, all visible theme rows must fit/read properly.
+* Right now only a few names are visible/cut off.
+* Make the tooltip scrollable or size-aware if needed.
+* Each theme name/value in the tooltip must be color-coded to match its line on the chart.
+* The user needs to immediately know which line belongs to which theme.
+* Preserve dark theme styling and readability.
+
+3. Performance Curve timeframe bug:
+   This is the important one. Right now 7D / 30D / YTD / 1Y / 5Y look the same or nearly the same. That is wrong. Each timeframe should show a different date window and a different normalized performance curve.
+
+Before changing code, diagnose the data contract:
+
+* For the existing Themes endpoint, call it for each timeframe used by the Performance Curve:
+  7D, 30D, YTD, 1Y, 5Y.
+* For one obvious theme, log/inspect:
+
+  * performance_curve.length
+  * first point date
+  * last point date
+  * first value_pct
+  * last value_pct
+* The result should be clearly different by timeframe:
+
+  * 7D should only cover recent dates
+  * 30D should cover roughly one month
+  * YTD should start near Jan 1
+  * 1Y should cover roughly one year
+  * 5Y should cover roughly five years
+* If all API responses return the same first date, same length, or same curve data, stop and report that this is a backend/data issue. Do not fake it visually.
+* If the API responses are different, fix the frontend state/query/chart wiring.
+
+Frontend fixes to check if API is good:
+
+* Make sure the Performance Curve timeframe state is separate from the Market Performance table timeframe.
+* The table may stay locked to the working default if needed, but the curve tab must use its own selected curve timeframe.
+* Make sure the queryKey includes the curve timeframe.
+* Make sure the request URL includes the curve timeframe.
+* Make sure changing timeframe actually refetches or selects the correct cached response.
+* Make sure the chart data is rebuilt from the selected timeframe response, not stale memoized rows.
+* Make sure any useMemo dependency arrays include the selected curve timeframe and rows.
+* Make sure the X-axis domain is based on actual performance_curve dates for the selected timeframe.
+* Do not use lookback bucket labels as x-axis points.
+
+If backend returns one full long-range curve only:
+
+* Either ask backend to return timeframe-specific curves, or slice/rebase client-side only if the full curve contains enough real date points.
+* If slicing client-side, do it correctly:
+
+  * filter points to selected timeframe date window
+  * find first available point in that window
+  * rebase all values so the first visible point starts at 0%
+  * formula:
+    rebased = (((1 + current_value_pct / 100) / (1 + start_value_pct / 100)) - 1) * 100
+* Do not simply zoom the same full-history normalized values without rebasing.
+
+Validation:
+
+* Relative Strength hover: theme names/member rows are readable, color-coded, and not squished.
+* Performance Curve hover: all displayed theme names are visible, color-coded to their lines, and readable.
+* 7D chart starts around recent dates and has short-window movement.
+* 30D chart looks different from 7D.
+* YTD starts near Jan 1 and differs from 1Y/5Y.
+* 1Y and 5Y show longer histories and do not look identical to 7D.
+* Switching timeframe visibly changes x-axis dates and chart shape.
+* No console errors.
+* No extra network calls on hover.

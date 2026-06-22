@@ -477,18 +477,41 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
               <YAxis tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
               <Tooltip
-                contentStyle={{ background: "#0f1117", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 6, fontSize: 11 }}
-                labelStyle={{ color: "#e2e8f0", fontWeight: 600, marginBottom: 4 }}
-                labelFormatter={(lbl: string) => fmtDateLabel(lbl)}
-                formatter={(v: any, id: string) => {
-                  const t = visibleThemes.find(x => x.theme_id === id);
-                  const pct = Number(v);
-                  return [
-                    `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`,
-                    t?.display_name ?? id,
-                  ];
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const sorted = [...payload].sort((a: any, b: any) => (b.value as number) - (a.value as number));
+                  return (
+                    <div style={{
+                      background: "#0f1117", border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 6, padding: "8px 12px", fontSize: 11,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                      minWidth: 200, maxWidth: 300,
+                      maxHeight: 340, display: "flex", flexDirection: "column",
+                    }}>
+                      <div style={{ color: "#94a3b8", fontWeight: 600, marginBottom: 7, fontSize: 10, flexShrink: 0 }}>
+                        {fmtDateLabel(label)}
+                      </div>
+                      <div style={{ overflowY: "auto", flex: 1 }}>
+                        {sorted.map((entry: any) => {
+                          const theme = visibleThemes.find(x => x.theme_id === entry.dataKey);
+                          const color = colorMap[entry.dataKey] ?? "#64748b";
+                          const pct   = Number(entry.value);
+                          return (
+                            <div key={entry.dataKey} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                              <span style={{ color, fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {theme?.display_name ?? entry.dataKey}
+                              </span>
+                              <span style={{ color: pct >= 0 ? "#4ade80" : "#f87171", fontWeight: 700, flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>
+                                {pct >= 0 ? "+" : ""}{pct.toFixed(2)}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
                 }}
-                itemStyle={{ color: "#e2e8f0" }}
               />
               <ReferenceLine y={0} stroke="#475569" strokeWidth={1} />
               {visibleThemes.map(t => (
@@ -950,9 +973,12 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                       borderRadius: 8, overflow: "hidden", minWidth: 200, maxWidth: 340, fontSize: 11,
                       boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
                     }}>
-                      {/* Header: name + return */}
+                      {/* Header: name (color-coded to bar) + return */}
                       <div style={{ padding: "9px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                        <div style={{ fontWeight: 700, color: "#f1f5f9", marginBottom: 3, fontSize: 12 }}>{d.displayName}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                          <span style={{ width: 9, height: 9, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                          <span style={{ fontWeight: 700, color: d.color, fontSize: 12 }}>{d.displayName}</span>
+                        </div>
                         {d.hasData ? (
                           <div style={{ color: pct >= 0 ? "#4ade80" : "#f87171", fontWeight: 600, fontSize: 13 }}>
                             {pct > 0 ? "+" : ""}{pct.toFixed(2)}%
@@ -979,7 +1005,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
                                 background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
                                 borderRadius: 4, padding: "3px 6px", display: "inline-flex", flexDirection: "column", gap: 1,
                               }}>
-                                <span style={{ fontWeight: 700, fontFamily: "monospace", color: "#f1f5f9", fontSize: 10, lineHeight: 1 }}>{m.symbol}</span>
+                                <span style={{ fontWeight: 700, fontFamily: "monospace", color: d.color || "#f1f5f9", fontSize: 10, lineHeight: 1 }}>{m.symbol}</span>
                                 {m.return_pct != null && (
                                   <span style={{ fontSize: 9, color: m.return_pct >= 0 ? "#4ade80" : "#f87171", lineHeight: 1 }}>
                                     {m.return_pct > 0 ? "+" : ""}{m.return_pct.toFixed(1)}%
@@ -1894,15 +1920,16 @@ function UnifiedThemesCard({
 }) {
   const [viewMode, setViewMode]       = useState<ViewMode>("table");
   const [cls, setCls]                 = useState<Classification>("themes");
-  const [tf, setTf]                   = useState<ThemeTf>("7D");
+  const [tf, setTf]                   = useState<ThemeTf>("7D");       // RS tab TF
+  const [curveTf, setCurveTf]         = useState<ThemeTf>("7D");       // Line tab TF — separate state
   const [sortKey, setSortKey]         = useState<SortKey>("rotation_score");
   const [sortDir, setSortDir]         = useState<"asc" | "desc">("desc");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
-  // Table view: lock to "7D" so all 6 TF columns (incl. 5Y) always have data.
-  // RS / Line view: use the user-selected tf — RS reads performance[tf]; Line reads performance_curve.
+  // Table: locked to "7D" so all 6 TF columns (incl. 5Y) always have real data.
+  // RS: uses tf. Line: uses curveTf (separate so switching TF in one tab doesn't affect the other).
   const apiCls  = cls === "sectors" ? "sector" : "all";
-  const queryTf = viewMode === "table" ? "7D" : tf;
+  const queryTf = viewMode === "table" ? "7D" : viewMode === "line" ? curveTf : tf;
   const { data: raw, isLoading, isError } = useQuery<{ themes: ThemeRow[] }>({
     queryKey: ["themes-unified", cls, queryTf],
     queryFn: () => fetch(`/api/themes/relative-strength?timeframe=${queryTf}&classification=${apiCls}`)
@@ -1981,11 +2008,21 @@ function UnifiedThemesCard({
         <div className="flex items-center gap-2 flex-wrap">
           {freshness && <span className="text-[10px] text-gray-600 hidden lg:block">{freshness}</span>}
           {isLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
-          {(viewMode === "rs" || viewMode === "line") && (
+          {viewMode === "rs" && (
             <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
               {TF_THEME_OPTIONS.map(t => (
                 <button key={t} onClick={() => setTf(t)}
                   className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${tf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+          {viewMode === "line" && (
+            <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5">
+              {TF_THEME_OPTIONS.map(t => (
+                <button key={t} onClick={() => setCurveTf(t)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${curveTf === t ? "bg-blue-500 text-white" : "text-gray-400 hover:text-white"}`}>
                   {t}
                 </button>
               ))}
@@ -2107,7 +2144,7 @@ function UnifiedThemesCard({
         <ThemeRSView themes={allThemes} tf={tf} />
       ) : (
         /* ── LINE GRAPH VIEW ── */
-        <LineGraphView themes={allThemes} colorMap={colorMap} tf={tf} />
+        <LineGraphView themes={allThemes} colorMap={colorMap} tf={curveTf} />
       )}
     </GlassCard>
   );
