@@ -1392,6 +1392,187 @@ const SIGNAL_LKG_FIELDS = [
 const isMissingSignalValue = (v: unknown): boolean =>
   v === null || v === undefined || v === '' || (typeof v === 'number' && Number.isNaN(v));
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREENER FILTER SYSTEM — frontend-only, no API calls, no LLM
+   ═══════════════════════════════════════════════════════════════════════════ */
+type FilterFieldType = 'numeric' | 'text';
+type FilterOperator  = 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'between' | 'contains' | 'not_contains' | 'exists' | 'missing';
+
+interface ScreenerFilter {
+  id: string;
+  fieldKey: string;
+  operator: FilterOperator;
+  value: string;
+  value2: string;
+}
+
+interface FilterFieldDef {
+  key: string;
+  label: string;
+  type: FilterFieldType;
+  group: 'Technical' | 'Fundamental';
+  unit?: string;
+}
+
+const SCREENER_FILTER_FIELDS: FilterFieldDef[] = [
+  { key: 'ticker',                  label: 'Symbol',              type: 'text',    group: 'Technical' },
+  { key: 'company',                 label: 'Company',             type: 'text',    group: 'Technical' },
+  { key: 'canonical_theme',         label: 'Theme',               type: 'text',    group: 'Technical' },
+  { key: 'price',                   label: 'Price',               type: 'numeric', group: 'Technical', unit: '$' },
+  { key: 'chg',                     label: 'Daily % Change',      type: 'numeric', group: 'Technical', unit: '%' },
+  { key: 'volume',                  label: 'Volume',              type: 'numeric', group: 'Technical' },
+  { key: 'volx',                    label: 'VolX',                type: 'numeric', group: 'Technical', unit: 'x' },
+  { key: 'vol_mc',                  label: 'Vol / Mkt Cap',       type: 'numeric', group: 'Technical' },
+  { key: 'stage',                   label: 'Stage',               type: 'text',    group: 'Technical' },
+  { key: 'options_score',           label: 'Options Score',       type: 'numeric', group: 'Technical' },
+  { key: 'options_signal',          label: 'Options Signal',      type: 'text',    group: 'Technical' },
+  { key: 'put_call',                label: 'Put/Call',            type: 'numeric', group: 'Technical' },
+  { key: 'iv',                      label: 'IV',                  type: 'numeric', group: 'Technical', unit: '%' },
+  { key: 'exp_move',                label: 'Expected Move',       type: 'numeric', group: 'Technical', unit: '%' },
+  { key: 'opt_volume',              label: 'Options Volume',      type: 'numeric', group: 'Technical' },
+  { key: 'open_interest',           label: 'Open Interest',       type: 'numeric', group: 'Technical' },
+  { key: 'market_cap',              label: 'Market Cap',          type: 'numeric', group: 'Fundamental', unit: '$' },
+  { key: 'revenue',                 label: 'Revenue',             type: 'numeric', group: 'Fundamental', unit: '$' },
+  { key: 'revenue_growth_q',        label: 'Revenue Growth (Q)',  type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'revenue_growth',          label: 'Revenue Growth (Y)',  type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'gross_margin',            label: 'Gross Margin',        type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'fcf_margin',              label: 'FCF Margin',          type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'free_cash_flow',          label: 'Free Cash Flow',      type: 'numeric', group: 'Fundamental', unit: '$' },
+  { key: 'operating_income',        label: 'Operating Income',    type: 'numeric', group: 'Fundamental', unit: '$' },
+  { key: 'ebit',                    label: 'EBIT',                type: 'numeric', group: 'Fundamental', unit: '$' },
+  { key: 'pe_ratio',                label: 'P/E',                 type: 'numeric', group: 'Fundamental' },
+  { key: 'ps_ratio',                label: 'P/S',                 type: 'numeric', group: 'Fundamental' },
+  { key: 'ev_ebitda',               label: 'EV/EBITDA',           type: 'numeric', group: 'Fundamental' },
+  { key: 'eps_growth',              label: 'EPS Growth',          type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'debt_to_equity',          label: 'Debt / Equity',       type: 'numeric', group: 'Fundamental' },
+  { key: 'net_debt_ebitda',         label: 'Net Debt / EBITDA',   type: 'numeric', group: 'Fundamental' },
+  { key: 'shares_insiders',         label: 'Insider %',           type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'earnings_date',           label: 'Earnings Date',       type: 'text',    group: 'Fundamental' },
+  { key: 'revenue_growth_est',      label: 'Rev Growth Est.',     type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'rev_growth_next_quarter', label: 'Rev Growth NQ',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'rev_growth_next_year',    label: 'Rev Growth NY',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'eps_growth_est',          label: 'EPS Growth Est.',     type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'eps_growth_tq',           label: 'EPS Growth TQ',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'eps_growth_nq',           label: 'EPS Growth NQ',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'eps_growth_ty',           label: 'EPS Growth TY',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'eps_growth_ny',           label: 'EPS Growth NY',       type: 'numeric', group: 'Fundamental', unit: '%' },
+];
+
+const NUMERIC_OPS: { op: FilterOperator; label: string }[] = [
+  { op: 'gt',      label: 'greater than (>)'  },
+  { op: 'gte',     label: 'at least (≥)'       },
+  { op: 'lt',      label: 'less than (<)'      },
+  { op: 'lte',     label: 'at most (≤)'        },
+  { op: 'eq',      label: 'equals (=)'         },
+  { op: 'between', label: 'between'            },
+  { op: 'exists',  label: 'has a value'        },
+  { op: 'missing', label: 'is missing / empty' },
+];
+
+const TEXT_OPS: { op: FilterOperator; label: string }[] = [
+  { op: 'contains',     label: 'contains'           },
+  { op: 'not_contains', label: 'does not contain'   },
+  { op: 'eq',           label: 'equals exactly'     },
+  { op: 'exists',       label: 'has a value'        },
+  { op: 'missing',      label: 'is empty / missing' },
+];
+
+function parseFilterInputValue(raw: string): number | null {
+  if (!raw) return null;
+  const s = raw.trim().replace(/^\+/, '');
+  if (!s || s === '—') return null;
+  const mB = s.match(/^\$?([\d,.]+)\s*[Bb]$/); if (mB) return parseFloat(mB[1].replace(/,/g,'')) * 1e9;
+  const mM = s.match(/^\$?([\d,.]+)\s*[Mm]$/); if (mM) return parseFloat(mM[1].replace(/,/g,'')) * 1e6;
+  const mK = s.match(/^\$?([\d,.]+)\s*[Kk]$/); if (mK) return parseFloat(mK[1].replace(/,/g,'')) * 1e3;
+  const cleaned = s.replace(/[%xX]$/, '').replace(/^\$/, '').replace(/,/g, '');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getFilterFieldRawValue(row: any, fieldKey: string): number | string | null {
+  switch (fieldKey) {
+    case 'ticker':          { const v = String(row.ticker || row.symbol || '').trim(); return v || null; }
+    case 'company':         { const v = String(row.company || row.name || '').trim(); return v || null; }
+    case 'canonical_theme': return getWatchlistTheme(row) || null;
+    case 'price':           { const n = Number(row.price); return Number.isFinite(n) ? n : null; }
+    case 'chg':             { const n = Number(row.change_pct ?? row.change_pct_1d); return Number.isFinite(n) ? n : null; }
+    case 'volume':          { const n = Number(row.volume); return Number.isFinite(n) ? n : null; }
+    case 'volx':            return getVolXVal(row);
+    case 'vol_mc':          { const n = Number(row.vol_mc_pct ?? row.vol_mc_ratio); return (Number.isFinite(n) && n > 0) ? n : null; }
+    case 'stage':           return getStageLabel(row) || null;
+    case 'options_score':   return getOptionsScore(row);
+    case 'options_signal':  { const v = String(row.options_signal ?? '').trim(); return v || null; }
+    case 'put_call':        { const n = Number(row.options_put_call_ratio); return Number.isFinite(n) ? n : null; }
+    case 'iv':              { const n = Number(row.options_iv); return Number.isFinite(n) ? n : null; }
+    case 'exp_move':        { const n = Number(row.options_expected_move); return Number.isFinite(n) ? n : null; }
+    case 'opt_volume':      { const n = Number(row.options_volume); return Number.isFinite(n) ? n : null; }
+    case 'open_interest':   { const n = Number(row.options_open_interest); return Number.isFinite(n) ? n : null; }
+    default:                return fgParseMetric(row, fieldKey);
+  }
+}
+
+function applyOneFilter(rawValue: number | string | null, filter: ScreenerFilter, fieldType: FilterFieldType): boolean {
+  const { operator: op, value, value2 } = filter;
+  if (op === 'exists')  return rawValue !== null && rawValue !== '' && rawValue !== undefined;
+  if (op === 'missing') return rawValue === null || rawValue === '' || rawValue === undefined;
+  if (fieldType === 'text') {
+    const sv = String(rawValue ?? '').toLowerCase();
+    const v  = (value ?? '').toLowerCase().trim();
+    if (!v) return true;
+    if (op === 'contains')     return sv.includes(v);
+    if (op === 'not_contains') return !sv.includes(v);
+    if (op === 'eq')           return sv === v;
+    return true;
+  }
+  if (rawValue === null || rawValue === undefined) return false;
+  const rn = typeof rawValue === 'number' ? rawValue : parseFloat(String(rawValue));
+  if (!Number.isFinite(rn)) return false;
+  const vn = parseFilterInputValue(value ?? '');
+  if (vn === null) return true;
+  if (op === 'gt')      return rn > vn;
+  if (op === 'gte')     return rn >= vn;
+  if (op === 'lt')      return rn < vn;
+  if (op === 'lte')     return rn <= vn;
+  if (op === 'eq')      return Math.abs(rn - vn) <= Math.max(Math.abs(vn) * 0.0001, 0.0001);
+  if (op === 'between') {
+    const vn2 = parseFilterInputValue(value2 ?? '');
+    if (vn2 === null) return true;
+    return rn >= Math.min(vn, vn2) && rn <= Math.max(vn, vn2);
+  }
+  return true;
+}
+
+function applyScreenerFilters(row: any, filters: ScreenerFilter[]): boolean {
+  return filters.every(f => {
+    const def = SCREENER_FILTER_FIELDS.find(d => d.key === f.fieldKey);
+    if (!def) return true;
+    return applyOneFilter(getFilterFieldRawValue(row, f.fieldKey), f, def.type);
+  });
+}
+
+function formatFilterChipLabel(f: ScreenerFilter): string {
+  const def = SCREENER_FILTER_FIELDS.find(d => d.key === f.fieldKey);
+  const label = def?.label ?? f.fieldKey;
+  const op = f.operator;
+  const sym: Partial<Record<FilterOperator, string>> = { gt: '>', gte: '≥', lt: '<', lte: '≤', eq: '=' };
+  if (op === 'exists')       return `${label}: has value`;
+  if (op === 'missing')      return `${label}: missing`;
+  if (op === 'between')      return `${label}: ${f.value}–${f.value2}`;
+  if (op === 'contains')     return `${label} ~ "${f.value}"`;
+  if (op === 'not_contains') return `${label} !~ "${f.value}"`;
+  if (op === 'eq' && def?.type === 'text') return `${label} = "${f.value}"`;
+  return `${label} ${sym[op] ?? op} ${f.value}`;
+}
+
+const SCREENER_FILTERS_LS_KEY = 'watchlist_screener_filters_v1';
+function loadStoredFilters(): ScreenerFilter[] {
+  try { const r = localStorage.getItem(SCREENER_FILTERS_LS_KEY); if (r) return JSON.parse(r) as ScreenerFilter[]; } catch {}
+  return [];
+}
+function saveFiltersToStorage(f: ScreenerFilter[]): void {
+  try { localStorage.setItem(SCREENER_FILTERS_LS_KEY, JSON.stringify(f)); } catch {}
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1433,6 +1614,13 @@ export default function WatchlistPage() {
     try { localStorage.setItem('wl_hide_foreign', next ? '1' : '0'); } catch {}
     return next;
   });
+  /* ── Screener filters ────────────────────────────────────────────── */
+  const [screenerFilters, setScreenerFilters] = useState<ScreenerFilter[]>(loadStoredFilters);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [draftField, setDraftField] = useState<string>(SCREENER_FILTER_FIELDS[0].key);
+  const [draftOp, setDraftOp]   = useState<FilterOperator>('gt');
+  const [draftVal, setDraftVal]   = useState('');
+  const [draftVal2, setDraftVal2] = useState('');
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2068,6 +2256,40 @@ export default function WatchlistPage() {
       .map(r => r.s);
   }, [mergedTickers, sortKey, sortDir]);
 
+  /* ── unified CSV-merged rows for filter evaluation ───────────────── */
+  const csvMergedScreenerRows = useMemo(() => {
+    const csvMap: Record<string, any> = {};
+    for (const row of ((watchlist as any)?.csv_data || [])) {
+      const t = String(row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toUpperCase();
+      if (t) csvMap[t] = row;
+    }
+    return mergedTickers.map(s => {
+      const tkKey = String((s as any).ticker || '').toUpperCase();
+      const csv = csvMap[tkKey] || {};
+      const canonicalTheme = getWatchlistTheme(s);
+      const merged: Record<string, any> = { ...csv };
+      for (const [k, v] of Object.entries(s as Record<string, any>)) {
+        if (v !== undefined && v !== null && v !== '') merged[k] = v;
+        else if (!(k in merged)) merged[k] = v;
+      }
+      if (canonicalTheme) merged['canonical_theme_name'] = canonicalTheme;
+      return merged;
+    });
+  }, [mergedTickers, watchlist]);
+
+  /* ── filtered symbol set — null = no active filters ─────────────── */
+  const filteredSymbolSet = useMemo<Set<string> | null>(() => {
+    if (!screenerFilters.length) return null;
+    const passing = new Set<string>();
+    for (const row of csvMergedScreenerRows) {
+      if (applyScreenerFilters(row, screenerFilters)) {
+        const sym = String(row.ticker || row.symbol || '').toUpperCase();
+        if (sym) passing.add(sym);
+      }
+    }
+    return passing;
+  }, [csvMergedScreenerRows, screenerFilters]);
+
   function handleSortClick(key: NonNullable<typeof sortKey>) {
     if (sortKey === key) {
       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -2693,11 +2915,17 @@ export default function WatchlistPage() {
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
     const tableTitle = opts?.title ?? 'SCREENER';
-    // Apply hide-foreign filter only to the ticker table rows (not bottom tabs)
+    const isMainScreener = tableTitle === 'SCREENER';
+    // Apply hide-foreign filter
     const visibleRows = hideForeignTickers
-      ? rows.filter(r => !String(r.ticker || r.symbol || '').includes(':'))
+      ? rows.filter(r => !String((r as any).ticker || (r as any).symbol || '').includes(':'))
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
+    // Apply screener filters (only for the main Screener panel, not Close Watch or custom row sets)
+    const filteredRows = (isMainScreener && filteredSymbolSet)
+      ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
+      : visibleRows;
+    const filterHidden = visibleRows.length - filteredRows.length;
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px';
     // 17 tracks × min widths (1232px) + 16 gaps × 6px (96px) + padding 14+14 (28px) = 1356px
     const TICKER_TABLE_MIN_WIDTH = 1356;
@@ -2720,14 +2948,128 @@ export default function WatchlistPage() {
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
     ];
+
+    /* ── inline filter modal ─────────────────────────────────────────── */
+    const filterModal = (showFilterModal && isMainScreener) ? (() => {
+      const fieldDef = SCREENER_FILTER_FIELDS.find(f => f.key === draftField) || SCREENER_FILTER_FIELDS[0];
+      const operators = fieldDef.type === 'text' ? TEXT_OPS : NUMERIC_OPS;
+      const needsValue = draftOp !== 'exists' && draftOp !== 'missing';
+      const isBetween  = draftOp === 'between';
+      const techFields = SCREENER_FILTER_FIELDS.filter(f => f.group === 'Technical');
+      const fundFields = SCREENER_FILTER_FIELDS.filter(f => f.group === 'Fundamental');
+      const INPUT_S: React.CSSProperties = { fontSize: 11, padding: '5px 8px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: C.font, outline: 'none' };
+      const handleAdd = () => {
+        if (needsValue && !draftVal.trim()) return;
+        const next: ScreenerFilter[] = [...screenerFilters, {
+          id: Math.random().toString(36).slice(2),
+          fieldKey: draftField, operator: draftOp,
+          value: draftVal.trim(), value2: draftVal2.trim(),
+        }];
+        setScreenerFilters(next); saveFiltersToStorage(next);
+        setDraftVal(''); setDraftVal2('');
+      };
+      const handleFieldChange = (key: string) => {
+        const def = SCREENER_FILTER_FIELDS.find(f => f.key === key);
+        const ops = (def?.type === 'text') ? TEXT_OPS : NUMERIC_OPS;
+        setDraftField(key);
+        if (!ops.find(o => o.op === draftOp)) setDraftOp(ops[0].op);
+        setDraftVal(''); setDraftVal2('');
+      };
+      const removeFilter = (id: string) => {
+        const next = screenerFilters.filter(f => f.id !== id);
+        setScreenerFilters(next); saveFiltersToStorage(next);
+      };
+      return (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9990, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '52px 20px 20px' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowFilterModal(false); }}
+        >
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, width: 380, maxHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', boxShadow: '0 16px 48px rgba(0,0,0,0.65)', overflow: 'hidden' }}>
+            {/* Modal header */}
+            <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: '0.08em', fontFamily: C.font }}>SCREENER FILTERS</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {screenerFilters.length > 0 && (
+                  <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: `${C.red}15`, border: `1px solid ${C.red}35`, color: C.red, cursor: 'pointer', fontFamily: C.font, fontWeight: 700 }}>
+                    Clear All
+                  </button>
+                )}
+                <button onClick={() => setShowFilterModal(false)} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, cursor: 'pointer', fontFamily: C.font }}>✕</button>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Add filter form */}
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: C.font, marginBottom: 8 }}>Add Filter</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {/* Field selector */}
+                  <select value={draftField} onChange={e => handleFieldChange(e.target.value)} style={{ ...INPUT_S, width: '100%', cursor: 'pointer' }}>
+                    <optgroup label="── Technical ──">
+                      {techFields.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                    </optgroup>
+                    <optgroup label="── Fundamental ──">
+                      {fundFields.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                    </optgroup>
+                  </select>
+                  {/* Operator + value */}
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' as const }}>
+                    <select value={draftOp} onChange={e => { setDraftOp(e.target.value as FilterOperator); setDraftVal(''); setDraftVal2(''); }} style={{ ...INPUT_S, flex: '1 1 130px', minWidth: 0, cursor: 'pointer' }}>
+                      {operators.map(o => <option key={o.op} value={o.op}>{o.label}</option>)}
+                    </select>
+                    {needsValue && (
+                      <input value={draftVal} onChange={e => setDraftVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} placeholder={isBetween ? 'Min' : (fieldDef.unit ? `e.g. 1.5${fieldDef.unit}` : 'Value')} style={{ ...INPUT_S, flex: '1 1 80px', minWidth: 56 }} />
+                    )}
+                    {isBetween && (
+                      <input value={draftVal2} onChange={e => setDraftVal2(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }} placeholder="Max" style={{ ...INPUT_S, flex: '1 1 80px', minWidth: 56 }} />
+                    )}
+                  </div>
+                  <button
+                    onClick={handleAdd}
+                    disabled={needsValue && !draftVal.trim()}
+                    style={{ fontSize: 10, padding: '6px 12px', borderRadius: 4, background: `${C.teal}1a`, border: `1px solid ${C.teal}55`, color: C.teal, cursor: (needsValue && !draftVal.trim()) ? 'not-allowed' : 'pointer', fontFamily: C.font, fontWeight: 700, opacity: (needsValue && !draftVal.trim()) ? 0.45 : 1, transition: 'opacity 0.1s' }}
+                  >
+                    + Add Filter
+                  </button>
+                </div>
+              </div>
+
+              {/* Active filters list */}
+              {screenerFilters.length > 0 ? (
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: C.font, marginBottom: 8 }}>
+                    Active ({screenerFilters.length}) — AND logic
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {screenerFilters.map(f => (
+                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${C.teal}0d`, border: `1px solid ${C.teal}30`, borderRadius: 6 }}>
+                        <span style={{ flex: 1, fontSize: 11, color: C.text, fontFamily: C.font }}>{formatFilterChipLabel(f)}</span>
+                        <button onClick={() => removeFilter(f.id)} style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0, opacity: 0.7 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center' as const, padding: '16px 0', color: C.dim, fontSize: 11, fontFamily: C.font }}>
+                  No active filters. Add one above to narrow the screener.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    })() : null;
+
     return (
       <div style={{
         background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         height: '100%', minHeight: 0,
       }}>
+        {filterModal}
+        {/* Header row */}
         <div style={{
-          padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+          padding: '10px 14px', borderBottom: screenerFilters.length > 0 && isMainScreener ? 'none' : `1px solid ${C.border}`,
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
         }}>
           <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'CLOSE WATCH' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
@@ -2763,11 +3105,13 @@ export default function WatchlistPage() {
               ? (hideForeignTickers && foreignHidden > 0
                   ? `${rows.length} tickers · ${visibleRows.length} shown`
                   : `${rows.length} ticker${rows.length !== 1 ? 's' : ''}`)
-              : pendingCount > 0
-                ? `${analyzedCount} analyzed · ${pendingCount} pending`
-                : (hideForeignTickers && foreignHidden > 0
-                    ? `${mergedTickers.length} total · ${visibleRows.length} shown`
-                    : `${mergedTickers.length} total`)}
+              : (filteredSymbolSet && isMainScreener)
+                ? `${mergedTickers.length} total · ${filteredRows.length} shown · ${filterHidden + foreignHidden} filtered`
+                : pendingCount > 0
+                  ? `${analyzedCount} analyzed · ${pendingCount} pending`
+                  : (hideForeignTickers && foreignHidden > 0
+                      ? `${mergedTickers.length} total · ${visibleRows.length} shown`
+                      : `${mergedTickers.length} total`)}
           </span>
           {screenerMode === 'technical' && !opts?.rows && pendingCount > 0 && (
             <span style={{
@@ -2786,6 +3130,23 @@ export default function WatchlistPage() {
             </span>
           )}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {isMainScreener && (
+              <button
+                onClick={() => setShowFilterModal(v => !v)}
+                style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                  padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+                  textTransform: 'uppercase' as const, fontFamily: C.font,
+                  background: screenerFilters.length > 0 ? `${C.teal}22` : 'transparent',
+                  color: screenerFilters.length > 0 ? C.teal : C.dim,
+                  border: `1px solid ${screenerFilters.length > 0 ? `${C.teal}60` : C.border}`,
+                  transition: 'all 0.12s', flexShrink: 0,
+                }}
+                title="Screener Filters"
+              >
+                {screenerFilters.length > 0 ? `⊙ Filters (${screenerFilters.length})` : '⊕ Filters'}
+              </button>
+            )}
             <button
               onClick={toggleHideForeign}
               style={{
@@ -2804,10 +3165,27 @@ export default function WatchlistPage() {
             </button>
           </div>
         </div>
+        {/* Filter chips strip — visible when filters are active */}
+        {isMainScreener && screenerFilters.length > 0 && (
+          <div style={{ padding: '5px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 5, flexWrap: 'wrap' as const, alignItems: 'center', background: `${C.teal}07`, flexShrink: 0 }}>
+            {screenerFilters.map(f => {
+              const next = screenerFilters.filter(x => x.id !== f.id);
+              return (
+                <span key={f.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, padding: '2px 6px 2px 7px', borderRadius: 10, background: `${C.teal}18`, border: `1px solid ${C.teal}40`, color: C.teal, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  {formatFilterChipLabel(f)}
+                  <button onClick={() => { setScreenerFilters(next); saveFiltersToStorage(next); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 12, lineHeight: 1, padding: '0 1px', opacity: 0.65 }}>×</button>
+                </span>
+              );
+            })}
+            <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: 'transparent', border: `1px solid ${C.dim}40`, color: C.dim, cursor: 'pointer', fontFamily: C.font }}>
+              Clear All
+            </button>
+          </div>
+        )}
 
         {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamental' ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
-            {renderFundamentalScreenerContent(visibleRows)}
+            {renderFundamentalScreenerContent(filteredRows)}
           </div>
         ) : (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
@@ -2859,7 +3237,7 @@ export default function WatchlistPage() {
             </div>
 
             {/* table rows */}
-            {visibleRows.map((stock, i) => {
+            {filteredRows.map((stock, i) => {
               const isPending = stock._pending;
               const chg1d = stock.change_pct ?? stock.change_pct_1d;
               const cCol = changeColor(chg1d);

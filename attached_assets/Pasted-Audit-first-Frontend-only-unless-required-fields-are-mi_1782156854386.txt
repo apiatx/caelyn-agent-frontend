@@ -1,0 +1,357 @@
+Audit first. Frontend-only unless required fields are missing from the already-loaded Watchlist payload. Do not touch backend. Do not add API/provider calls. Do not use an LLM.
+
+Goal:
+Add a filter/settings button to the Watchlist page `Screener` section.
+
+The Screener section currently has two modes:
+
+* Technical
+* Fundamental
+
+Add a compact filter/settings button in the Screener header that opens a popup/modal where the user can create filters across both Technical and Fundamental fields.
+
+The same active filters must apply to both Screener modes.
+
+Example:
+User sets:
+
+* VolX > 1.5x
+* P/S < 4
+* Revenue Growth > 50%
+
+Then:
+
+* Technical mode should show only tickers matching all active filters.
+* Fundamental mode should show the exact same filtered ticker universe, just with fundamental columns displayed.
+
+Core requirement:
+The filters should operate on one unified Watchlist Screener row model, not separately on Technical and Fundamental tables.
+
+Scope:
+Only update the Watchlist page Screener section.
+
+Do not change:
+
+* backend
+* provider calls
+* Watchlist saved data
+* Live News
+* bottom tabs
+* Golden Zone
+* Growth Momentum
+* HC Investment Zone
+* HC Trade Zone
+* Fundamental Grouping
+* Theme Grouping
+* Market Cap Grouping
+* StockDetailModal
+* Add ticker behavior
+* Hide Foreign behavior, except it should combine correctly with filters
+
+No new data fetching:
+Do not call:
+
+* FMP
+* Tradier
+* options endpoints
+* analyst endpoints
+* backend refresh endpoints
+* LLMs
+
+Use only the already-loaded Watchlist row data, technical fields, live quote fields, options fields, and CSV/fundamental merged fields.
+
+Architecture:
+Create a shared filtered Screener row set.
+
+Suggested flow:
+
+1. Build unified Screener rows from the same merged data already used by:
+
+   * Technical Screener
+   * Fundamental Screener
+
+2. Apply active saved watchlist scope.
+
+3. Apply Hide Foreign if enabled.
+
+4. Apply Screener filters.
+
+5. Feed the filtered symbol set into both:
+
+   * Technical table
+   * Fundamental table
+
+Important:
+Do not let Technical and Fundamental modes independently filter their own row arrays in ways that drift.
+
+Preferred model:
+
+* `allScreenerRows`
+* `activeScreenerFilters`
+* `filteredScreenerRows`
+* `filteredSymbolSet`
+
+Then:
+
+* Technical mode renders technical rows where symbol is in `filteredSymbolSet`
+* Fundamental mode renders fundamental rows where symbol is in `filteredSymbolSet`
+
+This guarantees both modes show the same stocks.
+
+Filter button:
+Add a compact button in the Screener header near the Technical/Fundamental toggle.
+
+Suggested label/icon:
+
+* `Filters`
+* or small sliders/settings icon
+* show active count if filters exist: `Filters (3)`
+
+When active filters exist, visually highlight the button.
+
+Filter modal/popup:
+Open a modal/popover with:
+
+* title: `Screener Filters`
+* list of available fields grouped by category
+* ability to add/remove filters
+* `Apply`
+* `Clear All`
+* `Close`
+
+Clear All:
+User must be able to clear all active filters with one click.
+
+Clear All should:
+
+* remove all custom filters
+* reset the filtered Screener back to the active watchlist / Hide Foreign state
+* update both Technical and Fundamental modes immediately
+
+Filter behavior:
+Default combine mode should be AND.
+
+Meaning:
+A row must pass every active filter.
+
+Do not add OR logic in this pass unless simple and already supported. Keep it clean.
+
+Supported filter types:
+
+Numeric filters:
+Operators:
+
+* greater than
+* greater than or equal
+* less than
+* less than or equal
+* equals
+* between
+
+Text/category filters:
+Operators:
+
+* contains
+* equals
+* does not contain
+
+Boolean/presence filters:
+Operators:
+
+* exists
+* missing
+
+Suggested field groups:
+
+Technical fields:
+
+* Symbol
+* Company
+* Theme
+* Price
+* Daily % Change
+* Volume
+* VolX
+* Vol Rank
+* Vol / Market Cap
+* Stage
+* Options Score
+* Options Signal
+* Put/Call
+* IV
+* Expected Move
+* Options Volume
+* Open Interest
+
+Fundamental fields:
+
+* Market Cap
+* Revenue
+* Revenue Growth (Q)
+* Revenue Growth (Y)
+* Gross Margin
+* FCF Margin
+* Free Cash Flow
+* Operating Income
+* EBIT
+* P/E
+* P/S
+* EV/EBITDA
+* EPS Growth
+* Debt / Equity
+* Net Debt / EBITDA
+* Insider %
+* Earnings Date
+* Revenue Growth Est.
+* Revenue Growth Next Quarter
+* Revenue Growth Next Year
+* EPS Growth Est.
+* EPS Growth This Quarter
+* EPS Growth Next Quarter
+* EPS Growth This Year
+* EPS Growth Next Year
+
+Theme field:
+Use the canonical AI-enhanced Watchlist theme, not raw CSV industry.
+
+Do not let CSV industry override the enhanced Watchlist theme.
+
+Parsing:
+Create robust parsing helpers.
+
+Numeric values may appear as:
+
+* `1.5x`
+* `+50%`
+* `$4.2B`
+* `$850M`
+* `1,250,000`
+* `—`
+* null
+* undefined
+
+Helpers:
+
+* parseNumberLike(value)
+* parsePercentLike(value)
+* parseCurrencyLike(value)
+* parseMultipleLike(value)
+* getFilterFieldValue(row, fieldKey)
+
+Rules:
+
+* `—`, null, undefined, empty string = missing
+* 0 is valid
+* percentages should compare as percentage points, so `50%` parses to `50`
+* VolX `1.5x` parses to `1.5`
+* Market cap/revenue `$4.2B` parses to `4200000000`
+
+Filter examples:
+
+* VolX > 1.5
+* P/S < 4
+* Revenue Growth (Q) > 50
+* Market Cap between 1000000000 and 10000000000
+* Stage equals S2 Breakout
+* Theme contains Semiconductor
+* Options Score >= 50
+* FCF Margin > 0
+
+Filter chips:
+When filters are active, show compact chips in the Screener header or just below it.
+
+Examples:
+
+* `VolX > 1.5x`
+* `P/S < 4`
+* `Rev Growth (Q) > 50%`
+
+Each chip should have an `x` to remove that individual filter.
+
+Also show:
+
+* `Clear All`
+
+Counts:
+Update Screener count text to reflect filtering.
+
+Example:
+`302 total · 248 shown · 12 filtered`
+
+Or:
+`302 total · 12 shown after filters`
+
+Make it clear when filters are active.
+
+Hide Foreign interaction:
+Hide Foreign should combine with custom filters.
+
+Example:
+If Hide Foreign is on and filters are active:
+
+* first exclude foreign tickers
+* then apply filters
+* count shown should reflect both
+
+Do not let Clear All turn off Hide Foreign unless user expects Clear All to clear only custom filters.
+
+Preferred:
+
+* Clear All clears only custom filters
+* Hide Foreign remains controlled by its own button
+
+Sorting:
+Existing Technical and Fundamental table sorting should continue to work after filters are applied.
+
+Apply filters first, then sorting.
+
+Persistence:
+Optional:
+Persist active Screener filters in localStorage.
+
+If implemented:
+
+* keep it separate from bottom tab localStorage
+* version the key, e.g. `watchlist_screener_filters_v1`
+* make sure Clear All removes persisted filters
+
+If persistence is risky, skip it for this pass.
+
+Modal UX:
+Keep it compact. Do not overbuild.
+
+Minimum acceptable UI:
+
+* select field
+* select operator
+* input value
+* add filter button
+* active filter list
+* clear all button
+
+Better UI:
+
+* fields grouped by Technical/Fundamental
+* numeric operators auto-selected for numeric fields
+* text operators for text fields
+* between shows two inputs
+
+Validation:
+
+1. Screener header has a filter/settings button.
+2. Clicking it opens a popup/modal.
+3. User can add `VolX > 1.5`.
+4. User can add `P/S < 4`.
+5. User can add `Revenue Growth (Q) > 50%`.
+6. Filters apply across both Technical and Fundamental modes.
+7. Switching Technical/Fundamental does not change the filtered ticker universe.
+8. Filter chips/counts update correctly.
+9. Clear All removes all custom filters.
+10. Hide Foreign still works and combines with filters.
+11. Existing sorting still works after filtering.
+12. Canonical AI-enhanced Theme is used, not raw CSV industry.
+13. No new API/provider calls are added.
+14. No LLM calls are added.
+15. Active saved watchlist filtering still works.
+16. Rows still open StockDetailModal.
+17. No console errors.
