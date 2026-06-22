@@ -413,7 +413,7 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
         {sortedThemes.map((t, i) => {
           const on    = selectedIds.has(t.theme_id);
           const color = colorMap[t.theme_id] ?? THEME_PALETTE[i % THEME_PALETTE.length];
-          const label = t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6);
+          const label = t.display_name;
           const tfVal = t.performance?.[tf];
           const tip   = `${t.display_name} · ${tf}: ${tfVal != null ? `${tfVal > 0 ? "+" : ""}${tfVal.toFixed(2)}%` : "n/a"}`;
           return (
@@ -827,7 +827,7 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
   const barData = useMemo(() => {
     return selectedThemes
       .map(t => ({
-        name:        t.representative_symbol ?? t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6),
+        name:        t.display_name,
         displayName: t.display_name,
         value:       pctForItem(t) ?? 0,
         hasData:     pctForItem(t) != null,
@@ -858,12 +858,9 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
           <div className="text-xs text-emerald-400 font-medium mb-2 flex items-center gap-1"><TrendingUp className="w-3 h-3" />Top Leaders</div>
           {topLeaders.length ? topLeaders.map(r => (
             <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
-              <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
-                {r.representative_symbol ?? r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
-              </span>
-              <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
-              <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colorMap[r.theme_id] }} />
+              <span className="text-xs font-medium text-white truncate max-w-[140px]">{r.display_name}</span>
+              <span className={`text-xs ml-auto flex-shrink-0 ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
@@ -871,27 +868,24 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
           <div className="text-xs text-red-400 font-medium mb-2 flex items-center gap-1"><TrendingDown className="w-3 h-3" />Bottom Laggards</div>
           {topLaggards.length ? topLaggards.map(r => (
             <div key={r.theme_id} className="flex items-center gap-2 mb-1" title={r.state_reason ?? r.display_name}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMap[r.theme_id] }} />
-              <span className="text-xs font-mono font-bold text-white truncate max-w-[80px]">
-                {r.representative_symbol ?? r.proxy_symbols_used?.[0] ?? r.proxy_symbols?.[0] ?? r.theme_id}
-              </span>
-              <span className="text-xs text-gray-500 truncate max-w-[60px] hidden sm:block">{r.display_name}</span>
-              <span className={`text-xs ml-auto ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colorMap[r.theme_id] }} />
+              <span className="text-xs font-medium text-white truncate max-w-[140px]">{r.display_name}</span>
+              <span className={`text-xs ml-auto flex-shrink-0 ${pctCls(pctForItem(r))}`}>{fmtPct(pctForItem(r), 1)}</span>
             </div>
           )) : <span className="text-xs text-gray-600">—</span>}
         </div>
       </div>
-      {/* Theme filter pills — show proxy ticker, tooltip shows display_name + proxies */}
+      {/* Theme filter pills — show human-readable display_name */}
       <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
         {themes.map((t, i) => {
           const on    = selectedIds.has(t.theme_id);
           const color = THEME_PALETTE[i % THEME_PALETTE.length];
-          const label = t.proxy_symbols_used?.[0] ?? t.proxy_symbols?.[0] ?? t.theme_id.slice(0, 6);
+          const label = t.display_name;
           const tip   = `${t.display_name}${t.proxy_symbols_used?.length ? ` · ${t.proxy_symbols_used.join(", ")}` : ""}`;
           return (
             <button key={t.theme_id} onClick={() => toggleId(t.theme_id)}
               title={tip}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-medium border transition-all flex-shrink-0 whitespace-nowrap ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border transition-all flex-shrink-0 whitespace-nowrap ${on ? "text-white border-transparent" : "text-gray-600 border-white/10"}`}
               style={on ? { background: `${color}30`, borderColor: `${color}60` } : {}}>
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "#374151" }} />
               {label}
@@ -910,8 +904,8 @@ function ThemeRSView({ themes, tf }: { themes: ThemeRow[]; tf: ThemeTf }) {
             <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 52, left: 4, bottom: 0 }}>
               <XAxis type="number" domain={barDomain} tick={{ fontSize: 9, fill: "#64748b" }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`} />
-              <YAxis type="category" dataKey="name" width={44}
-                tick={{ fontSize: 9, fill: "#94a3b8", fontFamily: "monospace", fontWeight: 600 }}
+              <YAxis type="category" dataKey="name" width={110}
+                tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 500 }}
                 tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, fontSize: 11 }}
@@ -1922,7 +1916,7 @@ function UnifiedThemesCard({
           <table className="w-full min-w-[680px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <Th label="#" /><Th label="Ticker" k="ticker" /><Th label="Name" k="name" />
+                <Th label="#" /><Th label="Theme" k="name" />
                 <Th label="1D" k="change_1d" /><Th label="7D" k="change_7d" />
                 <Th label="30D" k="change_30d" /><Th label="YTD" k="change_ytd" />
                 <Th label="1Y" k="change_1y" /><Th label="5Y" k="change_5y" />
@@ -1958,20 +1952,19 @@ function UnifiedThemesCard({
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                          <span className="font-mono font-bold text-white text-sm">{row.ticker}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="text-xs text-white truncate max-w-[130px]">{row.name}</div>
-                        {row.proxy_type === "custom" && row.proxy_symbols_used.length > 0 ? (
-                          <div className="flex flex-wrap gap-0.5 mt-1">
-                            {row.proxy_symbols_used.map((sym: string) => (
-                              <span key={sym} className="text-[9px] px-1 py-0 rounded bg-white/[0.06] border border-white/[0.08] text-white/50 font-mono">{sym}</span>
-                            ))}
+                          <div>
+                            <div className="text-xs text-white truncate max-w-[180px]">{row.name}</div>
+                            {row.proxy_type === "custom" && row.proxy_symbols_used.length > 0 ? (
+                              <div className="flex flex-wrap gap-0.5 mt-1">
+                                {row.proxy_symbols_used.map((sym: string) => (
+                                  <span key={sym} className="text-[9px] px-1 py-0 rounded bg-white/[0.06] border border-white/[0.08] text-white/50 font-mono">{sym}</span>
+                                ))}
+                              </div>
+                            ) : row.classification ? (
+                              <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace(/_/g, " ")}</div>
+                            ) : null}
                           </div>
-                        ) : row.classification ? (
-                          <div className="text-[9px] text-gray-600 mt-0.5 capitalize">{row.classification.replace("_", " ")}</div>
-                        ) : null}
+                        </div>
                       </td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_1d)} ${tfClsActive("change_1d")}`}>{fmtPct(row.change_1d)}</td>
                       <td className={`px-3 py-2.5 text-sm font-mono tabular-nums ${pctCls(row.change_7d)} ${tfClsActive("change_7d")}`}>{fmtPct(row.change_7d)}</td>
@@ -2001,7 +1994,7 @@ function UnifiedThemesCard({
                     </tr>
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
-                        <td colSpan={13} className="px-4 py-4">
+                        <td colSpan={12} className="px-4 py-4">
                           {row.holdings_display_mode === "theme_basket" ? (
                             <ThemeBasketPanel
                               tvSymbol={row.tvSymbol}
@@ -2026,7 +2019,7 @@ function UnifiedThemesCard({
                 );
               })}
               {sorted.length === 0 && !isLoading && (
-                <tr><td colSpan={11} className="px-3 py-8 text-center text-gray-500 text-sm">No data available</td></tr>
+                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500 text-sm">No data available</td></tr>
               )}
             </tbody>
           </table>

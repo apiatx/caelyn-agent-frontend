@@ -1,0 +1,83 @@
+FRONTEND EMERGENCY — stop fetching live ETF holdings; render saved theme universe and fix chart symbols
+
+The Themes page is broken:
+
+* expanded rows show “ETF holdings unavailable on current data plan”
+* TradingView widgets say “Chart Unavailable”
+* the page has shown internal theme codes where user-facing labels should be
+
+We need to restore the original working Themes page behavior and stop using live ETF holdings fetches.
+
+Core rule:
+The frontend should render the backend-provided saved theme universe / theme_holdings. It should not fetch ETF holdings for representative_symbol unless explicitly proven that this is the original working endpoint and it returns saved data.
+
+Audit first:
+
+1. Find the component rendering “ETF holdings unavailable on current data plan.”
+2. Find every call to:
+
+   * /api/sectors/etf/${ticker}
+   * EtfDetailPanel
+   * representative_symbol
+   * row.ticker
+   * row.tvSymbol
+3. Identify why TradingView receives an invalid symbol and shows “Chart Unavailable.”
+4. Identify whether expanded rows are using row.theme_holdings/admin basket data or still using ETF holdings endpoint fallback.
+5. Identify where Market Performance / Relative Strength / Performance Curve are showing theme_id instead of display name.
+
+Immediate repair:
+
+1. Remove/disable the unavailable ETF holdings message.
+2. Expanded rows should show backend-provided theme universe:
+
+   * admin basket final_theme_holdings for admin users if available
+   * row.theme_holdings / theme_universe for normal users
+3. Do not fetch live ETF holdings for representative_symbol.
+4. Keep TradingView theme-level chart using the backend-provided chart symbol only if valid.
+5. If chart symbol is invalid/missing, do not show “Chart Unavailable” everywhere; fix the symbol mapping.
+6. Basket ticker chips should still open individual ticker charts.
+7. Manual add/remove/leader UI can stay, but it must not break normal display.
+8. Visible labels must use display_name / row.name, not theme_id / row.key.
+
+Required tab display:
+Market Performance:
+
+* Remove visible Ticker column.
+* Rename Name column to Theme.
+* Move colored dot into Theme column.
+* Show display_name only, not theme_id.
+
+Relative Strength:
+
+* top leaders, laggards, chips, y-axis, tooltips use display_name.
+
+Performance Curve:
+
+* legend chips and tooltips use display_name.
+
+Validation:
+
+1. No “ETF holdings unavailable on current data plan” visible anywhere on Themes page.
+2. No chart says “Chart Unavailable” for valid chart symbols.
+3. Market Performance shows human-readable Theme names.
+4. Relative Strength shows human-readable Theme names.
+5. Performance Curve shows human-readable Theme names.
+6. Expanded Memory & Storage shows saved theme universe.
+7. Expanded Substrates / Packaging shows AMKR/ASX, not random SOXX holdings.
+8. Expanded broad ETF-backed themes show saved universe, not unavailable message.
+9. Add MRAM to Memory & Storage; it appears immediately.
+10. Click MRAM chip; MRAM chart opens.
+11. Mark leader; leader badge shows.
+12. Same ticker can belong to multiple themes.
+13. Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Files changed.
+* Exact component that rendered the bad unavailable message.
+* Exact chart symbol field used after fix.
+* Exact holdings field used after fix.
+* Screenshots for all 3 tabs and one expanded theme.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist untouched.

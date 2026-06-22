@@ -1,0 +1,165 @@
+Frontend Replit instructions — clean Themes page labels across all 3 tabs
+
+Goal:
+Clean up the Themes page display so users see theme names, not internal theme codes or representative ticker values, across all three tabs:
+
+1. Market Performance
+2. Relative Strength
+3. Performance Curve
+
+Current issue:
+The Ticker column is showing internal codes like:
+
+* agribusiness
+* ai_networking
+* datacenter_infra
+* equal_weight_sp500
+
+The Relative Strength and Performance Curve tabs also show shortened internal codes like:
+
+* agribu
+* ai_net
+* datace
+* equal_
+
+That is wrong. These views should show the human-readable theme name.
+
+Important:
+Do not remove backend fields.
+Do not remove representative_symbol from the row model.
+Do not change performance math.
+Do not change TradingView chart behavior.
+Do not change expanded-row theme basket behavior.
+Do not touch Watchlist files.
+
+Audit first:
+
+1. Open the Themes page file, likely:
+
+   * frontend/client/src/pages/stocks-sectors.tsx
+2. Find the Market Performance table column definitions/render.
+3. Find where the Ticker column is rendered.
+4. Find where the Name column is rendered.
+5. Find Relative Strength tab:
+
+   * top leaders
+   * bottom laggards
+   * colored theme chips
+   * y-axis labels
+   * chart labels
+6. Find Performance Curve tab:
+
+   * legend chips
+   * line labels
+   * tooltip labels
+7. Identify every place that uses:
+
+   * row.ticker
+   * row.key
+   * theme_id
+   * theme.theme_id
+   * representative_symbol
+     for visible theme labels.
+
+Required Market Performance behavior:
+
+1. Remove the Ticker column entirely from the visible table.
+2. Move the colored dot currently shown in the Ticker column into the Theme column.
+3. Rename the “Name” column to “Theme”.
+4. The Theme column should show:
+
+   * colored dot
+   * human-readable display name, e.g. “Data Center Infrastructure”
+   * classification/subtitle below, e.g. Theme / Sub Theme / Sector
+   * existing component chips under the name, if currently shown
+5. Do not show internal theme_id values in the table.
+6. Do not show representative_symbol in the table.
+7. Keep row expansion behavior working.
+8. Keep sorting working.
+9. Keep all performance columns unchanged:
+
+   * 1D
+   * 7D
+   * 30D
+   * YTD
+   * 1Y
+   * 5Y
+   * Score
+   * Trend
+   * Status
+   * Stage
+
+Required Relative Strength behavior:
+
+1. Use human-readable theme name for:
+
+   * Top Leaders labels
+   * Bottom Laggards labels
+   * colored filter/toggle chips
+   * y-axis labels
+   * tooltips
+2. Do not use row.ticker, row.key, or theme_id as visible label.
+3. If space is tight, truncate the human-readable name visually but keep the full name in title/tooltip.
+4. Example:
+
+   * show “AI Networking”
+   * not “ai_networking” or “ai_net”
+   * show “Data Center Infrastructure”
+   * not “datacenter_infra” or “datace”
+
+Required Performance Curve behavior:
+
+1. Use human-readable theme name for:
+
+   * legend chips
+   * tooltip labels
+   * selected line labels
+2. Do not use row.ticker, row.key, or theme_id as visible label.
+3. If chips are too wide, truncate visually but preserve full name in title/tooltip.
+
+Data model rule:
+
+* Use row.name / display_name for visible labels.
+* Keep row.key / theme_id only for React keys, selection state, API calls, and internal identity.
+* Keep representative_symbol only for TradingView chart symbol logic.
+* Do not use representative_symbol as visible theme label in these summary tabs.
+
+Validation required:
+
+1. Market Performance table no longer has a Ticker column.
+2. Market Performance table has a “Theme” column.
+3. Colored dot appears inside the Theme column.
+4. No visible rows show internal codes like:
+
+   * agribusiness
+   * ai_networking
+   * datacenter_infra
+   * equal_weight_sp500
+5. Relative Strength tab shows human-readable names:
+
+   * Agribusiness
+   * AI Networking
+   * Data Center Infrastructure
+   * Equal-Weighted S&P 500
+6. Performance Curve tab shows human-readable names, not slugs.
+7. Tooltips use human-readable names.
+8. Sorting still works.
+9. Row expansion still works.
+10. Theme basket editing still works.
+11. Ticker chip chart popups still work.
+12. representative_symbol chart behavior is unchanged.
+13. Performance math unchanged.
+14. Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Where Ticker column was removed.
+* Where colored dot was moved.
+* Exact field used for visible theme labels.
+* Exact field still used for internal keys.
+* Screenshots/visual validation for all three tabs.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist files untouched.
