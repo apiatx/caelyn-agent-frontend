@@ -1,0 +1,243 @@
+FRONTEND REPLIT INSTRUCTIONS — Options Flow Screener/Sectors toggle + Net Flow drilldown
+
+Goal:
+Update the Options Flow page with a top-level toggle:
+
+* Sectors
+* Screener
+
+Default selected tab: Sectors.
+
+The current Options Flow page becomes the “Screener” tab and must remain exactly as it is now. Do not change its existing layout, filters, tables, modals, endpoint calls, styling, or behavior.
+
+The new “Sectors” tab uses:
+
+GET /api/options-flow/sectors
+
+It should visualize net options flow grouped:
+
+Sector → Theme → Ticker
+
+Use the attached screenshots as visual inspiration:
+
+* dark dashboard
+* treemap/card layout
+* green for positive net flow
+* red for negative net flow
+* click sector to drill into themes
+* click theme to drill into tickers
+
+Do not split bullish and bearish into separate panels. Each card should be green/red based on net_premium.
+
+Critical constraints:
+
+1. Do not make Tradier calls from the frontend.
+2. Do not call per-ticker options endpoints for every ticker.
+3. Do not modify the existing Options Flow screener behavior.
+4. Do not touch Watchlist files.
+5. Do not show Pre-IPO or VCX.
+6. Use backend aggregate data only for the Sectors tab.
+7. Do not compute net flow from raw contracts in the frontend. Backend already provides call_premium, put_premium, net_premium, and put_call_ratio.
+
+Audit first:
+
+1. Find the current Options Flow page component.
+2. Find current API calls and data normalization.
+3. Identify the safest way to wrap the current page as the “Screener” tab without modifying it.
+4. Find existing tab/toggle styling.
+5. Find existing dollar/percent formatting helpers.
+6. Find existing loading/error/empty state patterns.
+7. Find existing ticker popup/modal behavior if available.
+8. Confirm live backend response shape from GET /api/options-flow/sectors.
+
+Backend facts already validated:
+
+* Endpoint source: master_and_supplement_cache.
+* Request path makes zero Tradier calls.
+* scan_status values:
+
+  * live
+  * supplement
+  * pending
+  * no_options
+* Theme universe uses actual basket symbols, not representative ETF symbols.
+* pending is normal while the supplement scan loop works through theme-only symbols.
+* pre_ipo and VCX are removed.
+
+Required tab behavior:
+
+1. Options Flow page opens on Sectors tab by default.
+2. Toggle buttons:
+
+   * Sectors
+   * Screener
+3. Screener tab renders the existing Options Flow page exactly as before.
+4. Sectors tab renders the new net flow drilldown.
+5. No new frontend Tradier calls.
+6. No per-ticker fetch storm.
+
+Sectors tab data:
+Use backend fields from `/api/options-flow/sectors`.
+
+Expected structure:
+
+* as_of
+* source
+* net_flow_method
+* put_call_ratio_method
+* sector_total_method
+* scan_coverage
+* sectors[]
+
+  * sector_id
+  * sector_name
+  * call_premium
+  * put_premium
+  * net_premium
+  * put_call_ratio
+  * bias
+  * ticker_count
+  * contributing_ticker_count
+  * themes[]
+
+    * theme_id
+    * theme_name
+    * call_premium
+    * put_premium
+    * net_premium
+    * put_call_ratio
+    * bias
+    * ticker_count
+    * contributing_ticker_count
+    * tickers[]
+
+Initial sector view:
+Each sector card should show:
+
+* sector name
+* net premium dollars
+* call premium dollars
+* put premium dollars
+* put/call ratio
+* contributing ticker count
+* scan coverage if useful
+* color:
+
+  * green if net_premium > 0
+  * red if net_premium < 0
+  * dim/neutral if near zero or unavailable
+
+Click sector:
+Show themes inside that sector.
+
+Breadcrumb:
+Sectors > Technology
+
+Each theme card:
+
+* theme name
+* net premium dollars
+* call premium dollars
+* put premium dollars
+* put/call ratio
+* ticker count
+* contributing ticker count
+* green/red by net_premium
+
+Click theme:
+Show tickers inside that theme.
+
+Breadcrumb:
+Sectors > Technology > AI Networking
+
+Each ticker row/card:
+
+* ticker
+* net premium dollars
+* call premium dollars
+* put premium dollars
+* put/call ratio
+* flow count
+* options_available
+* scan_status:
+
+  * live
+  * supplement
+  * pending
+  * no_options
+* updated_at/freshness if available
+* green/red by net_premium
+
+Ticker click:
+If the current Options Flow screener already has a ticker detail popup, optionally reuse it on user click only. Do not prefetch ticker details for every ticker.
+
+Display rules:
+
+1. Do not show Pre-IPO or VCX.
+2. Do not split bullish/bearish into separate panels.
+3. Do not compute sector totals client-side unless backend says to. Backend sector totals dedupe by unique ticker.
+4. Show method labels subtly:
+
+   * net_flow_method
+   * put_call_ratio_method
+   * sector_total_method
+5. If a ticker has options_available=false:
+
+   * show dim card/row
+   * display “Pending scan”, “No options”, or backend reason/scan_status
+6. Keep styling consistent with the app.
+7. Use readable labels:
+
+   * Sector names, theme names, and ticker symbols.
+   * Do not show internal theme IDs unless no display name exists.
+
+Header summary:
+Show:
+
+* total net premium
+* total call premium
+* total put premium
+* total put/call ratio
+* as_of / updated time
+* source
+* scan coverage summary:
+
+  * live
+  * supplement
+  * pending
+  * no_options
+
+Validation:
+
+1. Options Flow page defaults to Sectors.
+2. Screener tab is visually/functionally unchanged.
+3. Sectors endpoint is called once for aggregate data.
+4. No frontend Tradier calls.
+5. Sector cards render green/red based on net_premium.
+6. Clicking sector drills into themes.
+7. Clicking theme drills into tickers.
+8. Breadcrumb/back works.
+9. Put/call ratio displays.
+10. Dollar flow displays.
+11. Pending/no_options tickers render gracefully.
+12. No Pre-IPO/VCX.
+13. Manual theme edit sync:
+
+* backend adds/removes ticker from theme
+* Sectors tab reflects it after refetch
+
+14. Existing Options Flow screener unaffected.
+15. Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* How existing Screener was preserved.
+* Endpoint used.
+* Component structure.
+* Drilldown behavior.
+* Screenshots/visual validation.
+* Confirmation no frontend Tradier calls.
+* Confirmation Watchlist untouched.

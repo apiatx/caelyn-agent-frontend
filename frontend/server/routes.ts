@@ -5970,6 +5970,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/options-flow/sectors', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 25000);
+      const fwdHeaders: Record<string, string> = { 'X-API-Key': AGENT_KEY };
+      if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
+      const r = await fetch(`${AGENT_URL}/api/options-flow/sectors`, { headers: fwdHeaders, signal: ctrl.signal });
+      if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: 'options-flow/sectors failed', detail: t.slice(0, 200) }); }
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[options-flow/sectors] error:', e.message);
+      res.status(500).json({ error: e.name === 'AbortError' ? 'Request timed out' : e.message });
+    }
+  });
+
   app.get('/api/playbooks/serenity-regime', async (req, res) => {
     try {
       const ctrl = new AbortController();

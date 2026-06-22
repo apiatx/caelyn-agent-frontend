@@ -2913,6 +2913,316 @@ function TickerLookupBar() {
   );
 }
 
+// ─── Sectors Flow Tab — drilldown: Sectors → Themes → Tickers ────────────
+interface SFTicker {
+  ticker: string;
+  call_premium: number | null;
+  put_premium: number | null;
+  net_premium: number | null;
+  put_call_ratio: number | null;
+  flow_count: number | null;
+  options_available: boolean | null;
+  scan_status: string | null;
+  updated_at: string | null;
+}
+interface SFTheme {
+  theme_id: string;
+  theme_name: string;
+  call_premium: number | null;
+  put_premium: number | null;
+  net_premium: number | null;
+  put_call_ratio: number | null;
+  bias: string | null;
+  ticker_count: number | null;
+  contributing_ticker_count: number | null;
+  tickers: SFTicker[];
+}
+interface SFSector {
+  sector_id: string;
+  sector_name: string;
+  call_premium: number | null;
+  put_premium: number | null;
+  net_premium: number | null;
+  put_call_ratio: number | null;
+  bias: string | null;
+  ticker_count: number | null;
+  contributing_ticker_count: number | null;
+  themes: SFTheme[];
+}
+interface SFData {
+  as_of: string | null;
+  source: string | null;
+  net_flow_method: string | null;
+  put_call_ratio_method: string | null;
+  sector_total_method: string | null;
+  scan_coverage: Record<string, number> | null;
+  sectors: SFSector[];
+}
+
+function sfNetColor(net: number | null): string {
+  if (net == null) return C.dim;
+  if (net > 50_000)  return C.green;
+  if (net < -50_000) return C.red;
+  return C.dim;
+}
+function sfBiasColor(bias: string | null): string {
+  if (!bias) return C.dim;
+  const b = bias.toLowerCase();
+  if (b.includes("bull") || b.includes("call")) return C.green;
+  if (b.includes("bear") || b.includes("put"))  return C.red;
+  return C.yellow;
+}
+function SFScanBadge({ status, available }: { status: string | null; available: boolean | null }) {
+  if (available === false)
+    return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.dim}15`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>no options</span>;
+  const s = (status || "").toLowerCase();
+  if (s === "live")       return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.green}15`, border: `1px solid ${C.green}25`, color: C.green, fontFamily: font }}>live</span>;
+  if (s === "supplement") return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}25`, color: C.blue, fontFamily: font }}>supplement</span>;
+  if (s === "pending")    return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.yellow}15`, border: `1px solid ${C.yellow}25`, color: C.yellow, fontFamily: font }}>pending</span>;
+  return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.dim}15`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>{s || "—"}</span>;
+}
+
+function SectorsFlowTab() {
+  const [data,       setData]       = useState<SFData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeSector, setActiveSector] = useState<SFSector | null>(null);
+  const [activeTheme,  setActiveTheme]  = useState<SFTheme  | null>(null);
+
+  const load = useCallback(async (bg = false) => {
+    if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
+    try {
+      const r = await fetch("/api/options-flow/sectors", { headers: authHeaders() });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setData(await r.json());
+    } catch (e: any) {
+      if (!bg) setError(e.message || "Failed to load sectors");
+    } finally {
+      bg ? setRefreshing(false) : setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(false); }, [load]);
+
+  const totals = useMemo(() => {
+    if (!data?.sectors?.length) return null;
+    let call = 0, put = 0, net = 0;
+    data.sectors.forEach(s => { call += s.call_premium ?? 0; put += s.put_premium ?? 0; net += s.net_premium ?? 0; });
+    return { call, put, net, pcr: call > 0 ? put / call : null };
+  }, [data]);
+
+  const level: "sectors" | "themes" | "tickers" = activeTheme ? "tickers" : activeSector ? "themes" : "sectors";
+
+  const cardStyle = (net: number | null) => {
+    if (net == null)      return { bg: C.card,                       bdr: C.border };
+    if (net > 50_000)     return { bg: "rgba(34,197,94,0.06)",       bdr: "rgba(34,197,94,0.22)"  };
+    if (net < -50_000)    return { bg: "rgba(239,68,68,0.06)",       bdr: "rgba(239,68,68,0.22)"  };
+    return                       { bg: C.card,                       bdr: C.border };
+  };
+
+  if (loading) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 10, color: C.dim, fontFamily: font, fontSize: 12 }}>
+      <Loader2 className="w-6 h-6" style={{ color: C.blue, animation: "spin 1s linear infinite" }} />
+      Loading sectors flow…
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ padding: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8 }}>
+        <CircleAlert className="w-4 h-4" style={{ color: C.red, flexShrink: 0 }} />
+        <span style={{ color: C.red, fontSize: 12, fontFamily: font, flex: 1 }}>{error}</span>
+        <button onClick={() => load(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
+      </div>
+    </div>
+  );
+
+  if (!data) return null;
+
+  return (
+    <div style={{ padding: "12px 16px 24px", flex: 1, overflowY: "auto" }}>
+
+      {/* ── Header summary ── */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "10px 14px", marginBottom: 14, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 90 }}>
+          <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>Net Flow</span>
+          <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
+            {totals ? fmtCurrencyShort(totals.net) : "—"}
+          </span>
+        </div>
+        <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
+        <div style={{ display: "flex", gap: 16 }}>
+          {([
+            { label: "Call", val: totals?.call ?? null, color: C.green,  fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Put",  val: totals?.put  ?? null, color: C.red,    fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "P/C",  val: totals?.pcr  ?? null, color: C.text,   fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
+          ] as { label: string; val: number | null; color: string; fmt: (v: number | null) => string }[]).map(({ label, val, color, fmt }) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+              <span style={{ fontSize: 13, fontFamily: font, fontWeight: 600, color }}>{fmt(val)}</span>
+            </div>
+          ))}
+        </div>
+        {data.scan_coverage && Object.keys(data.scan_coverage).length > 0 && (
+          <>
+            <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {Object.entries(data.scan_coverage).map(([k, v]) => (
+                <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>{k.replace(/_/g, " ")}</span>
+                  <span style={{ fontSize: 12, fontFamily: font, fontWeight: 600, color: k === "live" ? C.green : k === "pending" ? C.yellow : k === "no_options" ? C.dim : C.blue }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+          {data.as_of && <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>Updated {new Date(data.as_of).toLocaleTimeString()}</span>}
+          {data.source && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.5 }}>{data.source}</span>}
+          <button
+            onClick={() => load(true)} disabled={refreshing}
+            style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 5, color: C.dim, fontSize: 9, fontFamily: font, cursor: refreshing ? "default" : "pointer" }}
+          >
+            <RefreshCw className="w-2.5 h-2.5" style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* ── Method labels (subtle) ── */}
+      {(data.net_flow_method || data.put_call_ratio_method || data.sector_total_method) && (
+        <div style={{ display: "flex", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
+          {data.net_flow_method       && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>net: {data.net_flow_method}</span>}
+          {data.put_call_ratio_method && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>pcr: {data.put_call_ratio_method}</span>}
+          {data.sector_total_method   && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>totals: {data.sector_total_method}</span>}
+        </div>
+      )}
+
+      {/* ── Breadcrumb ── */}
+      {level !== "sectors" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 11, fontFamily: font }}>
+          <button onClick={() => { setActiveSector(null); setActiveTheme(null); }} style={{ color: C.blue, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Sectors</button>
+          {activeSector && (
+            <>
+              <span style={{ color: C.dim }}>›</span>
+              {level === "tickers"
+                ? <button onClick={() => setActiveTheme(null)} style={{ color: C.blue, background: "none", border: "none", cursor: "pointer", padding: 0 }}>{activeSector.sector_name}</button>
+                : <span style={{ color: C.bright }}>{activeSector.sector_name}</span>
+              }
+            </>
+          )}
+          {activeTheme && (
+            <>
+              <span style={{ color: C.dim }}>›</span>
+              <span style={{ color: C.bright }}>{activeTheme.theme_name}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Sector cards ── */}
+      {level === "sectors" && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
+          {data.sectors.map(s => {
+            const cs = cardStyle(s.net_premium);
+            return (
+              <div
+                key={s.sector_id}
+                onClick={() => setActiveSector(s)}
+                style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
+                onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
+                onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ color: C.bright, fontFamily: sans, fontSize: 13, fontWeight: 700 }}>{s.sector_name}</span>
+                  {s.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(s.bias), border: `1px solid ${sfBiasColor(s.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{s.bias}</span>}
+                </div>
+                <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(s.call_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(s.put_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 12, fontFamily: font, color: C.text }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
+                  <span>{s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers</span>
+                  <span style={{ opacity: 0.4 }}>·</span>
+                  <span>{s.themes?.length ?? 0} themes</span>
+                  <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Theme cards ── */}
+      {level === "themes" && activeSector && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
+          {activeSector.themes.map(t => {
+            const cs = cardStyle(t.net_premium);
+            return (
+              <div
+                key={t.theme_id}
+                onClick={() => setActiveTheme(t)}
+                style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
+                onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
+                onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ color: C.bright, fontFamily: sans, fontSize: 12, fontWeight: 700 }}>{t.theme_name}</span>
+                  {t.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(t.bias), border: `1px solid ${sfBiasColor(t.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{t.bias}</span>}
+                </div>
+                <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(t.call_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(t.put_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 12, fontFamily: font, color: C.text }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
+                  <span>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers with flow</span>
+                  <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Ticker table ── */}
+      {level === "tickers" && activeTheme && (
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: C.card, borderBottom: `1px solid ${C.border}` }}>
+                {["Ticker", "Net", "Call", "Put", "P/C", "Flows", "Status"].map(h => (
+                  <th key={h} style={{ padding: "8px 10px", textAlign: h === "Ticker" ? "left" : "right", fontSize: 9, fontFamily: font, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {activeTheme.tickers.map((tk, i) => (
+                <tr key={tk.ticker} style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: tk.options_available === false ? 0.45 : 1 }}>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk.ticker}</td>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, color: sfNetColor(tk.net_premium), textAlign: "right" }}>{fmtCurrencyShort(tk.net_premium)}</td>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.green, textAlign: "right" }}>{fmtCurrencyShort(tk.call_premium)}</td>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.red, textAlign: "right" }}>{fmtCurrencyShort(tk.put_premium)}</td>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.text, textAlign: "right" }}>{tk.put_call_ratio != null ? tk.put_call_ratio.toFixed(2) : "—"}</td>
+                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>{tk.flow_count ?? "—"}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right" }}><SFScanBadge status={tk.scan_status} available={tk.options_available} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {activeTheme.tickers.length === 0 && (
+            <div style={{ padding: "24px", textAlign: "center", color: C.dim, fontFamily: font, fontSize: 12 }}>No ticker data available for this theme.</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
   // ── Thematic context (global macro strip) ─────────────────────────────────
@@ -2982,6 +3292,7 @@ export default function OptionsPage() {
     };
   })(), [screenerData]);
 
+  const [topTab, setTopTab] = useState<"sectors" | "screener">("sectors");
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -3063,7 +3374,7 @@ export default function OptionsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <Zap className="w-5 h-5" style={{ color: C.green }} />
           <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
-          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· unusual options flow · master screener</span>
+          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· options flow</span>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
             <button
               onClick={() => setShowGuide(true)}
@@ -3079,72 +3390,100 @@ export default function OptionsPage() {
         </div>
       </div>
 
-      {/* Page-level fetch error */}
-      {fetchError && !pageLoading && (
-        <div style={{ margin: "10px 16px 0", padding: "10px 14px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ color: C.red, fontSize: 11, fontFamily: font }}>⚠ {fetchError}</span>
-          <button onClick={() => fetchScreener(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
-        </div>
-      )}
-
-      {/* Macro regime context strip */}
-      {thematicContext && (
-        <div style={{ padding: "8px 16px 0" }}>
-          <RegimeContextStrip context={thematicContext} />
-        </div>
-      )}
-
-      {/* Ticker lookup — search any ticker's options signal */}
-      <div style={{ padding: "10px 16px 0" }}>
-        <TickerLookupBar />
+      {/* ── Top-level Sectors / Screener toggle ── */}
+      <div style={{ padding: "6px 16px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 2 }}>
+        {(["sectors", "screener"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTopTab(t)}
+            style={{
+              padding: "5px 18px", borderRadius: 6, fontSize: 11, fontFamily: font, fontWeight: 600,
+              cursor: "pointer", border: "none",
+              background: topTab === t ? `${C.blue}18` : "transparent",
+              color: topTab === t ? C.blue : C.dim,
+              borderBottom: topTab === t ? `2px solid ${C.blue}` : "2px solid transparent",
+              transition: "all 0.15s",
+            }}
+          >
+            {t === "sectors" ? "Sectors" : "Screener"}
+          </button>
+        ))}
       </div>
 
-      {/* Master screener — /api/options/screener, client-side filter + sort */}
-      <MasterScreener
-        screenerData={screenerData}
-        pageLoading={pageLoading}
-        pageRefreshing={pageRefreshing}
-        onRefresh={() => fetchScreener(true)}
-        onTickerSelect={setSelectedTicker}
-      />
+      {/* ── Sectors tab ── */}
+      {topTab === "sectors" && <SectorsFlowTab />}
 
-      {/* Bottom AI chat */}
-      <div style={{ borderTop: `1px solid ${C.border}`, background: C.card, padding: "10px 20px 14px", flexShrink: 0, marginTop: 14 }}>
-        {chatMessages.length > 0 && (
-          <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            {chatMessages.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: 8, fontSize: 12, fontFamily: sans, lineHeight: 1.6, background: m.role === "user" ? `${C.blue}18` : C.cardAlt, color: m.role === "user" ? C.blue : C.text, border: `1px solid ${m.role === "user" ? `${C.blue}30` : C.border}` }}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-            {chatLoading && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.dim, fontSize: 11, fontFamily: font }}>
-                <Loader2 className="w-3 h-3 animate-spin" /> Analyzing…
+      {/* ── Screener tab ── */}
+      {topTab === "screener" && (
+        <>
+          {/* Page-level fetch error */}
+          {fetchError && !pageLoading && (
+            <div style={{ margin: "10px 16px 0", padding: "10px 14px", background: `${C.red}10`, border: `1px solid ${C.red}25`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ color: C.red, fontSize: 11, fontFamily: font }}>⚠ {fetchError}</span>
+              <button onClick={() => fetchScreener(false)} style={{ padding: "4px 12px", background: `${C.blue}14`, border: `1px solid ${C.blue}35`, borderRadius: 6, color: C.blue, fontSize: 11, fontFamily: font, cursor: "pointer" }}>Retry</button>
+            </div>
+          )}
+
+          {/* Macro regime context strip */}
+          {thematicContext && (
+            <div style={{ padding: "8px 16px 0" }}>
+              <RegimeContextStrip context={thematicContext} />
+            </div>
+          )}
+
+          {/* Ticker lookup — search any ticker's options signal */}
+          <div style={{ padding: "10px 16px 0" }}>
+            <TickerLookupBar />
+          </div>
+
+          {/* Master screener — /api/options/screener, client-side filter + sort */}
+          <MasterScreener
+            screenerData={screenerData}
+            pageLoading={pageLoading}
+            pageRefreshing={pageRefreshing}
+            onRefresh={() => fetchScreener(true)}
+            onTickerSelect={setSelectedTicker}
+          />
+
+          {/* Bottom AI chat */}
+          <div style={{ borderTop: `1px solid ${C.border}`, background: C.card, padding: "10px 20px 14px", flexShrink: 0, marginTop: 14 }}>
+            {chatMessages.length > 0 && (
+              <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                {chatMessages.map((m, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                    <div style={{ maxWidth: "82%", padding: "8px 12px", borderRadius: 8, fontSize: 12, fontFamily: sans, lineHeight: 1.6, background: m.role === "user" ? `${C.blue}18` : C.cardAlt, color: m.role === "user" ? C.blue : C.text, border: `1px solid ${m.role === "user" ? `${C.blue}30` : C.border}` }}>
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.dim, fontSize: 11, fontFamily: font }}>
+                    <Loader2 className="w-3 h-3 animate-spin" /> Analyzing…
+                  </div>
+                )}
+                <div ref={chatBottomRef} />
               </div>
             )}
-            <div ref={chatBottomRef} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAgent(); } }}
+                placeholder="Ask about signal rank, thesis, flow drivers, or any ticker across all scans…"
+                disabled={chatLoading}
+                style={{ flex: 1, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 14px", color: C.bright, fontSize: 12, fontFamily: sans, outline: "none" }}
+              />
+              <button
+                onClick={askAgent}
+                disabled={chatLoading || !chatInput.trim()}
+                style={{ padding: "9px 14px", background: chatLoading || !chatInput.trim() ? `${C.dim}18` : `${C.blue}20`, border: `1px solid ${chatLoading || !chatInput.trim() ? C.border : `${C.blue}40`}`, borderRadius: 8, color: chatLoading || !chatInput.trim() ? C.dim : C.blue, cursor: chatLoading || !chatInput.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 5 }}
+              >
+                {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-        )}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            value={chatInput}
-            onChange={e => setChatInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAgent(); } }}
-            placeholder="Ask about signal rank, thesis, flow drivers, or any ticker across all scans…"
-            disabled={chatLoading}
-            style={{ flex: 1, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 14px", color: C.bright, fontSize: 12, fontFamily: sans, outline: "none" }}
-          />
-          <button
-            onClick={askAgent}
-            disabled={chatLoading || !chatInput.trim()}
-            style={{ padding: "9px 14px", background: chatLoading || !chatInput.trim() ? `${C.dim}18` : `${C.blue}20`, border: `1px solid ${chatLoading || !chatInput.trim() ? C.border : `${C.blue}40`}`, borderRadius: 8, color: chatLoading || !chatInput.trim() ? C.dim : C.blue, cursor: chatLoading || !chatInput.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 5 }}
-          >
-            {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Ticker detail modal */}
       {selectedTicker && (
