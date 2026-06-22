@@ -1059,22 +1059,148 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
   );
 });
 
-// ─── D: Theme Basket Panel (chart + theme_holdings list, no ETF API fetch) ───
-function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings }: {
-  tvSymbol?: string; dotColor?: string; name?: string | null; holdings: string[];
+// ─── D: Theme Basket Panel (chart + theme_holdings + dev-only edit UI) ────────
+interface AdminBasketDetail {
+  theme_id:               string;
+  base_symbols:           string[];
+  manual_added_symbols:   string[];
+  manual_removed_symbols: string[];
+  final_theme_holdings:   string[];
+}
+
+function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
+  tvSymbol?: string; dotColor?: string; name?: string | null;
+  holdings: string[]; themeId: string;
 }) {
+  const { isAuthenticated, token } = useAuth();
+  const qc = useQueryClient();
+  const [addInput, setAddInput]   = useState("");
+  const [feedback, setFeedback]   = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+
+  const getJwt = useCallback(() =>
+    token ?? localStorage.getItem("caelyn_jwt") ?? sessionStorage.getItem("caelyn_jwt") ?? "",
+  [token]);
+
+  // Admin: fetch live basket detail for manual-override metadata
+  const { data: adminBasket } = useQuery<AdminBasketDetail>({
+    queryKey: ["theme-admin-basket", themeId],
+    queryFn:  () =>
+      fetch(`/api/themes/admin/theme-basket/${encodeURIComponent(themeId)}`, {
+        headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
+      }).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled:   isAuthenticated,
+    staleTime: 0,
+    retry: 1,
+  });
+
+  const invalidateAll = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["themes-unified"] });
+    qc.invalidateQueries({ queryKey: ["theme-admin-basket", themeId] });
+  }, [qc, themeId]);
+
+  const showFeedback = useCallback((type: "ok" | "err", msg: string) => {
+    setFeedback({ type, msg });
+    setTimeout(() => setFeedback(null), 4000);
+  }, []);
+
+  // POST membership (action: "add" | "remove")
+  const membershipMutation = useMutation({
+    mutationFn: async ({ action, symbol, note }: { action: "add" | "remove"; symbol: string; note: string }) => {
+      const r = await fetch("/api/themes/admin/memberships", {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
+        body:    JSON.stringify({ theme_id: themeId, symbol, action, note }),
+      });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
+      return r.json();
+    },
+    onSuccess: (_, vars) => {
+      showFeedback("ok", vars.action === "add"
+        ? `${vars.symbol} added to this theme`
+        : `${vars.symbol} removed from this theme`);
+      invalidateAll();
+      if (vars.action === "add") setAddInput("");
+    },
+    onError: (e: any) => showFeedback("err", e.message ?? "Request failed"),
+  });
+
+  // DELETE membership override (restore default for one theme-symbol pair)
+  const restoreMutation = useMutation({
+    mutationFn: async (symbol: string) => {
+      const r = await fetch(
+        `/api/themes/admin/memberships/${encodeURIComponent(themeId)}/${encodeURIComponent(symbol)}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" } }
+      );
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
+      return r.json();
+    },
+    onSuccess: (_, sym) => { showFeedback("ok", `Default restored for ${sym} in this theme`); invalidateAll(); },
+    onError: (e: any) => showFeedback("err", e.message ?? "Restore failed"),
+  });
+
+  const handleAdd = useCallback(() => {
+    const sym = addInput.trim().toUpperCase();
+    if (!sym || !/^[A-Z0-9.]{1,12}$/.test(sym)) { showFeedback("err", "Enter a valid ticker symbol"); return; }
+    if (holdings.includes(sym)) { showFeedback("err", `${sym} is already in this theme`); return; }
+    membershipMutation.mutate({ action: "add", symbol: sym, note: "manual dev theme membership" });
+  }, [addInput, holdings, membershipMutation, showFeedback]);
+
+  const isBusy       = membershipMutation.isPending || restoreMutation.isPending;
+  const manualAdded  = adminBasket?.manual_added_symbols   ?? [];
+  const manualRemoved= adminBasket?.manual_removed_symbols ?? [];
+
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="w-2 h-2 rounded-full" style={{ background: dotColor ?? "#64748b" }} />
         {name && <span className="text-xs text-gray-500">{name}</span>}
       </div>
+
+      {/* TradingView chart — always uses representative_symbol */}
       <TVTickerChart ticker={tvSymbol?.split(":").pop() ?? ""} symbol={tvSymbol} />
-      {holdings.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-2.5">
-            <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Theme Basket</span>
+
+      {/* Theme Basket */}
+      <div className="mt-4">
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Theme Basket</span>
+          {isBusy && <span className="text-[10px] text-gray-500 animate-pulse">saving…</span>}
+        </div>
+
+        {holdings.length === 0 ? (
+          <span className="text-xs text-gray-600">No holdings</span>
+        ) : isAuthenticated ? (
+          /* Admin: chips with remove / restore-default buttons */
+          <div className="flex flex-wrap gap-1.5">
+            {holdings.map(sym => {
+              const isManualAdd = manualAdded.includes(sym);
+              return (
+                <div key={sym} className="flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded border border-white/10 bg-white/[0.04]">
+                  <span className="text-xs font-mono font-bold text-white">{sym}</span>
+                  {isManualAdd && (
+                    <span className="text-[8px] text-teal-400/60 ml-1">+added</span>
+                  )}
+                  {isManualAdd ? (
+                    <button
+                      title="Restore default for this theme"
+                      onClick={() => restoreMutation.mutate(sym)}
+                      disabled={isBusy}
+                      className="ml-1 text-[11px] text-amber-400/70 hover:text-amber-300 transition-colors disabled:opacity-40 px-0.5"
+                    >↺</button>
+                  ) : (
+                    <button
+                      title="Remove from this theme"
+                      onClick={() => membershipMutation.mutate({ action: "remove", symbol: sym, note: "manual dev removal from this theme" })}
+                      disabled={isBusy}
+                      className="ml-1 text-[13px] leading-none text-gray-600 hover:text-red-400 transition-colors disabled:opacity-40 px-0.5"
+                    >×</button>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        ) : (
+          /* Read-only: plain chips */
           <div className="flex flex-wrap gap-1.5">
             {holdings.map(sym => (
               <span key={sym} className="text-xs font-mono font-bold px-2 py-1 rounded border border-white/10 bg-white/[0.04] text-white">
@@ -1082,6 +1208,70 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings }: {
               </span>
             ))}
           </div>
+        )}
+
+        {/* Manually removed base symbols — show restore option */}
+        {isAuthenticated && manualRemoved.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Removed from base</div>
+            <div className="flex flex-wrap gap-1.5">
+              {manualRemoved.map(sym => (
+                <div key={sym} className="flex items-center gap-1.5 pl-2 pr-2 py-0.5 rounded border border-red-500/20 bg-red-500/5">
+                  <span className="text-xs font-mono text-red-400/60 line-through">{sym}</span>
+                  <button
+                    title="Restore default for this theme"
+                    onClick={() => restoreMutation.mutate(sym)}
+                    disabled={isBusy}
+                    className="text-[10px] text-amber-400/70 hover:text-amber-300 transition-colors disabled:opacity-40"
+                  >↺ Restore default for this theme</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Admin: Edit Theme Basket */}
+      {isAuthenticated && (
+        <div className="mt-5 pt-4 border-t border-white/[0.05]">
+          <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">
+            Edit Theme Basket
+          </div>
+
+          {/* Feedback */}
+          {feedback && (
+            <div className={`mb-3 text-xs px-2.5 py-1.5 rounded border ${
+              feedback.type === "ok"
+                ? "text-teal-400 border-teal-500/30 bg-teal-500/[0.08]"
+                : "text-red-400 border-red-500/30 bg-red-500/[0.08]"
+            }`}>
+              {feedback.msg}
+            </div>
+          )}
+
+          {/* Add ticker row */}
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={addInput}
+              onChange={e => setAddInput(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+              placeholder="TICKER"
+              maxLength={12}
+              disabled={isBusy}
+              className="w-[100px] bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-white/25 disabled:opacity-50"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={isBusy || !addInput.trim()}
+              className="text-xs px-3 py-1 rounded border border-teal-500/30 bg-teal-500/[0.08] text-teal-400 hover:bg-teal-500/[0.16] transition-colors disabled:opacity-40 whitespace-nowrap"
+            >
+              Add to this theme
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-700 mt-2">
+            Tickers can belong to multiple themes. Changes apply only to this theme.
+          </p>
         </div>
       )}
     </div>
@@ -1226,6 +1416,94 @@ function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
           )}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// ─── D2: ETF Detail Panel + Admin add-to-theme (dev-only) ────────────────────
+function EtfDetailPanelWithAdmin({ ticker, tvSymbol, dotColor, name, themeId }: {
+  ticker: string; tvSymbol?: string; dotColor?: string; name?: string | null; themeId: string;
+}) {
+  const { isAuthenticated, token } = useAuth();
+  const qc = useQueryClient();
+  const [addInput, setAddInput]   = useState("");
+  const [feedback, setFeedback]   = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+
+  const getJwt = useCallback(() =>
+    token ?? localStorage.getItem("caelyn_jwt") ?? sessionStorage.getItem("caelyn_jwt") ?? "",
+  [token]);
+
+  const showFeedback = useCallback((type: "ok" | "err", msg: string) => {
+    setFeedback({ type, msg });
+    setTimeout(() => setFeedback(null), 4000);
+  }, []);
+
+  const addMutation = useMutation({
+    mutationFn: async (symbol: string) => {
+      const r = await fetch("/api/themes/admin/memberships", {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
+        body:    JSON.stringify({ theme_id: themeId, symbol, action: "add", note: "manual dev theme membership" }),
+      });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
+      return r.json();
+    },
+    onSuccess: (_, sym) => {
+      showFeedback("ok", `${sym} added to this theme`);
+      qc.invalidateQueries({ queryKey: ["themes-unified"] });
+      setAddInput("");
+    },
+    onError: (e: any) => showFeedback("err", e.message ?? "Request failed"),
+  });
+
+  const handleAdd = useCallback(() => {
+    const sym = addInput.trim().toUpperCase();
+    if (!sym || !/^[A-Z0-9.]{1,12}$/.test(sym)) { showFeedback("err", "Enter a valid ticker symbol"); return; }
+    addMutation.mutate(sym);
+  }, [addInput, addMutation, showFeedback]);
+
+  return (
+    <div>
+      <EtfDetailPanel ticker={ticker} tvSymbol={tvSymbol} dotColor={dotColor} name={name} />
+
+      {isAuthenticated && (
+        <div className="mt-5 pt-4 border-t border-white/[0.05]">
+          <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">
+            Edit Theme Basket
+          </div>
+          {feedback && (
+            <div className={`mb-3 text-xs px-2.5 py-1.5 rounded border ${
+              feedback.type === "ok"
+                ? "text-teal-400 border-teal-500/30 bg-teal-500/[0.08]"
+                : "text-red-400 border-red-500/30 bg-red-500/[0.08]"
+            }`}>
+              {feedback.msg}
+            </div>
+          )}
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={addInput}
+              onChange={e => setAddInput(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+              placeholder="TICKER"
+              maxLength={12}
+              disabled={addMutation.isPending}
+              className="w-[100px] bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-xs font-mono text-white placeholder-gray-600 focus:outline-none focus:border-white/25 disabled:opacity-50"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={addMutation.isPending || !addInput.trim()}
+              className="text-xs px-3 py-1 rounded border border-teal-500/30 bg-teal-500/[0.08] text-teal-400 hover:bg-teal-500/[0.16] transition-colors disabled:opacity-40 whitespace-nowrap"
+            >
+              Add to this theme
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-700 mt-2">
+            Tickers can belong to multiple themes. Changes apply only to this theme.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1597,15 +1875,22 @@ function UnifiedThemesCard({
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
                         <td colSpan={13} className="px-4 py-4">
-                          {row.holdings_display_mode === "theme_basket" && row.theme_holdings?.length ? (
+                          {row.holdings_display_mode === "theme_basket" ? (
                             <ThemeBasketPanel
                               tvSymbol={row.tvSymbol}
                               dotColor={color}
                               name={row.name}
-                              holdings={row.theme_holdings}
+                              holdings={row.theme_holdings ?? []}
+                              themeId={row.key}
                             />
                           ) : (
-                            <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
+                            <EtfDetailPanelWithAdmin
+                              ticker={row.ticker}
+                              tvSymbol={row.tvSymbol}
+                              dotColor={color}
+                              name={row.name}
+                              themeId={row.key}
+                            />
                           )}
                         </td>
                       </tr>

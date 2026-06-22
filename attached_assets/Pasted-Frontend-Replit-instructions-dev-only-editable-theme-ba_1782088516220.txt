@@ -1,0 +1,177 @@
+Frontend Replit instructions — dev-only editable theme basket UI, many-to-many
+
+Backend is ready. Theme admin endpoints are now safely callable from the browser using the logged-in dev/admin JWT. Do not use AGENT_API_KEY in frontend code.
+
+Goal:
+Add a dev-only UI on the Themes page that lets the dev/admin manually add, remove, or restore ticker memberships for a theme basket.
+
+Critical model:
+This is many-to-many.
+
+* Membership is theme_id + symbol.
+* The same ticker can belong to multiple themes.
+* Removing a ticker from one theme removes it from that theme only.
+* Do not globally remove a ticker from all themes.
+* Do not force a primary theme.
+* Do not imply “move ticker” or “reassign ticker.”
+
+Backend endpoints available:
+
+* GET /api/themes/admin/memberships
+* POST /api/themes/admin/memberships
+* POST /api/themes/admin/memberships/bulk
+* DELETE /api/themes/admin/memberships/{theme_id}/{symbol}
+* GET /api/themes/admin/theme-basket/{theme_id}
+
+Auth:
+Use the existing logged-in JWT flow.
+
+Example:
+fetch('/api/themes/admin/memberships', {
+headers: {
+Authorization: `Bearer ${jwt}`,
+'Content-Type': 'application/json',
+},
+})
+
+Do not expose AGENT_API_KEY, ADMIN_PASSWORD, JWT_SECRET_KEY, or any secret in frontend code.
+
+Audit first:
+
+1. Open the Themes page file, likely:
+
+   * frontend/client/src/pages/stocks-sectors.tsx
+2. Find the expanded theme view.
+3. Find the ThemeBasketPanel component that was just added.
+4. Find how the frontend stores/reads the JWT from login.
+5. Find existing admin/dev-only UI patterns.
+6. Find how the Themes API refetch/invalidation works after mutations.
+7. Confirm Watchlist page files are not needed.
+
+Required UI:
+
+1. Edit controls must only be visible to the logged-in dev/admin user.
+2. Add the controls inside the expanded theme view / Theme Basket panel.
+3. For holdings_display_mode === "theme_basket":
+
+   * show current theme_holdings
+   * show remove button per symbol
+   * show restore/default button where applicable if practical
+   * show add ticker input
+4. For holdings_display_mode === "etf_holdings":
+
+   * still allow manually adding symbols to that theme
+   * after save/refetch, respect whatever backend returns for holdings_display_mode and theme_holdings
+5. Add ticker input:
+
+   * uppercase symbol
+   * basic symbol validation
+   * POST /api/themes/admin/memberships
+   * body:
+     {
+     "theme_id": row.key or row.theme_id,
+     "symbol": "ANET",
+     "action": "add",
+     "note": "manual dev theme membership"
+     }
+6. Remove ticker button:
+
+   * remove from the current theme only
+   * POST /api/themes/admin/memberships
+   * body:
+     {
+     "theme_id": current theme_id,
+     "symbol": selected symbol,
+     "action": "remove",
+     "note": "manual dev removal from this theme"
+     }
+   * do not call any global symbol delete
+7. Restore/default button:
+
+   * DELETE /api/themes/admin/memberships/{theme_id}/{symbol}
+   * clears the manual override for that one theme-symbol pair only
+   * does not remove the ticker from other themes
+8. After mutation:
+
+   * refetch /api/themes/relative-strength
+   * refetch /api/themes/admin/theme-basket/{theme_id} if used
+   * keep the same row expanded if possible
+   * show a small success/error state
+
+Important UX copy:
+Use:
+
+* “Add to this theme”
+* “Remove from this theme”
+* “Restore default for this theme”
+* “This ticker can belong to multiple themes”
+
+Avoid:
+
+* “Move ticker”
+* “Set primary theme”
+* “Reassign ticker”
+* “Remove globally”
+
+Important behavior:
+
+1. Do not globally dedupe tickers across themes.
+2. Only dedupe within the current theme’s displayed basket.
+3. If ANET is in AI Networking and Semiconductors, both are valid.
+4. Removing ANET from AI Networking must not remove it from Semiconductors.
+5. The frontend should not decide canonical theme membership. Backend remains source of truth.
+6. Do not change performance calculations.
+7. Do not change representative_symbol chart logic.
+8. Do not touch Watchlist page behavior.
+9. Do not call AI/LLM from frontend.
+10. Do not store edits only in localStorage.
+
+Suggested UI shape:
+Inside the expanded Theme Basket panel, add a small dev-only “Edit Theme Basket” section:
+
+* Add ticker input + “Add to this theme” button
+* Existing tickers shown as chips/rows
+* Each ticker has:
+
+  * “Remove from this theme”
+  * optional “Restore default” if backend basket debug indicates an override exists
+* Optional helper text:
+  “Tickers can belong to multiple themes. Changes apply only to this theme.”
+
+Validation required:
+
+1. Log in as dev/admin.
+2. Open Themes page.
+3. Expand AI Networking.
+4. Add ANET to AI Networking.
+5. Expand Semiconductors.
+6. Add ANET to Semiconductors.
+7. Confirm ANET appears in both theme baskets.
+8. Remove ANET from AI Networking.
+9. Confirm ANET disappears from AI Networking only.
+10. Confirm ANET still appears in Semiconductors.
+11. Add a ticker to Power / Cooling.
+12. Confirm it appears in that theme after refetch.
+13. Remove a base ticker from Substrates / Packaging.
+14. Confirm it disappears from that theme only.
+15. Restore default and confirm it returns.
+16. Confirm performance columns still render.
+17. Confirm representative_symbol chart still works.
+18. Confirm normal non-admin users do not see edit controls.
+19. Confirm unauthenticated users cannot call admin endpoints.
+20. Confirm Watchlist page files were not touched.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Admin visibility guard used.
+* JWT/helper used for admin requests.
+* Backend endpoints called.
+* Screenshots/visual validation.
+* Proof same ticker can appear in multiple themes.
+* Proof removing from one theme does not remove from another.
+* Confirmation performance math unchanged.
+* Confirmation representative_symbol chart unchanged.
+* Confirmation Watchlist files untouched.

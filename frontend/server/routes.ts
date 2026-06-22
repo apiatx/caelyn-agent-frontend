@@ -5814,6 +5814,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Theme Admin Endpoints (dev/admin only — forwards JWT auth to FastAPI) ───
+  app.get('/api/themes/admin/memberships', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const hdrs: Record<string, string> = { ...pbHdr() };
+      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
+      const r = await fetch(`${PB_URL}/api/themes/admin/memberships`, { headers: hdrs, signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/memberships GET]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/themes/admin/memberships', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const hdrs: Record<string, string> = { ...pbHdr() };
+      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
+      const r = await fetch(`${PB_URL}/api/themes/admin/memberships`, {
+        method: 'POST', headers: hdrs, body: JSON.stringify(req.body), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships POST failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/memberships POST]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/themes/admin/memberships/:theme_id/:symbol', async (req, res) => {
+    try {
+      const { theme_id, symbol } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const hdrs: Record<string, string> = { ...pbHdr() };
+      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
+      const r = await fetch(
+        `${PB_URL}/api/themes/admin/memberships/${encodeURIComponent(theme_id)}/${encodeURIComponent(symbol)}`,
+        { method: 'DELETE', headers: hdrs, signal: ctrl.signal }
+      );
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships DELETE failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/memberships DELETE]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/themes/admin/theme-basket/:theme_id', async (req, res) => {
+    try {
+      const { theme_id } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const hdrs: Record<string, string> = { ...pbHdr() };
+      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
+      const r = await fetch(`${PB_URL}/api/themes/admin/theme-basket/${encodeURIComponent(theme_id)}`, {
+        headers: hdrs, signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/theme-basket failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/theme-basket]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── Thematic Context ─────────────────────────────────────────────────
   app.get('/api/thematic-context/snapshot', async (req, res) => {
     try {
