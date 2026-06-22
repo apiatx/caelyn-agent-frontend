@@ -1603,13 +1603,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       if (response.ok) {
         const data = await response.json();
-        return res.status(response.status).json(data);
+        // Augment with is_admin — LOCAL_USERNAME never reaches the browser
+        return res.status(response.status).json({
+          ...data,
+          is_admin: !!(LOCAL_USERNAME && data.user_id && data.user_id === LOCAL_USERNAME),
+        });
       }
     } catch (_) { /* FastAPI unavailable — fall through to local */ }
     // Local fallback: check CAELYN_USERNAME / CAELYN_PASSWORD secrets
+    // If local fallback succeeds, the user IS the admin (only admin creds stored here)
     if (LOCAL_USERNAME && LOCAL_PASSWORD && username === LOCAL_USERNAME && password === LOCAL_PASSWORD) {
       const token = issueLocalToken(username);
-      return res.json({ token, user_id: username, message: 'Login successful' });
+      return res.json({ token, user_id: username, is_admin: true, message: 'Login successful' });
     }
     return res.status(401).json({ detail: 'Invalid username or password.' });
   });
@@ -1624,13 +1629,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(`${AGENT_URL}/api/auth/verify`, { headers });
       if (response.ok) {
         const data = await response.json();
-        return res.status(response.status).json(data);
+        // Augment with is_admin — LOCAL_USERNAME never reaches the browser
+        return res.status(response.status).json({
+          ...data,
+          is_admin: !!(LOCAL_USERNAME && data.user_id && data.user_id === LOCAL_USERNAME),
+        });
       }
     } catch (_) { /* FastAPI unavailable — fall through to local */ }
     // Local fallback: verify JWT signed by us
     if (token) {
       const payload = verifyLocalToken(token);
-      if (payload) return res.json({ valid: true, user_id: payload.user_id });
+      if (payload) return res.json({
+        valid: true,
+        user_id: payload.user_id,
+        is_admin: !!(LOCAL_USERNAME && payload.user_id === LOCAL_USERNAME),
+      });
     }
     return res.status(401).json({ valid: false, detail: 'Not authenticated.' });
   });
@@ -5814,14 +5827,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── Theme Admin Endpoints (dev/admin only — forwards JWT auth to FastAPI) ───
+  // ── Theme Admin Endpoints (dev/admin only — JWT-only, no API key bypass) ────
+  // These routes forward ONLY the JWT Authorization header. The X-API-Key is
+  // intentionally omitted so FastAPI must validate the JWT subject matches AUTH_USERNAME.
+  function adminHdr(req: any): Record<string, string> {
+    const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
+    return hdrs;
+  }
+
   app.get('/api/themes/admin/memberships', async (req, res) => {
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 15000);
-      const hdrs: Record<string, string> = { ...pbHdr() };
-      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
-      const r = await fetch(`${PB_URL}/api/themes/admin/memberships`, { headers: hdrs, signal: ctrl.signal });
+      const r = await fetch(`${PB_URL}/api/themes/admin/memberships`, { headers: adminHdr(req), signal: ctrl.signal });
       if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships failed' })));
       res.json(await r.json());
     } catch (e: any) {
@@ -5834,10 +5853,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 15000);
-      const hdrs: Record<string, string> = { ...pbHdr() };
-      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
       const r = await fetch(`${PB_URL}/api/themes/admin/memberships`, {
-        method: 'POST', headers: hdrs, body: JSON.stringify(req.body), signal: ctrl.signal,
+        method: 'POST', headers: adminHdr(req), body: JSON.stringify(req.body), signal: ctrl.signal,
       });
       if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships POST failed' })));
       res.json(await r.json());
@@ -5852,11 +5869,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { theme_id, symbol } = req.params;
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 15000);
-      const hdrs: Record<string, string> = { ...pbHdr() };
-      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
       const r = await fetch(
         `${PB_URL}/api/themes/admin/memberships/${encodeURIComponent(theme_id)}/${encodeURIComponent(symbol)}`,
-        { method: 'DELETE', headers: hdrs, signal: ctrl.signal }
+        { method: 'DELETE', headers: adminHdr(req), signal: ctrl.signal }
       );
       if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/memberships DELETE failed' })));
       res.json(await r.json());
@@ -5871,10 +5886,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { theme_id } = req.params;
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 15000);
-      const hdrs: Record<string, string> = { ...pbHdr() };
-      if (req.headers.authorization) hdrs['Authorization'] = req.headers.authorization as string;
       const r = await fetch(`${PB_URL}/api/themes/admin/theme-basket/${encodeURIComponent(theme_id)}`, {
-        headers: hdrs, signal: ctrl.signal,
+        headers: adminHdr(req), signal: ctrl.signal,
       });
       if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/theme-basket failed' })));
       res.json(await r.json());

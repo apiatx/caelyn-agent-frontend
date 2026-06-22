@@ -1072,7 +1072,7 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
   tvSymbol?: string; dotColor?: string; name?: string | null;
   holdings: string[]; themeId: string;
 }) {
-  const { isAuthenticated, token } = useAuth();
+  const { isAdmin, token } = useAuth();
   const qc = useQueryClient();
   const [addInput, setAddInput]   = useState("");
   const [feedback, setFeedback]   = useState<{ type: "ok" | "err"; msg: string } | null>(null);
@@ -1088,7 +1088,7 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
       fetch(`/api/themes/admin/theme-basket/${encodeURIComponent(themeId)}`, {
         headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
       }).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    enabled:   isAuthenticated,
+    enabled:   isAdmin,
     staleTime: 0,
     retry: 1,
   });
@@ -1169,7 +1169,7 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
 
         {holdings.length === 0 ? (
           <span className="text-xs text-gray-600">No holdings</span>
-        ) : isAuthenticated ? (
+        ) : isAdmin ? (
           /* Admin: chips with remove / restore-default buttons */
           <div className="flex flex-wrap gap-1.5">
             {holdings.map(sym => {
@@ -1211,7 +1211,7 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
         )}
 
         {/* Manually removed base symbols — show restore option */}
-        {isAuthenticated && manualRemoved.length > 0 && (
+        {isAdmin && manualRemoved.length > 0 && (
           <div className="mt-3">
             <div className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Removed from base</div>
             <div className="flex flex-wrap gap-1.5">
@@ -1232,7 +1232,7 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
       </div>
 
       {/* Admin: Edit Theme Basket */}
-      {isAuthenticated && (
+      {isAdmin && (
         <div className="mt-5 pt-4 border-t border-white/[0.05]">
           <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">
             Edit Theme Basket
@@ -1424,7 +1424,7 @@ function EtfDetailPanel({ ticker, tvSymbol, dotColor, name }: {
 function EtfDetailPanelWithAdmin({ ticker, tvSymbol, dotColor, name, themeId }: {
   ticker: string; tvSymbol?: string; dotColor?: string; name?: string | null; themeId: string;
 }) {
-  const { isAuthenticated, token } = useAuth();
+  const { isAdmin, token } = useAuth();
   const qc = useQueryClient();
   const [addInput, setAddInput]   = useState("");
   const [feedback, setFeedback]   = useState<{ type: "ok" | "err"; msg: string } | null>(null);
@@ -1466,7 +1466,7 @@ function EtfDetailPanelWithAdmin({ ticker, tvSymbol, dotColor, name, themeId }: 
     <div>
       <EtfDetailPanel ticker={ticker} tvSymbol={tvSymbol} dotColor={dotColor} name={name} />
 
-      {isAuthenticated && (
+      {isAdmin && (
         <div className="mt-5 pt-4 border-t border-white/[0.05]">
           <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">
             Edit Theme Basket

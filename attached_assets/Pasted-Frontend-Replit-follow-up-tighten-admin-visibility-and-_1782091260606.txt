@@ -1,0 +1,70 @@
+Frontend Replit follow-up — tighten admin visibility and verify holdings_display_mode
+
+Good progress, but two issues need final validation/fix before this is done.
+
+Issue 1 — admin visibility guard is too broad:
+The report says edit controls are guarded by `isAuthenticated`. That is not sufficient. This is a multi-user app. Normal authenticated users should not see dev/admin theme editing controls at all.
+
+Backend already protects the endpoints by requiring the JWT subject to match AUTH_USERNAME, but the frontend UI should also hide edit controls from non-admin users.
+
+Audit first:
+
+1. Inspect AuthContext and login response fields.
+2. Determine whether the frontend knows the current username/user identity.
+3. Determine whether there is an existing frontend admin/dev guard.
+4. Do not use AGENT_API_KEY or any secret in frontend code.
+
+Required behavior:
+
+1. Dev/admin user sees edit controls.
+2. Normal logged-in users do not see edit controls.
+3. Unauthenticated users do not see edit controls.
+4. Backend 403 remains the true security layer.
+5. Frontend guard should be a UX guard only, but it must not be `isAuthenticated` alone unless the product is truly single-user. It is not.
+
+Acceptable frontend guards:
+
+* Use current username from auth state and compare to known safe non-secret value exposed by backend, if available.
+* Add/use a backend `/api/auth/me` or equivalent that returns `{ username, is_admin }`.
+* Use existing auth payload if it already exposes username/is_admin.
+* If no admin identity exists in frontend, add a small safe backend/Express proxy check that returns whether the current JWT is admin. Do not expose secrets.
+
+Issue 2 — verify Semiconductors / holdings_display_mode:
+The report says “etf_holdings mode e.g. Semiconductors with ETF proxy,” but backend previously marked `semiconductors` as `theme_basket` because it has watchlist/manual additions.
+
+Required behavior:
+
+1. The frontend must not classify rows as ETF/custom manually.
+2. It must obey backend `holdings_display_mode`.
+3. If `semiconductors.holdings_display_mode === "theme_basket"`, expanded Semiconductors must show `theme_holdings`, not full ETF holdings.
+4. If a theme is truly `etf_holdings`, it can use the ETF panel.
+5. Do not rely on representative_symbol to decide holdings mode.
+
+Validation required:
+
+1. Log in as dev/admin.
+2. Confirm edit controls are visible.
+3. Log in or simulate a normal non-admin JWT.
+4. Confirm edit controls are hidden.
+5. Confirm unauthenticated users do not see edit controls.
+6. Confirm non-admin calls to admin endpoints return 403.
+7. Confirm Semiconductors uses whatever `holdings_display_mode` backend returns.
+8. Confirm Substrates / Packaging shows Theme Basket: AMKR, ASX.
+9. Confirm Data Center Infrastructure shows Theme Basket, not full DTCR holdings.
+10. Confirm a true ETF-only theme still shows ETF Holdings.
+11. Confirm many-to-many still works:
+
+    * same ticker can be added to two themes
+    * removing from one theme does not remove from the other
+12. Confirm Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Exact admin visibility guard used.
+* Whether frontend can identify admin via username/is_admin.
+* Proof non-admin logged-in user does not see edit controls.
+* Semiconductors holdings_display_mode from live API.
+* Screenshot/visual validation for one theme_basket and one etf_holdings theme.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist files untouched.

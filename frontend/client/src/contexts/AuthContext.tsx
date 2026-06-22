@@ -8,6 +8,7 @@ interface AuthContextType {
   token: string | null;
   userId: string | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   login: (username: string, password: string, rememberMe: boolean) => Promise<void>;
   logout: () => void;
@@ -45,6 +46,7 @@ function clearToken() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [, navigate] = useLocation();
 
@@ -64,8 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data?.valid) {
           setToken(stored);
           setUserId(data.user_id);
+          setIsAdmin(data.is_admin === true);
         } else {
           clearToken();
+          setIsAdmin(false);
         }
       })
       .catch(() => {
@@ -89,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeToken(data.token, rememberMe);
     setToken(data.token);
     setUserId(data.user_id);
+    setIsAdmin(data.is_admin === true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -98,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setToken(null);
     setUserId(null);
+    setIsAdmin(false);
     navigate('/login');
   }, [navigate]);
 
@@ -167,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       userId,
       isAuthenticated: !!token,
+      isAdmin,
       isLoading,
       login,
       logout,
