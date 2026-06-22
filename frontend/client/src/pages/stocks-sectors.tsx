@@ -1227,9 +1227,11 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
         {name && <span className="text-xs text-gray-500">{name}</span>}
       </div>
 
-      {/* TradingView chart — only shown when a valid exchange-prefixed symbol is available */}
-      {tvSymbol && tvSymbol.includes(":") && (
-        <TVTickerChart ticker={tvSymbol.split(":").pop() ?? ""} symbol={tvSymbol} />
+      {/* TradingView chart — shown for exchange-prefixed symbols (NASDAQ:SMH) or valid bare tickers (RYT).
+          Rejects empty strings, theme_id slugs (ai_networking), and known invalid placeholders (ETF, CUSTOM). */}
+      {tvSymbol && (tvSymbol.includes(":") || /^[A-Z][A-Z0-9]{0,5}$/.test(tvSymbol)) &&
+        tvSymbol !== "ETF" && tvSymbol !== "CUSTOM" && (
+        <TVTickerChart ticker={tvSymbol.split(":").pop() ?? tvSymbol} symbol={tvSymbol} />
       )}
 
       {/* Theme Basket */}

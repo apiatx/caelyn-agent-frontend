@@ -1,0 +1,61 @@
+Frontend final validation — restore theme-level charts from backend tv_symbol
+
+Backend now returns `tv_symbol` on every Themes API row.
+
+Backend validation examples:
+
+* substrates_packaging → NASDAQ:SOXX
+* ai_networking → NASDAQ:SMH
+* semicap_equipment → NASDAQ:SOXX
+* power_cooling → NASDAQ:GRID
+* quantum → NASDAQ:QTUM
+* photonics_lasers → NASDAQ:ROBO
+* datacenter_infra → NASDAQ:DTCR
+* clean_energy → NASDAQ:ICLN
+* uranium_nuclear → AMEX:URA
+* defense → AMEX:ITA
+* memory_storage → NASDAQ:SMH
+
+Goal:
+Make sure expanded Themes rows render the theme-level TradingView chart using backend `tv_symbol`.
+
+Audit/validate:
+
+1. Confirm normalizeThemeToRow reads backend `theme.tv_symbol`.
+2. Confirm `row.tvSymbol` is populated from backend `tv_symbol`.
+3. Confirm ThemeBasketPanel receives `row.tvSymbol`.
+4. Confirm TVTickerChart renders when `tvSymbol` is valid.
+5. Confirm no chart receives internal theme_id values like:
+
+   * ai_networking
+   * datacenter_infra
+   * equal_weight_sp500
+6. Confirm no chart receives invalid placeholders like:
+
+   * ETF
+   * CUSTOM
+   * empty string, unless the chart is intentionally hidden for that one row.
+
+Required behavior:
+
+1. Expanded Memory & Storage renders chart for NASDAQ:SMH.
+2. Expanded Substrates / Packaging renders chart for NASDAQ:SOXX.
+3. Expanded AI Networking renders chart for NASDAQ:SMH.
+4. Expanded Clean Energy renders chart for NASDAQ:ICLN.
+5. Expanded Uranium & Nuclear Energy renders chart for AMEX:URA.
+6. Expanded theme holdings still come from `theme_holdings`.
+7. No `/api/sectors/etf/` calls from Themes expanded rows.
+8. No “ETF holdings unavailable on current data plan” message.
+9. Basket ticker chips still open individual ticker charts.
+10. Add/remove/leader UI still works.
+11. Market Performance, Relative Strength, and Performance Curve labels use display names, not slugs.
+12. Performance math unchanged.
+13. Watchlist files untouched.
+
+One important check:
+If any backend `tv_symbol` is a bare ticker without exchange prefix, either:
+
+* update the frontend chart guard to allow valid bare tickers, or
+* ask backend to return exchange-prefixed tv_symbol for all representative symbols.
+
+Do not hide all charts just because one symbol lacks a prefix.
