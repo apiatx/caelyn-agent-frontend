@@ -675,7 +675,7 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     spkPrices,
     spkPos:                 (ch7 ?? 0) >= 0,
     dotColor:               THEME_PALETTE[idx % THEME_PALETTE.length],
-    tvSymbol:               themeEtfTvSymbol(ticker),
+    tvSymbol:               (theme as any).tv_symbol || THEME_ETF_TV[ticker.toUpperCase()] || "",
     stage:                     (theme as any).stage                     ?? null,
     stage_label:               (theme as any).stage_label               ?? null,
     stage_score:               (theme as any).stage_score               ?? null,
@@ -1227,8 +1227,10 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
         {name && <span className="text-xs text-gray-500">{name}</span>}
       </div>
 
-      {/* TradingView chart — always uses representative_symbol, never the leader */}
-      <TVTickerChart ticker={tvSymbol?.split(":").pop() ?? ""} symbol={tvSymbol} />
+      {/* TradingView chart — only shown when a valid exchange-prefixed symbol is available */}
+      {tvSymbol && tvSymbol.includes(":") && (
+        <TVTickerChart ticker={tvSymbol.split(":").pop() ?? ""} symbol={tvSymbol} />
+      )}
 
       {/* Theme Basket */}
       <div className="mt-4">
@@ -1995,23 +1997,13 @@ function UnifiedThemesCard({
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
                         <td colSpan={12} className="px-4 py-4">
-                          {row.holdings_display_mode === "theme_basket" ? (
-                            <ThemeBasketPanel
-                              tvSymbol={row.tvSymbol}
-                              dotColor={color}
-                              name={row.name}
-                              holdings={row.theme_holdings ?? []}
-                              themeId={row.key}
-                            />
-                          ) : (
-                            <EtfDetailPanelWithAdmin
-                              ticker={row.ticker}
-                              tvSymbol={row.tvSymbol}
-                              dotColor={color}
-                              name={row.name}
-                              themeId={row.key}
-                            />
-                          )}
+                          <ThemeBasketPanel
+                            tvSymbol={row.tvSymbol || undefined}
+                            dotColor={color}
+                            name={row.name}
+                            holdings={row.theme_holdings ?? row.proxy_symbols_used ?? []}
+                            themeId={row.key}
+                          />
                         </td>
                       </tr>
                     )}
