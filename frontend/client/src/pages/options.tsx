@@ -2994,7 +2994,15 @@ function SectorsFlowTab() {
     if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
     try {
       const r = await fetch("/api/options-flow/sectors", { headers: authHeaders() });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const ct = r.headers.get("content-type") || "";
+      if (!ct.includes("application/json")) {
+        const preview = (await r.text()).slice(0, 120);
+        throw new Error(`Expected JSON but got ${ct || "unknown"} (${r.status}): ${preview}`);
+      }
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body?.error || body?.detail || `HTTP ${r.status}`);
+      }
       setData(await r.json());
     } catch (e: any) {
       if (!bg) setError(e.message || "Failed to load sectors");

@@ -1,0 +1,89 @@
+FRONTEND REPLIT FIX — /api/options-flow/sectors returns HTML, not JSON
+
+Bug:
+The new Options Flow → Sectors tab fails with:
+
+Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+That means fetch("/api/options-flow/sectors") is receiving an HTML document, likely the frontend app shell/login page, not backend JSON.
+
+Do not change the Sectors UI yet. Fix the proxy/route first.
+
+Audit first:
+
+1. In the browser/network tab or curl, hit:
+   GET /api/options-flow/sectors
+2. Log:
+
+   * HTTP status
+   * content-type
+   * first 200 chars of response body
+3. Confirm whether the response is:
+
+   * frontend HTML fallback
+   * login HTML
+   * backend 401/403 HTML
+   * backend JSON
+4. Check frontend/server/routes.ts:
+
+   * where the new `/api/options-flow/sectors` proxy route is registered
+   * whether it appears before any frontend catch-all route
+   * whether it conflicts with existing `/api/options-flow/*` routes
+5. Check backend FastAPI directly:
+
+   * GET `${AGENT_URL}/api/options-flow/sectors`
+   * confirm it returns JSON.
+6. Confirm the frontend proxy forwards Authorization header correctly.
+
+Required fix:
+
+1. Ensure Express/frontend proxy route exists and is registered before the catch-all/static frontend route:
+   GET /api/options-flow/sectors
+2. Add debug route if needed:
+   GET /api/options-flow/sectors/debug
+3. Proxy to the correct FastAPI backend path:
+   `${AGENT_URL}/api/options-flow/sectors`
+4. Forward:
+
+   * Authorization header from browser request
+   * Content-Type / Accept as needed
+5. Do not blindly call `res.json()` in frontend until response is confirmed JSON.
+6. In the frontend fetch helper, add defensive handling:
+
+   * check `response.ok`
+   * check `content-type.includes("application/json")`
+   * if not JSON, read `response.text()` and show a useful error with first 120 chars
+     This prevents the ugly JSON parse crash.
+
+Important:
+
+* Do not change the existing Screener tab.
+* Do not change backend.
+* Do not touch Watchlist files.
+* Do not add frontend Tradier calls.
+* Do not call per-ticker endpoints.
+* Do not change the Sectors UI data model unless the route response shape differs.
+
+Validation:
+
+1. curl/browser fetch `/api/options-flow/sectors` returns:
+
+   * status 200
+   * content-type application/json
+   * JSON body with sectors[]
+2. The Sectors tab loads without JSON parse error.
+3. Network tab shows only `/api/options-flow/sectors` for the aggregate Sectors data.
+4. No request returns `<!DOCTYPE html>`.
+5. Screener tab still works exactly as before.
+6. No frontend Tradier calls.
+7. No Watchlist files touched.
+
+Deliverable:
+Report:
+
+* Root cause of HTML response.
+* Exact proxy route order/fix.
+* Direct backend response check.
+* Frontend proxy response check.
+* Defensive JSON handling added.
+* Screenshot/visual validation that Sectors tab loads.
