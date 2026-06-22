@@ -1,0 +1,183 @@
+FRONTEND REPLIT FOLLOW-UP — polish Options Flow Sectors tab after backend supplement cache fix
+
+Backend is now updated:
+
+* `/api/options-flow/sectors` returns sector → theme → ticker net options flow.
+* Request path makes zero Tradier calls.
+* Supplement scan data now persists to disk.
+* Restart no longer resets supplement coverage to zero.
+* `scan_status` can include:
+
+  * live
+  * supplement
+  * supplement_lkg
+  * pending
+  * no_options
+* `scan_coverage` now includes:
+
+  * coverage_pct
+  * supplement_fresh_count
+  * supplement_lkg_count
+  * estimated_full_coverage_minutes
+  * last_supplement_scan_at
+  * next_supplement_scan_at
+* Pre-IPO / VCX are removed.
+
+Goal:
+Polish the Options Flow Sectors tab so it clearly displays partial scan coverage and fixes blank ticker rows.
+
+Do not change the existing Screener tab.
+Do not touch Watchlist files.
+Do not add frontend Tradier calls.
+Do not call per-ticker endpoints for every ticker.
+Use only `/api/options-flow/sectors` for this tab.
+
+Audit first:
+
+1. Inspect the live `/api/options-flow/sectors` response.
+2. Confirm ticker object field names:
+
+   * symbol
+   * ticker
+   * underlying
+   * scan_status
+   * options_available
+   * call_premium
+   * put_premium
+   * net_premium
+   * put_call_ratio
+3. Find the ticker drilldown table.
+4. Find the sector/theme card rendering.
+5. Find the header scan coverage strip.
+
+Fix 1 — blank ticker rows:
+Ticker drilldown rows currently show blank ticker cells.
+
+Required behavior:
+
+1. Ticker column must render the symbol.
+2. Use fallback chain:
+
+   * ticker.symbol
+   * ticker.ticker
+   * ticker.underlying
+   * "—"
+3. Pending/no-options rows must still show the ticker symbol.
+4. Validate with:
+
+   * ALAB
+   * ANET
+   * AMKR
+   * ASX
+   * PENG
+   * MRVL
+   * MU
+   * VRT
+   * IREN
+   * ENPH
+
+Fix 2 — scan status display:
+Required behavior:
+
+1. Show scan status clearly on ticker rows:
+
+   * live
+   * supplement
+   * supplement_lkg
+   * pending
+   * no_options
+2. Suggested badge colors:
+
+   * live: green
+   * supplement: blue
+   * supplement_lkg: indigo/slate
+   * pending: amber
+   * no_options: dim gray
+3. Do not make pending look like an error.
+4. Use copy like:
+
+   * “Pending scan”
+   * “Supplement”
+   * “Supplement LKG”
+   * “No options”
+
+Fix 3 — card empty states:
+Some sectors/themes show no flow yet because their tickers are still pending.
+
+Required behavior:
+
+1. Cards with pending tickers should show “Pending scan” or “0 / X with flow” clearly.
+2. Cards with no options should show “No options data” or dim state.
+3. Distinguish:
+
+   * `$0` = actual zero
+   * `—` = unknown / pending / no data
+4. Do not hide sectors/themes just because no tickers have data yet.
+5. Keep green/red based on net_premium when net_premium exists.
+
+Fix 4 — coverage header:
+Use backend `scan_coverage` to show:
+
+* theme universe total
+* tickers with data
+* coverage percentage
+* master scan tickers
+* supplement fresh count
+* supplement LKG count
+* pending scan count
+* no options confirmed
+* estimated full coverage minutes
+* last supplement scan
+* next supplement scan
+
+Keep this compact, but make it obvious why some cards are pending.
+
+Fix 5 — drilldown UX:
+Required behavior:
+
+1. Sector view → click sector → themes.
+2. Theme view → click theme → tickers.
+3. Breadcrumb/back works.
+4. Ticker rows show:
+
+   * symbol
+   * net premium
+   * call premium
+   * put premium
+   * put/call ratio
+   * flow count if available
+   * scan status
+   * updated_at if available
+5. Do not show Pre-IPO or VCX.
+
+Validation:
+
+1. Options Flow page defaults to Sectors.
+2. Screener tab remains exactly unchanged.
+3. `/api/options-flow/sectors` is called for aggregate data.
+4. No frontend Tradier calls.
+5. Ticker table shows symbols; no blank ticker cells.
+6. Pending rows show ticker symbols and “Pending scan.”
+7. Supplement LKG rows show a distinct status.
+8. Coverage header reflects backend `scan_coverage`.
+9. Sector cards render green/red only when net data exists.
+10. Theme cards render pending/no-data states gracefully.
+11. No Pre-IPO/VCX.
+12. Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Exact backend ticker field used.
+* How scan statuses are rendered.
+* How coverage header uses `scan_coverage`.
+* Screenshots of:
+
+  * sector view
+  * theme drilldown
+  * ticker drilldown
+* Confirmation no frontend Tradier calls.
+* Confirmation Screener unchanged.
+* Confirmation Watchlist untouched.

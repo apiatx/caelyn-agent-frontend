@@ -2915,19 +2915,25 @@ function TickerLookupBar() {
 
 // ─── Sectors Flow Tab — drilldown: Sectors → Themes → Tickers ────────────
 interface SFTicker {
-  ticker: string;
+  symbol: string;
+  ticker?: string;
+  underlying?: string;
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
   put_call_ratio: number | null;
-  flow_count: number | null;
+  total_volume: number | null;
   options_available: boolean | null;
   scan_status: string | null;
   updated_at: string | null;
+  bias: string | null;
+  heat_score: number | null;
+  reason?: string | null;
 }
 interface SFTheme {
   theme_id: string;
   theme_name: string;
+  classification?: string | null;
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
@@ -2947,7 +2953,22 @@ interface SFSector {
   bias: string | null;
   ticker_count: number | null;
   contributing_ticker_count: number | null;
+  sector_total_method?: string | null;
   themes: SFTheme[];
+}
+interface SFCoverage {
+  theme_universe_total?: number | null;
+  master_count?: number | null;
+  supplement_fresh_count?: number | null;
+  supplement_lkg_count?: number | null;
+  supplement_count?: number | null;
+  no_options_count?: number | null;
+  pending_count?: number | null;
+  tickers_with_data?: number | null;
+  coverage_pct?: number | null;
+  estimated_full_coverage_minutes?: number | null;
+  last_supplement_scan_at?: string | null;
+  next_supplement_scan_at?: string | null;
 }
 interface SFData {
   as_of: string | null;
@@ -2955,7 +2976,7 @@ interface SFData {
   net_flow_method: string | null;
   put_call_ratio_method: string | null;
   sector_total_method: string | null;
-  scan_coverage: Record<string, number> | null;
+  scan_coverage: SFCoverage | null;
   sectors: SFSector[];
 }
 
@@ -2973,13 +2994,15 @@ function sfBiasColor(bias: string | null): string {
   return C.yellow;
 }
 function SFScanBadge({ status, available }: { status: string | null; available: boolean | null }) {
-  if (available === false)
-    return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.dim}15`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>no options</span>;
   const s = (status || "").toLowerCase();
-  if (s === "live")       return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.green}15`, border: `1px solid ${C.green}25`, color: C.green, fontFamily: font }}>live</span>;
-  if (s === "supplement") return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}25`, color: C.blue, fontFamily: font }}>supplement</span>;
-  if (s === "pending")    return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.yellow}15`, border: `1px solid ${C.yellow}25`, color: C.yellow, fontFamily: font }}>pending</span>;
-  return <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.dim}15`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>{s || "—"}</span>;
+  if (s === "live")           return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.green}15`, border: `1px solid ${C.green}30`, color: C.green, fontFamily: font }}>Live</span>;
+  if (s === "supplement")     return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}30`, color: C.blue, fontFamily: font }}>Supplement</span>;
+  if (s === "supplement_lkg") return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.30)", color: "#818cf8", fontFamily: font }}>Supplement LKG</span>;
+  if (s === "pending")        return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.yellow}12`, border: `1px solid ${C.yellow}30`, color: C.yellow, fontFamily: font }}>Pending scan</span>;
+  if (s === "no_options" || available === false)
+                              return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>No Options</span>;
+  if (s)                      return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>{s}</span>;
+  return null;
 }
 
 function SectorsFlowTab() {
@@ -3072,16 +3095,45 @@ function SectorsFlowTab() {
             </div>
           ))}
         </div>
-        {data.scan_coverage && Object.keys(data.scan_coverage).length > 0 && (
+        {data.scan_coverage && (
           <>
             <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {Object.entries(data.scan_coverage).map(([k, v]) => (
-                <div key={k} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>{k.replace(/_/g, " ")}</span>
-                  <span style={{ fontSize: 12, fontFamily: font, fontWeight: 600, color: k === "live" ? C.green : k === "pending" ? C.yellow : k === "no_options" ? C.dim : C.blue }}>{v}</span>
-                </div>
-              ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 200 }}>
+              {/* Primary coverage line */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, fontFamily: font, fontWeight: 700, color: C.bright }}>
+                  {data.scan_coverage.tickers_with_data ?? "—"} / {data.scan_coverage.theme_universe_total ?? "—"}
+                </span>
+                <span style={{ fontSize: 11, fontFamily: font, color: data.scan_coverage.coverage_pct != null && data.scan_coverage.coverage_pct >= 50 ? C.green : C.yellow }}>
+                  {data.scan_coverage.coverage_pct != null ? `${data.scan_coverage.coverage_pct.toFixed(1)}% coverage` : "—"}
+                </span>
+                {data.scan_coverage.pending_count != null && data.scan_coverage.pending_count > 0 && (
+                  <span style={{ fontSize: 10, fontFamily: font, color: C.yellow }}>· {data.scan_coverage.pending_count} pending</span>
+                )}
+                {data.scan_coverage.estimated_full_coverage_minutes != null && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: C.dim }}>ETA ~{Math.round(data.scan_coverage.estimated_full_coverage_minutes)} min</span>
+                )}
+              </div>
+              {/* Secondary breakdown */}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {data.scan_coverage.master_count != null && data.scan_coverage.master_count > 0 && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: C.green }}>Live: {data.scan_coverage.master_count}</span>
+                )}
+                {data.scan_coverage.supplement_fresh_count != null && data.scan_coverage.supplement_fresh_count > 0 && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: C.blue }}>Supplement: {data.scan_coverage.supplement_fresh_count}</span>
+                )}
+                {data.scan_coverage.supplement_lkg_count != null && data.scan_coverage.supplement_lkg_count > 0 && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: "#818cf8" }}>LKG: {data.scan_coverage.supplement_lkg_count}</span>
+                )}
+                {data.scan_coverage.no_options_count != null && data.scan_coverage.no_options_count > 0 && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: C.dim }}>No options: {data.scan_coverage.no_options_count}</span>
+                )}
+                {data.scan_coverage.next_supplement_scan_at && (
+                  <span style={{ fontSize: 9, fontFamily: font, color: C.dim }}>
+                    Next scan: {new Date(data.scan_coverage.next_supplement_scan_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -3200,26 +3252,59 @@ function SectorsFlowTab() {
       {/* ── Ticker table ── */}
       {level === "tickers" && activeTheme && (
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+          {/* Theme summary sub-header */}
+          {activeTheme.tickers.length > 0 && (() => {
+            const withData = activeTheme.tickers.filter(tk => tk.net_premium != null).length;
+            const pending  = activeTheme.tickers.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
+            const total    = activeTheme.tickers.length;
+            return (
+              <div style={{ padding: "8px 12px", background: C.cardAlt, borderBottom: `1px solid ${C.border}`, display: "flex", gap: 14, alignItems: "center", fontSize: 10, fontFamily: font, color: C.dim }}>
+                <span>{withData} / {total} with flow data</span>
+                {pending > 0 && <span style={{ color: C.yellow }}>· {pending} pending scan</span>}
+                {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
+              </div>
+            );
+          })()}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: C.card, borderBottom: `1px solid ${C.border}` }}>
-                {["Ticker", "Net", "Call", "Put", "P/C", "Flows", "Status"].map(h => (
-                  <th key={h} style={{ padding: "8px 10px", textAlign: h === "Ticker" ? "left" : "right", fontSize: 9, fontFamily: font, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+                {["Symbol", "Net", "Call", "Put", "P/C", "Volume", "Status", "Updated"].map(h => (
+                  <th key={h} style={{ padding: "8px 10px", textAlign: h === "Symbol" ? "left" : h === "Status" || h === "Updated" ? "center" : "right", fontSize: 9, fontFamily: font, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {activeTheme.tickers.map((tk, i) => (
-                <tr key={tk.ticker} style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: tk.options_available === false ? 0.45 : 1 }}>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk.ticker}</td>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, color: sfNetColor(tk.net_premium), textAlign: "right" }}>{fmtCurrencyShort(tk.net_premium)}</td>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.green, textAlign: "right" }}>{fmtCurrencyShort(tk.call_premium)}</td>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.red, textAlign: "right" }}>{fmtCurrencyShort(tk.put_premium)}</td>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.text, textAlign: "right" }}>{tk.put_call_ratio != null ? tk.put_call_ratio.toFixed(2) : "—"}</td>
-                  <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>{tk.flow_count ?? "—"}</td>
-                  <td style={{ padding: "8px 10px", textAlign: "right" }}><SFScanBadge status={tk.scan_status} available={tk.options_available} /></td>
-                </tr>
-              ))}
+              {activeTheme.tickers.map((tk, i) => {
+                const sym = tk.symbol || tk.ticker || tk.underlying || "—";
+                const isPending = (tk.scan_status || "").toLowerCase() === "pending";
+                const isNoOpts  = (tk.scan_status || "").toLowerCase() === "no_options" || tk.options_available === false;
+                return (
+                  <tr key={sym + i} style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: isNoOpts && !isPending ? 0.45 : 1 }}>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>{sym}</td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, color: isPending ? C.dim : sfNetColor(tk.net_premium), textAlign: "right" }}>
+                      {isPending ? "—" : fmtCurrencyShort(tk.net_premium)}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: isPending ? C.dim : C.green, textAlign: "right" }}>
+                      {isPending ? "—" : fmtCurrencyShort(tk.call_premium)}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: isPending ? C.dim : C.red, textAlign: "right" }}>
+                      {isPending ? "—" : fmtCurrencyShort(tk.put_premium)}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.text, textAlign: "right" }}>
+                      {tk.put_call_ratio != null ? tk.put_call_ratio.toFixed(2) : "—"}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>
+                      {tk.total_volume != null ? tk.total_volume.toLocaleString() : "—"}
+                    </td>
+                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                      <SFScanBadge status={tk.scan_status} available={tk.options_available} />
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 9, color: C.dim, textAlign: "center", whiteSpace: "nowrap" }}>
+                      {tk.updated_at ? new Date(tk.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {activeTheme.tickers.length === 0 && (
