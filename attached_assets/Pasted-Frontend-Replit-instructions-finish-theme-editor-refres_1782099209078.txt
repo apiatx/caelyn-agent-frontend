@@ -1,0 +1,191 @@
+Frontend Replit instructions — finish theme editor refresh, clickable ticker charts, and manual leader UI
+
+Backend is ready.
+
+Backend now supports:
+
+* many-to-many theme memberships
+* stale-safe theme RS cache after admin edits
+* per-theme manual leaders
+* theme rows with leader_symbol and leader_source
+* admin basket endpoint with manual_leader_symbol, effective_leader_symbol, leader_source
+* public RS payload can include admin_refresh_pending when stale-good LKG is being served during refresh
+
+Goal:
+Finish 3 frontend fixes on the Themes page.
+
+Fix 1:
+After dev/admin adds/removes/restores a ticker, the visible expanded Theme Basket must update immediately. Example: adding MRAM to Memory & Storage should show MRAM in the basket without a full reload.
+
+Fix 2:
+Every ticker chip in a Theme Basket should be clickable and open a TradingView chart popup for that individual ticker.
+
+Fix 3:
+Dev/admin should be able to mark one ticker as the manual leader for that theme.
+
+Audit first:
+
+1. Open the Themes page file:
+
+   * frontend/client/src/pages/stocks-sectors.tsx
+2. Find ThemeBasketPanel.
+3. Find admin add/remove/restore handlers.
+4. Find how /api/themes/admin/theme-basket/{theme_id} is fetched.
+5. Find how /api/themes/relative-strength is refetched.
+6. Find existing TradingView popup/modal components on this page or elsewhere.
+7. Confirm backend leader fields/endpoints:
+
+   * row.leader_symbol
+   * row.leader_source
+   * GET /api/themes/admin/theme-basket/{theme_id}
+   * POST /api/themes/admin/leaders
+   * DELETE /api/themes/admin/leaders/{theme_id}
+8. Confirm admin UI uses isAdmin, not isAuthenticated.
+
+Backend endpoints:
+
+* POST /api/themes/admin/memberships
+* DELETE /api/themes/admin/memberships/{theme_id}/{symbol}
+* GET /api/themes/admin/theme-basket/{theme_id}
+* POST /api/themes/admin/leaders
+* DELETE /api/themes/admin/leaders/{theme_id}
+
+Important backend behavior:
+After an admin edit, /api/themes/admin/theme-basket/{theme_id} reflects the edit immediately.
+/api/themes/relative-strength may temporarily serve stale-good 60-theme LKG with admin_refresh_pending: true until full recompute finishes.
+
+Therefore:
+The expanded ThemeBasketPanel should use the admin basket endpoint as the immediate source of truth after mutations. Do not rely only on /api/themes/relative-strength for instant panel updates.
+
+Fix 1 — refresh after add/remove/restore:
+Required behavior:
+
+1. On panel open, if isAdmin, fetch /api/themes/admin/theme-basket/{theme_id}.
+2. Use that admin basket response to populate current theme basket state:
+
+   * final_theme_holdings
+   * manual_added_symbols
+   * manual_removed_symbols
+   * manual_leader_symbol
+   * effective_leader_symbol
+   * leader_source
+3. For non-admin users, use row.theme_holdings as before.
+4. After add/remove/restore:
+
+   * call the admin mutation endpoint
+   * immediately refetch /api/themes/admin/theme-basket/{theme_id}
+   * update local ThemeBasketPanel state from that response
+   * also refetch /api/themes/relative-strength in the background
+5. Do not show success unless the refreshed admin basket reflects the expected change.
+6. Keep the same row expanded if possible.
+7. If public RS still serves stale-good data with admin_refresh_pending=true, do not overwrite the fresh local admin basket panel state with stale row.theme_holdings.
+8. Optionally show small copy like “Theme refresh pending…” if public RS response has admin_refresh_pending=true.
+
+Validation:
+
+* Add MRAM to Memory & Storage.
+* MRAM appears immediately in Theme Basket chips from admin basket response.
+* Refresh page; MRAM still appears.
+* Remove/restore MRAM; visible basket updates correctly.
+* Public table remains 60 rows even during refresh.
+
+Fix 2 — clickable ticker chips:
+Required behavior:
+
+1. Ticker chip text/body is clickable.
+2. Clicking the ticker opens TradingView popup/modal for that ticker.
+3. Use the individual ticker symbol, not representative_symbol.
+4. representative_symbol remains the theme-level chart only.
+5. Remove/restore/leader buttons inside the chip must not trigger the chart popup.
+
+   * use stopPropagation on edit buttons.
+6. Normal users can click ticker chips to open charts.
+7. Only admin/dev users see edit buttons.
+
+Suggested UI:
+
+* Chip body/ticker text: open chart
+* x button: remove from this theme, admin-only
+* star/crown button: mark leader, admin-only
+* restore button: restore default override, admin-only
+* tooltip: “Open chart”
+
+Fix 3 — manual theme leader:
+Required behavior:
+
+1. Show a leader badge/star/crown next to the current leader.
+2. Admin-only action per ticker:
+
+   * “Mark leader”
+3. Call:
+   POST /api/themes/admin/leaders
+   body:
+   {
+   "theme_id": current theme_id,
+   "leader_symbol": selected ticker,
+   "note": "manual dev selected theme leader"
+   }
+4. Optional clear leader action:
+   DELETE /api/themes/admin/leaders/{theme_id}
+5. After marking/clearing:
+
+   * refetch /api/themes/admin/theme-basket/{theme_id}
+   * update local panel state
+   * refetch /api/themes/relative-strength in background
+6. Leader is per-theme.
+7. Same ticker can be leader in multiple themes.
+8. Do not replace representative_symbol with leader_symbol.
+9. Do not use leader_symbol for the main theme chart.
+10. Do not change performance math.
+
+Important many-to-many behavior:
+
+* Same ticker can belong to multiple themes.
+* Removing from one theme only affects that theme.
+* Marking leader in one theme only affects that theme.
+* Do not globally dedupe tickers.
+* Do not use language like “move” or “reassign.”
+
+Admin visibility:
+
+* Use isAdmin from AuthContext.
+* Do not use isAuthenticated alone.
+* Do not expose AGENT_API_KEY or any secret.
+
+Validation required:
+
+1. Log in as dev/admin.
+2. Expand Memory & Storage.
+3. Add MRAM.
+4. Confirm MRAM appears immediately.
+5. Click MRAM chip and confirm TradingView chart opens for MRAM.
+6. Mark MRAM as leader.
+7. Confirm MRAM shows leader badge in Memory & Storage.
+8. Add MRAM to another theme, such as Power / Cooling.
+9. Confirm MRAM exists in both themes.
+10. Mark MRAM leader in Power / Cooling too.
+11. Confirm leader state is per-theme.
+12. Remove MRAM from Memory & Storage.
+13. Confirm MRAM disappears only from Memory & Storage.
+14. Confirm Memory & Storage leader clears/updates correctly.
+15. Confirm MRAM remains in Power / Cooling.
+16. Confirm representative_symbol chart for Memory & Storage remains SMH.
+17. Confirm performance columns still render.
+18. Confirm normal non-admin users can click basket tickers but cannot edit.
+19. Confirm unauthenticated/non-admin users do not see edit controls.
+20. Confirm Watchlist files untouched.
+
+Deliverable:
+Report:
+
+* Root cause of add-success-but-not-visible from frontend perspective.
+* Files changed.
+* Refresh strategy after mutation.
+* Chart popup/modal component used.
+* Exact backend leader endpoints called.
+* Visual validation screenshots.
+* Proof same ticker can belong to multiple themes.
+* Proof leader is per-theme.
+* Confirmation representative_symbol unchanged.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist files untouched.

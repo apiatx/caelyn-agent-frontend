@@ -1061,11 +1061,40 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
 
 // ─── D: Theme Basket Panel (chart + theme_holdings + dev-only edit UI) ────────
 interface AdminBasketDetail {
-  theme_id:               string;
-  base_symbols:           string[];
-  manual_added_symbols:   string[];
-  manual_removed_symbols: string[];
-  final_theme_holdings:   string[];
+  theme_id:                string;
+  base_symbols:            string[];
+  manual_added_symbols:    string[];
+  manual_removed_symbols:  string[];
+  final_theme_holdings:    string[];
+  manual_leader_symbol:    string | null;
+  effective_leader_symbol: string | null;
+  leader_source:           string | null;
+  admin_refresh_pending?:  boolean;
+}
+
+function TickerChartModal({ ticker, onClose }: { ticker: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-4xl bg-[#0f1117] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
+          <span className="font-mono font-bold text-white text-sm">{ticker}</span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors text-xl leading-none px-1"
+          >×</button>
+        </div>
+        <div className="p-3">
+          <TVTickerChart ticker={ticker} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
@@ -1074,14 +1103,16 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
 }) {
   const { isAdmin, token } = useAuth();
   const qc = useQueryClient();
-  const [addInput, setAddInput]   = useState("");
-  const [feedback, setFeedback]   = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [addInput, setAddInput]       = useState("");
+  const [feedback, setFeedback]       = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [chartTicker, setChartTicker] = useState<string | null>(null);
+  const [showPending, setShowPending] = useState(false);
 
   const getJwt = useCallback(() =>
     token ?? localStorage.getItem("caelyn_jwt") ?? sessionStorage.getItem("caelyn_jwt") ?? "",
   [token]);
 
-  // Admin: fetch live basket detail for manual-override metadata
+  // Admin: fetch live basket — immediate source of truth after mutations
   const { data: adminBasket } = useQuery<AdminBasketDetail>({
     queryKey: ["theme-admin-basket", themeId],
     queryFn:  () =>
@@ -1093,6 +1124,17 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
     retry: 1,
   });
 
+  // Hide pending banner once admin basket refreshes
+  useEffect(() => { if (adminBasket) setShowPending(false); }, [adminBasket]);
+
+  // Admin uses admin basket as source of truth; non-admin uses prop
+  const displayHoldings = (isAdmin && adminBasket?.final_theme_holdings) ? adminBasket.final_theme_holdings : holdings;
+  const manualAdded     = adminBasket?.manual_added_symbols   ?? [];
+  const manualRemoved   = adminBasket?.manual_removed_symbols ?? [];
+  const effectiveLeader = adminBasket?.effective_leader_symbol ?? null;
+  const manualLeader    = adminBasket?.manual_leader_symbol   ?? null;
+  const leaderSrc       = adminBasket?.leader_source          ?? null;
+
   const invalidateAll = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["themes-unified"] });
     qc.invalidateQueries({ queryKey: ["theme-admin-basket", themeId] });
@@ -1102,6 +1144,13 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
     setFeedback({ type, msg });
     setTimeout(() => setFeedback(null), 4000);
   }, []);
+
+  const onMutationSuccess = useCallback((msg: string, clearInput?: boolean) => {
+    showFeedback("ok", msg);
+    setShowPending(true);
+    invalidateAll();
+    if (clearInput) setAddInput("");
+  }, [showFeedback, invalidateAll]);
 
   // POST membership (action: "add" | "remove")
   const membershipMutation = useMutation({
@@ -1114,17 +1163,14 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
       return r.json();
     },
-    onSuccess: (_, vars) => {
-      showFeedback("ok", vars.action === "add"
-        ? `${vars.symbol} added to this theme`
-        : `${vars.symbol} removed from this theme`);
-      invalidateAll();
-      if (vars.action === "add") setAddInput("");
-    },
+    onSuccess: (_, vars) => onMutationSuccess(
+      vars.action === "add" ? `${vars.symbol} added to this theme` : `${vars.symbol} removed from this theme`,
+      vars.action === "add",
+    ),
     onError: (e: any) => showFeedback("err", e.message ?? "Request failed"),
   });
 
-  // DELETE membership override (restore default for one theme-symbol pair)
+  // DELETE membership override (restore default)
   const restoreMutation = useMutation({
     mutationFn: async (symbol: string) => {
       const r = await fetch(
@@ -1134,30 +1180,60 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
       if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
       return r.json();
     },
-    onSuccess: (_, sym) => { showFeedback("ok", `Default restored for ${sym} in this theme`); invalidateAll(); },
+    onSuccess: (_, sym) => onMutationSuccess(`Default restored for ${sym} in this theme`),
     onError: (e: any) => showFeedback("err", e.message ?? "Restore failed"),
+  });
+
+  // POST leader (mark manual leader for this theme)
+  const leaderMutation = useMutation({
+    mutationFn: async (symbol: string) => {
+      const r = await fetch("/api/themes/admin/leaders", {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
+        body:    JSON.stringify({ theme_id: themeId, leader_symbol: symbol, note: "manual dev selected theme leader" }),
+      });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
+      return r.json();
+    },
+    onSuccess: (_, sym) => onMutationSuccess(`${sym} marked as leader for this theme`),
+    onError: (e: any) => showFeedback("err", e.message ?? "Leader update failed"),
+  });
+
+  // DELETE leader (clear manual override for this theme)
+  const clearLeaderMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/themes/admin/leaders/${encodeURIComponent(themeId)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${getJwt()}`, "Content-Type": "application/json" },
+      });
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail ?? e.error ?? `${r.status}`); }
+      return r.json();
+    },
+    onSuccess: () => onMutationSuccess("Manual leader cleared for this theme"),
+    onError: (e: any) => showFeedback("err", e.message ?? "Clear leader failed"),
   });
 
   const handleAdd = useCallback(() => {
     const sym = addInput.trim().toUpperCase();
     if (!sym || !/^[A-Z0-9.]{1,12}$/.test(sym)) { showFeedback("err", "Enter a valid ticker symbol"); return; }
-    if (holdings.includes(sym)) { showFeedback("err", `${sym} is already in this theme`); return; }
+    if (displayHoldings.includes(sym)) { showFeedback("err", `${sym} is already in this theme`); return; }
     membershipMutation.mutate({ action: "add", symbol: sym, note: "manual dev theme membership" });
-  }, [addInput, holdings, membershipMutation, showFeedback]);
+  }, [addInput, displayHoldings, membershipMutation, showFeedback]);
 
-  const isBusy       = membershipMutation.isPending || restoreMutation.isPending;
-  const manualAdded  = adminBasket?.manual_added_symbols   ?? [];
-  const manualRemoved= adminBasket?.manual_removed_symbols ?? [];
+  const isBusy = membershipMutation.isPending || restoreMutation.isPending || leaderMutation.isPending || clearLeaderMutation.isPending;
 
   return (
     <div>
+      {/* Per-ticker chart modal */}
+      {chartTicker && <TickerChartModal ticker={chartTicker} onClose={() => setChartTicker(null)} />}
+
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="w-2 h-2 rounded-full" style={{ background: dotColor ?? "#64748b" }} />
         {name && <span className="text-xs text-gray-500">{name}</span>}
       </div>
 
-      {/* TradingView chart — always uses representative_symbol */}
+      {/* TradingView chart — always uses representative_symbol, never the leader */}
       <TVTickerChart ticker={tvSymbol?.split(":").pop() ?? ""} symbol={tvSymbol} />
 
       {/* Theme Basket */}
@@ -1165,48 +1241,86 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
         <div className="flex items-center gap-2 mb-2.5">
           <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Theme Basket</span>
           {isBusy && <span className="text-[10px] text-gray-500 animate-pulse">saving…</span>}
+          {showPending && !isBusy && (
+            <span className="text-[10px] text-amber-500/60">Theme refresh pending…</span>
+          )}
         </div>
 
-        {holdings.length === 0 ? (
+        {displayHoldings.length === 0 ? (
           <span className="text-xs text-gray-600">No holdings</span>
-        ) : isAdmin ? (
-          /* Admin: chips with remove / restore-default buttons */
+        ) : (
+          /* All chips are clickable — open per-ticker chart. Admin edit buttons use stopPropagation. */
           <div className="flex flex-wrap gap-1.5">
-            {holdings.map(sym => {
-              const isManualAdd = manualAdded.includes(sym);
+            {displayHoldings.map(sym => {
+              const isManualAdd  = manualAdded.includes(sym);
+              const isLeader     = sym === effectiveLeader;
+              const isManualLead = sym === manualLeader;
               return (
-                <div key={sym} className="flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded border border-white/10 bg-white/[0.04]">
+                <div
+                  key={sym}
+                  title="Open chart"
+                  onClick={() => setChartTicker(sym)}
+                  className="flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded border border-white/10 bg-white/[0.04] cursor-pointer hover:border-white/20 hover:bg-white/[0.07] transition-colors select-none"
+                >
                   <span className="text-xs font-mono font-bold text-white">{sym}</span>
                   {isManualAdd && (
-                    <span className="text-[8px] text-teal-400/60 ml-1">+added</span>
+                    <span className="text-[8px] text-teal-400/60 ml-1 pointer-events-none">+added</span>
                   )}
-                  {isManualAdd ? (
-                    <button
-                      title="Restore default for this theme"
-                      onClick={() => restoreMutation.mutate(sym)}
-                      disabled={isBusy}
-                      className="ml-1 text-[11px] text-amber-400/70 hover:text-amber-300 transition-colors disabled:opacity-40 px-0.5"
-                    >↺</button>
-                  ) : (
-                    <button
-                      title="Remove from this theme"
-                      onClick={() => membershipMutation.mutate({ action: "remove", symbol: sym, note: "manual dev removal from this theme" })}
-                      disabled={isBusy}
-                      className="ml-1 text-[13px] leading-none text-gray-600 hover:text-red-400 transition-colors disabled:opacity-40 px-0.5"
-                    >×</button>
+                  {/* Leader star — visible to all users */}
+                  {isLeader && !isAdmin && (
+                    <span
+                      title={leaderSrc === "manual" ? "Manual leader" : "Auto leader"}
+                      className="text-amber-400 text-[11px] ml-0.5 pointer-events-none"
+                    >★</span>
+                  )}
+                  {/* Admin-only controls */}
+                  {isAdmin && (
+                    <>
+                      {isLeader && isManualLead ? (
+                        /* Amber star = currently the manual leader; click to clear */
+                        <button
+                          title="Clear manual leader"
+                          onClick={e => { e.stopPropagation(); clearLeaderMutation.mutate(); }}
+                          disabled={isBusy}
+                          className="ml-0.5 text-[11px] text-amber-400 hover:text-red-400 transition-colors disabled:opacity-40 px-0.5"
+                        >★</button>
+                      ) : isLeader ? (
+                        /* Dim amber = auto leader; click to lock in as manual */
+                        <button
+                          title="Lock as manual leader (currently auto-detected)"
+                          onClick={e => { e.stopPropagation(); leaderMutation.mutate(sym); }}
+                          disabled={isBusy}
+                          className="ml-0.5 text-[11px] text-amber-400/50 hover:text-amber-400 transition-colors disabled:opacity-40 px-0.5"
+                        >★</button>
+                      ) : (
+                        /* Outline star = not leader; click to mark */
+                        <button
+                          title="Mark as leader"
+                          onClick={e => { e.stopPropagation(); leaderMutation.mutate(sym); }}
+                          disabled={isBusy}
+                          className="ml-0.5 text-[11px] text-gray-600 hover:text-amber-400 transition-colors disabled:opacity-40 px-0.5"
+                        >☆</button>
+                      )}
+                      {isManualAdd ? (
+                        <button
+                          title="Restore default for this theme"
+                          onClick={e => { e.stopPropagation(); restoreMutation.mutate(sym); }}
+                          disabled={isBusy}
+                          className="ml-0.5 text-[11px] text-amber-400/70 hover:text-amber-300 transition-colors disabled:opacity-40 px-0.5"
+                        >↺</button>
+                      ) : (
+                        <button
+                          title="Remove from this theme"
+                          onClick={e => { e.stopPropagation(); membershipMutation.mutate({ action: "remove", symbol: sym, note: "manual dev removal from this theme" }); }}
+                          disabled={isBusy}
+                          className="ml-0.5 text-[13px] leading-none text-gray-600 hover:text-red-400 transition-colors disabled:opacity-40 px-0.5"
+                        >×</button>
+                      )}
+                    </>
                   )}
                 </div>
               );
             })}
-          </div>
-        ) : (
-          /* Read-only: plain chips */
-          <div className="flex flex-wrap gap-1.5">
-            {holdings.map(sym => (
-              <span key={sym} className="text-xs font-mono font-bold px-2 py-1 rounded border border-white/10 bg-white/[0.04] text-white">
-                {sym}
-              </span>
-            ))}
           </div>
         )}
 
@@ -1272,6 +1386,19 @@ function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings, themeId }: {
           <p className="text-[10px] text-gray-700 mt-2">
             Tickers can belong to multiple themes. Changes apply only to this theme.
           </p>
+          {effectiveLeader && (
+            <div className="mt-2 text-[10px] text-gray-600">
+              Leader: <span className="text-amber-400/70 font-mono">{effectiveLeader}</span>
+              {leaderSrc === "manual" ? " (manual)" : " (auto)"}
+              {leaderSrc === "manual" && (
+                <button
+                  onClick={() => clearLeaderMutation.mutate()}
+                  disabled={isBusy}
+                  className="ml-2 text-gray-600 hover:text-red-400 transition-colors disabled:opacity-40"
+                >clear</button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

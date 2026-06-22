@@ -5897,6 +5897,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/themes/admin/leaders', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${PB_URL}/api/themes/admin/leaders`, {
+        method: 'POST', headers: adminHdr(req), body: JSON.stringify(req.body), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/leaders POST failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/leaders POST]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/themes/admin/leaders/:theme_id', async (req, res) => {
+    try {
+      const { theme_id } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${PB_URL}/api/themes/admin/leaders/${encodeURIComponent(theme_id)}`, {
+        method: 'DELETE', headers: adminHdr(req), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/leaders DELETE failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/leaders DELETE]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── Thematic Context ─────────────────────────────────────────────────
   app.get('/api/thematic-context/snapshot', async (req, res) => {
     try {
