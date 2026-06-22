@@ -169,6 +169,8 @@ interface ThemeRow {
   danger_zone:               boolean | null;
   representative_symbol:        string | null;
   representative_symbol_source: string | null;
+  holdings_display_mode:        string | null;
+  theme_holdings:               string[] | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -612,6 +614,8 @@ interface DisplayRow {
   breadth_rising_30w_ma_pct: number | null;
   breakout_watch:            boolean | null;
   danger_zone:               boolean | null;
+  holdings_display_mode:     string | null;
+  theme_holdings:            string[] | null;
 }
 
 function buildThemeSparkline(theme: ThemeRow): number[] {
@@ -689,6 +693,8 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     breadth_rising_30w_ma_pct: (theme as any).breadth_rising_30w_ma_pct ?? null,
     breakout_watch:            (theme as any).breakout_watch            ?? null,
     danger_zone:               (theme as any).danger_zone               ?? null,
+    holdings_display_mode:     (theme as any).holdings_display_mode     ?? null,
+    theme_holdings:            (theme as any).theme_holdings             ?? null,
   };
 }
 
@@ -1052,6 +1058,35 @@ const TVTickerChart = memo(function TVTickerChart({ ticker, symbol }: { ticker: 
     </div>
   );
 });
+
+// ─── D: Theme Basket Panel (chart + theme_holdings list, no ETF API fetch) ───
+function ThemeBasketPanel({ tvSymbol, dotColor, name, holdings }: {
+  tvSymbol?: string; dotColor?: string; name?: string | null; holdings: string[];
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-2 h-2 rounded-full" style={{ background: dotColor ?? "#64748b" }} />
+        {name && <span className="text-xs text-gray-500">{name}</span>}
+      </div>
+      <TVTickerChart ticker={tvSymbol?.split(":").pop() ?? ""} symbol={tvSymbol} />
+      {holdings.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2.5">
+            <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Theme Basket</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {holdings.map(sym => (
+              <span key={sym} className="text-xs font-mono font-bold px-2 py-1 rounded border border-white/10 bg-white/[0.04] text-white">
+                {sym}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── D: ETF Detail Panel (chart + performance + holdings) ────────────────────
 interface EtfDetail {
@@ -1562,7 +1597,16 @@ function UnifiedThemesCard({
                     {expanded && (
                       <tr key={`${row.key}-detail`} style={{ background: C.card2 }}>
                         <td colSpan={13} className="px-4 py-4">
-                          <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
+                          {row.holdings_display_mode === "theme_basket" && row.theme_holdings?.length ? (
+                            <ThemeBasketPanel
+                              tvSymbol={row.tvSymbol}
+                              dotColor={color}
+                              name={row.name}
+                              holdings={row.theme_holdings}
+                            />
+                          ) : (
+                            <EtfDetailPanel ticker={row.ticker} tvSymbol={row.tvSymbol} dotColor={color} name={row.name} />
+                          )}
                         </td>
                       </tr>
                     )}

@@ -1,0 +1,90 @@
+Frontend Replit instructions — expanded theme holdings must use theme_holdings
+
+Backend is ready for this frontend fix. Every theme row now includes:
+
+* representative_symbol
+* holdings_display_mode
+* theme_holdings
+
+Goal:
+Fix the expanded Themes page view so curated/custom/watchlist-enriched themes show their true theme basket, not ETF holdings from the representative chart ticker.
+
+Critical distinction:
+
+* representative_symbol is for TradingView chart only.
+* theme_holdings is for the expanded holdings/table when holdings_display_mode = "theme_basket".
+* ETF holdings should only be fetched/shown when holdings_display_mode = "etf_holdings".
+* A ticker can appear in multiple themes. Do not globally dedupe symbols across themes.
+
+Audit first:
+
+1. Open the Themes page file, likely:
+
+   * frontend/client/src/pages/stocks-sectors.tsx
+2. Find the expanded theme detail / holdings component.
+3. Find where the “ETF Holdings” table is rendered.
+4. Find where the app fetches holdings based on row.ticker, row.tvSymbol, representative_symbol, lead_proxy, or another ticker field.
+5. Confirm why Substrates / Packaging previously showed SOXX holdings instead of AMKR/ASX.
+
+Required frontend behavior:
+
+1. TradingView chart continues to use representative_symbol.
+2. Expanded holdings table uses theme_holdings when holdings_display_mode === "theme_basket".
+3. Expanded holdings table only fetches ETF holdings when holdings_display_mode === "etf_holdings".
+4. Section label should be accurate:
+
+   * "Theme Basket" for holdings_display_mode === "theme_basket"
+   * "ETF Holdings" for holdings_display_mode === "etf_holdings"
+5. Do not fetch ETF holdings for representative_symbol when holdings_display_mode === "theme_basket".
+6. Do not remove component chips under the theme name.
+7. Do not change performance calculations.
+8. Do not touch Watchlist files.
+9. Do not globally dedupe tickers across all themes. Only dedupe within the current theme’s displayed basket.
+
+Expected validation:
+
+1. Substrates / Packaging:
+
+   * chart: SOXX
+   * holdings/table: AMKR, ASX
+   * section label: Theme Basket
+   * no SOXX holdings like AVGO, MU, AMD, NVDA, INTC
+
+2. AI Networking:
+
+   * chart: SMH
+   * holdings/table: ALAB, ANET, AVGO, CRDO, MRVL
+   * section label: Theme Basket
+
+3. Power / Cooling:
+
+   * chart: GRID
+   * holdings/table: ETN, GEV, SEI, TT, VRT
+   * section label: Theme Basket
+
+4. Photonics / Lasers:
+
+   * chart: ROBO
+   * holdings/table: AAOI, COHR, FN, IPGP, LITE
+   * section label: Theme Basket
+
+5. Data Center Infrastructure:
+
+   * chart: DTCR
+   * holdings/table: merged true theme basket, not full DTCR holdings
+
+6. A pure ETF-only theme:
+
+   * chart uses representative_symbol
+   * ETF Holdings can still show if holdings_display_mode === "etf_holdings"
+
+Deliverable:
+Report:
+
+* Files audited.
+* Files changed.
+* Exact field used for chart.
+* Exact field used for expanded holdings.
+* Screenshot/visual validation.
+* Confirmation performance math unchanged.
+* Confirmation Watchlist files untouched.
