@@ -397,34 +397,55 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
     [sortedByTf, selectedIds]
   );
 
-  // Build unified date-indexed chart data from performance_curve on each visible theme
+  // Detect intraday mode: 1D returns ISO timestamps like "2026-06-22T09:30:00-04:00"
+  const isIntraday = useMemo(() => {
+    for (const t of visibleThemes) {
+      if (t.performance_curve?.length) return t.performance_curve[0].date.includes("T");
+    }
+    return false;
+  }, [visibleThemes]);
+
+  // Build unified key-indexed chart data using the FULL date/timestamp string as the key.
+  // Do NOT slice to 10 chars — intraday timestamps all share the same YYYY-MM-DD prefix and
+  // would collapse to one point, making hasCurveData false even when data is present.
   const lineData = useMemo(() => {
-    const dateSet = new Set<string>();
+    // Build per-theme Maps for O(1) lookups
+    const themeMaps = new Map<string, Map<string, number>>();
+    const keySet    = new Set<string>();
     for (const t of visibleThemes) {
       if (!t.performance_curve?.length) continue;
-      for (const pt of t.performance_curve) dateSet.add(pt.date.slice(0, 10));
-    }
-    const dates = [...dateSet].sort();
-    if (!dates.length) return [];
-
-    return dates.map(date => {
-      const pt: Record<string, any> = { date };
-      for (const t of visibleThemes) {
-        if (!t.performance_curve?.length) continue;
-        const found = t.performance_curve.find(p => p.date.slice(0, 10) === date);
-        if (found != null) pt[t.theme_id] = +found.value_pct.toFixed(3);
+      const tMap = new Map<string, number>();
+      for (const pt of t.performance_curve) {
+        tMap.set(pt.date, +pt.value_pct.toFixed(3));
+        keySet.add(pt.date);
       }
-      return pt;
+      themeMaps.set(t.theme_id, tMap);
+    }
+    const keys = [...keySet].sort();
+    if (!keys.length) return [];
+    return keys.map(key => {
+      const row: Record<string, any> = { date: key };
+      for (const t of visibleThemes) {
+        const val = themeMaps.get(t.theme_id)?.get(key);
+        if (val !== undefined) row[t.theme_id] = val;
+      }
+      return row;
     });
   }, [visibleThemes]);
 
-  const hasCurveData = lineData.length > 0;
+  const hasCurveData = lineData.length > 1;
 
   // Thin out x-axis ticks so labels don't overlap
   const tickInterval = lineData.length > 0 ? Math.max(0, Math.floor(lineData.length / 8) - 1) : 0;
 
+  // Format a data key for display. Intraday ISO → "HH:MM", daily → "MM/DD"
   const fmtDateLabel = (d: string) => {
-    if (!d || d.length < 10) return d;
+    if (!d || d.length < 5) return d;
+    if (d.includes("T")) {
+      // "2026-06-22T09:30:00-04:00" → "09:30"
+      const tIdx = d.indexOf("T");
+      return d.slice(tIdx + 1, tIdx + 6);
+    }
     return `${d.slice(5, 7)}/${d.slice(8, 10)}`; // MM/DD
   };
 

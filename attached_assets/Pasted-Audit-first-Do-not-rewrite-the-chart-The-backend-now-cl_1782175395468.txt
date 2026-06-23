@@ -1,0 +1,86 @@
+Audit first. Do not rewrite the chart. The backend now claims 1D Performance Curve data exists and returns intraday ISO timestamp points from the same Themes endpoint. The frontend still shows: “No performance curve data for 1D — try a different timeframe.”
+
+Find whether this is frontend data handling, wrong query params, or stale cache.
+
+Step 1 — Browser/API verification:
+
+* Open Themes → Performance Curve → 1D.
+* In browser network tab, inspect the exact request URL.
+* Confirm:
+
+  * route path
+  * timeframe param
+  * classification param
+  * response source
+  * theme count
+  * first theme’s `performance_curve.length`
+  * first point `date`
+  * first point `value_pct`
+* Important: backend validation used `classification=theme`. Earlier `classification=themes` returned invalid/empty. If frontend is sending `classification=themes`, fix it to the valid backend classifier key.
+
+Expected backend 1D response:
+
+* Same existing route:
+  `/api/themes/relative-strength?timeframe=1D&classification=theme`
+* Rows/themes should contain:
+  `performance_curve: [{ date: "YYYY-MM-DDTHH:mm:ss-04:00", value_pct: number }, ...]`
+* Dates should contain `"T"` because they are intraday timestamps.
+* 51 themes should have non-empty 1D curves when the 1D LKG is loaded.
+* If the API response has curves, do not touch backend.
+
+Likely frontend fixes:
+
+1. Query params
+
+* Make sure the Performance Curve 1D request uses the valid backend classification key.
+* Do not send `classification=themes` if backend expects `classification=theme`.
+* Keep the route consistent with the working 7D/30D/YTD/1Y/5Y route.
+
+2. React Query/cache
+
+* Make sure the queryKey includes:
+
+  * view mode
+  * curve timeframe
+  * classification
+* Switching to 1D must not reuse an older cached empty 1D response.
+* After fixing, invalidate/refetch the Themes query on timeframe change.
+* Do not use stale empty data if the backend response now contains curves.
+
+3. LineGraphView data transform
+
+* Make sure 1D timestamped points are accepted.
+* Do not filter out points because `date` contains `"T"`.
+* Do not require date strings to match daily `YYYY-MM-DD` only.
+* For 1D:
+
+  * x-axis should use timestamp values
+  * label formatter should show intraday time like `9:30`, `10:15`, `15:55`
+  * tooltip should show intraday time + theme + return %
+* For non-1D:
+
+  * keep current date formatting.
+
+4. Empty state
+
+* Only show “No performance curve data for 1D” if the actual API response for selected rows has no curves.
+* If API response has curves but chart transform produces empty data, fix the transform.
+* Add temporary console diagnostics if needed:
+
+  * `curveTf`
+  * request URL
+  * rows.length
+  * rowsWithCurve.length
+  * first row performance_curve length
+  * first point date
+
+Validation:
+
+* Network request for 1D uses the correct classification and route.
+* API response contains non-empty `performance_curve` arrays with ISO timestamps.
+* Chart renders lines for 1D.
+* X-axis shows intraday times, not month/day labels.
+* Hover tooltip shows time + color-coded theme rows.
+* Switching 1D ↔ 7D ↔ 5Y clears stale chart data and renders the correct axis.
+* No console errors.
+* No network calls on hover.
