@@ -1606,8 +1606,6 @@ function StrategyScreenerInner() {
                       <ColHeader col="max_score"    label="Max Score"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
                       <ColHeader col="avg_score"    label="Avg Score"  sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
                       <th style={{ ...TH_STYLE, textAlign: 'left' }}>Grade</th>
-                      <ColHeader col="mktcap"       label="Mkt Cap"    sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
-                      <ColHeader col="change"       label="1D%"        sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
                       <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 200 }}>Primary Role</th>
                     </>) : (<>
                       <ColHeader col="ticker"   label="Ticker"    sortCol={sortCol} sortDir={sortDir} onSort={doSort} />
@@ -1616,8 +1614,6 @@ function StrategyScreenerInner() {
                       <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 160 }}>Role</th>
                       <ColHeader col="score"    label="Score"     sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
                       <th style={{ ...TH_STYLE, textAlign: 'left' }}>Confidence</th>
-                      <ColHeader col="mktcap"   label="Mkt Cap"   sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
-                      <ColHeader col="change"   label="1D%"       sortCol={sortCol} sortDir={sortDir} onSort={doSort} right />
                       <th style={{ ...TH_STYLE, textAlign: 'left', minWidth: 200 }}>Why it matters</th>
                     </>)}
                     <th style={{ ...TH_STYLE, width: 18 }} />
@@ -1660,8 +1656,6 @@ function StrategyScreenerInner() {
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.max_bottleneck_score)}</td>
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.avg_bottleneck_score)}</td>
                           <td style={TD}><GradeBadge grade={r.best_evidence_grade} /></td>
-                          <td style={{ ...TD, textAlign: 'right' }}><span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{fmtCap(r.market_cap ?? r.marketCap)}</span></td>
-                          <td style={{ ...TD, textAlign: 'right' }}>{fmtChange(r.change_percent_1d)}</td>
                           <td style={{ ...TD, maxWidth: 280 }}>
                             <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {(r.roles_by_anchor && (Object.values(r.roles_by_anchor)[0] as string)) || '—'}
@@ -1681,8 +1675,6 @@ function StrategyScreenerInner() {
                           </td>
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.bottleneck_score ?? r.final_score)}</td>
                           <td style={TD}>{confBadge(r.confidence)}</td>
-                          <td style={{ ...TD, textAlign: 'right' }}><span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{fmtCap(r.market_cap ?? r.marketCap)}</span></td>
-                          <td style={{ ...TD, textAlign: 'right' }}>{fmtChange(r.change_percent_1d)}</td>
                           <td style={{ ...TD, maxWidth: 280 }}>
                             <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.why_it_matters || '—'}</span>
                           </td>
