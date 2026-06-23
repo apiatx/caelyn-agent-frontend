@@ -173,6 +173,12 @@ interface ThemeRow {
   theme_holdings:               string[] | null;
   members:         Array<{ symbol: string; price: number | null; change_pct: number | null; return_pct: number | null }> | null;
   performance_curve: Array<{ date: string; value_pct: number }> | null;
+  curve_status:           string | null;
+  basket_hash:            string | null;
+  curve_total_symbols:    number | null;
+  curve_covered_symbols:  number | null;
+  curve_missing_symbols:  string[] | null;
+  curve_partial:          boolean | null;
 }
 interface DashboardData {
   updated_at:          string | null;
@@ -482,10 +488,33 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
       {visibleThemes.length === 0 ? (
         <div className="h-[280px] flex items-center justify-center text-gray-600 text-sm">Select themes above to display</div>
       ) : !hasCurveData ? (
-        <div className="h-[280px] flex items-center justify-center text-gray-500 text-sm">
-          No performance curve data for {tf} — try a different timeframe
-        </div>
+        (() => {
+          // Use the first visible theme's curve_status to show an appropriate message
+          const status = visibleThemes[0]?.curve_status;
+          if (status === "stale_membership") {
+            return (
+              <div className="h-[280px] flex flex-col items-center justify-center gap-2 text-center px-6">
+                <div className="text-amber-400 text-sm font-medium">Theme basket changed. Rebuilding {tf} performance curve…</div>
+                <div className="text-gray-500 text-xs">The curve will update once the new basket data is warmed.</div>
+              </div>
+            );
+          }
+          if (status === "stale_legacy_lkg") {
+            return (
+              <div className="h-[280px] flex flex-col items-center justify-center gap-2 text-center px-6">
+                <div className="text-blue-400 text-sm font-medium">Refreshing legacy curve data for the current theme basket…</div>
+                <div className="text-gray-500 text-xs">{tf} curve data will appear once the rebuild completes.</div>
+              </div>
+            );
+          }
+          return (
+            <div className="h-[280px] flex items-center justify-center text-gray-500 text-sm">
+              No performance curve data for {tf} — try a different timeframe
+            </div>
+          );
+        })()
       ) : (
+        <>
         <div style={{ height: Math.max(260, Math.min(400, visibleThemes.length * 6 + 200)) }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={lineData} margin={{ top: 4, right: 16, left: -12, bottom: 0 }}>
@@ -545,6 +574,25 @@ function LineGraphView({ themes, colorMap, tf }: { themes: ThemeRow[]; colorMap:
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {/* Partial curve coverage note — shown when backend flags curve_partial */}
+        {visibleThemes.find(t => t.curve_partial) ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px]">
+            <span className="text-amber-400/80">
+              {"⚠ Partial curve"}
+              {visibleThemes.find(t => t.curve_partial)?.curve_covered_symbols != null &&
+               visibleThemes.find(t => t.curve_partial)?.curve_total_symbols != null
+                ? `: ${visibleThemes.find(t => t.curve_partial)?.curve_covered_symbols}/${visibleThemes.find(t => t.curve_partial)?.curve_total_symbols} symbols covered`
+                : ""}
+            </span>
+            {(visibleThemes.find(t => t.curve_partial)?.curve_missing_symbols ?? []).length > 0 &&
+             (visibleThemes.find(t => t.curve_partial)?.curve_missing_symbols ?? []).length <= 8 && (
+              <span className="text-gray-500">
+                {"Missing: "}{(visibleThemes.find(t => t.curve_partial)?.curve_missing_symbols ?? []).join(", ")}
+              </span>
+            )}
+          </div>
+        ) : null}
+        </>
       )}
     </>
   );
