@@ -3124,10 +3124,19 @@ export default function WatchlistPage() {
               {pendingCount} PENDING ANALYSIS
             </span>
           )}
-          {screenerMode === 'technical' && optionsMeta && ((optionsMeta.live_calls_enqueued ?? 0) > 0 || (optionsMeta.scan_in_progress ?? 0) > 0) && (
-            <span style={{ fontSize: 7, color: C.amber, opacity: 0.75, letterSpacing: '0.03em' }}>
-              Options scan warming — cached rows shown first
-            </span>
+          {screenerMode === 'technical' && optionsMeta && (
+            ((optionsMeta.deferred_symbols_count ?? 0) > 0 || (optionsMeta.inflight_symbols_count ?? 0) > 0) ? (
+              <span style={{ fontSize: 7, color: C.amber, opacity: 0.75, letterSpacing: '0.03em' }}>
+                Options scan warming — cached rows shown first
+              </span>
+            ) : (
+              <span style={{ fontSize: 7, color: C.dim, opacity: 0.7, letterSpacing: '0.03em' }}>
+                Options scan cached
+                {optionsMeta.data_available_count != null && optionsMeta.symbols_requested != null
+                  ? ` · ${optionsMeta.data_available_count}/${optionsMeta.symbols_requested} with options data`
+                  : ''}
+              </span>
+            )
           )}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {isMainScreener && (

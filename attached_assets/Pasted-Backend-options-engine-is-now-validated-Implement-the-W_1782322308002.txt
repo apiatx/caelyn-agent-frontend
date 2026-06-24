@@ -1,0 +1,185 @@
+Backend options engine is now validated. Implement the Watchlist options columns.
+
+Backend endpoint:
+`GET /api/watchlist/{id}/options-signals`
+
+Important backend behavior:
+
+* Watchlist options rows are now progressively drained until deferred symbols hit 0.
+* Foreign/OTC/no-options symbols are cached and should not be treated as loading forever.
+* Some rows have real options data.
+* Some rows are stale/LKG.
+* Some rows are confirmed unavailable/no-options.
+* Frontend must display those states clearly.
+
+Expected response:
+
+```ts
+{
+  signals: {
+    [ticker: string]: {
+      ticker: string;
+      options_score?: number;
+      options_signal?: string;
+      options_put_call_ratio?: number;
+      options_iv?: number;
+      options_expected_move?: number;
+      options_volume?: number;
+      options_open_interest?: number;
+      options_call_volume?: number;
+      options_put_volume?: number;
+      options_stale?: boolean;
+      options_data_available?: boolean;
+      options_risk_score?: number;
+      options_risk_level?: string;
+      options_source?: string;
+      options_unavailable_reason?: string;
+      options_updated_at?: string;
+    }
+  };
+  options_meta: {
+    symbols_requested: number;
+    cache_hits: number;
+    cache_misses: number;
+    live_calls_enqueued: number;
+    already_inflight: number;
+    scan_in_progress: number;
+    data_available_count: number;
+    data_unavailable_count: number;
+    stale_count: number;
+    fresh_count: number;
+    source_breakdown: Record<string, number>;
+    unavailable_reason_breakdown: Record<string, number>;
+    deferred_symbols_count: number;
+    inflight_symbols_count: number;
+    no_options_cached_count: number;
+    next_refresh_candidates_count: number;
+  };
+}
+```
+
+Hard constraints:
+
+* Do NOT touch Options Flow page.
+* Do NOT touch Portfolio Terminal.
+* Do NOT make direct Tradier calls from frontend.
+* Do NOT create a new Watchlist options section.
+* Add options columns to the existing Watchlist Tickers section/table only.
+* Close Watch must show the same options columns automatically.
+* Do not block the table while options scan warms.
+
+Audit first:
+
+1. Open `frontend/client/src/pages/watchlist.tsx`.
+2. Find the current Tickers table renderer.
+3. Find:
+
+   * `allTickerSymbols`
+   * `baseMergedTickers`
+   * `realtimeQuotes`
+   * `mergedTickers`
+   * `sortedTickers`
+   * `closeWatchTickers`
+4. Open Portfolio Terminal page and inspect the Options section labels/styles.
+5. Reuse Portfolio’s option column formatting where possible.
+
+Implementation:
+
+1. Add React Query:
+
+```ts
+const { data: optionsResp, isLoading: optionsLoading } = useQuery({
+  queryKey: ['watchlist-options-signals', activeId],
+  queryFn: async () => {
+    const r = await fetch(`/api/watchlist/${activeId}/options-signals`);
+    if (!r.ok) throw new Error(`watchlist options: ${r.status}`);
+    return r.json();
+  },
+  enabled: !!activeId && (innerView === 'tickers' || innerView === 'close-watch'),
+  staleTime: 120_000,
+  refetchOnWindowFocus: false,
+  retry: 1,
+});
+```
+
+2. Build:
+
+```ts
+const optionsSignalsByTicker = optionsResp?.signals ?? {};
+const optionsMeta = optionsResp?.options_meta;
+```
+
+3. Merge options into ticker rows after realtime quote merge:
+
+```ts
+const mergedTickers = useMemo(() => baseMergedTickers.map((t) => {
+  const sym = (t.ticker || '').toString().toUpperCase();
+  const rt = sym ? realtimeQuotes[sym] : undefined;
+  const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
+  const opt = sym ? optionsSignalsByTicker[sym] : undefined;
+  return opt ? { ...quoteMerged, ...opt } : quoteMerged;
+}), [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker]);
+```
+
+Important:
+If `mergeRealtimeQuote()` strips unknown fields, fix it so it preserves all original row fields.
+
+4. Add columns to existing Tickers table:
+   Use Portfolio labels if they differ. Otherwise:
+
+* Opt Score
+* Opt Signal
+* P/C
+* IV
+* EM
+* Opt Vol
+* OI
+
+5. Display states:
+
+* `options_data_available === true`: show real values.
+* `options_stale === true`: show values but with subtle stale badge/dim timestamp.
+* `options_data_available === false`: show `—`, with tooltip/reason from `options_unavailable_reason`.
+* `options_unavailable_reason` includes foreign/OTC/no-options: show `No opts` or `N/A`, not loading forever.
+* loading but no row yet: show subtle `…`.
+
+6. Header/meta status:
+   Near the Tickers table header, add a small non-blocking status line:
+
+* If `optionsMeta?.deferred_symbols_count > 0 || optionsMeta?.inflight_symbols_count > 0`:
+  `Options scan warming — cached rows shown first`
+* Else:
+  `Options scan cached`
+  Optionally include:
+  `{optionsMeta.data_available_count}/{optionsMeta.symbols_requested} with options data`
+
+7. Sorting:
+   Extend sortKey with:
+
+* `optionsScore`
+* `optionsPutCall`
+* `optionsIv`
+* `optionsExpectedMove`
+* `optionsVolume`
+* `optionsOi`
+
+Missing/unavailable rows sort to bottom.
+
+8. Layout:
+   The Watchlist table is dense. Add horizontal scrolling or compact widths carefully.
+   Do not recreate the Rel Vol / VolMC overlap bug.
+   Keep existing columns readable.
+
+9. Validation:
+
+* Watchlist Tickers table shows option columns.
+* Close Watch table shows same columns.
+* Real options rows display values.
+* Stale rows display values with stale indicator.
+* No-options/foreign rows show N/A/No opts, not infinite loading.
+* Existing quote/VolX/VolMC columns still work.
+* Existing sorts still work.
+* New options sorts work.
+* Browser network tab shows no direct Tradier calls.
+* Options Flow page unchanged.
+* Portfolio Terminal unchanged.
