@@ -1,0 +1,109 @@
+Do not checkpoint this yet. The visible UI has not changed.
+
+Problem:
+The Watchlist page Screener/Tickers section and the Options Flow Sectors tab still look exactly the same as before the options-engine fixes. There are still many blank tickers/sectors/themes without options data displayed. Code inspection is not enough; validate the actual runtime UI and API payloads.
+
+Goal:
+Find why the backend options data is not visibly appearing in the Watchlist table and Options Flow Sectors tab.
+
+Hard constraints:
+
+* Do NOT add new features.
+* Do NOT change Options Flow main screener/search.
+* Do NOT make direct Tradier calls from frontend.
+* Do NOT claim complete based only on code inspection.
+* Validate with actual authenticated runtime data.
+
+Runtime validation required:
+
+1. Log into the app in the browser.
+
+2. Open the Watchlist page.
+
+3. Select the Primary/dev watchlist.
+
+4. Visually confirm whether the table I am looking at is the same renderer you audited.
+
+   * If the visible section is called Screener, Tickers, or something else, identify the exact component/function rendering it.
+   * Do not assume it is `renderNewFormatTickerTable` unless proven from DOM/runtime.
+
+5. In browser/network or server logs, capture the actual response from:
+
+   * `/api/watchlist/{activeId}/options-signals`
+   * the frontend/Express proxy path if different
+
+6. Report:
+
+   * HTTP status
+   * `symbols_requested`
+   * `data_available_count`
+   * `data_unavailable_count`
+   * `stale_count`
+   * `fresh_count`
+   * `deferred_symbols_count`
+   * `inflight_symbols_count`
+   * `source_breakdown`
+   * first 10 tickers with `options_data_available === true`
+   * first 10 tickers with `options_data_available === false`
+   * first 10 rendered table rows and their option fields after frontend merge
+
+7. Confirm the React Query is actually firing:
+
+   * `enabled` is true
+   * `activeId` is the Primary watchlist id
+   * query key is correct
+   * response is not undefined
+   * `optionsSignalsByTicker` has keys
+   * merged rows contain `options_score`, `options_signal`, etc.
+
+8. Confirm the table rows actually receive merged option fields:
+
+   * Log or inspect one known ticker with options data.
+   * Example: pick one ticker from `data_available_count`.
+   * Verify that exact ticker row has the option fields before render.
+   * Verify the rendered cells show values, not `—`.
+
+9. If the options fields are present in merged rows but not visible:
+
+   * Fix the table renderer / column mapping / grid layout.
+   * Confirm horizontal scroll is visible.
+   * Confirm columns are not clipped behind CSS.
+   * Confirm the columns are in the visible section I am actually using.
+
+10. If the options fields are missing from merged rows:
+
+* Fix the React Query / proxy / activeId / merge path.
+* Confirm `mergeRealtimeQuote` is not overwriting them.
+* Confirm the backend endpoint response is reaching frontend.
+
+Options Flow Sectors validation:
+11. Open Options Flow page → Sectors tab.
+12. Capture actual response from:
+
+* `/api/options-flow/sectors`
+* any frontend proxy path if different
+
+13. Confirm response includes diagnostics:
+
+* `source = "shared_options_symbol_cache"`
+* `symbols_from_watchlist_cache`
+* `symbols_from_cache`
+* `symbols_from_lkg`
+* `watchlist_overlap_live_calls = 0`
+
+14. Inspect the visible Sectors rows:
+
+* Are rows blank because backend has no data?
+* Or because frontend is not reading the new fields?
+* Or because stale/LKG rows are intentionally dim/hidden?
+
+15. If frontend is still rendering old fields, update Sectors tab rendering to show stale/LKG/shared-cache values instead of blank/gray states.
+
+Required final proof:
+
+* Provide a screenshot or DOM/runtime evidence showing at least 5 Watchlist rows with real options values visible.
+* Provide a screenshot or DOM/runtime evidence showing Sectors tab rows using shared-cache/LKG values where available.
+* Provide exact API payload excerpts for those same tickers/sectors.
+* Only then checkpoint.
+
+Do not mark complete until the visible UI actually changes.
