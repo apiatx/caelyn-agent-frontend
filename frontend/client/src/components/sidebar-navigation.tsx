@@ -199,12 +199,6 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/predict'
         },
-        {
-          id: 'bittensor',
-          label: 'Bittensor',
-          icon: <Brain className="w-4 h-4" />,
-          path: '/app/bittensor'
-        },
       ]
     },
     {
@@ -226,7 +220,12 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
           icon: <TrendingUp className="w-4 h-4" />,
           path: '/app/onchain/analytics'
         },
-
+        {
+          id: 'bittensor',
+          label: 'Bittensor',
+          icon: <Brain className="w-4 h-4" />,
+          path: '/app/bittensor'
+        },
         {
           id: 'onchain-analyze',
           label: 'Analyze',
