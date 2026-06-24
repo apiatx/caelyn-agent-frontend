@@ -679,6 +679,15 @@ const THEME_ETF_TV: Record<string, string> = {
   XLE:   "AMEX:XLE",     XLF:   "AMEX:XLF",       XLV:   "AMEX:XLV",
   XLI:   "AMEX:XLI",     XLB:   "AMEX:XLB",       XLRE:  "AMEX:XLRE",
   XLK:   "AMEX:XLK",     XLU:   "AMEX:XLU",
+  // Thematic overrides
+  EUV:   "AMEX:EUV",     RACK:  "AMEX:RACK",
+};
+
+// Display-name → ETF ticker overrides for the TradingView Market Performance chart.
+// Keyed by lowercase display_name so backend capitalisation doesn't matter.
+const THEME_NAME_ETF_OVERRIDE: Record<string, string> = {
+  "photonics / lasers": "EUV",
+  "power / cooling":    "RACK",
 };
 function themeEtfTvSymbol(ticker: string): string {
   return THEME_ETF_TV[ticker.toUpperCase()] ?? ticker;
@@ -792,7 +801,7 @@ function normalizeThemeToRow(theme: ThemeRow, idx: number): DisplayRow {
     spkPrices,
     spkPos:                 (ch7 ?? 0) >= 0,
     dotColor:               THEME_PALETTE[idx % THEME_PALETTE.length],
-    tvSymbol:               (theme as any).tv_symbol || THEME_ETF_TV[ticker.toUpperCase()] || "",
+    tvSymbol:               (theme as any).tv_symbol || (() => { const ov = THEME_NAME_ETF_OVERRIDE[(theme.display_name ?? "").toLowerCase()]; return ov ? themeEtfTvSymbol(ov) : (THEME_ETF_TV[ticker.toUpperCase()] || ""); })(),
     stage:                     (theme as any).stage                     ?? null,
     stage_label:               (theme as any).stage_label               ?? null,
     stage_score:               (theme as any).stage_score               ?? null,
