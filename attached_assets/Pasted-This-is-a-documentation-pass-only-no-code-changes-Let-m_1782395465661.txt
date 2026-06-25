@@ -1,0 +1,159 @@
+This is a documentation pass only — no code changes. Let me gather the final state with a few parallel greps:
+
+
+4 actions
+The server is actually in active session right now (budget_enforcement_active: true, options_flow: 40/40 saturated with 11 deferred, maintenance: 737 deferred). That's live enforcement happening. Let me gather the lane map properly:
+
+
+4 actions
+I have everything except confirmation of the reserved-path route types. Quick parallel reads on those main.py lines:
+
+
+6 actions
+One final lookup — find the containing routes for _ok2ts (L8974) and _fetch_spy_qqq_extended (L15335):
+
+
+2 actions
+All data collected. The server is live in an active market session right now — that's real enforcement data, not simulated. Here is the complete Phase 3 checkpoint report.
+
+Phase 3 Final Checkpoint Report
+1. Final Lane Map — Every Tagged Call Site
+quotes — live price / volume / bid-ask refresh (30 RPM budget)
+File	Function	Method	Why quotes
+services/realtime_quotes_service.py:398	polling loop	get_quotes	live watchlist/screener price feed
+services/catalyst_calendar_service.py:795	earnings enrichment	get_quotes	live price for earnings calendar rows
+services/congressional_trading_service.py:318	congressional enrichment	get_quotes	live price for congressional trade rows
+services/earnings_clean_service.py:1006	earnings enrichment	get_quotes	live price for earnings display rows
+services/home_service.py:765	home dashboard	get_quotes	live quotes for homepage widgets
+services/insider_activity_service.py:694	insider enrichment	get_quotes	live price for insider activity rows
+services/playbook/discovery_enrichment.py:165,208	discovery enrichment ×2	get_quotes	live price for discovery playbook rows
+services/social_screener_service.py:1090	social screener	get_quotes	live price enrichment for social feed
+services/sector_rotation/providers.py:68	sector rotation	get_quotes	live sector ETF + stock quotes
+services/screener_hub_service.py:3139,3515	screener hub ×2	get_quotes	live quote enrichment for screener rows
+services/whale_watch_service.py:1461	whale watch live prices	get_quotes	current price for whale holdings display
+data/caelyn_terminal.py:1196,1439	terminal portfolio + history quotes	get_quotes	live bid/ask/last for terminal holdings and closed trades
+main.py:8073	portfolio page	get_quotes	live quotes for portfolio view
+main.py:8724	portfolio RV	get_quotes	realized-volatility enrichment
+main.py:10256	caelyn terminal endpoint	get_quotes	live terminal page quote fetch
+main.py:15371	trading dashboard sector ETFs	get_quotes	live sector ETF benchmark quotes
+options_flow — master options flow screener (40 RPM budget)
+File	Function	Method	Why options_flow
+data/tradier_flow_engine.py:191	TradierFlowEngine._scan_one()	all options calls inside engine	all master screener scans route through this wrapper
+main.py:11856,11871	master screener loop	engine.run_live_scan()	background master scan uses the flow engine; tag propagates via ContextVar into the engine
+saved_options — watchlist / portfolio option positions (25 RPM budget)
+File	Function	Method	Why saved_options
+data/portfolio_options_service.py:580	_scan_one_live()	get_option_expirations	per-symbol expiration fetch for watchlist/portfolio scan
+data/portfolio_options_service.py:600	_scan_one_live()	get_option_chain (gather)	per-symbol chain fetch for watchlist/portfolio scan
+services/smart_options_service.py:253	smart options	get_quotes (OCC symbols)	live price for saved option contracts
+main.py:5407	portfolio options OCC quotes	get_quotes	live price for portfolio's OCC option symbols
+main.py:11580	home options fast seeds	get_quotes	pre-market option quote seeds for homepage
+maintenance — background history warmers, supplement loops, OI enrichment (10 RPM budget)
+File	Function	Method	Why maintenance
+data/caelyn_terminal.py:1259	_fetch_tradier_histories()	get_history ×107 tickers	startup-only background prewarm of historical P&L data; not live price data; 107 individual HTTP calls
+services/whale_watch_service.py:1576	whale history gather	get_history ×N	background whale portfolio return history; runs after main whale page render
+services/screener_hub_service.py:844	_fetch_oi_from_tradier()	get_option_expirations	background OI enrichment for screener rows; not live quote data
+services/screener_hub_service.py:862	_fetch_oi_from_tradier()	get_option_chain per expiry	background OI enrichment; runs asynchronously after main screener response
+main.py:12207	theme supplement loop — quote batch	get_quotes	supplement loop re-scores stale watchlist tickers in background
+main.py:12246	theme supplement loop — flow scan	engine.run_live_scan()	supplement loop options flow scan in background; ContextVar propagates into engine
+2. Remaining Default / Reserved Paths
+Every route below is intentionally untagged (defaults to reserved, 5 RPM budget). Each is user-triggered or one-off; they must never starve background lanes.
+
+Route	Line	Methods called	Nature
+GET /api/portfolio/options-position-detail/{underlying}	L8931	get_quotes (OCC syms)	popup: user clicks open options position detail card
+GET /api/options/screener/{symbol}	L12678	get_quotes, get_option_expirations, get_option_chain	popup: user requests per-symbol options screener detail
+GET /api/options/chain/{symbol}	L13771	get_option_expirations, get_option_chain	popup/direct API: user opens a specific option chain
+GET /api/options/expirations/{symbol}	L13800	get_option_expirations, get_option_strikes	popup: user fetches expiration dates for a symbol
+GET /api/options/strikes/{symbol}	L13828	get_option_expirations, get_option_strikes	popup: user fetches strike list for a symbol
+GET /api/options/history-live/{symbol}	L13852	get_history	popup: user views single-symbol option price chart
+GET /api/options/contract-detail/{symbol}	L13915	get_history	popup: user views OCC contract historical data
+GET /api/trading-dashboard (SPY/QQQ benchmark)	L15305	get_history("SPY"), get_history("QQQ")	page load: benchmark fetch; 2 calls only; user navigates to trading dashboard
+All 8 are HTTP request handlers. None run in background tasks. Each fires only when a user action triggers the endpoint. The 5 RPM reserved budget is a soft ceiling that defers excess rapid-fire clicks during crunch periods — normal single-user interaction stays well under it.
+
+3. Off-Hours Behavior
+budget_enforcement_active: False — confirmed. Off-hours and weekends the ContextVar lane is still set and recorded, but _get() skips the check_budget() call and proceeds directly to TRADIER_LIMITER.acquire(). The global 110 RPM cap remains the sole ceiling.
+
+Phase 2 off-hours suppression is still active: offhours_options_calls_suppressed_count counter in rate-status confirms options-heavy loops (master screener, supplement) detect off-hours via tradier_market_session.is_active_session() and sleep instead of scanning.
+maintenance warmers exceed 10 RPM off-hours: expected. The caelyn terminal history burst (107 calls) and screener hub OI enrichment run freely at startup; maintenance: 108/10 OVER_BUDGET, deferred=0 is the correct output — informational counter, zero enforcement.
+No 429s: the global limiter caps at 110/min regardless; warmers queue behind TRADIER_LIMITER.acquire() instead of racing.
+Intentional: off-hours is the correct window to do bulk warm-ups without competing with live user traffic. Enforcement during off-hours would needlessly delay prewarm data.
+4. Active-Session Behavior — FORCE_ENFORCE Validation
+Tested with FORCE_ENFORCE = True (now reverted; re-enable with env var TRADIER_BUDGET_FORCE_ENFORCE=1):
+
+budget_enforcement_active : True
+last_429_at               : None
+quotes          3/30 RPM   deferred=0     ← protected ✅
+options_flow    0/40 RPM   deferred=0     ← protected ✅
+saved_options   3/25 RPM   deferred=0     ← protected ✅
+maintenance    10/10 RPM   deferred=541   ← correctly deferred ✅
+reserved        0/5  RPM   deferred=0     ← clean ✅
+
+Deferred call safety: _get() returns None when deferring. Every consumer handles this gracefully:
+
+get_history: if not data: return [] — deferred history returns empty bars; callers treat empty as "no data, use LKG"
+get_option_expirations: if not data: return [] — callers check falsy → return None sentinel (screener skips OI row, portfolio scan returns no_expirations sentinel)
+get_option_chain: if not data: return {"calls": [], "puts": []} — callers skip empty chains
+No rows blank; all deferred paths serve the last good cached value or omit the enrichment field silently
+Live active-session data (captured today during market hours):
+
+budget_enforcement_active : True
+calls_last_60s_by_lane    : {options_flow: 40, quotes: 0, ...}
+deferred_by_lane          : {options_flow: 43, maintenance: 737, ...}
+lane_saturation           : {options_flow: True}
+budget_rejections_or_deferrals : 780
+last_429_at               : None
+
+The master screener consumed its full 40 RPM options_flow budget and deferred 43 overflow calls. Maintenance warmers deferred 737 times (history calls held back during market hours). Quotes lane completely free. No 429s.
+
+5. Cache / Coalescing Proof
+Only physical HTTP calls that reach TradierProvider._get() increment the budget counter. Three mechanisms prevent double-counting:
+
+get_quotes (per-ticker cache)
+
+# get_quotes(): cache-first before _get() is ever called
+hit = cache.get(f"tradier:quote:sym:{sym}")
+if hit is not None:
+    result.append(hit)   # ← returns here; _get() never called
+    ...
+if not missing:
+    return result        # 100% hit: zero budget consumed
+
+get_option_expirations (coalescing via _EXPIRY_FUTURES)
+
+if symbol in _EXPIRY_FUTURES:
+    _coalesced_expiry_count += 1
+    return await asyncio.shield(_EXPIRY_FUTURES[symbol])  # ← short-circuit; _get() not called
+
+The second (and Nth) concurrent caller for the same symbol awaits the already-in-flight future. Only the first caller reaches _get() and counts against the budget.
+
+get_option_chain (coalescing via _CHAIN_FUTURES)
+
+if coalesce_key in _CHAIN_FUTURES:
+    _coalesced_chain_count += 1
+    return await asyncio.shield(_CHAIN_FUTURES[coalesce_key])  # ← short-circuit; _get() not called
+
+Same pattern. Lifetime coalesce counts are exposed in the rate-status response under coalesced_expiry_requests_lifetime and coalesced_chain_requests_lifetime.
+
+Conclusion: cache hits + coalesced waiters = zero budget cost. Only unique, physical HTTP calls to Tradier advance the per-lane counter.
+
+6. Diagnostics — /api/rate-status Fields
+All 7 required fields confirmed present (live active-session sample):
+
+Field	Value (live active-session)	Notes
+budget_enforcement_active	true	switches on when is_active_session() OR FORCE_ENFORCE=1
+budget_by_lane	{quotes:30, options_flow:40, saved_options:25, maintenance:10, reserved:5}	static config from tradier_budget.py
+calls_last_60s_by_lane	{options_flow:40, quotes:0, ...}	sliding 60s window per lane
+deferred_by_lane	{options_flow:43, maintenance:737, ...}	lifetime deferred counter per lane
+lane_saturation	{options_flow:true, ...}	true when calls_60s >= budget
+budget_rejections_or_deferrals	780	sum of all deferred_by_lane values
+last_429_at	null	timestamp of last Tradier 429; null = none observed
+Additional useful fields in the same response: tradier_market_session, is_tradier_active_session, calls_used_last_60s (global), offhours_options_calls_suppressed_count, coalesced_expiry_requests_lifetime, coalesced_chain_requests_lifetime.
+
+7. Remaining Risks
+Risk	Severity	Detail
+Off-hours relaxed enforcement	Low / by design	Background warmers consume full global 110 RPM budget off-hours. If a new background loop is added and not tagged to maintenance, it defaults to reserved (5 RPM) — safe during active sessions but undifferentiated. Audit any new background tasks at authoring time.
+get_history is one HTTP call per symbol, always	Medium	No batching exists in Tradier's /markets/history endpoint. Adding more history callers (e.g., a new analytics page) will hit maintenance at 1 call/symbol, exhausting the 10 RPM budget quickly during active sessions. New history callers must tag maintenance explicitly and tolerate deferral.
+No active page priority	Medium	All quotes lane calls compete equally. A heavy background refresh (e.g., realtime_quotes_service cycling 300 watchlist tickers) can consume the full 30 RPM budget before a foreground page load's quote call gets through. Active-page prioritization is deferred.
+No unified symbol registry	Low-Medium	The set of tickers fetched across lanes is assembled independently by each service. There is no deduplication layer across lanes. A symbol appearing in both the portfolio scan (saved_options) and screener (quotes) triggers two separate Tradier calls unless the per-ticker quote cache provides a hit.
+maintenance budget (10 RPM) may be low for combined steady-state	Low	During active sessions, supplement loop quotes (batched, ~2–3 calls/cycle) + OI enrichment + any new maintenance calls all share 10 RPM. Currently observed maintenance: 10/10 saturation during market hours with 737 deferred (mostly startup history burst). Steady-state OI enrichment will add ongoing pressure. Tune up to 15 RPM if needed without architectural changes.
+
+Checkpoint made
