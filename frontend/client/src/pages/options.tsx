@@ -2924,6 +2924,8 @@ interface SFTicker {
   net_premium: number | null;
   put_call_ratio: number | null;
   total_volume: number | null;
+  call_volume: number | null;
+  put_volume: number | null;
   options_available: boolean | null;
   scan_status: string | null;
   updated_at: string | null;
@@ -2979,6 +2981,7 @@ interface SFData {
   sector_total_method: string | null;
   scan_coverage: SFCoverage | null;
   sectors: SFSector[];
+  themes?: SFTheme[];
 }
 
 function sfNetColor(net: number | null): string {
@@ -2996,13 +2999,20 @@ function sfBiasColor(bias: string | null): string {
 }
 function SFScanBadge({ status, available }: { status: string | null; available: boolean | null }) {
   const s = (status || "").toLowerCase();
-  if (s === "live")           return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.green}15`, border: `1px solid ${C.green}30`, color: C.green, fontFamily: font }}>Live</span>;
-  if (s === "supplement")     return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}30`, color: C.blue, fontFamily: font }}>Supplement</span>;
-  if (s === "supplement_lkg") return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.30)", color: "#818cf8", fontFamily: font }}>Supplement LKG</span>;
-  if (s === "pending")        return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.yellow}12`, border: `1px solid ${C.yellow}30`, color: C.yellow, fontFamily: font }}>Pending scan</span>;
-  if (s === "no_options" || available === false)
-                              return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>No Options</span>;
-  if (s)                      return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>{s}</span>;
+  if (s === "live" || s === "fresh")
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.green}15`, border: `1px solid ${C.green}30`, color: C.green, fontFamily: font }}>Live Options Data</span>;
+  if (s === "supplement")
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}30`, color: C.blue, fontFamily: font }}>Live Options Data</span>;
+  if (s === "cached_data" || s === "supplement_lkg")
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.30)", color: "#818cf8", fontFamily: font }}>Cached Options Data</span>;
+  if (s === "pending")
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.yellow}12`, border: `1px solid ${C.yellow}30`, color: C.yellow, fontFamily: font }}>Pending Scan</span>;
+  if (s === "confirmed_no_options" || s === "no_options" || available === false)
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>No Listed Options</span>;
+  if (s === "missing_data")
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.orange}12`, border: `1px solid ${C.orange}25`, color: C.orange, fontFamily: font }}>Missing Options Data</span>;
+  if (s)
+    return <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: `${C.dim}12`, border: `1px solid ${C.dim}20`, color: C.dim, fontFamily: font }}>{s}</span>;
   return null;
 }
 
@@ -3156,19 +3166,52 @@ function SFTickerModal({ ticker, onClose }: { ticker: SFTicker; onClose: () => v
   );
 }
 
-function SectorsFlowTab() {
-  const [data,       setData]       = useState<SFData | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeSector, setActiveSector] = useState<SFSector | null>(null);
-  const [activeTheme,  setActiveTheme]  = useState<SFTheme  | null>(null);
+function sfCardStyle(net: number | null) {
+  if (net == null)   return { bg: C.card, bdr: C.border };
+  if (net > 50_000)  return { bg: "rgba(34,197,94,0.06)", bdr: "rgba(34,197,94,0.22)" };
+  if (net < -50_000) return { bg: "rgba(239,68,68,0.06)", bdr: "rgba(239,68,68,0.22)" };
+  return                    { bg: C.card, bdr: C.border };
+}
+function SFThemeCard({ theme: t, onClick }: { theme: SFTheme; onClick: () => void }) {
+  const cs = sfCardStyle(t.net_premium);
+  return (
+    <div
+      onClick={onClick}
+      style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
+      onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
+      onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ color: C.bright, fontFamily: sans, fontSize: 12, fontWeight: 700 }}>{t.theme_name}</span>
+        {t.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(t.bias), border: `1px solid ${sfBiasColor(t.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{t.bias}</span>}
+      </div>
+      <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: t.put_call_ratio != null ? (t.put_call_ratio < 0.7 ? C.green : t.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
+        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
+        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(t.call_premium)}</div></div>
+        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(t.put_premium)}</div></div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
+        <span>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers with flow</span>
+        <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
+      </div>
+    </div>
+  );
+}
+
+function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
+  const [data,           setData]           = useState<SFData | null>(null);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
+  const [refreshing,     setRefreshing]     = useState(false);
+  const [activeSector,   setActiveSector]   = useState<SFSector | null>(null);
+  const [activeTheme,    setActiveTheme]    = useState<SFTheme  | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<SFTicker | null>(null);
 
   const load = useCallback(async (bg = false) => {
     if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
     try {
-      const r = await fetch("/api/options-flow/sectors", { headers: authHeaders() });
+      const r = await fetch(`/api/options-flow/sectors?view=${view}`, { headers: authHeaders() });
       const ct = r.headers.get("content-type") || "";
       if (!ct.includes("application/json")) {
         const preview = (await r.text()).slice(0, 120);
@@ -3180,34 +3223,36 @@ function SectorsFlowTab() {
       }
       setData(await r.json());
     } catch (e: any) {
-      if (!bg) setError(e.message || "Failed to load sectors");
+      if (!bg) setError(e.message || `Failed to load ${view} flow`);
     } finally {
       bg ? setRefreshing(false) : setLoading(false);
     }
-  }, []);
+  }, [view]);
 
   useEffect(() => { load(false); }, [load]);
 
+  // Derive totals from whichever array the backend returned
   const totals = useMemo(() => {
-    if (!data?.sectors?.length) return null;
+    const src: Array<{ call_premium: number | null; put_premium: number | null; net_premium: number | null }> =
+      view === "themes" ? (data?.themes ?? []) : (data?.sectors ?? []);
+    if (!src.length) return null;
     let call = 0, put = 0, net = 0;
-    data.sectors.forEach(s => { call += s.call_premium ?? 0; put += s.put_premium ?? 0; net += s.net_premium ?? 0; });
+    src.forEach(s => { call += s.call_premium ?? 0; put += s.put_premium ?? 0; net += s.net_premium ?? 0; });
     return { call, put, net, pcr: call > 0 ? put / call : null };
-  }, [data]);
+  }, [data, view]);
 
-  const level: "sectors" | "themes" | "tickers" = activeTheme ? "tickers" : activeSector ? "themes" : "sectors";
-
-  const cardStyle = (net: number | null) => {
-    if (net == null)      return { bg: C.card,                       bdr: C.border };
-    if (net > 50_000)     return { bg: "rgba(34,197,94,0.06)",       bdr: "rgba(34,197,94,0.22)"  };
-    if (net < -50_000)    return { bg: "rgba(239,68,68,0.06)",       bdr: "rgba(239,68,68,0.22)"  };
-    return                       { bg: C.card,                       bdr: C.border };
-  };
+  // Navigation levels
+  // sectors view: top → (sector card clicked) → themes → (theme card clicked) → tickers
+  // themes  view: top → (theme card clicked) → tickers
+  const level: "top" | "themes" | "tickers" =
+    view === "themes"
+      ? (activeTheme ? "tickers" : "top")
+      : (activeTheme ? "tickers" : activeSector ? "themes" : "top");
 
   if (loading) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 10, color: C.dim, fontFamily: font, fontSize: 12 }}>
       <Loader2 className="w-6 h-6" style={{ color: C.blue, animation: "spin 1s linear infinite" }} />
-      Loading sectors flow…
+      {view === "themes" ? "Loading themes flow…" : "Loading sectors flow…"}
     </div>
   );
 
@@ -3222,6 +3267,23 @@ function SectorsFlowTab() {
   );
 
   if (!data) return null;
+
+  // Sort top-level items by P/C asc (nulls last) — applies to both sectors and themes views
+  const sortedTopItems = view === "themes"
+    ? [...(data.themes ?? [])].sort((a, b) => {
+        const ap = a.put_call_ratio; const bp = b.put_call_ratio;
+        if (ap == null && bp == null) return 0;
+        if (ap == null) return 1; if (bp == null) return -1;
+        return ap - bp;
+      })
+    : [...(data.sectors ?? [])].sort((a, b) => {
+        const ap = a.put_call_ratio; const bp = b.put_call_ratio;
+        if (ap == null && bp == null) return 0;
+        if (ap == null) return 1; if (bp == null) return -1;
+        return ap - bp;
+      });
+
+  const rootLabel = view === "themes" ? "Themes" : "Sectors";
 
   return (
     <>
@@ -3238,9 +3300,9 @@ function SectorsFlowTab() {
         <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
         <div style={{ display: "flex", gap: 16 }}>
           {([
-            { label: "Call", val: totals?.call ?? null, color: C.green,  fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "Put",  val: totals?.put  ?? null, color: C.red,    fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "P/C",  val: totals?.pcr  ?? null, color: C.text,   fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
+            { label: "Call", val: totals?.call ?? null, color: C.green, fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Put",  val: totals?.put  ?? null, color: C.red,   fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "P/C",  val: totals?.pcr  ?? null, color: C.text,  fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
           ] as { label: string; val: number | null; color: string; fmt: (v: number | null) => string }[]).map(({ label, val, color, fmt }) => (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
@@ -3252,7 +3314,6 @@ function SectorsFlowTab() {
           <>
             <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 200 }}>
-              {/* Primary coverage line */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, fontFamily: font, fontWeight: 700, color: C.bright }}>
                   {data.scan_coverage.tickers_with_data ?? "—"} / {data.scan_coverage.theme_universe_total ?? "—"}
@@ -3267,7 +3328,6 @@ function SectorsFlowTab() {
                   <span style={{ fontSize: 9, fontFamily: font, color: C.dim }}>ETA ~{Math.round(data.scan_coverage.estimated_full_coverage_minutes)} min</span>
                 )}
               </div>
-              {/* Secondary breakdown */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {data.scan_coverage.master_count != null && data.scan_coverage.master_count > 0 && (
                   <span style={{ fontSize: 9, fontFamily: font, color: C.green }}>Live: {data.scan_coverage.master_count}</span>
@@ -3303,7 +3363,7 @@ function SectorsFlowTab() {
         </div>
       </div>
 
-      {/* ── Method labels (subtle) ── */}
+      {/* ── Method labels ── */}
       {(data.net_flow_method || data.put_call_ratio_method || data.sector_total_method) && (
         <div style={{ display: "flex", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
           {data.net_flow_method       && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>net: {data.net_flow_method}</span>}
@@ -3313,10 +3373,10 @@ function SectorsFlowTab() {
       )}
 
       {/* ── Breadcrumb ── */}
-      {level !== "sectors" && (
+      {level !== "top" && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 11, fontFamily: font }}>
-          <button onClick={() => { setActiveSector(null); setActiveTheme(null); }} style={{ color: C.blue, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Sectors</button>
-          {activeSector && (
+          <button onClick={() => { setActiveSector(null); setActiveTheme(null); }} style={{ color: C.blue, background: "none", border: "none", cursor: "pointer", padding: 0 }}>{rootLabel}</button>
+          {view === "sectors" && activeSector && (
             <>
               <span style={{ color: C.dim }}>›</span>
               {level === "tickers"
@@ -3334,85 +3394,54 @@ function SectorsFlowTab() {
         </div>
       )}
 
-      {/* ── Sector cards ── */}
-      {level === "sectors" && (
+      {/* ── Top-level cards (Sector cards OR Theme cards depending on view) ── */}
+      {level === "top" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-          {[...data.sectors].sort((a, b) => {
-            const ap = a.put_call_ratio;
-            const bp = b.put_call_ratio;
-            if (ap == null && bp == null) return 0;
-            if (ap == null) return 1;
-            if (bp == null) return -1;
-            return ap - bp;
-          }).map(s => {
-            const cs = cardStyle(s.net_premium);
-            return (
-              <div
-                key={s.sector_id}
-                onClick={() => setActiveSector(s)}
-                style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
-                onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
-                onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ color: C.bright, fontFamily: sans, fontSize: 13, fontWeight: 700 }}>{s.sector_name}</span>
-                  {s.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(s.bias), border: `1px solid ${sfBiasColor(s.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{s.bias}</span>}
-                </div>
-                <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: s.put_call_ratio != null ? (s.put_call_ratio < 0.7 ? C.green : s.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(s.call_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(s.put_premium)}</div></div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
-                  <span>{s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers</span>
-                  <span style={{ opacity: 0.4 }}>·</span>
-                  <span>{s.themes?.length ?? 0} themes</span>
-                  <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
-                </div>
-              </div>
-            );
-          })}
+          {view === "sectors"
+            ? (sortedTopItems as SFSector[]).map(s => {
+                const cs = sfCardStyle(s.net_premium);
+                return (
+                  <div
+                    key={s.sector_id}
+                    onClick={() => setActiveSector(s)}
+                    style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
+                    onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
+                    onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{ color: C.bright, fontFamily: sans, fontSize: 13, fontWeight: 700 }}>{s.sector_name}</span>
+                      {s.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(s.bias), border: `1px solid ${sfBiasColor(s.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{s.bias}</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: s.put_call_ratio != null ? (s.put_call_ratio < 0.7 ? C.green : s.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
+                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
+                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(s.call_premium)}</div></div>
+                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(s.put_premium)}</div></div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
+                      <span>{s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers</span>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span>{s.themes?.length ?? 0} themes</span>
+                      <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
+                    </div>
+                  </div>
+                );
+              })
+            : (sortedTopItems as SFTheme[]).map(t => <SFThemeCard key={t.theme_id ?? t.theme_name} theme={t} onClick={() => setActiveTheme(t)} />)
+          }
         </div>
       )}
 
-      {/* ── Theme cards ── */}
-      {level === "themes" && activeSector && (
+      {/* ── Theme cards level (sectors view only — inside a clicked sector) ── */}
+      {level === "themes" && view === "sectors" && activeSector && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
-          {activeSector.themes.map(t => {
-            const cs = cardStyle(t.net_premium);
-            return (
-              <div
-                key={t.theme_id}
-                onClick={() => setActiveTheme(t)}
-                style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
-                onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
-                onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ color: C.bright, fontFamily: sans, fontSize: 12, fontWeight: 700 }}>{t.theme_name}</span>
-                  {t.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(t.bias), border: `1px solid ${sfBiasColor(t.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{t.bias}</span>}
-                </div>
-                <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: t.put_call_ratio != null ? (t.put_call_ratio < 0.7 ? C.green : t.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(t.call_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(t.put_premium)}</div></div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
-                  <span>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers with flow</span>
-                  <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
-                </div>
-              </div>
-            );
-          })}
+          {activeSector.themes.map(t => <SFThemeCard key={t.theme_id ?? t.theme_name} theme={t} onClick={() => setActiveTheme(t)} />)}
         </div>
       )}
 
-      {/* ── Ticker table ── */}
+      {/* ── Ticker table (both views) ── */}
       {level === "tickers" && activeTheme && (
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-          {/* Theme summary sub-header */}
           {activeTheme.tickers.length > 0 && (() => {
             const withData = activeTheme.tickers.filter(tk => tk.net_premium != null).length;
             const pending  = activeTheme.tickers.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
@@ -3428,7 +3457,7 @@ function SectorsFlowTab() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: C.card, borderBottom: `1px solid ${C.border}` }}>
-                {["Symbol", "Net", "Call", "Put", "P/C", "Volume", "Status", "Updated"].map(h => (
+                {["Symbol", "Net", "Call", "Put", "P/C", "Call Vol", "Put Vol", "Status", "Updated"].map(h => (
                   <th key={h} style={{ padding: "8px 10px", textAlign: h === "Symbol" ? "left" : h === "Status" || h === "Updated" ? "center" : "right", fontSize: 9, fontFamily: font, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -3437,7 +3466,9 @@ function SectorsFlowTab() {
               {activeTheme.tickers.map((tk, i) => {
                 const sym = tk.symbol || tk.ticker || tk.underlying || "—";
                 const isPending = (tk.scan_status || "").toLowerCase() === "pending";
-                const isNoOpts  = (tk.scan_status || "").toLowerCase() === "no_options" || tk.options_available === false;
+                const isNoOpts  = (tk.scan_status || "").toLowerCase() === "confirmed_no_options"
+                               || (tk.scan_status || "").toLowerCase() === "no_options"
+                               || tk.options_available === false;
                 return (
                   <tr
                     key={sym + i}
@@ -3465,7 +3496,10 @@ function SectorsFlowTab() {
                       {tk.put_call_ratio != null ? tk.put_call_ratio.toFixed(2) : "—"}
                     </td>
                     <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>
-                      {tk.total_volume != null ? tk.total_volume.toLocaleString() : "—"}
+                      {tk.call_volume != null ? tk.call_volume.toLocaleString() : tk.total_volume != null ? tk.total_volume.toLocaleString() : "—"}
+                    </td>
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>
+                      {tk.put_volume != null ? tk.put_volume.toLocaleString() : "—"}
                     </td>
                     <td style={{ padding: "8px 10px", textAlign: "center" }}>
                       <SFScanBadge status={tk.scan_status} available={tk.options_available} />
@@ -3561,7 +3595,8 @@ export default function OptionsPage() {
     };
   })(), [screenerData]);
 
-  const [topTab, setTopTab] = useState<"sectors" | "screener">("sectors");
+  const [topTab, setTopTab]           = useState<"sectors" | "screener">("sectors");
+  const [netFlowSubTab, setNetFlowSubTab] = useState<"sectors" | "themes">("sectors");
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -3669,8 +3704,29 @@ export default function OptionsPage() {
         </div>
       </div>
 
-      {/* ── Sectors tab ── */}
-      {topTab === "sectors" && <SectorsFlowTab />}
+      {/* ── Net Flow tab: Sectors / Themes sub-tabs ── */}
+      {topTab === "sectors" && (
+        <>
+          <div style={{ padding: "3px 16px 0", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 1 }}>
+            {(["sectors", "themes"] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setNetFlowSubTab(t)}
+                style={{
+                  padding: "4px 14px", fontSize: 10, fontFamily: font, fontWeight: 600,
+                  cursor: "pointer", border: "none", background: "transparent",
+                  color: netFlowSubTab === t ? C.blue : C.dim,
+                  borderBottom: netFlowSubTab === t ? `2px solid ${C.blue}` : "2px solid transparent",
+                  transition: "all 0.15s",
+                }}
+              >
+                {t === "sectors" ? "Sectors" : "Themes"}
+              </button>
+            ))}
+          </div>
+          <SectorsFlowTab key={netFlowSubTab} view={netFlowSubTab} />
+        </>
+      )}
 
       {/* ── Screener tab ── */}
       {topTab === "screener" && (
