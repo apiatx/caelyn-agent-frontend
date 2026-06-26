@@ -3723,31 +3723,21 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         />
       )}
 
-      {/* ══ THEMES — grouped by classification ══ */}
+      {/* ══ THEMES — grouped: combine Theme + Sub_Theme, exclude Sector ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
-        const groups: Record<string, SFTheme[]> = {};
-        sortedThemes.forEach(t => {
-          const k = t.classification || "Other";
-          if (!groups[k]) groups[k] = [];
-          groups[k].push(t);
-        });
+        const combined = sortedThemes.filter(t =>
+          (t.classification || "").toLowerCase() !== "sector"
+        );
         return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {Object.entries(groups).map(([groupName, themes]) => (
-              <div key={groupName}>
-                <div style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{groupName}</div>
-                <SFTreemap
-                  items={themes}
-                  sizeOf={t => sfTileSize(t.net_premium, t.call_premium, t.put_premium)}
-                  getPcr={t => t.put_call_ratio}
-                  onClick={t => setActiveTheme(t)}
-                  renderTile={sfRenderTheme}
-                  keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-                  height={Math.max(160, Math.min(380, themes.length * 42))}
-                />
-              </div>
-            ))}
-          </div>
+          <SFTreemap
+            items={combined}
+            sizeOf={t => sfTileSize(t.net_premium, t.call_premium, t.put_premium)}
+            getPcr={t => t.put_call_ratio}
+            onClick={t => setActiveTheme(t)}
+            renderTile={sfRenderTheme}
+            keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
+            height={Math.max(520, Math.min(1100, combined.length * 18 + 100))}
+          />
         );
       })()}
 
