@@ -3172,128 +3172,223 @@ function SFTickerModal({ ticker, onClose }: { ticker: SFTicker; onClose: () => v
   );
 }
 
-// ── P/C heatmap color helpers ────────────────────────────────────────────────
+// ── Squarified treemap layout ─────────────────────────────────────────────────
+// Returns rects indexed by ORIGINAL item order (not sorted order).
+function computeTreemap(
+  values: number[],
+  W: number,
+  H: number,
+): Array<{ x: number; y: number; w: number; h: number }> {
+  const n = values.length;
+  if (n === 0 || W <= 0 || H <= 0) return [];
+  const total = values.reduce((s, v) => s + v, 0);
+  if (total === 0) return values.map(() => ({ x: 0, y: 0, w: 0, h: 0 }));
+
+  const area = W * H;
+  const rects: Array<{ x: number; y: number; w: number; h: number }> = new Array(n);
+
+  // Sort descending by value; preserve original index so we write back correctly
+  const order = Array.from({ length: n }, (_, i) => i)
+    .sort((a, b) => values[b] - values[a]);
+  const scaled = order.map(i => (values[i] / total) * area);
+
+  // Worst aspect ratio in a proposed row
+  function worst(row: number[], rowLen: number): number {
+    if (row.length === 0 || rowLen === 0) return Infinity;
+    const s = row.reduce((a, b) => a + b, 0);
+    const thick = s / rowLen;
+    if (thick === 0) return Infinity;
+    let w = 0;
+    for (const v of row) {
+      if (v <= 0) continue;
+      const len = v / thick;
+      const r = len > thick ? len / thick : thick / Math.max(len, 1e-9);
+      if (r > w) w = r;
+    }
+    return w;
+  }
+
+  function layout(
+    start: number, end: number,
+    x: number, y: number, lw: number, lh: number,
+  ): void {
+    if (start >= end) return;
+    if (end - start === 1) {
+      rects[order[start]] = { x, y, w: lw, h: lh };
+      return;
+    }
+
+    const horiz = lw >= lh;
+    const rowLen = horiz ? lw : lh;
+
+    // Greedily add items to the row while aspect ratio improves
+    let rowEnd = start + 1;
+    let rowItems = [scaled[start]];
+    for (let i = start + 1; i < end; i++) {
+      const next = [...rowItems, scaled[i]];
+      if (worst(next, rowLen) > worst(rowItems, rowLen)) break;
+      rowItems = next;
+      rowEnd = i + 1;
+    }
+
+    const rowSum = rowItems.reduce((a, b) => a + b, 0);
+    const thick = rowSum / rowLen; // thickness of this row in pixels
+    let pos = horiz ? x : y;
+
+    for (let i = 0; i < rowItems.length; i++) {
+      const len = thick > 0 ? rowItems[i] / thick : 0;
+      rects[order[start + i]] = horiz
+        ? { x: pos, y, w: len, h: thick }
+        : { x, y: pos, w: thick, h: len };
+      pos += len;
+    }
+
+    if (horiz) layout(rowEnd, end, x, y + thick, lw, lh - thick);
+    else        layout(rowEnd, end, x + thick, y, lw - thick, lh);
+  }
+
+  layout(0, n, 0, 0, W, H);
+  return rects;
+}
+
+// ── P/C color helpers — exact rule: only pcr===1.0 is gray ───────────────────
 function sfPcrBg(pcr: number | null): string {
-  if (pcr == null) return "rgba(255,255,255,0.04)";
-  if (pcr < 0.6)   return "rgba(34,197,94,0.20)";
-  if (pcr < 0.85)  return "rgba(34,197,94,0.09)";
-  if (pcr < 1.15)  return "rgba(255,255,255,0.04)";
-  if (pcr < 1.5)   return "rgba(239,68,68,0.11)";
-  return                   "rgba(239,68,68,0.22)";
+  if (pcr == null) return "rgba(18,18,30,0.92)";
+  if (pcr === 1.0)  return "rgba(90,90,110,0.55)";
+  if (pcr < 1.0) {
+    const t = Math.min((1 - pcr) / 1.5, 1);
+    return `rgba(34,197,94,${(0.12 + t * 0.63).toFixed(3)})`;
+  }
+  const t = Math.min((pcr - 1) / 1.5, 1);
+  return `rgba(239,68,68,${(0.12 + t * 0.63).toFixed(3)})`;
 }
 function sfPcrBorder(pcr: number | null): string {
-  if (pcr == null) return C.border;
-  if (pcr < 0.7)   return "rgba(34,197,94,0.35)";
-  if (pcr > 1.3)   return "rgba(239,68,68,0.35)";
-  return C.border;
+  if (pcr == null) return "rgba(255,255,255,0.07)";
+  if (pcr === 1.0)  return "rgba(255,255,255,0.12)";
+  if (pcr < 1.0) return `rgba(34,197,94,${Math.min(0.15 + (1 - pcr) * 0.5, 0.65).toFixed(3)})`;
+  return `rgba(239,68,68,${Math.min(0.15 + (pcr - 1) * 0.5, 0.65).toFixed(3)})`;
 }
 function sfPcrTextCol(pcr: number | null): string {
-  if (pcr == null) return C.dim;
-  if (pcr < 0.7)   return C.green;
-  if (pcr > 1.3)   return C.red;
-  return C.text;
+  if (pcr == null) return "#555";
+  if (pcr === 1.0)  return "#aaa";
+  if (pcr < 1.0)   return C.green;
+  return C.red;
 }
 
-// ── Reusable heatmap tile (sector / theme level) ─────────────────────────────
-function HeatTile({ name, pcr, net, footer, flexBasis = 160, onClick }: {
-  name: string; pcr: number | null; net: number | null;
-  footer?: string; flexBasis?: number; onClick: () => void;
+// ── Generic squarified treemap component ─────────────────────────────────────
+function SFTreemap<T extends object>({
+  items, sizeOf, getPcr, noData, onClick, renderTile, keyOf, height, gap = 2,
+}: {
+  items: T[];
+  sizeOf: (item: T) => number;
+  getPcr: (item: T) => number | null;
+  noData?: (item: T) => boolean;
+  onClick: (item: T) => void;
+  renderTile: (item: T, tw: number, th: number) => ReactNode;
+  keyOf: (item: T, i: number) => string;
+  height: number;
+  gap?: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [cw, setCw] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setCw(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver(e => { const w = e[0]?.contentRect.width; if (w) setCw(w); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const values = items.map(item => Math.max(sizeOf(item), 0.001));
+  const rects  = cw > 8 && height > 8 ? computeTreemap(values, cw, height) : [];
+  const half   = gap / 2;
+
   return (
-    <div
-      onClick={onClick}
-      style={{
-        background: sfPcrBg(pcr), border: `1px solid ${sfPcrBorder(pcr)}`,
-        borderRadius: 8, padding: "12px 14px", cursor: "pointer",
-        flex: `1 1 ${flexBasis}px`,
-        minWidth: Math.min(flexBasis, 120), maxWidth: Math.max(flexBasis * 1.6, 320),
-        display: "flex", flexDirection: "column", gap: 3, transition: "filter 0.12s",
-      }}
-      onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.18)")}
-      onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-    >
-      <div style={{ fontSize: 11, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.25, marginBottom: 2 }}>{name}</div>
-      <div style={{ fontSize: 22, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1 }}>
-        {pcr != null ? pcr.toFixed(2) : "—"}
-      </div>
-      <div style={{ fontSize: 8, color: C.dim, fontFamily: font, letterSpacing: "0.06em", textTransform: "uppercase" }}>P/C ratio</div>
-      <div style={{ fontSize: 11, fontFamily: font, fontWeight: 600, color: sfNetColor(net), marginTop: 3 }}>
-        {fmtCurrencyShort(net)}
-      </div>
-      {footer && <div style={{ fontSize: 9, color: C.dim, fontFamily: font, marginTop: 1 }}>{footer}</div>}
+    <div ref={ref} style={{ position: "relative", width: "100%", height, overflow: "hidden" }}>
+      {rects.map((r, i) => {
+        if (!r || i >= items.length) return null;
+        const item = items[i];
+        const tw = Math.max(r.w - gap, 0);
+        const th = Math.max(r.h - gap, 0);
+        if (tw < 4 || th < 4) return null;
+        const faded = noData?.(item) ?? false;
+        return (
+          <div
+            key={keyOf(item, i)}
+            onClick={() => onClick(item)}
+            style={{
+              position: "absolute",
+              left: r.x + half, top: r.y + half, width: tw, height: th,
+              background: sfPcrBg(getPcr(item)),
+              border: `1px solid ${sfPcrBorder(getPcr(item))}`,
+              borderRadius: 2, cursor: "pointer", overflow: "hidden",
+              boxSizing: "border-box", opacity: faded ? 0.32 : 1,
+              transition: "filter 0.08s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.25)")}
+            onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+          >
+            {tw >= 12 && th >= 12 && renderTile(item, tw, th)}
+          </div>
+        );
+      })}
+      {items.length === 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.dim, fontFamily: font, fontSize: 12 }}>No data</div>
+      )}
     </div>
   );
 }
 
-// ── Ticker heatmap tile ───────────────────────────────────────────────────────
-function TickerHeatTile({ tk, onClick }: { tk: SFTicker; onClick: () => void }) {
+// ── Tile content renderers (module-level, not recreated per render) ────────────
+function sfRenderSector(s: SFSector, tw: number, th: number): ReactNode {
+  const pad      = tw > 55 ? "8px 10px" : "4px 5px";
+  const nameSize = Math.max(8, Math.min(11, tw / 11));
+  const pcrSize  = Math.max(12, Math.min(24, Math.min(tw / 5, th / 2.5)));
+  const netSize  = Math.max(8, Math.min(11, tw / 14));
+  return (
+    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      {tw > 38 && <div style={{ fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.sector_name}</div>}
+      {th > 34 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(s.put_call_ratio), lineHeight: 1 }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div>}
+      {th > 55 && tw > 52 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em" }}>P/C</div>}
+      {th > 68 && tw > 62 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div>}
+      {th > 88 && tw > 80 && <div style={{ fontSize: 8, color: "#666", fontFamily: font }}>{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</div>}
+    </div>
+  );
+}
+
+function sfRenderTheme(t: SFTheme, tw: number, th: number): ReactNode {
+  const pad      = tw > 55 ? "7px 9px" : "3px 5px";
+  const nameSize = Math.max(8, Math.min(11, tw / 13));
+  const pcrSize  = Math.max(11, Math.min(22, Math.min(tw / 5.5, th / 2.8)));
+  const netSize  = Math.max(8, Math.min(11, tw / 15));
+  return (
+    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      {tw > 32 && <div style={{ fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.theme_name}</div>}
+      {th > 30 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(t.put_call_ratio), lineHeight: 1 }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div>}
+      {th > 50 && tw > 48 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em" }}>P/C</div>}
+      {th > 62 && tw > 58 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div>}
+      {th > 80 && tw > 68 && <div style={{ fontSize: 8, color: "#666", fontFamily: font }}>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers</div>}
+    </div>
+  );
+}
+
+function sfRenderTicker(tk: SFTicker, tw: number, th: number): ReactNode {
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
-  const isNoOpts  = !isPending && (
-    (tk.scan_status || "").toLowerCase() === "confirmed_no_options" ||
-    (tk.scan_status || "").toLowerCase() === "no_options" ||
-    tk.options_available === false
-  );
-  const pcr = isPending ? null : tk.put_call_ratio;
-  const net = isPending ? null : tk.net_premium;
+  const pcr       = isPending ? null : tk.put_call_ratio;
+  const net       = isPending ? null : tk.net_premium;
+  const pad       = tw > 52 ? "6px 8px" : "3px 4px";
+  const symSize   = Math.max(8, Math.min(13, tw / 7));
+  const pcrSize   = Math.max(10, Math.min(20, Math.min(tw / 5, th / 2.5)));
   return (
-    <div
-      onClick={onClick}
-      style={{
-        background: sfPcrBg(pcr), border: `1px solid ${sfPcrBorder(pcr)}`,
-        borderRadius: 6, padding: "9px 11px", cursor: "pointer",
-        flex: "1 1 88px", minWidth: 80, maxWidth: 160,
-        opacity: isNoOpts ? 0.38 : 1,
-        display: "flex", flexDirection: "column", gap: 2, transition: "filter 0.12s",
-      }}
-      onMouseEnter={e => { if (!isNoOpts) e.currentTarget.style.filter = "brightness(1.2)"; }}
-      onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-    >
-      <div style={{ fontSize: 11, fontFamily: font, fontWeight: 800, color: C.bright }}>{sym}</div>
-      <div style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: sfPcrTextCol(pcr), lineHeight: 1 }}>
-        {isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}
-      </div>
-      <div style={{ fontSize: 8, color: C.dim, fontFamily: font, letterSpacing: "0.05em" }}>P/C</div>
-      <div style={{ fontSize: 10, fontFamily: font, fontWeight: 600, color: sfNetColor(net), marginTop: 1 }}>
-        {isPending ? "pending" : fmtCurrencyShort(net)}
-      </div>
+    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      {tw > 28 && <div style={{ fontSize: symSize, fontFamily: font, fontWeight: 800, color: C.bright, lineHeight: 1, whiteSpace: "nowrap" }}>{sym}</div>}
+      {th > 26 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1 }}>{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}</div>}
+      {th > 44 && tw > 42 && <div style={{ fontSize: 7, color: "#888", fontFamily: font }}>P/C</div>}
+      {th > 56 && tw > 50 && <div style={{ fontSize: Math.max(8, Math.min(10, tw / 12)), fontFamily: font, fontWeight: 600, color: sfNetColor(net) }}>{isPending ? "pend." : fmtCurrencyShort(net)}</div>}
     </div>
-  );
-}
-
-// ── Helper: scale flex-basis for tiles by net premium magnitude ───────────────
-function sfTileBasis(
-  items: Array<{ net_premium: number | null }>,
-  item:  { net_premium: number | null },
-  min = 140, max = 300
-): number {
-  const maxNet = Math.max(...items.map(i => Math.abs(i.net_premium ?? 0)));
-  if (maxNet === 0) return Math.round((min + max) / 2);
-  return Math.round(min + (Math.abs(item.net_premium ?? 0) / maxNet) * (max - min));
-}
-
-// ── Ticker heatmap grid with summary row ─────────────────────────────────────
-function TickerHeatmap({ tickers, onTickerClick, classification }: {
-  tickers: SFTicker[]; onTickerClick: (tk: SFTicker) => void; classification?: string | null;
-}) {
-  const withData = tickers.filter(tk => tk.net_premium != null).length;
-  const pending  = tickers.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-  return (
-    <>
-      <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
-        <span>{withData} / {tickers.length} with flow</span>
-        {pending > 0 && <span style={{ color: C.yellow }}>· {pending} pending</span>}
-        {classification && <span style={{ opacity: 0.5 }}>· {classification}</span>}
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {tickers.map((tk, i) => (
-          <TickerHeatTile key={(tk.symbol || tk.ticker || String(i))} tk={tk} onClick={() => onTickerClick(tk)} />
-        ))}
-      </div>
-      {tickers.length === 0 && (
-        <div style={{ padding: "32px 0", textAlign: "center", color: C.dim, fontFamily: font, fontSize: 12 }}>No ticker data available.</div>
-      )}
-    </>
   );
 }
 
@@ -3540,63 +3635,73 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         </div>
       )}
 
-      {/* ══ SECTORS — top: sector heatmap ══ */}
+      {/* ══ SECTORS — top: sector treemap ══ */}
       {view === "sectors" && level === "top" && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-          {sortedSectors.map(s => (
-            <HeatTile
-              key={s.sector_id}
-              name={s.sector_name}
-              pcr={s.put_call_ratio}
-              net={s.net_premium}
-              footer={`${s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers · ${s.themes?.length ?? 0} themes`}
-              flexBasis={sfTileBasis(sortedSectors, s, 150, 320)}
-              onClick={() => setActiveSector(s)}
-            />
-          ))}
-        </div>
+        <SFTreemap
+          items={sortedSectors}
+          sizeOf={s => Math.abs(s.net_premium ?? 0) || (s.call_premium ?? 0) + (s.put_premium ?? 0) || 1}
+          getPcr={s => s.put_call_ratio}
+          onClick={s => setActiveSector(s)}
+          renderTile={sfRenderSector}
+          keyOf={(s, i) => s.sector_id ?? String(i)}
+          height={Math.max(300, Math.min(520, sortedSectors.length * 45))}
+        />
       )}
 
-      {/* ══ SECTORS — drill: theme heatmap inside sector ══ */}
+      {/* ══ SECTORS — drill: theme treemap inside sector ══ */}
       {view === "sectors" && level === "themes" && activeSector && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-          {activeSector.themes.map(t => (
-            <HeatTile
-              key={t.theme_id ?? t.theme_name}
-              name={t.theme_name}
-              pcr={t.put_call_ratio}
-              net={t.net_premium}
-              footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
-              flexBasis={sfTileBasis(activeSector.themes, t, 130, 280)}
-              onClick={() => setActiveTheme(t)}
+        <SFTreemap
+          items={activeSector.themes}
+          sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+          getPcr={t => t.put_call_ratio}
+          onClick={t => setActiveTheme(t)}
+          renderTile={sfRenderTheme}
+          keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
+          height={Math.max(260, Math.min(500, activeSector.themes.length * 40))}
+        />
+      )}
+
+      {/* ══ SECTORS — drill: ticker treemap inside theme ══ */}
+      {view === "sectors" && level === "tickers" && activeTheme && (() => {
+        const tks  = activeTheme.tickers;
+        const h    = Math.max(220, Math.min(520, tks.length * 16 + 80));
+        const wd   = tks.filter(tk => tk.net_premium != null).length;
+        const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
+        return (
+          <>
+            <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
+              <span>{wd} / {tks.length} with flow</span>
+              {pend > 0 && <span style={{ color: C.yellow }}>· {pend} pending</span>}
+              {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
+            </div>
+            <SFTreemap
+              items={tks}
+              sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+              getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+              noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && ((tk.scan_status||"").toLowerCase()==="confirmed_no_options" || tk.options_available===false)}
+              onClick={tk => setSelectedTicker(tk)}
+              renderTile={sfRenderTicker}
+              keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+              height={h}
             />
-          ))}
-        </div>
-      )}
+          </>
+        );
+      })()}
 
-      {/* ══ SECTORS — drill: ticker heatmap inside theme ══ */}
-      {view === "sectors" && level === "tickers" && activeTheme && (
-        <TickerHeatmap tickers={activeTheme.tickers} onTickerClick={setSelectedTicker} classification={activeTheme.classification} />
-      )}
-
-      {/* ══ THEMES — ungrouped ══ */}
+      {/* ══ THEMES — ungrouped treemap ══ */}
       {view === "themes" && level === "top" && !grouped && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-          {sortedThemes.map(t => (
-            <HeatTile
-              key={t.theme_id ?? t.theme_name}
-              name={t.theme_name}
-              pcr={t.put_call_ratio}
-              net={t.net_premium}
-              footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
-              flexBasis={sfTileBasis(sortedThemes, t, 130, 280)}
-              onClick={() => setActiveTheme(t)}
-            />
-          ))}
-        </div>
+        <SFTreemap
+          items={sortedThemes}
+          sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+          getPcr={t => t.put_call_ratio}
+          onClick={t => setActiveTheme(t)}
+          renderTile={sfRenderTheme}
+          keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
+          height={Math.max(360, Math.min(660, sortedThemes.length * 14 + 80))}
+        />
       )}
 
-      {/* ══ THEMES — grouped by classification/sector ══ */}
+      {/* ══ THEMES — grouped by classification ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
         const groups: Record<string, SFTheme[]> = {};
         sortedThemes.forEach(t => {
@@ -3605,45 +3710,72 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
           groups[k].push(t);
         });
         return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {Object.entries(groups).map(([groupName, themes]) => (
               <div key={groupName}>
                 <div style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{groupName}</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-                  {themes.map(t => (
-                    <HeatTile
-                      key={t.theme_id ?? t.theme_name}
-                      name={t.theme_name}
-                      pcr={t.put_call_ratio}
-                      net={t.net_premium}
-                      footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
-                      flexBasis={sfTileBasis(themes, t, 130, 260)}
-                      onClick={() => setActiveTheme(t)}
-                    />
-                  ))}
-                </div>
+                <SFTreemap
+                  items={themes}
+                  sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+                  getPcr={t => t.put_call_ratio}
+                  onClick={t => setActiveTheme(t)}
+                  renderTile={sfRenderTheme}
+                  keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
+                  height={Math.max(110, Math.min(280, themes.length * 28))}
+                />
               </div>
             ))}
           </div>
         );
       })()}
 
-      {/* ══ THEMES — ticker heatmap drill ══ */}
-      {view === "themes" && level === "tickers" && activeTheme && (
-        <TickerHeatmap tickers={activeTheme.tickers} onTickerClick={setSelectedTicker} classification={activeTheme.classification} />
-      )}
+      {/* ══ THEMES — ticker treemap drill ══ */}
+      {view === "themes" && level === "tickers" && activeTheme && (() => {
+        const tks  = activeTheme.tickers;
+        const h    = Math.max(220, Math.min(520, tks.length * 16 + 80));
+        const wd   = tks.filter(tk => tk.net_premium != null).length;
+        const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
+        return (
+          <>
+            <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
+              <span>{wd} / {tks.length} with flow</span>
+              {pend > 0 && <span style={{ color: C.yellow }}>· {pend} pending</span>}
+              {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
+            </div>
+            <SFTreemap
+              items={tks}
+              sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+              getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+              noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+              onClick={tk => setSelectedTicker(tk)}
+              renderTile={sfRenderTicker}
+              keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+              height={h}
+            />
+          </>
+        );
+      })()}
 
-      {/* ══ ALL STOCKS — ungrouped ══ */}
+      {/* ══ ALL STOCKS — ungrouped treemap ══ */}
       {view === "allstocks" && !grouped && (
-        <TickerHeatmap tickers={allTickers} onTickerClick={setSelectedTicker} />
+        <SFTreemap
+          items={allTickers}
+          sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+          getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+          noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+          onClick={tk => setSelectedTicker(tk)}
+          renderTile={sfRenderTicker}
+          keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+          height={Math.max(380, Math.min(720, allTickers.length * 5 + 200))}
+        />
       )}
 
       {/* ══ ALL STOCKS — grouped by theme ══ */}
       {view === "allstocks" && grouped && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-          {(data?.themes ?? []).map(theme => {
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {(data?.themes ?? []).filter(th => (th.tickers ?? []).length > 0).map(theme => {
             const tks = theme.tickers ?? [];
-            if (tks.length === 0) return null;
+            const h   = Math.max(90, Math.min(240, tks.length * 18));
             return (
               <div key={theme.theme_id ?? theme.theme_name}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
@@ -3654,11 +3786,16 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
                     </span>
                   )}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {tks.map((tk, i) => (
-                    <TickerHeatTile key={(tk.symbol || tk.ticker || String(i))} tk={tk} onClick={() => setSelectedTicker(tk)} />
-                  ))}
-                </div>
+                <SFTreemap
+                  items={tks}
+                  sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+                  getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+                  noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+                  onClick={tk => setSelectedTicker(tk)}
+                  renderTile={sfRenderTicker}
+                  keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+                  height={h}
+                />
               </div>
             );
           })}

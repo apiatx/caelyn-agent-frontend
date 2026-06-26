@@ -1,0 +1,97 @@
+Frontend only. Do not modify backend logic.
+
+The Net Flow heatmap is close, but the current layout is still behaving like responsive cards/rectangles. Replace it with a true treemap layout.
+
+Goal:
+Tiles should fit together like puzzle pieces and fill the available container, like TradingView heatmaps.
+
+Applies to all Net Flow views:
+- Sectors
+- Themes
+- All Stocks
+
+Core requirements:
+1. Use a real treemap layout algorithm, not CSS grid cards.
+   - Acceptable: d3-hierarchy treemap/squarify if already available or easy to add.
+   - Or implement a lightweight squarified treemap helper.
+   - Do NOT use flex/grid auto cards where tiles just become longer rectangles.
+
+2. Tiles should:
+   - Fill the full heatmap container.
+   - Be sized proportionally by absolute net premium or total premium magnitude.
+   - Stay as close to square as possible.
+   - Reflow responsively with container size.
+   - Have small gaps/borders like TradingView.
+
+3. Color:
+   - Color is based on Put/Call ratio only.
+   - P/C < 1 = green.
+   - P/C > 1 = red.
+   - P/C exactly 1.00 = gray/neutral.
+   - Do NOT make a wide gray neutral zone around 1.
+   - Example:
+     - 0.99 should still be slightly green.
+     - 1.01 should still be slightly red.
+     - only exactly 1.00 is gray.
+   - Missing/null P/C may be muted dark/gray because no sentiment exists.
+
+4. P/C ratio remains primary visual text:
+   - Tile title
+   - Large P/C ratio
+   - Smaller net premium below
+   - Supporting count text smaller
+
+5. Sectors view:
+   - One treemap using sector nodes.
+   - Click sector → drill into themes for that sector.
+   - Click theme → drill into ticker treemap.
+
+6. Themes view:
+   - Grouped / Ungrouped toggle stays.
+   - Grouped ON:
+     - Group themes under their sector.
+     - Each sector group contains a treemap of theme tiles.
+   - Grouped OFF:
+     - One flat treemap of all themes.
+   - Click theme → ticker treemap.
+
+7. All Stocks view:
+   - Grouped / Ungrouped toggle stays.
+   - Grouped ON:
+     - Group stocks by theme, NOT by sector.
+     - Each theme group contains a treemap of ticker tiles.
+   - Grouped OFF:
+     - One flat treemap of all ticker tiles.
+   - Click ticker → existing modal/details.
+
+8. Preserve existing functionality:
+   - Refresh
+   - Coverage summary
+   - cached_data display
+   - ticker modal
+   - drilldown behavior
+   - Sectors / Themes / All Stocks tabs
+   - Grouped / Ungrouped toggles
+   - Search, if already implemented
+
+9. Do not show "Mixed Premium Scope" anywhere.
+
+Implementation notes:
+- If using d3:
+  - Use d3.hierarchy({ children })
+  - sum by sizeMetric = abs(net_premium) or call_premium + put_premium fallback
+  - d3.treemap().tile(d3.treemapSquarify).size([width, height]).paddingInner(2)
+- Use ResizeObserver so treemap recalculates when container size changes.
+- Keep a minimum tile size rule so tiny tiles can hide secondary text but remain visible.
+- For tiny tiles, show only symbol/name or nothing until hover.
+
+Acceptance criteria:
+- Sectors view fills the whole heatmap area with puzzle-piece tiles.
+- Themes view fills heatmap areas with puzzle-piece tiles.
+- All Stocks view fills heatmap areas with puzzle-piece tiles.
+- No horizontal card rows where tiles just stretch longer.
+- P/C color rule is exact:
+  - only P/C === 1 is gray
+  - below 1 green
+  - above 1 red
+- Vite build passes.
