@@ -5976,7 +5976,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       setTimeout(() => ctrl.abort(), 25000);
       const fwdHeaders: Record<string, string> = { 'X-API-Key': AGENT_KEY };
       if (req.headers.authorization) fwdHeaders['Authorization'] = req.headers.authorization as string;
-      const r = await fetch(`${AGENT_URL}/api/options-flow/sectors`, { headers: fwdHeaders, signal: ctrl.signal });
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${AGENT_URL}/api/options-flow/sectors${qs ? '?' + qs : ''}`, { headers: fwdHeaders, signal: ctrl.signal });
       if (!r.ok) { const t = await r.text(); return res.status(r.status).json({ error: 'options-flow/sectors failed', detail: t.slice(0, 200) }); }
       res.json(await r.json());
     } catch (e: any) {
