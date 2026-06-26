@@ -3172,40 +3172,132 @@ function SFTickerModal({ ticker, onClose }: { ticker: SFTicker; onClose: () => v
   );
 }
 
-function sfCardStyle(net: number | null) {
-  if (net == null)   return { bg: C.card, bdr: C.border };
-  if (net > 50_000)  return { bg: "rgba(34,197,94,0.06)", bdr: "rgba(34,197,94,0.22)" };
-  if (net < -50_000) return { bg: "rgba(239,68,68,0.06)", bdr: "rgba(239,68,68,0.22)" };
-  return                    { bg: C.card, bdr: C.border };
+// ── P/C heatmap color helpers ────────────────────────────────────────────────
+function sfPcrBg(pcr: number | null): string {
+  if (pcr == null) return "rgba(255,255,255,0.04)";
+  if (pcr < 0.6)   return "rgba(34,197,94,0.20)";
+  if (pcr < 0.85)  return "rgba(34,197,94,0.09)";
+  if (pcr < 1.15)  return "rgba(255,255,255,0.04)";
+  if (pcr < 1.5)   return "rgba(239,68,68,0.11)";
+  return                   "rgba(239,68,68,0.22)";
 }
-function SFThemeCard({ theme: t, onClick }: { theme: SFTheme; onClick: () => void }) {
-  const cs = sfCardStyle(t.net_premium);
+function sfPcrBorder(pcr: number | null): string {
+  if (pcr == null) return C.border;
+  if (pcr < 0.7)   return "rgba(34,197,94,0.35)";
+  if (pcr > 1.3)   return "rgba(239,68,68,0.35)";
+  return C.border;
+}
+function sfPcrTextCol(pcr: number | null): string {
+  if (pcr == null) return C.dim;
+  if (pcr < 0.7)   return C.green;
+  if (pcr > 1.3)   return C.red;
+  return C.text;
+}
+
+// ── Reusable heatmap tile (sector / theme level) ─────────────────────────────
+function HeatTile({ name, pcr, net, footer, flexBasis = 160, onClick }: {
+  name: string; pcr: number | null; net: number | null;
+  footer?: string; flexBasis?: number; onClick: () => void;
+}) {
   return (
     <div
       onClick={onClick}
-      style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
-      onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
+      style={{
+        background: sfPcrBg(pcr), border: `1px solid ${sfPcrBorder(pcr)}`,
+        borderRadius: 8, padding: "12px 14px", cursor: "pointer",
+        flex: `1 1 ${flexBasis}px`,
+        minWidth: Math.min(flexBasis, 120), maxWidth: Math.max(flexBasis * 1.6, 320),
+        display: "flex", flexDirection: "column", gap: 3, transition: "filter 0.12s",
+      }}
+      onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.18)")}
       onMouseLeave={e => (e.currentTarget.style.filter = "none")}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ color: C.bright, fontFamily: sans, fontSize: 12, fontWeight: 700 }}>{t.theme_name}</span>
-        {t.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(t.bias), border: `1px solid ${sfBiasColor(t.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{t.bias}</span>}
+      <div style={{ fontSize: 11, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.25, marginBottom: 2 }}>{name}</div>
+      <div style={{ fontSize: 22, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1 }}>
+        {pcr != null ? pcr.toFixed(2) : "—"}
       </div>
-      <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: t.put_call_ratio != null ? (t.put_call_ratio < 0.7 ? C.green : t.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
-        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
-        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(t.call_premium)}</div></div>
-        <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(t.put_premium)}</div></div>
+      <div style={{ fontSize: 8, color: C.dim, fontFamily: font, letterSpacing: "0.06em", textTransform: "uppercase" }}>P/C ratio</div>
+      <div style={{ fontSize: 11, fontFamily: font, fontWeight: 600, color: sfNetColor(net), marginTop: 3 }}>
+        {fmtCurrencyShort(net)}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
-        <span>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers with flow</span>
-        <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
+      {footer && <div style={{ fontSize: 9, color: C.dim, fontFamily: font, marginTop: 1 }}>{footer}</div>}
+    </div>
+  );
+}
+
+// ── Ticker heatmap tile ───────────────────────────────────────────────────────
+function TickerHeatTile({ tk, onClick }: { tk: SFTicker; onClick: () => void }) {
+  const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const isPending = (tk.scan_status || "").toLowerCase() === "pending";
+  const isNoOpts  = !isPending && (
+    (tk.scan_status || "").toLowerCase() === "confirmed_no_options" ||
+    (tk.scan_status || "").toLowerCase() === "no_options" ||
+    tk.options_available === false
+  );
+  const pcr = isPending ? null : tk.put_call_ratio;
+  const net = isPending ? null : tk.net_premium;
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: sfPcrBg(pcr), border: `1px solid ${sfPcrBorder(pcr)}`,
+        borderRadius: 6, padding: "9px 11px", cursor: "pointer",
+        flex: "1 1 88px", minWidth: 80, maxWidth: 160,
+        opacity: isNoOpts ? 0.38 : 1,
+        display: "flex", flexDirection: "column", gap: 2, transition: "filter 0.12s",
+      }}
+      onMouseEnter={e => { if (!isNoOpts) e.currentTarget.style.filter = "brightness(1.2)"; }}
+      onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+    >
+      <div style={{ fontSize: 11, fontFamily: font, fontWeight: 800, color: C.bright }}>{sym}</div>
+      <div style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: sfPcrTextCol(pcr), lineHeight: 1 }}>
+        {isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}
+      </div>
+      <div style={{ fontSize: 8, color: C.dim, fontFamily: font, letterSpacing: "0.05em" }}>P/C</div>
+      <div style={{ fontSize: 10, fontFamily: font, fontWeight: 600, color: sfNetColor(net), marginTop: 1 }}>
+        {isPending ? "pending" : fmtCurrencyShort(net)}
       </div>
     </div>
   );
 }
 
-function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
+// ── Helper: scale flex-basis for tiles by net premium magnitude ───────────────
+function sfTileBasis(
+  items: Array<{ net_premium: number | null }>,
+  item:  { net_premium: number | null },
+  min = 140, max = 300
+): number {
+  const maxNet = Math.max(...items.map(i => Math.abs(i.net_premium ?? 0)));
+  if (maxNet === 0) return Math.round((min + max) / 2);
+  return Math.round(min + (Math.abs(item.net_premium ?? 0) / maxNet) * (max - min));
+}
+
+// ── Ticker heatmap grid with summary row ─────────────────────────────────────
+function TickerHeatmap({ tickers, onTickerClick, classification }: {
+  tickers: SFTicker[]; onTickerClick: (tk: SFTicker) => void; classification?: string | null;
+}) {
+  const withData = tickers.filter(tk => tk.net_premium != null).length;
+  const pending  = tickers.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
+  return (
+    <>
+      <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
+        <span>{withData} / {tickers.length} with flow</span>
+        {pending > 0 && <span style={{ color: C.yellow }}>· {pending} pending</span>}
+        {classification && <span style={{ opacity: 0.5 }}>· {classification}</span>}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {tickers.map((tk, i) => (
+          <TickerHeatTile key={(tk.symbol || tk.ticker || String(i))} tk={tk} onClick={() => onTickerClick(tk)} />
+        ))}
+      </div>
+      {tickers.length === 0 && (
+        <div style={{ padding: "32px 0", textAlign: "center", color: C.dim, fontFamily: font, fontSize: 12 }}>No ticker data available.</div>
+      )}
+    </>
+  );
+}
+
+function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) {
   const [data,           setData]           = useState<SFData | null>(null);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string | null>(null);
@@ -3213,11 +3305,15 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
   const [activeSector,   setActiveSector]   = useState<SFSector | null>(null);
   const [activeTheme,    setActiveTheme]    = useState<SFTheme  | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<SFTicker | null>(null);
+  const [grouped,        setGrouped]        = useState(true);
+
+  // allstocks + themes both fetch ?view=themes; sectors fetches ?view=sectors
+  const fetchView = view === "allstocks" ? "themes" : view;
 
   const load = useCallback(async (bg = false) => {
     if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
     try {
-      const r = await fetch(`/api/options-flow/sectors?view=${view}`, { headers: authHeaders() });
+      const r = await fetch(`/api/options-flow/sectors?view=${fetchView}`, { headers: authHeaders() });
       const ct = r.headers.get("content-type") || "";
       if (!ct.includes("application/json")) {
         const preview = (await r.text()).slice(0, 120);
@@ -3229,43 +3325,69 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
       }
       setData(await r.json());
     } catch (e: any) {
-      if (!bg) setError(e.message || `Failed to load ${view} flow`);
+      if (!bg) setError(e.message || `Failed to load flow`);
     } finally {
       bg ? setRefreshing(false) : setLoading(false);
     }
-  }, [view]);
+  }, [fetchView]);
 
   useEffect(() => { load(false); }, [load]);
 
-  // Derive totals from whichever array the backend returned
+  // Totals from top-level items
   const totals = useMemo(() => {
-    const src: Array<{ call_premium: number | null; put_premium: number | null; net_premium: number | null; total_contract_volume?: number | null; aggregation_scope?: string | null }> =
-      view === "themes" ? (data?.themes ?? []) : (data?.sectors ?? []);
+    const src: Array<{ call_premium: number | null; put_premium: number | null; net_premium: number | null; total_contract_volume?: number | null }> =
+      fetchView === "themes" ? (data?.themes ?? []) : (data?.sectors ?? []);
     if (!src.length) return null;
     let call = 0, put = 0, net = 0, contracts = 0;
-    let hasMixed = false;
     src.forEach(s => {
-      call      += s.call_premium           ?? 0;
-      put       += s.put_premium            ?? 0;
-      net       += s.net_premium            ?? 0;
-      contracts += s.total_contract_volume  ?? 0;
-      if (s.aggregation_scope === "mixed") hasMixed = true;
+      call      += s.call_premium          ?? 0;
+      put       += s.put_premium           ?? 0;
+      net       += s.net_premium           ?? 0;
+      contracts += s.total_contract_volume ?? 0;
     });
-    return { call, put, net, pcr: call > 0 ? put / call : null, contracts, hasMixed };
-  }, [data, view]);
+    return { call, put, net, pcr: call > 0 ? put / call : null, contracts };
+  }, [data, fetchView]);
 
-  // Navigation levels
-  // sectors view: top → (sector card clicked) → themes → (theme card clicked) → tickers
-  // themes  view: top → (theme card clicked) → tickers
+  // Sorted themes (flat, ascending P/C)
+  const sortedThemes = useMemo(() => [...(data?.themes ?? [])].sort((a, b) => {
+    const ap = a.put_call_ratio, bp = b.put_call_ratio;
+    if (ap == null && bp == null) return 0;
+    if (ap == null) return 1; if (bp == null) return -1;
+    return ap - bp;
+  }), [data]);
+
+  // Sorted sectors (ascending P/C)
+  const sortedSectors = useMemo(() => [...(data?.sectors ?? [])].sort((a, b) => {
+    const ap = a.put_call_ratio, bp = b.put_call_ratio;
+    if (ap == null && bp == null) return 0;
+    if (ap == null) return 1; if (bp == null) return -1;
+    return ap - bp;
+  }), [data]);
+
+  // All tickers flattened from themes (for allstocks view), sorted by P/C asc
+  const allTickers = useMemo(() => {
+    const tks: SFTicker[] = [];
+    (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => tks.push(tk)));
+    return tks.sort((a, b) => {
+      const ap = a.put_call_ratio, bp = b.put_call_ratio;
+      if (ap == null && bp == null) return 0;
+      if (ap == null) return 1; if (bp == null) return -1;
+      return ap - bp;
+    });
+  }, [data]);
+
+  // Navigation level
   const level: "top" | "themes" | "tickers" =
-    view === "themes"
-      ? (activeTheme ? "tickers" : "top")
-      : (activeTheme ? "tickers" : activeSector ? "themes" : "top");
+    view === "allstocks" ? "top"
+    : view === "themes"  ? (activeTheme ? "tickers" : "top")
+    :                      (activeTheme ? "tickers" : activeSector ? "themes" : "top");
+
+  const rootLabel = view === "themes" ? "Themes" : view === "allstocks" ? "All Stocks" : "Sectors";
 
   if (loading) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 10, color: C.dim, fontFamily: font, fontSize: 12 }}>
       <Loader2 className="w-6 h-6" style={{ color: C.blue, animation: "spin 1s linear infinite" }} />
-      {view === "themes" ? "Loading themes flow…" : "Loading sectors flow…"}
+      {view === "sectors" ? "Loading sectors flow…" : view === "themes" ? "Loading themes flow…" : "Loading stocks flow…"}
     </div>
   );
 
@@ -3281,23 +3403,6 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
 
   if (!data) return null;
 
-  // Sort top-level items by P/C asc (nulls last) — applies to both sectors and themes views
-  const sortedTopItems = view === "themes"
-    ? [...(data.themes ?? [])].sort((a, b) => {
-        const ap = a.put_call_ratio; const bp = b.put_call_ratio;
-        if (ap == null && bp == null) return 0;
-        if (ap == null) return 1; if (bp == null) return -1;
-        return ap - bp;
-      })
-    : [...(data.sectors ?? [])].sort((a, b) => {
-        const ap = a.put_call_ratio; const bp = b.put_call_ratio;
-        if (ap == null && bp == null) return 0;
-        if (ap == null) return 1; if (bp == null) return -1;
-        return ap - bp;
-      });
-
-  const rootLabel = view === "themes" ? "Themes" : "Sectors";
-
   return (
     <>
     <div style={{ padding: "12px 16px 24px", flex: 1, overflowY: "auto" }}>
@@ -3310,7 +3415,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
             <Info
               size={10}
               style={{ color: C.dim, opacity: 0.55, cursor: "default", flexShrink: 0 }}
-              title="Premium is estimated dollars traded. Net Premium = Call Premium − Put Premium. Contracts = number of option contracts traded."
+              title="Premium is estimated option premium traded. Net Premium = Call Premium - Put Premium. Contracts = total option contracts traded."
             />
           </span>
           <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
@@ -3320,10 +3425,10 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
         <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {([
-            { label: "Call Premium",  val: totals?.call      ?? null, color: C.green, fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "Put Premium",   val: totals?.put       ?? null, color: C.red,   fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "Premium P/C",   val: totals?.pcr       ?? null, color: C.text,  fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
-            { label: "Contracts",     val: totals?.contracts ?? null, color: C.dim,   fmt: (v: number | null) => v != null && v > 0 ? v.toLocaleString() : "—" },
+            { label: "Call Premium", val: totals?.call      ?? null, color: C.green, fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Put Premium",  val: totals?.put       ?? null, color: C.red,   fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Premium P/C",  val: totals?.pcr       ?? null, color: C.text,  fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
+            { label: "Contracts",    val: totals?.contracts ?? null, color: C.dim,   fmt: (v: number | null) => v != null && v > 0 ? v.toLocaleString() : "—" },
           ] as { label: string; val: number | null; color: string; fmt: (v: number | null) => string }[]).map(({ label, val, color, fmt }) => (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
@@ -3393,6 +3498,26 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
         </div>
       )}
 
+      {/* ── Grouped toggle (themes + allstocks, top level only) ── */}
+      {(view === "themes" || view === "allstocks") && level === "top" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>
+            Group by {view === "themes" ? "sector" : "theme"}:
+          </span>
+          <button
+            onClick={() => setGrouped(g => !g)}
+            style={{
+              padding: "3px 12px", borderRadius: 20, fontSize: 10, fontFamily: font, fontWeight: 600, cursor: "pointer",
+              border: `1px solid ${grouped ? C.blue : C.border}`,
+              background: grouped ? `${C.blue}15` : "transparent",
+              color: grouped ? C.blue : C.dim, transition: "all 0.15s",
+            }}
+          >
+            {grouped ? "Grouped" : "Ungrouped"}
+          </button>
+        </div>
+      )}
+
       {/* ── Breadcrumb ── */}
       {level !== "top" && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 11, fontFamily: font }}>
@@ -3415,129 +3540,131 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
         </div>
       )}
 
-      {/* ── Top-level cards (Sector cards OR Theme cards depending on view) ── */}
-      {level === "top" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-          {view === "sectors"
-            ? (sortedTopItems as SFSector[]).map(s => {
-                const cs = sfCardStyle(s.net_premium);
-                return (
-                  <div
-                    key={s.sector_id}
-                    onClick={() => setActiveSector(s)}
-                    style={{ background: cs.bg, border: `1px solid ${cs.bdr}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer", transition: "filter 0.12s" }}
-                    onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.15)")}
-                    onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span style={{ color: C.bright, fontFamily: sans, fontSize: 13, fontWeight: 700 }}>{s.sector_name}</span>
-                      {s.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(s.bias), border: `1px solid ${sfBiasColor(s.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{s.bias}</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: s.put_call_ratio != null ? (s.put_call_ratio < 0.7 ? C.green : s.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
-                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
-                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(s.call_premium)}</div></div>
-                      <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(s.put_premium)}</div></div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
-                      <span>{s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers</span>
-                      <span style={{ opacity: 0.4 }}>·</span>
-                      <span>{s.themes?.length ?? 0} themes</span>
-                      <ChevronDown className="w-3 h-3" style={{ marginLeft: "auto" }} />
-                    </div>
-                  </div>
-                );
-              })
-            : (sortedTopItems as SFTheme[]).map(t => <SFThemeCard key={t.theme_id ?? t.theme_name} theme={t} onClick={() => setActiveTheme(t)} />)
-          }
+      {/* ══ SECTORS — top: sector heatmap ══ */}
+      {view === "sectors" && level === "top" && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+          {sortedSectors.map(s => (
+            <HeatTile
+              key={s.sector_id}
+              name={s.sector_name}
+              pcr={s.put_call_ratio}
+              net={s.net_premium}
+              footer={`${s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers · ${s.themes?.length ?? 0} themes`}
+              flexBasis={sfTileBasis(sortedSectors, s, 150, 320)}
+              onClick={() => setActiveSector(s)}
+            />
+          ))}
         </div>
       )}
 
-      {/* ── Theme cards level (sectors view only — inside a clicked sector) ── */}
-      {level === "themes" && view === "sectors" && activeSector && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
-          {activeSector.themes.map(t => <SFThemeCard key={t.theme_id ?? t.theme_name} theme={t} onClick={() => setActiveTheme(t)} />)}
+      {/* ══ SECTORS — drill: theme heatmap inside sector ══ */}
+      {view === "sectors" && level === "themes" && activeSector && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+          {activeSector.themes.map(t => (
+            <HeatTile
+              key={t.theme_id ?? t.theme_name}
+              name={t.theme_name}
+              pcr={t.put_call_ratio}
+              net={t.net_premium}
+              footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
+              flexBasis={sfTileBasis(activeSector.themes, t, 130, 280)}
+              onClick={() => setActiveTheme(t)}
+            />
+          ))}
         </div>
       )}
 
-      {/* ── Ticker table (both views) ── */}
-      {level === "tickers" && activeTheme && (
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-          {activeTheme.tickers.length > 0 && (() => {
-            const withData = activeTheme.tickers.filter(tk => tk.net_premium != null).length;
-            const pending  = activeTheme.tickers.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-            const total    = activeTheme.tickers.length;
+      {/* ══ SECTORS — drill: ticker heatmap inside theme ══ */}
+      {view === "sectors" && level === "tickers" && activeTheme && (
+        <TickerHeatmap tickers={activeTheme.tickers} onTickerClick={setSelectedTicker} classification={activeTheme.classification} />
+      )}
+
+      {/* ══ THEMES — ungrouped ══ */}
+      {view === "themes" && level === "top" && !grouped && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+          {sortedThemes.map(t => (
+            <HeatTile
+              key={t.theme_id ?? t.theme_name}
+              name={t.theme_name}
+              pcr={t.put_call_ratio}
+              net={t.net_premium}
+              footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
+              flexBasis={sfTileBasis(sortedThemes, t, 130, 280)}
+              onClick={() => setActiveTheme(t)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ══ THEMES — grouped by classification/sector ══ */}
+      {view === "themes" && level === "top" && grouped && (() => {
+        const groups: Record<string, SFTheme[]> = {};
+        sortedThemes.forEach(t => {
+          const k = t.classification || "Other";
+          if (!groups[k]) groups[k] = [];
+          groups[k].push(t);
+        });
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            {Object.entries(groups).map(([groupName, themes]) => (
+              <div key={groupName}>
+                <div style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{groupName}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+                  {themes.map(t => (
+                    <HeatTile
+                      key={t.theme_id ?? t.theme_name}
+                      name={t.theme_name}
+                      pcr={t.put_call_ratio}
+                      net={t.net_premium}
+                      footer={`${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0} tickers`}
+                      flexBasis={sfTileBasis(themes, t, 130, 260)}
+                      onClick={() => setActiveTheme(t)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* ══ THEMES — ticker heatmap drill ══ */}
+      {view === "themes" && level === "tickers" && activeTheme && (
+        <TickerHeatmap tickers={activeTheme.tickers} onTickerClick={setSelectedTicker} classification={activeTheme.classification} />
+      )}
+
+      {/* ══ ALL STOCKS — ungrouped ══ */}
+      {view === "allstocks" && !grouped && (
+        <TickerHeatmap tickers={allTickers} onTickerClick={setSelectedTicker} />
+      )}
+
+      {/* ══ ALL STOCKS — grouped by theme ══ */}
+      {view === "allstocks" && grouped && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          {(data?.themes ?? []).map(theme => {
+            const tks = theme.tickers ?? [];
+            if (tks.length === 0) return null;
             return (
-              <div style={{ padding: "8px 12px", background: C.cardAlt, borderBottom: `1px solid ${C.border}`, display: "flex", gap: 14, alignItems: "center", fontSize: 10, fontFamily: font, color: C.dim }}>
-                <span>{withData} / {total} with flow data</span>
-                {pending > 0 && <span style={{ color: C.yellow }}>· {pending} pending scan</span>}
-                {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
+              <div key={theme.theme_id ?? theme.theme_name}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em" }}>{theme.theme_name}</span>
+                  {theme.put_call_ratio != null && (
+                    <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: sfPcrTextCol(theme.put_call_ratio) }}>
+                      P/C {theme.put_call_ratio.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {tks.map((tk, i) => (
+                    <TickerHeatTile key={(tk.symbol || tk.ticker || String(i))} tk={tk} onClick={() => setSelectedTicker(tk)} />
+                  ))}
+                </div>
               </div>
             );
-          })()}
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: C.card, borderBottom: `1px solid ${C.border}` }}>
-                {["Symbol", "Net", "Call", "Put", "P/C", "Call Vol", "Put Vol", "Status", "Updated"].map(h => (
-                  <th key={h} style={{ padding: "8px 10px", textAlign: h === "Symbol" ? "left" : h === "Status" || h === "Updated" ? "center" : "right", fontSize: 9, fontFamily: font, color: C.dim, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {activeTheme.tickers.map((tk, i) => {
-                const sym = tk.symbol || tk.ticker || tk.underlying || "—";
-                const isPending = (tk.scan_status || "").toLowerCase() === "pending";
-                const isNoOpts  = (tk.scan_status || "").toLowerCase() === "confirmed_no_options"
-                               || (tk.scan_status || "").toLowerCase() === "no_options"
-                               || tk.options_available === false;
-                return (
-                  <tr
-                    key={sym + i}
-                    onClick={() => setSelectedTicker(tk)}
-                    style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: isNoOpts && !isPending ? 0.45 : 1, cursor: "pointer", transition: "filter 0.1s" }}
-                    onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.18)")}
-                    onMouseLeave={e => (e.currentTarget.style.filter = "none")}
-                  >
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        {sym}
-                        <Eye size={10} style={{ color: C.dim, opacity: 0.5, flexShrink: 0 }} />
-                      </span>
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, color: isPending ? C.dim : sfNetColor(tk.net_premium), textAlign: "right" }}>
-                      {isPending ? "—" : fmtCurrencyShort(tk.net_premium)}
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: isPending ? C.dim : C.green, textAlign: "right" }}>
-                      {isPending ? "—" : fmtCurrencyShort(tk.call_premium)}
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: isPending ? C.dim : C.red, textAlign: "right" }}>
-                      {isPending ? "—" : fmtCurrencyShort(tk.put_premium)}
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.text, textAlign: "right" }}>
-                      {tk.put_call_ratio != null ? tk.put_call_ratio.toFixed(2) : "—"}
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>
-                      {tk.call_volume != null ? tk.call_volume.toLocaleString() : tk.total_volume != null ? tk.total_volume.toLocaleString() : "—"}
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 11, color: C.dim, textAlign: "right" }}>
-                      {tk.put_volume != null ? tk.put_volume.toLocaleString() : "—"}
-                    </td>
-                    <td style={{ padding: "8px 10px", textAlign: "center" }}>
-                      <SFScanBadge status={tk.scan_status} available={tk.options_available} />
-                    </td>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 9, color: C.dim, textAlign: "center", whiteSpace: "nowrap" }}>
-                      {tk.updated_at ? new Date(tk.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {activeTheme.tickers.length === 0 && (
-            <div style={{ padding: "24px", textAlign: "center", color: C.dim, fontFamily: font, fontSize: 12 }}>No ticker data available for this theme.</div>
-          )}
+          })}
         </div>
       )}
+
     </div>
 
     {selectedTicker && (
@@ -3617,7 +3744,7 @@ export default function OptionsPage() {
   })(), [screenerData]);
 
   const [topTab, setTopTab]           = useState<"sectors" | "screener">("sectors");
-  const [netFlowSubTab, setNetFlowSubTab] = useState<"sectors" | "themes">("sectors");
+  const [netFlowSubTab, setNetFlowSubTab] = useState<"sectors" | "themes" | "allstocks">("sectors");
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -3729,7 +3856,7 @@ export default function OptionsPage() {
       {topTab === "sectors" && (
         <>
           <div style={{ padding: "3px 16px 0", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 1 }}>
-            {(["sectors", "themes"] as const).map(t => (
+            {(["sectors", "themes", "allstocks"] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setNetFlowSubTab(t)}
@@ -3741,7 +3868,7 @@ export default function OptionsPage() {
                   transition: "all 0.15s",
                 }}
               >
-                {t === "sectors" ? "Sectors" : "Themes"}
+                {t === "sectors" ? "Sectors" : t === "themes" ? "Themes" : "All Stocks"}
               </button>
             ))}
           </div>

@@ -1,0 +1,90 @@
+Frontend only. Do not modify backend logic.
+
+We are redesigning Options Flow → Net Flow into a heatmap/treemap UI.
+
+Important: keep all existing API/data behavior working. This is a visual/UI refactor, not a data rewrite.
+
+Current backend endpoints:
+- GET /api/options-flow/sectors?view=sectors
+- GET /api/options-flow/sectors?view=themes
+
+First, make sure the Express proxy forwards query params correctly. The Themes tab must receive `themes`, not `sectors`.
+
+Goal:
+Replace the current black rectangular/card/table Net Flow layout with a real heatmap/treemap style.
+
+Top-level Net Flow views:
+1. Sectors
+2. Themes
+3. All Stocks
+
+Design rules:
+- Color = Put/Call ratio sentiment.
+  - Low P/C = green / bullish
+  - Around 1.0 = neutral / dark gray
+  - High P/C = red / bearish
+- Size = Net Premium, but P/C ratio should be visually primary.
+- Display P/C ratio more prominently than Net Premium.
+- Net Premium is secondary text.
+- Do not show "Mixed Premium Scope" anywhere.
+- Keep info tooltip explaining:
+  "Premium is estimated option premium traded. Net Premium = Call Premium - Put Premium. Contracts = total option contracts traded."
+
+Sectors View:
+- Treemap of sectors only.
+- Each sector tile:
+  - Sector name
+  - P/C ratio large/primary
+  - Net Premium smaller/secondary
+- Click sector → show themes inside that sector as heatmap tiles.
+- Click theme → show ticker heatmap for that theme.
+- Preserve existing ticker click/modal behavior.
+
+Themes View:
+- Has Grouped / Ungrouped toggle.
+- Grouped ON:
+  - Group themes under their sector.
+  - Each sector section contains theme heatmap tiles.
+- Grouped OFF:
+  - Show all theme tiles together, sorted by current sort/default order.
+- Click theme → show ticker heatmap for that theme.
+- Theme tile:
+  - Theme name
+  - P/C ratio primary
+  - Net Premium secondary
+
+All Stocks View:
+- Add a third Net Flow sub-tab: All Stocks.
+- Has Grouped / Ungrouped toggle like Themes.
+- Grouped ON:
+  - Group stocks by their theme, NOT by sector.
+  - Each theme section contains ticker heatmap tiles.
+- Grouped OFF:
+  - Show all ticker tiles together.
+- Ticker tile:
+  - Symbol
+  - P/C ratio primary
+  - Net Premium secondary
+- Click ticker → existing ticker modal/detail.
+
+Implementation constraints:
+- Reuse existing data returned from sectors/themes endpoints.
+- Do not add new API calls unless absolutely necessary.
+- If All Stocks can be built by flattening existing theme ticker rows, do that.
+- Do not duplicate rendering logic. Create reusable treemap tile / group components.
+- Keep existing status/coverage summary working.
+- Keep Refresh working.
+- Keep cached_data rendering working.
+- Keep existing popup/modal behavior working.
+
+Acceptance:
+- Net Flow has Sectors / Themes / All Stocks sub-tabs.
+- UI looks like a heatmap/treemap, not black cards/tables.
+- P/C ratio is visually primary.
+- Net Premium is secondary.
+- Themes grouped view groups themes by sector.
+- All Stocks grouped view groups stocks by theme.
+- Ungrouped views show flat sorted heatmaps.
+- Existing drilldown still works: Sector → Theme → Tickers, Theme → Tickers, Ticker → modal.
+- No backend changes.
+- Vite build passes.
