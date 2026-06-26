@@ -3337,7 +3337,14 @@ function SectorsFlowTab() {
       {/* ── Sector cards ── */}
       {level === "sectors" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-          {data.sectors.map(s => {
+          {[...data.sectors].sort((a, b) => {
+            const ap = a.put_call_ratio;
+            const bp = b.put_call_ratio;
+            if (ap == null && bp == null) return 0;
+            if (ap == null) return 1;
+            if (bp == null) return -1;
+            return ap - bp;
+          }).map(s => {
             const cs = cardStyle(s.net_premium);
             return (
               <div
@@ -3352,10 +3359,10 @@ function SectorsFlowTab() {
                   {s.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(s.bias), border: `1px solid ${sfBiasColor(s.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{s.bias}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 700, color: s.put_call_ratio != null ? (s.put_call_ratio < 0.7 ? C.green : s.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 15, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div></div>
                   <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(s.call_premium)}</div></div>
                   <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(s.put_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 12, fontFamily: font, color: C.text }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div></div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
                   <span>{s.contributing_ticker_count ?? s.ticker_count ?? 0} tickers</span>
@@ -3387,10 +3394,10 @@ function SectorsFlowTab() {
                   {t.bias && <span style={{ fontSize: 10, fontFamily: font, color: sfBiasColor(t.bias), border: `1px solid ${sfBiasColor(t.bias)}35`, borderRadius: 4, padding: "1px 5px" }}>{t.bias}</span>}
                 </div>
                 <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 700, color: t.put_call_ratio != null ? (t.put_call_ratio < 0.7 ? C.green : t.put_call_ratio > 1.3 ? C.red : C.text) : C.dim }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
+                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Net</div><div style={{ fontSize: 14, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium) }}>{fmtCurrencyShort(t.net_premium)}</div></div>
                   <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Call</div><div style={{ fontSize: 12, fontFamily: font, color: C.green }}>{fmtCurrencyShort(t.call_premium)}</div></div>
                   <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>Put</div><div style={{ fontSize: 12, fontFamily: font, color: C.red }}>{fmtCurrencyShort(t.put_premium)}</div></div>
-                  <div><div style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>P/C</div><div style={{ fontSize: 12, fontFamily: font, color: C.text }}>{t.put_call_ratio != null ? t.put_call_ratio.toFixed(2) : "—"}</div></div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.dim, fontFamily: font }}>
                   <span>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers with flow</span>

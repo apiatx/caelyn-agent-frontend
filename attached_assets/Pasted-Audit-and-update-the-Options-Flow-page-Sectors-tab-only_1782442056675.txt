@@ -1,0 +1,45 @@
+Audit and update the Options Flow page → Sectors tab only.
+
+Goal:
+The sector cards must be ranked by P/C ratio, lowest to highest, so the most bullish sectors appear first and the most bearish appear last. Do not sort by NET. NET is misleading here because sectors have different ticker counts.
+
+UI change:
+On every sector card, reorder the metric row from:
+
+NET / CALL / PUT / P/C
+
+to:
+
+P/C / NET / CALL / PUT
+
+The P/C value should be visually emphasized and at least as large as NET, ideally the primary/biggest number on the card.
+
+Requirements:
+1. Find the existing sector card render logic for Options Flow → Sectors.
+2. Preserve the existing data source, refresh behavior, coverage display, pending/LKG/live labels, card expansion, theme drilldowns, and all existing paths.
+3. Sort sectors using the numeric P/C ratio ascending:
+   - lowest P/C first = most bullish
+   - highest P/C last = most bearish
+4. Handle null/missing/zero-denominator P/C safely:
+   - sectors with no valid P/C should sort to the bottom
+   - do not crash if call/put values are missing
+5. Keep the existing sentiment badge logic unless it is directly tied to the previous sort order.
+6. Update card layout labels and values to display:
+   - P/C
+   - NET
+   - CALL
+   - PUT
+7. Make P/C the dominant displayed metric:
+   - larger font than Call/Put
+   - equal or larger than NET
+   - do not make NET visually dominate the card
+8. Do not change backend API contracts unless absolutely necessary.
+9. Do not rename routes, do not create a new sectors component from scratch, and do not replace existing Options Flow page architecture.
+
+Validation:
+- Reload Options Flow → Sectors.
+- Confirm sectors are ordered by P/C ascending.
+- From the screenshot example, Consumer Discretionary P/C 0.01 and Real Estate P/C 0.01 should appear before Healthcare 0.33, Utilities 0.48, Technology 0.51, etc.
+- Confirm the metric order reads exactly: P/C, NET, CALL, PUT.
+- Confirm expanded sector/theme behavior still works.
+- Confirm coverage/pending display still works.
