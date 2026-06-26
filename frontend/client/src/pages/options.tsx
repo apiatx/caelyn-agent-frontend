@@ -23,6 +23,7 @@ import {
   Eye,
   BookOpen,
   Search,
+  Info,
 } from "lucide-react";
 import {
   BarChart,
@@ -2944,6 +2945,8 @@ interface SFTheme {
   bias: string | null;
   ticker_count: number | null;
   contributing_ticker_count: number | null;
+  total_contract_volume?: number | null;
+  aggregation_scope?: string | null;
   tickers: SFTicker[];
 }
 interface SFSector {
@@ -2957,6 +2960,8 @@ interface SFSector {
   ticker_count: number | null;
   contributing_ticker_count: number | null;
   sector_total_method?: string | null;
+  total_contract_volume?: number | null;
+  aggregation_scope?: string | null;
   themes: SFTheme[];
 }
 interface SFCoverage {
@@ -2982,6 +2987,7 @@ interface SFData {
   scan_coverage: SFCoverage | null;
   sectors: SFSector[];
   themes?: SFTheme[];
+  premium_metadata?: Record<string, string> | null;
 }
 
 function sfNetColor(net: number | null): string {
@@ -3233,12 +3239,19 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
 
   // Derive totals from whichever array the backend returned
   const totals = useMemo(() => {
-    const src: Array<{ call_premium: number | null; put_premium: number | null; net_premium: number | null }> =
+    const src: Array<{ call_premium: number | null; put_premium: number | null; net_premium: number | null; total_contract_volume?: number | null; aggregation_scope?: string | null }> =
       view === "themes" ? (data?.themes ?? []) : (data?.sectors ?? []);
     if (!src.length) return null;
-    let call = 0, put = 0, net = 0;
-    src.forEach(s => { call += s.call_premium ?? 0; put += s.put_premium ?? 0; net += s.net_premium ?? 0; });
-    return { call, put, net, pcr: call > 0 ? put / call : null };
+    let call = 0, put = 0, net = 0, contracts = 0;
+    let hasMixed = false;
+    src.forEach(s => {
+      call      += s.call_premium           ?? 0;
+      put       += s.put_premium            ?? 0;
+      net       += s.net_premium            ?? 0;
+      contracts += s.total_contract_volume  ?? 0;
+      if (s.aggregation_scope === "mixed") hasMixed = true;
+    });
+    return { call, put, net, pcr: call > 0 ? put / call : null, contracts, hasMixed };
   }, [data, view]);
 
   // Navigation levels
@@ -3292,20 +3305,35 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
       {/* ── Header summary ── */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "10px 14px", marginBottom: 14, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 90 }}>
-          <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>Net Flow</span>
-          <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
-            {totals ? fmtCurrencyShort(totals.net) : "—"}
+          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Net Premium
+            <Info
+              size={10}
+              style={{ color: C.dim, opacity: 0.55, cursor: "default", flexShrink: 0 }}
+              title="Estimated premium traded in USD. Some rollups may mix primary-expiry chain summaries and top unusual-contract flow."
+            />
           </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
+              {totals ? fmtCurrencyShort(totals.net) : "—"}
+            </span>
+            {totals?.hasMixed && (
+              <span style={{ fontSize: 9, fontFamily: font, padding: "1px 6px", borderRadius: 4, background: `${C.yellow}10`, border: `1px solid ${C.yellow}22`, color: C.yellow, whiteSpace: "nowrap" }}>
+                Mixed Premium Scope
+              </span>
+            )}
+          </div>
         </div>
         <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
-        <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {([
-            { label: "Call", val: totals?.call ?? null, color: C.green, fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "Put",  val: totals?.put  ?? null, color: C.red,   fmt: (v: number | null) => fmtCurrencyShort(v) },
-            { label: "P/C",  val: totals?.pcr  ?? null, color: C.text,  fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
+            { label: "Call Premium",  val: totals?.call      ?? null, color: C.green, fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Put Premium",   val: totals?.put       ?? null, color: C.red,   fmt: (v: number | null) => fmtCurrencyShort(v) },
+            { label: "Premium P/C",   val: totals?.pcr       ?? null, color: C.text,  fmt: (v: number | null) => v != null ? v.toFixed(2) : "—" },
+            { label: "Contracts",     val: totals?.contracts ?? null, color: C.dim,   fmt: (v: number | null) => v != null && v > 0 ? v.toLocaleString() : "—" },
           ] as { label: string; val: number | null; color: string; fmt: (v: number | null) => string }[]).map(({ label, val, color, fmt }) => (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
               <span style={{ fontSize: 13, fontFamily: font, fontWeight: 600, color }}>{fmt(val)}</span>
             </div>
           ))}
