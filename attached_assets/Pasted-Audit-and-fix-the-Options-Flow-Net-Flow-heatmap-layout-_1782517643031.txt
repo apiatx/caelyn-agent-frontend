@@ -1,0 +1,158 @@
+Audit and fix the Options Flow → Net Flow heatmap layout for Sectors, Themes, and All Stocks.
+
+Current problem:
+The current layout still behaves like oversized rectangular cards. It does not visually match TradingView heatmaps. The user wants a compact TradingView-style treemap where bullish/bearish names stand out by square size, neutral names shrink down, and everything fits in the visible page area without vertical scrolling.
+
+Important concept:
+Use PREMIUM P/C ratio as the neutral/bullish/bearish signal.
+
+Neutral baseline:
+P/C = 1.00
+
+Bullish:
+P/C < 1.00
+The farther below 1.00, the more bullish.
+
+Bearish:
+P/C > 1.00
+The farther above 1.00, the more bearish.
+
+Sizing:
+Tile size should be based on distance from neutral P/C = 1.00, not raw NET premium.
+
+Use this signal for size/priority:
+
+deviation_score = abs(log(premium_pcr))
+
+Examples:
+- P/C 0.05 = very bullish, large tile
+- P/C 0.25 = bullish, large/medium tile
+- P/C 0.90 = near neutral, small/gray tile
+- P/C 1.10 = near neutral, small/gray tile
+- P/C 2.00 = bearish, large/medium tile
+- P/C 5.00 = very bearish, large tile
+- P/C 32.45 = extreme bearish, very large tile
+
+Do not use absolute NET premium for tile area. NET can still be displayed, but it must not determine tile size because sectors/themes have unequal ticker counts.
+
+Required tabs/views:
+1. Sectors
+2. Themes
+3. All Stocks
+
+All three should use the same heatmap engine and visual rules.
+
+Layout requirements:
+1. Replace the current grid/card layout with a true squarified treemap layout.
+2. The treemap must fit inside the available viewport height.
+3. The user should not need to scroll vertically to see the full map.
+4. Tiles should prefer square-ish aspect ratios like TradingView.
+5. Avoid giant awkward horizontal/vertical rectangles unless the data genuinely forces it.
+6. Tiny/neutral tiles should compress into small squares/rectangles on the right/bottom like TradingView.
+7. Use hover tooltip/popover for small tiles that cannot fit full text.
+8. Larger tiles should show:
+   - name/symbol
+   - large P/C
+   - small label “P/C”
+   - NET premium
+   - optional ticker/theme count when relevant
+9. Medium tiles should show:
+   - name/symbol
+   - P/C
+   - NET premium if space allows
+10. Tiny tiles should show only name/symbol or nothing, with full details on hover.
+
+Sorting / placement:
+Before treemap layout, sort items by deviation_score descending.
+This means the items furthest away from P/C 1.00 get the largest/most prominent tiles.
+
+Color rules:
+Use direction from P/C:
+- P/C < 1.00 = green
+- P/C > 1.00 = red
+- P/C near 1.00 = gray/neutral
+
+Use intensity based on deviation_score:
+- Farther from 1.00 = stronger/brighter green or red
+- Closer to 1.00 = darker/gray/muted
+
+Suggested neutral band:
+- 0.85 <= P/C <= 1.15 should look neutral/gray or very muted.
+- Do not make near-1 values look strongly bullish/bearish.
+
+Data handling:
+1. Use existing API data and existing premium_pcr / pcr / put_call premium ratio fields.
+2. Do not change backend unless the required numeric P/C field is missing.
+3. Safely handle null/missing P/C:
+   - Size should be minimum
+   - Color should be neutral/dark gray
+   - Sort near the bottom
+4. Safely handle P/C = 0:
+   - Treat as extremely bullish but clamp the calculation so it does not explode.
+   - Example: safe_pcr = Math.max(pcr, 0.01)
+5. Clamp extreme values so one tile does not eat the whole page:
+   - Example deviation_score = Math.min(abs(log(safe_pcr)), 3.5)
+6. Add a small minimum area so all items remain hoverable.
+7. Do not duplicate symbols if the current data has duplicate rows; audit whether duplicates are coming from frontend mapping or backend payload. Deduplicate by stable key if necessary.
+
+Implementation guidance:
+Use a real treemap algorithm/library if already available in the frontend dependencies.
+If d3-hierarchy is already installed, use:
+- hierarchy
+- treemap
+- treemapSquarify
+
+If d3-hierarchy is not installed, either:
+- add d3-hierarchy if project dependency policy allows it, or
+- implement a small squarified treemap helper locally.
+
+Do not use CSS grid/flexbox as the primary layout. CSS grid is why this currently looks wrong.
+
+Treemap container:
+- Height should be based on available viewport after headers/controls.
+- Example: height: calc(100vh - existingHeaderHeight)
+- Width: 100%
+- overflow: hidden
+- no page-level vertical scroll for the treemap itself
+
+Tooltip:
+Add hover tooltip/popover with:
+- name/symbol
+- P/C
+- NET premium
+- Call premium
+- Put premium
+- contracts if available
+- ticker/theme coverage count if available
+- bullish/bearish/neutral label
+
+Preserve:
+- Existing Options Flow page route
+- Existing Net Flow / Unusual Flow toggle
+- Existing Sectors / Themes / All Stocks tabs
+- Existing refresh behavior
+- Existing coverage/pending/LKG/live diagnostics
+- Existing API contracts
+- Existing color theme/dark UI
+- Existing data source
+
+Do not:
+- Do not make new backend endpoints unless absolutely necessary.
+- Do not sort/size by NET premium.
+- Do not leave sectors/themes/stocks in simple card rows.
+- Do not create a separate page.
+- Do not rename routes.
+- Do not remove existing diagnostics.
+- Do not create scroll-heavy layouts.
+
+Validation:
+1. Open Options Flow → Net Flow → Sectors.
+2. Confirm the largest tiles are sectors farthest from P/C 1.00, not sectors with highest raw NET premium.
+3. Confirm bullish low P/C sectors are green and large when far below 1.00.
+4. Confirm bearish high P/C sectors are red and large when far above 1.00.
+5. Confirm near-1.00 sectors are small/muted/gray.
+6. Confirm the whole treemap fits in the page without needing to scroll down.
+7. Confirm tile shapes are mostly square-ish, TradingView-style.
+8. Repeat the same checks for Themes.
+9. Repeat the same checks for All Stocks.
+10. Confirm hover tooltip works for tiny tiles.
