@@ -1,0 +1,56 @@
+Frontend only. Do not modify backend.
+
+The treemap is now real, but the sizing is too extreme. The largest tiles dominate so much that users cannot read or even see the smaller sectors/themes/stocks.
+
+Fix the treemap readability.
+
+Requirements:
+1. Keep the squarified treemap / puzzle-piece layout.
+2. Keep color = P/C ratio.
+3. Keep P/C visually primary.
+4. But reduce size dominance from huge premium names.
+
+Sizing change:
+- Do NOT size tiles directly by raw absolute net premium.
+- Use a compressed size scale:
+  sizeValue = sqrt(abs(net_premium))
+  or
+  sizeValue = log1p(abs(net_premium))
+- Choose whichever gives better readability.
+- Add a minimum size floor so small nodes are still visible/readable.
+
+Minimum tile behavior:
+- For Sectors and Themes, every tile should be readable.
+- For All Stocks, every ticker should remain visible; scrolling is acceptable.
+- Do not make tiny slivers that are unreadable.
+- If needed, increase container height and allow vertical page scroll.
+
+Recommended:
+- Sectors: all 11 sectors should be visible and readable in one viewport area.
+- Themes ungrouped: readable tiles; page scroll acceptable.
+- All Stocks ungrouped: allow taller treemap/page scroll so smaller tickers are visible.
+- Grouped views: each group should have enough height for its child tiles.
+
+Specific implementation:
+1. Add a size accessor separate from displayed net premium.
+2. Use compressed sizing:
+   const raw = Math.abs(net_premium ?? 0)
+   const size = Math.max(MIN_TILE_WEIGHT, Math.sqrt(raw))
+   If sqrt still too extreme, use log1p(raw).
+3. For grouped treemaps, allocate group height based on number of children with a minimum readable height.
+4. Do not hide small tiles completely.
+5. Tiny tiles may hide secondary text, but should still show at least symbol/name when possible.
+6. All Stocks can be vertically scrollable. That is better than microscopic unreadable tiles.
+
+Color rule stays exact:
+- P/C < 1 green
+- P/C > 1 red
+- P/C === 1 gray only
+- null/missing P/C muted dark gray
+
+Acceptance:
+- No single sector/theme/ticker consumes almost the entire view.
+- Small sectors/themes/stocks are readable.
+- All Stocks may scroll vertically, but users can see/read all tickers.
+- Layout still fills space like puzzle pieces.
+- Vite build passes.

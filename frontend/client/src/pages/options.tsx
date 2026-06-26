@@ -3275,6 +3275,13 @@ function sfPcrTextCol(pcr: number | null): string {
   return C.red;
 }
 
+// ── Tile size: sqrt-compressed so huge premiums don't dominate ────────────────
+const SF_MIN_TILE_WEIGHT = 180; // floor in sqrt-space keeps tiny tiles readable
+function sfTileSize(net: number | null, call?: number | null, put?: number | null): number {
+  const raw = Math.abs(net ?? 0) || (call ?? 0) + (put ?? 0);
+  return Math.max(SF_MIN_TILE_WEIGHT, Math.sqrt(raw));
+}
+
 // ── Generic squarified treemap component ─────────────────────────────────────
 function SFTreemap<T extends object>({
   items, sizeOf, getPcr, noData, onClick, renderTile, keyOf, height, gap = 2,
@@ -3639,12 +3646,12 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {view === "sectors" && level === "top" && (
         <SFTreemap
           items={sortedSectors}
-          sizeOf={s => Math.abs(s.net_premium ?? 0) || (s.call_premium ?? 0) + (s.put_premium ?? 0) || 1}
+          sizeOf={s => sfTileSize(s.net_premium, s.call_premium, s.put_premium)}
           getPcr={s => s.put_call_ratio}
           onClick={s => setActiveSector(s)}
           renderTile={sfRenderSector}
           keyOf={(s, i) => s.sector_id ?? String(i)}
-          height={Math.max(300, Math.min(520, sortedSectors.length * 45))}
+          height={Math.max(440, Math.min(560, sortedSectors.length * 48))}
         />
       )}
 
@@ -3652,19 +3659,19 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {view === "sectors" && level === "themes" && activeSector && (
         <SFTreemap
           items={activeSector.themes}
-          sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+          sizeOf={t => sfTileSize(t.net_premium, t.call_premium, t.put_premium)}
           getPcr={t => t.put_call_ratio}
           onClick={t => setActiveTheme(t)}
           renderTile={sfRenderTheme}
           keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-          height={Math.max(260, Math.min(500, activeSector.themes.length * 40))}
+          height={Math.max(320, Math.min(580, activeSector.themes.length * 48))}
         />
       )}
 
       {/* ══ SECTORS — drill: ticker treemap inside theme ══ */}
       {view === "sectors" && level === "tickers" && activeTheme && (() => {
         const tks  = activeTheme.tickers;
-        const h    = Math.max(220, Math.min(520, tks.length * 16 + 80));
+        const h    = Math.max(300, Math.min(700, tks.length * 24 + 100));
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
         return (
@@ -3676,7 +3683,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
             </div>
             <SFTreemap
               items={tks}
-              sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+              sizeOf={tk => sfTileSize(tk.net_premium, tk.call_premium, tk.put_premium)}
               getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
               noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && ((tk.scan_status||"").toLowerCase()==="confirmed_no_options" || tk.options_available===false)}
               onClick={tk => setSelectedTicker(tk)}
@@ -3692,12 +3699,12 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {view === "themes" && level === "top" && !grouped && (
         <SFTreemap
           items={sortedThemes}
-          sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+          sizeOf={t => sfTileSize(t.net_premium, t.call_premium, t.put_premium)}
           getPcr={t => t.put_call_ratio}
           onClick={t => setActiveTheme(t)}
           renderTile={sfRenderTheme}
           keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-          height={Math.max(360, Math.min(660, sortedThemes.length * 14 + 80))}
+          height={Math.max(520, Math.min(1100, sortedThemes.length * 18 + 100))}
         />
       )}
 
@@ -3716,12 +3723,12 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
                 <div style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{groupName}</div>
                 <SFTreemap
                   items={themes}
-                  sizeOf={t => Math.abs(t.net_premium ?? 0) || (t.call_premium ?? 0) + (t.put_premium ?? 0) || 1}
+                  sizeOf={t => sfTileSize(t.net_premium, t.call_premium, t.put_premium)}
                   getPcr={t => t.put_call_ratio}
                   onClick={t => setActiveTheme(t)}
                   renderTile={sfRenderTheme}
                   keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-                  height={Math.max(110, Math.min(280, themes.length * 28))}
+                  height={Math.max(160, Math.min(380, themes.length * 42))}
                 />
               </div>
             ))}
@@ -3732,7 +3739,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {/* ══ THEMES — ticker treemap drill ══ */}
       {view === "themes" && level === "tickers" && activeTheme && (() => {
         const tks  = activeTheme.tickers;
-        const h    = Math.max(220, Math.min(520, tks.length * 16 + 80));
+        const h    = Math.max(300, Math.min(700, tks.length * 24 + 100));
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
         return (
@@ -3744,7 +3751,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
             </div>
             <SFTreemap
               items={tks}
-              sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+              sizeOf={tk => sfTileSize(tk.net_premium, tk.call_premium, tk.put_premium)}
               getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
               noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
               onClick={tk => setSelectedTicker(tk)}
@@ -3760,13 +3767,13 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {view === "allstocks" && !grouped && (
         <SFTreemap
           items={allTickers}
-          sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+          sizeOf={tk => sfTileSize(tk.net_premium, tk.call_premium, tk.put_premium)}
           getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
           noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
           onClick={tk => setSelectedTicker(tk)}
           renderTile={sfRenderTicker}
           keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
-          height={Math.max(380, Math.min(720, allTickers.length * 5 + 200))}
+          height={Math.max(600, Math.min(2400, allTickers.length * 9 + 300))}
         />
       )}
 
@@ -3775,7 +3782,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {(data?.themes ?? []).filter(th => (th.tickers ?? []).length > 0).map(theme => {
             const tks = theme.tickers ?? [];
-            const h   = Math.max(90, Math.min(240, tks.length * 18));
+            const h   = Math.max(120, Math.min(320, tks.length * 24));
             return (
               <div key={theme.theme_id ?? theme.theme_name}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
@@ -3788,7 +3795,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
                 </div>
                 <SFTreemap
                   items={tks}
-                  sizeOf={tk => Math.abs(tk.net_premium ?? 0) || (tk.call_premium ?? 0) + (tk.put_premium ?? 0) || 1}
+                  sizeOf={tk => sfTileSize(tk.net_premium, tk.call_premium, tk.put_premium)}
                   getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
                   noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
                   onClick={tk => setSelectedTicker(tk)}
