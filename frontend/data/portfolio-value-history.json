@@ -927,5 +927,22 @@
       "AMPG",
       "FLNC"
     ]
+  },
+  {
+    "timestamp": "2026-06-25T14:49:56.325Z",
+    "total_value": 113018.21637000001,
+    "holdings_count": 10,
+    "symbols": [
+      "LPTH",
+      "IQEPF",
+      "OUST",
+      "AOSL",
+      "SLNH",
+      "SIVEF",
+      "NBIS",
+      "PENG",
+      "AMPG",
+      "FLNC"
+    ]
   }
 ]

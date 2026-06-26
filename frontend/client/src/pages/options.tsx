@@ -41,6 +41,7 @@ import {
 } from "recharts";
 import { TickerThematicBadge, ThematicSection, RegimeContextStrip } from "@/components/ui/ticker-thematic";
 import type { RegimeContextData } from "@/components/ui/ticker-thematic";
+import { resolveTVSymbol } from "@/utils/tvSymbol";
 
 const API_BASE = "/api/options";
 
@@ -3005,6 +3006,156 @@ function SFScanBadge({ status, available }: { status: string | null; available: 
   return null;
 }
 
+// ─── Sector ticker detail popup ──────────────────────────────────────────────
+function SFTickerModal({ ticker, onClose }: { ticker: SFTicker; onClose: () => void }) {
+  const sym = ticker.symbol || ticker.ticker || ticker.underlying || '';
+  const tvSym = resolveTVSymbol(sym);
+  const [screener, setScreener] = useState<any>(null);
+  const [scrLoading, setScrLoading] = useState(true);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!sym) return;
+    setScrLoading(true);
+    setScreener(null);
+    fetch(`/api/options/screener/${encodeURIComponent(sym)}`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setScreener(d); setScrLoading(false); })
+      .catch(() => setScrLoading(false));
+  }, [sym]);
+
+  const score    = screener?.composite_score != null ? Math.round(screener.composite_score) : null;
+  const signal   = screener?.primary_signal ?? null;
+  const conf     = screener?.confidence ?? null;
+  const iv       = screener?.iv_current != null ? (screener.iv_current > 5 ? screener.iv_current : screener.iv_current * 100) : null;
+  const pcr      = screener?.pc_ratio ?? ticker.put_call_ratio ?? null;
+  const em       = screener?.expected_move != null ? screener.expected_move * 100 : null;
+  const vol      = screener?.total_volume ?? ticker.total_volume ?? null;
+  const price    = screener?.underlying_price ?? null;
+  const chgPct   = screener?.price_change_pct ?? null;
+
+  const signalLabel = signal ? signal.replace(/_/g, ' ').toUpperCase() : null;
+  const signalClr   = signal?.includes('unusual') ? C.yellow : signal?.includes('gamma') ? C.purple : signal?.includes('asym') ? C.green : signal?.includes('vol') || signal?.includes('iv') ? C.orange : C.blue;
+  const scoreClr    = score != null ? (score >= 70 ? C.green : score >= 50 ? C.yellow : C.dim) : C.dim;
+  const biasClr     = sfBiasColor(ticker.bias);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontFamily: font, fontSize: 16, fontWeight: 800, color: C.bright }}>{sym}</span>
+            {ticker.bias && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, border: `1px solid ${biasClr}35`, color: biasClr, fontFamily: font }}>{ticker.bias.toUpperCase()}</span>}
+            {price != null && (
+              <span style={{ fontFamily: font, fontSize: 12, color: C.text }}>
+                ${price.toFixed(2)}
+                {chgPct != null && <span style={{ marginLeft: 5, color: chgPct >= 0 ? C.green : C.red }}>{chgPct >= 0 ? '+' : ''}{chgPct.toFixed(2)}%</span>}
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dim, display: 'flex', padding: 4, borderRadius: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* TradingView chart */}
+        {tvSym && (
+          <div style={{ flexShrink: 0 }}>
+            <iframe
+              key={tvSym}
+              src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSym)}&interval=D&theme=dark&style=1&locale=en&hide_top_toolbar=0&hide_side_toolbar=1&allow_symbol_change=0&save_image=0&width=100%25&height=340`}
+              style={{ width: '100%', height: 340, border: 'none', display: 'block' }}
+              allowTransparency
+            />
+          </div>
+        )}
+
+        {/* Options data */}
+        <div style={{ padding: '14px 16px', borderTop: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 9, fontFamily: font, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Options Data</div>
+          {scrLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontFamily: font, fontSize: 11 }}>
+              <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Loading options data…
+            </div>
+          ) : screener == null ? (
+            <div style={{ color: C.dim, fontFamily: font, fontSize: 11 }}>
+              {ticker.options_available === false ? 'No options available for this ticker.' : 'Options data not available.'}
+            </div>
+          ) : (
+            <>
+              {/* Score + signal row */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                {score != null && (
+                  <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: '8px 12px', textAlign: 'center', minWidth: 70 }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Score</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, fontFamily: font, color: scoreClr }}>{score}</div>
+                  </div>
+                )}
+                {signalLabel && (
+                  <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: '8px 12px', textAlign: 'center', flex: 1, minWidth: 120 }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Signal</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: font, color: signalClr }}>{signalLabel}</div>
+                    {conf && <div style={{ fontSize: 9, color: C.dim, fontFamily: font, marginTop: 2 }}>{conf}</div>}
+                  </div>
+                )}
+                {ticker.heat_score != null && (
+                  <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: '8px 12px', textAlign: 'center', minWidth: 70 }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Heat</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, fontFamily: font, color: ticker.heat_score >= 75 ? C.red : ticker.heat_score >= 50 ? C.yellow : C.dim }}>{Math.round(ticker.heat_score)}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Metrics grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: 'IV', value: iv != null ? `${iv.toFixed(0)}%` : '—', color: iv != null && iv > 80 ? C.yellow : C.text },
+                  { label: 'P/C Ratio', value: pcr != null ? pcr.toFixed(2) : '—', color: pcr != null ? (pcr < 0.7 ? C.green : pcr > 1.3 ? C.red : C.text) : C.dim },
+                  { label: 'Exp Move', value: em != null ? `±${em.toFixed(1)}%` : '—', color: C.text },
+                  { label: 'Volume', value: vol != null ? vol.toLocaleString() : '—', color: C.text },
+                  { label: 'Net Flow', value: fmtCurrencyShort(ticker.net_premium), color: sfNetColor(ticker.net_premium) },
+                  { label: 'Calls', value: fmtCurrencyShort(ticker.call_premium), color: C.green },
+                  { label: 'Puts', value: fmtCurrencyShort(ticker.put_premium), color: C.red },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 6, padding: '7px 10px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: font, color }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Scan status + updated_at footer */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+                <SFScanBadge status={ticker.scan_status} available={ticker.options_available} />
+                {ticker.updated_at && (
+                  <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>
+                    Updated {new Date(ticker.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+                {screener?.on_demand && (
+                  <span style={{ fontSize: 9, color: C.blue, fontFamily: font, marginLeft: 'auto' }}>live scan</span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SectorsFlowTab() {
   const [data,       setData]       = useState<SFData | null>(null);
   const [loading,    setLoading]    = useState(true);
@@ -3012,6 +3163,7 @@ function SectorsFlowTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeSector, setActiveSector] = useState<SFSector | null>(null);
   const [activeTheme,  setActiveTheme]  = useState<SFTheme  | null>(null);
+  const [selectedTicker, setSelectedTicker] = useState<SFTicker | null>(null);
 
   const load = useCallback(async (bg = false) => {
     if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
@@ -3072,6 +3224,7 @@ function SectorsFlowTab() {
   if (!data) return null;
 
   return (
+    <>
     <div style={{ padding: "12px 16px 24px", flex: 1, overflowY: "auto" }}>
 
       {/* ── Header summary ── */}
@@ -3279,8 +3432,19 @@ function SectorsFlowTab() {
                 const isPending = (tk.scan_status || "").toLowerCase() === "pending";
                 const isNoOpts  = (tk.scan_status || "").toLowerCase() === "no_options" || tk.options_available === false;
                 return (
-                  <tr key={sym + i} style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: isNoOpts && !isPending ? 0.45 : 1 }}>
-                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>{sym}</td>
+                  <tr
+                    key={sym + i}
+                    onClick={() => setSelectedTicker(tk)}
+                    style={{ background: i % 2 === 0 ? C.card : C.cardAlt, borderBottom: `1px solid ${C.border}`, opacity: isNoOpts && !isPending ? 0.45 : 1, cursor: "pointer", transition: "filter 0.1s" }}
+                    onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.18)")}
+                    onMouseLeave={e => (e.currentTarget.style.filter = "none")}
+                  >
+                    <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, fontWeight: 700, color: C.bright }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {sym}
+                        <Eye size={10} style={{ color: C.dim, opacity: 0.5, flexShrink: 0 }} />
+                      </span>
+                    </td>
                     <td style={{ padding: "8px 10px", fontFamily: font, fontSize: 12, color: isPending ? C.dim : sfNetColor(tk.net_premium), textAlign: "right" }}>
                       {isPending ? "—" : fmtCurrencyShort(tk.net_premium)}
                     </td>
@@ -3313,6 +3477,11 @@ function SectorsFlowTab() {
         </div>
       )}
     </div>
+
+    {selectedTicker && (
+      <SFTickerModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+    )}
+    </>
   );
 }
 
