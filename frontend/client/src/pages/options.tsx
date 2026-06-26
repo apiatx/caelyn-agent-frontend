@@ -3638,29 +3638,8 @@ export default function OptionsPage() {
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      {/* Page header */}
-      <div style={{ padding: "13px 20px 11px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <Zap className="w-5 h-5" style={{ color: C.green }} />
-          <span style={{ color: C.bright, fontSize: 17, fontWeight: 800, fontFamily: font, letterSpacing: "-0.02em" }}>OPTIONS FLOW</span>
-          <span style={{ color: C.dim, fontSize: 11, fontFamily: font }}>· options flow</span>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              onClick={() => setShowGuide(true)}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 10, fontFamily: font, cursor: "pointer", transition: "border-color 0.1s, color 0.1s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}
-            >
-              <BookOpen className="w-3 h-3" />
-              Options Guide
-            </button>
-            <DataIngestionWidget />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Top-level Sectors / Screener toggle ── */}
-      <div style={{ padding: "6px 16px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 2 }}>
+      {/* ── Top-level tab toggle + Options Guide ── */}
+      <div style={{ padding: "6px 16px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", alignItems: "center", gap: 2 }}>
         {(["sectors", "screener"] as const).map(t => (
           <button
             key={t}
@@ -3674,9 +3653,20 @@ export default function OptionsPage() {
               transition: "all 0.15s",
             }}
           >
-            {t === "sectors" ? "Sectors" : "Screener"}
+            {t === "sectors" ? "Net Flow" : "Unusual Flow"}
           </button>
         ))}
+        <div style={{ marginLeft: "auto" }}>
+          <button
+            onClick={() => setShowGuide(true)}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: "transparent", color: C.dim, fontSize: 10, fontFamily: font, cursor: "pointer", transition: "border-color 0.1s, color 0.1s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.dim; }}
+          >
+            <BookOpen className="w-3 h-3" />
+            Options Guide
+          </button>
+        </div>
       </div>
 
       {/* ── Sectors tab ── */}
