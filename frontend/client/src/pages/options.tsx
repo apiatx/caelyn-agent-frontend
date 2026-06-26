@@ -3310,19 +3310,12 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" }) {
             <Info
               size={10}
               style={{ color: C.dim, opacity: 0.55, cursor: "default", flexShrink: 0 }}
-              title="Estimated premium traded in USD. Some rollups may mix primary-expiry chain summaries and top unusual-contract flow."
+              title="Premium is estimated dollars traded. Net Premium = Call Premium − Put Premium. Contracts = number of option contracts traded."
             />
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
-              {totals ? fmtCurrencyShort(totals.net) : "—"}
-            </span>
-            {totals?.hasMixed && (
-              <span style={{ fontSize: 9, fontFamily: font, padding: "1px 6px", borderRadius: 4, background: `${C.yellow}10`, border: `1px solid ${C.yellow}22`, color: C.yellow, whiteSpace: "nowrap" }}>
-                Mixed Premium Scope
-              </span>
-            )}
-          </div>
+          <span style={{ fontSize: 17, fontFamily: font, fontWeight: 800, color: totals ? (totals.net > 0 ? C.green : totals.net < 0 ? C.red : C.bright) : C.bright }}>
+            {totals ? fmtCurrencyShort(totals.net) : "—"}
+          </span>
         </div>
         <div style={{ width: 1, height: 32, background: C.border, flexShrink: 0 }} />
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
