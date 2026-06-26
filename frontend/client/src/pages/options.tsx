@@ -3350,17 +3350,32 @@ function SFTreemap<T extends object>({
 
 // ── Tile content renderers (module-level, not recreated per render) ────────────
 function sfRenderSector(s: SFSector, tw: number, th: number): ReactNode {
-  const pad      = tw > 55 ? "8px 10px" : "4px 5px";
-  const nameSize = Math.max(8, Math.min(11, tw / 11));
-  const pcrSize  = Math.max(12, Math.min(24, Math.min(tw / 5, th / 2.5)));
-  const netSize  = Math.max(8, Math.min(11, tw / 14));
+  const pad      = tw > 55 ? "7px 9px" : "4px 5px";
+  const nameSize = Math.max(8, Math.min(10, tw / 13));
+  // P/C capped so it never exceeds ~40% of tile height, leaving room for the name
+  const pcrSize  = Math.max(11, Math.min(20, Math.min(tw / 6, th / 3.2)));
+  const netSize  = Math.max(8, Math.min(10, tw / 15));
+  const wrapName = tw > 80;  // allow wrapping for wider tiles
   return (
-    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      {tw > 38 && <div style={{ fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.sector_name}</div>}
-      {th > 34 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(s.put_call_ratio), lineHeight: 1 }}>{s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}</div>}
-      {th > 55 && tw > 52 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em" }}>P/C</div>}
-      {th > 68 && tw > 62 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium) }}>{fmtCurrencyShort(s.net_premium)}</div>}
-      {th > 88 && tw > 80 && <div style={{ fontSize: 8, color: "#666", fontFamily: font }}>{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</div>}
+    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 2, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      {tw > 38 && (
+        <div style={{
+          fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright,
+          lineHeight: 1.25, flexShrink: 0, overflow: "hidden",
+          whiteSpace: wrapName ? "normal" : "nowrap",
+          textOverflow: wrapName ? undefined : "ellipsis",
+          wordBreak: "break-word",
+          maxHeight: nameSize * 1.25 * 2 + 1,  // max 2 lines
+        }}>{s.sector_name}</div>
+      )}
+      {th > 36 && (
+        <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(s.put_call_ratio), lineHeight: 1, flexShrink: 0 }}>
+          {s.put_call_ratio != null ? s.put_call_ratio.toFixed(2) : "—"}
+        </div>
+      )}
+      {th > 58 && tw > 52 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>P/C</div>}
+      {th > 72 && tw > 62 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium), flexShrink: 0 }}>{fmtCurrencyShort(s.net_premium)}</div>}
+      {th > 94 && tw > 80 && <div style={{ fontSize: 8, color: "#666", fontFamily: font, flexShrink: 0 }}>{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</div>}
     </div>
   );
 }
@@ -3688,7 +3703,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
               noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && ((tk.scan_status||"").toLowerCase()==="confirmed_no_options" || tk.options_available===false)}
               onClick={tk => setSelectedTicker(tk)}
               renderTile={sfRenderTicker}
-              keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+              keyOf={(tk, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
               height={h}
             />
           </>
@@ -3756,7 +3771,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
               noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
               onClick={tk => setSelectedTicker(tk)}
               renderTile={sfRenderTicker}
-              keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+              keyOf={(tk, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
               height={h}
             />
           </>
@@ -3772,7 +3787,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
           noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
           onClick={tk => setSelectedTicker(tk)}
           renderTile={sfRenderTicker}
-          keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+          keyOf={(tk, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
           height={Math.max(600, Math.min(2400, allTickers.length * 9 + 300))}
         />
       )}
@@ -3800,7 +3815,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
                   noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
                   onClick={tk => setSelectedTicker(tk)}
                   renderTile={sfRenderTicker}
-                  keyOf={(tk, i) => tk.symbol || tk.ticker || String(i)}
+                  keyOf={(tk, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
                   height={h}
                 />
               </div>
