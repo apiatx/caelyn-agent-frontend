@@ -1,0 +1,81 @@
+Do not do a full rewrite.
+
+The current base heatmap is finally successful. Preserve the current:
+
+* tile scoring
+* tile sizes
+* tile order
+* color logic
+* viewport fit
+* tooltip data
+* tab behavior
+* refresh/diagnostics behavior
+* existing zoom/pan feel as much as possible
+
+The only problem to fix is blurry/unreadable text when zoomed into small tiles.
+
+Before changing anything:
+
+1. Save/copy the current working SFHeatmap/SFTreemap implementation as a local fallback or clearly identify the exact code block that can be restored.
+2. Confirm current base layout still renders.
+3. Make the smallest possible rendering-layer change.
+
+Preferred approach:
+Keep the existing treemap layout output exactly as-is:
+
+* x0
+* y0
+* x1
+* y1
+* item
+* score
+* color
+
+Do not recalculate sizing/scoring/layout unless absolutely required.
+
+Change only how zoomed labels are rendered:
+
+* Keep the existing tile rectangles if they are working.
+* Add a non-scaled SVG or absolute-positioned overlay label layer.
+* Track current zoom transform: k, x, y.
+* For each tile, compute screen-space coordinates:
+  sx = x0 * k + x
+  sy = y0 * k + y
+  sw = (x1 - x0) * k
+  sh = (y1 - y0) * k
+* Decide label visibility from sw/sh.
+* Render labels in screen space so they stay crisp.
+* Do not scale the label layer.
+
+If the tile rectangles themselves are blurry:
+Only then move rect rendering to SVG `<rect>`, but still preserve the current layout/scoring/math. Do not rebuild the algorithm.
+
+Label behavior:
+
+* At base zoom, keep current clean look.
+* When zooming into tiny tiles, show symbol/name once the screen-space tile is large enough.
+* Then show P/C.
+* Then show net premium/call/put/contracts if enough space.
+* Text must remain sharp at high zoom.
+
+Hard guardrails:
+
+* Do not change the scoring formula.
+* Do not change pcr/materiality normalization.
+* Do not change color bands.
+* Do not change API calls.
+* Do not touch backend.
+* Do not replace the whole component unless the current rendering layer truly cannot be patched.
+* Do not claim success from compile only.
+
+Validation:
+
+1. Screenshot before change: base All Stocks heatmap.
+2. Screenshot after change: base All Stocks heatmap must look basically identical.
+3. Zoom into bottom-right tiny gray cluster.
+4. Text must be crisp.
+5. Small tile ticker names must appear when zoomed.
+6. P/C must appear when zoomed further.
+7. Reset zoom must restore the original full heatmap.
+8. Repeat quick check for Sectors and Themes.
+9. If base layout regresses, revert immediately and use overlay-label-only approach.

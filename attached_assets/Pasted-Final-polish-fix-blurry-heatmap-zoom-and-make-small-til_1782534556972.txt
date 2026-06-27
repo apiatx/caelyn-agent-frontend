@@ -1,0 +1,166 @@
+Final polish — fix blurry heatmap zoom and make small tiles readable when zoomed.
+
+The Options Flow → Net Flow heatmap now looks good at base zoom. Do not rebuild the full layout. Do not change backend. Do not change data contracts.
+
+Current problem:
+When zooming into the small gray/neutral tiles, the heatmap becomes blurry and ticker/P/C labels are still not readable enough. The user needs TradingView-quality zoom:
+
+* crystal clear tiles
+* crystal clear text
+* small tiles reveal full ticker/P/C/net data as they become large enough on screen
+* no blurry scaled-card effect
+
+Affected views:
+
+* Net Flow → Sectors
+* Net Flow → Themes
+* Net Flow → All Stocks
+
+Frontend only.
+
+Root issue to audit:
+The current zoom is likely scaling a rendered DOM/card layer, causing browser rasterization blur. This must be replaced or adjusted so zoomed content remains vector/text-rendered.
+
+Do not:
+
+* Do not use CSS `filter: blur(...)`
+* Do not use backdrop blur on the zoomed map layer
+* Do not scale a rasterized/card snapshot
+* Do not use CSS transform scaling on HTML cards if it causes blur
+* Do not make text gigantic by simply scaling it forever
+* Do not break the current base heatmap layout
+
+Required rendering behavior:
+
+1. Rectangles must remain sharp at every zoom level.
+2. Text must remain sharp at every zoom level.
+3. Labels must progressively appear based on zoomed screen-space tile size.
+4. Small gray/neutral tiles must become readable when zoomed in enough.
+5. At high zoom, the tile should show the same kind of full data that large tiles show at base zoom.
+
+Preferred implementation:
+Use SVG-native rendering for the heatmap:
+
+* `<svg>` sized to the measured panel
+* `<g>` inner layer for zoom/pan
+* `<rect>` for tiles
+* SVG `<text>` or `<foreignObject>` labels
+
+If using d3.zoom:
+
+* Apply d3 zoom transform to the inner SVG `<g>` for rect positioning.
+* Store current zoom transform `k/x/y`.
+* Calculate screen-space tile dimensions:
+  screenWidth = (x1 - x0) * zoom.k
+  screenHeight = (y1 - y0) * zoom.k
+* Use these screen-space dimensions to decide which labels to show.
+
+Important anti-blur requirement:
+If SVG text inside the zoomed `<g>` appears blurry because the whole group is being scaled, switch to a crisp overlay-label approach:
+
+Option A — preferred for sharp labels:
+
+* Keep tile rects inside zoomed SVG group.
+* Render labels in a separate non-scaled SVG overlay layer.
+* Convert each tile’s zoomed coordinates to screen coordinates:
+  sx = x0 * k + x
+  sy = y0 * k + y
+  sw = (x1 - x0) * k
+  sh = (y1 - y0) * k
+* Render `<text>` at sx/sy in the overlay layer.
+* Do NOT scale the label group.
+* Font sizes remain normal CSS/SVG font sizes, so text stays sharp.
+* Labels update on every zoom/pan.
+
+This is how to avoid the “magnifying a bitmap” blur.
+
+Option B:
+If labels stay inside the zoomed group, compensate font size by zoom:
+
+* fontSize = desiredScreenFontSize / zoom.k
+* strokeWidth = desiredScreenStrokeWidth / zoom.k
+  But Option A is cleaner and should be used if blur persists.
+
+Label tiers based on screen-space tile size:
+Tiny:
+
+* sw < 34 or sh < 24
+* no label
+* tooltip only
+
+Small:
+
+* sw >= 34 and sh >= 24
+* show symbol/name
+
+Medium:
+
+* sw >= 58 and sh >= 40
+* show symbol/name
+* show P/C value
+
+Large:
+
+* sw >= 90 and sh >= 64
+* show symbol/name
+* large P/C
+* small “P/C”
+* net premium
+
+Extra large:
+
+* sw >= 135 and sh >= 90
+* show symbol/name
+* P/C
+* net premium
+* call premium
+* put premium
+* contracts/ticker count if available
+
+This must update live while zooming.
+
+For All Stocks:
+When the user zooms into the tiny bottom-right gray cluster, the ticker symbol and P/C must appear once the tile is visually big enough. Further zoom should reveal net/call/put/contract data if available.
+
+Crispness requirements:
+
+1. Avoid CSS transforms on text containers that cause blur.
+2. Avoid `translate3d` or GPU-promoted HTML layers for the labels if they rasterize.
+3. SVG text should use integer or half-pixel-aligned positions where practical:
+
+   * x = Math.round(sx + padding)
+   * y = Math.round(sy + padding)
+4. Use `shape-rendering: crispEdges` or appropriate SVG rendering hints for rect borders if helpful.
+5. Keep text rendered by browser text engine, not scaled bitmap.
+6. Do not use canvas unless implementing a high-DPI redraw loop. SVG is preferred.
+
+Zoom behavior:
+
+1. Wheel over heatmap zooms around cursor.
+2. Drag pans while zoomed.
+3. Reset zoom returns to exact full-map view.
+4. Zoom scale should allow deep inspection, e.g. max scale 20x or 30x.
+5. Pan must be clamped so the map cannot drift completely out of view.
+6. Zoom must not create page-level scroll.
+7. Tooltip must still work while zoomed.
+
+Tooltip:
+Keep tooltip full-detail and sharp. Tooltip should not be inside the scaled zoom group. It should be fixed/portal/screen-space.
+
+Click behavior:
+Clicking a stock tile should still open the existing stock options detail popup if already wired.
+
+Validation:
+
+1. Open Net Flow → All Stocks at base zoom.
+2. Confirm base view still looks like the current good screenshot.
+3. Zoom into the smallest gray/neutral tile cluster.
+4. Confirm the map does not become blurry.
+5. Confirm ticker names appear as tiles become visually larger.
+6. Confirm P/C values appear with further zoom.
+7. Confirm large zoomed small tiles can show net premium and other details.
+8. Confirm text remains crystal clear, not fuzzy.
+9. Confirm reset zoom works.
+10. Confirm no console errors.
+11. Repeat a quick zoom test on Sectors and Themes.
+12. Do not call this complete unless the zoomed screenshot is sharp and readable.
