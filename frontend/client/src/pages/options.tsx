@@ -4200,6 +4200,12 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
   const [selectedTicker, setSelectedTicker] = useState<SFTicker | null>(null);
   const [grouped,        setGrouped]        = useState(true);
 
+  // Canonical payload caches.
+  // canonSectors = ?view=sectors response  (deduped sector aggregates — used for Themes grouped headers)
+  // canonThemes  = ?view=themes  response  (canonical theme aggregates — used for All Stocks grouped headers)
+  const [canonSectors, setCanonSectors] = useState<SFData | null>(null);
+  const [canonThemes,  setCanonThemes]  = useState<SFData | null>(null);
+
   // allstocks + themes both fetch ?view=themes; sectors fetches ?view=sectors
   const fetchView = view === "allstocks" ? "themes" : view;
 
@@ -4216,7 +4222,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         const body = await r.json().catch(() => ({}));
         throw new Error(body?.error || body?.detail || `HTTP ${r.status}`);
       }
-      setData(await r.json());
+      const d: SFData = await r.json();
+      setData(d);
+      // Cache canonical payloads so grouped headers can use authoritative metrics
+      if (fetchView === "sectors") setCanonSectors(d);
+      if (fetchView === "themes")  setCanonThemes(d);
     } catch (e: any) {
       if (!bg) setError(e.message || `Failed to load flow`);
     } finally {
@@ -4225,6 +4235,18 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
   }, [fetchView]);
 
   useEffect(() => { load(false); }, [load]);
+
+  // Background-fetch canonical sectors payload when user lands on Themes grouped
+  // without having visited the Sectors tab first.
+  useEffect(() => {
+    if (view !== "themes" || !grouped || canonSectors !== null) return;
+    let cancelled = false;
+    fetch(`/api/options-flow/sectors?view=sectors`, { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then((d: SFData | null) => { if (!cancelled && d) setCanonSectors(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [view, grouped, canonSectors]);
 
   // ── Diagnostic: validate canonical leaf count vs grouped leaf count ──────
   useEffect(() => {
@@ -4582,21 +4604,29 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {/* ══ THEMES — grouped: TradingView-style hierarchical treemap (sectors → themes) ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
         const { bySector } = getThemeHeatmapLeaves(data);
-        // Look up sector nodes for call/put/net premium per group header tooltip
-        const sectorNodeMap = new Map(
+        // Canonical sector aggregates — from ?view=sectors (deduped unique tickers, no overlap).
+        // Do NOT use sector nodes from the themes payload here: they aggregate via overlapping
+        // themes and produce inflated P/C values that don't match the Sectors tab.
+        const canonSectorByName = new Map(
+          (canonSectors?.sectors ?? []).map(s => [s.sector_name, s])
+        );
+        // Themes-payload sector nodes indexed by display name — only used for stable group key.
+        const themesPayloadSectorByName = new Map(
           (data.themes ?? [])
             .filter(t => (t.classification ?? "").toLowerCase() === "sector")
             .map(t => [t.theme_name, t])
         );
-        const groups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, pcr, leaves }) => {
-          const sNode = sectorNodeMap.get(sectorName);
+        const groups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, leaves }) => {
+          const sNode = themesPayloadSectorByName.get(sectorName);
+          const canon = canonSectorByName.get(sectorName);
           return {
             key:          sNode?.theme_id ?? sectorName,
             name:         sectorName,
-            pcr,
-            call_premium: sNode?.call_premium ?? null,
-            put_premium:  sNode?.put_premium  ?? null,
-            net_premium:  sNode?.net_premium  ?? null,
+            // Use canonical sector metrics (null = not loaded yet → header shows "—", no fake values)
+            pcr:          canon?.put_call_ratio ?? null,
+            call_premium: canon?.call_premium   ?? null,
+            put_premium:  canon?.put_premium    ?? null,
+            net_premium:  canon?.net_premium    ?? null,
             children:     leaves,
           };
         });

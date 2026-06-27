@@ -1,0 +1,80 @@
+Frontend only. Audit first, then fix in one clean pass.
+
+Problem:
+Options Flow → Net Flow has inconsistent parent group metrics.
+
+Example:
+- Sectors tab → Materials P/C ≈ 0.54
+- Themes tab → Grouped ON → Materials group header P/C ≈ 8.26
+
+This is wrong if the grouped header label is “Materials” and represents the Materials sector.
+
+Correct aggregation model:
+1. Theme tile = aggregate of tickers in that theme.
+2. Sector tile = aggregate of UNIQUE tickers in that sector.
+3. Sector should NOT be calculated by summing child theme tiles because theme membership can overlap and double-count tickers.
+
+Correct UI behavior:
+- In Sectors view:
+  - Sector tiles use canonical sector nodes from `/api/options-flow/sectors?view=sectors`.
+
+- In Themes view, Grouped ON:
+  - Parent sector group headers must use the canonical sector node from `/api/options-flow/sectors?view=sectors`.
+  - Child theme tiles must use theme nodes from `/api/options-flow/sectors?view=themes`.
+  - Do NOT calculate parent sector header metrics from child themes.
+  - Do NOT average child P/C.
+  - Do NOT copy first/last/max child P/C.
+  - Do NOT use any child theme with a similar name.
+
+- In All Stocks view, Grouped ON:
+  - Parent theme group headers must use canonical theme nodes from `/api/options-flow/sectors?view=themes`.
+  - Child ticker tiles remain the ticker rows.
+  - Do NOT calculate parent theme header metrics from child stock rows if canonical theme node is available.
+
+Implementation requirements:
+1. Ensure the component has access to both canonical payloads:
+   - sectorsPayload = `/api/options-flow/sectors?view=sectors`
+   - themesPayload = `/api/options-flow/sectors?view=themes`
+
+2. Build lookups:
+   - sectorByName or sectorById from sectorsPayload.sectors
+   - themeByName or themeById from themesPayload.themes
+
+3. For Themes grouped sector headers:
+   use sectorByName[groupName] metrics:
+   - put_call_ratio
+   - volume_put_call_ratio
+   - net_premium
+   - premium_per_contract
+   - total_contract_volume
+   - call_premium
+   - put_premium
+
+4. For All Stocks grouped theme headers:
+   use themeByName[groupName] metrics:
+   - put_call_ratio
+   - volume_put_call_ratio
+   - net_premium
+   - premium_per_contract
+   - total_contract_volume
+   - call_premium
+   - put_premium
+
+5. If canonical parent node is missing:
+   - show only group name + child count
+   - do not show fake P/C or fake premium metrics
+
+6. Do not change child tile metrics.
+7. Do not change backend.
+8. Do not change scanner/data behavior.
+9. Do not change color rules.
+10. Do not break treemap layout.
+
+Validation:
+- Sectors tab Materials P/C must match Themes grouped Materials parent header P/C.
+- Themes grouped Materials parent header must not equal Chemicals & Materials child P/C unless coincidentally true.
+- Child theme tiles retain their own P/C values.
+- All Stocks grouped parent theme headers use canonical theme metrics.
+- Ungrouped Themes remains unchanged.
+- Sectors view remains unchanged.
+- Vite build passes.
