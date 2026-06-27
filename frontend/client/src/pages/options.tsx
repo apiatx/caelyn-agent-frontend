@@ -3566,9 +3566,11 @@ function SFHeatmap<T extends object>({
             if (sw < 20 || sh < 16) return null;
             if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
             return (
-              <g key={`lbl-${keyOf(item, i)}`}>
-                {renderTile(item, sx, sy, sw, sh)}
-              </g>
+              // Nested <svg> hard-clips all text to the tile rectangle
+              <svg key={`lbl-${keyOf(item, i)}`} x={Math.round(sx)} y={Math.round(sy)}
+                width={Math.round(sw)} height={Math.round(sh)} overflow="hidden">
+                {renderTile(item, 0, 0, Math.round(sw), Math.round(sh))}
+              </svg>
             );
           })}
         </svg>
