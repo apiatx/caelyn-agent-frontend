@@ -1,0 +1,109 @@
+Emergency fix only — Options Flow → Net Flow heatmap is blank.
+
+Current issue:
+After the last treemap/zoom/flex rewrite, Options Flow → Net Flow shows the summary/header data, but the Sectors, Themes, and All Stocks treemap areas render nothing. The backend data is clearly loading because totals, coverage, pending, live/LKG, and updated timestamp still render.
+
+Do not touch backend.
+Do not change API routes.
+Do not change scanner/warmup/LKG behavior.
+Do not continue adding zoom or fancy behavior until the base treemap renders again.
+
+Priority:
+Restore visible tiles on:
+1. Net Flow → Sectors
+2. Net Flow → Themes
+3. Net Flow → All Stocks
+
+Likely causes to audit first:
+1. SFTreemap parent/container height is measuring 0.
+2. ResizeObserver is setting width/height to 0 or never firing.
+3. The new flex chain uses flex: 1 / minHeight: 0 but an ancestor has no explicit height.
+4. SFTreemap returns null/empty when measured height is 0.
+5. sfBuildSizeMap / sfScoredItems is returning no valid items because pcr/gross premium fields are missing, null, named differently, or all size scores collapse to 0.
+6. The render block may be mounted but clipped by overflow:hidden with zero height.
+7. Transform wrapper for zoom/pan may be positioned incorrectly or scaled/translated out of view.
+
+Debug requirements:
+Add temporary console diagnostics before changing logic:
+- active tab
+- item count passed into SFTreemap
+- measured width
+- measured height
+- scored item count
+- first 5 scored items with name/symbol, pcr, call_premium, put_premium, grossPremium, sizeScore
+- whether SFTreemap is returning early because dimensions are invalid
+
+Base rendering rule:
+At zoom = 1, before any zoom/pan behavior, the treemap must render all tiles visibly inside the available page area.
+
+Fix strategy:
+1. First restore the last known visible treemap behavior, even if imperfect.
+2. Then reapply dynamic fit safely.
+3. Only after tiles visibly render again, re-enable zoom/pan.
+
+Do not try to fix everything in one giant rewrite again.
+
+Specific layout fix:
+Use a reliable measured container.
+
+The Options Flow page / Net Flow tab must have an explicit height chain, for example:
+- page root: height: 100vh or calc(100vh - app shell offset)
+- Options Flow content wrapper: display:flex; flex-direction:column; min-height:0; overflow:hidden
+- header/summary/tabs section: flex: 0 0 auto
+- treemap panel: flex: 1 1 auto; min-height: 360px; overflow:hidden; position:relative
+
+Important:
+If ResizeObserver height is 0, fall back to a safe height:
+- Math.max(measuredHeight, 420)
+or
+- containerRef.current?.clientHeight || 520
+
+Do not allow SFTreemap to silently render nothing just because measured height is initially 0.
+
+SFTreemap requirements:
+1. It must render if items.length > 0.
+2. It must not return null unless items.length === 0.
+3. If width/height are not ready yet, render a small loading/measurement placeholder and retry.
+4. Add a safe fallback width/height.
+5. Keep overflow hidden inside the treemap panel, not on the whole page in a way that clips children.
+6. Temporarily disable zoom transform until base tiles render.
+7. Once base tiles render, re-enable zoom/pan behind a safe flag.
+
+Scoring/sizing safety:
+Do not let missing fields wipe out the dataset.
+
+Use robust getters:
+- pcr = item.premium_pcr ?? item.put_call_ratio ?? item.pcr ?? item.pc_ratio ?? 1
+- callPremium = item.call_premium ?? item.callPremium ?? item.total_call_prem ?? 0
+- putPremium = item.put_premium ?? item.putPremium ?? item.total_put_prem ?? 0
+- grossPremium = Math.max(0, callPremium + putPremium)
+
+If grossPremium is 0 but net_premium exists, use abs(net_premium) as fallback materiality.
+
+If sizeScore is invalid/NaN/Infinity, set it to minimum size, not zero.
+
+Every item should receive a positive treemap value:
+value = Math.max(sizeScore, 0.01)
+
+Validation before claiming done:
+1. Sectors tab visibly shows tiles.
+2. Themes tab visibly shows tiles.
+3. All Stocks tab visibly shows tiles.
+4. Browser console has no React/runtime errors.
+5. No blank treemap with only summary bar.
+6. Measured treemap width and height are both > 0.
+7. scored item count equals the expected visible item count.
+8. Page-level vertical scroll is not required for Sectors/Themes.
+9. All Stocks renders inside the viewport; if it is dense, use internal zoom/pan after base render works.
+10. Refresh still works and diagnostics still render.
+
+After restoring visible tiles:
+Then re-enable the intended improvements:
+- dynamic parent-measured fit
+- combined pcr deviation × premium materiality sizing
+- neutral gray near P/C 1.00
+- internal zoom/pan
+- hover tooltip
+- click stock popup
+
+But do these only after the visible treemap is restored.

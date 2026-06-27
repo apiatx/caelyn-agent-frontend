@@ -1,0 +1,1 @@
+- [Flex height chain](flex-height-chain.md) — minHeight:100vh does NOT create definite flex height; use calc(100vh-Npx) on leaf panels instead of flex:1 chain.

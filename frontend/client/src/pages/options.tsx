@@ -3411,11 +3411,16 @@ function SFTreemap<T extends object>({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Immediate measurement — use getBoundingClientRect first, fall back to clientWidth/Height
     const rect = el.getBoundingClientRect();
-    setDims({ w: rect.width, h: rect.height });
+    const iw = rect.width  > 0 ? rect.width  : el.clientWidth;
+    const ih = rect.height > 0 ? rect.height : el.clientHeight;
+    if (iw > 0 && ih > 0) setDims({ w: iw, h: ih });
     const ro = new ResizeObserver(entries => {
       const cr = entries[0]?.contentRect;
-      if (cr && cr.width > 0 && cr.height > 0) setDims({ w: cr.width, h: cr.height });
+      const w  = cr?.width  ?? el.clientWidth;
+      const h  = cr?.height ?? el.clientHeight;
+      if (w > 0 && h > 0) setDims({ w, h });
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -3463,8 +3468,12 @@ function SFTreemap<T extends object>({
   };
   const resetZoom = () => { const nz = { scale: 1, tx: 0, ty: 0 }; zoomRef.current = nz; setZoom(nz); };
 
+  // Safe dimensions: state → clientWidth/Height → 0. Never block render on 0 dims.
+  const safeW = dims.w > 0 ? dims.w : (ref.current?.clientWidth  ?? 0);
+  const safeH = dims.h > 0 ? dims.h : (ref.current?.clientHeight ?? 0);
+
   const values = items.map(item => Math.max(sizeOf(item), 0.001));
-  const rects  = dims.w > 8 && dims.h > 8 ? computeTreemap(values, dims.w, dims.h) : [];
+  const rects  = safeW > 8 && safeH > 8 ? computeTreemap(values, safeW, safeH) : [];
   const half   = gap / 2;
   const isZoomed = zoom.scale > 1.02;
 
@@ -3486,7 +3495,7 @@ function SFTreemap<T extends object>({
     >
       {/* Zoomable tile canvas */}
       <div style={{
-        position: "absolute", top: 0, left: 0, width: dims.w, height: dims.h,
+        position: "absolute", top: 0, left: 0, width: safeW || "100%", height: safeH || "100%",
         transform: `translate(${zoom.tx}px,${zoom.ty}px) scale(${zoom.scale})`,
         transformOrigin: "0 0",
       }}>
@@ -3870,8 +3879,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       )}
     </div>{/* end header section */}
 
-    {/* ── Treemap section: fills all remaining page height ── */}
-    <div style={{ flex: 1, minHeight: 0, padding: "0 16px 10px" }}>
+    {/* ── Treemap section: explicit viewport-calc height so ResizeObserver always measures > 0 ── */}
+    <div style={{ height: "calc(100vh - 310px)", minHeight: 360, padding: "0 16px 10px", overflow: "hidden", flexShrink: 0 }}>
 
       {/* ══ SECTORS — top: fills available space ══ */}
       {view === "sectors" && level === "top" && (() => {
