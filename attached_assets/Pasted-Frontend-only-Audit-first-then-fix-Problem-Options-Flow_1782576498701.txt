@@ -1,0 +1,74 @@
+Frontend only. Audit first, then fix.
+
+Problem:
+Options Flow → Net Flow → All Stocks has sort buttons:
+- Premium P/C
+- Vol P/C
+- Net Premium
+- Prem/Contract
+- Contracts
+- Call Premium
+- Put Premium
+
+The buttons visually highlight, but the stock tiles/groups do not actually reorder.
+
+Fix sorting so selected sort metric controls the treemap input order.
+
+Scope:
+- Net Flow → All Stocks
+- Both Grouped and Ungrouped modes
+- Also verify Sectors and Themes sort still work if they use the same helper
+
+Requirements:
+1. Find where sortBy state is updated.
+2. Find where All Stocks ticker arrays are built.
+3. Ensure sortBy is applied BEFORE passing items into SFTreemap / computeTreemap.
+4. In Ungrouped All Stocks:
+   - flatten all tickers
+   - dedupe/aggregate as currently done
+   - sort the final ticker array by selected sort metric
+   - pass sorted array into SFTreemap
+
+5. In Grouped All Stocks:
+   - group tickers by theme
+   - sort parent theme groups by selected metric using canonical theme metrics if available
+   - sort ticker children inside each theme group by selected metric
+   - pass sorted child arrays into each group treemap
+
+6. Sort directions:
+   - Premium P/C: ascending, lowest first = most call-heavy
+   - Vol P/C: ascending
+   - Net Premium: descending
+   - Prem/Contract: descending
+   - Contracts: descending
+   - Call Premium: descending
+   - Put Premium: descending
+
+7. Null / undefined values:
+   - Always sort last
+   - Do not convert null to 0 for sorting
+
+8. Treemap note:
+   Sorting should affect visual placement/order in the treemap input.
+   Tile size remains controlled by compressed size metric unless the current implementation intentionally ties size to sort.
+   Do not break squarified layout.
+
+9. Verify by logging before/after:
+   - selected sortBy
+   - first 10 ticker symbols in All Stocks ungrouped
+   - first 10 ticker symbols inside one grouped theme
+   - top 5 parent theme groups in grouped mode
+
+10. Remove temporary logs after validation.
+
+Acceptance:
+- Clicking Premium P/C reorders All Stocks with lowest Premium P/C first.
+- Clicking Vol P/C reorders All Stocks with lowest Vol P/C first.
+- Clicking Net Premium reorders All Stocks with highest Net Premium first.
+- Clicking Prem/Contract reorders All Stocks with highest premium_per_contract first.
+- Clicking Contracts reorders All Stocks with highest total_contract_volume first.
+- Clicking Call Premium reorders All Stocks with highest call_premium first.
+- Clicking Put Premium reorders All Stocks with highest put_premium first.
+- Grouped mode sorts both parent theme groups and child stock tiles.
+- Ungrouped mode sorts the flat stock treemap.
+- Vite build passes.

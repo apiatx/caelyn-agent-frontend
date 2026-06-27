@@ -3459,6 +3459,69 @@ function sfScored<T extends object>(
   return { sorted, valueOf: (t: T) => map.get(t) ?? 0.04 };
 }
 
+// Raw sort value accessor — same fields exist on SFSector, SFTheme, SFTicker
+function sfSortRaw(
+  item: { put_call_ratio?: number | null; volume_put_call_ratio?: number | null; net_premium?: number | null; premium_per_contract?: number | null; total_contract_volume?: number | null; call_premium?: number | null; put_premium?: number | null },
+  key: SFSortKey,
+): number | null {
+  switch (key) {
+    case "pcr":          return item.put_call_ratio          ?? null;
+    case "vpcr":         return item.volume_put_call_ratio   ?? null;
+    case "net_premium":  return item.net_premium             ?? null;
+    case "ppc":          return item.premium_per_contract    ?? null;
+    case "contracts":    return item.total_contract_volume   ?? null;
+    case "call_premium": return item.call_premium            ?? null;
+    case "put_premium":  return item.put_premium             ?? null;
+  }
+}
+
+// Builds a normalized score map for treemap sizing based on the selected sort key.
+// "pcr" keeps the original deviation×materiality formula; all other keys use
+// log-normalised absolute magnitude of the sort field so tile size matches sort priority.
+function sfBuildSortedScore<T extends object>(
+  items: T[],
+  sortKey: SFSortKey,
+  getGross: (t: T) => number,
+  getPcr: (t: T) => number | null,
+  getSortRaw: (t: T) => number | null,
+): Map<T, number> {
+  const MIN = 0.04;
+  if (sortKey === "pcr") return sfBuildValue(items, getGross, getPcr);
+
+  // vpcr: same deviation-from-1 semantics as pcr (extreme = most important)
+  if (sortKey === "vpcr") {
+    const devs = items.map(t => {
+      const v = getSortRaw(t);
+      if (v == null) return 0;
+      return Math.abs(Math.log(Math.max(0.01, Math.min(v, 100))));
+    });
+    const maxDev = Math.max(...devs, 1);
+    return new Map(items.map((t, i) => [t, Math.max(MIN, devs[i] / maxDev)]));
+  }
+
+  // All other keys: log-normalised absolute magnitude
+  const raws = items.map(t => {
+    const v = getSortRaw(t);
+    return v != null ? Math.log1p(Math.abs(v)) : 0;
+  });
+  const maxRaw = Math.max(...raws, 1);
+  return new Map(items.map((t, i) => [t, Math.max(MIN, raws[i] / maxRaw)]));
+}
+
+// Drop-in replacement for sfScored that honours the active sort key.
+// Tile SIZE and visual position both reflect sortKey (largest = most prominent for the chosen metric).
+function sfScoredWithSort<T extends object>(
+  items: T[],
+  sortKey: SFSortKey,
+  getGross: (t: T) => number,
+  getPcr: (t: T) => number | null,
+  getSortRaw: (t: T) => number | null,
+): { sorted: T[]; valueOf: (t: T) => number } {
+  const map = sfBuildSortedScore(items, sortKey, getGross, getPcr, getSortRaw);
+  const sorted = [...items].sort((a, b) => (map.get(b) ?? 0) - (map.get(a) ?? 0));
+  return { sorted, valueOf: (t: T) => map.get(t) ?? 0.04 };
+}
+
 // ── d3-hierarchy squarified treemap — direct-DOM zoom/pan, no CSS drift ───────
 // Container must have explicit width+height (ResizeObserver measures it).
 function SFHeatmap<T extends object>({
@@ -3704,11 +3767,12 @@ interface SFGroupDef<T> {
 }
 
 function SFGroupedHeatmap<T extends object>({
-  groups, getGross, getPcr, noData, onClick, renderTile, renderTooltip, keyOf,
+  groups, getGross, getPcr, getItemScore, noData, onClick, renderTile, renderTooltip, keyOf,
 }: {
   groups: SFGroupDef<T>[];
   getGross: (item: T) => number;
   getPcr:   (item: T) => number | null;
+  getItemScore?: (item: T) => number;
   noData?:  (item: T) => boolean;
   onClick:  (item: T) => void;
   renderTile: (item: T, sx: number, sy: number, sw: number, sh: number) => ReactNode;
@@ -3794,9 +3858,10 @@ function SFGroupedHeatmap<T extends object>({
     const allKids = groups.flatMap(g => g.children);
     if (!allKids.length) return { groupNodes: [], childNodes: [] };
 
-    // Global scoring so group size = Σ(child tile scores), not raw premium
-    const scoreMap = sfBuildValue(allKids, getGross, getPcr);
-    const sc = (c: T) => scoreMap.get(c) ?? 0.04;
+    // Global scoring so group size = Σ(child tile scores), not raw premium.
+    // When getItemScore is provided (sort-aware), use it; otherwise default PCR×materiality.
+    const defaultScoreMap = getItemScore ? null : sfBuildValue(allKids, getGross, getPcr);
+    const sc = (c: T) => getItemScore ? getItemScore(c) : (defaultScoreMap!.get(c) ?? 0.04);
 
     // Wrap each group to hide its 'children' from d3-hierarchy traversal
     const wrapped = groups.map(g => ({
@@ -3856,7 +3921,7 @@ function SFGroupedHeatmap<T extends object>({
     });
 
     return { groupNodes, childNodes };
-  }, [groups, dims, getGross, getPcr]);
+  }, [groups, dims, getGross, getPcr, getItemScore]);
 
   const VW = typeof window !== "undefined" ? window.innerWidth  : 1200;
   const VH = typeof window !== "undefined" ? window.innerHeight : 800;
@@ -4713,7 +4778,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ SECTORS — top: fills available space ══ */}
       {view === "sectors" && level === "top" && (() => {
-        const { sorted, valueOf } = sfScored(sortedSectors, s => (s.call_premium ?? 0) + (s.put_premium ?? 0), s => s.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(sortedSectors, sortBy, s => (s.call_premium ?? 0) + (s.put_premium ?? 0), s => s.put_call_ratio, s => sfSortRaw(s, sortBy));
         return (
           <SFHeatmap
             items={sorted}
@@ -4729,7 +4794,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ SECTORS — drill: themes inside sector ══ */}
       {view === "sectors" && level === "themes" && activeSector && (() => {
-        const { sorted, valueOf } = sfScored(activeSector.themes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(activeSector.themes, sortBy, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio, t => sfSortRaw(t, sortBy));
         return (
           <SFHeatmap
             items={sorted}
@@ -4748,7 +4813,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
@@ -4775,7 +4840,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {/* ══ THEMES — ungrouped: canonical leaves (theme + sub_theme only, no sector nodes) ══ */}
       {view === "themes" && level === "top" && !grouped && (() => {
         const { flatLeaves } = getThemeHeatmapLeaves(data);
-        const { sorted, valueOf } = sfScored(flatLeaves, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(flatLeaves, sortBy, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio, t => sfSortRaw(t, sortBy));
         return (
           <SFHeatmap
             items={sorted}
@@ -4807,7 +4872,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
             .filter(t => (t.classification ?? "").toLowerCase() === "sector")
             .map(t => [t.theme_name, t])
         );
-        const groups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, leaves }) => {
+        // Build unsorted groups, then sort both groups and their children by sortBy
+        const rawGroups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, leaves }) => {
           const sNode = themesPayloadSectorByName.get(sectorName);
           const canon = canonSectorByNorm.get(normKey(sectorName));
           return {
@@ -4818,14 +4884,28 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
             call_premium: canon?.call_premium   ?? null,
             put_premium:  canon?.put_premium    ?? null,
             net_premium:  canon?.net_premium    ?? null,
-            children:     leaves,
+            children:     sfSortItems(leaves, sortBy, t => sfSortRaw(t, sortBy)),
           };
         });
+        // Sort sector groups by sortBy using their canonical metrics
+        const sortedGroups = sfSortItems(rawGroups, sortBy, g => sfSortRaw({
+          put_call_ratio: g.pcr, call_premium: g.call_premium,
+          put_premium: g.put_premium, net_premium: g.net_premium,
+        }, sortBy));
+        // Build sort-aware score map for tile sizing within each group
+        const allGroupLeaves = sortedGroups.flatMap(g => g.children);
+        const groupScoreMap = sfBuildSortedScore(
+          allGroupLeaves, sortBy,
+          t => (t.call_premium ?? 0) + (t.put_premium ?? 0),
+          t => t.put_call_ratio,
+          t => sfSortRaw(t, sortBy),
+        );
         return (
           <SFGroupedHeatmap
-            groups={groups}
+            groups={sortedGroups}
             getGross={(t: SFTheme) => (t.call_premium ?? 0) + (t.put_premium ?? 0)}
             getPcr={(t: SFTheme) => t.put_call_ratio}
+            getItemScore={(t: SFTheme) => groupScoreMap.get(t) ?? 0.04}
             onClick={(t: SFTheme) => setActiveTheme(t)}
             renderTile={sfRenderTheme}
             renderTooltip={sfTooltipTheme}
@@ -4839,7 +4919,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
@@ -4865,7 +4945,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ ALL STOCKS — ungrouped: fills panel, zoom for small tiles ══ */}
       {view === "allstocks" && !grouped && (() => {
-        const { sorted, valueOf } = sfScored(allTickers, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScoredWithSort(allTickers, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <SFHeatmap
             items={sorted}
@@ -4882,26 +4962,34 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ ALL STOCKS — grouped by theme: TradingView-style hierarchical treemap ══ */}
       {view === "allstocks" && grouped && (() => {
-        const themeGroups: SFGroupDef<SFTicker>[] = (data?.themes ?? [])
-          .filter(th => {
-            const cls = (th.classification ?? "").toLowerCase();
-            return cls !== "sector";
-          })
-          .filter(th => (th.tickers ?? []).length > 0)
-          .map(theme => ({
-            key:          theme.theme_id ?? theme.theme_name,
-            name:         theme.theme_name,
-            pcr:          theme.put_call_ratio,
-            call_premium: theme.call_premium ?? null,
-            put_premium:  theme.put_premium  ?? null,
-            net_premium:  theme.net_premium  ?? null,
-            children:     theme.tickers ?? [],
-          }));
+        // Sort theme groups by sortBy, and children within each group by sortBy
+        const rawThemes = (data?.themes ?? [])
+          .filter(th => (th.classification ?? "").toLowerCase() !== "sector")
+          .filter(th => (th.tickers ?? []).length > 0);
+        const sortedThemeArr = sfSortItems(rawThemes, sortBy, th => sfSortRaw(th, sortBy));
+        const themeGroups: SFGroupDef<SFTicker>[] = sortedThemeArr.map(theme => ({
+          key:          theme.theme_id ?? theme.theme_name,
+          name:         theme.theme_name,
+          pcr:          theme.put_call_ratio,
+          call_premium: theme.call_premium ?? null,
+          put_premium:  theme.put_premium  ?? null,
+          net_premium:  theme.net_premium  ?? null,
+          children:     sfSortItems(theme.tickers ?? [], sortBy, tk => sfSortRaw(tk, sortBy)),
+        }));
+        // Build sort-aware score map for tile sizing (same object refs as children arrays above)
+        const allGroupTickers = sortedThemeArr.flatMap(th => th.tickers ?? []);
+        const groupScoreMap = sfBuildSortedScore(
+          allGroupTickers, sortBy,
+          tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0),
+          tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio,
+          tk => sfSortRaw(tk, sortBy),
+        );
         return (
           <SFGroupedHeatmap
             groups={themeGroups}
             getGross={(tk: SFTicker) => (tk.call_premium ?? 0) + (tk.put_premium ?? 0)}
             getPcr={(tk: SFTicker) => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+            getItemScore={(tk: SFTicker) => groupScoreMap.get(tk) ?? 0.04}
             noData={(tk: SFTicker) => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
             onClick={(tk: SFTicker) => setSelectedTicker(tk)}
             renderTile={sfRenderTicker}
