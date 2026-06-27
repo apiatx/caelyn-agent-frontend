@@ -3606,6 +3606,362 @@ function SFHeatmap<T extends object>({
   );
 }
 
+// ── TradingView-style hierarchical grouped heatmap ────────────────────────────────
+// Two-level squarify: parent groups fill the full panel; children are nested inside.
+// Shares the same zoom/pan/SVG-label-overlay architecture as SFHeatmap.
+//
+// Key layout note: groups are passed to d3-hierarchy as { _orig, _score } wrappers
+// (not raw SFGroupDef) to prevent d3 from traversing SFGroupDef.children as hierarchy
+// sub-nodes. The original group is recovered via wrapper._orig after layout.
+
+interface SFGroupDef<T> {
+  key: string;
+  name: string;
+  pcr: number | null;
+  call_premium?: number | null;
+  put_premium?: number | null;
+  net_premium?: number | null;
+  children: T[];
+}
+
+function SFGroupedHeatmap<T extends object>({
+  groups, getGross, getPcr, noData, onClick, renderTile, renderTooltip, keyOf,
+}: {
+  groups: SFGroupDef<T>[];
+  getGross: (item: T) => number;
+  getPcr:   (item: T) => number | null;
+  noData?:  (item: T) => boolean;
+  onClick:  (item: T) => void;
+  renderTile: (item: T, sx: number, sy: number, sw: number, sh: number) => ReactNode;
+  renderTooltip?: (item: T) => ReactNode;
+  keyOf: (item: T, i: number) => string;
+}) {
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const zRef     = useRef({ k: 1, x: 0, y: 0 });
+  const dragRef  = useRef<{ sx: number; sy: number; tx: number; ty: number } | null>(null);
+  const isZRef   = useRef(false);
+  const [dims,     setDims]     = useState({ w: 0, h: 0 });
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomXY,   setZoomXY]   = useState({ k: 1, x: 0, y: 0 });
+  const [tooltip,  setTooltip]  = useState<{ content: ReactNode; cx: number; cy: number } | null>(null);
+
+  useEffect(() => {
+    const el = wrapRef.current; if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const w = r.width  > 4 ? Math.floor(r.width)  : el.clientWidth;
+      const h = r.height > 4 ? Math.floor(r.height) : el.clientHeight;
+      if (w > 4 && h > 4) setDims({ w, h });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const applyT = () => {
+    const el = innerRef.current; if (!el) return;
+    const { k, x, y } = zRef.current;
+    el.style.transform = `translate(${x}px,${y}px) scale(${k})`;
+    el.style.transformOrigin = "0 0";
+  };
+  const setZ = (k: number, x: number, y: number) => {
+    const { w, h } = dims;
+    const cx = Math.min(0, Math.max(x, w - w * k));
+    const cy = Math.min(0, Math.max(y, h - h * k));
+    zRef.current = { k, x: cx, y: cy };
+    applyT();
+    const zoomed = k > 1.02;
+    if (zoomed !== isZRef.current) { isZRef.current = zoomed; setIsZoomed(zoomed); }
+    setZoomXY({ k, x: cx, y: cy });
+  };
+
+  useEffect(() => {
+    const el = wrapRef.current; if (!el || !dims.w) return;
+    const fn = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      const { k, x, y } = zRef.current;
+      const f  = e.deltaY < 0 ? 1.14 : 1 / 1.14;
+      const nk = Math.max(1, Math.min(k * f, 12));
+      if (nk === k) return;
+      const r = nk / k;
+      setZ(nk, cx - (cx - x) * r, cy - (cy - y) * r);
+    };
+    el.addEventListener("wheel", fn, { passive: false });
+    return () => el.removeEventListener("wheel", fn);
+  }, [dims]);
+
+  const onPD = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !isZRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { sx: e.clientX, sy: e.clientY, tx: zRef.current.x, ty: zRef.current.y };
+  };
+  const onPM = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const { sx, sy, tx, ty } = dragRef.current;
+    setZ(zRef.current.k, tx + (e.clientX - sx), ty + (e.clientY - sy));
+  };
+  const onPU = () => { dragRef.current = null; };
+
+  // ── Two-level treemap layout ──────────────────────────────────────────────────
+  type GNode = { group: SFGroupDef<T>; gx0: number; gy0: number; gx1: number; gy1: number; hH: number };
+  type CNode = { item: T; x0: number; y0: number; x1: number; y1: number };
+
+  const { groupNodes, childNodes } = useMemo((): { groupNodes: GNode[]; childNodes: CNode[] } => {
+    if (!dims.w || !dims.h || !groups.length) return { groupNodes: [], childNodes: [] };
+    const allKids = groups.flatMap(g => g.children);
+    if (!allKids.length) return { groupNodes: [], childNodes: [] };
+
+    // Global scoring so group size = Σ(child tile scores), not raw premium
+    const scoreMap = sfBuildValue(allKids, getGross, getPcr);
+    const sc = (c: T) => scoreMap.get(c) ?? 0.04;
+
+    // Wrap each group to hide its 'children' from d3-hierarchy traversal
+    const wrapped = groups.map(g => ({
+      _orig:  g,
+      _score: Math.max(0.01, g.children.reduce((s, c) => s + sc(c), 0)),
+    }));
+
+    // Pass 1: group treemap over full panel
+    const gRoot = hierarchy<any>({ children: wrapped })
+      .sum((d: any) => Array.isArray(d.children) ? 0 : Math.max(d._score as number, 0.001))
+      .sort((a: any, b: any) => (b.value ?? 0) - (a.value ?? 0));
+    treemap<any>()
+      .size([dims.w, dims.h])
+      .tile(treemapSquarify.ratio(1))
+      .paddingInner(3)
+      .paddingOuter(0)(gRoot);
+
+    const groupNodes: GNode[] = [];
+    const childNodes: CNode[] = [];
+
+    (gRoot.leaves() as any[]).forEach((gl: any) => {
+      const g  = (gl.data as { _orig: SFGroupDef<T> })._orig;
+      const gx0 = gl.x0 as number, gy0 = gl.y0 as number;
+      const gx1 = gl.x1 as number, gy1 = gl.y1 as number;
+      const gw = gx1 - gx0, gh = gy1 - gy0;
+      if (gw < 2 || gh < 2) return;
+
+      // Header height: full (20px) if tall enough, reduced (14px) if squeezed, gone if tiny
+      const hH = gh >= 36 ? 20 : gh >= 20 ? 14 : 0;
+      groupNodes.push({ group: g, gx0, gy0, gx1, gy1, hH });
+      if (!g.children.length) return;
+
+      // Pass 2: child treemap inside this group (below the header)
+      const cw = Math.max(0, gw - 4);          // 2px inner padding each side
+      const ch = Math.max(0, gh - hH - 1);     // 1px bottom gap
+      if (cw < 4 || ch < 4) return;
+
+      const sortedKids = [...g.children].sort((a, b) => sc(b) - sc(a));
+      const cRoot = hierarchy<any>({ children: sortedKids })
+        .sum((d: any) => Array.isArray(d.children) ? 0 : Math.max(sc(d as T), 0.001))
+        .sort((a: any, b: any) => (b.value ?? 0) - (a.value ?? 0));
+      treemap<any>()
+        .size([cw, ch])
+        .tile(treemapSquarify.ratio(1))
+        .paddingInner(1)
+        .paddingOuter(0)(cRoot);
+
+      (cRoot.leaves() as any[]).forEach((cl: any) => {
+        childNodes.push({
+          item: cl.data as T,
+          x0: gx0 + 2 + (cl.x0 as number),
+          y0: gy0 + hH + (cl.y0 as number),
+          x1: gx0 + 2 + (cl.x1 as number),
+          y1: gy0 + hH + (cl.y1 as number),
+        });
+      });
+    });
+
+    return { groupNodes, childNodes };
+  }, [groups, dims, getGross, getPcr]);
+
+  const VW = typeof window !== "undefined" ? window.innerWidth  : 1200;
+  const VH = typeof window !== "undefined" ? window.innerHeight : 800;
+  const TW = 220;
+  const ttX = tooltip ? Math.min(tooltip.cx + 14, VW - TW - 8) : 0;
+  const ttY = tooltip ? Math.max(8, Math.min(tooltip.cy + 10, VH - 240)) : 0;
+
+  return (
+    <div
+      ref={wrapRef}
+      onPointerDown={onPD} onPointerMove={onPM} onPointerUp={onPU} onPointerCancel={onPU}
+      style={{
+        position: "relative", width: "100%", height: "100%",
+        overflow: "hidden", background: C.bg,
+        cursor: isZoomed ? "grab" : "default",
+        userSelect: "none",
+      }}
+    >
+      <div
+        ref={innerRef}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: dims.w || "100%", height: dims.h || "100%",
+          willChange: "transform",
+        }}
+      >
+        {/* Group background borders — behind children */}
+        {groupNodes.map(({ group, gx0, gy0, gx1, gy1 }) => (
+          <div
+            key={`gbg-${group.key}`}
+            style={{
+              position: "absolute", left: gx0, top: gy0,
+              width: gx1 - gx0, height: gy1 - gy0,
+              border: `1px solid ${sfPcrBorder(group.pcr)}`,
+              background: "rgba(10,11,22,0.55)",
+              borderRadius: 3, boxSizing: "border-box",
+              pointerEvents: "none",
+            }}
+          />
+        ))}
+
+        {/* Child tiles */}
+        {childNodes.map(({ item, x0, y0, x1, y1 }, i) => {
+          const tw = x1 - x0, th = y1 - y0;
+          if (tw < 2 || th < 2) return null;
+          const faded = noData?.(item) ?? false;
+          return (
+            <div
+              key={keyOf(item, i)}
+              onClick={() => onClick(item)}
+              onMouseEnter={e => {
+                e.currentTarget.style.filter = "brightness(1.28)";
+                if (renderTooltip) setTooltip({ content: renderTooltip(item), cx: e.clientX, cy: e.clientY });
+              }}
+              onMouseMove={e => {
+                if (tooltip) setTooltip(p => p ? { ...p, cx: e.clientX, cy: e.clientY } : null);
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.filter = "";
+                setTooltip(null);
+              }}
+              style={{
+                position: "absolute", left: x0, top: y0, width: tw, height: th,
+                background: sfPcrBg(getPcr(item)),
+                border: `1px solid ${sfPcrBorder(getPcr(item))}`,
+                borderRadius: 2, overflow: "hidden", boxSizing: "border-box",
+                opacity: faded ? 0.32 : 1, cursor: "pointer",
+                transition: "filter 0.07s",
+              }}
+            />
+          );
+        })}
+
+        {/* Group header hover zones — rendered after children so they sit on top in the header strip */}
+        {groupNodes.map(({ group, gx0, gy0, gx1, hH }) => {
+          if (hH === 0) return null;
+          const hoverContent = (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{group.name}</div>
+              <div style={{ color: sfPcrTextCol(group.pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{sfSentiment(group.pcr)}</div>
+              {sfTTRow("P/C Ratio",    group.pcr?.toFixed(2) ?? "—",             sfPcrTextCol(group.pcr))}
+              {group.net_premium  != null && sfTTRow("Net Premium",  fmtCurrencyShort(group.net_premium),  sfNetColor(group.net_premium))}
+              {group.call_premium != null && sfTTRow("Call Premium", fmtCurrencyShort(group.call_premium), C.green)}
+              {group.put_premium  != null && sfTTRow("Put Premium",  fmtCurrencyShort(group.put_premium),  C.red)}
+              {sfTTRow("Children", String(group.children.length), C.dim)}
+            </div>
+          );
+          return (
+            <div
+              key={`ghov-${group.key}`}
+              style={{
+                position: "absolute", left: gx0, top: gy0,
+                width: gx1 - gx0, height: hH, cursor: "default",
+              }}
+              onMouseEnter={e => setTooltip({ content: hoverContent, cx: e.clientX, cy: e.clientY })}
+              onMouseMove={e => setTooltip(p => p ? { ...p, cx: e.clientX, cy: e.clientY } : null)}
+              onMouseLeave={() => setTooltip(null)}
+            />
+          );
+        })}
+      </div>
+
+      {/* SVG label overlay — group headers + child labels, always screen-space crisp */}
+      {dims.w > 0 && dims.h > 0 && (
+        <svg
+          width={dims.w} height={dims.h}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "hidden" }}
+        >
+          {/* Group header text */}
+          {groupNodes.map(({ group, gx0, gy0, gx1, gy1, hH }) => {
+            const { k, x: tx, y: ty } = zoomXY;
+            const sx = gx0 * k + tx, sy = gy0 * k + ty;
+            const sw = (gx1 - gx0) * k, sh = (gy1 - gy0) * k;
+            if (sw < 24 || sh < 12) return null;
+            if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
+            const shH = hH > 0 ? hH * k : Math.min(14, sh * 0.22);
+            const ly  = sy + Math.max(shH * 0.6, 6);
+            const fs  = Math.max(8, Math.min(11, sw / 14));
+            return (
+              <g key={`ghlbl-${group.key}`}>
+                <text x={sx + 5} y={ly} fontSize={fs} fill={C.dim} opacity={0.9}
+                  fontFamily={font} fontWeight="700" letterSpacing="0.08em"
+                  dominantBaseline="middle">
+                  {group.name.toUpperCase()}
+                </text>
+                {sw >= 110 && group.pcr != null && (
+                  <text x={sx + sw - 5} y={ly} fontSize={Math.max(8, fs - 1)}
+                    fill={sfPcrTextCol(group.pcr)} fontFamily={font} fontWeight="700"
+                    textAnchor="end" dominantBaseline="middle">
+                    {`P/C ${group.pcr.toFixed(2)}`}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Child tile labels */}
+          {childNodes.map(({ item, x0, y0, x1, y1 }, i) => {
+            const { k, x: tx, y: ty } = zoomXY;
+            const sx = x0 * k + tx, sy = y0 * k + ty;
+            const sw = (x1 - x0) * k, sh = (y1 - y0) * k;
+            if (sw < 20 || sh < 16) return null;
+            if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
+            return (
+              <g key={`clbl-${keyOf(item, i)}`}>
+                {renderTile(item, sx, sy, sw, sh)}
+              </g>
+            );
+          })}
+        </svg>
+      )}
+
+      {isZoomed && (
+        <button
+          onClick={e => { e.stopPropagation(); setZ(1, 0, 0); }}
+          style={{
+            position: "absolute", top: 8, right: 8, zIndex: 20,
+            background: "rgba(13,14,28,0.90)", border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: 5, color: C.dim, fontSize: 10, fontFamily: font,
+            padding: "3px 9px", cursor: "pointer", userSelect: "none",
+          }}
+        >↺ Reset zoom</button>
+      )}
+
+      {groups.length === 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.dim, fontFamily: font, fontSize: 12 }}>
+          No data
+        </div>
+      )}
+
+      {tooltip && (
+        <div style={{
+          position: "fixed", left: ttX, top: ttY, zIndex: 9999,
+          background: "#0d0e1c", border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 8, padding: "10px 12px", width: TW,
+          boxShadow: "0 8px 28px rgba(0,0,0,0.6)", pointerEvents: "none",
+        }}>
+          {tooltip.content}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tile content renderers — SVG text in screen space, no transform, always sharp ─
 // sx/sy = screen-space top-left of tile. sw/sh = screen-space px dimensions.
 // Font sizes are real screen pixels — no ÷k needed (this is the unscaled overlay).
@@ -4223,50 +4579,37 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ THEMES — grouped: same canonical leaves visually sectioned by parent sector ══ */}
+      {/* ══ THEMES — grouped: TradingView-style hierarchical treemap (sectors → themes) ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
         const { bySector } = getThemeHeatmapLeaves(data);
+        // Look up sector nodes for call/put/net premium per group header tooltip
+        const sectorNodeMap = new Map(
+          (data.themes ?? [])
+            .filter(t => (t.classification ?? "").toLowerCase() === "sector")
+            .map(t => [t.theme_name, t])
+        );
+        const groups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, pcr, leaves }) => {
+          const sNode = sectorNodeMap.get(sectorName);
+          return {
+            key:          sNode?.theme_id ?? sectorName,
+            name:         sectorName,
+            pcr,
+            call_premium: sNode?.call_premium ?? null,
+            put_premium:  sNode?.put_premium  ?? null,
+            net_premium:  sNode?.net_premium  ?? null,
+            children:     leaves,
+          };
+        });
         return (
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 8 }}>
-              {bySector.map(({ sectorName, pcr, leaves }) => {
-                const { sorted, valueOf } = sfScored(
-                  leaves,
-                  t => (t.call_premium ?? 0) + (t.put_premium ?? 0),
-                  t => t.put_call_ratio,
-                );
-                const h = Math.max(80, Math.min(220, leaves.length * 32));
-                return (
-                  <div key={sectorName}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        {sectorName}
-                      </span>
-                      {pcr != null && (
-                        <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: sfPcrTextCol(pcr) }}>
-                          P/C {pcr.toFixed(2)}
-                        </span>
-                      )}
-                      <span style={{ fontSize: 9, fontFamily: font, color: C.dim, opacity: 0.6 }}>
-                        {leaves.length} {leaves.length === 1 ? "theme" : "themes"}
-                      </span>
-                    </div>
-                    <div style={{ height: h }}>
-                      <SFHeatmap
-                        items={sorted}
-                        valueOf={valueOf}
-                        getPcr={t => t.put_call_ratio}
-                        onClick={t => setActiveTheme(t)}
-                        renderTile={sfRenderTheme}
-                        renderTooltip={sfTooltipTheme}
-                        keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <SFGroupedHeatmap
+            groups={groups}
+            getGross={(t: SFTheme) => (t.call_premium ?? 0) + (t.put_premium ?? 0)}
+            getPcr={(t: SFTheme) => t.put_call_ratio}
+            onClick={(t: SFTheme) => setActiveTheme(t)}
+            renderTile={sfRenderTheme}
+            renderTooltip={sfTooltipTheme}
+            keyOf={(t: SFTheme, i) => t.theme_id ?? t.theme_name ?? String(i)}
+          />
         );
       })()}
 
@@ -4316,42 +4659,36 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ ALL STOCKS — grouped by theme (scrollable list of mini-maps) ══ */}
-      {view === "allstocks" && grouped && (
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 8 }}>
-            {(data?.themes ?? []).filter(th => (th.tickers ?? []).length > 0).map(theme => {
-              const tks = theme.tickers ?? [];
-              const h   = Math.max(100, Math.min(260, tks.length * 28));
-              const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
-              return (
-                <div key={theme.theme_id ?? theme.theme_name}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em" }}>{theme.theme_name}</span>
-                    {theme.put_call_ratio != null && (
-                      <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: sfPcrTextCol(theme.put_call_ratio) }}>
-                        P/C {theme.put_call_ratio.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ height: h }}>
-                    <SFHeatmap
-                      items={sorted}
-                      valueOf={valueOf}
-                      getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
-                      noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
-                      onClick={tk => setSelectedTicker(tk)}
-                      renderTile={sfRenderTicker}
-                      renderTooltip={sfTooltipTicker}
-                      keyOf={(tk, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* ══ ALL STOCKS — grouped by theme: TradingView-style hierarchical treemap ══ */}
+      {view === "allstocks" && grouped && (() => {
+        const themeGroups: SFGroupDef<SFTicker>[] = (data?.themes ?? [])
+          .filter(th => {
+            const cls = (th.classification ?? "").toLowerCase();
+            return cls !== "sector";
+          })
+          .filter(th => (th.tickers ?? []).length > 0)
+          .map(theme => ({
+            key:          theme.theme_id ?? theme.theme_name,
+            name:         theme.theme_name,
+            pcr:          theme.put_call_ratio,
+            call_premium: theme.call_premium ?? null,
+            put_premium:  theme.put_premium  ?? null,
+            net_premium:  theme.net_premium  ?? null,
+            children:     theme.tickers ?? [],
+          }));
+        return (
+          <SFGroupedHeatmap
+            groups={themeGroups}
+            getGross={(tk: SFTicker) => (tk.call_premium ?? 0) + (tk.put_premium ?? 0)}
+            getPcr={(tk: SFTicker) => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+            noData={(tk: SFTicker) => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+            onClick={(tk: SFTicker) => setSelectedTicker(tk)}
+            renderTile={sfRenderTicker}
+            renderTooltip={sfTooltipTicker}
+            keyOf={(tk: SFTicker, i) => `${tk.symbol || tk.ticker || "tk"}-${i}`}
+          />
+        );
+      })()}
 
     </div>{/* end treemap section */}
     </div>{/* end outer flex column */}

@@ -1,0 +1,222 @@
+Polish grouped heatmap views to match TradingView grouped treemap style.
+
+Current state:
+The grouped toggle behavior now works correctly from a data perspective. Do not change the grouping logic/datasets.
+
+Problem:
+The grouped views visually look like stacked group sections/rows, not like TradingView’s grouped heatmap. The grouped Themes and grouped All Stocks views should look like TradingView’s sector-grouped map:
+
+* one full-panel heatmap
+* parent group containers laid out across the whole panel
+* child tiles nested inside each parent group
+* subtle group headers at the top edge of each parent area
+* no vertical section list
+* no page-like grouped scrolling
+* no large black dead zones
+
+Affected views:
+
+1. Options Flow → Net Flow → Themes → Grouped
+
+   * parent groups = sectors
+   * child tiles = canonical theme/sub_theme leaves
+
+2. Options Flow → Net Flow → All Stocks → Grouped
+
+   * parent groups = themes, or whatever the current working grouped toggle groups by
+   * child tiles = stock/ticker leaves
+
+Do not touch:
+
+* backend
+* API routes
+* data fetching
+* scan/LKG/live/pending behavior
+* summary/diagnostics
+* ungrouped Sectors/Themes/All Stocks views
+* current scoring formula
+* current color formula
+* current crisp zoom label overlay
+* current tooltip behavior
+
+Core requirement:
+Replace the grouped-mode visual layout only.
+
+The grouped view should be a hierarchical treemap:
+
+root
+group A
+child tile
+child tile
+group B
+child tile
+child tile
+group C
+child tile
+child tile
+
+The root-level groups should be placed by a treemap algorithm across the full available panel. Then each group’s children should be laid out inside that group’s rectangle.
+
+Do not render grouped mode as:
+
+* vertical stacked sections
+* separate rows per group
+* scrollable cards
+* repeated independent treemaps stacked vertically
+
+TradingView-style grouped design:
+
+1. Entire grouped heatmap fills the same panel as ungrouped mode.
+2. Each parent group has a thin header label along the top edge:
+
+   * uppercase group name
+   * small P/C value
+   * small child count
+   * optional chevron “›” if you want TradingView feel
+3. The group header should sit inside or over the parent group rectangle.
+4. Child tiles render inside the parent group area below/under the header.
+5. Parent group boundaries should be visible but subtle.
+6. Children keep the same green/red/gray color logic.
+7. Parent group background should be very dark/transparent, not a big solid card color that fights the children.
+8. Child tiles should remain square-ish.
+9. Tiny child tiles should still become readable on zoom.
+10. Tooltip and click behavior should still work.
+
+Implementation guidance:
+Keep existing working data helpers:
+
+* canonical theme leaves
+* grouped theme leaves by sector
+* grouped stock leaves by theme
+* sizing/color helpers
+* zoom state
+* label overlay
+
+Add or refactor only the grouped renderer.
+
+Recommended helper:
+renderHierarchicalHeatmap(groups)
+
+Where each group has:
+
+* key
+* name
+* aggregate call_premium
+* aggregate put_premium
+* aggregate net_premium
+* aggregate premium_pcr
+* children: leaf tiles
+* groupSizeScore = sum(child.tileSizeScore)
+
+Parent layout:
+Run treemap over groups using groupSizeScore:
+
+* root size = measuredWidth x measuredHeight
+* group value = sum child tile size scores
+* use squarify
+* use small padding between groups
+
+Child layout:
+For each group rectangle:
+
+* reserve small header height, for example 18–24px depending on group size
+* run a nested treemap for children inside:
+  x = group.x0 + innerPadding
+  y = group.y0 + headerHeight
+  width = groupWidth - innerPadding * 2
+  height = groupHeight - headerHeight - innerPadding
+* child value = existing tile size score
+* use the same squarify/ratio settings as ungrouped mode
+
+Important:
+The parent group treemap and child treemap should both use measured panel dimensions. Do not use hardcoded heights or stacked containers.
+
+Sizing:
+Parent groups:
+
+* size by sum of child tile size scores
+* not raw net premium
+* not raw ticker count
+
+Child tiles:
+
+* keep existing combined score:
+  P/C deviation × normalized premium materiality
+
+Color:
+Child tiles:
+
+* keep existing tile color logic
+
+Parent/header:
+
+* parent outline/border can inherit aggregate sentiment color subtly
+* header P/C color can be green/red/gray based on aggregate P/C
+* parent fill should remain dark/transparent so the child colors dominate
+
+Zoom behavior:
+Grouped view must use the same high-quality zoom as ungrouped:
+
+1. Wheel zoom around cursor.
+2. Drag pan.
+3. Reset zoom.
+4. No page scroll while zooming.
+5. Labels stay crisp.
+6. Small tiles reveal labels based on screen-space dimensions.
+7. Group headers should also stay readable while zoomed.
+8. Do not let the map drift out of frame.
+
+Label behavior:
+Group headers:
+
+* show group name when group area is large enough
+* show aggregate P/C and count if space allows
+* hide/truncate intelligently for small groups
+
+Child tiles:
+
+* same label tiers as ungrouped
+* screen-space label rules must still work after nested group offsets
+
+Tooltip:
+Group hover tooltip:
+
+* group name
+* aggregate P/C
+* net premium
+* call premium
+* put premium
+* child count
+
+Child hover tooltip:
+
+* same as existing stock/theme tooltip
+
+Click:
+
+* Child stock tiles still open stock detail popup
+* Child theme/sub_theme tiles still drill/open whatever current behavior does
+* Parent group click optional; do not break child click
+
+Preserve ungrouped:
+The ungrouped views already look good. Do not touch them unless necessary to share the renderer safely.
+
+Validation:
+
+1. Open Net Flow → Themes → Grouped.
+2. Confirm it is one full-panel grouped treemap, not stacked sections.
+3. Confirm parent groups are sectors.
+4. Confirm child tiles are the same canonical theme/sub_theme leaves as ungrouped.
+5. Confirm group headers look like TradingView: subtle name at top edge, small P/C/count.
+6. Confirm no large black dead zone at bottom.
+7. Confirm no page-level vertical scrolling for grouped view.
+8. Open Net Flow → All Stocks → Grouped.
+9. Confirm it is one full-panel grouped treemap, not stacked sections.
+10. Confirm parent groups contain child stock tiles.
+11. Confirm zoom into small child tiles is crisp and labels appear.
+12. Confirm tooltips still work.
+13. Confirm stock click popup still works.
+14. Confirm ungrouped Sectors/Themes/All Stocks are visually unchanged.
+15. Confirm console has no errors.
+
+Do not claim done until screenshots show grouped Themes and grouped All Stocks visually resembling TradingView grouped heatmap layout.
