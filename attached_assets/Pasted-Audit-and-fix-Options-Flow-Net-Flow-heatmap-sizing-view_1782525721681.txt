@@ -1,0 +1,203 @@
+Audit and fix Options Flow → Net Flow heatmap sizing, viewport fit, and stock detail interactions.
+
+Current problem:
+The treemap is closer, but still not right.
+
+Observed issues:
+1. Sectors and Themes leave large unused black space below the tiles.
+2. All Stocks scrolls vertically very far.
+3. The layout is using fixed-ish height calculations instead of dynamically filling the available viewport.
+4. Some tiny-dollar-flow items are huge only because P/C is extreme, which creates fake signal.
+5. The user wants a TradingView-style map that auto-fits the page and supports zooming into small tiles.
+
+Core behavior:
+The heatmap must dynamically fit the available visible page area for:
+- Sectors
+- Themes
+- All Stocks
+
+The user should not need to scroll down the page to see the heatmap. The map itself should be a fixed viewport with internal zoom/pan.
+
+Do not keep trying to tune hardcoded calc(100vh - 310px) style values. That is brittle.
+
+Required layout architecture:
+1. Make the Options Flow Net Flow page body a vertical flex layout.
+2. Header/tabs/summary/notes should take natural height.
+3. The treemap panel should take all remaining height:
+   - flex: 1
+   - min-height: 0
+   - overflow: hidden
+4. The treemap component should use ResizeObserver on its actual parent container.
+5. Treemap width and height must come from the measured parent, not guessed constants.
+6. The page itself should not vertically scroll for the Net Flow heatmap view.
+7. All Stocks must fit inside the same visible treemap viewport as Sectors/Themes.
+
+Treemap sizing logic:
+Do not size tiles by raw NET premium only.
+Do not size tiles by pure P/C deviation only.
+
+Use a combined conviction/materiality score:
+
+pcr_deviation = abs(log(clamp(premium_pcr, 0.01, 100)))
+
+premium_materiality should be based on real dollar premium, preferably:
+gross_premium = call_premium + put_premium
+
+Then create a normalized score within the current view:
+
+materiality_score = normalized/log-scaled gross_premium within current dataset
+direction_score = pcr_deviation
+tile_size_score = direction_score * materiality_score
+
+Important:
+- Extreme P/C with tiny dollar premium should not become a giant tile.
+- A $158 premium item with P/C 0.00 should be small.
+- A $10M+ premium item far from 1.00 should be large.
+- Near-neutral P/C around 1.00 should be small/gray even if total premium is large.
+- Use a minimum tile size so tiny names remain hoverable.
+- Clamp max score so one extreme item does not eat the whole map.
+
+Suggested implementation:
+- safePcr = clamp(premium_pcr ?? 1, 0.01, 100)
+- deviation = abs(log(safePcr))
+- grossPremium = max(0, call_premium + put_premium)
+- materiality = log1p(grossPremium)
+- Normalize materiality within the visible dataset.
+- sizeScore = max(minSize, deviation * normalizedMateriality)
+
+If the user switches between Sectors, Themes, and All Stocks, recompute normalization separately for that active dataset.
+
+Sorting:
+Sort by tile_size_score descending before treemap layout.
+
+Color:
+Color direction comes from P/C:
+- P/C < 1.00 = green
+- P/C > 1.00 = red
+- near 1.00 = gray
+
+Color intensity should come from pcr_deviation:
+- farther from 1.00 = stronger color
+- closer to 1.00 = muted/gray
+
+Neutral band:
+0.85 <= P/C <= 1.15 should look gray or almost gray.
+
+Zoom/pan requirement:
+Add internal treemap zooming.
+
+Behavior:
+1. Mouse wheel over the treemap zooms in/out around cursor.
+2. Drag pans the zoomed treemap.
+3. Double-click or a visible “Reset” control resets zoom to 1.
+4. Zoom should not cause the page to scroll.
+5. Zoom should be clipped inside the treemap panel.
+6. Tooltip should still work while zoomed.
+7. Zoom should not trigger any API calls.
+
+Implementation options:
+If d3-zoom is already available, use it.
+If d3-zoom is not installed but d3 is already used, add/use d3-zoom if dependency policy allows.
+Otherwise implement a lightweight transform state:
+- scale
+- translateX
+- translateY
+- wheel handler
+- pointer drag handler
+- transform: translate(...) scale(...)
+
+Base treemap:
+The base treemap should always render fully fitted at zoom = 1.
+Zoom is only for inspecting smaller tiles, not for fixing the base layout.
+
+Tile labels:
+Large tiles:
+- name/symbol
+- big P/C
+- small “P/C”
+- net premium
+- count if sector/theme
+
+Medium tiles:
+- name/symbol
+- P/C
+- net premium if space allows
+
+Tiny tiles:
+- symbol/name only or no text
+- full info available through hover/click
+
+Stock click popup:
+For All Stocks, clicking a tile should open the existing stock options popup/detail panel if it already exists.
+
+The popup should include the existing Options Data fields:
+- Score
+- Signal
+- signal strength/confidence, if available
+- IV
+- P/C Ratio
+- Exp Move
+- Volume
+- Net Flow
+- Calls
+- Puts
+
+Do not cram all of these into the tile itself.
+
+Hover tooltip:
+All tiles should have a lightweight hover tooltip.
+
+For stocks, tooltip should show:
+- symbol/name
+- P/C
+- net premium
+- call premium
+- put premium
+- volume/contracts if available
+- signal if already available locally
+
+For sectors/themes, tooltip should show:
+- name
+- P/C
+- net premium
+- call premium
+- put premium
+- ticker count
+- theme count if applicable
+
+Data preservation:
+Preserve existing:
+- Options Flow route
+- Net Flow / Unusual Flow toggle
+- Sectors / Themes / All Stocks tabs
+- refresh button
+- coverage/pending/LKG/live diagnostics
+- existing API contracts
+- existing popup route/data source
+- existing dark styling
+
+Deduplication audit:
+The screenshots show possible duplicate symbols/items in All Stocks, including repeated ETF/ticker tiles.
+Audit whether duplicates are created by frontend transformation or backend payload.
+
+Do not blindly dedupe until source is identified.
+
+If duplicate rows are frontend-created:
+- dedupe by stable symbol key before treemap layout
+
+If duplicate rows are backend-created:
+- report exact source and ask/backend fix separately
+
+Validation:
+1. Sectors fills the available treemap area with no large black dead zone below.
+2. Themes fills the available treemap area with no large black dead zone below.
+3. All Stocks does not create page-level vertical scrolling.
+4. All Stocks fits inside the treemap viewport at zoom = 1.
+5. Mouse wheel over the treemap zooms into smaller tiles.
+6. Drag pans while zoomed.
+7. Reset zoom works.
+8. Tiny tiles are inspectable through hover/click after zooming.
+9. Low-dollar extreme P/C names no longer dominate the map.
+10. High-dollar, high-deviation names become visually prominent.
+11. Near-1.00 P/C names are small and gray/muted.
+12. Clicking a stock opens the existing Options Data popup with Score, Signal, IV, P/C Ratio, Exp Move, Volume, Net Flow, Calls, and Puts.
