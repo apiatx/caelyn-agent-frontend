@@ -4607,8 +4607,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         // Canonical sector aggregates — from ?view=sectors (deduped unique tickers, no overlap).
         // Do NOT use sector nodes from the themes payload here: they aggregate via overlapping
         // themes and produce inflated P/C values that don't match the Sectors tab.
-        const canonSectorByName = new Map(
-          (canonSectors?.sectors ?? []).map(s => [s.sector_name, s])
+        // Use a normalized key (lowercase, no whitespace) to handle name mismatches such as
+        // "Health Care" (themes payload) vs "Healthcare" (sectors payload).
+        const normKey = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+        const canonSectorByNorm = new Map(
+          (canonSectors?.sectors ?? []).map(s => [normKey(s.sector_name), s])
         );
         // Themes-payload sector nodes indexed by display name — only used for stable group key.
         const themesPayloadSectorByName = new Map(
@@ -4618,7 +4621,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
         const groups: SFGroupDef<SFTheme>[] = bySector.map(({ sectorName, leaves }) => {
           const sNode = themesPayloadSectorByName.get(sectorName);
-          const canon = canonSectorByName.get(sectorName);
+          const canon = canonSectorByNorm.get(normKey(sectorName));
           return {
             key:          sNode?.theme_id ?? sectorName,
             name:         sectorName,
