@@ -1,0 +1,207 @@
+Audit first. No edits until the audit is complete.
+
+We now have a normalized backend endpoint:
+
+GET /api/predict/investor/intelligence
+
+This endpoint is the preferred source for the Investor mode page. It returns:
+
+* tracked_odds
+* equity_signals
+* diagnostics
+* cache_age_seconds
+* grouped driver markets
+* watchlist-first ticker impacts
+* canonical theme-universe fallback tickers
+
+Goal:
+Redesign the Prophetik / Prediction Markets page into a cleaner terminal-style intelligence page without removing signal.
+
+Current problem:
+The page has too many separate glasscard sections, duplicate/conflicting interpretations, odds are too small, and useful data is spread across too many panels. The goal is to consolidate the signal, not delete it.
+
+Audit requirements:
+
+1. Find the current Prophetik / Prediction Markets page component.
+2. Find all components/sections currently rendering:
+
+   * Top Equity Signals
+   * Regime Scoreboard
+   * Sector Rotation Signals
+   * Stock Watchlists
+   * Theme Clusters
+   * Market Screener
+   * Market Intelligence
+   * Movers & Shakers
+   * Biggest 24h Odds Movers
+   * Top Edges
+   * Whale Watch
+   * Top Macro Markets
+3. Find current API calls used by the page.
+4. Identify reusable table/card/modal/drawer components.
+5. Report file paths and current component structure before editing.
+
+Preferred data source:
+Use GET /api/predict/investor/intelligence for Investor mode whenever available.
+
+Compatibility:
+If /api/predict/investor/intelligence is unavailable or malformed, gracefully fall back to existing endpoints so the page does not crash. But the new normalized endpoint should be the primary path.
+
+Investor mode layout:
+
+1. Macro Odds Board
+   Use payload.tracked_odds.
+
+Display as compact cards or a dense terminal table.
+
+Show:
+
+* label
+* category
+* large YES/NO odds
+* 24h delta
+* 7d delta
+* volume/liquidity if present
+* dashboard priority if useful
+
+This should include Fed, recession, cuts/hikes, SPX/index daily, target milestones, tech/earnings odds, and other tracked families returned by backend.
+
+2. Market-Moving Event Tape
+   Use payload.equity_signals.
+
+This should be the main section.
+
+Render as a dense terminal-style table, not giant glasscards.
+
+Columns:
+
+* Event
+* Odds
+* 24h Δ
+* 7d Δ
+* Direction
+* Sector / Theme Read
+* Watchlist Hits
+* Quality
+
+Odds must be visually prominent: large, bold, easy to scan. The current small blue odds text is too weak.
+
+Each event_family_key should appear only once.
+
+3. Clickable Event Detail Drawer / Modal
+   Clicking an event row opens a drawer or modal.
+
+Show:
+
+* event title
+* event_family_key if useful in dev/debug only
+* large YES/NO odds
+* 1h / 24h / 7d deltas
+* volume
+* liquidity
+* signal quality
+* direction
+* why_it_matters
+* driver_markets table
+* theme_impacts
+* bullish_watchlist
+* bearish_watchlist
+* conditional_watchlist
+* bullish_fallback
+* bearish_fallback
+* conflicts
+* source links if present
+
+Clearly label fallback tickers as “Theme Universe Fallback”, not user watchlist tickers.
+
+4. Watchlist Impact Matrix
+   Aggregate ticker_impacts across all equity_signals.
+
+Three columns:
+
+* Bullish
+* Bearish
+* Conditional
+
+Prioritize watchlist tickers. Show sector/theme context next to each ticker when available.
+
+Fallback tickers should be visually separated or secondary.
+
+5. Sector / Theme Rotation Matrix
+   Combine the old Sector Rotation Signals and Theme Clusters concepts.
+
+Render as a compact matrix/table:
+
+* sector
+* theme
+* direction
+* driver/event count
+* quality/confidence
+* impacted tickers/watchlist hits
+
+Do not render separate duplicate cards for the same event_family_key.
+
+6. Raw Market Screener
+   Keep the existing raw market screener, but collapse it by default under “Raw Markets”.
+
+Power users can expand it.
+
+Do not make this the main page experience.
+
+7. Diagnostics
+   If payload.diagnostics exists, render a dev-only collapsed Diagnostics panel.
+
+Show key fields:
+
+* ticker_impact_source
+* hardcoded_sector_stocks_used
+* watchlist_symbols_count
+* watchlist_ticker_hits
+* canonical_theme_fallback_hits
+* unmapped_theme_impacts
+* theme_universe_theme_count
+* duplicate_markets_collapsed
+* grouped_event_families
+* cache_age_seconds
+
+Design requirements:
+
+* Keep the existing page identity and dark theme.
+* Keep Investor / Gambler toggle.
+* Keep top action buttons:
+
+  * Caelyn Predicts
+  * Caelyn Analyzes
+  * Open Polymarket
+  * Other Platforms
+* Investor mode should feel more like a terminal / intelligence board.
+* Less giant glasscard feed.
+* More compact tables, rows, badges, and clickable detail drawers.
+* Hide empty sections completely or show one compact “No qualified signals” row.
+* Remove empty Whale Watch-style skeleton blocks.
+* Move, hide, or constrain the floating mascot if it overlaps tables/cards.
+* Preserve Gambler mode separately. Do not mix bettor signals into Investor mode.
+
+Do not:
+
+* Do not hardcode tickers in the frontend.
+* Do not create frontend-only sector/theme mappings.
+* Do not show fallback tickers as if they are user watchlist tickers.
+* Do not duplicate top cards for the same event_family_key.
+* Do not show China/Taiwan labels for Hormuz unless backend sends China/Taiwan.
+* Do not remove existing signal data; consolidate it behind better layouts and drilldowns.
+* Do not break existing top navigation or existing Gambler mode.
+
+Validation:
+
+1. Investor mode loads primarily from /api/predict/investor/intelligence.
+2. Main page is table/terminal style, not a giant glasscard feed.
+3. Odds are large and easy to scan.
+4. Hormuz appears as one grouped event row with multiple driver markets in the drawer.
+5. Watchlist tickers and fallback theme-universe tickers are visually separated.
+6. Empty Whale Watch-style placeholders are gone.
+7. Raw market screener still exists but is collapsed by default.
+8. Existing top nav buttons still work.
+9. Investor / Gambler toggle still works.
+10. No frontend hardcoded ticker list was added.
+11. Diagnostics show hardcoded_sector_stocks_used=false when returned by backend.
