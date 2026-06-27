@@ -4472,14 +4472,6 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         </div>
       </div>
 
-      {/* ── Method labels ── */}
-      {(data.net_flow_method || data.put_call_ratio_method || data.sector_total_method) && (
-        <div style={{ display: "flex", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
-          {data.net_flow_method       && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>net: {data.net_flow_method}</span>}
-          {data.put_call_ratio_method && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>pcr: {data.put_call_ratio_method}</span>}
-          {data.sector_total_method   && <span style={{ fontSize: 9, color: C.dim, fontFamily: font, opacity: 0.45 }}>totals: {data.sector_total_method}</span>}
-        </div>
-      )}
 
       {/* ── Grouped toggle (themes + allstocks, top level only) ── */}
       {(view === "themes" || view === "allstocks") && level === "top" && (
