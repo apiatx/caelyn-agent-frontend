@@ -223,6 +223,24 @@ export function AlertHistoryButton() {
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
   const fetchedOnce = useRef(false);
 
+  // Right-edge proximity — reveal bell only when cursor is near the right edge
+  const [nearRightEdge, setNearRightEdge] = useState(false);
+  const edgeHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX >= window.innerWidth - 72) {
+        if (edgeHideTimer.current) { clearTimeout(edgeHideTimer.current); edgeHideTimer.current = null; }
+        setNearRightEdge(true);
+      } else {
+        if (!edgeHideTimer.current) {
+          edgeHideTimer.current = setTimeout(() => { setNearRightEdge(false); edgeHideTimer.current = null; }, 900);
+        }
+      }
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => { window.removeEventListener('mousemove', onMove); if (edgeHideTimer.current) clearTimeout(edgeHideTimer.current); };
+  }, []);
+
   const { ackAlert, dismissAlert, removeFromView } = useAlerts();
 
   // ── Fetch helpers ──────────────────────────────────────────────────────────
@@ -322,33 +340,44 @@ export function AlertHistoryButton() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  const bellVisible = nearRightEdge || open;
+
   return (
     <>
-      {/* ── Bell trigger button ── */}
-      <button
-        onClick={() => setOpen(true)}
-        className="
-          fixed top-4 right-4 z-[9990]
-          w-9 h-9 rounded-full flex items-center justify-center
-          bg-[#111318]/90 backdrop-blur-md border border-white/10
-          hover:border-white/25 hover:bg-white/[0.08]
-          transition-all duration-200 shadow-lg
-          active:scale-95
-        "
-        aria-label="Alert history"
+      {/* ── Bell trigger button — slides in from right edge on proximity ── */}
+      <div
+        style={{
+          position: 'fixed', top: 16, right: 16, zIndex: 9990,
+          opacity: bellVisible ? 1 : 0,
+          transform: bellVisible ? 'translateX(0)' : 'translateX(64px)',
+          transition: 'opacity 0.25s ease, transform 0.25s ease',
+          pointerEvents: bellVisible ? 'auto' : 'none',
+        }}
       >
-        <Bell className="w-4 h-4 text-white/55" />
-        {badgeCount > 0 && (
-          <span className="
-            absolute -top-1 -right-1 min-w-[16px] h-4
-            flex items-center justify-center
-            rounded-full bg-orange-500 text-[8.5px] font-bold text-white
-            px-1 leading-none pointer-events-none
-          ">
-            {badgeCount > 99 ? '99+' : badgeCount}
-          </span>
-        )}
-      </button>
+        <button
+          onClick={() => setOpen(true)}
+          className="
+            w-9 h-9 rounded-full flex items-center justify-center relative
+            bg-[#111318]/90 backdrop-blur-md border border-white/10
+            hover:border-white/25 hover:bg-white/[0.08]
+            transition-all duration-200 shadow-lg
+            active:scale-95
+          "
+          aria-label="Alert history"
+        >
+          <Bell className="w-4 h-4 text-white/55" />
+          {badgeCount > 0 && (
+            <span className="
+              absolute -top-1 -right-1 min-w-[16px] h-4
+              flex items-center justify-center
+              rounded-full bg-orange-500 text-[8.5px] font-bold text-white
+              px-1 leading-none pointer-events-none
+            ">
+              {badgeCount > 99 ? '99+' : badgeCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* ── History drawer ── */}
       <Sheet open={open} onOpenChange={setOpen}>

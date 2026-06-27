@@ -218,6 +218,24 @@ export default function ChatbotWidget() {
     setPos(null);
   }, []);
 
+  // Right-edge proximity — show fairy button only when cursor is near the right edge
+  const [nearRightEdge, setNearRightEdge] = useState(false);
+  const edgeHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX >= window.innerWidth - 72) {
+        if (edgeHideTimer.current) { clearTimeout(edgeHideTimer.current); edgeHideTimer.current = null; }
+        setNearRightEdge(true);
+      } else {
+        if (!edgeHideTimer.current) {
+          edgeHideTimer.current = setTimeout(() => { setNearRightEdge(false); edgeHideTimer.current = null; }, 900);
+        }
+      }
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => { window.removeEventListener('mousemove', onMove); if (edgeHideTimer.current) clearTimeout(edgeHideTimer.current); };
+  }, []);
+
   // ── Scroll / unread ───────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,8 +263,9 @@ export default function ChatbotWidget() {
     setInput('');
   };
 
-  // ── Collapsed: fairy button always bottom-right ───────────────────────────
+  // ── Collapsed: fairy button — appears only when cursor touches the right edge ─
   if (mode === 'collapsed') {
+    const btnSize = isMobile ? 80 : 100;
     return (
       <>
         <style>{`
@@ -258,23 +277,36 @@ export default function ChatbotWidget() {
             65% { transform: scale(1); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
           }
-          .chatbot-btn-entrance {
+          .chatbot-btn-inner {
             animation: chatbot-entrance 1.5s ease-out 0.3s 1 both;
           }
-          .chatbot-btn-entrance:hover {
+          .chatbot-btn-inner:hover {
             transform: scale(1.6) !important;
           }
         `}</style>
-        <button className="chatbot-btn-entrance" onClick={() => { setMode('small'); setHasUnread(false); }} style={{
-          position: 'fixed', bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 9999,
-          width: isMobile ? 80 : 100, height: isMobile ? 80 : 100,
-          background: 'none', border: 'none', padding: 0,
-          cursor: 'pointer',
-          filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25))',
+        {/* Wrapper handles edge-reveal slide; inner button keeps its animation */}
+        <div style={{
+          position: 'fixed',
+          bottom: isMobile ? 16 : 24,
+          right: isMobile ? 16 : 24,
+          zIndex: 9999,
+          width: btnSize,
+          height: btnSize,
+          opacity: nearRightEdge ? 1 : 0,
+          transform: nearRightEdge ? 'translateX(0)' : `translateX(${btnSize + (isMobile ? 16 : 24) + 8}px)`,
+          transition: 'opacity 0.3s ease, transform 0.3s ease',
+          pointerEvents: nearRightEdge ? 'auto' : 'none',
         }}>
-          <img src={cryptoHippoLogo} alt="Chat" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          {hasUnread && <span style={{ position:'absolute', top:2, right:2, width:12, height:12, borderRadius:'50%', background:C.green, border:`2px solid ${C.bg}` }} />}
-        </button>
+          <button className="chatbot-btn-inner" onClick={() => { setMode('small'); setHasUnread(false); }} style={{
+            width: '100%', height: '100%',
+            background: 'none', border: 'none', padding: 0,
+            cursor: 'pointer', position: 'relative',
+            filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(139,92,246,0.25))',
+          }}>
+            <img src={cryptoHippoLogo} alt="Chat" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            {hasUnread && <span style={{ position:'absolute', top:2, right:2, width:12, height:12, borderRadius:'50%', background:C.green, border:`2px solid ${C.bg}` }} />}
+          </button>
+        </div>
       </>
     );
   }
