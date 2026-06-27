@@ -3391,7 +3391,7 @@ function SFHeatmap<T extends object>({
   getPcr: (item: T) => number | null;
   noData?: (item: T) => boolean;
   onClick: (item: T) => void;
-  renderTile: (item: T, sw: number, sh: number, k: number) => ReactNode;
+  renderTile: (item: T, sx: number, sy: number, sw: number, sh: number) => ReactNode;
   renderTooltip?: (item: T) => ReactNode;
   keyOf: (item: T, i: number) => string;
 }) {
@@ -3402,7 +3402,7 @@ function SFHeatmap<T extends object>({
   const isZRef   = useRef(false);
   const [dims, setDims]         = useState({ w: 0, h: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomK, setZoomK]       = useState(1);
+  const [zoomXY, setZoomXY]     = useState({ k: 1, x: 0, y: 0 });
   const [tooltip, setTooltip]   = useState<{ item: T; cx: number; cy: number } | null>(null);
 
   // ResizeObserver — measures the actual rendered panel, no hardcoded math
@@ -3436,8 +3436,8 @@ function SFHeatmap<T extends object>({
     applyT();
     const zoomed = k > 1.02;
     if (zoomed !== isZRef.current) { isZRef.current = zoomed; setIsZoomed(zoomed); }
-    // Update zoomK so label tiers re-evaluate — React bails out if k unchanged (pan)
-    setZoomK(k);
+    // Track full zoom state so SVG label overlay can compute screen-space coords
+    setZoomXY({ k, x: cx, y: cy });
   };
 
   // Non-passive wheel zoom — zooms around cursor, never causes page scroll
@@ -3522,8 +3522,6 @@ function SFHeatmap<T extends object>({
         {nodes.map(({ item, x0, y0, x1, y1 }, i) => {
           const tw = x1 - x0, th = y1 - y0;
           if (tw < 2 || th < 2) return null;
-          // screen-space dims: what the tile looks like on screen after zoom
-          const sw = tw * zoomK, sh = th * zoomK;
           const faded = noData?.(item) ?? false;
           return (
             <div
@@ -3549,13 +3547,31 @@ function SFHeatmap<T extends object>({
                 opacity: faded ? 0.32 : 1, cursor: "pointer",
                 transition: "filter 0.07s",
               }}
-            >
-              {/* Labels use screen-space dims for tier thresholds, k to counter-scale fonts */}
-              {sw >= 20 && sh >= 16 && renderTile(item, sw, sh, zoomK)}
-            </div>
+            />
           );
         })}
       </div>
+
+      {/* SVG label overlay — no transform, screen-space coords, always vector-sharp */}
+      {dims.w > 0 && dims.h > 0 && (
+        <svg
+          width={dims.w} height={dims.h}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "hidden" }}
+        >
+          {nodes.map(({ item, x0, y0, x1, y1 }, i) => {
+            const { k, x: tx, y: ty } = zoomXY;
+            const sx = x0 * k + tx, sy = y0 * k + ty;
+            const sw = (x1 - x0) * k, sh = (y1 - y0) * k;
+            if (sw < 20 || sh < 16) return null;
+            if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
+            return (
+              <g key={`lbl-${keyOf(item, i)}`}>
+                {renderTile(item, sx, sy, sw, sh)}
+              </g>
+            );
+          })}
+        </svg>
+      )}
 
       {isZoomed && (
         <button
@@ -3589,156 +3605,146 @@ function SFHeatmap<T extends object>({
   );
 }
 
-// ── Tile content renderers ─────────────────────────────────────────────────────
-// sw/sh = screen-space px (tile px × zoom k). k = zoom scale.
-// Font sizes are expressed in CSS px (inside the zoomed container), so we
-// divide by k to keep them stable on screen. Clamp so they never go cartoon-huge.
+// ── Tile content renderers — SVG text in screen space, no transform, always sharp ─
+// sx/sy = screen-space top-left of tile. sw/sh = screen-space px dimensions.
+// Font sizes are real screen pixels — no ÷k needed (this is the unscaled overlay).
 
-function sfRenderSector(s: SFSector, sw: number, sh: number, k: number): ReactNode {
-  // Tier thresholds are in screen-space (sw/sh)
-  if (sw < 36 || sh < 24) return null;                      // tiny — no text
-
+function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: number): ReactNode {
+  if (sw < 34 || sh < 24) return null;
+  const pad = 5;
   const pcr = s.put_call_ratio;
-
-  // Target on-screen font sizes (pixels as the user sees them), then ÷k for CSS
-  const nameScreenPx = Math.max(9,  Math.min(13, sw / 10));
-  const pcrScreenPx  = Math.max(11, Math.min(26, Math.min(sw / 4.5, sh / 2.8)));
-  const subScreenPx  = Math.max(8,  Math.min(11, sw / 14));
-
-  const namePx = nameScreenPx / k;
-  const pcrPx  = pcrScreenPx  / k;
-  const subPx  = subScreenPx  / k;
-  const padPx  = Math.max(2, 7 / k);
-  const gapPx  = Math.max(1, 2 / k);
-
-  const showPcr   = sh >= 42;
-  const showLabel = sw >= 90  && sh >= 64;
-  const showNet   = sw >= 90  && sh >= 64;
-  const showCount = sw >= 140 && sh >= 90;
-
-  return (
-    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      <div style={{
-        fontSize: namePx, fontFamily: sans, fontWeight: 700, color: C.bright,
-        lineHeight: 1.25, flexShrink: 0, overflow: "hidden",
-        whiteSpace: sw > 110 ? "normal" : "nowrap",
-        textOverflow: "ellipsis",
-        wordBreak: "break-word",
-      }}>{s.sector_name}</div>
-
-      {showPcr && (
-        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
-          {pcr != null ? pcr.toFixed(2) : "—"}
-          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
-        </div>
-      )}
-
-      {showNet && (
-        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium), flexShrink: 0 }}>
-          {fmtCurrencyShort(s.net_premium)}
-        </div>
-      )}
-
-      {showCount && (
-        <div style={{ fontSize: subPx * 0.85, color: "#666", fontFamily: font, flexShrink: 0 }}>
-          {(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes
-        </div>
-      )}
-    </div>
+  const nameFs = Math.max(9,  Math.min(13, sw / 10));
+  const pcrFs  = Math.max(11, Math.min(26, Math.min(sw / 4.5, sh / 2.8)));
+  const subFs  = Math.max(8,  Math.min(11, sw / 14));
+  const showPcr   = sh >= 40;
+  const showLabel = sw >= 90 && sh >= 64;
+  const showNet   = sw >= 90 && sh >= 64;
+  const showCount = sw >= 135 && sh >= 90;
+  const els: ReactNode[] = [];
+  let y = sy + pad;
+  els.push(
+    <text key="n" x={Math.round(sx + pad)} y={Math.round(y)}
+      fontSize={nameFs} fontFamily={sans} fontWeight={700} fill={C.bright} dominantBaseline="hanging"
+    >{s.sector_name}</text>
   );
+  y += nameFs + 3;
+  if (showPcr && y + pcrFs < sy + sh - 2) {
+    els.push(
+      <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+    );
+    y += pcrFs + 3;
+  }
+  if (showNet && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="net" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfNetColor(s.net_premium)} dominantBaseline="hanging"
+      >{fmtCurrencyShort(s.net_premium)}</text>
+    );
+    y += subFs + 2;
+  }
+  if (showCount && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</text>
+    );
+  }
+  return <>{els}</>;
 }
 
-function sfRenderTheme(t: SFTheme, sw: number, sh: number, k: number): ReactNode {
+function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: number): ReactNode {
   if (sw < 30 || sh < 20) return null;
-
+  const pad = 4;
   const pcr = t.put_call_ratio;
-
-  const nameScreenPx = Math.max(8,  Math.min(13, sw / 10));
-  const pcrScreenPx  = Math.max(10, Math.min(24, Math.min(sw / 4.5, sh / 2.8)));
-  const subScreenPx  = Math.max(8,  Math.min(11, sw / 14));
-
-  const namePx = nameScreenPx / k;
-  const pcrPx  = pcrScreenPx  / k;
-  const subPx  = subScreenPx  / k;
-  const padPx  = Math.max(2, 6 / k);
-  const gapPx  = Math.max(1, 2 / k);
-
+  const nameFs = Math.max(8,  Math.min(13, sw / 10));
+  const pcrFs  = Math.max(10, Math.min(24, Math.min(sw / 4.5, sh / 2.8)));
+  const subFs  = Math.max(8,  Math.min(11, sw / 14));
   const showPcr   = sh >= 36;
-  const showLabel = sw >= 90  && sh >= 60;
-  const showNet   = sw >= 90  && sh >= 60;
+  const showLabel = sw >= 90 && sh >= 60;
+  const showNet   = sw >= 90 && sh >= 60;
   const showCount = sw >= 130 && sh >= 84;
-
-  return (
-    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      <div style={{
-        fontSize: namePx, fontFamily: sans, fontWeight: 700, color: C.bright,
-        lineHeight: 1.2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", flexShrink: 0,
-      }}>{t.theme_name}</div>
-
-      {showPcr && (
-        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
-          {pcr != null ? pcr.toFixed(2) : "—"}
-          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
-        </div>
-      )}
-
-      {showNet && (
-        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium), flexShrink: 0 }}>
-          {fmtCurrencyShort(t.net_premium)}
-        </div>
-      )}
-
-      {showCount && (
-        <div style={{ fontSize: subPx * 0.85, color: "#666", fontFamily: font, flexShrink: 0 }}>
-          {t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers
-        </div>
-      )}
-    </div>
+  const els: ReactNode[] = [];
+  let y = sy + pad;
+  els.push(
+    <text key="n" x={Math.round(sx + pad)} y={Math.round(y)}
+      fontSize={nameFs} fontFamily={sans} fontWeight={700} fill={C.bright} dominantBaseline="hanging"
+    >{t.theme_name}</text>
   );
+  y += nameFs + 3;
+  if (showPcr && y + pcrFs < sy + sh - 2) {
+    els.push(
+      <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+    );
+    y += pcrFs + 3;
+  }
+  if (showNet && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="net" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfNetColor(t.net_premium)} dominantBaseline="hanging"
+      >{fmtCurrencyShort(t.net_premium)}</text>
+    );
+    y += subFs + 2;
+  }
+  if (showCount && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers</text>
+    );
+  }
+  return <>{els}</>;
 }
 
-function sfRenderTicker(tk: SFTicker, sw: number, sh: number, k: number): ReactNode {
-  if (sw < 36 || sh < 24) return null;
-
+function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: number): ReactNode {
+  if (sw < 34 || sh < 24) return null;
+  const pad = 4;
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
   const net       = isPending ? null : tk.net_premium;
-
-  const symScreenPx = Math.max(9,  Math.min(18, sw / 5.5));
-  const pcrScreenPx = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
-  const subScreenPx = Math.max(8,  Math.min(11, sw / 12));
-
-  const symPx = symScreenPx / k;
-  const pcrPx = pcrScreenPx / k;
-  const subPx = subScreenPx / k;
-  const padPx = Math.max(2, 5 / k);
-  const gapPx = Math.max(1, 2 / k);
-
-  const showPcr   = sh >= 42;
-  const showLabel = sw >= 90  && sh >= 64;
-  const showNet   = sw >= 90  && sh >= 64;
-
-  return (
-    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      <div style={{ fontSize: symPx, fontFamily: font, fontWeight: 800, color: C.bright, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
-        {sym}
-      </div>
-
-      {showPcr && (
-        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
-          {isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}
-          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
-        </div>
-      )}
-
-      {showNet && (
-        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(net), flexShrink: 0 }}>
-          {isPending ? "pending" : fmtCurrencyShort(net)}
-        </div>
-      )}
-    </div>
+  const symFs = Math.max(9,  Math.min(18, sw / 5.5));
+  const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
+  const subFs = Math.max(8,  Math.min(11, sw / 12));
+  const showPcr   = sh >= 40;
+  const showLabel = sw >= 90 && sh >= 64;
+  const showNet   = sw >= 90 && sh >= 64;
+  const showExtra = sw >= 135 && sh >= 90;
+  const els: ReactNode[] = [];
+  let y = sy + pad;
+  els.push(
+    <text key="sym" x={Math.round(sx + pad)} y={Math.round(y)}
+      fontSize={symFs} fontFamily={font} fontWeight={800} fill={C.bright} dominantBaseline="hanging"
+    >{sym}</text>
   );
+  y += symFs + 3;
+  if (showPcr && y + pcrFs < sy + sh - 2) {
+    els.push(
+      <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
+      >{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+    );
+    y += pcrFs + 3;
+  }
+  if (showNet && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="net" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfNetColor(net)} dominantBaseline="hanging"
+      >{isPending ? "pending" : fmtCurrencyShort(net)}</text>
+    );
+    y += subFs + 2;
+  }
+  if (showExtra && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="cp" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >C:{fmtCurrencyShort(tk.call_premium)} P:{fmtCurrencyShort(tk.put_premium)}</text>
+    );
+  }
+  return <>{els}</>;
 }
 
 function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) {
