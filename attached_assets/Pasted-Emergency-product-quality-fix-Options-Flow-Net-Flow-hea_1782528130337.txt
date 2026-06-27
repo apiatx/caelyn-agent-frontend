@@ -1,0 +1,286 @@
+Emergency product-quality fix — Options Flow → Net Flow heatmap layout and zoom.
+
+The current treemap renders, but it is not acceptable. It still has awkward long rectangles, black/blank dead space, and zooming pushes the map out of place. This needs to be rebuilt into a proper TradingView-style heatmap.
+
+Scope:
+Frontend only unless proven otherwise.
+
+Affected views:
+
+* Options Flow → Net Flow → Sectors
+* Options Flow → Net Flow → Themes
+* Options Flow → Net Flow → All Stocks
+
+Do not touch:
+
+* backend scan logic
+* API routes
+* LKG/live/pending behavior
+* refresh behavior
+* coverage diagnostics
+* Net Flow / Unusual Flow toggle
+* existing data contracts
+
+Current failures:
+
+1. Sectors still leaves black space below the treemap.
+2. Themes still leaves black space below the treemap.
+3. All Stocks still does not fit cleanly.
+4. Zooming causes the tiles to drift/off-center/out of place.
+5. Some tiles are still long awkward rectangles.
+6. The layout does not feel like TradingView’s heatmap.
+7. Duplicate tickers are visible in All Stocks, for example repeated ETF/ticker tiles. Audit this.
+
+Do not keep tuning the current custom div transform version if it is the source of the drift. Replace it with a proper SVG-based treemap if needed.
+
+Required architecture:
+Use a single reusable heatmap engine for Sectors, Themes, and All Stocks.
+
+Preferred implementation:
+Use d3-hierarchy + d3-zoom with SVG.
+
+Use:
+
+* d3.hierarchy
+* d3.treemap
+* d3.treemapSquarify.ratio(...)
+* d3.zoom
+
+If d3-hierarchy and d3-zoom are already available, use them.
+If d3 is not available but dependency policy allows it, add the minimal d3 modules.
+If dependency policy does not allow it, implement the equivalent, but do not leave the current broken CSS transform behavior.
+
+Layout requirements:
+
+1. The heatmap must fill the entire available heatmap panel.
+2. No black/blank dead zone below the map.
+3. No page-level vertical scrolling for the heatmap view.
+4. The map itself should be clipped inside the panel.
+5. The base view at zoom = 1 must show the full heatmap fitted to the panel.
+6. Sectors, Themes, and All Stocks must all use measured parent width/height.
+7. Do not use hardcoded calc(100vh - 310px) guesses as the main layout strategy.
+8. Use ResizeObserver on the actual heatmap panel.
+9. If measurement is temporarily unavailable, use a safe fallback, but once measured, the treemap must fill measured width and height.
+
+Recommended page structure:
+
+* Options Flow Net Flow wrapper:
+  display: flex
+  flex-direction: column
+  height: 100%
+  min-height: 0
+  overflow: hidden
+
+* Header / tabs / summary / notes / toggles:
+  flex: 0 0 auto
+
+* Heatmap panel:
+  flex: 1 1 auto
+  min-height: 0
+  width: 100%
+  overflow: hidden
+  position: relative
+
+Treemap rendering:
+Render tiles in an SVG sized exactly to the panel:
+
+* svg width = measuredWidth
+* svg height = measuredHeight
+* viewBox = `0 0 ${measuredWidth} ${measuredHeight}`
+* treemap.size([measuredWidth, measuredHeight])
+
+Each tile:
+
+* render as `<g transform="translate(x0,y0)">`
+* render `<rect width={x1-x0} height={y1-y0}>`
+* render text only when tile is large enough
+* tiny tiles rely on hover/click tooltip
+
+This removes CSS transform drift and keeps all coordinates inside one known coordinate system.
+
+Squareness / aspect ratio:
+Use d3.treemapSquarify with a sane ratio.
+
+Target:
+
+* tiles should be square-ish like TradingView
+* avoid extreme runway rectangles
+* use paddingInner/paddingOuter carefully, no huge gaps
+* do not allow one tile to create useless blank space
+
+Important:
+The treemap should fill the full rectangular panel. Any black gap larger than a few pixels at the bottom/right is a bug.
+
+Sizing logic:
+Do not size by raw net premium alone.
+Do not size by pure P/C deviation alone.
+
+Use combined signal:
+
+safePcr = clamp(premium_pcr ?? put_call_ratio ?? pcr ?? pc_ratio ?? 1, 0.01, 100)
+pcrDeviation = abs(log(safePcr))
+
+grossPremium = call_premium + put_premium
+If grossPremium is missing or zero, fallback to abs(net_premium).
+
+materiality = log1p(grossPremium)
+
+Normalize materiality within the current active dataset:
+
+* Sectors normalized against sectors only
+* Themes normalized against themes only
+* All Stocks normalized against stocks only
+
+tileSizeScore = pcrDeviation * normalizedMateriality
+
+Rules:
+
+* Extreme P/C with tiny dollar premium should not become massive.
+* High dollar premium plus far-from-1.00 P/C should become large.
+* Near-neutral P/C around 1.00 should be small/muted.
+* Every visible item gets a positive value.
+* Clamp extremes so one tile does not eat the whole page.
+* Sort by tileSizeScore descending before layout.
+
+Suggested:
+value = max(tileSizeScore, 0.01)
+
+Color:
+Direction:
+
+* P/C < 1.00 = green
+* P/C > 1.00 = red
+* near 1.00 = gray/neutral
+
+Neutral band:
+
+* 0.85 <= P/C <= 1.15 should be gray or very muted.
+
+Intensity:
+
+* based on pcrDeviation
+* farther from 1.00 = stronger color
+* closer to 1.00 = muted
+
+Zoom requirements:
+Implement seamless TradingView-style internal zoom.
+
+Must-have:
+
+1. Wheel over the heatmap zooms around the cursor.
+2. Drag pans while zoomed.
+3. Double-click or Reset button resets to full map.
+4. Zoom must never cause page scrolling.
+5. Zoom must not push the whole map into random blank space.
+6. Zoom transform must be clamped so users cannot pan the map completely out of view.
+7. At zoom = 1, the map is perfectly fitted.
+8. Tooltip/click still works while zoomed.
+
+If using d3.zoom:
+
+* Attach zoom behavior to the SVG.
+* Apply transform to a single inner `<g>`.
+* Use scaleExtent, for example [1, 12].
+* Use translateExtent and extent based on measured width/height.
+* Clamp pan to avoid losing the map off-canvas.
+* Reset sets zoomIdentity.
+
+Do not use an unbounded CSS transform wrapper that allows the map to drift off-screen.
+
+Duplicate audit:
+All Stocks screenshots show duplicate symbols/ETFs, such as repeated SOXX/TSM/KLAC/SMH/XLB/XLE-style rows.
+
+Audit source:
+
+1. Log raw All Stocks item count.
+2. Log unique symbol count.
+3. Log duplicate symbols and their source fields.
+4. Determine whether duplicates are created by frontend flattening or backend payload.
+
+Rules:
+
+* In All Stocks → Ungrouped, each symbol should appear once.
+* If multiple rows for the same symbol exist, aggregate them by symbol:
+
+  * call_premium = sum
+  * put_premium = sum
+  * net_premium = call_premium - put_premium
+  * premium_pcr = put_premium / call_premium, null if call_premium is zero
+  * contracts/volume = sum if available
+* In grouped-by-theme mode, a symbol can appear in multiple groups only if the UI is explicitly grouped and that behavior is intentional.
+* Do not duplicate tiles in the ungrouped stock heatmap.
+
+Tile labels:
+Large tiles:
+
+* name/symbol
+* big P/C
+* small “P/C”
+* net premium
+* ticker/theme count where relevant
+
+Medium tiles:
+
+* name/symbol
+* P/C
+* net premium if it fits
+
+Small tiles:
+
+* symbol/name only or no text
+* details through hover/click
+
+Tooltip:
+All tiles need hover tooltip.
+
+For sectors/themes:
+
+* name
+* P/C
+* net premium
+* call premium
+* put premium
+* ticker count
+* theme count if applicable
+
+For stocks:
+
+* symbol/name
+* P/C
+* net premium
+* call premium
+* put premium
+* contracts/volume if available
+* signal/score/IV/expected move if already available locally
+
+Click:
+For stock tiles, clicking should open the existing Options Data popup/detail panel if available. Do not cram full detail into tiles.
+
+Validation checklist before claiming done:
+
+1. Sectors fills the heatmap panel with no bottom black dead zone.
+2. Themes fills the heatmap panel with no bottom black dead zone.
+3. All Stocks fills the heatmap panel at zoom = 1.
+4. No page-level vertical scroll is needed to see the base heatmap.
+5. Zoom over cursor works smoothly.
+6. Drag pan works smoothly while zoomed.
+7. Reset zoom returns to exact full-panel view.
+8. The map cannot be panned completely off-screen.
+9. Tiles are square-ish and TradingView-like.
+10. No absurd long runway rectangles.
+11. Near-neutral P/C tiles are small/muted.
+12. High-conviction, high-materiality tiles are large.
+13. Low-dollar extreme P/C tiles do not dominate.
+14. All Stocks ungrouped has no duplicate symbols.
+15. Browser console has no runtime errors.
+16. Refresh still works.
+17. Coverage/pending/live/LKG diagnostics still render.
+
+Important:
+Do not report “compiled clean” as success. Success means visual validation in the browser screenshots:
+
+* tiles fill the panel
+* zoom is stable
+* no dead black space
+* no broken drift
+* no duplicate ungrouped stock tiles

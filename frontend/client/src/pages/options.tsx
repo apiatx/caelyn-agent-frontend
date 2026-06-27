@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
+import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import type { ReactNode } from "react";
@@ -3353,197 +3354,209 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
   );
 }
 
-// ── Combined conviction/materiality score ─────────────────────────────────────
-// Tiles sized by: pcr_deviation × normalized_log_premium
-// → extreme P/C with tiny $ stays small; real $ + extreme P/C gets large; near-neutral stays small
-function sfBuildSizeMap<T extends object>(
+// ── Tile sizing: pcrDeviation × normalizedMateriality (conviction × scale) ────
+function sfBuildValue<T extends object>(
   items: T[],
   getGross: (t: T) => number,
-  getPcr: (t: T) => number | null
+  getPcr: (t: T) => number | null,
 ): Map<T, number> {
   const MIN = 0.04;
   const logs = items.map(t => Math.log1p(Math.max(0, getGross(t))));
   const maxLog = Math.max(...logs, 1);
   return new Map(items.map((t, i) => {
     const normMat = maxLog > 0 ? logs[i] / maxLog : 0;
-    const safePcr = Math.max(Math.min(getPcr(t) ?? 1.0, 100), 0.01);
+    const safePcr = Math.max(0.01, Math.min(getPcr(t) ?? 1.0, 100));
     const dev = Math.abs(Math.log(safePcr));
     return [t, Math.max(MIN, Math.min(dev * normMat, 3.5))];
   }));
 }
 
-// Build sizeMap and sort items by score descending (best squarification)
-function sfScoredItems<T extends object>(
+function sfScored<T extends object>(
   items: T[],
   getGross: (t: T) => number,
-  getPcr: (t: T) => number | null
-): { sorted: T[]; sizeMap: Map<T, number> } {
-  const sizeMap = sfBuildSizeMap(items, getGross, getPcr);
-  const sorted = [...items].sort((a, b) => (sizeMap.get(b) ?? 0) - (sizeMap.get(a) ?? 0));
-  return { sorted, sizeMap };
+  getPcr: (t: T) => number | null,
+): { sorted: T[]; valueOf: (t: T) => number } {
+  const map = sfBuildValue(items, getGross, getPcr);
+  const sorted = [...items].sort((a, b) => (map.get(b) ?? 0) - (map.get(a) ?? 0));
+  return { sorted, valueOf: (t: T) => map.get(t) ?? 0.04 };
 }
 
-// ── Generic squarified treemap component — with wheel zoom + drag pan ─────────
-// Parent wrapper div controls height via flex; SFTreemap observes its own dims.
-function SFTreemap<T extends object>({
-  items, sizeOf, getPcr, noData, onClick, renderTile, renderTooltip, keyOf, gap = 2,
+// ── d3-hierarchy squarified treemap — direct-DOM zoom/pan, no CSS drift ───────
+// Container must have explicit width+height (ResizeObserver measures it).
+function SFHeatmap<T extends object>({
+  items, valueOf, getPcr, noData, onClick, renderTile, renderTooltip, keyOf,
 }: {
   items: T[];
-  sizeOf: (item: T) => number;
+  valueOf: (item: T) => number;
   getPcr: (item: T) => number | null;
   noData?: (item: T) => boolean;
   onClick: (item: T) => void;
   renderTile: (item: T, tw: number, th: number) => ReactNode;
   renderTooltip?: (item: T) => ReactNode;
   keyOf: (item: T, i: number) => string;
-  gap?: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [dims, setDims] = useState({ w: 0, h: 0 });
-  const [tooltip, setTooltip] = useState<{ item: T; cx: number; cy: number } | null>(null);
-  const [zoom, setZoom] = useState({ scale: 1, tx: 0, ty: 0 });
-  const zoomRef = useRef({ scale: 1, tx: 0, ty: 0 });
-  const dragState = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
-  const isDragging = useRef(false);
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const zRef     = useRef({ k: 1, x: 0, y: 0 });
+  const dragRef  = useRef<{ sx: number; sy: number; tx: number; ty: number } | null>(null);
+  const isZRef   = useRef(false);
+  const [dims, setDims]         = useState({ w: 0, h: 0 });
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [tooltip, setTooltip]   = useState<{ item: T; cx: number; cy: number } | null>(null);
 
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-
+  // ResizeObserver — measures the actual rendered panel, no hardcoded math
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Immediate measurement — use getBoundingClientRect first, fall back to clientWidth/Height
-    const rect = el.getBoundingClientRect();
-    const iw = rect.width  > 0 ? rect.width  : el.clientWidth;
-    const ih = rect.height > 0 ? rect.height : el.clientHeight;
-    if (iw > 0 && ih > 0) setDims({ w: iw, h: ih });
-    const ro = new ResizeObserver(entries => {
-      const cr = entries[0]?.contentRect;
-      const w  = cr?.width  ?? el.clientWidth;
-      const h  = cr?.height ?? el.clientHeight;
-      if (w > 0 && h > 0) setDims({ w, h });
-    });
+    const el = wrapRef.current; if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const w = r.width  > 4 ? Math.floor(r.width)  : el.clientWidth;
+      const h = r.height > 4 ? Math.floor(r.height) : el.clientHeight;
+      if (w > 4 && h > 4) setDims({ w, h });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  // Non-passive wheel — must attach via addEventListener to call preventDefault
+  // Apply zoom transform directly to inner div — no React re-render on every frame
+  const applyT = () => {
+    const el = innerRef.current; if (!el) return;
+    const { k, x, y } = zRef.current;
+    el.style.transform = `translate(${x}px,${y}px) scale(${k})`;
+    el.style.transformOrigin = "0 0";
+  };
+
+  const setZ = (k: number, x: number, y: number) => {
+    const { w, h } = dims;
+    const cx = Math.min(0, Math.max(x, w - w * k));
+    const cy = Math.min(0, Math.max(y, h - h * k));
+    zRef.current = { k, x: cx, y: cy };
+    applyT();
+    const zoomed = k > 1.02;
+    if (zoomed !== isZRef.current) { isZRef.current = zoomed; setIsZoomed(zoomed); }
+  };
+
+  // Non-passive wheel zoom — zooms around cursor, never causes page scroll
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
+    const el = wrapRef.current; if (!el || !dims.w) return;
+    const fn = (e: WheelEvent) => {
       e.preventDefault();
       const rect = el.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      const z = zoomRef.current;
-      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const newScale = Math.max(0.9, Math.min(z.scale * factor, 12));
-      const r = newScale / z.scale;
-      const nz = { scale: newScale, tx: cx - (cx - z.tx) * r, ty: cy - (cy - z.ty) * r };
-      zoomRef.current = nz;
-      setZoom(nz);
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      const { k, x, y } = zRef.current;
+      const f  = e.deltaY < 0 ? 1.14 : 1 / 1.14;
+      const nk = Math.max(1, Math.min(k * f, 12));
+      if (nk === k) return;
+      const r = nk / k;
+      setZ(nk, cx - (cx - x) * r, cy - (cy - y) * r);
     };
-    el.addEventListener("wheel", handler, { passive: false });
-    return () => el.removeEventListener("wheel", handler);
-  }, []);
+    el.addEventListener("wheel", fn, { passive: false });
+    return () => el.removeEventListener("wheel", fn);
+  }, [dims]);
 
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || zoomRef.current.scale < 1.05) return;
-    const z = zoomRef.current;
-    dragState.current = { x: e.clientX, y: e.clientY, tx: z.tx, ty: z.ty };
+  // Drag pan — pointer capture for smooth tracking
+  const onPD = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !isZRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { sx: e.clientX, sy: e.clientY, tx: zRef.current.x, ty: zRef.current.y };
   };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragState.current) return;
-    const dx = e.clientX - dragState.current.x;
-    const dy = e.clientY - dragState.current.y;
-    if (!isDragging.current && dx * dx + dy * dy < 25) return;
-    isDragging.current = true;
-    const nz = { scale: zoomRef.current.scale, tx: dragState.current.tx + dx, ty: dragState.current.ty + dy };
-    zoomRef.current = nz;
-    setZoom(nz);
+  const onPM = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const { sx, sy, tx, ty } = dragRef.current;
+    setZ(zRef.current.k, tx + (e.clientX - sx), ty + (e.clientY - sy));
   };
-  const onPointerUp = () => {
-    dragState.current = null;
-    setTimeout(() => { isDragging.current = false; }, 0);
-  };
-  const resetZoom = () => { const nz = { scale: 1, tx: 0, ty: 0 }; zoomRef.current = nz; setZoom(nz); };
+  const onPU = () => { dragRef.current = null; };
 
-  // Safe dimensions: state → clientWidth/Height → 0. Never block render on 0 dims.
-  const safeW = dims.w > 0 ? dims.w : (ref.current?.clientWidth  ?? 0);
-  const safeH = dims.h > 0 ? dims.h : (ref.current?.clientHeight ?? 0);
+  // d3-hierarchy treemap layout — squarify for TradingView-like tile shape
+  const nodes = useMemo(() => {
+    if (!dims.w || !dims.h || !items.length) return [] as Array<{ item: T; x0: number; y0: number; x1: number; y1: number }>;
+    const root = hierarchy<any>({ children: items })
+      .sum((d: any) => Array.isArray(d.children) ? 0 : Math.max(valueOf(d as T), 0.001))
+      .sort((a: any, b: any) => (b.value ?? 0) - (a.value ?? 0));
+    treemap<any>()
+      .size([dims.w, dims.h])
+      .tile(treemapSquarify.ratio(1))
+      .paddingInner(2)
+      .paddingOuter(0)
+      (root);
+    return (root.leaves() as any[]).map((n: any) => ({
+      item: n.data as T,
+      x0: n.x0 as number, y0: n.y0 as number,
+      x1: n.x1 as number, y1: n.y1 as number,
+    }));
+  }, [items, dims, valueOf]);
 
-  const values = items.map(item => Math.max(sizeOf(item), 0.001));
-  const rects  = safeW > 8 && safeH > 8 ? computeTreemap(values, safeW, safeH) : [];
-  const half   = gap / 2;
-  const isZoomed = zoom.scale > 1.02;
-
-  const VW = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const VW = typeof window !== "undefined" ? window.innerWidth  : 1200;
   const VH = typeof window !== "undefined" ? window.innerHeight : 800;
-  const ttW = 220;
-  const ttX = tooltip ? Math.min(tooltip.cx + 14, VW - ttW - 8) : 0;
-  const ttY = tooltip ? Math.max(Math.min(tooltip.cy + 6, VH - 200), 8) : 0;
+  const TW = 220;
+  const ttX = tooltip ? Math.min(tooltip.cx + 14, VW - TW - 8) : 0;
+  const ttY = tooltip ? Math.max(8, Math.min(tooltip.cy + 10, VH - 240)) : 0;
 
   return (
     <div
-      ref={ref}
-      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden",
-               cursor: isDragging.current ? "grabbing" : isZoomed ? "grab" : "default" }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
+      ref={wrapRef}
+      onPointerDown={onPD}
+      onPointerMove={onPM}
+      onPointerUp={onPU}
+      onPointerCancel={onPU}
+      style={{
+        position: "relative", width: "100%", height: "100%",
+        overflow: "hidden", background: C.bg,
+        cursor: isZoomed ? "grab" : "default",
+        userSelect: "none",
+      }}
     >
-      {/* Zoomable tile canvas */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, width: safeW || "100%", height: safeH || "100%",
-        transform: `translate(${zoom.tx}px,${zoom.ty}px) scale(${zoom.scale})`,
-        transformOrigin: "0 0",
-      }}>
-        {rects.map((r, i) => {
-          if (!r || i >= items.length) return null;
-          const item  = items[i];
-          const tw    = Math.max(r.w - gap, 0);
-          const th    = Math.max(r.h - gap, 0);
-          if (tw < 4 || th < 4) return null;
+      {/* Inner div — zoom/pan target; transform applied directly to DOM */}
+      <div
+        ref={innerRef}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: dims.w || "100%", height: dims.h || "100%",
+          willChange: "transform",
+        }}
+      >
+        {nodes.map(({ item, x0, y0, x1, y1 }, i) => {
+          const tw = x1 - x0, th = y1 - y0;
+          if (tw < 2 || th < 2) return null;
           const faded = noData?.(item) ?? false;
           return (
             <div
               key={keyOf(item, i)}
-              onClick={() => { if (!isDragging.current) onClick(item); }}
+              onClick={() => onClick(item)}
               onMouseEnter={e => {
-                e.currentTarget.style.filter = "brightness(1.25)";
+                e.currentTarget.style.filter = "brightness(1.28)";
                 if (renderTooltip) setTooltip({ item, cx: e.clientX, cy: e.clientY });
               }}
               onMouseMove={e => {
-                if (renderTooltip) setTooltip(prev => prev ? { ...prev, cx: e.clientX, cy: e.clientY } : null);
+                if (renderTooltip) setTooltip(p => p ? { ...p, cx: e.clientX, cy: e.clientY } : null);
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.filter = "none";
+                e.currentTarget.style.filter = "";
                 setTooltip(null);
               }}
               style={{
                 position: "absolute",
-                left: r.x + half, top: r.y + half, width: tw, height: th,
+                left: x0, top: y0, width: tw, height: th,
                 background: sfPcrBg(getPcr(item)),
                 border: `1px solid ${sfPcrBorder(getPcr(item))}`,
-                borderRadius: 2, cursor: isZoomed ? "inherit" : "pointer", overflow: "hidden",
-                boxSizing: "border-box", opacity: faded ? 0.32 : 1,
-                transition: "filter 0.08s",
+                borderRadius: 2, overflow: "hidden", boxSizing: "border-box",
+                opacity: faded ? 0.32 : 1, cursor: "pointer",
+                transition: "filter 0.07s",
               }}
             >
-              {tw >= 12 && th >= 12 && renderTile(item, tw, th)}
+              {tw >= 14 && th >= 14 && renderTile(item, tw, th)}
             </div>
           );
         })}
       </div>
 
-      {/* Reset zoom button — only visible when zoomed */}
       {isZoomed && (
         <button
-          onClick={e => { e.stopPropagation(); resetZoom(); }}
+          onClick={e => { e.stopPropagation(); setZ(1, 0, 0); }}
           style={{
             position: "absolute", top: 8, right: 8, zIndex: 20,
-            background: "rgba(13,14,28,0.88)", border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(13,14,28,0.90)", border: "1px solid rgba(255,255,255,0.18)",
             borderRadius: 5, color: C.dim, fontSize: 10, fontFamily: font,
             padding: "3px 9px", cursor: "pointer", userSelect: "none",
           }}
@@ -3551,15 +3564,16 @@ function SFTreemap<T extends object>({
       )}
 
       {items.length === 0 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.dim, fontFamily: font, fontSize: 12 }}>No data</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.dim, fontFamily: font, fontSize: 12 }}>
+          No data
+        </div>
       )}
 
-      {/* Tooltip — position:fixed so it escapes the overflow:hidden container */}
       {tooltip && renderTooltip && (
         <div style={{
           position: "fixed", left: ttX, top: ttY, zIndex: 9999,
           background: "#0d0e1c", border: "1px solid rgba(255,255,255,0.14)",
-          borderRadius: 8, padding: "10px 12px", width: ttW,
+          borderRadius: 8, padding: "10px 12px", width: TW,
           boxShadow: "0 8px 28px rgba(0,0,0,0.6)", pointerEvents: "none",
         }}>
           {renderTooltip(tooltip.item)}
@@ -3701,11 +3715,31 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
     return ap - bp;
   }), [data]);
 
-  // All tickers flattened from themes (for allstocks view), sorted by P/C asc
+  // All tickers flattened from themes — deduplicated by symbol, sorted by P/C asc
   const allTickers = useMemo(() => {
-    const tks: SFTicker[] = [];
-    (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => tks.push(tk)));
-    return tks.sort((a, b) => {
+    const raw: SFTicker[] = [];
+    (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => raw.push(tk)));
+    // Deduplicate by symbol: aggregate premiums, recompute PCR
+    const bySymbol = new Map<string, SFTicker>();
+    raw.forEach(tk => {
+      const sym = tk.symbol || tk.ticker || tk.underlying || "";
+      if (!sym) { return; }
+      const existing = bySymbol.get(sym);
+      if (!existing) { bySymbol.set(sym, { ...tk }); return; }
+      const call = (existing.call_premium ?? 0) + (tk.call_premium ?? 0);
+      const put  = (existing.put_premium  ?? 0) + (tk.put_premium  ?? 0);
+      bySymbol.set(sym, {
+        ...existing,
+        call_premium:        call,
+        put_premium:         put,
+        net_premium:         call - put,
+        premium_pcr:         call > 0 ? put / call : null,
+        put_call_ratio:      call > 0 ? put / call : existing.put_call_ratio,
+        total_contract_volume: (existing.total_contract_volume ?? 0) + (tk.total_contract_volume ?? 0),
+      });
+    });
+    const deduped = Array.from(bySymbol.values());
+    return deduped.sort((a, b) => {
       const ap = a.put_call_ratio, bp = b.put_call_ratio;
       if (ap == null && bp == null) return 0;
       if (ap == null) return 1; if (bp == null) return -1;
@@ -3879,16 +3913,16 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       )}
     </div>{/* end header section */}
 
-    {/* ── Treemap section: explicit viewport-calc height so ResizeObserver always measures > 0 ── */}
-    <div style={{ height: "calc(100vh - 310px)", minHeight: 360, padding: "0 16px 10px", overflow: "hidden", flexShrink: 0 }}>
+    {/* ── Heatmap panel: flex:1 fills remaining space, ResizeObserver measures exact dimensions ── */}
+    <div style={{ flex: 1, minHeight: 0, padding: "0 16px 10px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
       {/* ══ SECTORS — top: fills available space ══ */}
       {view === "sectors" && level === "top" && (() => {
-        const { sorted, sizeMap } = sfScoredItems(sortedSectors, s => (s.call_premium ?? 0) + (s.put_premium ?? 0), s => s.put_call_ratio);
+        const { sorted, valueOf } = sfScored(sortedSectors, s => (s.call_premium ?? 0) + (s.put_premium ?? 0), s => s.put_call_ratio);
         return (
-          <SFTreemap
+          <SFHeatmap
             items={sorted}
-            sizeOf={s => sizeMap.get(s) ?? 0.04}
+            valueOf={valueOf}
             getPcr={s => s.put_call_ratio}
             onClick={s => setActiveSector(s)}
             renderTile={sfRenderSector}
@@ -3900,11 +3934,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ SECTORS — drill: themes inside sector ══ */}
       {view === "sectors" && level === "themes" && activeSector && (() => {
-        const { sorted, sizeMap } = sfScoredItems(activeSector.themes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { sorted, valueOf } = sfScored(activeSector.themes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
         return (
-          <SFTreemap
+          <SFHeatmap
             items={sorted}
-            sizeOf={t => sizeMap.get(t) ?? 0.04}
+            valueOf={valueOf}
             getPcr={t => t.put_call_ratio}
             onClick={t => setActiveTheme(t)}
             renderTile={sfRenderTheme}
@@ -3919,18 +3953,18 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, sizeMap } = sfScoredItems(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
         return (
-          <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
               <span>{wd} / {tks.length} with flow</span>
               {pend > 0 && <span style={{ color: C.yellow }}>· {pend} pending</span>}
               {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <SFTreemap
+              <SFHeatmap
                 items={sorted}
-                sizeOf={tk => sizeMap.get(tk) ?? 0.04}
+                valueOf={valueOf}
                 getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
                 noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && ((tk.scan_status||"").toLowerCase()==="confirmed_no_options" || tk.options_available===false)}
                 onClick={tk => setSelectedTicker(tk)}
@@ -3945,11 +3979,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
 
       {/* ══ THEMES — ungrouped: all themes including sub-themes ══ */}
       {view === "themes" && level === "top" && !grouped && (() => {
-        const { sorted, sizeMap } = sfScoredItems(sortedThemes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { sorted, valueOf } = sfScored(sortedThemes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
         return (
-          <SFTreemap
+          <SFHeatmap
             items={sorted}
-            sizeOf={t => sizeMap.get(t) ?? 0.04}
+            valueOf={valueOf}
             getPcr={t => t.put_call_ratio}
             onClick={t => setActiveTheme(t)}
             renderTile={sfRenderTheme}
@@ -3962,11 +3996,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       {/* ══ THEMES — grouped: Theme + Sub_Theme only (no Sector classification) ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
         const base = sortedThemes.filter(t => (t.classification || "").toLowerCase() !== "sector");
-        const { sorted, sizeMap } = sfScoredItems(base, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { sorted, valueOf } = sfScored(base, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
         return (
-          <SFTreemap
+          <SFHeatmap
             items={sorted}
-            sizeOf={t => sizeMap.get(t) ?? 0.04}
+            valueOf={valueOf}
             getPcr={t => t.put_call_ratio}
             onClick={t => setActiveTheme(t)}
             renderTile={sfRenderTheme}
@@ -3981,18 +4015,18 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, sizeMap } = sfScoredItems(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
         return (
-          <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
               <span>{wd} / {tks.length} with flow</span>
               {pend > 0 && <span style={{ color: C.yellow }}>· {pend} pending</span>}
               {activeTheme.classification && <span style={{ opacity: 0.5 }}>· {activeTheme.classification}</span>}
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <SFTreemap
+              <SFHeatmap
                 items={sorted}
-                sizeOf={tk => sizeMap.get(tk) ?? 0.04}
+                valueOf={valueOf}
                 getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
                 noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
                 onClick={tk => setSelectedTicker(tk)}
@@ -4005,13 +4039,13 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ ALL STOCKS — ungrouped: fits viewport, zoom in for small tiles ══ */}
+      {/* ══ ALL STOCKS — ungrouped: fills panel, zoom for small tiles ══ */}
       {view === "allstocks" && !grouped && (() => {
-        const { sorted, sizeMap } = sfScoredItems(allTickers, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+        const { sorted, valueOf } = sfScored(allTickers, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
         return (
-          <SFTreemap
+          <SFHeatmap
             items={sorted}
-            sizeOf={tk => sizeMap.get(tk) ?? 0.04}
+            valueOf={valueOf}
             getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
             noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
             onClick={tk => setSelectedTicker(tk)}
@@ -4022,14 +4056,14 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ ALL STOCKS — grouped by theme (scrollable within treemap section) ══ */}
+      {/* ══ ALL STOCKS — grouped by theme (scrollable list of mini-maps) ══ */}
       {view === "allstocks" && grouped && (
-        <div style={{ height: "100%", overflowY: "auto" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 8 }}>
             {(data?.themes ?? []).filter(th => (th.tickers ?? []).length > 0).map(theme => {
               const tks = theme.tickers ?? [];
               const h   = Math.max(100, Math.min(260, tks.length * 28));
-              const { sorted, sizeMap } = sfScoredItems(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
+              const { sorted, valueOf } = sfScored(tks, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio);
               return (
                 <div key={theme.theme_id ?? theme.theme_name}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
@@ -4041,9 +4075,9 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
                     )}
                   </div>
                   <div style={{ height: h }}>
-                    <SFTreemap
+                    <SFHeatmap
                       items={sorted}
-                      sizeOf={tk => sizeMap.get(tk) ?? 0.04}
+                      valueOf={valueOf}
                       getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
                       noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
                       onClick={tk => setSelectedTicker(tk)}
@@ -4209,7 +4243,7 @@ export default function OptionsPage() {
   };
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: sans, display: "flex", flexDirection: "column" }}>
+    <div style={{ background: C.bg, height: "100vh", overflow: "auto", fontFamily: sans, display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes pulse  { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
@@ -4247,9 +4281,9 @@ export default function OptionsPage() {
         </div>
       </div>
 
-      {/* ── Net Flow tab: Sectors / Themes sub-tabs ── */}
+      {/* ── Net Flow tab: flex:1 so heatmap fills the viewport remainder ── */}
       {topTab === "sectors" && (
-        <>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
           <div style={{ padding: "3px 16px 0", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 1 }}>
             {(["sectors", "themes", "allstocks"] as const).map(t => (
               <button
@@ -4268,7 +4302,7 @@ export default function OptionsPage() {
             ))}
           </div>
           <SectorsFlowTab key={netFlowSubTab} view={netFlowSubTab} />
-        </>
+        </div>
       )}
 
       {/* ── Screener tab ── */}
