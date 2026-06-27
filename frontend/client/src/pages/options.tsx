@@ -3886,7 +3886,7 @@ function SFGroupedHeatmap<T extends object>({
           width={dims.w} height={dims.h}
           style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "hidden" }}
         >
-          {/* Group header text */}
+          {/* Group header text — each wrapped in a nested <svg> that clips to its header strip */}
           {groupNodes.map(({ group, gx0, gy0, gx1, gy1, hH }) => {
             const { k, x: tx, y: ty } = zoomXY;
             const sx = gx0 * k + tx, sy = gy0 * k + ty;
@@ -3894,27 +3894,29 @@ function SFGroupedHeatmap<T extends object>({
             if (sw < 24 || sh < 12) return null;
             if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
             const shH = hH > 0 ? hH * k : Math.min(14, sh * 0.22);
-            const ly  = sy + Math.max(shH * 0.6, 6);
+            const ly  = Math.max(shH * 0.6, 6);
             const fs  = Math.max(8, Math.min(11, sw / 14));
             return (
-              <g key={`ghlbl-${group.key}`}>
-                <text x={sx + 5} y={ly} fontSize={fs} fill={C.dim} opacity={0.9}
+              // Nested <svg> creates an isolated viewport — text outside its width/height is hard-clipped
+              <svg key={`ghlbl-${group.key}`} x={Math.round(sx)} y={Math.round(sy)}
+                width={Math.round(sw)} height={Math.round(shH + 4)} overflow="hidden">
+                <text x={5} y={ly} fontSize={fs} fill={C.dim} opacity={0.9}
                   fontFamily={font} fontWeight="700" letterSpacing="0.08em"
                   dominantBaseline="middle">
                   {group.name.toUpperCase()}
                 </text>
                 {sw >= 110 && group.pcr != null && (
-                  <text x={sx + sw - 5} y={ly} fontSize={Math.max(8, fs - 1)}
+                  <text x={Math.round(sw) - 5} y={ly} fontSize={Math.max(8, fs - 1)}
                     fill={sfPcrTextCol(group.pcr)} fontFamily={font} fontWeight="700"
                     textAnchor="end" dominantBaseline="middle">
                     {`P/C ${group.pcr.toFixed(2)}`}
                   </text>
                 )}
-              </g>
+              </svg>
             );
           })}
 
-          {/* Child tile labels */}
+          {/* Child tile labels — each wrapped in a nested <svg> that clips to the tile bounds */}
           {childNodes.map(({ item, x0, y0, x1, y1 }, i) => {
             const { k, x: tx, y: ty } = zoomXY;
             const sx = x0 * k + tx, sy = y0 * k + ty;
@@ -3922,9 +3924,11 @@ function SFGroupedHeatmap<T extends object>({
             if (sw < 20 || sh < 16) return null;
             if (sx + sw < 0 || sx > dims.w || sy + sh < 0 || sy > dims.h) return null;
             return (
-              <g key={`clbl-${keyOf(item, i)}`}>
-                {renderTile(item, sx, sy, sw, sh)}
-              </g>
+              // Nested <svg> hard-clips all text to the tile rectangle
+              <svg key={`clbl-${keyOf(item, i)}`} x={Math.round(sx)} y={Math.round(sy)}
+                width={Math.round(sw)} height={Math.round(sh)} overflow="hidden">
+                {renderTile(item, 0, 0, Math.round(sw), Math.round(sh))}
+              </svg>
             );
           })}
         </svg>
