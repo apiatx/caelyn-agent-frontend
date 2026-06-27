@@ -3391,7 +3391,7 @@ function SFHeatmap<T extends object>({
   getPcr: (item: T) => number | null;
   noData?: (item: T) => boolean;
   onClick: (item: T) => void;
-  renderTile: (item: T, tw: number, th: number) => ReactNode;
+  renderTile: (item: T, sw: number, sh: number, k: number) => ReactNode;
   renderTooltip?: (item: T) => ReactNode;
   keyOf: (item: T, i: number) => string;
 }) {
@@ -3402,6 +3402,7 @@ function SFHeatmap<T extends object>({
   const isZRef   = useRef(false);
   const [dims, setDims]         = useState({ w: 0, h: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomK, setZoomK]       = useState(1);
   const [tooltip, setTooltip]   = useState<{ item: T; cx: number; cy: number } | null>(null);
 
   // ResizeObserver — measures the actual rendered panel, no hardcoded math
@@ -3435,6 +3436,8 @@ function SFHeatmap<T extends object>({
     applyT();
     const zoomed = k > 1.02;
     if (zoomed !== isZRef.current) { isZRef.current = zoomed; setIsZoomed(zoomed); }
+    // Update zoomK so label tiers re-evaluate — React bails out if k unchanged (pan)
+    setZoomK(k);
   };
 
   // Non-passive wheel zoom — zooms around cursor, never causes page scroll
@@ -3519,6 +3522,8 @@ function SFHeatmap<T extends object>({
         {nodes.map(({ item, x0, y0, x1, y1 }, i) => {
           const tw = x1 - x0, th = y1 - y0;
           if (tw < 2 || th < 2) return null;
+          // screen-space dims: what the tile looks like on screen after zoom
+          const sw = tw * zoomK, sh = th * zoomK;
           const faded = noData?.(item) ?? false;
           return (
             <div
@@ -3545,7 +3550,8 @@ function SFHeatmap<T extends object>({
                 transition: "filter 0.07s",
               }}
             >
-              {tw >= 14 && th >= 14 && renderTile(item, tw, th)}
+              {/* Labels use screen-space dims for tier thresholds, k to counter-scale fonts */}
+              {sw >= 20 && sh >= 16 && renderTile(item, sw, sh, zoomK)}
             </div>
           );
         })}
@@ -3584,66 +3590,153 @@ function SFHeatmap<T extends object>({
 }
 
 // ── Tile content renderers ─────────────────────────────────────────────────────
-function sfRenderSector(s: SFSector, tw: number, th: number): ReactNode {
-  const pcr      = s.put_call_ratio;
-  const pad      = tw > 55 ? "7px 9px" : "4px 5px";
-  const nameSize = Math.max(8, Math.min(10, tw / 13));
-  const pcrSize  = Math.max(11, Math.min(22, Math.min(tw / 5.5, th / 3)));
-  const netSize  = Math.max(8, Math.min(10, tw / 15));
+// sw/sh = screen-space px (tile px × zoom k). k = zoom scale.
+// Font sizes are expressed in CSS px (inside the zoomed container), so we
+// divide by k to keep them stable on screen. Clamp so they never go cartoon-huge.
+
+function sfRenderSector(s: SFSector, sw: number, sh: number, k: number): ReactNode {
+  // Tier thresholds are in screen-space (sw/sh)
+  if (sw < 36 || sh < 24) return null;                      // tiny — no text
+
+  const pcr = s.put_call_ratio;
+
+  // Target on-screen font sizes (pixels as the user sees them), then ÷k for CSS
+  const nameScreenPx = Math.max(9,  Math.min(13, sw / 10));
+  const pcrScreenPx  = Math.max(11, Math.min(26, Math.min(sw / 4.5, sh / 2.8)));
+  const subScreenPx  = Math.max(8,  Math.min(11, sw / 14));
+
+  const namePx = nameScreenPx / k;
+  const pcrPx  = pcrScreenPx  / k;
+  const subPx  = subScreenPx  / k;
+  const padPx  = Math.max(2, 7 / k);
+  const gapPx  = Math.max(1, 2 / k);
+
+  const showPcr   = sh >= 42;
+  const showLabel = sw >= 90  && sh >= 64;
+  const showNet   = sw >= 90  && sh >= 64;
+  const showCount = sw >= 140 && sh >= 90;
+
   return (
-    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 2, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      {tw > 36 && (
-        <div style={{
-          fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright,
-          lineHeight: 1.25, flexShrink: 0, overflow: "hidden",
-          whiteSpace: tw > 80 ? "normal" : "nowrap",
-          textOverflow: tw > 80 ? undefined : "ellipsis",
-          wordBreak: "break-word", maxHeight: nameSize * 1.25 * 2 + 2,
-        }}>{s.sector_name}</div>
-      )}
-      {th > 34 && (
-        <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
+    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      <div style={{
+        fontSize: namePx, fontFamily: sans, fontWeight: 700, color: C.bright,
+        lineHeight: 1.25, flexShrink: 0, overflow: "hidden",
+        whiteSpace: sw > 110 ? "normal" : "nowrap",
+        textOverflow: "ellipsis",
+        wordBreak: "break-word",
+      }}>{s.sector_name}</div>
+
+      {showPcr && (
+        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
           {pcr != null ? pcr.toFixed(2) : "—"}
+          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
         </div>
       )}
-      {th > 58 && tw > 50 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>P/C</div>}
-      {th > 72 && tw > 60 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium), flexShrink: 0 }}>{fmtCurrencyShort(s.net_premium)}</div>}
-      {th > 94 && tw > 78 && <div style={{ fontSize: 8, color: "#666", fontFamily: font, flexShrink: 0 }}>{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</div>}
+
+      {showNet && (
+        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(s.net_premium), flexShrink: 0 }}>
+          {fmtCurrencyShort(s.net_premium)}
+        </div>
+      )}
+
+      {showCount && (
+        <div style={{ fontSize: subPx * 0.85, color: "#666", fontFamily: font, flexShrink: 0 }}>
+          {(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes
+        </div>
+      )}
     </div>
   );
 }
 
-function sfRenderTheme(t: SFTheme, tw: number, th: number): ReactNode {
-  const pcr      = t.put_call_ratio;
-  const pad      = tw > 55 ? "7px 9px" : "3px 5px";
-  const nameSize = Math.max(8, Math.min(10, tw / 13));
-  const pcrSize  = Math.max(11, Math.min(20, Math.min(tw / 5.5, th / 3)));
-  const netSize  = Math.max(8, Math.min(10, tw / 15));
+function sfRenderTheme(t: SFTheme, sw: number, sh: number, k: number): ReactNode {
+  if (sw < 30 || sh < 20) return null;
+
+  const pcr = t.put_call_ratio;
+
+  const nameScreenPx = Math.max(8,  Math.min(13, sw / 10));
+  const pcrScreenPx  = Math.max(10, Math.min(24, Math.min(sw / 4.5, sh / 2.8)));
+  const subScreenPx  = Math.max(8,  Math.min(11, sw / 14));
+
+  const namePx = nameScreenPx / k;
+  const pcrPx  = pcrScreenPx  / k;
+  const subPx  = subScreenPx  / k;
+  const padPx  = Math.max(2, 6 / k);
+  const gapPx  = Math.max(1, 2 / k);
+
+  const showPcr   = sh >= 36;
+  const showLabel = sw >= 90  && sh >= 60;
+  const showNet   = sw >= 90  && sh >= 60;
+  const showCount = sw >= 130 && sh >= 84;
+
   return (
-    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      {tw > 30 && <div style={{ fontSize: nameSize, fontFamily: sans, fontWeight: 700, color: C.bright, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>{t.theme_name}</div>}
-      {th > 28 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>{pcr != null ? pcr.toFixed(2) : "—"}</div>}
-      {th > 50 && tw > 46 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>P/C</div>}
-      {th > 62 && tw > 56 && <div style={{ fontSize: netSize, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium), flexShrink: 0 }}>{fmtCurrencyShort(t.net_premium)}</div>}
-      {th > 80 && tw > 66 && <div style={{ fontSize: 8, color: "#666", fontFamily: font, flexShrink: 0 }}>{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers</div>}
+    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      <div style={{
+        fontSize: namePx, fontFamily: sans, fontWeight: 700, color: C.bright,
+        lineHeight: 1.2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", flexShrink: 0,
+      }}>{t.theme_name}</div>
+
+      {showPcr && (
+        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
+          {pcr != null ? pcr.toFixed(2) : "—"}
+          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
+        </div>
+      )}
+
+      {showNet && (
+        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(t.net_premium), flexShrink: 0 }}>
+          {fmtCurrencyShort(t.net_premium)}
+        </div>
+      )}
+
+      {showCount && (
+        <div style={{ fontSize: subPx * 0.85, color: "#666", fontFamily: font, flexShrink: 0 }}>
+          {t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers
+        </div>
+      )}
     </div>
   );
 }
 
-function sfRenderTicker(tk: SFTicker, tw: number, th: number): ReactNode {
+function sfRenderTicker(tk: SFTicker, sw: number, sh: number, k: number): ReactNode {
+  if (sw < 36 || sh < 24) return null;
+
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
   const net       = isPending ? null : tk.net_premium;
-  const pad       = tw > 50 ? "5px 7px" : "3px 4px";
-  const symSize   = Math.max(8, Math.min(12, tw / 7));
-  const pcrSize   = Math.max(9, Math.min(18, Math.min(tw / 5, th / 3)));
+
+  const symScreenPx = Math.max(9,  Math.min(18, sw / 5.5));
+  const pcrScreenPx = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
+  const subScreenPx = Math.max(8,  Math.min(11, sw / 12));
+
+  const symPx = symScreenPx / k;
+  const pcrPx = pcrScreenPx / k;
+  const subPx = subScreenPx / k;
+  const padPx = Math.max(2, 5 / k);
+  const gapPx = Math.max(1, 2 / k);
+
+  const showPcr   = sh >= 42;
+  const showLabel = sw >= 90  && sh >= 64;
+  const showNet   = sw >= 90  && sh >= 64;
+
   return (
-    <div style={{ padding: pad, display: "flex", flexDirection: "column", gap: 1, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
-      {tw > 26 && <div style={{ fontSize: symSize, fontFamily: font, fontWeight: 800, color: C.bright, lineHeight: 1, whiteSpace: "nowrap", flexShrink: 0 }}>{sym}</div>}
-      {th > 24 && <div style={{ fontSize: pcrSize, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}</div>}
-      {th > 44 && tw > 40 && <div style={{ fontSize: 7, color: "#888", fontFamily: font, flexShrink: 0 }}>P/C</div>}
-      {th > 56 && tw > 48 && <div style={{ fontSize: Math.max(8, Math.min(10, tw / 12)), fontFamily: font, fontWeight: 600, color: sfNetColor(net), flexShrink: 0 }}>{isPending ? "pend." : fmtCurrencyShort(net)}</div>}
+    <div style={{ padding: padPx, display: "flex", flexDirection: "column", gap: gapPx, overflow: "hidden", height: "100%", boxSizing: "border-box" }}>
+      <div style={{ fontSize: symPx, fontFamily: font, fontWeight: 800, color: C.bright, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flexShrink: 0 }}>
+        {sym}
+      </div>
+
+      {showPcr && (
+        <div style={{ fontSize: pcrPx, fontFamily: font, fontWeight: 900, color: sfPcrTextCol(pcr), lineHeight: 1, flexShrink: 0 }}>
+          {isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}
+          {showLabel && <span style={{ fontSize: pcrPx * 0.6, opacity: 0.55, marginLeft: Math.max(1, 3 / k) }}>{" P/C"}</span>}
+        </div>
+      )}
+
+      {showNet && (
+        <div style={{ fontSize: subPx, fontFamily: font, fontWeight: 600, color: sfNetColor(net), flexShrink: 0 }}>
+          {isPending ? "pending" : fmtCurrencyShort(net)}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,153 @@
+Final polish fix — Options Flow Net Flow heatmap zoom labels.
+
+The heatmap layout now looks much better. Do not rewrite the treemap again. This task is specifically about zoom/scroll behavior and label visibility on tiny tiles.
+
+Current problem:
+When the user zooms into the smallest gray/neutral tiles, the tile gets larger visually, but the ticker/name and P/C label do not appear like they do on TradingView.
+
+Expected behavior:
+As the user zooms into tiny tiles, labels should progressively appear based on the tile’s zoomed on-screen size.
+
+Affected views:
+
+* Net Flow → Sectors
+* Net Flow → Themes
+* Net Flow → All Stocks
+
+Frontend only.
+Do not touch backend.
+Do not change API routes.
+Do not change sizing/color logic unless necessary for label visibility.
+
+Core fix:
+Label visibility must be based on screen-space tile dimensions after zoom, not original treemap dimensions.
+
+Track the current zoom transform:
+
+* zoom scale: k
+* translate x/y
+
+For each tile, compute effective screen dimensions:
+
+screenWidth = (tile.x1 - tile.x0) * zoom.k
+screenHeight = (tile.y1 - tile.y0) * zoom.k
+
+Then choose label detail level from screenWidth/screenHeight.
+
+Suggested label tiers:
+
+1. Tiny:
+
+   * screenWidth < 36 or screenHeight < 24
+   * show no text
+   * hover tooltip only
+
+2. Small:
+
+   * screenWidth >= 36 and screenHeight >= 24
+   * show symbol/name only
+
+3. Medium:
+
+   * screenWidth >= 60 and screenHeight >= 42
+   * show symbol/name
+   * show P/C value
+
+4. Large:
+
+   * screenWidth >= 90 and screenHeight >= 64
+   * show symbol/name
+   * show large P/C value
+   * show “P/C”
+   * show net premium
+
+5. Extra large:
+
+   * screenWidth >= 140 and screenHeight >= 90
+   * show all large fields plus ticker/theme count where relevant
+
+Important:
+The label tier should update live while zooming and panning.
+
+Implementation guidance:
+If using SVG + d3.zoom:
+
+1. Store the active zoom transform in React state or ref.
+2. Update it inside the zoom handler.
+3. Use zoomTransform.k to calculate label eligibility.
+4. Keep the tile rectangles inside the zoomed `<g>`.
+5. Render labels either:
+
+   * inside the zoomed group, but make visibility thresholds account for zoom.k, or
+   * in a separate overlay layer using screen-space coordinates.
+
+Preferred clean approach:
+Use the same zoomed `<g>` for rects and labels, but calculate label visibility using screenWidth/screenHeight.
+
+If text becomes too large at high zoom:
+Clamp font sizes:
+
+* symbol font: min/max range, e.g. 10px–18px
+* P/C font: min/max range, e.g. 11px–26px
+
+Or divide font size slightly by zoom.k if text scales too aggressively. Do not let labels become cartoon-huge.
+
+Text rules:
+For stocks:
+
+* Large/medium tile: symbol
+* Then P/C value
+* Then net premium if space allows
+
+For themes/sectors:
+
+* name
+* P/C value
+* net premium if space allows
+* count if space allows
+
+Tiny tiles:
+No text, but tooltip must work.
+
+Hover tooltip:
+Hover tooltip should still show full details regardless of label visibility:
+
+* symbol/name
+* P/C
+* net premium
+* call premium
+* put premium
+* volume/contracts if available
+* signal/score/IV/expected move if already available locally
+
+Zoom/scroll requirements:
+
+1. Wheel over heatmap zooms, not page-scrolls.
+2. User can zoom into tiny tiles.
+3. Once zoomed enough, tiny tile labels appear.
+4. Drag pan remains smooth.
+5. Reset zoom returns to full fitted heatmap.
+6. Map cannot drift out of frame.
+7. Labels must not appear outside their tile boundaries.
+8. Use clipPath or SVG overflow clipping if needed.
+
+Do not:
+
+* Do not rebuild the whole heatmap.
+* Do not revert to card/grid layout.
+* Do not hardcode labels only for big original tiles.
+* Do not allow page scroll while wheel-zooming over the heatmap.
+* Do not show every label at zoom = 1; that will make it unreadable.
+
+Validation:
+
+1. Open Net Flow → All Stocks.
+2. At zoom = 1, tiny neutral/gray tiles may have no label. That is fine.
+3. Zoom into the tiny gray/neutral tile cluster.
+4. Confirm the ticker symbol appears once the tile is visually large enough.
+5. Zoom further and confirm P/C appears.
+6. Confirm tooltip works on the same tile.
+7. Repeat quickly on Sectors and Themes.
+8. Confirm browser console has no runtime errors.
+9. Confirm reset zoom works.
+10. Confirm no page-level scrolling happens while wheel-zooming inside the heatmap.
