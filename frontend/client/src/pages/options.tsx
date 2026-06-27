@@ -2939,6 +2939,7 @@ interface SFTheme {
   theme_id: string;
   theme_name: string;
   classification?: string | null;
+  parent_sector?: string | null;         // e.g. "technology", "utilities" — matches sector node theme_id
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
@@ -3747,6 +3748,92 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   return <>{els}</>;
 }
 
+// ── Canonical theme leaf helper ────────────────────────────────────────────────
+// Returns the same leaf universe for both grouped and ungrouped Themes views.
+// Canonical = classification "theme" or "sub_theme" (never "sector").
+// Grouping uses parent_sector on each leaf — value matches the sector node's theme_id.
+// Sector nodes (classification="sector") live inside the same data.themes flat list
+// and carry the sector-level PCR for the grouped headers.
+// data.sectors is empty for ?view=themes; parent_sector is the authoritative link.
+function getThemeHeatmapLeaves(data: SFData): {
+  flatLeaves: SFTheme[];
+  bySector: Array<{ sectorName: string; pcr: number | null; leaves: SFTheme[] }>;
+} {
+  const isLeaf = (t: SFTheme): boolean => {
+    const cls = (t.classification ?? "theme").toLowerCase();
+    return cls === "theme" || cls === "sub_theme";
+  };
+
+  const allThemes = data.themes ?? [];
+
+  // Flat canonical list (theme + sub_theme only)
+  const flatLeaves = allThemes.filter(isLeaf);
+
+  // Build sector header map from sector-classified nodes in data.themes
+  // sector node theme_id === leaf's parent_sector value (e.g. "technology")
+  const sectorNodeMap = new Map<string, SFTheme>();
+  const sectorOrder: string[] = [];
+  allThemes.forEach(t => {
+    if ((t.classification ?? "").toLowerCase() === "sector") {
+      sectorNodeMap.set(t.theme_id, t);
+      sectorOrder.push(t.theme_id);
+    }
+  });
+
+  // Group canonical leaves by parent_sector
+  const groupMap = new Map<string, { sectorName: string; pcr: number | null; leaves: SFTheme[] }>();
+  const unmapped: SFTheme[] = [];
+
+  flatLeaves.forEach(t => {
+    const ps = t.parent_sector ?? null;
+    if (!ps) { unmapped.push(t); return; }
+    if (!groupMap.has(ps)) {
+      const node = sectorNodeMap.get(ps);
+      groupMap.set(ps, {
+        sectorName: node?.theme_name ?? ps,
+        pcr: node?.put_call_ratio ?? null,
+        leaves: [],
+      });
+    }
+    groupMap.get(ps)!.leaves.push(t);
+  });
+
+  // Emit groups in sector-node order, then any extra parent_sector values
+  const bySector: Array<{ sectorName: string; pcr: number | null; leaves: SFTheme[] }> = [];
+  sectorOrder.forEach(sid => {
+    const g = groupMap.get(sid);
+    if (g && g.leaves.length > 0) bySector.push(g);
+  });
+  groupMap.forEach((g, sid) => {
+    if (!sectorOrder.includes(sid) && g.leaves.length > 0) bySector.push(g);
+  });
+
+  // Fallback: if parent_sector was absent, try data.sectors[].themes[] (legacy shape)
+  if (bySector.length === 0) {
+    (data.sectors ?? []).forEach(sector => {
+      const leaves = (sector.themes ?? []).filter(isLeaf);
+      if (leaves.length > 0) {
+        bySector.push({ sectorName: sector.sector_name, pcr: sector.put_call_ratio, leaves });
+        leaves.forEach(t => unmapped.splice(unmapped.indexOf(t), 1));
+      }
+    });
+  }
+
+  // Unmapped leaves (no parent_sector and not in any sector)
+  if (unmapped.length > 0) {
+    console.warn(`[Themes] ${unmapped.length} orphaned leaves (no parent_sector):`,
+      unmapped.slice(0, 5).map(t => ({ name: t.theme_name, cls: t.classification })));
+    bySector.push({ sectorName: "Unmapped", pcr: null, leaves: unmapped });
+  }
+
+  // Last resort: if still nothing, dump all leaves in one bucket
+  if (bySector.length === 0 && flatLeaves.length > 0) {
+    bySector.push({ sectorName: "All Themes", pcr: null, leaves: flatLeaves });
+  }
+
+  return { flatLeaves, bySector };
+}
+
 function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) {
   const [data,           setData]           = useState<SFData | null>(null);
   const [loading,        setLoading]        = useState(true);
@@ -3782,6 +3869,49 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
   }, [fetchView]);
 
   useEffect(() => { load(false); }, [load]);
+
+  // ── Diagnostic: validate canonical leaf count vs grouped leaf count ──────
+  useEffect(() => {
+    if (view !== "themes" || !data) return;
+    const all = data.themes ?? [];
+    const byCls: Record<string, number> = {};
+    all.forEach(t => { const c = (t.classification ?? "none").toLowerCase(); byCls[c] = (byCls[c] ?? 0) + 1; });
+    const { flatLeaves, bySector } = getThemeHeatmapLeaves(data);
+    const groupedCount = bySector.reduce((n, g) => n + g.leaves.length, 0);
+    // Log ALL keys on the first raw leaf so we can see what sector fields the API provides
+    const firstLeaf = flatLeaves[0] as any;
+    const firstLeafAllFields = firstLeaf ? Object.fromEntries(
+      Object.keys(firstLeaf).map(k => [k, firstLeaf[k]])
+    ) : null;
+    // Probe likely sector-assignment field names
+    const sectorFieldProbe = flatLeaves.slice(0, 5).map(t => {
+      const r = t as any;
+      return {
+        name: t.theme_name,
+        sector_name: r.sector_name,
+        sector: r.sector,
+        parent_sector: r.parent_sector,
+        aggregation_scope: t.aggregation_scope,
+        sector_id: r.sector_id,
+        parent_id: r.parent_id,
+      };
+    });
+    console.log("[Themes diagnostic]", {
+      total_raw: all.length,
+      by_classification: byCls,
+      canonical_leaf_count: flatLeaves.length,
+      grouped_leaf_count: groupedCount,
+      sector_groups: bySector.map(g => `${g.sectorName}(${g.leaves.length})`),
+      sector_field_probe: sectorFieldProbe,
+      first_leaf_all_keys: firstLeafAllFields ? Object.keys(firstLeafAllFields) : null,
+      first_10_leaves: flatLeaves.slice(0, 10).map(t => ({ name: t.theme_name, cls: t.classification ?? "none" })),
+      data_sectors_count: (data.sectors ?? []).length,
+      data_sectors_names: (data.sectors ?? []).map(s => `${s.sector_name}(themes:${(s.themes??[]).length})`),
+    });
+    if (flatLeaves.length !== groupedCount) {
+      console.warn("[Themes] MISMATCH — ungrouped:", flatLeaves.length, "grouped:", groupedCount);
+    }
+  }, [view, data]);
 
   // Totals from top-level items
   const totals = useMemo(() => {
@@ -4076,9 +4206,10 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ THEMES — ungrouped: all themes including sub-themes ══ */}
+      {/* ══ THEMES — ungrouped: canonical leaves (theme + sub_theme only, no sector nodes) ══ */}
       {view === "themes" && level === "top" && !grouped && (() => {
-        const { sorted, valueOf } = sfScored(sortedThemes, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { flatLeaves } = getThemeHeatmapLeaves(data);
+        const { sorted, valueOf } = sfScored(flatLeaves, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
         return (
           <SFHeatmap
             items={sorted}
@@ -4092,20 +4223,50 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
-      {/* ══ THEMES — grouped: Theme + Sub_Theme only (no Sector classification) ══ */}
+      {/* ══ THEMES — grouped: same canonical leaves visually sectioned by parent sector ══ */}
       {view === "themes" && level === "top" && grouped && (() => {
-        const base = sortedThemes.filter(t => (t.classification || "").toLowerCase() !== "sector");
-        const { sorted, valueOf } = sfScored(base, t => (t.call_premium ?? 0) + (t.put_premium ?? 0), t => t.put_call_ratio);
+        const { bySector } = getThemeHeatmapLeaves(data);
         return (
-          <SFHeatmap
-            items={sorted}
-            valueOf={valueOf}
-            getPcr={t => t.put_call_ratio}
-            onClick={t => setActiveTheme(t)}
-            renderTile={sfRenderTheme}
-            renderTooltip={sfTooltipTheme}
-            keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
-          />
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 8 }}>
+              {bySector.map(({ sectorName, pcr, leaves }) => {
+                const { sorted, valueOf } = sfScored(
+                  leaves,
+                  t => (t.call_premium ?? 0) + (t.put_premium ?? 0),
+                  t => t.put_call_ratio,
+                );
+                const h = Math.max(80, Math.min(220, leaves.length * 32));
+                return (
+                  <div key={sectorName}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        {sectorName}
+                      </span>
+                      {pcr != null && (
+                        <span style={{ fontSize: 10, fontFamily: font, fontWeight: 700, color: sfPcrTextCol(pcr) }}>
+                          P/C {pcr.toFixed(2)}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 9, fontFamily: font, color: C.dim, opacity: 0.6 }}>
+                        {leaves.length} {leaves.length === 1 ? "theme" : "themes"}
+                      </span>
+                    </div>
+                    <div style={{ height: h }}>
+                      <SFHeatmap
+                        items={sorted}
+                        valueOf={valueOf}
+                        getPcr={t => t.put_call_ratio}
+                        onClick={t => setActiveTheme(t)}
+                        renderTile={sfRenderTheme}
+                        renderTooltip={sfTooltipTheme}
+                        keyOf={(t, i) => t.theme_id ?? t.theme_name ?? String(i)}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         );
       })()}
 

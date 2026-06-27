@@ -1,0 +1,161 @@
+Fix Options Flow → Net Flow → Themes grouped/ungrouped behavior.
+
+Current problem:
+On the Themes toggle/tab, the “Group by sector” button is not actually grouping the same dataset. It appears to be switching between different datasets:
+
+* grouped view looks like one theme/sub-theme set
+* ungrouped view looks like another theme/sub-theme/sector-like set
+
+That is wrong.
+
+Correct behavior:
+The Themes tab must always use the same canonical theme leaf universe.
+
+Canonical Themes-tab leaf universe:
+
+* include all nodes where classification is `theme`
+* include all nodes where classification is `sub_theme`
+* exclude all nodes where classification is `sector`
+
+The Sectors tab already handles sector nodes. Sector nodes should not appear as leaf tiles inside the Themes tab.
+
+Grouped toggle behavior:
+
+1. Ungrouped OFF / flat view:
+
+   * render every canonical theme/sub_theme leaf tile in one flat treemap.
+   * no sector grouping containers.
+   * same items as grouped mode, just flat.
+
+2. Grouped ON / group by sector:
+
+   * render the exact same canonical theme/sub_theme leaf tiles.
+   * group/nest them by sector.
+   * each sector should act as a visual parent/container/header/group.
+   * child tiles remain the same theme/sub_theme leaves.
+   * do not replace child tiles with sector aggregate tiles.
+   * do not switch to a different classification filter.
+
+Important:
+Grouped and ungrouped should have the same leaf count, excluding only empty/invalid nodes. The only difference is visual grouping.
+
+Audit first:
+Add temporary logs:
+
+* total raw theme nodes
+* count classification === "sector"
+* count classification === "theme"
+* count classification === "sub_theme"
+* canonical leaf count used by Themes tab
+* grouped leaf count
+* ungrouped leaf count
+* missing sector assignment count
+* first 10 canonical leaves with name, classification, sector
+
+Expected:
+canonicalLeafCount === groupedLeafCount === ungroupedLeafCount
+
+If not equal, fix the filtering/mapping.
+
+Implementation guidance:
+Create one shared helper:
+
+getThemeHeatmapLeaves(data):
+
+* flatten whatever structure currently feeds Themes
+* keep classification `theme` and `sub_theme`
+* drop classification `sector`
+* normalize fields:
+
+  * id/key
+  * name
+  * classification
+  * sector
+  * premium_pcr / put_call_ratio
+  * net_premium
+  * call_premium
+  * put_premium
+  * ticker_count
+  * source node
+
+Then:
+
+* Ungrouped uses getThemeHeatmapLeaves(data)
+* Grouped uses groupBy(sector, getThemeHeatmapLeaves(data))
+
+Do not maintain separate grouped and ungrouped item builders unless they both call the same canonical helper.
+
+Grouped rendering:
+Use a parent grouped treemap if the heatmap engine supports hierarchy:
+root
+sector group
+theme/sub_theme leaf
+theme/sub_theme leaf
+
+If current treemap engine cannot support hierarchical nesting cleanly, then render sector sections, but still:
+
+* preserve same leaf tiles
+* avoid page-level scroll
+* keep TradingView-like fit as much as possible
+* avoid reverting to ugly card grids
+
+Sector group sizing:
+Sector parent size should be based on sum of child tile size scores.
+Child tile size still uses the existing combined score:
+P/C deviation × premium materiality
+
+Do not size grouped parent sectors by raw net premium.
+
+Labels:
+Grouped mode:
+
+* sector group label/header should be subtle
+* child tiles still show theme/sub_theme name, P/C, net premium based on zoom/space
+
+Ungrouped mode:
+
+* same child labels, no sector containers
+
+Data handling:
+If a theme/sub_theme lacks a sector:
+
+* put it in an “Unmapped” group temporarily
+* log it
+* do not drop it silently
+
+Preserve:
+
+* current good heatmap visual quality
+* current scoring logic
+* current color logic
+* current zoom/pan
+* current crisp label overlay
+* current tooltip behavior
+* Net Flow / Unusual Flow toggle
+* Sectors / Themes / All Stocks tabs
+* summary diagnostics
+* refresh behavior
+* backend API contracts
+
+Do not:
+
+* Do not touch backend unless sector assignment is missing from the payload.
+* Do not rework the whole heatmap.
+* Do not change Sectors tab behavior.
+* Do not show sector aggregate tiles as leaves in the Themes tab.
+* Do not let grouped and ungrouped use different datasets.
+
+Validation:
+
+1. Open Options Flow → Net Flow → Themes.
+2. Capture leaf count in ungrouped mode.
+3. Toggle Group by sector on.
+4. Capture leaf count in grouped mode.
+5. Confirm counts match.
+6. Confirm grouped mode visually groups the same tiles under sector buckets.
+7. Confirm ungrouped mode shows the same tiles in one flat heatmap.
+8. Confirm no sector nodes appear as standalone theme tiles.
+9. Confirm zoom labels still work.
+10. Confirm tooltip still works.
+11. Confirm no browser console errors.
+12. Confirm Sectors and All Stocks tabs are unchanged.
