@@ -2924,10 +2924,15 @@ interface SFTicker {
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
-  put_call_ratio: number | null;
+  put_call_ratio: number | null;          // Premium P/C  (put_premium / call_premium)
+  volume_put_call_ratio?: number | null;  // Vol P/C      (put_contracts / call_contracts)
   total_volume: number | null;
   call_volume: number | null;
   put_volume: number | null;
+  total_contract_volume?: number | null;
+  premium_per_contract?: number | null;
+  call_premium_per_contract?: number | null;
+  put_premium_per_contract?: number | null;
   options_available: boolean | null;
   scan_status: string | null;
   updated_at: string | null;
@@ -2939,15 +2944,19 @@ interface SFTheme {
   theme_id: string;
   theme_name: string;
   classification?: string | null;
-  parent_sector?: string | null;         // e.g. "technology", "utilities" — matches sector node theme_id
+  parent_sector?: string | null;          // e.g. "technology", "utilities" — matches sector node theme_id
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
-  put_call_ratio: number | null;
+  put_call_ratio: number | null;          // Premium P/C
+  volume_put_call_ratio?: number | null;  // Vol P/C
   bias: string | null;
   ticker_count: number | null;
   contributing_ticker_count: number | null;
   total_contract_volume?: number | null;
+  premium_per_contract?: number | null;
+  call_premium_per_contract?: number | null;
+  put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
   tickers: SFTicker[];
 }
@@ -2957,12 +2966,16 @@ interface SFSector {
   call_premium: number | null;
   put_premium: number | null;
   net_premium: number | null;
-  put_call_ratio: number | null;
+  put_call_ratio: number | null;          // Premium P/C
+  volume_put_call_ratio?: number | null;  // Vol P/C
   bias: string | null;
   ticker_count: number | null;
   contributing_ticker_count: number | null;
   sector_total_method?: string | null;
   total_contract_volume?: number | null;
+  premium_per_contract?: number | null;
+  call_premium_per_contract?: number | null;
+  put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
   themes: SFTheme[];
 }
@@ -3298,6 +3311,17 @@ function sfSentiment(pcr: number | null): string {
   return dev > 1.5 ? "Very Bearish" : "Bearish";
 }
 
+// ── Signal text (Premium P/C × Vol P/C combo) ────────────────────────────────
+function sfSignalText(pcr: number | null, vpcr: number | null): string | null {
+  if (pcr == null) return null;
+  if (Math.abs(pcr - 1) < 0.05) return "Balanced premium flow";
+  if (vpcr == null) return null;
+  if (pcr < 1 && vpcr > 1) return "Large call premium despite heavier put activity";
+  if (pcr < 1 && vpcr < 1) return "Call-heavy premium and activity";
+  if (pcr > 1 && vpcr < 1) return "Large put premium despite heavier call activity";
+  return "Put-heavy premium and activity"; // pcr > 1 && vpcr > 1
+}
+
 // ── Tooltip row helper ────────────────────────────────────────────────────────
 function sfTTRow(label: string, val: string, col: string): ReactNode {
   return (
@@ -3309,31 +3333,54 @@ function sfTTRow(label: string, val: string, col: string): ReactNode {
 }
 
 // ── Tooltip content per tile type ─────────────────────────────────────────────
+// ── Tooltip note ──────────────────────────────────────────────────────────────
+function sfTTNote(text: string): ReactNode {
+  return <div style={{ fontSize: 8, color: "#484848", fontFamily: font, marginTop: -1, marginBottom: 2, paddingLeft: 2, lineHeight: 1.3 }}>{text}</div>;
+}
+
 function sfTooltipSector(s: SFSector): ReactNode {
-  const pcr = s.put_call_ratio;
+  const pcr  = s.put_call_ratio;
+  const vpcr = s.volume_put_call_ratio ?? null;
+  const sig  = sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{s.sector_name}</div>
-      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{sfSentiment(pcr)}</div>
-      {sfTTRow("P/C Ratio", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{sfSentiment(pcr)}</div>
+      {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
+      {sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {sfTTNote("put ÷ call premium — lower is more call-heavy")}
+      {vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
+      {vpcr != null && sfTTNote("put ÷ call contracts — lower is more call-active")}
       {sfTTRow("Net Premium", fmtCurrencyShort(s.net_premium), sfNetColor(s.net_premium))}
       {sfTTRow("Call Premium", fmtCurrencyShort(s.call_premium ?? null), C.green)}
       {sfTTRow("Put Premium", fmtCurrencyShort(s.put_premium ?? null), C.red)}
+      {s.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(s.premium_per_contract), C.dim)}
+      {s.premium_per_contract != null && sfTTNote("est. premium per traded contract")}
+      {s.total_contract_volume != null && sfTTRow("Contracts", s.total_contract_volume.toLocaleString(), C.dim)}
       {s.contributing_ticker_count != null && sfTTRow("Tickers", String(s.contributing_ticker_count), C.dim)}
       {s.themes != null && sfTTRow("Themes", String(s.themes.length), C.dim)}
     </div>
   );
 }
 function sfTooltipTheme(t: SFTheme): ReactNode {
-  const pcr = t.put_call_ratio;
+  const pcr  = t.put_call_ratio;
+  const vpcr = t.volume_put_call_ratio ?? null;
+  const sig  = sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{t.theme_name}</div>
-      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{sfSentiment(pcr)}</div>
-      {sfTTRow("P/C Ratio", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{sfSentiment(pcr)}</div>
+      {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
+      {sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {sfTTNote("put ÷ call premium — lower is more call-heavy")}
+      {vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
+      {vpcr != null && sfTTNote("put ÷ call contracts — lower is more call-active")}
       {sfTTRow("Net Premium", fmtCurrencyShort(t.net_premium), sfNetColor(t.net_premium))}
       {sfTTRow("Call Premium", fmtCurrencyShort(t.call_premium ?? null), C.green)}
       {sfTTRow("Put Premium", fmtCurrencyShort(t.put_premium ?? null), C.red)}
+      {t.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(t.premium_per_contract), C.dim)}
+      {t.premium_per_contract != null && sfTTNote("est. premium per traded contract")}
+      {t.total_contract_volume != null && sfTTRow("Contracts", t.total_contract_volume.toLocaleString(), C.dim)}
       {(t.contributing_ticker_count != null || t.ticker_count != null) && sfTTRow("Coverage", `${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0}`, C.dim)}
     </div>
   );
@@ -3342,17 +3389,47 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
+  const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
+  const sig       = sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font, marginBottom: 2 }}>{sym}</div>
-      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>{isPending ? "Pending" : sfSentiment(pcr)}</div>
-      {!isPending && sfTTRow("P/C Ratio", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{isPending ? "Pending" : sfSentiment(pcr)}</div>
+      {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
+      {!isPending && sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {!isPending && sfTTNote("put ÷ call premium — lower is more call-heavy")}
+      {!isPending && vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
+      {!isPending && vpcr != null && sfTTNote("put ÷ call contracts — lower is more call-active")}
       {!isPending && sfTTRow("Net Premium", fmtCurrencyShort(tk.net_premium), sfNetColor(tk.net_premium))}
       {!isPending && sfTTRow("Call Premium", fmtCurrencyShort(tk.call_premium ?? null), C.green)}
       {!isPending && sfTTRow("Put Premium", fmtCurrencyShort(tk.put_premium ?? null), C.red)}
+      {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
+      {!isPending && tk.premium_per_contract != null && sfTTNote("est. premium per traded contract — higher = larger contracts")}
       {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
     </div>
   );
+}
+
+// ── Sort key type + sort options (used by SectorsFlowTab + render helpers) ────
+type SFSortKey = "pcr" | "vpcr" | "net_premium" | "ppc" | "contracts" | "call_premium" | "put_premium";
+const SF_SORT_OPTIONS: Array<{ key: SFSortKey; label: string; desc: boolean }> = [
+  { key: "pcr",          label: "Premium P/C",  desc: false }, // ascending — lower is more bullish
+  { key: "vpcr",         label: "Vol P/C",       desc: false },
+  { key: "net_premium",  label: "Net Premium",   desc: true  }, // descending — largest net first
+  { key: "ppc",          label: "Prem/Contract", desc: true  },
+  { key: "contracts",    label: "Contracts",     desc: true  },
+  { key: "call_premium", label: "Call Premium",  desc: true  },
+  { key: "put_premium",  label: "Put Premium",   desc: true  },
+];
+function sfSortItems<T>(items: T[], key: SFSortKey, getter: (t: T) => number | null): T[] {
+  const opt = SF_SORT_OPTIONS.find(o => o.key === key)!;
+  return [...items].sort((a, b) => {
+    const av = getter(a), bv = getter(b);
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1; // nulls last
+    if (bv == null) return -1;
+    return opt.desc ? bv - av : av - bv;
+  });
 }
 
 // ── Tile sizing: pcrDeviation × normalizedMateriality (conviction × scale) ────
@@ -3973,16 +4050,20 @@ function SFGroupedHeatmap<T extends object>({
 // Font sizes are real screen pixels — no ÷k needed (this is the unscaled overlay).
 
 function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: number): ReactNode {
-  if (sw < 34 || sh < 24) return null;
-  const pad = 5;
-  const pcr = s.put_call_ratio;
+  if (sw < 30 || sh < 20) return null;
+  const pad  = 5;
+  const pcr  = s.put_call_ratio;
+  const vpcr = s.volume_put_call_ratio ?? null;
+  const ppc  = s.premium_per_contract ?? null;
   const nameFs = Math.max(9,  Math.min(13, sw / 10));
   const pcrFs  = Math.max(11, Math.min(26, Math.min(sw / 4.5, sh / 2.8)));
   const subFs  = Math.max(8,  Math.min(11, sw / 14));
-  const showPcr   = sh >= 40;
-  const showLabel = sw >= 90 && sh >= 64;
-  const showNet   = sw >= 90 && sh >= 64;
-  const showCount = sw >= 135 && sh >= 90;
+  const showPcr      = sh >= 36;
+  const showPcrLabel = sw >= 88 && sh >= 60;
+  const showVpcr     = sw >= 76 && sh >= 54;
+  const showNet      = sw >= 88 && sh >= 60;
+  const showPpc      = sw >= 120 && sh >= 80;
+  const showCount    = sw >= 150 && sh >= 96;
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -3995,9 +4076,17 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
+  }
+  if (showVpcr && vpcr != null && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="vp" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+    );
+    y += subFs + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4007,10 +4096,18 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     );
     y += subFs + 2;
   }
-  if (showCount && y + subFs * 0.85 < sy + sh - 2) {
+  if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+    );
+    y += subFs * 0.85 + 2;
+  }
+  if (showCount && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
       >{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</text>
     );
   }
@@ -4018,16 +4115,20 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
 }
 
 function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: number): ReactNode {
-  if (sw < 30 || sh < 20) return null;
-  const pad = 4;
-  const pcr = t.put_call_ratio;
+  if (sw < 28 || sh < 18) return null;
+  const pad  = 4;
+  const pcr  = t.put_call_ratio;
+  const vpcr = t.volume_put_call_ratio ?? null;
+  const ppc  = t.premium_per_contract ?? null;
   const nameFs = Math.max(8,  Math.min(13, sw / 10));
   const pcrFs  = Math.max(10, Math.min(24, Math.min(sw / 4.5, sh / 2.8)));
   const subFs  = Math.max(8,  Math.min(11, sw / 14));
-  const showPcr   = sh >= 36;
-  const showLabel = sw >= 90 && sh >= 60;
-  const showNet   = sw >= 90 && sh >= 60;
-  const showCount = sw >= 130 && sh >= 84;
+  const showPcr      = sh >= 34;
+  const showPcrLabel = sw >= 88 && sh >= 58;
+  const showVpcr     = sw >= 74 && sh >= 52;
+  const showNet      = sw >= 88 && sh >= 58;
+  const showPpc      = sw >= 118 && sh >= 78;
+  const showCount    = sw >= 145 && sh >= 92;
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4040,9 +4141,17 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
+  }
+  if (showVpcr && vpcr != null && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="vp" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+    );
+    y += subFs + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4052,10 +4161,18 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     );
     y += subFs + 2;
   }
-  if (showCount && y + subFs * 0.85 < sy + sh - 2) {
+  if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+    );
+    y += subFs * 0.85 + 2;
+  }
+  if (showCount && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
       >{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers</text>
     );
   }
@@ -4063,19 +4180,24 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
 }
 
 function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: number): ReactNode {
-  if (sw < 34 || sh < 24) return null;
-  const pad = 4;
+  if (sw < 30 || sh < 20) return null;
+  const pad       = 4;
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
+  const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
   const net       = isPending ? null : tk.net_premium;
+  const ppc       = isPending ? null : (tk.premium_per_contract ?? null);
+  const contracts = isPending ? null : (tk.total_contract_volume ?? null);
   const symFs = Math.max(9,  Math.min(18, sw / 5.5));
   const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
   const subFs = Math.max(8,  Math.min(11, sw / 12));
-  const showPcr   = sh >= 40;
-  const showLabel = sw >= 90 && sh >= 64;
-  const showNet   = sw >= 90 && sh >= 64;
-  const showExtra = sw >= 135 && sh >= 90;
+  const showPcr      = sh >= 36;
+  const showPcrLabel = sw >= 86 && sh >= 60;
+  const showVpcr     = sw >= 72 && sh >= 52;
+  const showNet      = sw >= 86 && sh >= 60;
+  const showPpc      = sw >= 110 && sh >= 76;
+  const showContracts= sw >= 130 && sh >= 90;
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4088,9 +4210,17 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}{showLabel && <tspan fontSize={pcrFs * 0.62} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
+  }
+  if (showVpcr && vpcr != null && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="vpcr" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+    );
+    y += subFs + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4100,11 +4230,19 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     );
     y += subFs + 2;
   }
-  if (showExtra && y + subFs * 0.85 < sy + sh - 2) {
+  if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
-      <text key="cp" x={Math.round(sx + pad)} y={Math.round(y)}
+      <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
-      >C:{fmtCurrencyShort(tk.call_premium)} P:{fmtCurrencyShort(tk.put_premium)}</text>
+      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+    );
+    y += subFs * 0.85 + 2;
+  }
+  if (showContracts && contracts != null && y + subFs * 0.8 < sy + sh - 2) {
+    els.push(
+      <text key="cts" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
+      >{contracts.toLocaleString()}<tspan opacity={0.65}>{" cts"}</tspan></text>
     );
   }
   return <>{els}</>;
@@ -4205,6 +4343,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
   const [activeTheme,    setActiveTheme]    = useState<SFTheme  | null>(null);
   const [selectedTicker, setSelectedTicker] = useState<SFTicker | null>(null);
   const [grouped,        setGrouped]        = useState(true);
+  const [sortBy,         setSortBy]         = useState<SFSortKey>("pcr");
 
   // Canonical payload caches.
   // canonSectors = ?view=sectors response  (deduped sector aggregates — used for Themes grouped headers)
@@ -4312,53 +4451,85 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
     return { call, put, net, pcr: call > 0 ? put / call : null, contracts };
   }, [data, fetchView]);
 
-  // Sorted themes (flat, ascending P/C)
-  const sortedThemes = useMemo(() => [...(data?.themes ?? [])].sort((a, b) => {
-    const ap = a.put_call_ratio, bp = b.put_call_ratio;
-    if (ap == null && bp == null) return 0;
-    if (ap == null) return 1; if (bp == null) return -1;
-    return ap - bp;
-  }), [data]);
+  // Sorted themes (flat) — order driven by sortBy
+  const sortedThemes = useMemo(() => sfSortItems(
+    data?.themes ?? [],
+    sortBy,
+    t => {
+      switch (sortBy) {
+        case "pcr":          return t.put_call_ratio;
+        case "vpcr":         return t.volume_put_call_ratio ?? null;
+        case "net_premium":  return t.net_premium;
+        case "ppc":          return t.premium_per_contract ?? null;
+        case "contracts":    return t.total_contract_volume ?? null;
+        case "call_premium": return t.call_premium;
+        case "put_premium":  return t.put_premium;
+      }
+    },
+  ), [data, sortBy]);
 
-  // Sorted sectors (ascending P/C)
-  const sortedSectors = useMemo(() => [...(data?.sectors ?? [])].sort((a, b) => {
-    const ap = a.put_call_ratio, bp = b.put_call_ratio;
-    if (ap == null && bp == null) return 0;
-    if (ap == null) return 1; if (bp == null) return -1;
-    return ap - bp;
-  }), [data]);
+  // Sorted sectors — order driven by sortBy
+  const sortedSectors = useMemo(() => sfSortItems(
+    data?.sectors ?? [],
+    sortBy,
+    s => {
+      switch (sortBy) {
+        case "pcr":          return s.put_call_ratio;
+        case "vpcr":         return s.volume_put_call_ratio ?? null;
+        case "net_premium":  return s.net_premium;
+        case "ppc":          return s.premium_per_contract ?? null;
+        case "contracts":    return s.total_contract_volume ?? null;
+        case "call_premium": return s.call_premium;
+        case "put_premium":  return s.put_premium;
+      }
+    },
+  ), [data, sortBy]);
 
-  // All tickers flattened from themes — deduplicated by symbol, sorted by P/C asc
+  // All tickers flattened from themes — deduplicated by symbol, sorted by sortBy
   const allTickers = useMemo(() => {
     const raw: SFTicker[] = [];
     (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => raw.push(tk)));
-    // Deduplicate by symbol: aggregate premiums, recompute PCR
+    // Deduplicate by symbol: aggregate premiums, recompute PCR + new fields
     const bySymbol = new Map<string, SFTicker>();
     raw.forEach(tk => {
       const sym = tk.symbol || tk.ticker || tk.underlying || "";
       if (!sym) { return; }
       const existing = bySymbol.get(sym);
       if (!existing) { bySymbol.set(sym, { ...tk }); return; }
-      const call = (existing.call_premium ?? 0) + (tk.call_premium ?? 0);
-      const put  = (existing.put_premium  ?? 0) + (tk.put_premium  ?? 0);
+      const call  = (existing.call_premium ?? 0) + (tk.call_premium ?? 0);
+      const put   = (existing.put_premium  ?? 0) + (tk.put_premium  ?? 0);
+      const cts   = (existing.total_contract_volume ?? 0) + (tk.total_contract_volume ?? 0);
+      // volume_put_call_ratio: weight-average by contracts (fallback: take latest non-null)
+      const existVpcr = existing.volume_put_call_ratio ?? null;
+      const tkVpcr    = tk.volume_put_call_ratio ?? null;
+      const vpcr = (existVpcr != null || tkVpcr != null)
+        ? ((existVpcr ?? 0) * (existing.total_contract_volume ?? 0) + (tkVpcr ?? 0) * (tk.total_contract_volume ?? 0)) / Math.max(1, cts)
+        : null;
       bySymbol.set(sym, {
         ...existing,
-        call_premium:        call,
-        put_premium:         put,
-        net_premium:         call - put,
-        premium_pcr:         call > 0 ? put / call : null,
-        put_call_ratio:      call > 0 ? put / call : existing.put_call_ratio,
-        total_contract_volume: (existing.total_contract_volume ?? 0) + (tk.total_contract_volume ?? 0),
+        call_premium:           call,
+        put_premium:            put,
+        net_premium:            call - put,
+        put_call_ratio:         call > 0 ? put / call : existing.put_call_ratio,
+        volume_put_call_ratio:  vpcr,
+        total_contract_volume:  cts,
+        // premium_per_contract recomputed from aggregated totals
+        premium_per_contract:   cts > 0 ? Math.abs(call + put) / (cts * 100) : null,
       });
     });
     const deduped = Array.from(bySymbol.values());
-    return deduped.sort((a, b) => {
-      const ap = a.put_call_ratio, bp = b.put_call_ratio;
-      if (ap == null && bp == null) return 0;
-      if (ap == null) return 1; if (bp == null) return -1;
-      return ap - bp;
+    return sfSortItems(deduped, sortBy, tk => {
+      switch (sortBy) {
+        case "pcr":          return tk.put_call_ratio;
+        case "vpcr":         return tk.volume_put_call_ratio ?? null;
+        case "net_premium":  return tk.net_premium;
+        case "ppc":          return tk.premium_per_contract ?? null;
+        case "contracts":    return tk.total_contract_volume ?? null;
+        case "call_premium": return tk.call_premium;
+        case "put_premium":  return tk.put_premium;
+      }
     });
-  }, [data]);
+  }, [data, sortBy]);
 
   // Navigation level
   const level: "top" | "themes" | "tickers" =
@@ -4475,23 +4646,42 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       </div>
 
 
-      {/* ── Grouped toggle (themes + allstocks, top level only) ── */}
-      {(view === "themes" || view === "allstocks") && level === "top" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>
-            Group by {view === "themes" ? "sector" : "theme"}:
+      {/* ── Sort + Grouped controls row ── */}
+      {level === "top" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.07em", flexShrink: 0 }}>
+            Sort
           </span>
-          <button
-            onClick={() => setGrouped(g => !g)}
-            style={{
-              padding: "3px 12px", borderRadius: 20, fontSize: 10, fontFamily: font, fontWeight: 600, cursor: "pointer",
-              border: `1px solid ${grouped ? C.blue : C.border}`,
-              background: grouped ? `${C.blue}15` : "transparent",
-              color: grouped ? C.blue : C.dim, transition: "all 0.15s",
-            }}
-          >
-            {grouped ? "Grouped" : "Ungrouped"}
-          </button>
+          {SF_SORT_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setSortBy(key)}
+              style={{
+                padding: "2px 9px", borderRadius: 20, fontSize: 9, fontFamily: font, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.12s",
+                border: `1px solid ${sortBy === key ? C.blue : C.border}`,
+                background: sortBy === key ? `${C.blue}18` : "transparent",
+                color: sortBy === key ? C.blue : C.dim,
+              }}
+            >{label}</button>
+          ))}
+          {(view === "themes" || view === "allstocks") && (
+            <>
+              <div style={{ width: 1, height: 16, background: C.border, flexShrink: 0, marginLeft: 2 }} />
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: font, flexShrink: 0 }}>
+                Group by {view === "themes" ? "sector" : "theme"}:
+              </span>
+              <button
+                onClick={() => setGrouped(g => !g)}
+                style={{
+                  padding: "2px 10px", borderRadius: 20, fontSize: 9, fontFamily: font, fontWeight: 600, cursor: "pointer",
+                  border: `1px solid ${grouped ? C.blue : C.border}`,
+                  background: grouped ? `${C.blue}15` : "transparent",
+                  color: grouped ? C.blue : C.dim, transition: "all 0.15s",
+                }}
+              >{grouped ? "Grouped" : "Ungrouped"}</button>
+            </>
+          )}
         </div>
       )}
 
