@@ -1,0 +1,144 @@
+Fix the Prophetik Investor tab regression. Audit first, then edit.
+
+Current problem:
+The previous redesign destroyed the useful Investor tab by replacing the existing signal sections with a mostly-empty intelligence table. That is not acceptable.
+
+Goal:
+Restore the useful original Investor tab sections and make the new /api/predict/investor/intelligence data additive, not a replacement.
+
+Important:
+Do not edit backend.
+Do not change Gambler mode.
+Do not remove existing Investor signal sections.
+Do not do another full rewrite.
+
+Implementation order:
+
+1. Restore the old Investor tab structure
+   In frontend/client/src/components/prophetik-investor-tab.tsx, restore the previous useful sections:
+
+* Top Equity Signals
+* Regime Scoreboard
+* Sector Rotation Signals
+* Stock Watchlists
+* Theme Clusters
+
+These should render from /api/predict/investor/overview exactly like before.
+
+If needed, use git/replit file history to restore the pre-redesign version of prophetik-investor-tab.tsx, then re-apply only the small additive changes below.
+
+2. Keep the intelligence proxy route
+   Keep the new frontend/server/routes.ts route:
+
+GET /api/predict/investor/intelligence
+
+Do not remove it.
+
+3. Add intelligence as a compact additive section, not the whole page
+   Add a new compact section near the top, above or below Top Equity Signals:
+
+“Market-Moving Event Tape”
+
+Use /api/predict/investor/intelligence.equity_signals.
+
+Render a small table with:
+
+* Event
+* Odds
+* 24h Δ
+* 7d Δ
+* Direction
+* Sector / Theme
+* Watchlist / Fallback tickers
+* Quality
+
+Rules:
+
+* Maximum visible rows: 5 by default.
+* Add “Show all” if more exist.
+* One row per event_family_key.
+* Row click can open a detail drawer/modal if already implemented, but do not make the drawer required for this fix.
+* Fix the typo “DIRSECTOR” to “Sector / Theme” or “Read”.
+* Odds should be larger than normal text, but do not let this section dominate the page.
+
+4. Fix Macro Odds Board behavior
+   Do not show a giant Macro Odds Board full of empty “—” rows.
+
+Either:
+A. collapse Macro Odds Board by default, or
+B. only render tracked_odds rows that have a real probability/odds value.
+
+If most tracked_odds are null stubs, show a compact collapsed header:
+“Macro Odds Board — 1 live / 19 tracked”
+
+When expanded, it may show all tracked families, but live rows must be first and empty stub rows must be visually secondary.
+
+5. Restore old Sector / Theme content
+   The new Sector / Theme Rotation Matrix currently says “No sector or theme rotation data available,” which is worse than before.
+
+For this fix:
+
+* Restore the original Sector Rotation Signals section from overview.sector_rotation.
+* Restore the original Theme Clusters section from overview.theme_clusters.
+* Do not replace them with an empty intelligence-only matrix.
+
+Later we can build a better combined matrix, but not in this regression fix.
+
+6. Restore Watchlist section behavior
+   The Watchlist Impact Matrix can stay only if it is additive and useful.
+
+But the original Stock Watchlists section must return.
+If both exist:
+
+* Original Stock Watchlists stays as the primary section.
+* New intelligence-derived Watchlist Impact Matrix can appear below it or inside a collapsed “Intelligence Watchlist Impact” panel.
+
+7. Preserve useful old glasscards
+   The user did not ask to delete the old signal cards. The problem was duplicate/confusing logic, not the existence of the cards.
+
+Restore the original Top Equity Signals cards.
+Then optionally add a small badge or line from intelligence data if the event_family_key mapping is available.
+
+Do not replace the cards with only the tape.
+
+8. Hide empty / broken sections
+
+* Do not show empty Whale Watch-style skeletons.
+* Do not show giant tables of null values.
+* Do not show “No sector/theme data” if the old overview sections have data.
+* Do not let the floating mascot overlap important cards/tables.
+
+9. Data source strategy
+   Use both endpoints:
+
+Primary for existing sections:
+GET /api/predict/investor/overview
+
+Additive intelligence data:
+GET /api/predict/investor/intelligence
+
+Do not make /intelligence the sole source for the Investor tab until it fully covers all old useful sections.
+
+10. Validation
+    After fixing, restart and confirm:
+
+* Top Equity Signals are back.
+* Regime Scoreboard is back.
+* Sector Rotation Signals are back.
+* Stock Watchlists are back.
+* Theme Clusters are back.
+* New Market-Moving Event Tape exists but is compact.
+* Macro Odds Board does not render a giant list of empty stub rows.
+* Hormuz appears once in the new Event Tape.
+* Old useful sections are not hidden behind Raw/Legacy by default.
+* Investor/Gambler toggle still works.
+* Gambler tab remains unchanged.
+* /api/predict/investor/intelligence still returns 200.
+* No frontend hardcoded ticker list was added.
+
+Deliver:
+
+* changed files
+* confirmation of restored sections
+* screenshot of the full Investor tab top/middle/bottom
+* route test result for /api/predict/investor/intelligence
