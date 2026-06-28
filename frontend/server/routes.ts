@@ -5040,10 +5040,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/signal-changes", (q, s) => proxyPredict("/api/predict/signal-changes", q, s));
 
   // ── Prophetik Investor tab endpoints ────────────────────────────────────────
-  app.get("/api/predict/investor/overview",  (q, s) => proxyPredict("/api/predict/investor/overview",  q, s));
-  app.get("/api/predict/investor/regime",    (q, s) => proxyPredict("/api/predict/investor/regime",    q, s));
-  app.get("/api/predict/investor/watchlists",(q, s) => proxyPredict("/api/predict/investor/watchlists",q, s));
-  app.get("/api/predict/investor/themes",    (q, s) => proxyPredict("/api/predict/investor/themes",    q, s));
+  app.get("/api/predict/investor/overview",      (q, s) => proxyPredict("/api/predict/investor/overview",      q, s));
+  app.get("/api/predict/investor/regime",        (q, s) => proxyPredict("/api/predict/investor/regime",        q, s));
+  app.get("/api/predict/investor/watchlists",    (q, s) => proxyPredict("/api/predict/investor/watchlists",    q, s));
+  app.get("/api/predict/investor/themes",        (q, s) => proxyPredict("/api/predict/investor/themes",        q, s));
+  app.get("/api/predict/investor/intelligence",  (q, s) => proxyPredict("/api/predict/investor/intelligence",  q, s));
 
   // ── Whale Watch proxy ────────────────────────────────────────────────────────
   const WHALE_URL = "https://fast-api-server-aidanpilon.replit.app";

@@ -1,0 +1,165 @@
+Proceed with the frontend redesign, but follow this implementation order exactly.
+
+No backend edits. Frontend only.
+
+Implementation order:
+
+1. Add proxy route first
+   Add GET /api/predict/investor/intelligence in frontend/server/routes.ts, matching the existing predict investor proxy pattern used for:
+
+* /api/predict/investor/overview
+* /api/predict/investor/regime
+* /api/predict/investor/watchlists
+* /api/predict/investor/themes
+
+Validate the route returns the backend payload before changing the page.
+
+2. Wire the Investor tab to the new endpoint
+   In frontend/client/src/components/prophetik-investor-tab.tsx:
+
+* Try GET /api/predict/investor/intelligence first.
+* If unavailable, malformed, or empty, fall back to GET /api/predict/investor/overview.
+* Preserve loading/error handling.
+* Do not crash if fields are missing.
+
+3. Preserve the existing top page shell
+   In frontend/client/src/pages/predict.tsx:
+
+* Keep the current page identity/header.
+* Keep Investor / Gambler toggle.
+* Keep Caelyn Predicts, Caelyn Analyzes, Open Polymarket, Other Platforms.
+* Do not redesign Gambler mode in this pass.
+* Do not break DecisionEngine, RecentSignalChanges, EnhancedMarketsTable, or PolymarketDashboard.
+
+4. Redesign Investor mode only
+   Replace the current large glasscard feed with a terminal-style intelligence layout:
+
+A. Macro Odds Board
+Use intelligence.tracked_odds.
+Show compact cards or dense table rows with:
+
+* label
+* category
+* large odds
+* 24h delta
+* 7d delta
+* volume/liquidity where present
+* priority if useful
+
+B. Market-Moving Event Tape
+Use intelligence.equity_signals.
+This is the primary section.
+Render as a dense table with:
+
+* Event
+* Odds
+* 24h Δ
+* 7d Δ
+* Direction
+* Sector / Theme Read
+* Watchlist Hits
+* Quality
+
+Odds must be large/bold/easy to scan.
+
+Each event_family_key appears once only.
+
+C. Event Detail Drawer / Modal
+Clicking an Event Tape row opens a drawer/modal showing:
+
+* title
+* large odds
+* 1h / 24h / 7d deltas
+* volume
+* liquidity
+* direction
+* signal quality
+* why_it_matters
+* driver_markets table
+* theme_impacts
+* bullish_watchlist
+* bearish_watchlist
+* conditional_watchlist
+* bullish_fallback
+* bearish_fallback
+* conflicts
+* source links if present
+
+Reuse the existing DriverMarketsTable if possible.
+
+Clearly label fallback tickers as “Theme Universe Fallback.” Do not visually mix them with user watchlist tickers.
+
+D. Watchlist Impact Matrix
+Aggregate ticker_impacts across all equity_signals.
+Three columns:
+
+* Bullish
+* Bearish
+* Conditional
+
+Watchlist tickers should be primary. Fallback tickers should be secondary/separated.
+
+E. Sector / Theme Rotation Matrix
+Combine the old Sector Rotation Signals and Theme Clusters ideas into one compact table/matrix:
+
+* sector
+* theme
+* direction
+* driver/event count
+* quality/confidence
+* impacted watchlist/fallback tickers
+
+Do not render duplicate cards for the same event_family_key.
+
+F. Raw Markets / Legacy Overview
+Keep legacy overview/screener-style data available, but collapse it by default under “Raw / Legacy Signals.”
+Do not make it the primary page experience.
+
+G. Diagnostics
+If intelligence.diagnostics exists, show a collapsed dev-only Diagnostics panel.
+Include:
+
+* ticker_impact_source
+* hardcoded_sector_stocks_used
+* watchlist_symbols_count
+* watchlist_ticker_hits
+* canonical_theme_fallback_hits
+* unmapped_theme_impacts
+* theme_universe_theme_count
+* duplicate_markets_collapsed
+* grouped_event_families
+* cache_age_seconds
+
+5. Cleanup rules
+
+* Remove or hide empty Whale Watch-style skeleton boxes.
+* Hide empty sections or show one compact “No qualified signals” row.
+* Move/hide/constrain the floating mascot if it overlaps tables/cards.
+* Do not hardcode tickers in frontend.
+* Do not create frontend-only sector/theme mappings.
+* Do not show fallback tickers as if they are watchlist tickers.
+* Do not show China/Taiwan on Hormuz unless backend sends China/Taiwan.
+* Do not delete signal data; consolidate it behind better layout and drilldowns.
+
+Validation:
+
+1. /api/predict/investor/intelligence proxy works.
+2. Investor mode loads from /intelligence first.
+3. /overview fallback works if /intelligence fails.
+4. Main Investor page is terminal/table style, not giant glasscard feed.
+5. Odds are visually prominent.
+6. Hormuz appears as one grouped event row, with multiple driver markets visible in drawer.
+7. Watchlist tickers and Theme Universe fallback tickers are visually separated.
+8. Empty Whale Watch skeleton placeholders are gone.
+9. Raw/legacy signals still exist but are collapsed by default.
+10. Top nav buttons still work.
+11. Investor/Gambler toggle still works.
+12. No frontend hardcoded ticker list was added.
+13. Diagnostics show hardcoded_sector_stocks_used=false when returned by backend.
+
+After implementation, restart and provide:
+
+* changed files
+* screenshots or browser validation notes
+* route test result for /api/predict/investor/intelligence
+* confirmation that Gambler mode still works unchanged
