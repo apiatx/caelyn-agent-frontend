@@ -1235,7 +1235,7 @@ export default function HomePage() {
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const liveOddsStatus: string = liveOddsData?.status ?? "warming";
+  const isOddsWarming: boolean = !liveOddsData || liveOddsData.status === "warming" || (!liveOddsData.live_count && !liveOddsData.odds?.length);
   const liveOddsRows: any[] = (() => {
     const all: any[] = liveOddsData?.odds ?? [];
     return all
@@ -1844,7 +1844,7 @@ export default function HomePage() {
                           <SectionHeader icon={Signal} title="Prediction Markets" accent="Prophetik" viewMore="/app/predict" />
                         </div>
                         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
-                          {liveOddsStatus === "warming" && (
+                          {isOddsWarming && (
                             <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                               <div className="w-7 h-7 rounded-full border-2 border-blue-400/20 border-t-blue-400/60 animate-spin" />
                               <div>
@@ -1855,7 +1855,7 @@ export default function HomePage() {
                               </div>
                             </div>
                           )}
-                          {liveOddsStatus !== "warming" && liveOddsRows.length === 0 && (
+                          {!isOddsWarming && liveOddsRows.length === 0 && (
                             <div className="flex flex-col items-center justify-center h-full text-center gap-2">
                               <p className="text-[11px] text-white/30">No live market-relevant odds found</p>
                               <p className="text-[9px] text-white/15">

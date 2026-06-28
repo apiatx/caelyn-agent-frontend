@@ -1,0 +1,213 @@
+Audit first. No edits until the audit is complete.
+
+The current Prophetik Investor page is structurally better, but the UX still has four problems:
+
+1. Odds lack contract context.
+   Example: “Next Fed Rate Decision — 0.4%” is meaningless unless the user can see what outcome/date that probability refers to.
+   Example: “Number of Fed Cuts in 2026 — 0.2%” is meaningless unless the user can see which number of cuts or which contract outcome is being priced.
+
+2. Event Impact Ledger has mostly blank columns.
+   The Dir / Tickers / Quality columns are often blank or unclear. “Dir” is especially confusing when the same row can contain both bullish and bearish ticker implications.
+
+3. Useful old sections are hidden under “Raw Legacy Signals / Debug.”
+   That label is wrong. These are not garbage/debug sections. They are supporting signal breakdowns.
+
+4. The page still has too much vertical scroll.
+   Make it tighter and more terminal-style without cutting off important text.
+
+Scope:
+Frontend first. Only make backend edits if the frontend audit proves the needed context fields are missing from /api/predict/odds/live or /api/predict/investor/intelligence.
+
+Do not edit Gambler mode.
+Do not remove signal data.
+Do not hardcode tickers.
+Do not create frontend-only market interpretation rules unless they are display-only labels from already-provided backend fields.
+
+Audit:
+
+1. Inspect Prophetik Investor component.
+2. Inspect the shape returned by:
+
+   * GET /api/predict/odds/live
+   * GET /api/predict/investor/intelligence
+   * GET /api/predict/investor/overview
+3. Confirm whether /odds/live rows include:
+
+   * question
+   * selected outcome / outcome label
+   * yes/no side being priced
+   * end_date
+   * market_slug or URL
+   * volume/liquidity
+4. Report which display fields are missing before editing.
+
+Required UI changes:
+
+A. Market Impact Command Center
+
+Each odds item must show contract context.
+
+Instead of:
+“Next Fed Rate Decision — 0.4%”
+
+Show:
+“Next Fed Rate Decision”
+“0.4% YES — [actual Polymarket question/outcome/date]”
+“24h +0.0pp · 7d +0.0pp · Vol $199K”
+
+Instead of:
+“Number of Fed Cuts in 2026 — 0.2%”
+
+Show the exact priced contract, for example:
+“0.2% YES — [actual market question / selected cuts outcome]”
+
+If exact outcome context is unavailable, show the raw question as the subtitle.
+
+Required visible fields per odds row/card:
+
+* family label
+* actual market question or contract description
+* priced side/outcome: YES / NO / selected outcome
+* end date if present
+* odds %
+* 24h delta
+* 7d delta
+* volume/liquidity if present
+
+Layout:
+
+* Make Command Center compact.
+* Show top 6–8 live odds by default.
+* Use a 2-column compact grid or dense terminal rows.
+* Do not create a giant vertical list.
+* Add “Show all” if more odds exist.
+* Missing families must not render as empty rows.
+
+B. Event Impact Ledger
+
+Rename columns:
+
+* “Dir” → “Market Read”
+* “Tickers” → “Exposure”
+* “Quality” can remain, but only if populated; otherwise hide or show status.
+
+For Market Read:
+Show contextual labels such as:
+
+* Risk-on
+* Risk-off
+* Rates restrictive
+* Rates easing
+* Inflationary
+* Disinflationary
+* Growth positive
+* Growth negative
+* Geopolitical stress rising
+* Geopolitical stress easing
+* Tech bullish
+* Commodity pressure
+* Macro only
+
+Do not show a blank dash when a readable label can be derived from category/family fields.
+
+For Exposure:
+
+* If watchlist/fallback tickers exist, show grouped chips:
+
+  * Bullish: ...
+  * Bearish: ...
+  * Conditional: ...
+* If no ticker mapping exists, show a compact label:
+
+  * Macro only
+  * No direct ticker map
+* Do not leave the column visually blank.
+
+If a row contains both bullish and bearish stocks, do not show a single unexplained BULLISH/BEARISH direction. The label must explain whether it is:
+
+* overall macro read
+* equity impact read
+* mixed/conditional read
+
+C. Rename Raw Legacy panel
+
+Rename:
+“Raw Legacy Signals / Debug”
+
+To:
+“Signal Breakdown”
+
+Subtitle:
+“Underlying equity, regime, sector, watchlist, and theme evidence”
+
+Inside it, keep the same old signal data but organize it as compact tabs or compact accordion sections:
+
+* Equity Signals
+* Regime
+* Sectors
+* Watchlist
+* Themes
+* Diagnostics
+
+Do not call useful product data “debug.”
+
+D. Tighten visual layout
+
+Reduce scroll without cutting off text:
+
+* Smaller vertical padding
+* Denser row heights
+* Smaller section gaps
+* Command Center max visible rows 6–8
+* Ledger max-height with internal scroll if needed
+* Compact Signal Breakdown tabs/accordions
+* Keep text wrapping for long market questions
+* Do not truncate important questions without tooltip or row expansion
+* Floating mascot must not overlap content
+
+E. Detail drawer / row expansion
+
+Clicking an Event Ledger row should show:
+
+* full market question
+* family key
+* category
+* selected outcome / side
+* odds
+* 1h / 24h / 7d deltas
+* volume/liquidity
+* end date
+* URL/open market if available
+* related sector/theme info if available
+* bullish/bearish/conditional exposure if available
+* history mini-section or button to fetch /api/predict/odds/history?family_key=...
+
+Backend-only if required:
+If /api/predict/odds/live does not include enough context, add these fields to each odds[] item:
+
+* question
+* selected_outcome
+* outcome_side
+* end_date
+* market_slug
+* url
+* display_subtitle
+* display_probability_label
+
+Do not change scanner logic unless needed for display fields.
+
+Validation:
+
+1. Command Center odds are understandable without opening a drawer.
+2. Fed rows show date/outcome/question context.
+3. Number of Fed cuts row shows what cut outcome/contract is priced.
+4. NVDA/TSLA/AAPL/MSFT rows show the target/date context if available.
+5. Event Ledger has no mostly-empty Dir/Tickers/Quality columns.
+6. “Dir” is renamed to “Market Read.”
+7. Blank ticker exposure is replaced with “Macro only” or “No direct ticker map.”
+8. “Raw Legacy Signals / Debug” is renamed to “Signal Breakdown.”
+9. Page has less vertical scroll than current version.
+10. No missing families are rendered as empty rows.
+11. No sports/pop-culture rows appear.
+12. Gambler mode unchanged.
+13. No frontend hardcoded ticker list added.
