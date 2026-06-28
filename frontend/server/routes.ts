@@ -5045,6 +5045,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/predict/investor/watchlists",    (q, s) => proxyPredict("/api/predict/investor/watchlists",    q, s));
   app.get("/api/predict/investor/themes",        (q, s) => proxyPredict("/api/predict/investor/themes",        q, s));
   app.get("/api/predict/investor/intelligence",  (q, s) => proxyPredict("/api/predict/investor/intelligence",  q, s));
+  app.get("/api/predict/odds/live",              (q, s) => proxyPredict("/api/predict/odds/live",              q, s));
+  app.get("/api/predict/odds/history",           (q, s) => proxyPredict("/api/predict/odds/history",           q, s));
 
   // ── Whale Watch proxy ────────────────────────────────────────────────────────
   const WHALE_URL = "https://fast-api-server-aidanpilon.replit.app";

@@ -1,0 +1,198 @@
+Audit first. No edits until the audit is complete.
+
+Backend odds spine is now ready enough for frontend use.
+
+Available endpoints:
+
+* GET /api/predict/odds/live
+* GET /api/predict/odds/history?family_key=...&days=7
+* GET /api/predict/investor/intelligence
+* GET /api/predict/investor/overview
+
+Important backend behavior:
+
+* /api/predict/odds/live returns live matched families only in odds[]
+* missing_families are separate
+* sports/pop culture are hard-excluded
+* odds snapshots persist for 7-day history
+* catalog is intentionally memory-only
+* do not render missing families as giant empty rows
+
+Frontend goals:
+
+1. Add a compact Market Dashboard widget: “Live Prediction Odds”
+2. Rebuild Prophetik Investor into one concise macro/political/economic market-impact engine
+3. Do not touch Gambler mode
+
+Part A — Market Dashboard widget
+
+Find the Market Dashboard component/page.
+
+Add a compact widget using:
+GET /api/predict/odds/live
+
+Show top 5–8 odds where dashboard_enabled is true.
+
+Sort by:
+
+1. priority
+2. abs(delta_24h_pp)
+3. volume/liquidity if present
+
+Each row/card should show:
+
+* label
+* category
+* large odds %
+* 24h delta
+* 7d delta
+* volume/liquidity if present
+* small status/source badge
+
+Example:
+Fed Rate Decision     0.4%   -0.2pp 24h
+Fed Cuts 2026         41%    +3.1pp 24h
+Recession             18%    -1.0pp 7d
+NVDA Milestone        32%    +5.2pp 24h
+Hormuz / Iran         37%    -9.0pp 24h
+
+If /odds/live is warming:
+
+* show a compact “Prediction odds warming…” state
+* do not show empty rows
+
+If no live odds:
+
+* show one compact “No live market-relevant odds found” row
+
+Do not show missing families as rows.
+
+Part B — Prophetik Investor page
+
+Current problem:
+The Investor tab is still messy because it shows too many disconnected sections:
+
+* Market-Moving Event Tape
+* Macro Odds Board
+* Top Equity Signals
+* Regime Scoreboard
+* Sector Rotation
+* Stock Watchlists
+* Theme Clusters
+
+Replace the primary Investor view with two main sections max:
+
+SECTION 1 — Market Impact Command Center
+
+Use /api/predict/odds/live as the odds spine.
+
+Show:
+
+* Overall status: live_count / tracked_count
+* updated_at / cache_age_seconds
+* 3–5 key live odds cards/rows
+* biggest 24h mover
+* biggest 7d mover
+* rates read
+* geopolitical read
+* tech/AI/mega-cap read
+* commodities read
+
+Keep this concise. It should fit near the top of the page.
+
+Do not render a giant Macro Odds Board.
+Do not render missing families as rows.
+
+SECTION 2 — Event Impact Ledger
+
+Use /api/predict/odds/live odds[] plus /api/predict/investor/intelligence equity_signals if available.
+
+Dense terminal-style table.
+
+Columns:
+
+* Event / Odds Family
+* Category
+* Odds
+* 24h Δ
+* 7d Δ
+* Market Read
+* Related sectors/themes if available
+* Watchlist/fallback exposure if available
+* Quality/status
+
+Rules:
+
+* One row per family_key or event_family_key
+* No duplicate Hormuz rows
+* Odds large/bold
+* Sort by priority, movement, market relevance
+* Click row to open detail drawer
+
+Detail drawer should show:
+
+* full question
+* family key
+* category
+* odds and deltas
+* volume/liquidity
+* history chart placeholder or simple mini time-series from /api/predict/odds/history
+* driver markets from intelligence if available
+* related sectors/themes
+* watchlist exposure
+* fallback theme universe tickers
+* conflicts if present
+
+Part C — Raw / Legacy collapsed panel
+
+Move old Investor sections into one collapsed panel:
+“Raw Legacy Signals / Debug”
+
+Inside it, it is okay to show:
+
+* old Top Equity Signals
+* Regime Scoreboard
+* Sector Rotation
+* Stock Watchlists
+* Theme Clusters
+* diagnostics
+
+But these must not be primary sections anymore.
+
+Part D — Keep unchanged
+
+Do not edit:
+
+* Gambler mode
+* DecisionEngine
+* RecentSignalChanges
+* EnhancedMarketsTable
+* PolymarketDashboard
+* top page header
+* Investor/Gambler toggle
+* Caelyn Predicts / Caelyn Analyzes / Open Polymarket / Other Platforms buttons
+
+Hard rules:
+
+* Do not hardcode tickers in frontend
+* Do not create frontend-only sector/theme mappings
+* Do not show sports or pop culture in Investor/Dashboard
+* Do not show missing families as empty rows
+* Do not show giant glasscard grids as the primary Investor layout
+* Do not hide useful old data entirely; put it in Raw Legacy collapsed panel
+* Floating mascot must not overlap content
+
+Validation required:
+
+1. Market Dashboard shows compact Live Prediction Odds widget.
+2. Prophetik Investor has two main primary sections max.
+3. Old scattered sections are collapsed under Raw Legacy, not primary.
+4. /api/predict/odds/live warming state renders cleanly.
+5. /api/predict/odds/live warm state shows 5–8 real live odds.
+6. No sports/pop culture shown.
+7. Missing families are not rendered as empty rows.
+8. Hormuz appears once.
+9. Odds are large and readable.
+10. Gambler mode unchanged.
+11. No frontend hardcoded ticker list added.
+12. Provide changed files and browser validation notes.
