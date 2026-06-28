@@ -188,7 +188,14 @@ interface BackendOverview {
 // ─── Intelligence endpoint types ──────────────────────────────────────────────
 
 interface TrackedOddsItem {
+  // Backend field names (actual API response)
+  family_key?: string;
   label?: string;
+  market_question?: string;
+  yes_probability?: number;     // 0-1 scale from backend
+  dashboard_priority?: number;
+  candidate_count?: number;
+  // Normalised / legacy fields
   question?: string;
   category?: string;
   yes_pct?: number;
@@ -201,6 +208,7 @@ interface TrackedOddsItem {
   liquidity?: number;
   priority?: string | number;
   direction?: string;
+  driver_markets?: unknown[];
 }
 
 interface TickerImpact {
@@ -222,6 +230,54 @@ interface ThemeImpact {
   driver_count?: number;
 }
 
+// Actual backend shape for intelligence equity_signals
+interface IntelligenceTickerImpacts {
+  bullish_watchlist?: string[];
+  bearish_watchlist?: string[];
+  conditional_watchlist?: string[];
+  bullish_fallback?: string[];
+  bearish_fallback?: string[];
+}
+
+interface IntelligenceThemeImpact {
+  sector?: string;
+  theme?: string;
+  sub_theme?: string | null;
+  direction?: string;
+  confidence?: string;
+  rationale?: string;
+}
+
+interface IntelligenceDriverMarket {
+  question?: string;
+  yes_pct?: number;
+  delta_24h_pp?: number;
+  delta_7d_pp?: number;
+  volume_24h?: number;
+  condition_id?: string;
+  slug?: string;
+}
+
+interface IntelligenceEquitySignal {
+  event_family_key?: string;
+  title: string;
+  primary_category?: string;
+  primary_theme_id?: string;
+  yes_probability?: number;   // 0-1 scale
+  delta_24h_pp?: number;
+  delta_7d_pp?: number;
+  direction?: string;         // "rising" | "falling" | "bullish" | "bearish"
+  signal_quality?: string;    // "low" | "moderate" | "high"
+  why_it_matters?: string;
+  driver_markets?: IntelligenceDriverMarket[];
+  theme_impacts?: IntelligenceThemeImpact[];
+  ticker_impacts?: IntelligenceTickerImpacts;
+  conflicts?: string[];
+  market_count?: number;
+  total_volume_24h?: number;
+  source_links?: unknown[];
+}
+
 interface IntelligenceDiagnostics {
   ticker_impact_source?: string;
   hardcoded_sector_stocks_used?: boolean;
@@ -237,7 +293,7 @@ interface IntelligenceDiagnostics {
 
 interface BackendIntelligence extends BackendOverview {
   tracked_odds?: TrackedOddsItem[];
-  equity_signals?: BackendEquitySignal[];
+  equity_signals?: IntelligenceEquitySignal[];
   diagnostics?: IntelligenceDiagnostics;
   cache_age_seconds?: number;
 }
@@ -319,6 +375,81 @@ function transformWatchlists(wl?: BackendWatchlists): { bullish: WatchlistEntry[
   };
 }
 
+// Converts the intelligence endpoint's equity_signal shape → BackendEquitySignal view-model
+function normalizeIntelSignal(s: IntelligenceEquitySignal): BackendEquitySignal {
+  const yesPct = s.yes_probability != null ? s.yes_probability * 100 : undefined;
+  const ti = s.ticker_impacts;
+
+  const dirMap: Record<string, string> = {
+    rising: "bullish", bullish: "bullish", bull: "bullish", positive: "bullish",
+    falling: "bearish", bearish: "bearish", bear: "bearish", negative: "bearish",
+  };
+  const normalizedDir = dirMap[(s.direction ?? "").toLowerCase()] ?? s.direction;
+
+  const firstDm = s.driver_markets?.[0];
+  const pdm: BackendDriverMarket | undefined = firstDm ? {
+    question: firstDm.question,
+    yes_pct: firstDm.yes_pct,
+    current_probability_pct: firstDm.yes_pct,
+    delta_24h_pp: firstDm.delta_24h_pp ?? s.delta_24h_pp,
+    delta_7d_pp: firstDm.delta_7d_pp ?? s.delta_7d_pp,
+  } : yesPct != null ? {
+    current_probability_pct: yesPct,
+    delta_24h_pp: s.delta_24h_pp,
+    delta_7d_pp: s.delta_7d_pp,
+  } : undefined;
+
+  const strToTicker = (t: string): TickerImpact => ({ ticker: t });
+
+  return {
+    theme_id: s.primary_theme_id,
+    event_family_key: s.event_family_key,
+    title: s.title,
+    summary_direction: normalizedDir,
+    confidence: s.signal_quality,
+    signal_quality_label: s.signal_quality
+      ? s.signal_quality.charAt(0).toUpperCase() + s.signal_quality.slice(1)
+      : undefined,
+    why_it_matters: s.why_it_matters,
+    primary_driver_market: pdm,
+    driver_markets: s.driver_markets?.map(dm => ({
+      question: dm.question,
+      yes_pct: dm.yes_pct,
+      current_probability_pct: dm.yes_pct,
+      delta_24h_pp: dm.delta_24h_pp,
+      delta_7d_pp: dm.delta_7d_pp,
+    })),
+    conflicts: s.conflicts,
+    market_count: s.market_count,
+    bullish_watchlist:   (ti?.bullish_watchlist    ?? []).map(strToTicker),
+    bearish_watchlist:   (ti?.bearish_watchlist    ?? []).map(strToTicker),
+    conditional_watchlist: (ti?.conditional_watchlist ?? []).map(strToTicker),
+    bullish_fallback:    (ti?.bullish_fallback ?? []).map(strToTicker),
+    bearish_fallback:    (ti?.bearish_fallback ?? []).map(strToTicker),
+    theme_impacts: s.theme_impacts?.map(t => ({
+      theme_name: t.theme,
+      direction: t.direction,
+      sectors: t.sector ? [t.sector] : undefined,
+    })),
+    headline_bullish_sectors: s.theme_impacts
+      ?.filter(t => t.direction === "bullish")
+      .map(t => t.sector)
+      .filter((x): x is string => Boolean(x)),
+    headline_bearish_sectors: s.theme_impacts
+      ?.filter(t => t.direction === "bearish")
+      .map(t => t.sector)
+      .filter((x): x is string => Boolean(x)),
+    headline_bullish_tickers: [
+      ...(ti?.bullish_watchlist ?? []),
+      ...(ti?.bullish_fallback  ?? []),
+    ],
+    headline_bearish_tickers: [
+      ...(ti?.bearish_watchlist ?? []),
+      ...(ti?.bearish_fallback  ?? []),
+    ],
+  };
+}
+
 // ─── Utility helpers ──────────────────────────────────────────────────────────
 
 function fmtPP(v?: number | null): string {
@@ -339,6 +470,7 @@ function resolveOdds(m: BackendDriverMarket | TrackedOddsItem): string {
     ?? (m as BackendDriverMarket).current_probability
     ?? (m as BackendDriverMarket).yes_pct
     ?? (m as TrackedOddsItem).yes_pct
+    ?? (m as TrackedOddsItem).yes_probability
     ?? (m as BackendDriverMarket).probability;
   if (raw == null) return "—";
   const n = typeof raw === "string" ? parseFloat(raw) : raw;
@@ -353,6 +485,7 @@ function resolveOddsNum(m: BackendDriverMarket | TrackedOddsItem): number | null
     ?? (m as BackendDriverMarket).current_probability
     ?? (m as BackendDriverMarket).yes_pct
     ?? (m as TrackedOddsItem).yes_pct
+    ?? (m as TrackedOddsItem).yes_probability
     ?? (m as BackendDriverMarket).probability;
   if (raw == null) return null;
   const n = typeof raw === "number" ? raw : parseFloat(raw as string);
@@ -1012,9 +1145,14 @@ function WatchlistImpactMatrix({ signals, overviewWl, loading }: {
         }
       };
 
-      classify(s.ticker_impacts?.filter(t => t.direction === "bullish") ?? s.bullish_watchlist ?? [], "bullish");
-      classify(s.ticker_impacts?.filter(t => t.direction === "bearish") ?? s.bearish_watchlist ?? [], "bearish");
-      classify(s.ticker_impacts?.filter(t => t.direction === "conditional") ?? s.conditional_watchlist ?? [], "conditional");
+      // ticker_impacts may be an array (legacy overview) or a dict object (intelligence).
+      // Only use .filter() if it is actually an array; otherwise fall back to the
+      // flattened watchlist fields that normalizeIntelSignal already populated.
+      const tiRaw = s.ticker_impacts;
+      const tiArr: TickerImpact[] | undefined = Array.isArray(tiRaw) ? tiRaw : undefined;
+      classify(tiArr?.filter(t => t.direction === "bullish") ?? s.bullish_watchlist ?? [], "bullish");
+      classify(tiArr?.filter(t => t.direction === "bearish") ?? s.bearish_watchlist ?? [], "bearish");
+      classify(tiArr?.filter(t => t.direction === "conditional") ?? s.conditional_watchlist ?? [], "conditional");
       classify(s.bullish_fallback ?? [], "bullish", true);
       classify(s.bearish_fallback ?? [], "bearish", true);
     }
@@ -1518,7 +1656,8 @@ export function ProphetikInvestorTab() {
 
   // Intelligence-specific fields
   const trackedOdds   : TrackedOddsItem[]     = intel?.tracked_odds ?? [];
-  const equitySignals : BackendEquitySignal[] = intel?.equity_signals ?? [];
+  // Normalize intelligence signals (dict ticker_impacts + 0-1 odds) → BackendEquitySignal view-model
+  const equitySignals : BackendEquitySignal[] = (intel?.equity_signals ?? []).map(normalizeIntelSignal);
   const diagnostics   : IntelligenceDiagnostics | undefined = intel?.diagnostics;
 
   // Overview-compatible fields (from intel or overview)
