@@ -1,0 +1,122 @@
+Audit first. No edits until the audit is complete.
+
+Current issue:
+The Home page “Prediction Markets” widget now shows the right odds feed, but it displays vague family/category labels like:
+
+* Number of Fed Cuts in 2026
+* US Recession Probability
+* NVDA Price Milestone
+* TSLA Price Milestone
+* Strait of Hormuz / Iran
+
+The Predict page now renders this correctly by showing the actual market question / contract context. The Home widget should use the same display logic.
+
+Goal:
+Update the Home page Prediction Markets widget so each row shows the actual tracked market/contract question, not the vague family label.
+
+Do not edit backend unless the audit proves the Home endpoint is missing the required fields.
+Do not break the Predict page.
+Do not change the odds scanner.
+Do not touch Gambler mode.
+
+Audit:
+
+1. Locate the Home page component.
+2. Locate the “Prediction Markets” widget.
+3. Find the API source used by the widget:
+
+   * /api/predict/odds/live
+   * /api/predict/investor/intelligence
+   * /api/home/dashboard
+   * or another home endpoint.
+4. Inspect the actual row payload used by the Home widget.
+5. Confirm whether the row has:
+
+   * question
+   * display_title
+   * display_subtitle
+   * priced_outcome_label
+   * priced_probability
+   * outcome_summary
+   * outcomes[]
+   * contract_context
+   * end_date
+   * market_read
+6. Compare with the Predict page display helper and reuse the same title/context priority if possible.
+
+Display rule:
+The primary bold text on Home must be the actual market question if available.
+
+Priority for primary title:
+
+1. question
+2. display_subtitle, only if it is a real contract sentence
+3. display_title
+4. label
+
+Do not use vague family labels as the primary title when question exists.
+
+Examples:
+
+Bad:
+NVDA Price Milestone
+
+Good:
+Will NVIDIA be the largest company in the world by market cap on July 31?
+
+Bad:
+Number of Fed Cuts in 2026
+
+Good:
+Will 6 Fed rate cuts happen in 2026?
+or the actual Polymarket question/bucket being priced.
+
+Bad:
+Strait of Hormuz / Iran
+
+Good:
+Will Strait of Hormuz traffic return to normal by July 31?
+
+Row layout:
+Each row should show:
+
+* primary bold market question
+* muted category/family context underneath, like “Fed / Rates” or “Equities / Tech”
+* odds %
+* 24h delta
+* 7d delta
+* priced_outcome_label if space allows
+
+Keep it compact for Home. Do not render the full outcomes list here unless there is room. The Home widget is a preview; Predict page is the detail view.
+
+Optional if space allows:
+Show one short context chip:
+
+* No change
+* 6 cuts
+* NVIDIA
+* Yes
+* ↑ $130
+  based on priced_outcome_label.
+
+Important:
+
+* Do not show both display_title and question as two competing titles.
+* Do not cut off the odds/delta columns.
+* If question is too long, allow 2-line wrap or clamp with tooltip/title attribute.
+* Clicking “View more” should still go to Prophetik/Predict.
+
+Backend-only if required:
+If the Home widget gets data from /api/home/dashboard and that payload does not include question/display fields, update the backend Home dashboard odds payload to pass through the same enriched fields already available from /api/predict/investor/intelligence tracked_odds or /api/predict/odds/live.
+
+Validation:
+
+1. Home Prediction Markets no longer shows vague primary labels like “NVDA Price Milestone” when a real question exists.
+2. Fed rows show actual market question/bucket context.
+3. NVDA/TSLA rows show actual market question.
+4. Hormuz row shows actual market question.
+5. Odds, 24h delta, and 7d delta still show.
+6. Home widget remains compact.
+7. Predict page remains unchanged and still correct.
+8. No sports/pop-culture rows appear.
+9. No frontend hardcoded market labels added.

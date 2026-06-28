@@ -1866,24 +1866,36 @@ export default function HomePage() {
                           {liveOddsRows.length > 0 && (
                             <div className="divide-y divide-white/[0.04]">
                               {liveOddsRows.map((o: any) => {
-                                const pct = o.yes_probability != null ? o.yes_probability * 100 : null;
+                                // Same question-first priority as Prophetik Investor
+                                const q: string | undefined = o.question;
+                                const primaryTitle: string =
+                                  (q && q.length > 10) ? q
+                                  : (o.display_subtitle && o.display_subtitle !== o.priced_outcome_label && o.display_subtitle.length > 5) ? o.display_subtitle
+                                  : o.display_title ?? o.label;
+                                const familyLabel: string = o.display_title ?? o.label;
+                                const secondaryCtx: string | undefined = primaryTitle !== familyLabel ? familyLabel : o.category;
+                                const pricedPct = o.priced_probability != null ? o.priced_probability * 100
+                                  : o.yes_probability != null ? o.yes_probability * 100 : null;
                                 const d24Color = o.delta_24h_pp == null ? 'text-white/25' : o.delta_24h_pp >= 0 ? 'text-emerald-400' : 'text-rose-400';
                                 const d7Color  = o.delta_7d_pp  == null ? 'text-white/25' : o.delta_7d_pp  >= 0 ? 'text-emerald-400' : 'text-rose-400';
                                 return (
                                   <div
                                     key={o.family_key}
-                                    className="flex items-center gap-2.5 py-2.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                                    className="flex items-start gap-2.5 py-2.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
                                     onClick={() => setLocation('/app/predict')}
                                   >
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-[11px] font-semibold text-white/85 leading-tight truncate">{o.label}</p>
-                                      {o.category && <p className="text-[9px] text-white/30 mt-0.5 truncate">{o.category}</p>}
+                                      <p className="text-[10px] font-semibold text-white/85 leading-snug line-clamp-2" title={primaryTitle}>{primaryTitle}</p>
+                                      {secondaryCtx && <p className="text-[8px] text-white/28 mt-0.5 truncate">{secondaryCtx}</p>}
+                                      {o.priced_outcome_label && (
+                                        <span className="inline-block text-[7px] text-white/30 bg-white/[0.05] rounded px-1 mt-0.5 truncate max-w-full">{o.priced_outcome_label}</span>
+                                      )}
                                     </div>
                                     <div className="flex flex-col items-end flex-shrink-0">
-                                      <span className="text-[16px] font-bold tabular-nums text-white/90">
-                                        {pct != null ? `${pct.toFixed(1)}%` : '\u2014'}
+                                      <span className="text-[15px] font-bold tabular-nums text-white/90">
+                                        {pricedPct != null ? `${pricedPct.toFixed(1)}%` : '\u2014'}
                                       </span>
-                                      <div className="flex items-center gap-1.5">
+                                      <div className="flex flex-col items-end gap-0.5">
                                         {o.delta_24h_pp != null && (
                                           <span className={`text-[8px] font-mono ${d24Color}`}>
                                             {o.delta_24h_pp >= 0 ? '+' : ''}{o.delta_24h_pp.toFixed(1)}pp 24h
