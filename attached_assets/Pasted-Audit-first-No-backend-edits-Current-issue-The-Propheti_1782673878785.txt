@@ -1,0 +1,85 @@
+Audit first. No backend edits.
+
+Current issue:
+The Prophetik Investor Command Center and Event Ledger show both:
+
+* internal family/display title, e.g. “Next Fed Rate Decision — July 2026”
+* actual Polymarket question, e.g. “Will there be no change in Fed interest rates after the July 2026 meeting?”
+
+This is duplicate and noisy.
+
+Goal:
+Use the actual market question as the primary bold text. Remove duplicate family-style titles from the main display.
+
+Display rules:
+
+1. Main bold title should be:
+   question if available.
+
+Example:
+Show:
+“Will there be no change in Fed interest rates after the July 2026 meeting?”
+
+Do NOT show above it:
+“Next Fed Rate Decision — July 2026”
+
+2. Family/category labels should become small muted context only.
+   Examples:
+
+* Fed / Rates
+* July 2026
+* Next Fed Rate Decision
+
+These can appear as small badges or secondary metadata, but not as a second headline.
+
+3. Command Center cards:
+   For each odds item, show:
+
+* bold question as primary title
+* small category/context badge if useful
+* odds + priced outcome label
+* vertical outcomes list
+* 24h / 7d delta
+* market_read
+
+Do not show both display_title and question.
+
+4. Event Impact Ledger:
+   In the Event / Contract column:
+
+* primary bold line = question
+* secondary muted line = category / contract_context / family label if useful
+
+Do not show display_title as the primary text when question exists.
+
+5. Top Movers:
+   Same rule:
+
+* show actual question as the main line
+* show family/category as muted context only
+* show the moved outcome and current odds
+
+6. Fallback priority:
+   Primary title:
+   question → display_subtitle → display_title → label
+
+Secondary context:
+category + contract_context + label
+
+7. Keep:
+
+* outcome list
+* exposure column
+* market_read
+* no-spinner loading behavior
+* Gambler mode unchanged
+
+Validation:
+
+1. “Next Fed Rate Decision — July 2026” is not shown as the main title when the real question exists.
+2. The Fed card headline is the actual question.
+3. NVDA/TSLA milestone cards use the actual market question as the headline.
+4. Event Ledger uses actual questions as primary contract labels.
+5. Category/family context is still available but muted/small.
+6. No important text is cut off.
+7. Page is visually cleaner and less duplicative.

@@ -504,18 +504,19 @@ function CmdCard({
       </div>
       {rows.slice(0, 2).map(row => {
         const t = row as TrackedOddsItem;
-        const title = t.display_title ?? row.label;
+        const familyLabel = t.display_title ?? row.label;
         const pricedPct = t.priced_probability != null ? t.priced_probability * 100
                         : row.yes_pct ?? (row.yes_probability != null ? row.yes_probability * 100 : null);
         const outcomeLabel = t.priced_outcome_label;
         const ctx = contractContextLine(t);
+        const primaryTitle = ctx ?? familyLabel;
         const mr = t.market_read;
         return (
           <div key={row.family_key} className="flex flex-col gap-1.5">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-white/72 leading-tight">{title}</p>
-                {ctx && <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-2">{ctx}</p>}
+                <p className="text-[10px] font-semibold text-white/72 leading-tight line-clamp-3">{primaryTitle}</p>
+                {ctx && <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{familyLabel}</p>}
                 {mr && <MarketReadCell read={mr} />}
               </div>
               <div className="text-right flex-shrink-0">
@@ -674,8 +675,8 @@ function MarketImpactCommandCenter({
                   return (
                     <div key={row!.family_key + badge} className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[9px] font-semibold text-white/65 leading-tight">{tm.display_title ?? row!.label}</p>
-                        {tmCtx && <p className="text-[7px] text-white/28 leading-tight mt-0.5 line-clamp-2">{tmCtx}</p>}
+                        <p className="text-[9px] font-semibold text-white/65 leading-tight line-clamp-3">{tmCtx ?? tm.display_title ?? row!.label}</p>
+                        {tmCtx && <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{tm.display_title ?? row!.label}</p>}
                         <span className="text-[7px] text-white/20">Biggest {badge} move</span>
                       </div>
                       <div className="text-right flex-shrink-0">
@@ -824,8 +825,8 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
               {row.signal_quality && <QualityBadge q={row.signal_quality} />}
               {row.source === "intel" && <span className="text-[7px] text-blue-400/50 font-mono border border-blue-400/20 px-1 rounded">intel</span>}
             </div>
-            <h3 className="text-[13px] font-bold text-white/90 leading-snug">{row.display_title ?? row.label}</h3>
-            {row.event_title && <p className="text-[9px] text-white/30 leading-tight mt-0.5">{row.event_title}</p>}
+            <h3 className="text-[13px] font-bold text-white/90 leading-snug">{contractContextLine(row) ?? row.display_title ?? row.label}</h3>
+            {contractContextLine(row) && <p className="text-[8px] text-white/28 leading-tight mt-0.5">{row.display_title ?? row.label}</p>}
             <p className="text-[8px] text-white/20 font-mono mt-0.5">{row.family_key}</p>
           </div>
           <button onClick={onClose} className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
@@ -1176,9 +1177,9 @@ function EventImpactLedger({
                       onClick={() => setSelected(row)}
                     >
                       <td className="py-1.5 pr-3">
-                        <p className="text-[11px] font-semibold text-white/80 leading-tight">{row.display_title ?? row.label}</p>
+                        <p className="text-[11px] font-semibold text-white/80 leading-tight line-clamp-3">{contractContextLine(row) ?? row.display_title ?? row.label}</p>
                         {contractContextLine(row) && (
-                          <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-2">{contractContextLine(row)}</p>
+                          <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{row.display_title ?? row.label}</p>
                         )}
                         {row.end_date && (
                           <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
