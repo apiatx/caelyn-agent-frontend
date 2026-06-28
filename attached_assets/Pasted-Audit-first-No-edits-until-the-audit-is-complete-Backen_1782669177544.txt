@@ -1,0 +1,149 @@
+Audit first. No edits until the audit is complete.
+
+Backend now enriches Prophetik odds rows with full Polymarket contract/outcome context.
+
+Available fields on /api/predict/investor/intelligence tracked_odds[] should now include:
+
+* display_title
+* display_subtitle
+* contract_context
+* event_title
+* question
+* priced_outcome_label
+* priced_probability
+* outcome_summary
+* outcomes[]
+* end_date
+* url
+* neg_risk
+* market_read
+* exposure
+
+Goal:
+Make Prophetik Investor display prediction market odds like real contract odds, not vague family labels.
+
+Do not break the current loading fix.
+Do not touch Gambler mode.
+Do not change backend.
+Do not reintroduce the warming spinner when intelligence.tracked_odds has rows.
+
+Audit:
+
+1. Inspect the current Prophetik Investor component.
+2. Find the Market Impact Command Center cards.
+3. Find the Event Impact Ledger row rendering.
+4. Find the Event Ledger detail drawer / row expansion.
+5. Confirm actual payload fields from /api/predict/investor/intelligence tracked_odds[].
+
+Hard loading rule:
+Continue using intelligence.tracked_odds as the preferred source.
+
+const trackedRows = intelligence?.tracked_odds ?? [];
+const liveRows = oddsLive?.odds ?? [];
+const oddsRows = trackedRows.length > 0 ? trackedRows : liveRows.length > 0 ? liveRows : [];
+
+Only show the full warming state when oddsRows.length === 0.
+
+UI changes:
+
+1. Market Impact Command Center cards
+
+Each card should show:
+
+* display_title or label
+* large priced_probability or yes_probability
+* priced_outcome_label
+* display_subtitle or question
+* outcome_summary
+* 24h delta
+* 7d delta
+* volume/liquidity
+* end date if present
+* market_read
+
+Example display:
+
+Next Fed Rate Decision — July 2026
+81.5% · No change
+Fed Decision in July?
+Other: 25 bps increase 16.2% · 25 bps decrease 0.4%
+24h +1.0pp · 7d +3.0pp
+
+Do not show:
+Next Fed Rate Decision — 81.5%
+without the outcome/date context.
+
+2. Event Impact Ledger
+
+Change the Event / Contract cell to show:
+
+* display_title or label as the main title
+* display_subtitle or question underneath
+* contract_context or end_date as a small badge when available
+
+Change the Odds cell to show:
+
+* priced_probability or yes_probability
+* priced_outcome_label underneath
+
+Example:
+81.5%
+No change
+
+Do not show only “YES” when YES is ambiguous.
+
+3. Outcome summary
+
+If outcome_summary exists, show it in compact text under the contract or in the detail drawer.
+
+For multi-outcome markets like Fed decision / Fed cuts:
+
+* show the selected priced outcome
+* show other outcome buckets in outcome_summary
+* do not reduce the market to a single unexplained probability
+
+4. Detail drawer / row expansion
+
+Show full Polymarket-style outcome breakdown:
+
+* all outcomes[] as rows/chips
+* label
+* probability
+* selected/priced outcome highlighted
+* question
+* event_title
+* end_date
+* Polymarket URL
+* market_read
+* exposure
+
+For negRisk multi-outcome markets, outcomes[] should render all buckets.
+
+5. Fallback behavior
+
+If display_title is missing, use label.
+If display_subtitle is missing, use question.
+If priced_outcome_label is missing, use priced_outcome.
+If outcome_summary is missing, do not show a blank area.
+
+Never hide a row because a display field is missing.
+
+6. Exposure must stay fixed
+
+Keep the existing backend-driven exposure renderer.
+Never show “Macro Only.”
+Do not hardcode ticker maps.
+
+Validation:
+
+1. Fed decision card shows “July 2026” or the raw meeting question context.
+2. Fed decision shows the priced outcome, e.g. “No change,” not just YES.
+3. Fed cuts row shows the actual cuts bucket/outcome context.
+4. Fed hikes row shows the actual hike contract context.
+5. NVDA/TSLA/AAPL/MSFT/GOOGL rows show target/date context from raw question or subtitle.
+6. Event Ledger shows subtitle/question under each family label.
+7. Detail drawer shows all outcomes[] for multi-outcome markets.
+8. Existing no-spinner loading behavior remains fixed.
+9. Exposure column still works and never says “Macro Only.”
+10. Gambler mode unchanged.
+11. Provide screenshots/browser validation notes.

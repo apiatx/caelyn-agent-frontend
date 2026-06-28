@@ -133,10 +133,31 @@ interface BackendExposure {
   no_direct_exposure?: boolean;
   exposure_source?: string;
 }
+interface OddsOutcome {
+  label?: string;
+  display_label?: string;
+  probability?: number;
+  clob_token_id?: string;
+  side?: string;
+}
 interface TrackedOddsItem extends LiveOddsItem {
   market_read?: string;
   exposure?: BackendExposure;
   dashboard_priority?: number;
+  // Enriched Polymarket contract context
+  display_title?: string;
+  display_subtitle?: string;
+  contract_context?: string;
+  event_title?: string;
+  question?: string;
+  url?: string;
+  end_date?: string;
+  priced_outcome?: string;
+  priced_outcome_label?: string;
+  priced_probability?: number;
+  outcomes?: OddsOutcome[];
+  outcome_summary?: string;
+  neg_risk?: boolean;
 }
 interface IntelEquitySignal {
   event_family_key?: string; title: string; primary_category?: string;
@@ -175,6 +196,17 @@ interface LedgerRow {
   marketRead: string;
   exposure?: BackendExposure;
   priority?: number;
+  // Enriched display fields from TrackedOddsItem
+  display_title?: string;
+  display_subtitle?: string;
+  priced_outcome_label?: string;
+  priced_probability?: number;
+  outcome_summary?: string;
+  end_date?: string;
+  url?: string;
+  event_title?: string;
+  outcomes?: OddsOutcome[];
+  neg_risk?: boolean;
 }
 
 // ─── View-model types ─────────────────────────────────────────────────────────
@@ -389,24 +421,37 @@ function CmdCard({
         <span className="text-[8px] font-bold uppercase tracking-wider text-white/25">{label}</span>
       </div>
       {rows.slice(0, 2).map(row => {
-        const pct = row.yes_pct ?? (row.yes_probability != null ? row.yes_probability * 100 : null);
-        const mr  = (row as TrackedOddsItem).market_read;
+        const t = row as TrackedOddsItem;
+        const title = t.display_title ?? row.label;
+        const pricedPct = t.priced_probability != null ? t.priced_probability * 100
+                        : row.yes_pct ?? (row.yes_probability != null ? row.yes_probability * 100 : null);
+        const outcomeLabel = t.priced_outcome_label;
+        const summary = t.outcome_summary;
+        const mr = t.market_read;
         return (
-          <div key={row.family_key} className="flex items-start gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-white/72 leading-tight line-clamp-1">{row.label}</p>
-              {mr && <MarketReadCell read={mr} />}
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-[14px] font-bold tabular-nums text-white/85 leading-none">
-                {pct != null ? fmtPct(pct) : "—"}
-              </p>
-              <div className="flex gap-1 justify-end mt-0.5">
-                <span className={`text-[7px] font-mono ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)} 24h</span>
-                {row.delta_7d_pp != null && (
-                  <span className={`text-[7px] font-mono ${ppColor(row.delta_7d_pp)}`}>{fmtPP(row.delta_7d_pp)} 7d</span>
+          <div key={row.family_key} className="flex flex-col gap-1">
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-white/72 leading-tight">{title}</p>
+                {mr && <MarketReadCell read={mr} />}
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-[14px] font-bold tabular-nums text-white/85 leading-none">
+                  {pricedPct != null ? fmtPct(pricedPct) : "—"}
+                </p>
+                {outcomeLabel && (
+                  <p className="text-[8px] text-white/45 leading-tight mt-0.5">{outcomeLabel}</p>
                 )}
               </div>
+            </div>
+            {summary && (
+              <p className="text-[7px] text-white/22 leading-tight line-clamp-2">{summary}</p>
+            )}
+            <div className="flex gap-1 flex-wrap">
+              <span className={`text-[7px] font-mono ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)} 24h</span>
+              {row.delta_7d_pp != null && (
+                <span className={`text-[7px] font-mono ${ppColor(row.delta_7d_pp)}`}>{fmtPP(row.delta_7d_pp)} 7d</span>
+              )}
             </div>
           </div>
         );
@@ -663,9 +708,9 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
 
   if (!row) return null;
 
-  const pct  = row.yes_pct;
-  const side = preferredSideLabel(row.preferred_outcome);
-  const polyUrl = row.slug ? `https://polymarket.com/event/${row.slug}` : null;
+  const pct  = row.priced_probability != null ? row.priced_probability * 100 : row.yes_pct;
+  const side = row.priced_outcome_label ?? preferredSideLabel(row.preferred_outcome);
+  const polyUrl = row.url ?? (row.slug ? `https://polymarket.com/event/${row.slug}` : null);
   const volStr = fmtVol(row.volume_24h);
   const liqStr = fmtVol(row.liquidity);
 
@@ -683,7 +728,8 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
               {row.signal_quality && <QualityBadge q={row.signal_quality} />}
               {row.source === "intel" && <span className="text-[7px] text-blue-400/50 font-mono border border-blue-400/20 px-1 rounded">intel</span>}
             </div>
-            <h3 className="text-[13px] font-bold text-white/90 leading-snug">{row.label}</h3>
+            <h3 className="text-[13px] font-bold text-white/90 leading-snug">{row.display_title ?? row.label}</h3>
+            {row.event_title && <p className="text-[9px] text-white/30 leading-tight mt-0.5">{row.event_title}</p>}
             <p className="text-[8px] text-white/20 font-mono mt-0.5">{row.family_key}</p>
           </div>
           <button onClick={onClose} className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
@@ -692,16 +738,25 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
         </div>
 
         <div className="px-4 py-4 space-y-4">
-          {/* Contract question */}
-          {row.market_question && (
-            <div className="px-3 py-2.5 rounded-lg bg-blue-500/[0.05] border border-blue-500/15">
-              <p className="text-[8px] text-blue-400/50 font-bold uppercase tracking-wider mb-1">Priced contract</p>
-              <p className="text-[11px] text-white/75 leading-snug">
-                <span className="font-bold text-white/90 font-mono">{pct != null ? `${pct.toFixed(1)}% ` : ""}{side}</span>
-                {" — "}{row.market_question}
-              </p>
+          {/* Priced outcome + contract context */}
+          <div className="px-3 py-2.5 rounded-lg bg-blue-500/[0.05] border border-blue-500/15 space-y-1.5">
+            <p className="text-[7px] font-bold uppercase tracking-wider text-blue-400/40">Contract</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[20px] font-bold tabular-nums text-white/90 leading-none">{pct != null ? fmtPct(pct) : "—"}</span>
+              {side && <span className="text-[11px] text-white/55 font-semibold">{side}</span>}
             </div>
-          )}
+            {row.outcome_summary && (
+              <p className="text-[9px] text-blue-300/55 leading-relaxed">{row.outcome_summary}</p>
+            )}
+            {(row.display_subtitle || row.market_question) && (
+              <p className="text-[8px] text-white/25 leading-snug">{row.display_subtitle ?? row.market_question}</p>
+            )}
+            {row.end_date && (
+              <p className="text-[8px] text-white/20">
+                Expires {new Date(row.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            )}
+          </div>
 
           {/* Odds strip */}
           <div className="grid grid-cols-4 gap-px rounded-xl overflow-hidden bg-white/[0.04]">
@@ -730,6 +785,39 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
                   <ExternalLink className="w-3 h-3" />Open on Polymarket
                 </a>
               )}
+            </div>
+          )}
+
+          {/* Outcomes breakdown */}
+          {(row.outcomes?.length ?? 0) > 1 && (
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-wider text-white/20 mb-1.5">
+                All Outcomes{row.neg_risk ? " · negRisk" : ""}
+              </p>
+              <div className="space-y-0.5">
+                {row.outcomes!.map((o, i) => {
+                  const prob = o.probability != null ? o.probability * 100 : null;
+                  const oLabel = o.display_label ?? o.label ?? "";
+                  const isSelected = oLabel === row.priced_outcome_label || o.label === row.priced_outcome_label;
+                  return (
+                    <div key={i} className={`flex items-center gap-2 px-2 py-1 rounded ${isSelected ? "bg-blue-500/[0.08] border border-blue-500/15" : ""}`}>
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[9px] ${isSelected ? "text-white/80 font-semibold" : "text-white/38"}`}>{oLabel}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {prob != null && (
+                          <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${isSelected ? "bg-blue-400/60" : "bg-white/12"}`} style={{ width: `${Math.min(prob, 100)}%` }} />
+                          </div>
+                        )}
+                        <span className={`text-[9px] font-bold tabular-nums w-10 text-right ${isSelected ? "text-white/85" : "text-white/28"}`}>
+                          {prob != null ? fmtPct(prob) : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -929,6 +1017,16 @@ function EventImpactLedger({
         // exposure: backend tracked_odds field preferred, then equity_signal field
         exposure: tracked.exposure ?? sig?.exposure,
         priority: o.priority ?? tracked.dashboard_priority ?? 99,
+        display_title: tracked.display_title,
+        display_subtitle: tracked.display_subtitle,
+        priced_outcome_label: tracked.priced_outcome_label,
+        priced_probability: tracked.priced_probability,
+        outcome_summary: tracked.outcome_summary,
+        end_date: tracked.end_date,
+        url: tracked.url,
+        event_title: tracked.event_title,
+        outcomes: tracked.outcomes,
+        neg_risk: tracked.neg_risk,
       });
     }
 
@@ -1002,19 +1100,24 @@ function EventImpactLedger({
                       onClick={() => setSelected(row)}
                     >
                       <td className="py-1.5 pr-3">
-                        <p className="text-[11px] font-semibold text-white/80 leading-tight">{row.label}</p>
-                        {row.market_question && (
-                          <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-1">{row.market_question}</p>
+                        <p className="text-[11px] font-semibold text-white/80 leading-tight">{row.display_title ?? row.label}</p>
+                        {(row.display_subtitle || row.market_question) && (
+                          <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-1">{row.display_subtitle ?? row.market_question}</p>
+                        )}
+                        {row.end_date && (
+                          <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
                         )}
                       </td>
                       <td className="py-1.5 pr-3">
                         <span className="text-[8px] text-white/30 leading-tight">{row.category ?? "—"}</span>
                       </td>
                       <td className="py-1.5 pr-3">
-                        <span className="text-[13px] font-bold tabular-nums text-white/85">
-                          {row.yes_pct != null ? fmtPct(row.yes_pct) : "—"}
-                        </span>
-                        <span className="text-[7px] text-white/30 ml-1">{side}</span>
+                        <p className="text-[13px] font-bold tabular-nums text-white/85 leading-none">
+                          {row.priced_probability != null ? fmtPct(row.priced_probability * 100) : (row.yes_pct != null ? fmtPct(row.yes_pct) : "—")}
+                        </p>
+                        {row.priced_outcome_label && (
+                          <p className="text-[8px] text-white/35 leading-tight mt-0.5">{row.priced_outcome_label}</p>
+                        )}
                       </td>
                       <td className={`py-1.5 pr-3 font-mono text-[9px] ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)}</td>
                       <td className={`py-1.5 pr-3 font-mono text-[9px] ${ppColor(row.delta_7d_pp)}`}>{fmtPP(row.delta_7d_pp)}</td>
