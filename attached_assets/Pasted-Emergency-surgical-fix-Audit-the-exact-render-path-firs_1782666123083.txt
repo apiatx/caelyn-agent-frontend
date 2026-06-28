@@ -1,0 +1,98 @@
+Emergency surgical fix. Audit the exact render path first, then edit only the Prophetik Investor component.
+
+Current unacceptable bug:
+The page still shows:
+
+“Prediction odds warming… 26 families tracked · cache initializing”
+
+indefinitely, even though /api/predict/investor/intelligence returns tracked_odds with usable rows.
+
+Goal:
+The Prophetik Investor page must render immediately from intelligence.tracked_odds. /api/predict/odds/live must not block the UI.
+
+Hard rule:
+If /api/predict/investor/intelligence.tracked_odds has rows, the Command Center and Event Impact Ledger must render. No spinner. No warming state.
+
+Audit:
+
+1. Find the exact component rendering the text:
+   “Prediction odds warming…”
+2. Find every loading/isWarming/empty-state condition above it.
+3. Find whether any parent component returns a loading UI before MarketImpactCommandCenter receives props.
+4. Find whether Command Center still receives oddsLive instead of normalized oddsRows.
+5. Find whether Event Ledger receives oddsRows or still reads oddsData internally.
+6. Log or inspect:
+
+   * oddsLive?.status
+   * oddsLive?.odds?.length
+   * intelligence?.tracked_odds?.length
+   * normalized oddsRows.length
+     immediately before render.
+
+Implementation:
+
+1. Create one normalized odds source at the top of ProphetikInvestorTab:
+
+const trackedRows = intelligence?.tracked_odds ?? [];
+const liveRows = oddsLive?.odds ?? [];
+
+const oddsRows = trackedRows.length
+? trackedRows
+: liveRows.length
+? liveRows
+: [];
+
+Important:
+Prefer intelligence.tracked_odds first for Prophetik Investor because it has market_read + exposure. Do not prefer oddsLive if oddsLive is empty or missing exposure.
+
+2. Remove any full-page or Command Center loading gate based on oddsLive.status.
+
+Bad:
+if (oddsLiveLoading) return <Spinner />
+if (oddsLive?.status === "warming") show full warming state
+if (!oddsLive?.odds?.length) show warming
+
+Good:
+if (oddsRows.length === 0) show compact warming/empty state.
+otherwise render the Command Center and Ledger.
+
+3. Pass oddsRows directly into both components:
+
+<MarketImpactCommandCenter oddsRows={oddsRows} ... />
+<EventImpactLedger oddsRows={oddsRows} ... />
+
+Do not let either component fetch its own rows or read oddsLive directly for rendering.
+
+4. /api/predict/odds/live should become optional/background data.
+   If it is slow, empty, stale, or warming, it must not block rendering from intelligence.tracked_odds.
+
+5. Add a tiny source badge:
+
+* If using intelligence.tracked_odds: “Intelligence cache”
+* If using oddsLive: “Live odds”
+* If both empty: “Warming”
+
+6. Add request timeout safety for /api/predict/odds/live if needed.
+   If /odds/live takes longer than 1500ms, allow it to fail silently and keep rendering intelligence.tracked_odds.
+
+7. Keep Event Impact Ledger exposure rendering from backend exposure.
+   Never show “Macro Only.”
+   Do not hardcode ticker mappings.
+   Do not edit Gambler mode.
+
+Validation:
+
+1. Hard refresh Prophetik Investor.
+2. Immediately after page load, if intelligence.tracked_odds.length > 0, Command Center renders cards.
+3. Full warming spinner appears only if intelligence.tracked_odds.length === 0 and oddsLive.odds.length === 0.
+4. Temporarily simulate /api/predict/odds/live returning empty or timing out; page must still render from intelligence.tracked_odds.
+5. Console/browser validation must print:
+
+   * oddsLive.status
+   * oddsLive.odds.length
+   * intelligence.tracked_odds.length
+   * oddsRows.length
+6. Event Impact Ledger renders the same oddsRows and exposure.
+7. No row says “Macro Only.”
+8. Gambler mode unchanged.
+9. Provide screenshot after hard refresh showing Command Center rendered, not warming.

@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { useState, memo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { GlassCard } from "@/components/ui/glass-card";
 import {
@@ -1319,25 +1319,41 @@ export function ProphetikInvestorTab() {
   });
 
   // ── Normalized odds source ──────────────────────────────────────────────────
-  // Priority: live odds → intelligence.tracked_odds → empty
-  // This ensures the Command Center and Ledger always render when either source
-  // has data, even if odds/live returns empty or warming status.
+  // Priority: intelligence.tracked_odds FIRST (has market_read + exposure)
+  //           → live odds (polymarket, no exposure) → empty
+  // odds/live returning {} or odds:[] must NEVER block rendering when
+  // intelligence.tracked_odds has rows.
+  const trackedRows: TrackedOddsItem[] = intel?.tracked_odds ?? [];
+  const liveRows: LiveOddsItem[]       = oddsData?.odds ?? [];
+
   const oddsRows: (LiveOddsItem | TrackedOddsItem)[] =
-    (oddsData?.odds?.length ?? 0) > 0 ? oddsData!.odds :
-    (intel?.tracked_odds?.length ?? 0) > 0 ? intel!.tracked_odds :
+    trackedRows.length > 0 ? trackedRows :
+    liveRows.length > 0    ? liveRows :
     [];
 
   const oddsSource: OddsSourceType =
-    (oddsData?.odds?.length ?? 0) > 0 ? "live" :
-    (intel?.tracked_odds?.length ?? 0) > 0 ? "intelligence" :
+    trackedRows.length > 0 ? "intelligence" :
+    liveRows.length > 0    ? "live" :
     "none";
 
   const STALE_STATUSES = ["lkg", "stale_db", "stale"] as const;
   const oddsStale = oddsSource === "live" &&
     STALE_STATUSES.includes((oddsData?.status ?? "") as typeof STALE_STATUSES[number]);
 
-  const trackedCount = oddsData?.tracked_count ?? (intel?.tracked_odds?.length ?? 0);
+  const trackedCount = intel?.tracked_odds?.length ?? oddsData?.tracked_count ?? 0;
   const liveCount    = oddsData?.live_count ?? 0;
+
+  // ── Debug log (validation per spec) ─────────────────────────────────────────
+  useEffect(() => {
+    console.log("[ProphetikInvestor] odds diagnostics", {
+      "oddsLive.status":              oddsData?.status ?? "pending",
+      "oddsLive.odds.length":         liveRows.length,
+      "intelligence.tracked_odds.length": trackedRows.length,
+      "oddsRows.length":              oddsRows.length,
+      "oddsSource":                   oddsSource,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oddsData, intel]);
 
   return (
     <div className="pb-4">
