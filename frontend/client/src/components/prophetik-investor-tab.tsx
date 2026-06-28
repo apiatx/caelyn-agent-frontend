@@ -432,13 +432,20 @@ function OddsCard({ item }: { item: LiveOddsItem }) {
 
 function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | null | undefined }) {
   const [showAll, setShowAll] = useState(false);
-  const isWarming = !oddsData || oddsData.status === "warming" || (!oddsData.live_count && !oddsData.odds?.length);
+
+  const hasOdds     = (oddsData?.odds?.length ?? 0) > 0;
+  // Warming only when there are truly no usable odds rows
+  const isWarming   = !oddsData || !hasOdds;
+  // Stale when we have odds but they come from LKG / DB snapshot / stale cache
+  const STALE_STATUSES = ["lkg", "stale_db", "stale"] as const;
+  const isCached    = hasOdds && oddsData != null && STALE_STATUSES.includes(oddsData.status as typeof STALE_STATUSES[number]);
+
   const trackedCount = oddsData?.tracked_count ?? 0;
   const liveCount    = oddsData?.live_count ?? 0;
 
   const dashboardOdds: LiveOddsItem[] = (() => {
-    if (!oddsData?.odds?.length) return [];
-    return [...oddsData.odds]
+    if (!hasOdds) return [];
+    return [...oddsData!.odds]
       .filter(o => o.dashboard_enabled !== false)
       .sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99));
   })();
@@ -458,6 +465,10 @@ function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | 
               <span className="flex items-center gap-1 text-amber-400/60">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse" />Warming
               </span>
+            ) : isCached ? (
+              <span className="flex items-center gap-1 text-amber-400/45">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400/45 animate-pulse" />Refreshing
+              </span>
             ) : liveCount > 0 ? (
               <span className="flex items-center gap-1 text-emerald-400/60">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
@@ -469,6 +480,18 @@ function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | 
         }
       />
 
+      {/* Stale cache banner — shown when we have usable odds from LKG/DB but not yet live */}
+      {isCached && (
+        <div className="flex items-center gap-1.5 mb-3 px-2.5 py-1.5 rounded-lg bg-amber-500/[0.06] border border-amber-500/10">
+          <div className="w-1 h-1 rounded-full bg-amber-400/50 animate-pulse flex-shrink-0" />
+          <p className="text-[8px] text-amber-400/55">
+            Last known odds · refreshing in background
+            {oddsData?.cache_age_seconds != null && ` · ${Math.round(oddsData.cache_age_seconds / 60)}m old`}
+          </p>
+        </div>
+      )}
+
+      {/* Full warming spinner — only when there are no odds rows at all */}
       {isWarming && (
         <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
           <div className="w-7 h-7 rounded-full border-2 border-blue-400/20 border-t-blue-400/60 animate-spin" />
