@@ -1,0 +1,169 @@
+Audit first. No edits until the audit is complete.
+
+Current Prophetik Investor page is loading and directionally correct, but the odds are still too vague.
+
+Problems:
+
+1. Outcome summaries are rendered as one long inline sentence:
+   “No change 81.5% · 25 bps increase 16.2% · ...”
+   This must become a vertical list so users can visually compare outcomes.
+
+2. Some rows/cards still show vague probabilities:
+   “NVDA Price Milestone — 91.5%”
+   That is useless unless the user sees the actual contract/question, target price, and date.
+
+3. Top Movers still lacks outcome context:
+   “Israel / Gaza / Hamas +67.5pp”
+   This must show what outcome moved, not just the family label.
+
+Goal:
+Make every odds display contract-first, not family-label-first.
+
+Do not break the loading fix.
+Do not touch Gambler mode.
+Do not edit backend unless the audit proves required fields are missing.
+Do not hardcode ticker maps or contract labels.
+
+Audit:
+
+1. Inspect the current Prophetik Investor component.
+2. Inspect the actual payload from /api/predict/investor/intelligence tracked_odds[].
+3. For these rows, confirm available fields:
+
+   * fed_rate_decision
+   * fed_cuts_2026
+   * nvda_price_milestone
+   * israel_gaza
+   * hormuz_iran
+   * bitcoin_price
+4. Check whether each row has:
+
+   * display_title
+   * display_subtitle
+   * question
+   * priced_outcome_label
+   * priced_probability
+   * outcome_summary
+   * outcomes[]
+   * contract_context
+   * end_date
+   * url
+5. Report any missing fields before editing.
+
+Critical rendering rules:
+
+A. Never show an odds number without contract context.
+
+Bad:
+NVDA Price Milestone — 91.5%
+
+Good:
+NVDA Price Milestone
+91.5% · NVIDIA above $X by DATE
+[raw Polymarket question if target/date parsing is not available]
+
+If display_subtitle is generic, such as only “NVIDIA”, “Tesla”, “Apple”, “Yes”, or a ticker/name, fall back to question.
+
+Use this priority for context text:
+
+1. question, if it contains useful contract terms like above/below/by/date/price/meeting/cuts/hikes
+2. display_subtitle
+3. event_title
+4. label
+
+B. Outcome summaries must be vertical lists.
+
+Replace inline outcome_summary text with a compact OutcomeList component.
+
+For outcomes[] render:
+
+* one outcome per row
+* label on the left
+* probability on the right
+* selected/priced outcome highlighted
+* max visible outcomes in compact cards: 4
+* “+N more” or “Show all” if more than 4
+* full list in the detail drawer
+
+Example:
+Outcomes:
+No change                  81.5%
+25 bps increase            16.2%
+25 bps decrease             1.2%
+50+ bps increase            0.4%
+50+ bps decrease            0.4%
+
+Do not render this as one long inline sentence.
+
+C. Command Center cards
+
+Each category card item must show:
+
+* display_title or label
+* large priced_probability / yes_probability
+* priced_outcome_label
+* contract context line using question if useful
+* compact vertical outcome list if outcomes[] exists
+* 24h / 7d delta
+* market_read
+
+For Top Movers:
+Do not show only:
+Israel / Gaza / Hamas +67.5pp
+
+Show:
+Israel / Gaza / Hamas
++67.5pp 24h
+[priced_outcome_label] · [question or useful contract subtitle]
+Current odds: XX%
+
+D. Event Impact Ledger
+
+Event / Contract column should show:
+
+* display_title or label
+* useful contract context underneath, preferably raw question
+* contract_context/end_date badge if available
+
+Odds column should show:
+
+* probability
+* priced_outcome_label
+  not just YES when YES is ambiguous.
+
+If priced_outcome_label is generic, show question/subtitle directly below.
+
+E. Detail drawer
+
+Show:
+
+* full question
+* event_title
+* display_title
+* priced outcome
+* full vertical outcomes[] list
+* end date
+* Polymarket URL
+* market_read
+* exposure
+
+F. Fallback behavior
+
+If outcomes[] exists, use it.
+If outcomes[] is missing but outcome_summary exists, split it into vertical display rows if possible.
+If both missing, show question and priced_outcome_label.
+
+Never hide rows because metadata is incomplete.
+
+Validation:
+
+1. Fed Decision outcome alternatives appear as vertical rows, not one inline sentence.
+2. Fed Cuts outcome buckets appear as vertical rows.
+3. NVDA row/card shows the actual contract/question/target context, not just “NVIDIA” or “91.5%.”
+4. Top Movers shows the moved outcome/question, not just the family label.
+5. Event Ledger odds cell shows priced_outcome_label under probability.
+6. Detail drawer shows full outcomes[] list.
+7. Current no-spinner loading behavior remains fixed.
+8. Exposure column remains fixed and never says Macro Only.
+9. No sports/pop-culture rows appear.
+10. Gambler mode unchanged.

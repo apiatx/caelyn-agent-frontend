@@ -207,6 +207,7 @@ interface LedgerRow {
   event_title?: string;
   outcomes?: OddsOutcome[];
   neg_risk?: boolean;
+  question?: string;
 }
 
 // ─── View-model types ─────────────────────────────────────────────────────────
@@ -399,6 +400,87 @@ function Empty({ text }: { text: string }) {
 
 // ─── SECTION 1: Market Impact Command Center ──────────────────────────────────
 
+// Return the most useful contract context string — prioritise question, then subtitle if not redundant
+function contractContextLine(t: {
+  question?: string; display_subtitle?: string; priced_outcome_label?: string; event_title?: string;
+}): string | null {
+  const q = t.question;
+  if (q && q.length > 10) return q;
+  const sub = t.display_subtitle;
+  if (sub && sub !== t.priced_outcome_label && sub.length > 5) return sub;
+  const et = t.event_title;
+  if (et && et.length > 5) return et;
+  return null;
+}
+
+// Vertical outcome list — renders outcomes[] as rows, or splits outcome_summary as fallback
+function OutcomeList({
+  outcomes, pricedLabel, outcomeSummary, maxVisible = 4, className = "",
+}: {
+  outcomes?: OddsOutcome[];
+  pricedLabel?: string;
+  outcomeSummary?: string;
+  maxVisible?: number;
+  className?: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  type OItem = { label: string; prob: number | null; isSelected: boolean };
+  let items: OItem[] = [];
+
+  if (outcomes && outcomes.length > 0) {
+    items = outcomes.map(o => {
+      const oLabel = o.display_label ?? o.label ?? "";
+      return {
+        label: oLabel,
+        prob: o.probability != null ? o.probability * 100 : null,
+        isSelected: oLabel === pricedLabel || o.label === pricedLabel,
+      };
+    });
+  } else if (outcomeSummary) {
+    items = outcomeSummary.split(" · ").map(part => {
+      const m = part.match(/^(.+?)\s+([\d.]+)%$/);
+      if (m) return { label: m[1], prob: parseFloat(m[2]), isSelected: m[1] === pricedLabel };
+      return { label: part, prob: null, isSelected: false };
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  const visible = showAll ? items : items.slice(0, maxVisible);
+  const remaining = items.length - maxVisible;
+
+  return (
+    <div className={`space-y-0.5 ${className}`}>
+      {visible.map((item, i) => (
+        <div key={i} className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded ${item.isSelected ? "bg-blue-500/[0.08]" : ""}`}>
+          <span className={`flex-1 text-[8px] leading-tight ${item.isSelected ? "text-white/75 font-semibold" : "text-white/35"}`}>
+            {item.label}
+          </span>
+          {item.prob != null && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="w-10 h-0.5 bg-white/[0.05] rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${item.isSelected ? "bg-blue-400/60" : "bg-white/12"}`} style={{ width: `${Math.min(item.prob, 100)}%` }} />
+              </div>
+              <span className={`text-[8px] font-bold tabular-nums w-8 text-right ${item.isSelected ? "text-white/80" : "text-white/30"}`}>
+                {fmtPct(item.prob)}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+      {!showAll && remaining > 0 && (
+        <button
+          onClick={e => { e.stopPropagation(); setShowAll(true); }}
+          className="text-[7px] text-white/25 hover:text-white/50 transition-colors pl-1.5 pt-0.5"
+        >
+          +{remaining} more
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Helper: check if family_key contains any of the group substrings
 function matchesGroup(familyKey: string, subs: readonly string[]): boolean {
   const k = familyKey.toLowerCase();
@@ -426,13 +508,14 @@ function CmdCard({
         const pricedPct = t.priced_probability != null ? t.priced_probability * 100
                         : row.yes_pct ?? (row.yes_probability != null ? row.yes_probability * 100 : null);
         const outcomeLabel = t.priced_outcome_label;
-        const summary = t.outcome_summary;
+        const ctx = contractContextLine(t);
         const mr = t.market_read;
         return (
-          <div key={row.family_key} className="flex flex-col gap-1">
+          <div key={row.family_key} className="flex flex-col gap-1.5">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-semibold text-white/72 leading-tight">{title}</p>
+                {ctx && <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-2">{ctx}</p>}
                 {mr && <MarketReadCell read={mr} />}
               </div>
               <div className="text-right flex-shrink-0">
@@ -444,9 +527,12 @@ function CmdCard({
                 )}
               </div>
             </div>
-            {summary && (
-              <p className="text-[7px] text-white/22 leading-tight line-clamp-2">{summary}</p>
-            )}
+            <OutcomeList
+              outcomes={t.outcomes}
+              pricedLabel={outcomeLabel ?? undefined}
+              outcomeSummary={t.outcome_summary ?? undefined}
+              maxVisible={3}
+            />
             <div className="flex gap-1 flex-wrap">
               <span className={`text-[7px] font-mono ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)} 24h</span>
               {row.delta_7d_pp != null && (
@@ -582,15 +668,25 @@ function MarketImpactCommandCenter({
                 { row: top7d?.family_key !== top24?.family_key ? top7d : undefined, badge: "7d", val: top7d?.family_key !== top24?.family_key ? top7d?.delta_7d_pp : undefined },
               ] as { row?: LiveOddsItem | TrackedOddsItem; badge: string; val?: number | null }[])
                 .filter(x => x.row && x.val != null && x.val !== 0)
-                .map(({ row, badge, val }) => (
-                  <div key={row!.family_key + badge} className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-semibold text-white/65 leading-tight line-clamp-1">{row!.label}</p>
-                      <span className="text-[7px] text-white/20">Biggest {badge} move</span>
+                .map(({ row, badge, val }) => {
+                  const tm = row as TrackedOddsItem;
+                  const tmCtx = contractContextLine(tm);
+                  return (
+                    <div key={row!.family_key + badge} className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-semibold text-white/65 leading-tight">{tm.display_title ?? row!.label}</p>
+                        {tmCtx && <p className="text-[7px] text-white/28 leading-tight mt-0.5 line-clamp-2">{tmCtx}</p>}
+                        <span className="text-[7px] text-white/20">Biggest {badge} move</span>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`text-[12px] font-bold tabular-nums ${ppColor(val)}`}>{fmtPP(val)}</span>
+                        {tm.priced_probability != null && (
+                          <p className="text-[7px] text-white/28 font-mono">{fmtPct(tm.priced_probability * 100)}</p>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[12px] font-bold tabular-nums flex-shrink-0 ${ppColor(val)}`}>{fmtPP(val)}</span>
-                  </div>
-                ))
+                  );
+                })
               }
             </div>
           )}
@@ -745,11 +841,8 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
               <span className="text-[20px] font-bold tabular-nums text-white/90 leading-none">{pct != null ? fmtPct(pct) : "—"}</span>
               {side && <span className="text-[11px] text-white/55 font-semibold">{side}</span>}
             </div>
-            {row.outcome_summary && (
-              <p className="text-[9px] text-blue-300/55 leading-relaxed">{row.outcome_summary}</p>
-            )}
-            {(row.display_subtitle || row.market_question) && (
-              <p className="text-[8px] text-white/25 leading-snug">{row.display_subtitle ?? row.market_question}</p>
+            {contractContextLine(row) && (
+              <p className="text-[9px] text-blue-300/55 leading-relaxed">{contractContextLine(row)}</p>
             )}
             {row.end_date && (
               <p className="text-[8px] text-white/20">
@@ -789,35 +882,17 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
           )}
 
           {/* Outcomes breakdown */}
-          {(row.outcomes?.length ?? 0) > 1 && (
+          {(row.outcomes?.length ?? 0) > 0 && (
             <div>
               <p className="text-[8px] font-bold uppercase tracking-wider text-white/20 mb-1.5">
                 All Outcomes{row.neg_risk ? " · negRisk" : ""}
               </p>
-              <div className="space-y-0.5">
-                {row.outcomes!.map((o, i) => {
-                  const prob = o.probability != null ? o.probability * 100 : null;
-                  const oLabel = o.display_label ?? o.label ?? "";
-                  const isSelected = oLabel === row.priced_outcome_label || o.label === row.priced_outcome_label;
-                  return (
-                    <div key={i} className={`flex items-center gap-2 px-2 py-1 rounded ${isSelected ? "bg-blue-500/[0.08] border border-blue-500/15" : ""}`}>
-                      <div className="flex-1 min-w-0">
-                        <span className={`text-[9px] ${isSelected ? "text-white/80 font-semibold" : "text-white/38"}`}>{oLabel}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {prob != null && (
-                          <div className="w-16 h-1 bg-white/[0.05] rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${isSelected ? "bg-blue-400/60" : "bg-white/12"}`} style={{ width: `${Math.min(prob, 100)}%` }} />
-                          </div>
-                        )}
-                        <span className={`text-[9px] font-bold tabular-nums w-10 text-right ${isSelected ? "text-white/85" : "text-white/28"}`}>
-                          {prob != null ? fmtPct(prob) : "—"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <OutcomeList
+                outcomes={row.outcomes}
+                pricedLabel={row.priced_outcome_label ?? undefined}
+                outcomeSummary={row.outcome_summary ?? undefined}
+                maxVisible={99}
+              />
             </div>
           )}
 
@@ -1027,6 +1102,7 @@ function EventImpactLedger({
         event_title: tracked.event_title,
         outcomes: tracked.outcomes,
         neg_risk: tracked.neg_risk,
+        question: tracked.question,
       });
     }
 
@@ -1101,8 +1177,8 @@ function EventImpactLedger({
                     >
                       <td className="py-1.5 pr-3">
                         <p className="text-[11px] font-semibold text-white/80 leading-tight">{row.display_title ?? row.label}</p>
-                        {(row.display_subtitle || row.market_question) && (
-                          <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-1">{row.display_subtitle ?? row.market_question}</p>
+                        {contractContextLine(row) && (
+                          <p className="text-[8px] text-white/30 leading-tight mt-0.5 line-clamp-2">{contractContextLine(row)}</p>
                         )}
                         {row.end_date && (
                           <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
