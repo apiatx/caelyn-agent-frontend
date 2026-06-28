@@ -367,112 +367,123 @@ function Empty({ text }: { text: string }) {
 
 // ─── SECTION 1: Market Impact Command Center ──────────────────────────────────
 
-function OddsCard({ item }: { item: LiveOddsItem }) {
-  const pct  = item.yes_pct ?? (item.yes_probability != null ? item.yes_probability * 100 : null);
-  const side = preferredSideLabel(item.preferred_outcome);
-  const polyUrl = item.slug ? `https://polymarket.com/event/${item.slug}` : null;
-  const volStr = fmtVol(item.volume_24h);
-  const liqStr = fmtVol(item.liquidity);
+// Helper: check if family_key contains any of the group substrings
+function matchesGroup(familyKey: string, subs: readonly string[]): boolean {
+  const k = familyKey.toLowerCase();
+  return subs.some(s => k.includes(s));
+}
 
+// Compact executive-summary card for one category
+function CmdCard({
+  icon, label, rows,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  rows: (LiveOddsItem | TrackedOddsItem)[];
+}) {
+  if (!rows.length) return null;
   return (
-    <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] transition-colors p-2.5 flex flex-col gap-1.5">
-      {/* Label + category */}
-      <div className="flex items-start justify-between gap-1.5">
-        <p className="text-[11px] font-bold text-white/90 leading-tight">{item.label}</p>
-        {item.category && (
-          <span className="text-[7px] text-white/25 flex-shrink-0 border border-white/[0.07] px-1 py-0.5 rounded mt-0.5">
-            {item.category}
-          </span>
-        )}
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3 flex flex-col gap-2.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-blue-400/45">{icon}</span>
+        <span className="text-[8px] font-bold uppercase tracking-wider text-white/25">{label}</span>
       </div>
-
-      {/* Contract subtitle: pct + side + question */}
-      {item.market_question && (
-        <p className="text-[9px] text-white/40 leading-snug line-clamp-2">
-          <span className="text-white/65 font-semibold font-mono">{pct != null ? `${pct.toFixed(1)}% ` : ""}{side}</span>
-          {" — "}{item.market_question}
-        </p>
-      )}
-
-      {/* Odds + deltas row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {pct != null && !item.market_question && (
-          <span className="text-[15px] font-bold tabular-nums text-white/90">{fmtPct(pct)}</span>
-        )}
-        {item.delta_1h_pp != null && item.delta_1h_pp !== 0 && (
-          <span className={`text-[9px] font-mono ${ppColor(item.delta_1h_pp)}`}>{fmtPP(item.delta_1h_pp)} 1h</span>
-        )}
-        {item.delta_24h_pp != null && (
-          <span className={`text-[9px] font-mono ${ppColor(item.delta_24h_pp)}`}>{fmtPP(item.delta_24h_pp)} 24h</span>
-        )}
-        {item.delta_7d_pp != null && (
-          <span className={`text-[9px] font-mono ${ppColor(item.delta_7d_pp)}`}>{fmtPP(item.delta_7d_pp)} 7d</span>
-        )}
-        {(volStr || liqStr) && (
-          <span className="text-[8px] text-white/20 ml-auto">
-            {volStr && `${volStr} vol`}{volStr && liqStr && " · "}{liqStr && `${liqStr} liq`}
-          </span>
-        )}
-        {polyUrl && (
-          <a
-            href={polyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="text-white/20 hover:text-blue-400 transition-colors ml-1"
-            title="Open on Polymarket"
-          >
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
+      {rows.slice(0, 2).map(row => {
+        const pct = row.yes_pct ?? (row.yes_probability != null ? row.yes_probability * 100 : null);
+        const mr  = (row as TrackedOddsItem).market_read;
+        return (
+          <div key={row.family_key} className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold text-white/72 leading-tight line-clamp-1">{row.label}</p>
+              {mr && <MarketReadCell read={mr} />}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-[14px] font-bold tabular-nums text-white/85 leading-none">
+                {pct != null ? fmtPct(pct) : "—"}
+              </p>
+              <div className="flex gap-1 justify-end mt-0.5">
+                <span className={`text-[7px] font-mono ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)} 24h</span>
+                {row.delta_7d_pp != null && (
+                  <span className={`text-[7px] font-mono ${ppColor(row.delta_7d_pp)}`}>{fmtPP(row.delta_7d_pp)} 7d</span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | null | undefined }) {
-  const [showAll, setShowAll] = useState(false);
+type OddsSourceType = "live" | "intelligence" | "none";
 
-  const hasOdds     = (oddsData?.odds?.length ?? 0) > 0;
-  // Warming only when there are truly no usable odds rows
-  const isWarming   = !oddsData || !hasOdds;
-  // Stale when we have odds but they come from LKG / DB snapshot / stale cache
-  const STALE_STATUSES = ["lkg", "stale_db", "stale"] as const;
-  const isCached    = hasOdds && oddsData != null && STALE_STATUSES.includes(oddsData.status as typeof STALE_STATUSES[number]);
+function MarketImpactCommandCenter({
+  oddsRows,
+  oddsSource,
+  oddsStale,
+  trackedCount,
+  liveCount,
+  cacheAgeSec,
+}: {
+  oddsRows: (LiveOddsItem | TrackedOddsItem)[];
+  oddsSource: OddsSourceType;
+  oddsStale: boolean;
+  trackedCount: number;
+  liveCount: number;
+  cacheAgeSec?: number;
+}) {
+  const isWarming = oddsRows.length === 0;
 
-  const trackedCount = oddsData?.tracked_count ?? 0;
-  const liveCount    = oddsData?.live_count ?? 0;
+  const GROUPS = [
+    { id: "rates",       label: "Rates / Fed",       icon: <Building2 className="w-3 h-3" />, keys: ["fed_","rate_","fomc"] as const },
+    { id: "growth",      label: "Growth / Recession", icon: <BarChart3 className="w-3 h-3" />, keys: ["recession","spx_daily","cpi_","inflation","jobs_","unemployment","gdp","tariff"] as const },
+    { id: "geo",         label: "Geopolitical Risk",  icon: <Globe2 className="w-3 h-3" />,    keys: ["hormuz","iran","russia","ukraine","china_","taiwan","israel","gaza"] as const },
+    { id: "tech",        label: "Tech / Mega-cap",    icon: <Zap className="w-3 h-3" />,       keys: ["nvda_","tsla_","aapl_","msft_","googl_","amd_","ai_export","mega_cap"] as const },
+    { id: "commodities", label: "Commodities",        icon: <Layers className="w-3 h-3" />,    keys: ["bitcoin","oil_","gold_","crude","commodity","crypto"] as const },
+  ];
 
-  const dashboardOdds: LiveOddsItem[] = (() => {
-    if (!hasOdds) return [];
-    return [...oddsData!.odds]
-      .filter(o => o.dashboard_enabled !== false)
-      .sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99));
-  })();
+  const grouped = GROUPS.map(g => ({
+    ...g,
+    rows: oddsRows
+      .filter(r => matchesGroup(r.family_key, g.keys))
+      .sort((a, b) =>
+        (a.priority ?? (a as TrackedOddsItem).dashboard_priority ?? 99) -
+        (b.priority ?? (b as TrackedOddsItem).dashboard_priority ?? 99)
+      ),
+  }));
 
-  const visible = showAll ? dashboardOdds : dashboardOdds.slice(0, 8);
-  const extra   = dashboardOdds.length - 8;
+  // Top Movers: biggest absolute 24h and 7d movers
+  const byAbs24 = [...oddsRows].sort((a, b) => Math.abs(b.delta_24h_pp ?? 0) - Math.abs(a.delta_24h_pp ?? 0));
+  const byAbs7d = [...oddsRows].sort((a, b) => Math.abs(b.delta_7d_pp ?? 0) - Math.abs(a.delta_7d_pp ?? 0));
+  const top24   = byAbs24[0];
+  const top7d   = byAbs7d.find(r => r.family_key !== top24?.family_key) ?? byAbs7d[0];
+  const hasMovers = (top24?.delta_24h_pp ?? 0) !== 0 || (top7d?.delta_7d_pp ?? 0) !== 0;
+
+  const activeGroups = grouped.filter(g => g.rows.length > 0);
 
   return (
     <GlassCard className="p-4 mb-4">
       <SecHeader
         icon={<Radio className="w-4 h-4" />}
         title="Market Impact Command Center"
-        subtitle="Live prediction market odds tracking macro, political, and economic events"
+        subtitle="Executive summary of tracked prediction market signals by category"
         right={
           <div className="flex items-center gap-2 text-[9px]">
             {isWarming ? (
               <span className="flex items-center gap-1 text-amber-400/60">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse" />Warming
               </span>
-            ) : isCached ? (
+            ) : oddsSource === "intelligence" ? (
+              <span className="flex items-center gap-1 text-blue-400/50">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400/50 animate-pulse" />Intel cache
+              </span>
+            ) : oddsStale ? (
               <span className="flex items-center gap-1 text-amber-400/45">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400/45 animate-pulse" />Refreshing
               </span>
             ) : liveCount > 0 ? (
               <span className="flex items-center gap-1 text-emerald-400/60">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
-                {liveCount} live
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />{liveCount} live
               </span>
             ) : null}
             <span className="text-white/20">{trackedCount} tracked</span>
@@ -480,18 +491,23 @@ function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | 
         }
       />
 
-      {/* Stale cache banner — shown when we have usable odds from LKG/DB but not yet live */}
-      {isCached && (
+      {/* Source banners */}
+      {!isWarming && oddsSource === "intelligence" && (
+        <div className="flex items-center gap-1.5 mb-3 px-2.5 py-1.5 rounded-lg bg-blue-500/[0.06] border border-blue-500/10">
+          <div className="w-1 h-1 rounded-full bg-blue-400/50 flex-shrink-0" />
+          <p className="text-[8px] text-blue-400/55">Intelligence cache · refreshing odds</p>
+        </div>
+      )}
+      {!isWarming && oddsStale && (
         <div className="flex items-center gap-1.5 mb-3 px-2.5 py-1.5 rounded-lg bg-amber-500/[0.06] border border-amber-500/10">
           <div className="w-1 h-1 rounded-full bg-amber-400/50 animate-pulse flex-shrink-0" />
           <p className="text-[8px] text-amber-400/55">
-            Last known odds · refreshing in background
-            {oddsData?.cache_age_seconds != null && ` · ${Math.round(oddsData.cache_age_seconds / 60)}m old`}
+            Last known odds · refreshing{cacheAgeSec != null ? ` · ${Math.round(cacheAgeSec / 60)}m old` : ""}
           </p>
         </div>
       )}
 
-      {/* Full warming spinner — only when there are no odds rows at all */}
+      {/* Full warming spinner — only when both sources are empty */}
       {isWarming && (
         <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
           <div className="w-7 h-7 rounded-full border-2 border-blue-400/20 border-t-blue-400/60 animate-spin" />
@@ -502,34 +518,45 @@ function MarketImpactCommandCenter({ oddsData }: { oddsData: LiveOddsResponse | 
         </div>
       )}
 
-      {!isWarming && dashboardOdds.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-6 gap-1.5 text-center">
-          <CircleDot className="w-4 h-4 text-white/15" />
-          <p className="text-[11px] text-white/30">No dashboard-enabled odds found</p>
-          <p className="text-[9px] text-white/15">{trackedCount} families tracked</p>
-        </div>
-      )}
+      {/* Executive summary grid */}
+      {!isWarming && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {activeGroups.map(g => (
+            <CmdCard key={g.id} icon={g.icon} label={g.label} rows={g.rows} />
+          ))}
 
-      {visible.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {visible.map(o => <OddsCard key={o.family_key} item={o} />)}
-          </div>
-          {extra > 0 && (
-            <button
-              onClick={() => setShowAll(v => !v)}
-              className="mt-2 w-full text-[9px] text-white/25 hover:text-white/50 transition-colors py-1.5 border border-white/[0.05] hover:border-white/[0.10] rounded-lg"
-            >
-              {showAll ? "Show less" : `Show ${extra} more`}
-            </button>
+          {/* Top Movers card */}
+          {hasMovers && (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3 flex flex-col gap-2.5">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-3 h-3 text-blue-400/45" />
+                <span className="text-[8px] font-bold uppercase tracking-wider text-white/25">Top Movers</span>
+              </div>
+              {([
+                { row: top24, badge: "24h", val: top24?.delta_24h_pp },
+                { row: top7d?.family_key !== top24?.family_key ? top7d : undefined, badge: "7d", val: top7d?.family_key !== top24?.family_key ? top7d?.delta_7d_pp : undefined },
+              ] as { row?: LiveOddsItem | TrackedOddsItem; badge: string; val?: number | null }[])
+                .filter(x => x.row && x.val != null && x.val !== 0)
+                .map(({ row, badge, val }) => (
+                  <div key={row!.family_key + badge} className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-semibold text-white/65 leading-tight line-clamp-1">{row!.label}</p>
+                      <span className="text-[7px] text-white/20">Biggest {badge} move</span>
+                    </div>
+                    <span className={`text-[12px] font-bold tabular-nums flex-shrink-0 ${ppColor(val)}`}>{fmtPP(val)}</span>
+                  </div>
+                ))
+              }
+            </div>
           )}
-          {oddsData?.updated_at && (
-            <p className="text-[8px] text-white/12 mt-2">
-              Updated {new Date(oddsData.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              {oddsData.cache_age_seconds != null && ` · ${Math.round(oddsData.cache_age_seconds / 60)}m cache`}
-            </p>
+
+          {/* Fallback when no groups matched */}
+          {activeGroups.length === 0 && (
+            <div className="col-span-full">
+              <Empty text="No categorized signals in current odds set" />
+            </div>
           )}
-        </>
+        </div>
       )}
     </GlassCard>
   );
@@ -848,21 +875,18 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
 }
 
 function EventImpactLedger({
-  oddsData,
+  oddsRows,
+  oddsSource,
   intel,
 }: {
-  oddsData: LiveOddsResponse | null | undefined;
+  oddsRows: (LiveOddsItem | TrackedOddsItem)[];
+  oddsSource: OddsSourceType;
   intel: IntelligenceResponse | null | undefined;
 }) {
   const [selected, setSelected] = useState<LedgerRow | null>(null);
 
   const rows: LedgerRow[] = (() => {
-    // Build lookup maps
-    // tracked_odds from intelligence: all family_keys with market_read + exposure
-    const trackedMap = new Map<string, TrackedOddsItem>();
-    for (const t of intel?.tracked_odds ?? []) trackedMap.set(t.family_key, t);
-
-    // equity_signals from intelligence: richer qualitative data
+    // equity_signals provide richer qualitative fields (direction, signal_quality, etc.)
     const intelSigMap = new Map<string, IntelEquitySignal>();
     for (const s of intel?.equity_signals ?? []) {
       const key = s.event_family_key ?? s.title;
@@ -872,14 +896,16 @@ function EventImpactLedger({
     const out: LedgerRow[] = [];
     const seen = new Set<string>();
 
-    // All live odds items — enrich with tracked_odds (market_read + exposure) and intel signals
-    for (const o of oddsData?.odds ?? []) {
+    // Primary source: normalized oddsRows (live odds OR tracked_odds fallback)
+    // TrackedOddsItem already carries market_read + exposure — use them directly
+    for (const o of oddsRows) {
       const key     = o.family_key;
-      const tracked = trackedMap.get(key);
-      const sig     = intelSigMap.get(key);
       seen.add(key);
+      const tracked = o as TrackedOddsItem; // may have market_read + exposure
+      const sig     = intelSigMap.get(key);
       out.push({
-        source: "odds",
+        // "odds" enables 7d history fetch; use only when we have live polymarket data
+        source: oddsSource === "live" ? "odds" : "intel",
         family_key: key,
         label: o.label,
         category: o.category,
@@ -898,20 +924,19 @@ function EventImpactLedger({
         theme_impacts: sig?.theme_impacts,
         driver_markets: o.driver_markets,
         conflicts: sig?.conflicts,
-        // Use backend market_read from tracked_odds (preferred) or intel signal, then fallback derivation
-        marketRead: tracked?.market_read ?? sig?.market_read ?? marketReadLabel(sig?.direction, o.category),
-        // Use backend exposure from tracked_odds (preferred) or intel signal
-        exposure: tracked?.exposure ?? sig?.exposure,
-        priority: o.priority ?? (tracked?.dashboard_priority ?? 99),
+        // market_read: backend tracked_odds field preferred, then equity_signal field, then derived
+        marketRead: tracked.market_read ?? sig?.market_read ?? marketReadLabel(sig?.direction, o.category),
+        // exposure: backend tracked_odds field preferred, then equity_signal field
+        exposure: tracked.exposure ?? sig?.exposure,
+        priority: o.priority ?? tracked.dashboard_priority ?? 99,
       });
     }
 
-    // Intel-only equity_signals not already covered by live odds
+    // Supplementary: equity_signals not already covered by oddsRows
     for (const s of intel?.equity_signals ?? []) {
       const key = s.event_family_key ?? s.title;
       if (seen.has(key)) continue;
       seen.add(key);
-      const tracked = trackedMap.get(key);
       out.push({
         source: "intel",
         family_key: key,
@@ -927,8 +952,8 @@ function EventImpactLedger({
         theme_impacts: s.theme_impacts,
         driver_markets: s.driver_markets,
         conflicts: s.conflicts,
-        marketRead: tracked?.market_read ?? s.market_read ?? marketReadLabel(s.direction, s.primary_category),
-        exposure: tracked?.exposure ?? s.exposure,
+        marketRead: s.market_read ?? marketReadLabel(s.direction, s.primary_category),
+        exposure: s.exposure,
       });
     }
 
@@ -1293,6 +1318,27 @@ export function ProphetikInvestorTab() {
     refetchInterval: 5 * 60_000,
   });
 
+  // ── Normalized odds source ──────────────────────────────────────────────────
+  // Priority: live odds → intelligence.tracked_odds → empty
+  // This ensures the Command Center and Ledger always render when either source
+  // has data, even if odds/live returns empty or warming status.
+  const oddsRows: (LiveOddsItem | TrackedOddsItem)[] =
+    (oddsData?.odds?.length ?? 0) > 0 ? oddsData!.odds :
+    (intel?.tracked_odds?.length ?? 0) > 0 ? intel!.tracked_odds :
+    [];
+
+  const oddsSource: OddsSourceType =
+    (oddsData?.odds?.length ?? 0) > 0 ? "live" :
+    (intel?.tracked_odds?.length ?? 0) > 0 ? "intelligence" :
+    "none";
+
+  const STALE_STATUSES = ["lkg", "stale_db", "stale"] as const;
+  const oddsStale = oddsSource === "live" &&
+    STALE_STATUSES.includes((oddsData?.status ?? "") as typeof STALE_STATUSES[number]);
+
+  const trackedCount = oddsData?.tracked_count ?? (intel?.tracked_odds?.length ?? 0);
+  const liveCount    = oddsData?.live_count ?? 0;
+
   return (
     <div className="pb-4">
       {/* Sub-header */}
@@ -1317,8 +1363,15 @@ export function ProphetikInvestorTab() {
         </div>
       </div>
 
-      <MarketImpactCommandCenter oddsData={oddsData} />
-      <EventImpactLedger oddsData={oddsData} intel={intel} />
+      <MarketImpactCommandCenter
+        oddsRows={oddsRows}
+        oddsSource={oddsSource}
+        oddsStale={oddsStale}
+        trackedCount={trackedCount}
+        liveCount={liveCount}
+        cacheAgeSec={oddsData?.cache_age_seconds}
+      />
+      <EventImpactLedger oddsRows={oddsRows} oddsSource={oddsSource} intel={intel} />
       <SignalBreakdown overview={overview} />
     </div>
   );

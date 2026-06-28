@@ -1,0 +1,147 @@
+Audit first. No edits until the audit is complete.
+
+Current Prophetik Investor problem:
+
+1. Market Impact Command Center is stuck on:
+   “Prediction odds warming… 26 families tracked · cache initializing”
+   even though the rest of the page has usable prediction odds / Event Ledger data.
+2. Market Impact Command Center and Event Impact Ledger are redundant. They show mostly the same rows/odds.
+
+Goal:
+Make the Command Center robust and non-duplicative.
+
+Do not edit Gambler mode.
+Do not remove signal.
+Do not hardcode frontend ticker mappings.
+
+Audit:
+
+1. Find the Prophetik Investor component.
+2. Find all data fetches used by:
+
+   * Market Impact Command Center
+   * Event Impact Ledger
+   * Signal Breakdown
+3. Inspect current responses from:
+
+   * /api/predict/odds/live
+   * /api/predict/investor/intelligence
+   * /api/predict/investor/overview
+4. Identify which endpoint currently has usable odds when the Command Center says warming.
+5. Report the exact status/live_count/odds.length/tracked_odds.length before editing.
+
+Bug fix — robust data fallback:
+Create one normalized frontend source for prediction odds rows:
+
+const oddsRows =
+oddsLive?.odds?.length
+? oddsLive.odds
+: intelligence?.tracked_odds?.length
+? intelligence.tracked_odds
+: [];
+
+Rules:
+
+1. Market Impact Command Center must render if oddsRows.length > 0.
+2. Event Impact Ledger must render if oddsRows.length > 0.
+3. The full “Prediction odds warming…” spinner can only render if oddsRows.length === 0.
+4. Do not rely only on oddsLive.status.
+5. If using intelligence.tracked_odds fallback, show a small badge:
+   “Intelligence cache · refreshing odds”
+6. If using oddsLive with status stale_db/lkg/stale, show:
+   “Last known odds · refreshing”
+7. If oddsLive is warming but intelligence.tracked_odds has data, do NOT show the big warming spinner.
+
+Command Center redesign:
+The Command Center should NOT duplicate the Event Ledger table.
+
+It should be an executive summary panel.
+
+Use oddsRows to compute compact summary cards:
+
+A. Rates / Fed
+Use fed_rate_decision, fed_cuts_2026, fed_hikes_2026.
+Show:
+
+* top relevant Fed odds
+* market_read
+* biggest 24h/7d move among Fed rows
+
+B. Growth / Recession / Economy
+Use recession_probability, jobs_unemployment, cpi_inflation if present.
+Show:
+
+* recession odds
+* jobs/unemployment odds
+* market_read
+
+C. Geopolitical Risk
+Use hormuz_iran, russia_ukraine, china_taiwan, israel_gaza.
+Show:
+
+* top geopolitical odds
+* biggest move
+* market_read
+
+D. Tech / Mega-cap
+Use NVDA, TSLA, AAPL, MSFT, GOOGL, AMD families.
+Show:
+
+* top 2 mega-cap/tech odds by priority or movement
+
+E. Commodities / Liquidity
+Use oil, gold, bitcoin.
+Show:
+
+* top commodity/liquidity odds and market_read
+
+F. Top Movers
+Show:
+
+* biggest 24h mover
+* biggest 7d mover
+
+Command Center should show 4–6 compact cards/tiles, not a long list of all odds rows.
+
+Each card should include:
+
+* label
+* odds %
+* short raw question/context
+* 24h delta
+* 7d delta
+* market_read
+* one-line exposure summary if available
+
+Event Impact Ledger:
+This remains the full table of all oddsRows.
+
+It should show:
+
+* Event / Contract
+* Category
+* Odds
+* 24h Δ
+* 7d Δ
+* Market Read
+* Exposure
+* Quality/status
+
+Ledger should use backend market_read and exposure, just like the recent fix.
+Never show “Macro Only.”
+Never leave Exposure blank if backend exposure exists.
+
+Signal Breakdown:
+Keep as-is unless required for layout. It is supporting evidence, not the main command center.
+
+Validation:
+
+1. If /api/predict/odds/live returns warming/empty but /api/predict/investor/intelligence.tracked_odds has data, Command Center still renders immediately.
+2. Full warming spinner only appears when both oddsLive.odds and intelligence.tracked_odds are empty.
+3. Command Center is not a duplicate of the Event Ledger.
+4. Command Center shows summary cards for Rates, Growth/Recession, Geopolitics, Tech/Mega-cap, Commodities/Liquidity, and Top Movers where data exists.
+5. Event Ledger still shows the full odds table.
+6. No row says “Macro Only.”
+7. Exposure still renders from backend.
+8. Gambler mode unchanged.
+9. Provide browser validation notes with the actual oddsLive status and intelligence tracked_odds count.
