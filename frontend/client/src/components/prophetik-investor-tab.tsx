@@ -119,17 +119,38 @@ interface IntelTickerImpacts {
   conditional_watchlist?: string[];
   bullish_fallback?: string[]; bearish_fallback?: string[];
 }
+// Backend-provided exposure object (from tracked_odds and equity_signals)
+interface BackendExposure {
+  bullish_watchlist?: string[];
+  bearish_watchlist?: string[];
+  conditional_watchlist?: string[];
+  bullish_fallback?: string[];
+  bearish_fallback?: string[];
+  conditional_fallback?: string[];
+  bullish_themes?: string[];
+  bearish_themes?: string[];
+  conditional_themes?: string[];
+  no_direct_exposure?: boolean;
+  exposure_source?: string;
+}
+interface TrackedOddsItem extends LiveOddsItem {
+  market_read?: string;
+  exposure?: BackendExposure;
+  dashboard_priority?: number;
+}
 interface IntelEquitySignal {
   event_family_key?: string; title: string; primary_category?: string;
   yes_probability?: number; delta_24h_pp?: number; delta_7d_pp?: number;
   direction?: string; signal_quality?: string; why_it_matters?: string;
   driver_markets?: IntelDriverMarket[]; theme_impacts?: IntelThemeImpact[];
-  ticker_impacts?: IntelTickerImpacts; conflicts?: string[];
+  ticker_impacts?: IntelTickerImpacts;
+  market_read?: string; exposure?: BackendExposure;
+  conflicts?: string[];
   market_count?: number; total_volume_24h?: number;
 }
 interface IntelligenceResponse {
   updated_at?: string; equity_signals?: IntelEquitySignal[];
-  tracked_odds?: LiveOddsItem[];
+  tracked_odds?: TrackedOddsItem[];
 }
 
 // ─── Unified ledger row ───────────────────────────────────────────────────────
@@ -152,9 +173,7 @@ interface LedgerRow {
   driver_markets?: (IntelDriverMarket | OddsDriverMarket)[];
   conflicts?: string[];
   marketRead: string;
-  exposureBull: string[];
-  exposureBear: string[];
-  exposureConditional: string[];
+  exposure?: BackendExposure;
   priority?: number;
 }
 
@@ -324,16 +343,6 @@ function marketReadLabel(direction?: string, category?: string): string {
   if (dir === "rising")  return "Risk-on signal";
   if (dir === "falling") return "Risk-off signal";
   return "Macro";
-}
-
-// Build exposure lists from ticker_impacts
-function buildExposure(ti?: IntelTickerImpacts) {
-  if (!ti) return { bull: [], bear: [], cond: [] };
-  return {
-    bull: [...(ti.bullish_watchlist ?? []), ...(ti.bullish_fallback ?? [])].slice(0, 6),
-    bear: [...(ti.bearish_watchlist ?? []), ...(ti.bearish_fallback ?? [])].slice(0, 6),
-    cond: (ti.conditional_watchlist ?? []).slice(0, 4),
-  };
 }
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -511,31 +520,69 @@ async function fetchOddsHistory(familyKey: string, days = 7): Promise<OddsHistor
   return res.json();
 }
 
-function ExposureCell({ bull, bear, cond }: { bull: string[]; bear: string[]; cond: string[] }) {
-  if (!bull.length && !bear.length && !cond.length) {
-    return <span className="text-[8px] text-white/20 italic">Macro only</span>;
+function ExposureCell({ exposure }: { exposure?: BackendExposure }) {
+  if (!exposure) return <span className="text-[8px] text-white/15">—</span>;
+  if (exposure.no_direct_exposure) return <span className="text-[8px] text-white/20 italic">No direct exposure</span>;
+
+  const bullW = exposure.bullish_watchlist ?? [];
+  const bearW = exposure.bearish_watchlist ?? [];
+  const bullF = exposure.bullish_fallback ?? [];
+  const bearF = exposure.bearish_fallback ?? [];
+  const bullT = exposure.bullish_themes ?? [];
+  const bearT = exposure.bearish_themes ?? [];
+
+  const hasWatchlist = bullW.length > 0 || bearW.length > 0;
+  const hasFallback  = bullF.length > 0 || bearF.length > 0;
+  const hasThemes    = bullT.length > 0 || bearT.length > 0;
+
+  if (!hasWatchlist && !hasFallback && !hasThemes) return <span className="text-[8px] text-white/15">—</span>;
+
+  // Level 1: watchlist tickers (solid chips, visually primary)
+  if (hasWatchlist) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        {bullW.length > 0 && (
+          <div className="flex flex-wrap gap-0.5">
+            {bullW.slice(0, 3).map(t => <span key={t} className="text-[7px] font-mono font-bold px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>)}
+            {bullW.length > 3 && <span className="text-[7px] text-white/20">+{bullW.length - 3}</span>}
+          </div>
+        )}
+        {bearW.length > 0 && (
+          <div className="flex flex-wrap gap-0.5">
+            {bearW.slice(0, 3).map(t => <span key={t} className="text-[7px] font-mono font-bold px-1 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>)}
+            {bearW.length > 3 && <span className="text-[7px] text-white/20">+{bearW.length - 3}</span>}
+          </div>
+        )}
+      </div>
+    );
   }
+
+  // Level 2: fallback tickers (theme universe, muted style)
+  if (hasFallback) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[6px] text-white/18 uppercase tracking-wider leading-none">Theme Universe</span>
+        {bullF.length > 0 && (
+          <div className="flex flex-wrap gap-0.5">
+            {bullF.slice(0, 3).map(t => <span key={t} className="text-[7px] font-mono px-1 py-0.5 rounded bg-emerald-500/[0.06] border border-emerald-500/15 text-emerald-400/65">{t}</span>)}
+            {bullF.length > 3 && <span className="text-[7px] text-white/18">+{bullF.length - 3}</span>}
+          </div>
+        )}
+        {bearF.length > 0 && (
+          <div className="flex flex-wrap gap-0.5">
+            {bearF.slice(0, 3).map(t => <span key={t} className="text-[7px] font-mono px-1 py-0.5 rounded bg-red-500/[0.06] border border-red-500/15 text-red-400/65">{t}</span>)}
+            {bearF.length > 3 && <span className="text-[7px] text-white/18">+{bearF.length - 3}</span>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Level 3: theme chips only
   return (
     <div className="flex flex-col gap-0.5">
-      {bull.length > 0 && (
-        <div className="flex flex-wrap gap-0.5">
-          {bull.slice(0, 3).map(t => (
-            <span key={t} className="text-[7px] font-mono font-bold px-1 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>
-          ))}
-          {bull.length > 3 && <span className="text-[7px] text-white/20">+{bull.length - 3}</span>}
-        </div>
-      )}
-      {bear.length > 0 && (
-        <div className="flex flex-wrap gap-0.5">
-          {bear.slice(0, 3).map(t => (
-            <span key={t} className="text-[7px] font-mono font-bold px-1 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>
-          ))}
-          {bear.length > 3 && <span className="text-[7px] text-white/20">+{bear.length - 3}</span>}
-        </div>
-      )}
-      {bull.length === 0 && bear.length === 0 && cond.length > 0 && (
-        <span className="text-[8px] text-white/20 italic">Conditional</span>
-      )}
+      {bullT.slice(0, 2).map(t => <span key={t} className="text-[7px] text-emerald-400/55 leading-tight truncate max-w-[120px]">{t}</span>)}
+      {bearT.slice(0, 2).map(t => <span key={t} className="text-[7px] text-red-400/55 leading-tight truncate max-w-[120px]">{t}</span>)}
     </div>
   );
 }
@@ -657,36 +704,62 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
           </div>
 
           {/* Exposure */}
-          {(row.exposureBull.length > 0 || row.exposureBear.length > 0 || row.exposureConditional.length > 0) && (
+          {row.exposure && !row.exposure.no_direct_exposure && (
             <div>
-              <p className="text-[8px] font-bold uppercase tracking-wider text-white/20 mb-1.5">Watchlist Exposure</p>
+              <p className="text-[8px] font-bold uppercase tracking-wider text-white/20 mb-1.5">
+                Exposure
+                {row.exposure.exposure_source && <span className="text-white/15 ml-1 font-normal normal-case">{row.exposure.exposure_source}</span>}
+              </p>
               <div className="space-y-1.5">
-                {row.exposureBull.length > 0 && (
-                  <div>
-                    <p className="text-[7px] text-emerald-400/50 font-bold uppercase mb-1">Bullish</p>
-                    <div className="flex flex-wrap gap-1">
-                      {row.exposureBull.map(t => <span key={t} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>)}
-                    </div>
-                  </div>
+                {/* Watchlist tickers — primary */}
+                {((row.exposure.bullish_watchlist?.length ?? 0) > 0 || (row.exposure.bearish_watchlist?.length ?? 0) > 0) && (
+                  <>
+                    {(row.exposure.bullish_watchlist?.length ?? 0) > 0 && (
+                      <div>
+                        <p className="text-[7px] text-emerald-400/50 font-bold uppercase mb-1">Bullish</p>
+                        <div className="flex flex-wrap gap-1">
+                          {row.exposure.bullish_watchlist!.map(t => <span key={t} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    {(row.exposure.bearish_watchlist?.length ?? 0) > 0 && (
+                      <div>
+                        <p className="text-[7px] text-red-400/50 font-bold uppercase mb-1">Bearish</p>
+                        <div className="flex flex-wrap gap-1">
+                          {row.exposure.bearish_watchlist!.map(t => <span key={t} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>)}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
-                {row.exposureBear.length > 0 && (
-                  <div>
-                    <p className="text-[7px] text-red-400/50 font-bold uppercase mb-1">Bearish</p>
-                    <div className="flex flex-wrap gap-1">
-                      {row.exposureBear.map(t => <span key={t} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400">{t}</span>)}
-                    </div>
-                  </div>
+                {/* Fallback tickers — theme universe */}
+                {((row.exposure.bullish_fallback?.length ?? 0) > 0 || (row.exposure.bearish_fallback?.length ?? 0) > 0) && (
+                  <>
+                    <p className="text-[7px] text-white/20 font-bold uppercase">Theme Universe</p>
+                    {(row.exposure.bullish_fallback?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {row.exposure.bullish_fallback!.map(t => <span key={t} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/[0.07] border border-emerald-500/15 text-emerald-400/70">{t}</span>)}
+                      </div>
+                    )}
+                    {(row.exposure.bearish_fallback?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {row.exposure.bearish_fallback!.map(t => <span key={t} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-500/[0.07] border border-red-500/15 text-red-400/70">{t}</span>)}
+                      </div>
+                    )}
+                  </>
                 )}
-                {row.exposureConditional.length > 0 && (
-                  <div>
-                    <p className="text-[7px] text-amber-400/50 font-bold uppercase mb-1">Conditional</p>
-                    <div className="flex flex-wrap gap-1">
-                      {row.exposureConditional.map(t => <span key={t} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400">{t}</span>)}
-                    </div>
+                {/* Theme labels */}
+                {((row.exposure.bullish_themes?.length ?? 0) > 0 || (row.exposure.bearish_themes?.length ?? 0) > 0) && (
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {row.exposure.bullish_themes?.map(t => <span key={t} className="text-[8px] text-emerald-400/55 border border-emerald-500/15 px-1.5 py-0.5 rounded-full">{t}</span>)}
+                    {row.exposure.bearish_themes?.map(t => <span key={t} className="text-[8px] text-red-400/55 border border-red-500/15 px-1.5 py-0.5 rounded-full">{t}</span>)}
                   </div>
                 )}
               </div>
             </div>
+          )}
+          {row.exposure?.no_direct_exposure && (
+            <p className="text-[9px] text-white/20 italic">No direct exposure mapped for this event.</p>
           )}
 
           {/* Driver markets */}
@@ -753,29 +826,35 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
 
 function EventImpactLedger({
   oddsData,
-  intelSignals,
+  intel,
 }: {
   oddsData: LiveOddsResponse | null | undefined;
-  intelSignals: IntelEquitySignal[];
+  intel: IntelligenceResponse | null | undefined;
 }) {
   const [selected, setSelected] = useState<LedgerRow | null>(null);
 
   const rows: LedgerRow[] = (() => {
-    const intelMap = new Map<string, IntelEquitySignal>();
-    for (const s of intelSignals) {
+    // Build lookup maps
+    // tracked_odds from intelligence: all family_keys with market_read + exposure
+    const trackedMap = new Map<string, TrackedOddsItem>();
+    for (const t of intel?.tracked_odds ?? []) trackedMap.set(t.family_key, t);
+
+    // equity_signals from intelligence: richer qualitative data
+    const intelSigMap = new Map<string, IntelEquitySignal>();
+    for (const s of intel?.equity_signals ?? []) {
       const key = s.event_family_key ?? s.title;
-      intelMap.set(key, s);
+      intelSigMap.set(key, s);
     }
 
     const out: LedgerRow[] = [];
     const seen = new Set<string>();
 
-    // All odds items, enriched with intel where available
+    // All live odds items — enrich with tracked_odds (market_read + exposure) and intel signals
     for (const o of oddsData?.odds ?? []) {
-      const key   = o.family_key;
-      const intel = intelMap.get(key);
+      const key     = o.family_key;
+      const tracked = trackedMap.get(key);
+      const sig     = intelSigMap.get(key);
       seen.add(key);
-      const { bull, bear, cond } = buildExposure(intel?.ticker_impacts);
       out.push({
         source: "odds",
         family_key: key,
@@ -790,26 +869,26 @@ function EventImpactLedger({
         delta_7d_pp: o.delta_7d_pp,
         volume_24h: o.volume_24h,
         liquidity: o.liquidity,
-        direction: intel?.direction,
-        signal_quality: intel?.signal_quality,
-        ticker_impacts: intel?.ticker_impacts,
-        theme_impacts: intel?.theme_impacts,
+        direction: sig?.direction,
+        signal_quality: sig?.signal_quality,
+        ticker_impacts: sig?.ticker_impacts,
+        theme_impacts: sig?.theme_impacts,
         driver_markets: o.driver_markets,
-        conflicts: intel?.conflicts,
-        marketRead: marketReadLabel(intel?.direction, o.category),
-        exposureBull: bull,
-        exposureBear: bear,
-        exposureConditional: cond,
-        priority: o.priority,
+        conflicts: sig?.conflicts,
+        // Use backend market_read from tracked_odds (preferred) or intel signal, then fallback derivation
+        marketRead: tracked?.market_read ?? sig?.market_read ?? marketReadLabel(sig?.direction, o.category),
+        // Use backend exposure from tracked_odds (preferred) or intel signal
+        exposure: tracked?.exposure ?? sig?.exposure,
+        priority: o.priority ?? (tracked?.dashboard_priority ?? 99),
       });
     }
 
-    // Intel-only signals not in live odds
-    for (const s of intelSignals) {
+    // Intel-only equity_signals not already covered by live odds
+    for (const s of intel?.equity_signals ?? []) {
       const key = s.event_family_key ?? s.title;
       if (seen.has(key)) continue;
       seen.add(key);
-      const { bull, bear, cond } = buildExposure(s.ticker_impacts);
+      const tracked = trackedMap.get(key);
       out.push({
         source: "intel",
         family_key: key,
@@ -825,10 +904,8 @@ function EventImpactLedger({
         theme_impacts: s.theme_impacts,
         driver_markets: s.driver_markets,
         conflicts: s.conflicts,
-        marketRead: marketReadLabel(s.direction, s.primary_category),
-        exposureBull: bull,
-        exposureBear: bear,
-        exposureConditional: cond,
+        marketRead: tracked?.market_read ?? s.market_read ?? marketReadLabel(s.direction, s.primary_category),
+        exposure: tracked?.exposure ?? s.exposure,
       });
     }
 
@@ -897,7 +974,7 @@ function EventImpactLedger({
                         <MarketReadCell read={row.marketRead} />
                       </td>
                       <td className="py-1.5 pr-3">
-                        <ExposureCell bull={row.exposureBull} bear={row.exposureBear} cond={row.exposureConditional} />
+                        <ExposureCell exposure={row.exposure} />
                       </td>
                       <td className="py-1.5">
                         <QualityBadge q={row.signal_quality} />
@@ -1193,8 +1270,6 @@ export function ProphetikInvestorTab() {
     refetchInterval: 5 * 60_000,
   });
 
-  const intelSignals: IntelEquitySignal[] = intel?.equity_signals ?? [];
-
   return (
     <div className="pb-4">
       {/* Sub-header */}
@@ -1220,7 +1295,7 @@ export function ProphetikInvestorTab() {
       </div>
 
       <MarketImpactCommandCenter oddsData={oddsData} />
-      <EventImpactLedger oddsData={oddsData} intelSignals={intelSignals} />
+      <EventImpactLedger oddsData={oddsData} intel={intel} />
       <SignalBreakdown overview={overview} />
     </div>
   );

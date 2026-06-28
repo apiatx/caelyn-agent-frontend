@@ -1,0 +1,68 @@
+Audit first. No edits until the audit is complete.
+
+You are in the FRONTEND repo. Do not work in backend attached_assets. Do not create a standalone unused component unless you also integrate it into the live Prophetik / Prediction Markets page.
+
+Current backend is already updated:
+
+* /api/predict/odds/live odds[] rows now include market_read and exposure
+* /api/predict/investor/intelligence tracked_odds[] and equity_signals[] include market_read and exposure
+* exposure_rows_without_tickers = 0
+* hardcoded_sector_stocks_used = false
+
+Goal:
+Fix the live Prophetik Investor → Event Impact Ledger so the Exposure column never says “Macro Only” and never renders blank when backend exposure exists.
+
+Audit:
+
+1. Locate the live Prophetik / Prediction Markets page source.
+2. Locate the Investor tab component.
+3. Locate the Event Impact Ledger rendering logic.
+4. Locate where “Macro Only” is rendered.
+5. Locate current API calls to:
+
+   * /api/predict/odds/live
+   * /api/predict/investor/intelligence
+6. Inspect actual payload shape in browser/network or fetch call and confirm exposure fields exist.
+
+Implementation:
+
+1. Remove “Macro Only” display logic from Event Impact Ledger.
+2. Use backend market_read in the Market Read column.
+3. Render backend exposure in the Exposure column.
+
+Exposure rendering priority:
+
+* bullish_watchlist
+* bearish_watchlist
+* conditional_watchlist
+* bullish_fallback
+* bearish_fallback
+* conditional_fallback
+* bullish_themes
+* bearish_themes
+* conditional_themes
+
+Display rules:
+
+* Watchlist tickers should be visually primary.
+* Fallback tickers should be labeled “Theme Universe.”
+* Theme-only exposure should render as theme chips.
+* Only show “No direct exposure” if backend explicitly returns exposure.no_direct_exposure === true.
+* Never show “Macro Only.”
+* Never leave Exposure blank if exposure exists.
+* Do not hardcode ticker mappings in frontend.
+* Do not create frontend-only sector/theme exposure logic.
+
+Validation:
+
+1. Fed decision row shows exposure.
+2. Fed cuts/hikes rows show exposure.
+3. Recession row shows exposure.
+4. NVDA/TSLA/AAPL/MSFT/GOOGL rows show exposure.
+5. Hormuz/Iran row shows exposure.
+6. Oil/gold/bitcoin rows show exposure.
+7. No row says “Macro Only.”
+8. No row has a blank Exposure column when backend exposure exists.
+9. No frontend hardcoded ticker map was added.
+10. Gambler mode unchanged.
+11. Provide changed files and browser screenshot/validation notes from the live page.
