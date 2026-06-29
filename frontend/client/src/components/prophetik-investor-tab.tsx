@@ -98,6 +98,7 @@ interface LiveOddsResponse {
   updated_at?: string; cache_age_seconds?: number;
   live_count?: number; tracked_count?: number;
   status?: string; odds?: LiveOddsItem[];
+  unusual_prediction_markets?: any[];
 }
 interface OddsHistoryPoint { timestamp?: string; yes_probability?: number; }
 interface OddsHistoryResponse {
@@ -590,13 +591,6 @@ function MarketImpactCommandCenter({
       ),
   }));
 
-  // Top Movers: biggest absolute 24h and 7d movers
-  const byAbs24 = [...oddsRows].sort((a, b) => Math.abs(b.delta_24h_pp ?? 0) - Math.abs(a.delta_24h_pp ?? 0));
-  const byAbs7d = [...oddsRows].sort((a, b) => Math.abs(b.delta_7d_pp ?? 0) - Math.abs(a.delta_7d_pp ?? 0));
-  const top24   = byAbs24[0];
-  const top7d   = byAbs7d.find(r => r.family_key !== top24?.family_key) ?? byAbs7d[0];
-  const hasMovers = (top24?.delta_24h_pp ?? 0) !== 0 || (top7d?.delta_7d_pp ?? 0) !== 0;
-
   const activeGroups = grouped.filter(g => g.rows.length > 0);
 
   return (
@@ -662,44 +656,6 @@ function MarketImpactCommandCenter({
           {activeGroups.map(g => (
             <CmdCard key={g.id} icon={g.icon} label={g.label} rows={g.rows} />
           ))}
-
-          {/* Top Movers card */}
-          {hasMovers && (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3 flex flex-col gap-2.5">
-              <div className="flex items-center gap-1.5">
-                <Activity className="w-3 h-3 text-blue-400/45" />
-                <span className="text-[8px] font-bold uppercase tracking-wider text-white/25">Top Movers</span>
-              </div>
-              {([
-                { row: top24, badge: "24h", val: top24?.delta_24h_pp },
-                { row: top7d?.family_key !== top24?.family_key ? top7d : undefined, badge: "7d", val: top7d?.family_key !== top24?.family_key ? top7d?.delta_7d_pp : undefined },
-              ] as { row?: LiveOddsItem | TrackedOddsItem; badge: string; val?: number | null }[])
-                .filter(x => x.row && x.val != null && x.val !== 0)
-                .map(({ row, badge, val }) => {
-                  const tm = row as TrackedOddsItem;
-                  const tmCtx = contractContextLine(tm);
-                  return (
-                    <div key={row!.family_key + badge} className="flex items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[9px] font-semibold text-white/65 leading-tight line-clamp-3">{tmCtx ?? tm.display_title ?? row!.label}</p>
-                        {tmCtx && <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{tm.display_title ?? row!.label}</p>}
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <ProviderBadge provider={tm.provider} />
-                          <span className="text-[7px] text-white/20">Biggest {badge} move</span>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className={`text-[12px] font-bold tabular-nums ${ppColor(val)}`}>{fmtPP(val)}</span>
-                        {tm.priced_probability != null && (
-                          <p className="text-[7px] text-white/28 font-mono">{fmtPct(tm.priced_probability * 100)}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              }
-            </div>
-          )}
 
           {/* Fallback when no groups matched */}
           {activeGroups.length === 0 && (
@@ -1078,7 +1034,7 @@ function UnusualPMVolumeSection({ rows }: { rows: any[] }) {
       </div>
       <div className="px-4 pb-4">
         {rows.length === 0 ? (
-          <p className="text-[9px] text-white/20 italic">Volume baseline warming — needs a few snapshots.</p>
+          <p className="text-[8px] text-white/15 italic">Baseline warming · no unusual volume detected yet.</p>
         ) : (
           <div className="divide-y divide-white/[0.04]">
             {rows.map((u: any, i: number) => {
@@ -1126,6 +1082,8 @@ function EventImpactLedger({
   intel: IntelligenceResponse | null | undefined;
 }) {
   const [selected, setSelected] = useState<LedgerRow | null>(null);
+  const [sortCol, setSortCol] = useState<string>("");
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
 
   const rows: LedgerRow[] = (() => {
     // equity_signals provide richer qualitative fields (direction, signal_quality, etc.)
@@ -1228,29 +1186,62 @@ function EventImpactLedger({
           <Empty text="No events available — odds spine initializing" />
         )}
 
-        {rows.length > 0 && (
-          <div className="overflow-x-auto" style={{ maxHeight: "520px", overflowY: "auto" }}>
-            <table className="w-full" style={{ borderCollapse: "collapse" }}>
-              <thead className="sticky top-0 z-10 bg-[#0c0e14]">
-                <tr className="border-b border-white/[0.06]">
-                  {[
-                    { h: "Event / Contract", w: "min-w-[160px]" },
-                    { h: "Category", w: "min-w-[80px]" },
-                    { h: "Odds", w: "w-20" },
-                    { h: "24h Δ", w: "w-14" },
-                    { h: "7d Δ", w: "w-14" },
-                    { h: "Market Read", w: "min-w-[110px]" },
-                    { h: "Exposure", w: "min-w-[100px]" },
-                    { h: "Quality", w: "w-14" },
-                  ].map(({ h, w }) => (
-                    <th key={h} className={`text-left text-[8px] font-bold uppercase tracking-wider text-white/20 pb-2 pr-3 last:pr-0 ${w}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(row => {
-                  const side = preferredSideLabel(row.preferred_outcome);
-                  return (
+        {rows.length > 0 && (() => {
+          const hasProvider = rows.some(r => r.provider);
+
+          const sortedRows = sortCol === "" ? rows : [...rows].sort((a, b) => {
+            switch (sortCol) {
+              case "event": return sortDir * ((contractContextLine(a) ?? a.display_title ?? a.label).localeCompare(contractContextLine(b) ?? b.display_title ?? b.label));
+              case "category": return sortDir * ((a.category ?? "").localeCompare(b.category ?? ""));
+              case "odds": {
+                const pa = a.priced_probability ?? (a.yes_pct != null ? a.yes_pct / 100 : null);
+                const pb = b.priced_probability ?? (b.yes_pct != null ? b.yes_pct / 100 : null);
+                if (pa == null && pb == null) return 0; if (pa == null) return 1; if (pb == null) return -1;
+                return sortDir * (pa - pb);
+              }
+              case "d24": {
+                const da = a.delta_24h_pp, db = b.delta_24h_pp;
+                if (da == null && db == null) return 0; if (da == null) return 1; if (db == null) return -1;
+                return sortDir * (da - db);
+              }
+              case "d7": {
+                const da = a.delta_7d_pp, db = b.delta_7d_pp;
+                if (da == null && db == null) return 0; if (da == null) return 1; if (db == null) return -1;
+                return sortDir * (da - db);
+              }
+              case "read": return sortDir * a.marketRead.localeCompare(b.marketRead);
+              case "provider": return sortDir * ((a.provider ?? "").localeCompare(b.provider ?? ""));
+              default: return 0;
+            }
+          });
+
+          const thCls = (col: string, w: string) => {
+            const active = sortCol === col;
+            return `text-left text-[8px] font-bold uppercase tracking-wider pb-2 pr-3 cursor-pointer select-none ${w} ${active ? "text-white/50" : "text-white/20 hover:text-white/38"} transition-colors`;
+          };
+          const thClick = (col: string) => {
+            if (sortCol === col) setSortDir(d => (d === 1 ? -1 : 1));
+            else { setSortCol(col); setSortDir(1); }
+          };
+          const arrow = (col: string) => sortCol === col ? (sortDir === 1 ? " ▲" : " ▼") : "";
+
+          return (
+            <div className="overflow-x-auto" style={{ maxHeight: "520px", overflowY: "auto" }}>
+              <table className="w-full" style={{ borderCollapse: "collapse" }}>
+                <thead className="sticky top-0 z-10 bg-[#0c0e14]">
+                  <tr className="border-b border-white/[0.06]">
+                    <th className={thCls("event",    "min-w-[160px]")} onClick={() => thClick("event")}>Event / Contract{arrow("event")}</th>
+                    <th className={thCls("category", "min-w-[80px]")}  onClick={() => thClick("category")}>Category{arrow("category")}</th>
+                    <th className={thCls("odds",     "w-20")}          onClick={() => thClick("odds")}>Odds{arrow("odds")}</th>
+                    <th className={thCls("d24",      "w-14")}          onClick={() => thClick("d24")}>24h Δ{arrow("d24")}</th>
+                    <th className={thCls("d7",       "w-14")}          onClick={() => thClick("d7")}>7d Δ{arrow("d7")}</th>
+                    <th className={thCls("read",     "min-w-[110px]")} onClick={() => thClick("read")}>Market Read{arrow("read")}</th>
+                    <th className="text-left text-[8px] font-bold uppercase tracking-wider text-white/20 pb-2 pr-3 min-w-[100px]">Exposure</th>
+                    {hasProvider && <th className={thCls("provider", "w-16")} onClick={() => thClick("provider")}>Provider{arrow("provider")}</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRows.map(row => (
                     <tr
                       key={row.family_key}
                       className="border-b border-white/[0.025] hover:bg-white/[0.025] transition-colors cursor-pointer"
@@ -1261,8 +1252,9 @@ function EventImpactLedger({
                         {contractContextLine(row) && (
                           <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{row.display_title ?? row.label}</p>
                         )}
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <ProviderBadge provider={row.provider} />
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          {row.signal_quality && <QualityBadge q={row.signal_quality} />}
+                          {!hasProvider && <ProviderBadge provider={row.provider} />}
                           {row.end_date && (
                             <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
                           )}
@@ -1281,22 +1273,16 @@ function EventImpactLedger({
                       </td>
                       <td className={`py-1.5 pr-3 font-mono text-[9px] ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)}</td>
                       <td className={`py-1.5 pr-3 font-mono text-[9px] ${ppColor(row.delta_7d_pp)}`}>{fmtPP(row.delta_7d_pp)}</td>
-                      <td className="py-1.5 pr-3">
-                        <MarketReadCell read={row.marketRead} />
-                      </td>
-                      <td className="py-1.5 pr-3">
-                        <ExposureCell exposure={row.exposure} />
-                      </td>
-                      <td className="py-1.5">
-                        <QualityBadge q={row.signal_quality} />
-                      </td>
+                      <td className="py-1.5 pr-3"><MarketReadCell read={row.marketRead} /></td>
+                      <td className="py-1.5 pr-3"><ExposureCell exposure={row.exposure} /></td>
+                      {hasProvider && <td className="py-1.5"><ProviderBadge provider={row.provider} /></td>}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </GlassCard>
 
       <DetailDrawer row={selected} onClose={() => setSelected(null)} />
@@ -1600,6 +1586,15 @@ export function ProphetikInvestorTab() {
     ? rawOddsRows.filter(r => r.family_key !== "spx_dec31_milestone")
     : rawOddsRows;
 
+  // Keep last non-empty snapshot so the page never flashes to 0 during a refresh cycle
+  const [lastGoodRows, setLastGoodRows] = useState<(LiveOddsItem | TrackedOddsItem)[]>([]);
+  useEffect(() => {
+    if (oddsRows.length > 0) setLastGoodRows(oddsRows);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oddsRows.length]);
+  const displayRows   = oddsRows.length > 0 ? oddsRows : lastGoodRows;
+  const isUsingStale  = oddsRows.length === 0 && lastGoodRows.length > 0;
+
   const unusualRows: any[] = oddsData?.unusual_prediction_markets ?? [];
 
   const oddsSource: OddsSourceType =
@@ -1651,14 +1646,14 @@ export function ProphetikInvestorTab() {
       </div>
 
       <MarketImpactCommandCenter
-        oddsRows={oddsRows}
+        oddsRows={displayRows}
         oddsSource={oddsSource}
-        oddsStale={oddsStale}
+        oddsStale={oddsStale || isUsingStale}
         trackedCount={trackedCount}
         liveCount={liveCount}
         cacheAgeSec={oddsData?.cache_age_seconds}
       />
-      <EventImpactLedger oddsRows={oddsRows} oddsSource={oddsSource} intel={intel} />
+      <EventImpactLedger oddsRows={displayRows} oddsSource={oddsSource} intel={intel} />
       <UnusualPMVolumeSection rows={unusualRows} />
       <SignalBreakdown overview={overview} />
     </div>

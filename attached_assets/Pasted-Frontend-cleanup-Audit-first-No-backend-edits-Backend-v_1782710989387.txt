@@ -1,0 +1,132 @@
+Frontend cleanup. Audit first. No backend edits.
+
+Backend validation is now complete:
+
+* 30 live prediction market rows
+* Kalshi + Polymarket provider fields present
+* rotated-contract fake deltas suppressed
+* null deltas are intentional when a contract is new or lacks same-contract 24h/7d history
+* quality is now structured: quality_label / quality_reason
+* market_read and exposure are backend-driven
+
+Tasks:
+
+1. Keep last non-empty data during refresh
+
+Current issue:
+The page can flash to:
+“0 tracked / Prediction odds warming”
+during refresh even though a previous valid payload exists.
+
+Fix:
+
+* Store lastGoodOddsRows in component state.
+* When current oddsRows.length > 0, update lastGoodOddsRows.
+* When current oddsRows.length === 0 but lastGoodOddsRows.length > 0, render lastGoodOddsRows and show a subtle “refreshing” indicator.
+* Only show full warming state if both current rows and lastGoodOddsRows are empty.
+
+Do not hide the page during refresh.
+
+2. Remove Top Movers panel
+
+Remove the Top Movers card from Market Impact Command Center.
+
+Reason:
+Event Impact Ledger already contains 24h/7d moves, and Top Movers is redundant/noisy.
+
+3. Make Event Impact Ledger sortable
+
+Every visible column should be sortable:
+
+* Event / Contract
+* Category
+* Odds
+* 24h Δ
+* 7d Δ
+* Market Read
+* Exposure
+* Provider, if visible
+
+Sorting behavior:
+
+* Click header toggles asc/desc.
+* Numeric columns sort numerically.
+* Text columns sort alphabetically.
+* Null deltas sort last.
+* Default sort can remain backend order until the user clicks a column.
+
+4. Remove full Quality column
+
+Do not use a full-width Quality column.
+
+If backend sends quality_label / quality_reason:
+
+* show quality_label as a tiny badge in the Event / Contract cell, or
+* show quality details only in the detail drawer.
+
+Quality should not consume a whole table column.
+
+5. Render null deltas cleanly
+
+Backend may now return:
+
+* price_change_24h: null
+* price_change_7d: null
+* delta_missing_reason: "new_contract_or_rotated_market" or similar
+
+Frontend should render null deltas as:
+—
+
+Do not show 0.0pp unless backend actually returns 0.
+
+Optional tooltip/title:
+“New contract / insufficient same-contract history”
+
+6. Kalshi rows
+
+Kalshi rows should render just like Polymarket rows:
+
+* actual market question as bold primary title
+* provider badge: Kalshi
+* odds/probability
+* priced_outcome_label
+* outcomes[] vertical list
+* volume / OI / liquidity in detail drawer
+* null deltas as —
+
+7. Unusual Prediction Market Volume
+
+Current section says:
+“Volume baseline warming — needs a few snapshots.”
+
+Keep it, but do not make it visually prominent if empty.
+
+If unusual_prediction_markets[] is empty:
+
+* show compact muted state, or collapse the section lower on the page.
+
+Do not let this card look like a broken feature.
+
+8. Keep existing good behavior
+
+* Actual market question remains primary bold text.
+* Family label remains muted/secondary only.
+* Outcome lists stay vertical.
+* Provider badge stays subtle.
+* Exposure remains backend-driven.
+* Home widget remains compact.
+* Gambler mode unchanged.
+* No sports/culture.
+
+Validation:
+
+1. Page does not flash back to 0 tracked during refresh if last good data exists.
+2. Top Movers panel is removed.
+3. Event Impact Ledger columns are sortable.
+4. Quality column is removed/demoted.
+5. Null deltas render as “—”.
+6. Kalshi rows still render.
+7. Polymarket rows still render.
+8. Detail drawer still works.
+9. No sports/culture rows appear.
+10. Gambler mode unchanged.
