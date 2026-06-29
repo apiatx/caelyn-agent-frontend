@@ -1,0 +1,140 @@
+Emergency audit + fix. Frontend only unless the audit proves backend payload is missing rows.
+
+User reports that after the latest frontend title-priority change, these markets disappeared from the Predict/Prophetik UI:
+
+* BTC Up/Down near-term date
+* SPX / S&P 500 Up/Down near-term date
+* WTI Up/Down near-term date
+* NVDA Up/Down near-term date
+* SPX price / close price by December 31 / end of 2026
+
+This latest frontend pass was supposed to ONLY change title priority to use primary_question. It must not remove, filter, dedupe, regroup, or hide any market rows.
+
+Do not edit backend.
+Do not touch Gambler mode.
+Do not change API endpoints.
+Do not remove existing sorting/lastGoodRows/provider badges.
+Do not “clean up” categories.
+Do not hide rows just because primary_question/raw_question/display_title changed.
+
+Audit first:
+
+1. Pull raw frontend-used payloads:
+
+* /api/predict/investor/intelligence
+* /api/predict/odds/live
+
+2. Print the full family_key list from raw payload:
+
+* intelligence.tracked_odds[]
+* odds.live odds[]
+
+3. Specifically check whether these family keys exist in raw payload:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* btc_daily_direction
+* wti_daily_direction
+* gold_daily_direction
+* nvda_daily_direction
+* spx_tomorrow_close_ladder
+* spx_year_end_close_ladder
+* spx_year_end_close_range
+* spx_dec31_milestone
+* spx_year_high_ladder
+* spx_month_end_high_ladder
+
+4. Print the family_key list after each frontend transformation:
+
+* oddsRows
+* lastGoodRows
+* displayRows
+* deduped rows
+* grouped/category rows used by Market Impact Command Center
+* ledgerRows used by Event Impact Ledger
+* rows shown on Home widget, if touched
+
+5. Find the exact transformation where the missing families disappear.
+
+Likely bug:
+The new contractContextLine() / primary_question logic may be accidentally used for filtering, grouping, deduping, or “valid row” checks. It should only affect displayed text.
+
+Hard rule:
+primary_question must be presentation-only. It must never determine whether a row exists.
+
+Fix requirements:
+
+1. Restore all rows from backend payload into Event Impact Ledger.
+   The Event Impact Ledger should show every valid tracked market row unless there is an explicit backend reason to suppress it.
+
+2. Restore Kalshi finance rows.
+   These must render if present in payload:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* spx_tomorrow_close_ladder
+* spx_year_end_close_ladder or spx_year_end_close_range
+* spx_dec31_milestone if it is the selected/backward-compatible key
+* spx_year_high_ladder
+* spx_month_end_high_ladder
+* spx_vs_gold_annual_return
+
+3. Restore Polymarket daily/near-term rows if present.
+   These must render if present in payload:
+
+* btc_daily_direction
+* wti_daily_direction
+* gold_daily_direction
+* nvda_daily_direction
+
+If any of these are NOT in the backend payload, report “backend missing” with the raw missing family_key. Do not pretend the frontend can render a row that backend did not send.
+
+4. Fix dedupe logic.
+   Only dedupe exact known duplicates, not broad concepts.
+
+Allowed dedupe:
+If both spx_dec31_milestone and spx_year_end_close_ladder / spx_year_end_close_range represent the same user-facing S&P end-of-2026 market, show the higher-volume / higher-quality row in the main Command Center.
+
+Not allowed:
+
+* Do not remove all SPX year-end rows.
+* Do not remove SPX daily because SPX year-end exists.
+* Do not remove ladder/range markets because a daily market exists.
+* Do not remove rows because primary_question equals event_title.
+* Do not remove rows because raw_question differs from primary_question.
+
+5. Fix grouping.
+   Market Impact Command Center grouping should not drop rows that lack a perfect category mapping.
+   If category/group is missing, put row into a fallback group like “Markets” or “Other Market Signals,” not invisible.
+
+6. Title display only.
+   Use title priority only for text rendering:
+   primary_question → question → display_title → label
+
+Do not use that title priority for filtering/dedup/group inclusion.
+
+7. Rollback option.
+   If the latest primary_question frontend patch caused row disappearance and the fix is not obvious, revert only the row-hiding part of that patch.
+   Keep:
+
+* sortable ledger
+* Top Movers removed
+* lastGoodRows fallback
+* Quality demoted
+* provider badge
+* vertical outcomes
+
+But do not sacrifice row visibility.
+
+Validation required:
+
+A. Print raw payload family keys.
+B. Print final displayed Event Impact Ledger family keys.
+C. Confirm Event Impact Ledger includes every raw payload row except explicit allowed duplicate suppression.
+D. Confirm SPX Daily Up/Down appears if spx_daily_direction is in payload.
+E. Confirm NASDAQ Daily Up/Down appears if nasdaq_daily_direction is in payload.
+F. Confirm SPX Dec 31 / year-end row appears if any spx_dec31_milestone / spx_year_end_close_ladder / spx_year_end_close_range row is in payload.
+G. Confirm BTC/WTI/Gold/NVDA Up/Down rows appear if backend sends their family keys.
+H. Confirm fed_cuts_2026 still uses primary_question, not the wrong sibling raw question.
+I. Confirm Home widget still uses primary_question.
+J. Confirm no backend edits.

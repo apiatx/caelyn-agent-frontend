@@ -5,7 +5,7 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, RefreshCw,
   Building2, BarChart3, Globe2, Layers, Zap, ChevronDown,
   ChevronRight, CircleDot, ArrowUpRight, ArrowDownRight,
-  Minus, Activity, X, Radio, ExternalLink,
+  Minus, Activity, X, Radio, ExternalLink, Signal,
 } from "lucide-react";
 
 // ─── Overview types ───────────────────────────────────────────────────────────
@@ -579,11 +579,11 @@ function MarketImpactCommandCenter({
   const isWarming = oddsRows.length === 0;
 
   const GROUPS = [
-    { id: "rates",       label: "Rates / Fed",       icon: <Building2 className="w-3 h-3" />, keys: ["fed_","rate_","fomc"] as const },
-    { id: "growth",      label: "Growth / Recession", icon: <BarChart3 className="w-3 h-3" />, keys: ["recession","spx_daily","cpi_","inflation","jobs_","unemployment","gdp","tariff"] as const },
+    { id: "rates",       label: "Rates / Fed",        icon: <Building2 className="w-3 h-3" />, keys: ["fed_","rate_","fomc"] as const },
+    { id: "growth",      label: "Growth / Macro",     icon: <BarChart3 className="w-3 h-3" />, keys: ["recession","spx_daily","spx_year","spx_dec","spx_tomorrow","spx_month","spx_vs_gold","nasdaq","cpi_","inflation","jobs_","unemployment","gdp","tariff"] as const },
     { id: "geo",         label: "Geopolitical Risk",  icon: <Globe2 className="w-3 h-3" />,    keys: ["hormuz","iran","russia","ukraine","china_","taiwan","israel","gaza"] as const },
     { id: "tech",        label: "Tech / Mega-cap",    icon: <Zap className="w-3 h-3" />,       keys: ["nvda_","tsla_","aapl_","msft_","googl_","amd_","ai_export","mega_cap"] as const },
-    { id: "commodities", label: "Commodities",        icon: <Layers className="w-3 h-3" />,    keys: ["bitcoin","oil_","gold_","crude","commodity","crypto"] as const },
+    { id: "commodities", label: "Commodities",        icon: <Layers className="w-3 h-3" />,    keys: ["bitcoin","btc_","eth_","sol_","oil_","wti","gold_","crude","commodity","crypto"] as const },
   ];
 
   const grouped = GROUPS.map(g => ({
@@ -596,7 +596,18 @@ function MarketImpactCommandCenter({
       ),
   }));
 
-  const activeGroups = grouped.filter(g => g.rows.length > 0);
+  const groupedKeySet = new Set(grouped.flatMap(g => g.rows.map(r => r.family_key)));
+  const ungroupedRows = oddsRows
+    .filter(r => !groupedKeySet.has(r.family_key))
+    .sort((a, b) =>
+      (a.priority ?? (a as TrackedOddsItem).dashboard_priority ?? 99) -
+      (b.priority ?? (b as TrackedOddsItem).dashboard_priority ?? 99)
+    );
+
+  const activeGroups: { id: string; label: string; icon: React.ReactNode; rows: (LiveOddsItem | TrackedOddsItem)[] }[] = [
+    ...grouped.filter(g => g.rows.length > 0),
+    ...(ungroupedRows.length > 0 ? [{ id: "other", label: "Other Market Signals", icon: <Signal className="w-3 h-3" />, rows: ungroupedRows }] : []),
+  ];
 
   return (
     <GlassCard className="p-4 mb-4">
