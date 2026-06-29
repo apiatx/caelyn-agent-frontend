@@ -1,0 +1,217 @@
+Audit first. No edits until the audit is complete.
+
+Backend now returns expanded Kalshi finance markets in the prediction odds payload. The Prophetik/Predict page and Home prediction widget need to render them cleanly.
+
+Do not edit backend.
+Do not touch Gambler mode.
+Do not break existing Predict page display.
+Do not reintroduce vague category titles.
+Do not hardcode market labels.
+
+Backend now supports Kalshi rows for these families:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* spx_tomorrow_close_ladder
+* spx_year_end_close_ladder
+* spx_year_high_ladder
+* spx_month_end_high_ladder
+* spx_vs_gold_annual_return
+* nasdaq_year_end_close_ladder
+* spx_dec31_milestone, if still present
+
+Also backend exposes:
+
+* provider: "kalshi" or "polymarket"
+* outcomes[]
+* outcome_summary
+* open_interest
+* volume / volume_24h
+* liquidity
+* unusual_prediction_markets[]
+
+Goal:
+Make the UI treat Kalshi ladder/range markets as first-class market contracts, not as vague one-number odds.
+
+Audit:
+
+1. Inspect the actual payload from /api/predict/investor/intelligence and/or /api/predict/odds/live.
+2. Confirm the new Kalshi family rows are present.
+3. Confirm whether both spx_dec31_milestone and spx_year_end_close_ladder appear. If they are duplicates, prefer the higher-volume/higher-quality one in display.
+4. Inspect existing Predict page outcome list renderer.
+5. Inspect Home page Prediction Markets widget.
+6. Inspect where a new glasscard section could fit.
+
+Rendering requirements:
+
+1. Provider badge
+
+For every row/card, show a small provider badge:
+
+* Kalshi
+* Polymarket
+
+Keep it subtle. Do not make provider the headline.
+
+2. Kalshi daily direction rows
+
+For:
+
+* S&P 500 Daily Up/Down
+* NASDAQ-100 Daily Up/Down
+
+Show:
+
+* actual market question as bold headline
+* odds/probability
+* Up/Down or Yes/No outcome label
+* close time / end date
+* volume and open interest if available
+* provider badge: Kalshi
+
+Example layout:
+Will the S&P 500 be above 7354.02 on Jun 29 at 4pm EDT?
+74.5% · Up
+Vol $4.5K · OI 2.9K · Kalshi
+
+3. Kalshi ladder/range markets
+
+For ladder/range markets:
+
+* S&P price tomorrow at 4pm
+* S&P close price end of 2026
+* How high will S&P get this year
+* How high will S&P get by month-end
+* Nasdaq-100 close price end of 2026
+
+Do not collapse them to one vague number.
+
+Show:
+
+* bold market question/title
+* selected/default outcome probability
+* compact vertical outcomes list
+* max visible outcomes in cards: 4–6
+* “+N more” if more outcomes exist
+* full outcome ladder in detail drawer
+
+Outcome list rows:
+label left, probability right.
+
+Example:
+7,400 or above             48%
+7,375 or above             65%
+7,350 or above             72%
++24 more
+
+4. Matchup markets
+
+For:
+
+* Annual Return: S&P 500 Total Return Vs. Gold
+
+Render both outcomes clearly:
+S&P 500 Total Return Index     83%
+Gold                           35%
+
+Do not force probabilities to sum to 100 if Kalshi structure does not require that.
+
+5. Duplicate handling in frontend display
+
+If backend returns two very similar S&P year-end rows:
+
+* prefer the higher-volume / higher-quality Kalshi ladder row
+* hide the lower-quality duplicate from the Command Center summary
+* it can still appear in detail/debug only if needed
+
+Do not show duplicate “S&P end of 2026” cards that confuse the user.
+
+6. Unusual Prediction Market Volume glasscard
+
+Add a new compact glasscard section on Prophetik/Predict page:
+
+Title:
+Unusual Prediction Market Volume
+
+Subtitle:
+Finance and macro prediction markets with volume above recent baseline
+
+Data source:
+unusual_prediction_markets[]
+
+If unusual_prediction_markets[] has rows:
+Each row/card should show:
+
+* question
+* provider
+* current_volume_24h
+* avg_volume_7d or median_volume_7d
+* volume_multiple
+* probability
+* price_change_24h
+* market_read
+* exposure if compact enough
+
+If unusual_prediction_markets[] is empty but backend says baseline warming:
+Show a subtle empty/warming state:
+“Volume baseline warming — needs a few snapshots.”
+
+Do not show this section if it creates noisy blank space on Home. Predict page only for now unless Home has room.
+
+7. Home page Prediction Markets widget
+
+Home should include the new Kalshi finance rows when they are among the most important/high-volume markets.
+
+Home row priority should favor:
+
+* high volume
+* large 24h/7d odds move
+* daily index direction
+* unusual volume
+
+But keep Home compact. No full ladder list on Home.
+
+Home should show:
+
+* question
+* probability + outcome
+* provider badge
+* volume if space allows
+
+8. Detail drawer
+
+For every Kalshi row:
+Show:
+
+* provider
+* question/title
+* close_time/end_date
+* volume
+* volume_24h
+* open_interest
+* liquidity
+* full outcomes[]
+* market_read
+* exposure
+
+9. Keep existing rules
+
+* Actual market question is primary bold text.
+* Family/category label is secondary/muted only.
+* No sports/culture.
+* Exposure column remains backend-driven.
+* Loading fix remains: intelligence.tracked_odds preferred over empty odds/live.
+* Gambler mode unchanged.
+
+Validation:
+
+1. Predict page shows S&P 500 Daily Up/Down from Kalshi.
+2. Predict page shows NASDAQ-100 Daily Up/Down from Kalshi.
+3. Predict page shows S&P tomorrow close ladder with multiple outcome rows.
+4. Predict page shows S&P year-end close ladder with multiple outcome rows.
+5. Predict page shows S&P vs Gold matchup with both outcomes.
+6. Outcome ladders are vertical, not one long inline sentence.
+7. No duplicate/confusing S&P year-end cards appear in the main Command Center.
+8. Unusual Prediction Market Volume section appears and either shows rows or a clean baseline-warming state.
+9. Home prediction widget uses real questions and can surface Kalshi finance rows.
+10. Existing Polymarket Fed/geopolitical/AI rows still render correctly.

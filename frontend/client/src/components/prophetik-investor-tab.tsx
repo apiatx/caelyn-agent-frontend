@@ -158,6 +158,8 @@ interface TrackedOddsItem extends LiveOddsItem {
   outcomes?: OddsOutcome[];
   outcome_summary?: string;
   neg_risk?: boolean;
+  provider?: string;
+  open_interest?: number;
 }
 interface IntelEquitySignal {
   event_family_key?: string; title: string; primary_category?: string;
@@ -208,6 +210,8 @@ interface LedgerRow {
   outcomes?: OddsOutcome[];
   neg_risk?: boolean;
   question?: string;
+  provider?: string;
+  open_interest?: number;
 }
 
 // ─── View-model types ─────────────────────────────────────────────────────────
@@ -511,10 +515,12 @@ function CmdCard({
         const ctx = contractContextLine(t);
         const primaryTitle = ctx ?? familyLabel;
         const mr = t.market_read;
+        const isLadder = (t.outcomes?.length ?? 0) >= 5;
         return (
           <div key={row.family_key} className="flex flex-col gap-1.5">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
+                {t.provider && <div className="mb-0.5"><ProviderBadge provider={t.provider} /></div>}
                 <p className="text-[10px] font-semibold text-white/72 leading-tight line-clamp-3">{primaryTitle}</p>
                 {ctx && <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{familyLabel}</p>}
                 {mr && <MarketReadCell read={mr} />}
@@ -532,7 +538,7 @@ function CmdCard({
               outcomes={t.outcomes}
               pricedLabel={outcomeLabel ?? undefined}
               outcomeSummary={t.outcome_summary ?? undefined}
-              maxVisible={3}
+              maxVisible={isLadder ? 5 : 3}
             />
             <div className="flex gap-1 flex-wrap">
               <span className={`text-[7px] font-mono ${ppColor(row.delta_24h_pp)}`}>{fmtPP(row.delta_24h_pp)} 24h</span>
@@ -677,7 +683,10 @@ function MarketImpactCommandCenter({
                       <div className="flex-1 min-w-0">
                         <p className="text-[9px] font-semibold text-white/65 leading-tight line-clamp-3">{tmCtx ?? tm.display_title ?? row!.label}</p>
                         {tmCtx && <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{tm.display_title ?? row!.label}</p>}
-                        <span className="text-[7px] text-white/20">Biggest {badge} move</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <ProviderBadge provider={tm.provider} />
+                          <span className="text-[7px] text-white/20">Biggest {badge} move</span>
+                        </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <span className={`text-[12px] font-bold tabular-nums ${ppColor(val)}`}>{fmtPP(val)}</span>
@@ -794,6 +803,19 @@ function QualityBadge({ q }: { q?: string }) {
   return <span className={`text-[7px] font-bold px-1 py-0.5 rounded border ${cls} capitalize`}>{q}</span>;
 }
 
+function ProviderBadge({ provider }: { provider?: string }) {
+  if (!provider) return null;
+  const isKalshi = provider.toLowerCase() === "kalshi";
+  const cls = isKalshi
+    ? "text-amber-400/70 border-amber-500/25 bg-amber-500/[0.06]"
+    : "text-purple-400/70 border-purple-500/25 bg-purple-500/[0.06]";
+  return (
+    <span className={`text-[6px] font-bold uppercase tracking-wider px-1 py-0.5 rounded border ${cls}`}>
+      {isKalshi ? "Kalshi" : "Polymarket"}
+    </span>
+  );
+}
+
 function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => void }) {
   const { data: history } = useQuery<OddsHistoryResponse>({
     queryKey: ["odds-history", row?.family_key],
@@ -807,9 +829,11 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
 
   const pct  = row.priced_probability != null ? row.priced_probability * 100 : row.yes_pct;
   const side = row.priced_outcome_label ?? preferredSideLabel(row.preferred_outcome);
+  const isKalshi = row.provider === "kalshi";
   const polyUrl = row.url ?? (row.slug ? `https://polymarket.com/event/${row.slug}` : null);
   const volStr = fmtVol(row.volume_24h);
   const liqStr = fmtVol(row.liquidity);
+  const oiStr  = fmtVol(row.open_interest);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end" onClick={onClose}>
@@ -823,6 +847,7 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               {row.category && <span className="text-[8px] text-white/30">{row.category}</span>}
               {row.signal_quality && <QualityBadge q={row.signal_quality} />}
+              <ProviderBadge provider={row.provider} />
               {row.source === "intel" && <span className="text-[7px] text-blue-400/50 font-mono border border-blue-400/20 px-1 rounded">intel</span>}
             </div>
             <h3 className="text-[13px] font-bold text-white/90 leading-snug">{contractContextLine(row) ?? row.display_title ?? row.label}</h3>
@@ -869,14 +894,15 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
           </div>
 
           {/* Volume / liquidity / link */}
-          {(volStr || liqStr || polyUrl) && (
+          {(volStr || oiStr || liqStr || polyUrl) && (
             <div className="flex items-center gap-3 flex-wrap text-[9px]">
               {volStr && <span className="text-white/30">{volStr} vol</span>}
+              {oiStr && <span className="text-white/30">{oiStr} OI</span>}
               {liqStr && <span className="text-white/30">{liqStr} liq</span>}
               {polyUrl && (
                 <a href={polyUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 text-blue-400/60 hover:text-blue-400 transition-colors ml-auto">
-                  <ExternalLink className="w-3 h-3" />Open on Polymarket
+                  <ExternalLink className="w-3 h-3" />Open on {isKalshi ? "Kalshi" : "Polymarket"}
                 </a>
               )}
             </div>
@@ -1038,6 +1064,58 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
   );
 }
 
+function UnusualPMVolumeSection({ rows }: { rows: any[] }) {
+  return (
+    <GlassCard className="mb-4">
+      <div className="flex items-start gap-2.5 px-4 pt-4 pb-2">
+        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] text-white/30 flex-shrink-0">
+          <Activity className="w-4 h-4" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-white/60">Unusual Prediction Market Volume</h2>
+          <p className="text-[9px] text-white/25 mt-0.5">Finance and macro markets with volume above recent baseline</p>
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        {rows.length === 0 ? (
+          <p className="text-[9px] text-white/20 italic">Volume baseline warming — needs a few snapshots.</p>
+        ) : (
+          <div className="divide-y divide-white/[0.04]">
+            {rows.map((u: any, i: number) => {
+              const q = u.question ?? u.display_title ?? u.label ?? u.family_key;
+              const pct = u.priced_probability != null ? u.priced_probability * 100
+                : u.yes_probability != null ? u.yes_probability * 100 : null;
+              const volStr = fmtVol(u.current_volume_24h);
+              const mult: number | undefined = u.volume_multiple;
+              const d24 = u.price_change_24h ?? u.delta_24h_pp;
+              return (
+                <div key={u.family_key ?? i} className="py-2.5 flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-white/75 leading-snug line-clamp-2">{q}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <ProviderBadge provider={u.provider} />
+                      {u.category && <span className="text-[7px] text-white/22">{u.category}</span>}
+                      {mult != null && (
+                        <span className="text-[7px] font-bold text-amber-400/80">{mult.toFixed(1)}× vol</span>
+                      )}
+                      {volStr && <span className="text-[7px] text-white/25">${volStr}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {pct != null && <p className="text-[13px] font-bold tabular-nums text-white/85">{fmtPct(pct)}</p>}
+                    {u.priced_outcome_label && <p className="text-[7px] text-white/35">{u.priced_outcome_label}</p>}
+                    {d24 != null && <p className={`text-[7px] font-mono ${ppColor(d24)}`}>{fmtPP(d24)} 24h</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </GlassCard>
+  );
+}
+
 function EventImpactLedger({
   oddsRows,
   oddsSource,
@@ -1104,6 +1182,8 @@ function EventImpactLedger({
         outcomes: tracked.outcomes,
         neg_risk: tracked.neg_risk,
         question: tracked.question,
+        provider: tracked.provider,
+        open_interest: tracked.open_interest,
       });
     }
 
@@ -1181,9 +1261,12 @@ function EventImpactLedger({
                         {contractContextLine(row) && (
                           <p className="text-[7px] text-white/22 leading-tight mt-0.5 truncate">{row.display_title ?? row.label}</p>
                         )}
-                        {row.end_date && (
-                          <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
-                        )}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <ProviderBadge provider={row.provider} />
+                          {row.end_date && (
+                            <span className="text-[7px] text-white/15 font-mono">{new Date(row.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-1.5 pr-3">
                         <span className="text-[8px] text-white/30 leading-tight">{row.category ?? "—"}</span>
@@ -1506,10 +1589,18 @@ export function ProphetikInvestorTab() {
   const trackedRows: TrackedOddsItem[] = intel?.tracked_odds ?? [];
   const liveRows: LiveOddsItem[]       = oddsData?.odds ?? [];
 
-  const oddsRows: (LiveOddsItem | TrackedOddsItem)[] =
+  const rawOddsRows: (LiveOddsItem | TrackedOddsItem)[] =
     trackedRows.length > 0 ? trackedRows :
     liveRows.length > 0    ? liveRows :
     [];
+
+  // Dedup: if the higher-quality Kalshi ladder is present, drop legacy milestone duplicate
+  const hasYearEndLadder = rawOddsRows.some(r => r.family_key === "spx_year_end_close_ladder");
+  const oddsRows: (LiveOddsItem | TrackedOddsItem)[] = hasYearEndLadder
+    ? rawOddsRows.filter(r => r.family_key !== "spx_dec31_milestone")
+    : rawOddsRows;
+
+  const unusualRows: any[] = oddsData?.unusual_prediction_markets ?? [];
 
   const oddsSource: OddsSourceType =
     trackedRows.length > 0 ? "intelligence" :
@@ -1568,6 +1659,7 @@ export function ProphetikInvestorTab() {
         cacheAgeSec={oddsData?.cache_age_seconds}
       />
       <EventImpactLedger oddsRows={oddsRows} oddsSource={oddsSource} intel={intel} />
+      <UnusualPMVolumeSection rows={unusualRows} />
       <SignalBreakdown overview={overview} />
     </div>
   );
