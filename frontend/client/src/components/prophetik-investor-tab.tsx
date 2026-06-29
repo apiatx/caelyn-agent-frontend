@@ -1094,6 +1094,186 @@ function UnusualPMVolumeSection({ rows }: { rows: any[] }) {
   );
 }
 
+// ─── SECTION: Near-Term Market Direction ─────────────────────────────────────
+
+const DIRECTION_KEYS = [
+  "spx_daily_direction",
+  "nasdaq_daily_direction",
+  "btc_daily_direction",
+  "wti_daily_direction",
+  "gold_daily_direction",
+  "nvda_daily_direction",
+] as const;
+
+const SPX_LEVEL_KEYS = [
+  "spx_tomorrow_close_ladder",
+  "spx_dec31_milestone",
+  "spx_year_end_close_ladder",
+  "spx_year_end_close_range",
+] as const;
+
+const ALL_NEAR_TERM_KEYS: readonly string[] = [...DIRECTION_KEYS, ...SPX_LEVEL_KEYS];
+
+function NearTermDirectionSection({
+  displayRows,
+  oddsSource,
+  intel,
+}: {
+  displayRows: (LiveOddsItem | TrackedOddsItem)[];
+  oddsSource: OddsSourceType;
+  intel: IntelligenceResponse | null | undefined;
+}) {
+  const [selected, setSelected] = useState<LedgerRow | null>(null);
+
+  const intelSigMap = new Map<string, IntelEquitySignal>();
+  for (const s of intel?.equity_signals ?? []) {
+    intelSigMap.set(s.event_family_key ?? s.title, s);
+  }
+
+  const dirKeySet  = new Set<string>(DIRECTION_KEYS);
+  const spxKeySet  = new Set<string>(SPX_LEVEL_KEYS);
+
+  const directionRows = displayRows.filter(r => dirKeySet.has(r.family_key));
+
+  const spxCandidates = displayRows.filter(r => spxKeySet.has(r.family_key));
+  const spxLevelRows  = spxCandidates.length > 1
+    ? [spxCandidates.slice().sort((a, b) =>
+        ((b as TrackedOddsItem).volume_24h ?? 0) - ((a as TrackedOddsItem).volume_24h ?? 0)
+      )[0]]
+    : spxCandidates;
+
+  const allSectionRows = [...directionRows, ...spxLevelRows];
+
+  useEffect(() => {
+    const presentKeys = new Set(displayRows.map(r => r.family_key));
+    for (const k of ALL_NEAR_TERM_KEYS) {
+      if (!presentKeys.has(k)) console.log(`MISSING_DIRECTION_FAMILY: ${k}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayRows.length]);
+
+  function toLedgerRow(o: LiveOddsItem | TrackedOddsItem): LedgerRow {
+    const tracked = o as TrackedOddsItem;
+    const sig = intelSigMap.get(o.family_key);
+    return {
+      source: oddsSource === "live" ? "odds" : "intel",
+      family_key: o.family_key,
+      label: o.label,
+      category: o.category,
+      yes_pct: o.yes_pct ?? (o.yes_probability != null ? o.yes_probability * 100 : null),
+      preferred_outcome: o.preferred_outcome,
+      market_question: o.market_question,
+      slug: o.slug,
+      delta_1h_pp: o.delta_1h_pp,
+      delta_24h_pp: o.delta_24h_pp,
+      delta_7d_pp: o.delta_7d_pp,
+      volume_24h: o.volume_24h,
+      liquidity: o.liquidity,
+      direction: sig?.direction,
+      signal_quality: sig?.signal_quality,
+      ticker_impacts: sig?.ticker_impacts,
+      theme_impacts: sig?.theme_impacts,
+      driver_markets: o.driver_markets,
+      conflicts: sig?.conflicts,
+      marketRead: tracked.market_read ?? sig?.market_read ?? marketReadLabel(sig?.direction, o.category),
+      exposure: tracked.exposure ?? sig?.exposure,
+      priority: o.priority ?? tracked.dashboard_priority ?? 99,
+      display_title: tracked.display_title,
+      display_subtitle: tracked.display_subtitle,
+      priced_outcome_label: tracked.priced_outcome_label,
+      priced_probability: tracked.priced_probability,
+      outcome_summary: tracked.outcome_summary,
+      end_date: tracked.end_date,
+      url: tracked.url,
+      event_title: tracked.event_title,
+      outcomes: tracked.outcomes,
+      neg_risk: tracked.neg_risk,
+      question: tracked.question,
+      provider: tracked.provider,
+      open_interest: tracked.open_interest,
+      primary_question: tracked.primary_question,
+      raw_question: tracked.raw_question,
+    };
+  }
+
+  if (allSectionRows.length === 0) {
+    return (
+      <GlassCard className="p-4 mb-4">
+        <SecHeader
+          icon={<TrendingUp className="w-4 h-4" />}
+          title="Near-Term Market Direction"
+          subtitle="Index, crypto, commodity, and mega-cap direction markets"
+        />
+        <p className="text-[10px] text-white/25 mt-2">Direction markets unavailable — backend did not return the required families.</p>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <>
+      <GlassCard className="p-4 mb-4">
+        <SecHeader
+          icon={<TrendingUp className="w-4 h-4" />}
+          title="Near-Term Market Direction"
+          subtitle="Index, crypto, commodity, and mega-cap direction markets"
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+          {allSectionRows.map(o => {
+            const tracked = o as TrackedOddsItem;
+            const primaryTitle = contractContextLine(tracked) ?? tracked.display_title ?? o.label;
+            const pricedPct = tracked.priced_probability != null ? tracked.priced_probability * 100
+              : o.yes_pct ?? (o.yes_probability != null ? o.yes_probability * 100 : null);
+            const isLadder = (tracked.outcomes?.length ?? 0) >= 5;
+            return (
+              <div
+                key={o.family_key}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-3 flex flex-col gap-1.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                onClick={() => setSelected(toLedgerRow(o))}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    {tracked.provider && <div className="mb-1"><ProviderBadge provider={tracked.provider} /></div>}
+                    <p className="text-[10px] font-semibold text-white/72 leading-tight line-clamp-2">{primaryTitle}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[14px] font-bold tabular-nums text-white/85 leading-none">
+                      {pricedPct != null ? fmtPct(pricedPct) : "—"}
+                    </p>
+                    {tracked.priced_outcome_label && (
+                      <p className="text-[7px] text-white/40 mt-0.5">{tracked.priced_outcome_label}</p>
+                    )}
+                  </div>
+                </div>
+                <OutcomeList
+                  outcomes={tracked.outcomes}
+                  pricedLabel={tracked.priced_outcome_label ?? undefined}
+                  outcomeSummary={tracked.outcome_summary ?? undefined}
+                  maxVisible={isLadder ? 5 : 3}
+                />
+                <div className="flex gap-1.5 flex-wrap">
+                  <span className={`text-[7px] font-mono ${ppColor(o.delta_24h_pp)}`}>{fmtPP(o.delta_24h_pp)} 24h</span>
+                  {o.delta_7d_pp != null && (
+                    <span className={`text-[7px] font-mono ${ppColor(o.delta_7d_pp)}`}>{fmtPP(o.delta_7d_pp)} 7d</span>
+                  )}
+                  {tracked.volume_24h != null && (
+                    <span className="text-[7px] text-white/22">${fmtVol(tracked.volume_24h)} vol</span>
+                  )}
+                  {tracked.open_interest != null && (
+                    <span className="text-[7px] text-white/22">${fmtVol(tracked.open_interest)} OI</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+      <DetailDrawer row={selected} onClose={() => setSelected(null)} />
+    </>
+  );
+}
+
+// ─── SECTION 2: Event Impact Ledger ──────────────────────────────────────────
+
 function EventImpactLedger({
   oddsRows,
   oddsSource,
@@ -1677,6 +1857,7 @@ export function ProphetikInvestorTab() {
         liveCount={liveCount}
         cacheAgeSec={oddsData?.cache_age_seconds}
       />
+      <NearTermDirectionSection displayRows={displayRows} oddsSource={oddsSource} intel={intel} />
       <EventImpactLedger oddsRows={displayRows} oddsSource={oddsSource} intel={intel} />
       <UnusualPMVolumeSection rows={unusualRows} />
       <SignalBreakdown overview={overview} />

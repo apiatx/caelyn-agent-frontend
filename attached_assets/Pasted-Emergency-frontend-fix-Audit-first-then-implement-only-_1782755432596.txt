@@ -1,0 +1,181 @@
+Emergency frontend fix. Audit first, then implement only if the rows exist in the frontend payload.
+
+User wants a dedicated section for these market families. Do not bury them inside generic Market Impact Command Center groups.
+
+Required dedicated section title:
+Near-Term Market Direction
+
+Required rows/families:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* btc_daily_direction
+* wti_daily_direction
+* gold_daily_direction
+* nvda_daily_direction
+* spx_tomorrow_close_ladder
+* spx_dec31_milestone
+* spx_year_end_close_ladder
+* spx_year_end_close_range
+
+User specifically expects to see:
+
+* SPX / S&P 500 Up or Down near-term/current-next day
+* BTC Up or Down near-term/current-next day
+* WTI Up or Down near-term/current-next day
+* NVDA Up or Down near-term/current-next day
+* SPX price / close price by December 31 / end of 2026
+
+This must be its own visible glasscard/section on Prophetik/Predict. Do not rely on Command Center grouping.
+
+Do not edit backend.
+Do not touch Gambler mode.
+Do not remove any existing rows.
+Do not change title logic.
+Do not hide rows because deltas are null.
+Do not dedupe these rows away except for exact S&P year-end duplicate handling described below.
+
+Audit requirements before editing:
+
+1. Pull the frontend-used payloads:
+
+* /api/predict/investor/intelligence
+* /api/predict/odds/live
+
+2. Print raw family_key lists from:
+
+* intelligence.tracked_odds[]
+* odds.live odds[]
+
+3. Print whether each required family is present or missing:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* btc_daily_direction
+* wti_daily_direction
+* gold_daily_direction
+* nvda_daily_direction
+* spx_tomorrow_close_ladder
+* spx_dec31_milestone
+* spx_year_end_close_ladder
+* spx_year_end_close_range
+
+4. Print final displayRows family_key list.
+
+5. If any required family is present in raw payload but missing from displayRows, fix the frontend transformation.
+
+6. If any required family is missing from raw backend payload, do not pretend frontend can render it. Print:
+   BACKEND_MISSING: family_key
+
+Implementation:
+
+1. Add a new explicit section on Prophetik/Predict:
+
+Section title:
+Near-Term Market Direction
+
+Subtitle:
+Index, crypto, commodity, and mega-cap direction markets
+
+Place it near the top:
+
+* After Market Impact Command Center, or
+* Before Event Impact Ledger
+
+2. This section must filter displayRows by exact family_key, not by substring groups.
+
+Use explicit key arrays:
+
+const DIRECTION_KEYS = [
+"spx_daily_direction",
+"nasdaq_daily_direction",
+"btc_daily_direction",
+"wti_daily_direction",
+"gold_daily_direction",
+"nvda_daily_direction",
+];
+
+const SPX_LEVEL_KEYS = [
+"spx_tomorrow_close_ladder",
+"spx_dec31_milestone",
+"spx_year_end_close_ladder",
+"spx_year_end_close_range",
+];
+
+3. Render every matching row from displayRows.
+
+Each row/card should show:
+
+* primary_question → question → display_title → label
+* provider badge
+* priced_probability
+* priced_outcome_label
+* 24h delta
+* 7d delta
+* volume / OI if available
+* compact outcomes list, vertical
+* click opens the existing detail drawer
+
+4. S&P year-end duplicate rule
+
+If multiple S&P Dec 31 / year-end keys exist:
+
+* prefer the higher volume / higher quality row
+* show only one in this dedicated section
+* do not remove all of them
+* do not let spx_dec31_milestone hide spx_year_end_close_range unless the range row is present and higher-volume/higher-quality
+
+5. Missing-state behavior
+
+If a required family is not present in displayRows:
+
+* do not show an empty card in the UI
+* but log it clearly in console/audit output:
+  MISSING_DIRECTION_FAMILY: family_key
+
+If none of the required rows are present:
+
+* show a compact warning:
+  “Direction markets unavailable — backend did not return the required families.”
+  But only show this if the raw payload truly lacks them.
+
+6. Do not let Command Center grouping control this section.
+
+This new section must not use:
+
+* GROUPS config
+* matchesGroup()
+* category substring matching
+* generic catch-all
+
+It should be exact-family-key based.
+
+7. Keep Event Impact Ledger behavior
+
+The Event Impact Ledger should still show all displayRows.
+Do not remove direction rows from the ledger.
+Do not move rows out of ledger.
+This new section is a focused duplicate/spotlight section, not a replacement.
+
+8. Home widget
+
+Do not touch Home in this pass unless the Prophetik section is confirmed working.
+
+Validation:
+
+A. Console/audit output must show raw payload family keys.
+B. Console/audit output must show required family present/missing status.
+C. Prophetik page shows a dedicated “Near-Term Market Direction” section.
+D. If spx_daily_direction is in payload, it appears in that section.
+E. If nasdaq_daily_direction is in payload, it appears in that section.
+F. If btc_daily_direction is in payload, it appears in that section.
+G. If wti_daily_direction is in payload, it appears in that section.
+H. If gold_daily_direction is in payload, it appears in that section.
+I. If nvda_daily_direction is in payload, it appears in that section.
+J. If any SPX Dec 31 / year-end key is in payload, one S&P year-end row appears in that section.
+K. Rows still appear in Event Impact Ledger.
+L. Top Movers remains removed.
+M. Ledger sorting remains working.
+N. primary_question title logic remains working.
+O. Gambler mode unchanged.
+P. No backend edits.
