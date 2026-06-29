@@ -93,6 +93,7 @@ interface LiveOddsItem {
   volume_24h?: number; liquidity?: number; candidate_count?: number;
   driver_markets?: OddsDriverMarket[];
   delta_1h_pp?: number; delta_24h_pp?: number; delta_7d_pp?: number;
+  primary_question?: string; raw_question?: string;
 }
 interface LiveOddsResponse {
   updated_at?: string; cache_age_seconds?: number;
@@ -213,6 +214,8 @@ interface LedgerRow {
   question?: string;
   provider?: string;
   open_interest?: number;
+  primary_question?: string;
+  raw_question?: string;
 }
 
 // ─── View-model types ─────────────────────────────────────────────────────────
@@ -407,8 +410,10 @@ function Empty({ text }: { text: string }) {
 
 // Return the most useful contract context string — prioritise question, then subtitle if not redundant
 function contractContextLine(t: {
-  question?: string; display_subtitle?: string; priced_outcome_label?: string; event_title?: string;
+  primary_question?: string; question?: string; display_subtitle?: string; priced_outcome_label?: string; event_title?: string;
 }): string | null {
+  const pq = t.primary_question;
+  if (pq && pq.length > 5) return pq;
   const q = t.question;
   if (q && q.length > 10) return q;
   const sub = t.display_subtitle;
@@ -831,6 +836,12 @@ function DetailDrawer({ row, onClose }: { row: LedgerRow | null; onClose: () => 
                 Expires {new Date(row.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </p>
             )}
+            {row.raw_question && row.raw_question !== row.primary_question && row.raw_question !== (contractContextLine(row) ?? row.display_title ?? row.label) && (
+              <div className="mt-1.5 pt-1.5 border-t border-white/[0.06]">
+                <p className="text-[7px] font-bold uppercase tracking-wider text-white/15 mb-0.5">Source contract</p>
+                <p className="text-[8px] text-white/28 leading-snug">{row.raw_question}</p>
+              </div>
+            )}
           </div>
 
           {/* Odds strip */}
@@ -1142,6 +1153,8 @@ function EventImpactLedger({
         question: tracked.question,
         provider: tracked.provider,
         open_interest: tracked.open_interest,
+        primary_question: tracked.primary_question,
+        raw_question: tracked.raw_question,
       });
     }
 

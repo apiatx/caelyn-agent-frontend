@@ -1866,10 +1866,12 @@ export default function HomePage() {
                           {liveOddsRows.length > 0 && (
                             <div className="divide-y divide-white/[0.04]">
                               {liveOddsRows.map((o: any) => {
-                                // Same question-first priority as Prophetik Investor
+                                // primary_question → question → display_subtitle → display_title → label
+                                const pq: string | undefined = o.primary_question;
                                 const q: string | undefined = o.question;
                                 const primaryTitle: string =
-                                  (q && q.length > 10) ? q
+                                  (pq && pq.length > 5) ? pq
+                                  : (q && q.length > 10) ? q
                                   : (o.display_subtitle && o.display_subtitle !== o.priced_outcome_label && o.display_subtitle.length > 5) ? o.display_subtitle
                                   : o.display_title ?? o.label;
                                 const familyLabel: string = o.display_title ?? o.label;

@@ -1,0 +1,135 @@
+Frontend only. Audit first, then implement. No backend edits.
+
+Goal:
+Use backend’s new `primary_question` field as the main displayed market title everywhere on Prophetik/Predict and the Home prediction widget.
+
+Backend now sends:
+
+* primary_question
+* raw_question
+* question
+* display_title
+* label
+* priced_outcome_label
+* priced_probability
+* outcomes[]
+* price_change_24h / price_change_7d
+* delta_missing_reason
+
+Problem:
+Some multi-outcome markets still show the wrong raw sibling question as the headline.
+
+Example bad:
+“Will 11 Fed rate cuts happen in 2026?”
+while the displayed odds are:
+“0 cuts / 0 bps · 77.9%”
+
+Correct:
+Main title should be:
+“How many Fed rate cuts in 2026?”
+or whatever backend sends as `primary_question`.
+
+Implementation:
+
+1. Update title priority everywhere market titles are rendered:
+
+Use this priority:
+primary_question → question → display_title → label
+
+Apply this to:
+
+* Market Impact Command Center cards
+* Event Impact Ledger Event / Contract column
+* Detail drawer header/title
+* Home page Prediction Markets widget
+* Any other Prophetik investor market row/card using prediction odds
+
+2. Raw question handling
+
+If `raw_question` exists and differs from `primary_question`, do NOT show raw_question as the main title.
+
+Instead, show it only in the detail drawer as:
+“Source contract” or “Matched market”
+
+Example:
+Main title:
+“How many Fed rate cuts in 2026?”
+
+Detail drawer:
+Source contract:
+“Will 11 Fed rate cuts happen in 2026?”
+
+3. Preserve binary market specificity
+
+For binary Kalshi rows, backend primary_question should already be the full raw contract question.
+
+So these should still show full strike/date context:
+
+* S&P 500 Daily Up/Down
+* NASDAQ-100 Daily Up/Down
+
+Example:
+“Will the S&P 500 be above 7354.02 on Jun 29 at 4pm EDT?”
+
+Do not replace these with vague titles like:
+“S&P 500 Daily Direction”
+
+4. Preserve ladder/range behavior
+
+For Kalshi ladder/range markets, primary_question may be concise event-level text like:
+
+* “S&P 500 Tomorrow Close”
+* “S&P 500 Year-End Close Range”
+
+That is correct. Keep outcome ladders visible underneath.
+
+5. Deltas
+
+Continue rendering null deltas as:
+—
+
+If `delta_missing_reason` exists, optionally use it as tooltip/title text.
+
+Do not show 0.0pp unless backend actually returns 0.
+
+6. Do not regress existing cleanup
+
+Keep:
+
+* Top Movers removed
+* Event Impact Ledger sortable
+* Quality column removed/demoted
+* last-good-data fallback during refresh
+* provider badges
+* vertical outcome lists
+* backend-driven exposure
+* Home widget compact
+* Gambler mode unchanged
+
+Validation:
+
+1. fed_cuts_2026 main title does NOT show:
+   “Will 11 Fed rate cuts happen in 2026?”
+
+2. fed_cuts_2026 main title DOES show backend `primary_question`, e.g.:
+   “How many Fed rate cuts in 2026?”
+
+3. fed_cuts_2026 detail drawer still shows raw_question/source contract.
+
+4. SPX daily direction still shows full Kalshi contract question with strike/date.
+
+5. NASDAQ daily direction still shows full Kalshi contract question with strike/date.
+
+6. Kalshi ladder/range markets still show concise event-level titles and vertical outcome ladders.
+
+7. Null deltas show “—”.
+
+8. Top Movers is still gone.
+
+9. Ledger sorting still works.
+
+10. Home prediction widget also uses `primary_question`.
+
+11. No backend edits.
+
+12. Gambler mode unchanged.
