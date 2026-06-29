@@ -3222,7 +3222,6 @@ export default function WatchlistPage() {
                     style={{
                       cursor: sortable ? 'pointer' : 'default',
                       color: active ? '#f5f5f0' : C.dim,
-                      userSelect: 'none' as const,
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       overflow: 'hidden', whiteSpace: 'nowrap' as const,
                       ...(col.key === 'ticker' ? {
@@ -3504,7 +3503,7 @@ export default function WatchlistPage() {
     const TH: React.CSSProperties = {
       padding: '6px 14px', fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
       textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
-      cursor: 'pointer', userSelect: 'none' as const,
+      cursor: 'pointer',
       background: C.card, borderBottom: `1px solid ${C.border}`,
       fontFamily: C.font,
     };
@@ -5340,7 +5339,7 @@ export default function WatchlistPage() {
                 const TH: React.CSSProperties = {
                   padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
                   textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
-                  cursor: 'pointer', userSelect: 'none' as const,
+                  cursor: 'pointer',
                   background: C.card, borderBottom: `1px solid ${C.border}`,
                   fontFamily: C.font,
                 };
