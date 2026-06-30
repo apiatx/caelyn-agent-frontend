@@ -1108,8 +1108,10 @@ const DIRECTION_KEYS = [
 const SPX_LEVEL_KEYS = [
   "spx_tomorrow_close_ladder",
   "spx_dec31_milestone",
-  "spx_year_end_close_ladder",
   "spx_year_end_close_range",
+  "spx_year_high_ladder",
+  "spx_month_end_high_ladder",
+  "spx_vs_gold_annual_return",
 ] as const;
 
 const ALL_NEAR_TERM_KEYS: readonly string[] = [...DIRECTION_KEYS, ...SPX_LEVEL_KEYS];
@@ -1136,16 +1138,18 @@ function NearTermDirectionSection({
   const directionRows = displayRows.filter(r => dirKeySet.has(r.family_key));
 
   const spxCandidates = displayRows.filter(r => spxKeySet.has(r.family_key));
-  const spxLevelRows  = spxCandidates.length > 1
-    ? [spxCandidates.slice().sort((a, b) =>
-        ((b as TrackedOddsItem).volume_24h ?? 0) - ((a as TrackedOddsItem).volume_24h ?? 0)
-      )[0]]
+  // Only dedup spx_dec31_milestone vs spx_year_end_close_range (same concept, prefer range)
+  const hasYearEndRange = spxCandidates.some(r => r.family_key === "spx_year_end_close_range");
+  const spxLevelRows = hasYearEndRange
+    ? spxCandidates.filter(r => r.family_key !== "spx_dec31_milestone")
     : spxCandidates;
 
   const allSectionRows = [...directionRows, ...spxLevelRows];
 
   useEffect(() => {
     const presentKeys = new Set(displayRows.map(r => r.family_key));
+    console.log("[NearTermDirection] input family_keys:", displayRows.map(r => r.family_key));
+    console.log("[NearTermDirection] rendered family_keys:", allSectionRows.map(r => r.family_key));
     for (const k of ALL_NEAR_TERM_KEYS) {
       if (!presentKeys.has(k)) console.log(`MISSING_DIRECTION_FAMILY: ${k}`);
     }
@@ -1784,9 +1788,11 @@ export function ProphetikInvestorTab() {
     liveRows.length > 0    ? liveRows :
     [];
 
-  // Dedup: if the higher-quality Kalshi ladder is present, drop legacy milestone duplicate
-  const hasYearEndLadder = rawOddsRows.some(r => r.family_key === "spx_year_end_close_ladder");
-  const oddsRows: (LiveOddsItem | TrackedOddsItem)[] = hasYearEndLadder
+  // Dedup: if the richer range/ladder key is present, drop the legacy milestone duplicate
+  const hasYearEndDedup = rawOddsRows.some(r =>
+    r.family_key === "spx_year_end_close_ladder" || r.family_key === "spx_year_end_close_range"
+  );
+  const oddsRows: (LiveOddsItem | TrackedOddsItem)[] = hasYearEndDedup
     ? rawOddsRows.filter(r => r.family_key !== "spx_dec31_milestone")
     : rawOddsRows;
 
@@ -1820,7 +1826,9 @@ export function ProphetikInvestorTab() {
       "oddsLive.odds.length":         liveRows.length,
       "intelligence.tracked_odds.length": trackedRows.length,
       "oddsRows.length":              oddsRows.length,
+      "displayRows.length":           displayRows.length,
       "oddsSource":                   oddsSource,
+      "displayRows.keys":             displayRows.map(r => r.family_key),
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oddsData, intel]);

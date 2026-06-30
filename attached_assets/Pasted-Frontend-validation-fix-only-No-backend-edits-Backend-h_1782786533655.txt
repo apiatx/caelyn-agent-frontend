@@ -1,0 +1,120 @@
+Frontend validation + fix only. No backend edits.
+
+Backend has confirmed both endpoints now return 30 rows and the required families are present in `/api/predict/investor/intelligence.tracked_odds[]`.
+
+Required families confirmed by backend:
+
+* spx_daily_direction
+* nasdaq_daily_direction
+* btc_daily_direction
+* wti_daily_direction
+* gold_daily_direction
+* nvda_daily_direction
+* spx_tomorrow_close_ladder
+* spx_dec31_milestone
+* spx_year_end_close_range
+* spx_year_high_ladder
+* spx_month_end_high_ladder
+* spx_vs_gold_annual_return
+
+Note:
+`spx_year_end_close_ladder` is absent from backend, but `spx_year_end_close_range` is present and covers the S&P year-end close concept. The UI should show the range row.
+
+Goal:
+Make the Near-Term Market Direction section visibly render these rows from the current 30-row intelligence payload.
+
+Audit first:
+
+1. Reload Prophetik/Predict.
+2. Log:
+
+   * oddsRows.length
+   * lastGoodRows.length
+   * displayRows.length
+   * displayRows family_key list
+   * NearTermDirectionSection input row family_key list
+   * NearTermDirectionSection final rendered family_key list
+3. Specifically print present/missing for:
+
+   * spx_daily_direction
+   * nasdaq_daily_direction
+   * btc_daily_direction
+   * wti_daily_direction
+   * gold_daily_direction
+   * nvda_daily_direction
+   * spx_tomorrow_close_ladder
+   * spx_dec31_milestone
+   * spx_year_end_close_range
+   * spx_year_high_ladder
+   * spx_month_end_high_ladder
+   * spx_vs_gold_annual_return
+
+Fix if needed:
+
+1. If oddsRows has 30 rows but displayRows/near-term section has fewer:
+   Find and remove the frontend filter/dedupe that drops those families.
+
+2. If lastGoodRows is stuck on an older 21-row payload:
+   Update lastGoodRows whenever the current payload has more valid rows than the stale cache.
+   Do not let stale lastGoodRows override a newer non-empty payload.
+
+Rule:
+If current oddsRows.length > 0, current oddsRows wins.
+lastGoodRows is only fallback when current oddsRows.length === 0.
+
+3. Near-Term Market Direction must use exact family_key matching.
+
+Render these exact keys:
+const DIRECTION_KEYS = [
+"spx_daily_direction",
+"nasdaq_daily_direction",
+"btc_daily_direction",
+"wti_daily_direction",
+"gold_daily_direction",
+"nvda_daily_direction",
+];
+
+const SPX_LEVEL_KEYS = [
+"spx_tomorrow_close_ladder",
+"spx_dec31_milestone",
+"spx_year_end_close_range",
+"spx_year_high_ladder",
+"spx_month_end_high_ladder",
+"spx_vs_gold_annual_return",
+];
+
+Do not depend on GROUPS, category strings, title text, or substring matching.
+
+4. S&P year-end handling:
+   Show `spx_year_end_close_range` if present.
+   Do not wait for `spx_year_end_close_ladder`.
+   If both `spx_dec31_milestone` and `spx_year_end_close_range` are present, both can show unless they are visually duplicative; if deduping, keep the higher-volume/richer ladder/range row.
+
+5. Do not hide rows because:
+
+* delta is null
+* quality_label is missing
+* provider is Kalshi or Polymarket
+* primary_question differs from raw_question
+* outcomes[] has many rows
+
+6. Screenshot validation required:
+   Send screenshot of the Near-Term Market Direction section showing at least:
+
+* SPX Daily Up/Down
+* Nasdaq Daily Up/Down
+* BTC Up/Down
+* WTI Up/Down
+* Gold Up/Down
+* NVDA Up/Down
+* S&P year-end/range or Dec 31 row
+
+7. Preserve:
+
+* Top Movers removed
+* sortable ledger
+* Quality column demoted
+* provider badges
+* primary_question title logic
+* last-good fallback only for empty refreshes
+* Gambler mode untouched
