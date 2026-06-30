@@ -3556,19 +3556,20 @@ export default function WatchlistPage() {
                 </td>
               </tr>
             ) : sortedFundRows.map((row, ri) => {
-              const rowBg    = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
-              const rowHover = 'rgba(255,255,255,0.03)';
-              const setAllTdBg = (el: HTMLTableRowElement, bg: string) => {
+              const rowBg      = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
+              const rowHover   = 'rgba(255,255,255,0.03)';
+              const stickyBase = ri % 2 === 0 ? C.bg : C.card;
+              const setTdBgs = (el: HTMLTableRowElement, bg: string) => {
                 (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
-                  .forEach(td => { td.style.background = bg; });
+                  .forEach((td, i) => { td.style.background = i === 0 ? stickyBase : bg; });
               };
               return (
               <tr
                 key={`${row.ticker}-${ri}`}
                 onClick={() => row.ticker && handleTickerClick(row.ticker)}
                 style={{ cursor: row.ticker ? 'pointer' : 'default', transition: 'background 0.1s' }}
-                onMouseEnter={e => setAllTdBg(e.currentTarget, rowHover)}
-                onMouseLeave={e => setAllTdBg(e.currentTarget, rowBg)}
+                onMouseEnter={e => setTdBgs(e.currentTarget, rowHover)}
+                onMouseLeave={e => setTdBgs(e.currentTarget, rowBg)}
               >
                 {FUND_COLS.map((col, ci) => {
                   const isFirst = ci === 0;
