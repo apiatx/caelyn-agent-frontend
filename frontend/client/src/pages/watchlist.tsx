@@ -1597,7 +1597,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2' | 'pctVs50d' | 'pctVs200d' | 'pos52w' | 'pctFrom52wHigh' | 'atrPct' | 'techTimingScore'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
@@ -1726,7 +1726,7 @@ export default function WatchlistPage() {
       route: '/app/watchlist',
       page: 'watchlist',
       selected: activeId,
-      sort: sortKey ? { key: sortKey, dir: sortDir } : null,
+      sort: sortKey ? { key: sortKey, dir: sortDir } : undefined,
       row_count: richStocks.length || plainTickers.length,
       visible_symbols: rows.map((r: any) => r.ticker).filter(Boolean),
       visible_rows: rows,
@@ -2235,6 +2235,30 @@ export default function WatchlistPage() {
         const lbl: string | null = sa?.label ?? s2?.label ?? null;
         const rank = lbl != null ? (STAGE_SORT_RANK[lbl] ?? null) : null;
         return { v: rank ?? 999, missing: rank == null };
+      }
+      case 'pctVs50d': {
+        const n = Number(stock.stage2_breakout?.technical_metrics?.pct_vs_sma_50);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'pctVs200d': {
+        const n = Number(stock.stage2_breakout?.technical_metrics?.pct_vs_sma_200);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'pos52w': {
+        const n = Number(stock.stage2_breakout?.technical_metrics?.range_position_52w);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'pctFrom52wHigh': {
+        const n = Number(stock.stage2_breakout?.technical_metrics?.pct_from_52w_high);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'atrPct': {
+        const n = Number(stock.stage2_breakout?.technical_metrics?.atr_14_pct);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'techTimingScore': {
+        const n = Number(stock.stage2_breakout?.technical_timing_score);
+        return { v: n, missing: !Number.isFinite(n) };
       }
     }
   }
@@ -2926,9 +2950,9 @@ export default function WatchlistPage() {
       ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
       : visibleRows;
     const filterHidden = visibleRows.length - filteredRows.length;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px';
-    // 17 tracks × min widths (1232px) + 16 gaps × 6px (96px) + padding 14+14 (28px) = 1356px
-    const TICKER_TABLE_MIN_WIDTH = 1356;
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 80px 60px 84px 88px 88px 72px 64px 52px 80px 80px';
+    // 30 tracks: original 17 + 13 technical cols; total min ~2386px
+    const TICKER_TABLE_MIN_WIDTH = 2400;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -2947,6 +2971,20 @@ export default function WatchlistPage() {
       { key: 'optionsExpectedMove', label: 'EM' },
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
+      // ── Technical metrics columns ────────────────────────────────────
+      { label: 'MA Stack' },
+      { key: 'pctVs50d', label: '% vs 50D' },
+      { key: 'pctVs200d', label: '% vs 200D' },
+      { label: 'Extension Risk' },
+      { key: 'pos52w', label: '52W Pos' },
+      { key: 'pctFrom52wHigh', label: '% From 52W High' },
+      { label: 'Entry Zone' },
+      { label: 'Breakout Signal' },
+      { label: 'Accum/Dist' },
+      { label: 'Squeeze' },
+      { key: 'atrPct', label: 'ATR %' },
+      { label: 'Momentum Trend' },
+      { label: 'Technical State' },
     ];
 
     /* ── inline filter modal ─────────────────────────────────────────── */
@@ -3429,6 +3467,61 @@ export default function WatchlistPage() {
                   <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
                   {/* OI — col 17 */}
                   <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
+                  {/* ── Technical Metrics Columns 18-30 ────────────────────── */}
+                  {((_tm, _ts, _tts) => {
+                    const _sp: React.CSSProperties = { fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const };
+                    const _tl = (s: string | null | undefined) =>
+                      s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : DASH;
+                    const _signedPct = (v: number | null | undefined) =>
+                      v != null && Number.isFinite(Number(v)) ? `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(1)}%` : DASH;
+                    // MA Stack
+                    const _maClr = _tm?.ma_stack === 'bull' ? '#22c55e' : _tm?.ma_stack === 'bear' ? C.red : _tm?.ma_stack ? C.amber : C.dim;
+                    // % vs 50D / 200D
+                    const _p50 = _tm?.pct_vs_sma_50; const _p50Clr = _p50 != null ? (Number(_p50) > 0 ? '#22c55e' : C.red) : C.dim;
+                    const _p200 = _tm?.pct_vs_sma_200; const _p200Clr = _p200 != null ? (Number(_p200) > 0 ? '#22c55e' : C.red) : C.dim;
+                    // Extension Risk
+                    const _extClr = _tm?.extension_risk === 'overheated' ? '#fb923c' : _tm?.extension_risk === 'extended' ? C.amber : _tm?.extension_risk === 'normal' ? '#22c55e' : C.dim;
+                    // 52W Pos
+                    const _pos52 = _tm?.range_position_52w;
+                    const _pos52Str = _pos52 != null && Number.isFinite(Number(_pos52)) ? `${Number(_pos52).toFixed(0)}%` : DASH;
+                    // % From 52W High
+                    const _pffh = _tm?.pct_from_52w_high;
+                    const _pffhStr = _pffh == null ? DASH : Number(_pffh) >= 0 ? 'At High' : `${Number(_pffh).toFixed(1)}%`;
+                    const _pffhClr = _pffh == null ? C.dim : Number(_pffh) >= 0 ? '#22c55e' : Number(_pffh) > -5 ? C.amber : C.dim;
+                    // Entry Zone
+                    const _ezClr = _tm?.entry_zone === 'optimal' ? '#22c55e' : _tm?.entry_zone === 'breakout_watch' ? C.amber : _tm?.entry_zone === 'extended' ? '#fb923c' : C.dim;
+                    // Breakout Signal
+                    const _bsClr = _tm?.breakout_signal === 'triggered' ? '#22c55e' : _tm?.breakout_signal === 'near_trigger' ? C.amber : _tm?.breakout_signal === 'failed' ? C.red : C.dim;
+                    // Accum/Dist
+                    const _adClr = _tm?.accumulation_distribution_signal === 'bullish' ? '#22c55e' : _tm?.accumulation_distribution_signal === 'bearish' ? C.red : C.dim;
+                    // Squeeze
+                    const _sqClr = _tm?.squeeze_signal === 'expansion' ? '#22c55e' : _tm?.squeeze_signal === 'compression' ? C.red : _tm?.squeeze_signal === 'squeeze' ? C.amber : C.dim;
+                    // ATR %
+                    const _atrV = _tm?.atr_14_pct;
+                    const _atrStr = _atrV != null && Number.isFinite(Number(_atrV)) ? `${Number(_atrV).toFixed(1)}%` : DASH;
+                    // Momentum Trend
+                    const _moClr = _tm?.momentum_trend === 'positive' ? '#22c55e' : _tm?.momentum_trend === 'negative' ? C.red : C.dim;
+                    // Technical State (root overrides metric copy)
+                    const _tsVal: string | null | undefined = _ts ?? _tm?.technical_state;
+                    const _tsClr = _tsVal === 'overheated' ? '#fb923c' : _tsVal === 'extended' ? C.amber : _tsVal === 'normal' ? '#22c55e' : _tsVal === 'weak' ? C.red : C.dim;
+                    return (
+                      <>
+                        <span style={{ ..._sp, color: _maClr }}>{_tl(_tm?.ma_stack)}</span>
+                        <span style={{ ..._sp, color: _p50Clr }}>{_signedPct(_p50)}</span>
+                        <span style={{ ..._sp, color: _p200Clr }}>{_signedPct(_p200)}</span>
+                        <span style={{ ..._sp, color: _extClr }}>{_tl(_tm?.extension_risk)}</span>
+                        <span style={{ ..._sp, color: _pos52 != null ? C.text : C.dim }}>{_pos52Str}</span>
+                        <span style={{ ..._sp, color: _pffhClr }}>{_pffhStr}</span>
+                        <span style={{ ..._sp, color: _ezClr }}>{_tl(_tm?.entry_zone)}</span>
+                        <span style={{ ..._sp, color: _bsClr }}>{_tl(_tm?.breakout_signal)}</span>
+                        <span style={{ ..._sp, color: _adClr }}>{_tl(_tm?.accumulation_distribution_signal)}</span>
+                        <span style={{ ..._sp, color: _sqClr }}>{_tl(_tm?.squeeze_signal)}</span>
+                        <span style={{ ..._sp, color: _atrV != null ? C.text : C.dim }}>{_atrStr}</span>
+                        <span style={{ ..._sp, color: _moClr }}>{_tl(_tm?.momentum_trend)}</span>
+                        <span style={{ ..._sp, color: _tsClr }}>{_tl(_tsVal)}</span>
+                      </>
+                    );
+                  })(_s2?.technical_metrics, _s2?.technical_state, _s2?.technical_timing_score)}
                 </div>
               );
             })}
