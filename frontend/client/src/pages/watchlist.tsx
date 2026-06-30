@@ -760,7 +760,7 @@ type FundColFmt = 'symbol' | 'str' | 'price' | 'compact' | 'pct' | 'ratio' | 'vo
 interface FundColDef { key: string; label: string; aliases?: string[]; fmt: FundColFmt }
 
 const FUND_COLS: FundColDef[] = [
-  { key: 'ticker',           label: 'Symbol',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
+  { key: 'ticker',           label: 'Ticker',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
   { key: 'canonical_theme_name', label: 'Theme',     aliases: ['section_title', 'watchlist_theme', 'ai_theme', 'enhanced_theme', 'theme_label', 'mapped_theme'], fmt: 'str' },
   { key: 'market_cap',       label: 'Mkt Cap',       aliases: ['marketCap', 'market_capitalization'],                              fmt: 'compact' },
   { key: 'revenue',          label: 'Revenue',       aliases: ['revenue_ttm', 'total_revenue', 'totalRevenue', 'annualRevenue'],   fmt: 'compact' },
@@ -3574,7 +3574,7 @@ export default function WatchlistPage() {
                   const isFirst = ci === 0;
                   const stickyStyle: React.CSSProperties = isFirst ? {
                     position: 'sticky' as const, left: 0, zIndex: 1,
-                    background: rowBg,
+                    background: ri % 2 === 0 ? C.bg : C.card,
                     boxShadow: '2px 0 4px rgba(0,0,0,0.5)',
                   } : { background: rowBg };
 
