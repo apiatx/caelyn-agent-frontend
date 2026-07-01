@@ -5516,21 +5516,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.json({ major_developments: [], major_developments_count: 0, high_signal_count: 0 }); }
   });
 
-  // News for specific watchlist — get tickers from that watchlist, then use Express RSS proxy
+  // News for specific watchlist — use tickers passed by frontend (avoids redundant
+  // FastAPI re-fetch that was timing out and returning empty news).
+  // Fallback: fetch tickers from FastAPI if query param not provided.
   app.get('/api/watchlist/:wid/news', async (req, res) => {
     try {
       const { wid } = req.params;
+      const port = process.env.PORT || 5000;
+
+      // Frontend passes ?tickers=AAOI,MU,... to skip the slow FastAPI re-fetch
+      const queryTickers = (req.query.tickers as string | undefined)?.trim();
+      if (queryTickers) {
+        const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${encodeURIComponent(queryTickers)}`);
+        return res.json(await newsRes.json());
+      }
+
+      // Fallback: fetch watchlist from FastAPI to get tickers
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 10000);
-      // Get tickers for this watchlist
       const wlRes = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl.signal });
       if (!wlRes.ok) return res.json({});
       const wlData = await wlRes.json();
       if (wlData.empty || !wlData.tickers?.length) return res.json({});
       const tickers = wlData.tickers.join(',');
-      // Use our working Express RSS proxy
-      const port = process.env.PORT || 5000;
-      const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${tickers}`);
+      const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${encodeURIComponent(tickers)}`);
       res.json(await newsRes.json());
     } catch { res.json({}); }
   });

@@ -1745,7 +1745,13 @@ export default function WatchlistPage() {
     queryKey: ['/api/watchlist/news', activeId],
     queryFn: async () => {
       if (!activeId) return {};
-      const r = await fetch(`/api/watchlist/${activeId}/news`);
+      // Pass tickers we already have so the Express proxy can skip re-fetching
+      // from FastAPI (which was the cause of timeouts → empty news results).
+      const wlTickers = (watchlist?.tickers || []).join(',');
+      const url = wlTickers
+        ? `/api/watchlist/${activeId}/news?tickers=${encodeURIComponent(wlTickers)}`
+        : `/api/watchlist/${activeId}/news`;
+      const r = await fetch(url);
       if (!r.ok) return {};
       return r.json();
     },
@@ -2806,8 +2812,8 @@ export default function WatchlistPage() {
       }}>
         {allStocks.map((stock, i) => {
           const col = stock.section_id ? sectionAccent(stock.section_id) : C.teal;
-          const chg1d = stock.change_pct ?? stock.change_pct_1d;
-          const cCol = changeColor(chg1d);
+          const chg1d = getDailyChangePct(stock);
+          const cCol = changeColor(chg1d ?? undefined);
           return (
             <button
               key={`chip-${stock.ticker || i}`}
@@ -3416,8 +3422,8 @@ export default function WatchlistPage() {
             {/* table rows */}
             {filteredRows.map((stock, i) => {
               const isPending = stock._pending;
-              const chg1d = stock.change_pct ?? stock.change_pct_1d;
-              const cCol = changeColor(chg1d);
+              const chg1d = getDailyChangePct(stock);
+              const cCol = changeColor(chg1d ?? undefined);
               // Stage (pre-computed)
               const _sa = (stock as any).stage_analysis;
               const _s2 = stock.stage2_breakout;
@@ -3444,12 +3450,12 @@ export default function WatchlistPage() {
               const _scClr = _scVal != null && _scVal >= 70 ? C.green : _scVal != null && _scVal >= 50 ? C.amber : C.dim;
               const _oSig = _oUn ? '' : (stock.options_signal ?? '');
               const _oSigL = _oSig.toLowerCase();
-              const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dimLow;
+              const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dim;
               const _oSigStr = _oHas ? (_oUn ? DASH : (_oSig || DASH)) : _oLd;
               const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale options data' : undefined;
               const _oCP = _oUn ? null : (stock.options_put_call_ratio != null ? Number(stock.options_put_call_ratio) : null);
               const _oCPStr = _oCP != null && Number.isFinite(_oCP) ? _oCP.toFixed(2) : (_oHas ? DASH : _oLd);
-              const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dimLow;
+              const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dim;
               const _oIV = _oUn ? null : (stock.options_iv != null ? Number(stock.options_iv) : null);
               const _oIVStr = _oIV != null && Number.isFinite(_oIV) ? `${(_oIV > 5 ? _oIV : _oIV * 100).toFixed(0)}%` : (_oHas ? DASH : _oLd);
               const _oEM = _oUn ? null : (stock.options_expected_move != null ? Number(stock.options_expected_move) : null);
@@ -3591,9 +3597,9 @@ export default function WatchlistPage() {
                   {/* P/C — col 13 */}
                   <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
                   {/* IV — col 14 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dimLow, opacity:_oDim }}>{_oIVStr}</span>
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
                   {/* EM — col 15 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dimLow, opacity:_oDim }}>{_oEMStr}</span>
+                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
                   {/* Opt Vol — col 16 */}
                   <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
                   {/* OI — col 17 */}

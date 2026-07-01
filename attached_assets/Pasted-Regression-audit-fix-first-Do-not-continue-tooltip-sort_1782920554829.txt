@@ -1,0 +1,248 @@
+Regression audit/fix first. Do not continue tooltip/sort polish until existing Watchlist behavior is restored.
+
+Problems after recent Watchlist Technical column work:
+1. Existing `Chg %` column now shows `—`.
+2. Existing `Volume %` column now shows `—`.
+3. Watchlist `LIVE NEWS` section now shows:
+   "LIVE NEWS (0)"
+   "No major developments detected in recent watchlist news."
+   "No news available yet"
+
+These worked before. Treat this as a regression.
+
+Do not touch backend unless the audit proves the backend/API payload is missing the data.
+Do not add API calls.
+Do not touch Tradier.
+Do not touch the Tradier dynamic pacer.
+Do not touch Options Flow.
+Do not touch Fundamental toggle.
+Do not touch setup tabs.
+Do not patch compiled bundles.
+Do not change provider logic.
+Do not clear caches unless explicitly needed and explained.
+
+Part A — Audit API payload vs frontend mapping
+
+Inspect the real Watchlist API response used by the frontend.
+
+For sample tickers:
+- AAOI
+- MU
+- NVDA
+- PLTR
+- ASTS
+- OPTX
+
+Confirm whether the payload still contains values for:
+- Chg %
+- Volume %
+- current price/change fields
+- relative volume / volume percent fields
+
+Check possible keys:
+- change_pct
+- changePercent
+- percent_change
+- price_change_pct
+- day_change_pct
+- chg_pct
+- volume_pct
+- volume_percent
+- volume_change_pct
+- rel_vol
+- relative_volume
+- vol_x
+- volume
+- avg_volume
+
+Then inspect frontend mapping:
+- tickerColumns definition
+- row cell rendering
+- getSortValue
+- format percent helpers
+- any row/cell array alignment
+- any ScreenContext or filter context changes
+
+Determine whether:
+1. API still has values but frontend reads wrong keys.
+2. API values are valid but formatter treats them as missing.
+3. Adding new Technical cells shifted row alignment.
+4. SortKey/type changes accidentally broke existing fields.
+5. Valid 0 is being treated as missing.
+6. Numeric strings are not being parsed.
+
+Fix `Chg %` and `Volume %` to use the exact same source/behavior they used before the Technical column work.
+
+Part B — Audit Live News source
+
+Find the Watchlist `LIVE NEWS` component/source.
+
+Report:
+- exact frontend file/component
+- exact API endpoint or payload field it uses
+- whether it gets news from Watchlist GET, a separate news endpoint, or cached backend service
+- whether the backend payload currently contains news
+- whether the frontend is filtering news incorrectly
+- whether the active watchlist ID, favorites filter, or selected section is now causing zero results
+- whether a recent frontend change changed the data shape passed into the news component
+
+Check for:
+- live_news
+- news
+- headlines
+- watchlist_news
+- major_developments
+- recent_news
+- news_items
+- catalysts/news merged payload
+- favorite-only filter accidentally applied
+- active watchlist mismatch
+- empty array default overriding real data
+- stale query key / React Query key mismatch
+
+Part C — Restore Live News
+
+If backend payload/API has news:
+- fix frontend mapping/filtering only
+- restore the previous Live News behavior
+- count should reflect actual items
+- section should show headlines again
+
+If backend API returns zero news:
+- stop and report the exact endpoint and backend response
+- do not invent a new frontend workaround
+- do not add new provider calls
+
+Important:
+Do not create a new news fetch path. Use the existing Watchlist news path/cache.
+
+Part D — Preserve new Technical columns
+
+While fixing regressions:
+- keep the new Technical columns
+- do not remove technical_metrics wiring
+- missing technical_metrics should still show `—`
+- do not break sortable technical columns already added
+
+Part E — Then finish Technical sorting
+
+After regressions are fixed, make the new Technical columns sortable.
+
+Numeric columns:
+- % vs 50D
+- % vs 200D
+- 52W Pos
+- % From 52W High
+- ATR %
+
+Label columns should use custom bullish-to-bearish rank maps, not alphabetical.
+
+Rank maps:
+
+MA Stack:
+- bull: 3
+- mixed: 2
+- bear: 1
+- missing: 0
+
+Extension Risk:
+- pullback_buy_zone: 6
+- healthy: 5
+- neutral: 4
+- extended: 3
+- overheated: 2
+- broken: 1
+- missing: 0
+
+Entry Zone:
+- fresh_breakout: 8
+- breakout_watch: 7
+- 20d_pullback: 6
+- 50d_pullback: 5
+- neutral: 4
+- extended: 3
+- overheated: 2
+- broken: 1
+- missing: 0
+
+Breakout Signal:
+- confirmed_breakout: 8
+- fresh_breakout: 7
+- near_trigger: 6
+- coiling: 5
+- no_setup: 4
+- extended_breakout: 3
+- failed_breakout: 1
+- missing: 0
+
+Accum/Dist:
+- heavy_accumulation: 5
+- accumulation: 4
+- dry_up: 3
+- neutral: 2
+- distribution: 1
+- missing: 0
+
+Squeeze:
+- coiling: 5
+- tight: 4
+- expansion: 3
+- normal: 2
+- volatile: 1
+- missing: 0
+
+Momentum Trend:
+- accelerating: 5
+- positive: 4
+- cooling: 3
+- diverging: 2
+- negative: 1
+- neutral: 0
+- missing: 0
+
+Technical State:
+- breakout_trigger: 9
+- pullback_entry: 8
+- coiling: 7
+- trend_advance: 6
+- neutral: 5
+- extended: 4
+- overheated: 3
+- distribution: 2
+- broken: 1
+- unknown/missing: 0
+
+Descending sort should show best/bullish/actionable first.
+Ascending sort should show weakest/bearish first.
+
+Part F — Header explanations
+
+Only after regressions are fixed, add hover/tap explanations to the new Technical column headers.
+
+Use existing Tooltip/Popover pattern if available.
+Do not let tooltips break sorting clicks.
+
+Part G — Validation
+
+Validate:
+
+1. `Chg %` values restored.
+2. `Volume %` values restored.
+3. Valid `0` renders as `0.0%`, not `—`.
+4. `LIVE NEWS` count is no longer incorrectly 0 if backend has news.
+5. Live News headlines render again.
+6. New Technical columns still render.
+7. New Technical columns sort correctly.
+8. Fundamental toggle unchanged.
+9. Setup tabs unchanged.
+10. No backend changes unless API payload was proven missing.
+11. No new API calls.
+12. Build passes or only pre-existing unrelated errors remain.
+
+Report:
+- root cause of Chg % blank
+- root cause of Volume % blank
+- root cause of Live News empty
+- files changed
+- proof backend payload was/was not missing
+- validation screenshots/logs if available
