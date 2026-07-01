@@ -1288,6 +1288,33 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
 /* ═══════════════════════════════════════════════════════════════════
    Chain Reaction — Bottleneck Screener (rebuilt)
    ═══════════════════════════════════════════════════════════════════ */
+
+// Hardcoded fallback so tabs render instantly and never depend solely on a
+// live fetch. When the API loads successfully it replaces these with live data.
+// Keep this list in display_order sync with the backend.
+const FALLBACK_ANCHORS = [
+  { anchor_key: 'NVDA',      visible_name: 'Nvidia',      display_order: 1 },
+  { anchor_key: 'SPCX',      visible_name: 'X Ecosystem', display_order: 2 },
+  { anchor_key: 'MU',        visible_name: 'Micron',      display_order: 3 },
+  { anchor_key: 'ANTHROPIC', visible_name: 'Anthropic',   display_order: 4 },
+  { anchor_key: 'OPENAI',    visible_name: 'OpenAI',      display_order: 5 },
+  { anchor_key: 'TSM',       visible_name: 'TSM',         display_order: 6 },
+  { anchor_key: 'GOOG',      visible_name: 'Google',      display_order: 7 },
+  { anchor_key: 'AAPL',      visible_name: 'Apple',       display_order: 8 },
+  { anchor_key: 'AMD',       visible_name: 'AMD',         display_order: 9 },
+  { anchor_key: 'AVGO',      visible_name: 'Broadcom',    display_order: 10 },
+  { anchor_key: 'MSFT',      visible_name: 'Microsoft',   display_order: 11 },
+  { anchor_key: 'META',      visible_name: 'Meta',        display_order: 12 },
+  { anchor_key: 'AMZN',      visible_name: 'Amazon',      display_order: 13 },
+];
+
+const LABEL_OVERRIDES: Record<string, string> = {
+  NVDA: 'Nvidia',
+  SPCX: 'X Ecosystem',
+  MU:   'Micron',
+  GOOG: 'Google',
+};
+
 function StrategyScreenerInner() {
   const [activeTab,    setActiveTab]    = useState<string>('multi-anchor');
   const [sortCol,      setSortCol]      = useState<string>('anchor_count');
@@ -1300,20 +1327,21 @@ function StrategyScreenerInner() {
   const [showAddModal, setShowAddModal] = useState(false);
   const qc = useQueryClient();
 
+  // v2 key busts the old 12-anchor stale cache; staleTime:0 ensures a fresh
+  // fetch on every mount so newly-added anchors always appear.
   const { data: anchorsData } = useQuery<any>({
-    queryKey: ['bottlenecks-anchors'],
+    queryKey: ['bottlenecks-anchors-v2'],
     queryFn:  fetchAnchorList,
-    staleTime: 15 * 60 * 1000,
+    staleTime: 0,
     retry: 1,
   });
-  const LABEL_OVERRIDES: Record<string, string> = {
-    NVDA: 'Nvidia',
-    SPCX: 'X Ecosystem',
-    MU:   'Micron',
-    GOOG: 'Google',
-  };
+
   const anchors: any[] = useMemo(() => {
-    const raw: any[] = (anchorsData?.anchors ?? []).map((a: any) =>
+    // Use live API data when available; fall back to hardcoded list so tabs
+    // always render (including Micron) even while the fetch is in-flight.
+    const apiList: any[] = anchorsData?.anchors ?? [];
+    const source = apiList.length > 0 ? apiList : FALLBACK_ANCHORS;
+    const raw = source.map((a: any) =>
       LABEL_OVERRIDES[a.anchor_key]
         ? { ...a, visible_name: LABEL_OVERRIDES[a.anchor_key] }
         : a

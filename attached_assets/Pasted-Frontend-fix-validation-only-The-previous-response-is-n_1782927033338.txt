@@ -1,0 +1,177 @@
+Frontend fix/validation only.
+
+The previous response is not sufficient. I do not see a Micron tab on the Bottlenecks page, and the Multi-anchor Bottlenecks table does not appear updated with MU/Micron overlap.
+
+Do not touch Watchlist.
+Do not touch unrelated pages.
+Do not edit backend.
+Do not assume this works from API theory.
+Do not mark complete until the actual Bottlenecks UI visibly shows MU.
+
+Problem:
+You said MU should appear automatically because `/api/bottlenecks/anchors` returns MU, but the actual Bottlenecks page does not show a Micron tab.
+
+Required debugging sequence:
+
+1. Identify the exact component rendered by `/app/bottlenecks`.
+
+Confirm:
+
+* route path `/app/bottlenecks`
+* component rendered by that route
+* file path of that component
+* whether it is the same component you edited in `strategy-screener.tsx`
+* whether there is another Bottlenecks page/component that is actually being used
+
+Do not assume. Trace the route from App/router to rendered component.
+
+2. Inspect the actual frontend fetch for anchors.
+
+In the Bottlenecks page code, find the fetch call for:
+
+`/api/bottlenecks/anchors`
+
+Confirm the parser handles the actual backend shape:
+
+```js
+{
+  status: "ok",
+  anchors: [...]
+}
+```
+
+If the frontend expects a raw array, fix it.
+
+The UI must render from `response.anchors`, not `response` directly.
+
+3. Confirm MU exists in frontend state.
+
+Add temporary console logging if needed, then remove or keep only useful dev-safe logs.
+
+Log/check:
+
+* raw anchors response
+* parsed anchors array length
+* parsed anchor keys
+* whether `MU` is present
+* final rendered tab list
+
+Expected:
+
+* anchors length = 13
+* keys include `MU`
+* MU display_order = 3
+* rendered tabs include `Micron`
+
+4. Fix fallback/static anchors.
+
+If the page falls back to a static anchor list when the fetch fails, update that fallback to include MU.
+
+Expected fallback tab order:
+
+* NVDA
+* SPCX / X
+* MU
+* ANTHROPIC
+* OPENAI
+* TSM
+* GOOG
+* AAPL
+* AMD
+* AVGO
+* MSFT
+* META
+* AMZN
+
+Labels:
+
+* NVDA → `Nvidia`
+* SPCX/X → `X Ecosystem`
+* MU → `Micron`
+* GOOG → `Google`
+
+5. Confirm Multi-anchor endpoint uses the right response key.
+
+The Multi-anchor tab must call exactly:
+
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Backend response uses:
+
+`items`
+
+not `rows`.
+
+Confirm the frontend table data is reading:
+
+`response.items`
+
+Expected:
+
+* displayed Multi-anchor rows = 148
+* MU appears in anchor badges for overlapping rows
+* examples like ASML, LRCX, AMAT, KLAC should include MU when backend returns MU
+
+6. Confirm tab click behavior.
+
+Click the Micron tab or simulate tab state.
+
+The MU tab must call:
+
+`/api/bottlenecks/anchor/MU`
+
+Expected:
+
+* backend rows = 117
+* frontend displayed rows = 117
+* header says `117 bottlenecks across 11 categories` or dynamically equivalent
+
+7. Confirm drawer behavior.
+
+Open these MU rows:
+
+* ASML
+* 042700.KS
+* 8299.TWO
+
+Drawer endpoint should be:
+
+`/api/bottlenecks/anchor/MU/ticker/{ticker}`
+
+Expected:
+
+* drawer opens
+* TradingView chart attempts to render
+* evidence / why it matters appears
+* cross-anchor appearances appear if returned
+
+8. Visual/browser validation required.
+
+You must validate the actual rendered `/app/bottlenecks` page, not just API calls.
+
+If login blocks screenshot validation:
+
+* say that clearly
+* still validate by inspecting the rendered component/state after authentication if possible
+* do not claim visual success if you only saw the login page
+
+9. Final report must include:
+
+* exact `/app/bottlenecks` component file path
+* exact anchors response shape
+* parsed anchor keys
+* rendered tab labels
+* whether Micron tab is visible
+* Multi-anchor backend item count
+* Multi-anchor frontend displayed count
+* MU backend row count
+* MU frontend displayed row count
+* drawer validation for ASML
+* files changed
+
+Do not mark complete unless:
+
+* Micron tab is visible on `/app/bottlenecks`
+* Multi-anchor displayed rows = 148
+* MU displayed rows = 117
+* MU badges appear in Multi-anchor rows where backend returns MU
