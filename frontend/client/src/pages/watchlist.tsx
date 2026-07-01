@@ -3016,9 +3016,9 @@ export default function WatchlistPage() {
       ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
       : visibleRows;
     const filterHidden = visibleRows.length - filteredRows.length;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 80px 60px 84px 88px 88px 72px 64px 52px 80px 80px';
-    // 30 tracks: original 17 + 13 technical cols; total min ~2386px
-    const TICKER_TABLE_MIN_WIDTH = 2400;
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px';
+    // 30 tracks: original 17 + 13 technical cols; total min ~2490px
+    const TICKER_TABLE_MIN_WIDTH = 2490;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -3597,7 +3597,7 @@ export default function WatchlistPage() {
                         <span style={{ ..._sp, color: _maClr }}>{_tl(_tm?.ma_stack)}</span>
                         <span style={{ ..._sp, color: _p50Clr }}>{_signedPct(_p50)}</span>
                         <span style={{ ..._sp, color: _p200Clr }}>{_signedPct(_p200)}</span>
-                        <span style={{ ..._sp, color: _extClr }}>{_tl(_tm?.extension_risk)}</span>
+                        <span style={{ ..._sp, color: _extClr }}>{_tm?.extension_risk === 'pullback_buy_zone' ? 'Pullback Buy' : _tl(_tm?.extension_risk)}</span>
                         <span style={{ ..._sp, color: _pos52 != null ? C.text : C.dim }}>{_pos52Str}</span>
                         <span style={{ ..._sp, color: _pffhClr }}>{_pffhStr}</span>
                         <span style={{ ..._sp, color: _ezClr }}>{_tl(_tm?.entry_zone)}</span>
