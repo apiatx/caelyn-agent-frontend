@@ -1,0 +1,218 @@
+Frontend audit/fix only first.
+
+Problems:
+1. The new Technical columns look good, but they need to be sortable. For label-based columns, sorting should use custom bullish-to-bearish / best-to-worst ranking, not alphabetical.
+2. Existing `Chg %` and `Volume %` columns are now showing blank `—`. These worked before. Need to audit whether this is a frontend mapping/render regression or backend payload issue.
+
+Do not change backend unless the audit proves the API payload is missing the fields.
+Do not add API calls.
+Do not touch Tradier.
+Do not touch Fundamental toggle.
+Do not touch setup tabs.
+Do not touch CSV upload.
+Do not patch compiled bundles.
+
+Part A — Audit `Chg %` and `Volume %`
+
+Before editing, inspect the real Watchlist API payload for sample tickers:
+- AAOI
+- MU
+- NVDA
+- PLTR
+- ASTS
+- OPTX
+
+For each, report whether the payload contains the fields used for:
+- Chg %
+- Volume %
+
+Check possible keys already used in the app:
+- change_pct
+- changePercent
+- percent_change
+- price_change_pct
+- day_change_pct
+- chg_pct
+- volume_pct
+- volume_percent
+- volume_change_pct
+- rel_vol
+- relative_volume
+- vol_x
+- volume
+- avg_volume
+
+Then inspect the frontend table mapping:
+- tickerColumns definition
+- row cell rendering
+- getSortValue
+- any field formatter/helper for Chg %
+- any field formatter/helper for Volume %
+
+Determine:
+1. Did the API stop sending values?
+2. Did the frontend start reading the wrong key?
+3. Did adding new cells shift/break row alignment?
+4. Did formatter logic treat `0` or valid numeric strings as missing?
+5. Did sortKey/type changes affect these cells?
+
+If API payload has values, fix frontend mapping only.
+If API payload is missing values, stop and report before backend changes.
+
+Part B — Restore `Chg %` and `Volume %`
+
+Restore the existing behavior exactly.
+
+Requirements:
+- `Chg %` should use the same field/source it used before the technical column change.
+- `Volume %` should use the same field/source it used before.
+- Valid `0` must display as `0.0%`, not `—`.
+- Numeric strings should parse correctly.
+- Missing/null/NaN should display `—`.
+- Existing sorting for these columns should still work.
+
+Do not rename these columns.
+Do not remove them.
+Do not change backend.
+
+Part C — Add custom sorting for new Technical columns
+
+Make the new Technical columns sortable where useful.
+
+Numeric columns sort normally:
+- % vs 50D
+- % vs 200D
+- 52W Pos
+- % From 52W High
+- ATR %
+- Technical Timing Score if present
+
+For label columns, use explicit rank maps instead of alphabetical sorting.
+
+Sort direction:
+- Descending = most bullish / best technical condition first
+- Ascending = weakest / most bearish first
+
+Add rank maps:
+
+MA Stack:
+- bull: 3
+- mixed: 2
+- bear: 1
+- missing: 0
+
+Extension Risk:
+Best-to-worst:
+- pullback_buy_zone: 6
+- healthy: 5
+- neutral: 4
+- extended: 3
+- overheated: 2
+- broken: 1
+- missing: 0
+
+Entry Zone:
+Best-to-worst:
+- fresh_breakout: 8
+- breakout_watch: 7
+- 20d_pullback: 6
+- 50d_pullback: 5
+- neutral: 4
+- extended: 3
+- overheated: 2
+- broken: 1
+- missing: 0
+
+Breakout Signal:
+Best-to-worst:
+- confirmed_breakout: 8
+- fresh_breakout: 7
+- near_trigger: 6
+- coiling: 5
+- no_setup: 4
+- extended_breakout: 3
+- failed_breakout: 1
+- missing: 0
+
+Accum/Dist:
+Best-to-worst:
+- heavy_accumulation: 5
+- accumulation: 4
+- dry_up: 3
+- neutral: 2
+- distribution: 1
+- missing: 0
+
+Squeeze:
+Best-to-worst for setup quality:
+- coiling: 5
+- tight: 4
+- expansion: 3
+- normal: 2
+- volatile: 1
+- missing: 0
+
+Momentum Trend:
+Best-to-worst:
+- accelerating: 5
+- positive: 4
+- cooling: 3
+- diverging: 2
+- negative: 1
+- neutral: 0
+- missing: 0
+
+Technical State:
+Best-to-worst for entry/timing:
+- breakout_trigger: 9
+- pullback_entry: 8
+- coiling: 7
+- trend_advance: 6
+- neutral: 5
+- extended: 4
+- overheated: 3
+- distribution: 2
+- broken: 1
+- unknown/missing: 0
+
+Important:
+Do not use alphabetical sorting for these labels.
+Do not change label display text.
+Only change sort values.
+
+Part D — Header hover explanations
+
+If tooltip work has not already been added, add header hover/tap explanations for the new Technical columns.
+
+Do not let tooltips break sorting clicks.
+If header has both sort and tooltip, use the existing app pattern for sortable headers with help icons.
+
+Tooltips should explain:
+- what the column means
+- how to interpret bullish/neutral/bearish values
+- entry/exit relevance
+
+Part E — Validation
+
+Validate:
+
+1. `Chg %` values are restored.
+2. `Volume %` values are restored.
+3. `0` values render as `0.0%`, not `—`.
+4. New technical numeric columns sort correctly.
+5. New technical label columns sort by custom rank maps, not alphabetically.
+6. Descending sort puts strongest/best technical states first.
+7. Ascending sort puts weakest/worst states first.
+8. Fundamental toggle unchanged.
+9. Setup tabs unchanged.
+10. No backend changes unless API payload was proven missing.
+11. No new API calls.
+12. Build passes or report only pre-existing unrelated build errors.
+
+Sample tickers to validate visually/data-wise:
+- AAOI
+- MU
+- NVDA
+- PLTR
+- ASTS
+- OPTX

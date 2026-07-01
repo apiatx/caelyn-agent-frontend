@@ -1598,7 +1598,7 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2' | 'pctVs50d' | 'pctVs200d' | 'pos52w' | 'pctFrom52wHigh' | 'atrPct' | 'techTimingScore'>(null);
+  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2' | 'pctVs50d' | 'pctVs200d' | 'pos52w' | 'pctFrom52wHigh' | 'atrPct' | 'techTimingScore' | 'maStack' | 'extRisk' | 'entryZone' | 'bkSignal' | 'accumDist' | 'squeezeSig' | 'momentumTrend' | 'techState'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
@@ -2260,6 +2260,71 @@ export default function WatchlistPage() {
       case 'techTimingScore': {
         const n = Number(stock.stage2_breakout?.technical_timing_score);
         return { v: n, missing: !Number.isFinite(n) };
+      }
+      case 'maStack': {
+        const RANK: Record<string, number> = { bull: 3, mixed: 2, bear: 1 };
+        const v = stock.stage2_breakout?.technical_metrics?.ma_stack ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'extRisk': {
+        const RANK: Record<string, number> = {
+          pullback_buy_zone: 6, healthy: 5, neutral: 4, extended: 3, overheated: 2, broken: 1,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.extension_risk ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'entryZone': {
+        const RANK: Record<string, number> = {
+          fresh_breakout: 8, breakout_watch: 7, '20d_pullback': 6, '50d_pullback': 5,
+          neutral: 4, extended: 3, overheated: 2, broken: 1,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.entry_zone ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'bkSignal': {
+        const RANK: Record<string, number> = {
+          confirmed_breakout: 8, fresh_breakout: 7, near_trigger: 6, coiling: 5,
+          no_setup: 4, extended_breakout: 3, failed_breakout: 1,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.breakout_signal ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'accumDist': {
+        const RANK: Record<string, number> = {
+          heavy_accumulation: 5, accumulation: 4, dry_up: 3, neutral: 2, distribution: 1,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.accumulation_distribution_signal ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'squeezeSig': {
+        const RANK: Record<string, number> = {
+          coiling: 5, tight: 4, expansion: 3, normal: 2, volatile: 1,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.squeeze_signal ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'momentumTrend': {
+        const RANK: Record<string, number> = {
+          accelerating: 5, positive: 4, cooling: 3, diverging: 2, negative: 1, neutral: 0,
+        };
+        const v = stock.stage2_breakout?.technical_metrics?.momentum_trend ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'techState': {
+        const RANK: Record<string, number> = {
+          breakout_trigger: 9, pullback_entry: 8, coiling: 7, trend_advance: 6,
+          neutral: 5, extended: 4, overheated: 3, distribution: 2, broken: 1,
+        };
+        const v = stock.stage2_breakout?.technical_state ?? null;
+        const r = v != null ? (RANK[v] ?? 0) : 0;
+        return { v: r, missing: r === 0 };
       }
     }
   }
@@ -2973,19 +3038,19 @@ export default function WatchlistPage() {
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
       // ── Technical metrics columns ────────────────────────────────────
-      { label: 'MA Stack',         tooltip: 'Whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull = constructive trend; Bear = weak or broken trend.' },
-      { key: 'pctVs50d',  label: '% vs 50D',         tooltip: 'Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.' },
-      { key: 'pctVs200d', label: '% vs 200D',        tooltip: 'Price distance from the 200-day moving average. Shows long-term trend context. Below the 200D is generally weaker.' },
-      { label: 'Extension Risk',   tooltip: 'Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.' },
-      { key: 'pos52w',    label: '52W Pos',           tooltip: 'Where price sits in its 52-week range from 0–100%. Higher = closer to yearly highs / leadership; very low = damaged or early recovery.' },
-      { key: 'pctFrom52wHigh', label: '% From 52W High', tooltip: 'How far below the 52-week high price currently is. Near 0 = near highs / breakout area; deeply negative = more overhead supply or damage.' },
-      { label: 'Entry Zone',       tooltip: 'Interpreted entry timing label — shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.' },
-      { label: 'Breakout Signal',  tooltip: 'Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Separates actionable breakouts from chase/failed setups.' },
-      { label: 'Accum/Dist',       tooltip: 'Recent price/volume behavior scored as accumulation vs. distribution. Accumulation = demand; Distribution = selling pressure; Dry-up can indicate a base or squeeze.' },
-      { label: 'Squeeze',          tooltip: 'Volatility compression or expansion. Tight/coiling = setup energy building; Volatile = wider risk; Expansion = the move may already be underway.' },
-      { key: 'atrPct',    label: 'ATR %',             tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
-      { label: 'Momentum Trend',   tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
-      { label: 'Technical State',  tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
+      { key: 'maStack',        label: 'MA Stack',          tooltip: 'Whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull = constructive trend; Bear = weak or broken trend.' },
+      { key: 'pctVs50d',       label: '% vs 50D',          tooltip: 'Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.' },
+      { key: 'pctVs200d',      label: '% vs 200D',         tooltip: 'Price distance from the 200-day moving average. Shows long-term trend context. Below the 200D is generally weaker.' },
+      { key: 'extRisk',        label: 'Extension Risk',    tooltip: 'Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.' },
+      { key: 'pos52w',         label: '52W Pos',           tooltip: 'Where price sits in its 52-week range from 0–100%. Higher = closer to yearly highs / leadership; very low = damaged or early recovery.' },
+      { key: 'pctFrom52wHigh', label: '% From 52W High',  tooltip: 'How far below the 52-week high price currently is. Near 0 = near highs / breakout area; deeply negative = more overhead supply or damage.' },
+      { key: 'entryZone',      label: 'Entry Zone',        tooltip: 'Interpreted entry timing label — shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.' },
+      { key: 'bkSignal',       label: 'Breakout Signal',   tooltip: 'Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Separates actionable breakouts from chase/failed setups.' },
+      { key: 'accumDist',      label: 'Accum/Dist',        tooltip: 'Recent price/volume behavior scored as accumulation vs. distribution. Accumulation = demand; Distribution = selling pressure; Dry-up can indicate a base or squeeze.' },
+      { key: 'squeezeSig',     label: 'Squeeze',           tooltip: 'Volatility compression or expansion. Tight/coiling = setup energy building; Volatile = wider risk; Expansion = the move may already be underway.' },
+      { key: 'atrPct',         label: 'ATR %',             tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
+      { key: 'momentumTrend',  label: 'Momentum Trend',    tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
+      { key: 'techState',      label: 'Technical State',   tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
     ];
 
     /* ── inline filter modal ─────────────────────────────────────────── */
