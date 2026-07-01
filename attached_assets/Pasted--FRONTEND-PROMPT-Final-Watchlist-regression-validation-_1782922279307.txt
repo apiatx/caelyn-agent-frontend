@@ -1,0 +1,104 @@
+[FRONTEND PROMPT]
+
+Final Watchlist regression validation/fix only.
+
+Good work on:
+- Chg % fallback using getDailyChangePct()
+- Live News route using already-loaded tickers instead of re-fetching FastAPI
+- preserving the new Technical columns
+
+But I need one remaining confirmation/fix:
+
+1. Volume % / VolX / Vol/MC still needs to be explicitly validated.
+The report mentioned this as a likely defensive-read issue, but the changed-files summary only clearly shows Chg % and Live News fixes.
+
+Audit and confirm:
+- which visible column I’m calling “Volume %” maps to in the code
+- whether it is VolX, relative volume, Vol/MC, volume percent, or another field
+- what API keys are present for sample tickers
+- what frontend field the cell currently reads
+- whether rows now display values instead of —
+
+Sample tickers:
+- AAOI
+- MU
+- NVDA
+- PLTR
+- ASTS
+- OPTX
+
+Check possible payload keys:
+- relative_volume
+- rel_vol
+- vol_x
+- volx
+- volume_pct
+- volume_percent
+- volume_change_pct
+- vol_mc_pct
+- vol_mc_ratio
+- volume_market_cap
+- volume_to_market_cap
+- volume
+- avg_volume
+
+If the API has values but the cell shows —, fix frontend mapping only.
+Do not change backend.
+Do not add API calls.
+
+2. Confirm existing Chg % is restored.
+For the same sample tickers, confirm:
+- payload value
+- rendered value
+- valid 0 renders as 0.0%, not —
+
+3. Confirm Live News is restored.
+Confirm:
+- Live News count is no longer incorrectly 0 when RSS returns articles
+- headlines render
+- Express route uses ?tickers= and does not timeout
+- no new provider path was added
+
+4. Confirm new Technical columns are sortable.
+Numeric columns:
+- % vs 50D
+- % vs 200D
+- 52W Pos
+- % From 52W High
+- ATR %
+
+Label columns must use custom bullish-to-bearish rank maps, not alphabetical:
+- MA Stack
+- Extension Risk
+- Entry Zone
+- Breakout Signal
+- Accum/Dist
+- Squeeze
+- Momentum Trend
+- Technical State
+
+Descending sort should show strongest/best technical condition first.
+Ascending sort should show weakest/worst condition first.
+
+5. Confirm header tooltips exist for the new Technical columns.
+If they do not exist yet, add them using the existing app tooltip/popover pattern.
+Do not break sorting clicks.
+
+6. Validation:
+- Chg % restored
+- Volume % restored
+- Live News restored
+- new Technical columns still render
+- technical label columns sort by rank, not alphabetically
+- Fundamental toggle unchanged
+- setup tabs unchanged
+- no backend changes
+- no new API calls
+- build/dev server passes or only pre-existing unrelated errors remain
+
+Report:
+- exact root cause of Volume % blank
+- exact field mapping restored
+- whether technical sorting is rank-based
+- whether tooltips are present
+- files changed
