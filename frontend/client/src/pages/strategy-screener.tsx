@@ -1307,7 +1307,9 @@ function StrategyScreenerInner() {
     retry: 1,
   });
   const LABEL_OVERRIDES: Record<string, string> = {
+    NVDA: 'Nvidia',
     SPCX: 'X Ecosystem',
+    MU:   'Micron',
     GOOG: 'Google',
   };
   const anchors: any[] = useMemo(() => {

@@ -1,0 +1,158 @@
+Frontend only.
+
+Backend has fully added the MU / Micron Bottlenecks anchor. Update the Bottlenecks page to include MU consistently with the existing anchor tabs.
+
+Do not edit backend.
+Do not touch unrelated pages.
+Do not redesign the Bottlenecks page again.
+Do not call `/api/bottlenecks/current`.
+Do not make live market-data calls.
+Do not trigger LLM/web research.
+
+Backend validation summary:
+
+* `/api/bottlenecks/anchors` now returns 13 anchors
+* MU is display_order=3
+* MU has 117 rows
+* MU has 11 categories
+* `/api/bottlenecks/anchor/MU` works
+* `/api/bottlenecks/anchor/MU/ticker/{ticker}` works
+* `/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000` returns 148 items
+* Multi-anchor screener rows are under `items`, not `rows`
+* 55 multi-anchor rows include MU
+
+Tasks:
+
+1. Add MU / Micron tab to the Bottlenecks page.
+
+Visible tab order after `Multi-anchor Bottlenecks` should be:
+
+1. Nvidia
+2. X Ecosystem
+3. Micron
+4. Anthropic
+5. OpenAI
+6. TSM
+7. Google
+8. Apple
+9. AMD
+10. Broadcom
+11. Microsoft
+12. Meta
+13. Amazon
+
+Use backend `display_order` if available, but keep frontend label overrides:
+
+* SPCX should display as `X Ecosystem`
+* GOOG should display as `Google`
+* MU should display as `Micron`
+* NVDA should display as `Nvidia`
+
+2. MU tab behavior
+
+Endpoint:
+`/api/bottlenecks/anchor/MU`
+
+The MU tab should use the same dense screener table as every other anchor tab.
+
+Header:
+`117 bottlenecks across 11 categories`
+
+Or dynamically:
+`{N} bottlenecks across {M} categories`
+
+Columns stay consistent:
+
+* Ticker
+* Company
+* Category / Layer
+* Role
+* Bottleneck Score
+* Directness / Confidence
+* Basket / Tier if available
+* Market Cap
+* 1D %
+* VolX / momentum if available
+* Options / flow score if available
+* Why it matters preview
+
+Do not hardcode MU row data in frontend.
+
+3. MU drawer behavior
+
+Clicking an MU row should call:
+
+`/api/bottlenecks/anchor/MU/ticker/{ticker}`
+
+Validate drawer opens for:
+
+* ASML
+* 042700.KS
+* 8299.TWO
+* 688008.SS
+* 2404.TW
+
+Drawer should show the same sections as the other anchors:
+
+* TradingView chart attempt
+* ticker/company
+* category/layer
+* bottleneck score
+* supply-chain role
+* evidence / why it matters
+* why hidden / why now if present
+* invalidation / risk notes if present
+* cross-anchor appearances if returned
+
+4. Multi-anchor tab
+
+Keep using this exact endpoint:
+
+`/api/bottlenecks/multi-anchor-screener?min_anchors=2&limit=1000`
+
+Important:
+The backend response uses `items`, not `rows`.
+
+Make sure the frontend reads:
+`response.items`
+
+Do not accidentally read only `response.rows`.
+
+Expected count:
+
+* 148 multi-anchor items
+* 55 include MU in anchors
+
+MU should naturally appear in anchor badges for overlapping tickers like ASML, LRCX, AMAT, KLAC, VRT, ETN, MRVL, and AEHR.
+
+5. Existing behavior must remain intact
+
+Confirm:
+
+* Multi-anchor Bottlenecks is still the default tab
+* Old Current / All tab is still gone
+* Old repeated multi-anchor section is not shown inside individual anchor tabs
+* Nvidia is still first after Multi-anchor
+* X label still says `X Ecosystem`
+* Google label still says `Google`
+* Missing market data still renders as `—`
+* Foreign tickers remain visible
+* No unrelated pages changed
+
+6. Validation report
+
+Return this table:
+
+Tab | Backend rows/items | Frontend displayed rows | Drawer works? | Notes
+
+Required:
+
+* Multi-anchor displayed rows = 148
+* MU displayed rows = 117
+* MU drawer works for ASML
+* MU drawer works for 042700.KS
+* MU drawer works for 8299.TWO
+* Multi-anchor badges include MU where backend returns MU
+* no console errors
+* no TypeScript errors
+* no failed proxy calls
