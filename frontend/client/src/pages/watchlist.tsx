@@ -1617,6 +1617,7 @@ export default function WatchlistPage() {
   });
   /* ── Screener filters ────────────────────────────────────────────── */
   const [screenerFilters, setScreenerFilters] = useState<ScreenerFilter[]>(loadStoredFilters);
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [draftField, setDraftField] = useState<string>(SCREENER_FILTER_FIELDS[0].key);
   const [draftOp, setDraftOp]   = useState<FilterOperator>('gt');
@@ -2367,6 +2368,22 @@ export default function WatchlistPage() {
     });
   }, [mergedTickers, watchlist]);
 
+  /* ── unique themes from actual screener rows (used by THEMES bar) ── */
+  const screenerThemes = useMemo<string[]>(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const s of sortedTickers) {
+      const t = ((s as any).canonical_theme_name || (s as any).section_title || '').toString().trim();
+      if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+    }
+    // Also fold in any backend market_themes not already covered
+    for (const entry of marketThemes) {
+      const label = resolveThemeLabel(entry as any).trim();
+      if (label && !seen.has(label)) { seen.add(label); out.push(label); }
+    }
+    return out.sort((a, b) => a.localeCompare(b));
+  }, [sortedTickers, marketThemes]);
+
   /* ── filtered symbol set — null = no active filters ─────────────── */
   const filteredSymbolSet = useMemo<Set<string> | null>(() => {
     if (!screenerFilters.length) return null;
@@ -2653,14 +2670,13 @@ export default function WatchlistPage() {
   ) : null;
 
   /* ── market themes banner ────────────────────────────────────────── */
-  // marketThemes entries may be plain strings (old backend) or
-  // { canonical_theme_name, canonical_theme_id } objects (new backend).
-  // resolveThemeLabel handles both transparently.
+  // Derives themes from actual screener rows so the bar always matches
+  // what is shown in the Theme column. Clicking a chip filters the screener.
   const renderMarketThemes = () => {
-    if (!marketThemes.length) return null;
+    if (!screenerThemes.length) return null;
     return (
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
+        display: 'flex', alignItems: 'center', gap: 6,
         padding: '8px 20px',
         background: C.card2,
         borderBottom: `1px solid ${C.border}`,
@@ -2675,20 +2691,40 @@ export default function WatchlistPage() {
         }}>
           THEMES
         </span>
-        {marketThemes.map((entry, i) => {
-          const label = resolveThemeLabel(entry as any);
+        {/* "All" reset chip — only shown when a theme is active */}
+        {selectedTheme && (
+          <span
+            onClick={() => setSelectedTheme(null)}
+            style={{
+              flexShrink: 0, cursor: 'pointer',
+              padding: '3px 10px', borderRadius: 4,
+              fontSize: 10, fontWeight: 700,
+              fontFamily: C.sansFont,
+              color: C.teal,
+              background: 'rgba(20,184,166,0.12)',
+              border: `1px solid ${C.teal}`,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ✕ All
+          </span>
+        )}
+        {screenerThemes.map((label) => {
+          const active = selectedTheme === label;
           return (
             <span
-              key={i}
+              key={label}
+              onClick={() => setSelectedTheme(active ? null : label)}
               style={{
-                flexShrink: 0,
+                flexShrink: 0, cursor: 'pointer',
                 padding: '3px 10px', borderRadius: 4,
-                fontSize: 10, fontWeight: 600,
+                fontSize: 10, fontWeight: active ? 700 : 600,
                 fontFamily: C.sansFont,
-                color: 'rgba(255,255,255,0.60)',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                color: active ? '#fff' : 'rgba(255,255,255,0.60)',
+                background: active ? 'rgba(20,184,166,0.18)' : 'rgba(255,255,255,0.06)',
+                border: active ? `1px solid ${C.teal}` : '1px solid rgba(255,255,255,0.12)',
                 whiteSpace: 'nowrap',
+                transition: 'background 0.12s, border-color 0.12s, color 0.12s',
               }}
             >
               {label}
@@ -3012,10 +3048,17 @@ export default function WatchlistPage() {
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
     // Apply screener filters (only for the main Screener panel, not Close Watch or custom row sets)
-    const filteredRows = (isMainScreener && filteredSymbolSet)
+    const screenerFilteredRows = (isMainScreener && filteredSymbolSet)
       ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
       : visibleRows;
-    const filterHidden = visibleRows.length - filteredRows.length;
+    const filterHidden = visibleRows.length - screenerFilteredRows.length;
+    // Apply theme filter (clicking a chip in the THEMES bar)
+    const filteredRows = (isMainScreener && selectedTheme)
+      ? screenerFilteredRows.filter(r => {
+          const t = ((r as any).canonical_theme_name || (r as any).section_title || '').toString().trim();
+          return t === selectedTheme;
+        })
+      : screenerFilteredRows;
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px';
     // 30 tracks: original 17 + 13 technical cols; total min ~2490px
     const TICKER_TABLE_MIN_WIDTH = 2490;
