@@ -13,6 +13,7 @@ import type { PlaybookSummary, WatchlistPlaybookResponse } from '@/types/playboo
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -2953,7 +2954,7 @@ export default function WatchlistPage() {
     const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 80px 60px 84px 88px 88px 72px 64px 52px 80px 80px';
     // 30 tracks: original 17 + 13 technical cols; total min ~2386px
     const TICKER_TABLE_MIN_WIDTH = 2400;
-    const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string }[] = [
+    const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
       { key: 'theme', label: 'Theme' },
@@ -2972,19 +2973,19 @@ export default function WatchlistPage() {
       { key: 'optionsVolume', label: 'Opt Vol' },
       { key: 'optionsOi', label: 'OI' },
       // ── Technical metrics columns ────────────────────────────────────
-      { label: 'MA Stack' },
-      { key: 'pctVs50d', label: '% vs 50D' },
-      { key: 'pctVs200d', label: '% vs 200D' },
-      { label: 'Extension Risk' },
-      { key: 'pos52w', label: '52W Pos' },
-      { key: 'pctFrom52wHigh', label: '% From 52W High' },
-      { label: 'Entry Zone' },
-      { label: 'Breakout Signal' },
-      { label: 'Accum/Dist' },
-      { label: 'Squeeze' },
-      { key: 'atrPct', label: 'ATR %' },
-      { label: 'Momentum Trend' },
-      { label: 'Technical State' },
+      { label: 'MA Stack',         tooltip: 'Whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull = constructive trend; Bear = weak or broken trend.' },
+      { key: 'pctVs50d',  label: '% vs 50D',         tooltip: 'Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.' },
+      { key: 'pctVs200d', label: '% vs 200D',        tooltip: 'Price distance from the 200-day moving average. Shows long-term trend context. Below the 200D is generally weaker.' },
+      { label: 'Extension Risk',   tooltip: 'Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.' },
+      { key: 'pos52w',    label: '52W Pos',           tooltip: 'Where price sits in its 52-week range from 0–100%. Higher = closer to yearly highs / leadership; very low = damaged or early recovery.' },
+      { key: 'pctFrom52wHigh', label: '% From 52W High', tooltip: 'How far below the 52-week high price currently is. Near 0 = near highs / breakout area; deeply negative = more overhead supply or damage.' },
+      { label: 'Entry Zone',       tooltip: 'Interpreted entry timing label — shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.' },
+      { label: 'Breakout Signal',  tooltip: 'Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Separates actionable breakouts from chase/failed setups.' },
+      { label: 'Accum/Dist',       tooltip: 'Recent price/volume behavior scored as accumulation vs. distribution. Accumulation = demand; Distribution = selling pressure; Dry-up can indicate a base or squeeze.' },
+      { label: 'Squeeze',          tooltip: 'Volatility compression or expansion. Tight/coiling = setup energy building; Volatile = wider risk; Expansion = the move may already be underway.' },
+      { key: 'atrPct',    label: 'ATR %',             tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
+      { label: 'Momentum Trend',   tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
+      { label: 'Technical State',  tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
     ];
 
     /* ── inline filter modal ─────────────────────────────────────────── */
@@ -3250,10 +3251,11 @@ export default function WatchlistPage() {
               textTransform: 'uppercase' as const, letterSpacing: '0.08em',
               gap: 6,
             }}>
+              <TooltipProvider delayDuration={180}>
               {tickerColumns.map(col => {
                 const sortable = col.key != null;
                 const active = sortable && sortKey === col.key;
-                return (
+                const spanEl = (
                   <span
                     key={col.key ?? col.label}
                     onClick={() => { if (col.key) handleSortClick(col.key); }}
@@ -3269,9 +3271,12 @@ export default function WatchlistPage() {
                         background: C.card,
                       } : {}),
                     }}
-                    title={sortable ? `Sort by ${col.label}` : col.label}
+                    title={!col.tooltip ? (sortable ? `Sort by ${col.label}` : col.label) : undefined}
                   >
                     {col.label}
+                    {col.tooltip && (
+                      <span style={{ fontSize: 7, opacity: 0.45, lineHeight: 1, flexShrink: 0 }}>?</span>
+                    )}
                     {sortable && (
                       <span style={{ fontSize: 8, opacity: active ? 1 : 0.3 }}>
                         {active ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
@@ -3279,7 +3284,25 @@ export default function WatchlistPage() {
                     )}
                   </span>
                 );
+                if (!col.tooltip) return spanEl;
+                return (
+                  <Tooltip key={col.key ?? col.label}>
+                    <TooltipTrigger asChild>{spanEl}</TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      style={{
+                        maxWidth: 260, fontSize: 11, lineHeight: 1.5,
+                        background: '#141414', border: '1px solid rgba(255,255,255,0.12)',
+                        color: '#e5e5e0', padding: '8px 10px', borderRadius: 6,
+                      }}
+                    >
+                      <p style={{ margin: 0, fontWeight: 600, marginBottom: 3, textTransform: 'none', letterSpacing: 0 }}>{col.label}</p>
+                      <p style={{ margin: 0, opacity: 0.8, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>{col.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
               })}
+              </TooltipProvider>
             </div>
 
             {/* table rows */}

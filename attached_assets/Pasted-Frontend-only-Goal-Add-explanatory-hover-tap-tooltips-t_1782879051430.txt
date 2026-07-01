@@ -1,0 +1,63 @@
+Frontend only.
+
+Goal:
+Add explanatory hover/tap tooltips to the new Watchlist → Screener → Technical column headers.
+
+Do not change backend.
+Do not add API calls.
+Do not touch Fundamental toggle.
+Do not touch setup tabs.
+Do not touch sorting behavior except to ensure tooltips do not break it.
+
+Use existing Tooltip/Popover UI if available. If none exists, use the app’s closest existing hover/help pattern.
+
+Add header explanations for:
+
+MA Stack:
+Shows whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull usually means constructive trend; Bear usually means weak or broken trend.
+
+% vs 50D:
+Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.
+
+% vs 200D:
+Price distance from the 200-day moving average. Shows long-term trend context. Below 200D is usually weaker.
+
+Extension Risk:
+Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.
+
+52W Pos:
+Where price sits in its 52-week range from 0–100%. Higher means closer to yearly highs/leadership; very low means damaged or early recovery.
+
+% From 52W High:
+How far below the 52-week high price is. Near 0 means near highs/breakout area; deeply negative means more overhead supply or damage.
+
+Entry Zone:
+Interpreted entry timing label. Shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.
+
+Breakout Signal:
+Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Helps separate actionable breakouts from chase/failed setups.
+
+Accum/Dist:
+Uses recent price/volume behavior to estimate accumulation versus distribution. Accumulation suggests demand; distribution suggests selling pressure; dry-up can indicate a base or squeeze.
+
+Squeeze:
+Shows volatility compression or expansion. Tight/coiling can indicate setup energy; volatile means wider risk; expansion means the move may already be underway.
+
+ATR %:
+Average true range as a percent of price. Helps size risk; higher ATR means the stock is more volatile.
+
+Momentum Trend:
+Uses recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; cooling, diverging, or negative warns momentum is fading.
+
+Technical State:
+Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. This is not a buy/sell rating; it is chart timing context.
+
+Tooltip requirements:
+1. Desktop hover.
+2. Mobile tap/click if supported.
+3. Do not clutter headers.
+4. Do not break sorting.
+5. Missing values still show —.
+6. Technical columns still render for all populated tickers.
+7. Fundamental toggle unchanged.
+8. Build passes.
