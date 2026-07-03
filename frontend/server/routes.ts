@@ -5456,7 +5456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;
     // Don't intercept these — they have their own routes
-    if (['news','list','debug','earnings'].includes(wid)) return next();
+    if (['news','list','debug','earnings','strategy-report'].includes(wid)) return next();
     try {
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 30000);
@@ -5501,6 +5501,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const msg = e?.name === 'AbortError' ? 'Analysis timed out (3 min). Try again.' : e.message;
       console.error('[watchlist refresh] error:', msg);
       res.status(500).json({ error: msg });
+    }
+  });
+
+  // ── Strategy report endpoints (safe, non-destructive) ────────────
+  app.post('/api/watchlist/strategy-report/generate', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 120000);
+      const r = await fetch(`${WL_URL}/api/watchlist/strategy-report/generate`, {
+        method: 'POST',
+        headers: { ...wlHdr(), ...req.headers.authorization ? { Authorization: req.headers.authorization as string } : {} },
+        body: JSON.stringify(req.body || {}),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) {
+        const b = await r.json().catch(() => ({}));
+        return res.status(r.status).json({ error: b.detail || b.error || `Backend ${r.status}` });
+      }
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Report generation timed out (120s)' : e.message });
+    }
+  });
+
+  app.get('/api/watchlist/strategy-report/history', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${WL_URL}/api/watchlist/strategy-report/history${qs ? `?${qs}` : ''}`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ reports: [], error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ reports: [], error: e.message });
+    }
+  });
+
+  app.get('/api/watchlist/strategy-report/:report_id', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${WL_URL}/api/watchlist/strategy-report/${encodeURIComponent(req.params.report_id)}`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Theme classifier status endpoints (Part E) ────────────────────
+  app.post('/api/watchlist/debug/themes/classify/start', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+      const r = await fetch(`${WL_URL}/api/watchlist/debug/themes/classify/start${qs ? `?${qs}` : ''}`, {
+        method: 'POST', headers: wlHdr(), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `Backend ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/watchlist/debug/themes/classify/status', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(`${WL_URL}/api/watchlist/debug/themes/classify/status`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ running: false });
+      res.json(await r.json());
+    } catch {
+      res.json({ running: false });
     }
   });
 

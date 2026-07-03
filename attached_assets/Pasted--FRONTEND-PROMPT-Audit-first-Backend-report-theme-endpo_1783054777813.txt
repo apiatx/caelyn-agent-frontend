@@ -1,0 +1,188 @@
+[FRONTEND PROMPT]
+
+Audit first. Backend report/theme endpoints now exist. Do not touch backend unless an endpoint is clearly missing or broken.
+
+Critical:
+Do not call the old destructive Refresh endpoints for strategy behavior.
+
+Old dangerous endpoints confirmed by backend audit:
+- POST /api/watchlist/refresh
+- POST /api/watchlist/{id}/refresh
+
+These run full re-analysis / Claude / Tradier quote refresh and mutate watchlist data. Do not use them for the Strategy dropdown Refresh behavior.
+
+Use the new safe backend endpoints instead:
+
+Theme classifier:
+- POST /api/watchlist/debug/themes/classify/start
+- GET  /api/watchlist/debug/themes/classify/status
+- GET  /api/watchlist/debug/themes/provenance?symbol=
+
+Strategy reports:
+- POST /api/watchlist/strategy-report/generate
+- GET  /api/watchlist/strategy-report/history?watchlist_id=<id>
+- GET  /api/watchlist/strategy-report/<report_id>
+
+Do not add provider calls.
+Do not call LLMs from frontend.
+Do not touch Tradier.
+Do not trigger options scans.
+Do not mutate the watchlist table from Refresh.
+Do not touch Fundamental CSV behavior.
+Do not break the old watchlist.
+Do not patch compiled bundles.
+
+PART A — Strategy dropdown labels
+
+Audit current dropdown labels:
+- Default
+- Serenity
+- S&J
+
+Change display labels:
+- Serenity → Bottlenecks
+- S&J → Asymmetry
+
+Preserve internal IDs if backend expects them. Backend supports aliases:
+- bottlenecks maps to serenity
+- asymmetry maps to sjcapital
+
+Frontend should send:
+- strategy_id: "bottlenecks"
+- strategy_id: "asymmetry"
+
+or use the backend-supported alias mapping exactly as documented.
+
+PART B — Refresh button behavior
+
+Audit the current Refresh click handler.
+
+New desired behavior:
+When user selects Bottlenecks or Asymmetry and clicks Refresh:
+
+1. Do not call old refresh endpoints.
+2. Do not refresh/rewrite the watchlist table.
+3. Do not rerun options scans.
+4. Do not clear cache.
+5. Do not change active watchlist rows.
+6. Call:
+
+POST /api/watchlist/strategy-report/generate
+
+Body:
+{
+  "watchlist_id": "<active_watchlist_id>",
+  "strategy_id": "bottlenecks" | "asymmetry",
+  "save": true
+}
+
+7. Open a modal/popup with the generated report.
+8. Show loading state while report generates.
+9. Handle slow generation gracefully.
+10. Show error state if generation fails.
+
+If strategy is Default:
+- do not call destructive refresh automatically
+- either leave Refresh disabled/no-op with helper text
+- or ask before using any old refresh behavior
+- safest first version: Default Refresh does nothing except show “Select Bottlenecks or Asymmetry to generate a strategy report.”
+
+PART C — Strategy report modal
+
+Build a report modal/popup.
+
+Show:
+- strategy name
+- generated_at
+- watchlist name
+- ticker count
+- matched ticker count
+- ranked results
+- ticker
+- score/rank
+- reasons
+- supporting fields
+- missing data notes
+- cache freshness if provided
+- close button
+
+Do not fetch per ticker.
+Use only the backend report response.
+
+PART D — Report history button
+
+Add a new report/history button near or above Refresh.
+
+Use scroll emoji/icon:
+📜
+
+Behavior:
+1. Click opens saved reports for the current watchlist.
+2. Fetch:
+   GET /api/watchlist/strategy-report/history?watchlist_id=<active_watchlist_id>
+3. Show saved reports:
+   - strategy name
+   - generated_at
+   - matched count
+4. User can click a saved report.
+5. Fetch:
+   GET /api/watchlist/strategy-report/<report_id>
+6. Open the same report modal.
+7. Do not regenerate reports from history.
+
+PART E — Theme classifier status UI
+
+Backend now auto-triggers theme classifier on save/upload.
+
+Add lightweight UI only if easy:
+- if classifier running, show subtle “Theme classification running…”
+- if unmapped remain, show “Needs Theme: X”
+- do not block the page
+- do not poll aggressively
+- do not call LLM from frontend
+
+Optional button only if dev/admin guard exists:
+- “Retry Theme Classification”
+- calls POST /api/watchlist/debug/themes/classify/start?watchlist_id=<id>&missing_only=true
+
+PART F — Theme display validation
+
+Ensure current theme display still uses priority:
+1. canonical_theme_name
+2. theme
+3. csv_industry/raw_industry fallback
+4. Unassigned / Needs Theme
+
+Validate:
+- new 370-ticker watchlist no longer shows old blank theme behavior
+- Theme tab groups by canonical theme, not Untitled
+- Theme chips include canonical themes
+- old 302-ticker watchlist still works
+
+PART G — Validation
+
+Validate:
+
+1. Dropdown shows Bottlenecks and Asymmetry.
+2. Serenity and S&J old labels are not shown to user.
+3. Clicking Refresh with Bottlenecks selected does not call old refresh endpoints.
+4. Clicking Refresh with Asymmetry selected does not call old refresh endpoints.
+5. Refresh generates a saved strategy report.
+6. Report modal opens.
+7. Report history 📜 button opens saved reports.
+8. Opening a saved report does not regenerate it.
+9. Watchlist table does not mutate after report generation.
+10. No options scan triggered.
+11. No Tradier calls triggered by frontend.
+12. Chg %, VOLX, Vol/MC, Live News still work.
+13. Technical columns still work.
+14. Fundamental toggle unchanged.
+15. Setup tabs unchanged.
+16. Build passes or only unrelated pre-existing errors remain.
+
+Report:
+- old Refresh handler path before
+- new Refresh handler path after
+- exact endpoint called for report generation
+- files changed
+- screenshots/route validation if available

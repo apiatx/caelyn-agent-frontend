@@ -1575,6 +1575,22 @@ function saveFiltersToStorage(f: ScreenerFilter[]): void {
   try { localStorage.setItem(SCREENER_FILTERS_LS_KEY, JSON.stringify(f)); } catch {}
 }
 
+/* ── Strategy display label map: backend ID → user-visible label & report alias ──
+   Backend supports aliases: bottlenecks→serenity, asymmetry→sjcapital.
+   scoreWatchlist still uses the backend ID (serenity/sjcapital).
+   Strategy reports use the alias (bottlenecks/asymmetry).              */
+const STRATEGY_DISPLAY: Record<string, { label: string; reportId: string }> = {
+  serenity:  { label: 'Bottlenecks', reportId: 'bottlenecks' },
+  sjcapital: { label: 'Asymmetry',   reportId: 'asymmetry'   },
+};
+
+function wlApiHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json', 'X-API-Key': 'hippo_ak_7f3x9k2m4p8q1w5t' };
+  const tok = localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt');
+  if (tok) h['Authorization'] = `Bearer ${tok}`;
+  return h;
+}
+
 export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -1599,6 +1615,12 @@ export default function WatchlistPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>('default');
   const [strategyScoreData, setStrategyScoreData] = useState<WatchlistPlaybookResponse | null>(null);
   const [strategyScoreLoading, setStrategyScoreLoading] = useState(false);
+  const [strategyReportModal, setStrategyReportModal] = useState<{
+    open: boolean; report: any | null; loading: boolean; error: string | null;
+  }>({ open: false, report: null, loading: false, error: null });
+  const [reportHistoryModal, setReportHistoryModal] = useState<{
+    open: boolean; history: any[]; loading: boolean; selectedReport: any | null; selectedLoading: boolean;
+  }>({ open: false, history: [], loading: false, selectedReport: null, selectedLoading: false });
   const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2' | 'pctVs50d' | 'pctVs200d' | 'pos52w' | 'pctFrom52wHigh' | 'atrPct' | 'techTimingScore' | 'maStack' | 'extRisk' | 'entryZone' | 'bkSignal' | 'accumDist' | 'squeezeSig' | 'momentumTrend' | 'techState'>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
@@ -1879,6 +1901,56 @@ export default function WatchlistPage() {
       setActiveId(remaining[0]?.id ?? null);
     },
   });
+
+  /* ── generate strategy report — Part B (safe, non-destructive) ───── */
+  const generateStrategyReport = async () => {
+    if (!activeId || selectedStrategy === 'default') return;
+    const reportId = STRATEGY_DISPLAY[selectedStrategy]?.reportId ?? selectedStrategy;
+    setStrategyReportModal({ open: true, report: null, loading: true, error: null });
+    try {
+      const r = await fetch('/api/watchlist/strategy-report/generate', {
+        method: 'POST',
+        headers: wlApiHeaders(),
+        body: JSON.stringify({ watchlist_id: activeId, strategy_id: reportId, save: true }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || body.detail || `Report generation failed (${r.status})`);
+      }
+      const data = await r.json();
+      setStrategyReportModal({ open: true, report: data, loading: false, error: null });
+    } catch (e: any) {
+      setStrategyReportModal({ open: true, report: null, loading: false, error: e.message || 'Report generation failed' });
+    }
+  };
+
+  /* ── report history — Part D ─────────────────────────────────────── */
+  const openReportHistory = async () => {
+    if (!activeId) return;
+    setReportHistoryModal({ open: true, history: [], loading: true, selectedReport: null, selectedLoading: false });
+    try {
+      const r = await fetch(`/api/watchlist/strategy-report/history?watchlist_id=${activeId}`, { headers: wlApiHeaders() });
+      if (!r.ok) throw new Error(`History fetch failed (${r.status})`);
+      const data = await r.json();
+      const history = Array.isArray(data) ? data : (data?.reports ?? data?.history ?? []);
+      setReportHistoryModal({ open: true, history, loading: false, selectedReport: null, selectedLoading: false });
+    } catch {
+      setReportHistoryModal({ open: true, history: [], loading: false, selectedReport: null, selectedLoading: false });
+    }
+  };
+
+  const openSavedReport = async (reportId: string) => {
+    setReportHistoryModal(prev => ({ ...prev, selectedLoading: true }));
+    try {
+      const r = await fetch(`/api/watchlist/strategy-report/${reportId}`, { headers: wlApiHeaders() });
+      if (!r.ok) throw new Error(`Failed to load report (${r.status})`);
+      const data = await r.json();
+      setReportHistoryModal(prev => ({ ...prev, selectedLoading: false }));
+      setStrategyReportModal({ open: true, report: data, loading: false, error: null });
+    } catch {
+      setReportHistoryModal(prev => ({ ...prev, selectedLoading: false }));
+    }
+  };
 
   /* ── refresh active watchlist ────────────────────────────────────── */
   const refreshMut = useMutation({
@@ -4111,7 +4183,9 @@ export default function WatchlistPage() {
             {/* Strategy selector */}
             {strategyPlaybooks.length > 0 && (
               <StrategySelector
-                playbooks={strategyPlaybooks}
+                playbooks={strategyPlaybooks.map(p =>
+                  STRATEGY_DISPLAY[p.id] ? { ...p, short_label: STRATEGY_DISPLAY[p.id].label } : p
+                )}
                 selectedId={selectedStrategy}
                 onChange={(id) => {
                   setSelectedStrategy(id);
@@ -4125,8 +4199,8 @@ export default function WatchlistPage() {
               />
             )}
 
-            {/* Right: error + last analyzed + refresh */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            {/* Right: status + history + refresh */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
               {/* Agent analysis running in background — non-error state */}
               {refreshStatus === 'running' && !refreshMut.isPending && (
                 <div style={{
@@ -4145,46 +4219,81 @@ export default function WatchlistPage() {
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '4px 10px', borderRadius: 4,
                   background: `${C.red}12`, border: `1px solid ${C.red}30`,
-                  maxWidth: 320,
+                  maxWidth: 280,
                 }}>
-                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.font, fontWeight: 700 }}>
-                    ✕ ANALYSIS FAILED:
-                  </span>
+                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.font, fontWeight: 700 }}>✕</span>
                   <span style={{ fontSize: 9, color: C.red, fontFamily: C.sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                     {refreshError}
                   </span>
-                  <button
-                    onClick={() => setRefreshError(null)}
-                    style={{ background: 'none', border: 'none', color: C.red, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1, flexShrink: 0 }}
-                  >×</button>
+                  <button onClick={() => setRefreshError(null)} style={{ background: 'none', border: 'none', color: C.red, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1, flexShrink: 0 }}>×</button>
                 </div>
               )}
-              {lastUpdated && !refreshError && (
+              {lastUpdated && !refreshError && selectedStrategy === 'default' && (
                 <span style={{ fontSize: 10, color: C.dim }}>
                   Last analyzed: {timeAgo(lastUpdated)}
                 </span>
               )}
+
+              {/* 📜 Report history button — Part D */}
               <button
-                onClick={() => { setRefreshError(null); refreshMut.mutate(); }}
-                disabled={refreshMut.isPending}
+                onClick={openReportHistory}
+                title="View saved strategy reports"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '4px 12px', borderRadius: 4,
-                  background: refreshError ? `${C.amber}15` : 'transparent',
-                  border: `1px solid ${refreshError ? C.amber : C.teal}50`,
-                  color: refreshError ? C.amber : C.teal,
-                  fontSize: 10, fontWeight: 700,
-                  fontFamily: C.font, cursor: refreshMut.isPending ? 'not-allowed' : 'pointer',
-                  opacity: refreshMut.isPending ? 0.5 : 1,
-                  letterSpacing: '0.04em',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 9px', borderRadius: 4,
+                  background: 'transparent',
+                  border: `1px solid ${C.border}`,
+                  color: C.dim, fontSize: 13,
+                  cursor: 'pointer', transition: 'border-color 0.1s',
                 }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = C.teal)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
               >
-                <RefreshCw
-                  style={{ width: 11, height: 11 }}
-                  className={refreshMut.isPending ? 'wl-spin' : ''}
-                />
-                {refreshMut.isPending ? 'ANALYZING...' : refreshError ? '↺ RETRY' : '⟳ REFRESH'}
+                📜
               </button>
+
+              {/* Refresh / Generate Report button */}
+              {selectedStrategy === 'default' ? (
+                <button
+                  title="Select Bottlenecks or Asymmetry to generate a strategy report"
+                  disabled
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '4px 12px', borderRadius: 4,
+                    background: 'transparent',
+                    border: `1px solid ${C.border}`,
+                    color: C.dim, fontSize: 10, fontWeight: 700,
+                    fontFamily: C.font, cursor: 'not-allowed',
+                    letterSpacing: '0.04em', opacity: 0.5,
+                  }}
+                >
+                  <RefreshCw style={{ width: 11, height: 11 }} />
+                  REPORT
+                </button>
+              ) : (
+                <button
+                  onClick={generateStrategyReport}
+                  disabled={strategyReportModal.loading}
+                  title={`Generate ${STRATEGY_DISPLAY[selectedStrategy]?.label ?? selectedStrategy} report for this watchlist`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '4px 12px', borderRadius: 4,
+                    background: strategyReportModal.loading ? `rgba(99,102,241,0.15)` : 'transparent',
+                    border: `1px solid rgba(99,102,241,0.5)`,
+                    color: '#a5b4fc', fontSize: 10, fontWeight: 700,
+                    fontFamily: C.font,
+                    cursor: strategyReportModal.loading ? 'not-allowed' : 'pointer',
+                    opacity: strategyReportModal.loading ? 0.7 : 1,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  <RefreshCw
+                    style={{ width: 11, height: 11 }}
+                    className={strategyReportModal.loading ? 'wl-spin' : ''}
+                  />
+                  {strategyReportModal.loading ? 'GENERATING...' : '⟳ REPORT'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -5699,6 +5808,214 @@ export default function WatchlistPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* ═══ Strategy Report Modal — Part C ═══ */}
+      {strategyReportModal.open && (
+        <div
+          onClick={() => setStrategyReportModal(s => ({ ...s, open: false }))}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9000,
+            background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0f1117', border: `1px solid ${C.border}`,
+              borderRadius: 10, width: '90vw', maxWidth: 780,
+              maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 20px', borderBottom: `1px solid ${C.border}`,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>
+                {strategyReportModal.report
+                  ? `${strategyReportModal.report.strategy_name ?? strategyReportModal.report.strategy_id ?? STRATEGY_DISPLAY[selectedStrategy]?.label ?? 'Strategy'} Report`
+                  : 'Strategy Report'}
+              </span>
+              <button
+                onClick={() => setStrategyReportModal(s => ({ ...s, open: false }))}
+                style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+              >×</button>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }} className="wl-scrollbar">
+              {strategyReportModal.loading && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
+                  <div className="wl-spin" style={{ width: 28, height: 28, border: `3px solid rgba(99,102,241,0.2)`, borderTopColor: '#6366f1', borderRadius: '50%' }} />
+                  <span style={{ fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                    Generating report — this may take 10–30 seconds…
+                  </span>
+                </div>
+              )}
+              {strategyReportModal.error && !strategyReportModal.loading && (
+                <div style={{ padding: 20, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12, color: C.red, fontFamily: C.font, marginBottom: 6 }}>Report generation failed</div>
+                  <div style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont }}>{strategyReportModal.error}</div>
+                </div>
+              )}
+              {strategyReportModal.report && !strategyReportModal.loading && (() => {
+                const rpt = strategyReportModal.report;
+                const results: any[] = rpt.results ?? rpt.ranked_results ?? rpt.tickers ?? [];
+                const wlName = rpt.watchlist_name ?? (wlMetas ?? []).find(w => w.id === activeId)?.name ?? '';
+                return (
+                  <>
+                    {/* Meta row */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', marginBottom: 16 }}>
+                      {wlName && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Watchlist: <span style={{ color: C.text }}>{wlName}</span></span>}
+                      {rpt.generated_at && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Generated: <span style={{ color: C.text }}>{new Date(rpt.generated_at).toLocaleString()}</span></span>}
+                      {rpt.ticker_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Tickers: <span style={{ color: C.text }}>{rpt.ticker_count}</span></span>}
+                      {rpt.matched_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Matched: <span style={{ color: '#22c55e' }}>{rpt.matched_count}</span></span>}
+                      {rpt.cache_freshness && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Cache: <span style={{ color: C.amber }}>{typeof rpt.cache_freshness === 'string' ? rpt.cache_freshness : JSON.stringify(rpt.cache_freshness)}</span></span>}
+                    </div>
+
+                    {/* Results table */}
+                    {results.length === 0 && (
+                      <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                        No matched tickers in this report.
+                      </div>
+                    )}
+                    {results.length > 0 && results.map((item: any, idx: number) => {
+                      const ticker = item.ticker ?? item.symbol ?? '';
+                      const score = item.score ?? item.fit_score ?? item.rank_score;
+                      const rank = item.rank ?? idx + 1;
+                      const reasons: string[] = Array.isArray(item.reasons) ? item.reasons : (item.reason ? [item.reason] : []);
+                      const missing = item.missing_data_notes ?? item.missing_data ?? '';
+                      const supporting = item.supporting_fields ?? item.details ?? {};
+                      return (
+                        <div key={ticker || idx} style={{
+                          padding: '10px 12px', marginBottom: 8,
+                          background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}`,
+                          borderRadius: 6,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: reasons.length ? 6 : 0 }}>
+                            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, minWidth: 20 }}>#{rank}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>{ticker}</span>
+                            {score != null && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                                color: Number(score) >= 70 ? '#22c55e' : Number(score) >= 40 ? C.amber : C.dim,
+                                marginLeft: 'auto',
+                              }}>
+                                {typeof score === 'number' ? score.toFixed(1) : score}
+                              </span>
+                            )}
+                          </div>
+                          {reasons.map((r: string, i: number) => (
+                            <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, paddingLeft: 30, lineHeight: 1.5 }}>
+                              · {r}
+                            </div>
+                          ))}
+                          {typeof supporting === 'object' && Object.keys(supporting).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', paddingLeft: 30, marginTop: 4 }}>
+                              {Object.entries(supporting).map(([k, v]) => (
+                                <span key={k} style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                                  {k}: <span style={{ color: C.text }}>{String(v)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {missing && (
+                            <div style={{ fontSize: 9, color: C.amber, fontFamily: C.font, paddingLeft: 30, marginTop: 4, opacity: 0.8 }}>
+                              ⚠ {missing}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Report History Modal — Part D ═══ */}
+      {reportHistoryModal.open && (
+        <div
+          onClick={() => setReportHistoryModal(s => ({ ...s, open: false }))}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9000,
+            background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0f1117', border: `1px solid ${C.border}`,
+              borderRadius: 10, width: 480, maxHeight: '70vh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>📜 Saved Reports</span>
+              <button
+                onClick={() => setReportHistoryModal(s => ({ ...s, open: false }))}
+                style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+              >×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 18px' }} className="wl-scrollbar">
+              {reportHistoryModal.loading && (
+                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                  Loading…
+                </div>
+              )}
+              {!reportHistoryModal.loading && reportHistoryModal.history.length === 0 && (
+                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                  No saved reports for this watchlist yet.
+                  {selectedStrategy !== 'default' && (
+                    <div style={{ marginTop: 8 }}>
+                      Click ⟳ REPORT to generate one.
+                    </div>
+                  )}
+                </div>
+              )}
+              {reportHistoryModal.history.map((h: any, i: number) => {
+                const rid = h.report_id ?? h.id ?? '';
+                const stratLabel = STRATEGY_DISPLAY[h.strategy_id]?.label ?? h.strategy_name ?? h.strategy_id ?? '—';
+                const generatedAt = h.generated_at ? new Date(h.generated_at).toLocaleString() : '—';
+                const matchedCount = h.matched_count ?? h.ticker_count ?? null;
+                return (
+                  <div
+                    key={rid || i}
+                    onClick={() => rid && openSavedReport(rid)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 12px', marginBottom: 6,
+                      background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}`,
+                      borderRadius: 6, cursor: rid ? 'pointer' : 'default',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { if (rid) (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)'; }}
+                    onMouseLeave={e => { if (rid) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'; }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: C.font, marginBottom: 2 }}>{stratLabel}</div>
+                      <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{generatedAt}</div>
+                    </div>
+                    {matchedCount != null && (
+                      <span style={{ fontSize: 10, color: '#22c55e', fontFamily: C.font, fontWeight: 700 }}>
+                        {matchedCount} matched
+                      </span>
+                    )}
+                    {reportHistoryModal.selectedLoading && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>…</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ═══ Stock Detail Modal ═══ */}
