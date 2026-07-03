@@ -1,0 +1,83 @@
+[FRONTEND PROMPT]
+
+Audit/fix new watchlist display only.
+
+Backend is now live with:
+- theme / canonical_theme_name / canonical_theme_id assigned for new uploaded watchlists
+- stage2_breakout.technical_metrics in the Watchlist GET payload for covered symbols
+- stage2_breakout.technical_state
+- stage2_breakout.technical_timing_score
+
+Problem:
+The new uploaded watchlist may still show missing Theme or Technical values in the UI even though backend now sends them.
+
+Do not change backend.
+Do not add API calls.
+Do not touch Tradier.
+Do not touch Fundamental toggle.
+Do not touch setup tabs.
+Do not touch CSV upload.
+Do not patch compiled bundles.
+
+New watchlist:
+00a0e3ea-31dc-4223-97bc-470720dd3215
+
+Audit first:
+1. Open/select the new watchlist.
+2. Inspect the actual frontend-received row object for:
+   - AAOI
+   - MU
+   - NVDA
+   - PLTR
+   - ASTS
+   - OPTX
+   - 5 new-only eligible tickers from the new watchlist
+
+For each, confirm whether the row contains:
+- theme
+- canonical_theme_name
+- canonical_theme_id
+- stage2_breakout.label
+- stage2_breakout.score
+- stage2_breakout.technical_metrics
+- stage2_breakout.technical_state
+- stage2_breakout.technical_timing_score
+
+Find whether CSV-only/skeleton watchlists use a different row shape than analyzed watchlists.
+
+Fix if needed:
+1. Technical columns should read from:
+   - stock.stage2_breakout.technical_metrics
+   - stock.stage2_breakout.technical_state
+   - stock.stage2_breakout.technical_timing_score
+
+regardless of whether the row comes from analyzed sections or skeleton CSV fallback rows.
+
+2. Theme display priority should be:
+   - canonical_theme_name
+   - theme
+   - csv industry / raw industry fallback
+   - Unassigned / Needs Theme
+
+Do not let blank CSV theme/industry overwrite canonical theme.
+
+3. Rows without technical_metrics should still show — gracefully.
+
+Validation:
+1. New watchlist returns 370 rows in UI.
+2. Theme appears for backend-covered rows.
+3. Unmapped rows show Unassigned / Needs Theme, not blank.
+4. Technical values appear for backend-covered rows.
+5. Rows without technical_metrics show — gracefully.
+6. Old 302-ticker watchlist still works.
+7. Fundamental toggle unchanged.
+8. Setup tabs unchanged.
+9. No new API calls.
+10. Build/dev server passes or only unrelated pre-existing errors remain.
+
+Report:
+- whether frontend was dropping backend fields
+- exact row shape difference, if any
+- Theme count visible in UI
+- Technical metrics count visible in UI
+- files changed

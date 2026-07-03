@@ -189,8 +189,8 @@ function extractAllStocks(analysis: any): any[] {
             dollar_volume: t.dollar_volume ?? null,
             section_id: section.id,
             section_title: section.title,
-            canonical_theme_name: section.canonical_theme_name || section.title,
-            canonical_theme_id: section.canonical_theme_id || section.id,
+            canonical_theme_name: t.canonical_theme_name || section.canonical_theme_name || section.title,
+            canonical_theme_id: t.canonical_theme_id || section.canonical_theme_id || section.id,
             rel_vol_trend: t.rel_vol_trend ?? null,
             rel_vol_rank_delta: t.rel_vol_rank_delta ?? null,
             rel_vol_value_delta: t.rel_vol_value_delta ?? null,
@@ -810,6 +810,7 @@ function fundGetField(row: any, key: string, aliases: string[] = []): any {
 function getWatchlistTheme(row: any): string | undefined {
   if (!row) return undefined;
   return row.canonical_theme_name || row.section_title ||
+         row.theme ||
          row.watchlist_theme || row.ai_theme || row.enhanced_theme ||
          row.theme_label || row.mapped_theme || undefined;
 }
@@ -2193,7 +2194,7 @@ export default function WatchlistPage() {
         return { v, missing: !v };
       }
       case 'theme': {
-        const v = (stock.canonical_theme_name || stock.section_title || '').toString().toLowerCase();
+        const v = (stock.canonical_theme_name || stock.section_title || stock.theme || '').toString().toLowerCase();
         return { v, missing: !v };
       }
       case 'price': {
@@ -2379,7 +2380,7 @@ export default function WatchlistPage() {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const s of sortedTickers) {
-      const t = ((s as any).canonical_theme_name || (s as any).section_title || '').toString().trim();
+      const t = ((s as any).canonical_theme_name || (s as any).section_title || (s as any).theme || '').toString().trim();
       if (t && !seen.has(t)) { seen.add(t); out.push(t); }
     }
     // Also fold in any backend market_themes not already covered
@@ -3061,7 +3062,7 @@ export default function WatchlistPage() {
     // Apply theme filter (clicking a chip in the THEMES bar)
     const filteredRows = (isMainScreener && selectedTheme)
       ? screenerFilteredRows.filter(r => {
-          const t = ((r as any).canonical_theme_name || (r as any).section_title || '').toString().trim();
+          const t = ((r as any).canonical_theme_name || (r as any).section_title || (r as any).theme || '').toString().trim();
           return t === selectedTheme;
         })
       : screenerFilteredRows;
@@ -3506,8 +3507,8 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
                   </span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || ''}>
-                    {stock.canonical_theme_name || stock.section_title || DASH}
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || stock.theme || ''}>
+                    {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
                     {formatPrice(stock.price)}
