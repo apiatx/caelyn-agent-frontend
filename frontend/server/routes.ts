@@ -5594,28 +5594,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FastAPI re-fetch that was timing out and returning empty news).
   // Fallback: fetch tickers from FastAPI if query param not provided.
   app.get('/api/watchlist/:wid/news', async (req, res) => {
+    const { wid } = req.params;
     try {
-      const { wid } = req.params;
-      const port = process.env.PORT || 5000;
-
-      // Frontend passes ?tickers=AAOI,MU,... to skip the slow FastAPI re-fetch
-      const queryTickers = (req.query.tickers as string | undefined)?.trim();
-      if (queryTickers) {
-        const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${encodeURIComponent(queryTickers)}`);
-        return res.json(await newsRes.json());
-      }
-
-      // Fallback: fetch watchlist from FastAPI to get tickers
+      // Call FastAPI directly — it returns articles + ticker_activity + hyperscaler_articles + rss_activity_meta
+      // Warm cache: fast (<2s). Cold/first build: up to 90s.
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 10000);
-      const wlRes = await fetch(`${WL_URL}/api/watchlist/${wid}`, { headers: wlHdr(), signal: ctrl.signal });
-      if (!wlRes.ok) return res.json({});
-      const wlData = await wlRes.json();
-      if (wlData.empty || !wlData.tickers?.length) return res.json({});
-      const tickers = wlData.tickers.join(',');
-      const newsRes = await fetch(`http://localhost:${port}/api/proxy/news/ticker?tickers=${encodeURIComponent(tickers)}`);
-      res.json(await newsRes.json());
-    } catch { res.json({}); }
+      const tid = setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${wid}/news`, {
+        headers: wlHdr(),
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+      if (!r.ok) {
+        console.error(`[watchlist/${wid}/news] FastAPI returned ${r.status}`);
+        return res.status(r.status).json({ error: `News fetch failed (${r.status})` });
+      }
+      res.json(await r.json());
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'News fetch timed out (90s)' : 'News unavailable';
+      console.error(`[watchlist/${wid}/news] error:`, e?.message ?? e);
+      res.status(502).json({ error: msg });
+    }
   });
 
   // ── Playbook / Strategy routes ──────────────────────────────────────

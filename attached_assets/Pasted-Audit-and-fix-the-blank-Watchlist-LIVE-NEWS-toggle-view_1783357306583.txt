@@ -1,0 +1,471 @@
+Audit and fix the blank Watchlist LIVE NEWS toggle views.
+
+CURRENT USER-VISIBLE BUG:
+
+All three new Live News toggles render empty states:
+
+NEWS ACTIVITY:
+"No news activity data available yet."
+
+ALL NEWS:
+"No news available yet"
+
+HYPERSCALER DEALS:
+"No hyperscaler deal or partnership news detected for this Watchlist."
+
+This is occurring even though the backend agent previously validated live backend data containing:
+
+ticker_activity: 370 rows
+articles: populated per-ticker article map
+hyperscaler_articles: populated hyperscaler feed
+
+Do not assume there are three separate rendering bugs.
+
+All three views being empty simultaneously strongly suggests the shared newsData request/runtime response path is failing or returning a different shape.
+
+AUDIT FIRST.
+
+Do not add frontend fallback data.
+Do not fabricate activity rows.
+Do not restore top_articles as the ALL NEWS source.
+Do not remove the three toggles.
+Do not modify backend code from the frontend repo.
+
+PART A — TRACE THE EXACT RUNTIME REQUEST
+
+Audit the current newsData React Query in:
+
+frontend/client/src/pages/watchlist.tsx
+
+The known request path is conceptually:
+
+/api/watchlist/${activeId}/news?tickers=${encodeURIComponent(wlTickers)}
+
+Report the exact:
+
+queryKey
+activeId
+request URL
+ticker query length
+HTTP status
+response Content-Type
+response byte size
+top-level response keys
+
+Use the actual active Watchlist from the running app.
+
+Do not inspect only TypeScript types.
+
+Do not inspect only mocked data.
+
+Make the exact HTTP request the browser makes.
+
+For the live response print only structural diagnostics, not the full 30K article payload:
+
+{
+activeId,
+url,
+status,
+ok,
+contentType,
+responseBytes,
+topLevelKeys,
+articlesIsObject,
+articleTickerKeyCount,
+tickerActivityIsArray,
+tickerActivityLength,
+hyperscalerArticlesIsArray,
+hyperscalerArticlesLength,
+topArticlesLength,
+isBuilding,
+cacheAgeS,
+rssActivityMeta
+}
+
+EXPECTED BACKEND SHAPE:
+
+articles
+top_articles
+ticker_activity
+hyperscaler_articles
+rss_activity_meta
+
+The backend previously validated:
+
+ticker_activity approximately 370 entries
+articles populated
+hyperscaler_articles populated
+
+Report what the frontend runtime actually receives.
+
+PART B — STOP SILENTLY CONVERTING HTTP ERRORS INTO EMPTY NEWS
+
+Audit the current query behavior.
+
+Known existing logic is conceptually:
+
+const r = await fetch(url);
+if (!r.ok) return {};
+return r.json();
+
+This silently turns:
+
+404
+500
+502
+503
+timeout proxy responses
+
+into an apparently valid empty NewsResponse.
+
+That makes every toggle render a misleading empty state.
+
+Fix the query so non-2xx responses are observable.
+
+Preferred:
+
+const text = await r.text();
+
+if (!r.ok) {
+console.error('[watchlist-news]', {
+activeId,
+url,
+status: r.status,
+body: text.slice(0, 1000),
+});
+throw new Error(`Watchlist news failed (${r.status})`);
+}
+
+Then parse JSON safely.
+
+Do not leave permanent noisy logging of article payloads.
+
+Structural diagnostic logging is acceptable during validation.
+
+The card should distinguish:
+
+request error
+
+from:
+
+valid response with zero rows
+
+Do not show:
+
+"No news available yet"
+
+for an HTTP 500/502.
+
+Reuse existing page/card error styling if available.
+
+A small state such as:
+
+"News data unavailable"
+
+is sufficient for a genuine query error.
+
+PART C — TRACE THE EXPRESS PROXY / ROUTE PATH
+
+The frontend request is made to the frontend origin:
+
+/api/watchlist/{activeId}/news?tickers=...
+
+Trace the exact Express route, proxy middleware, or catch-all handler that receives this request.
+
+Report:
+
+1. exact frontend server file
+2. exact Express route/middleware
+3. exact upstream FastAPI base URL
+4. exact upstream path generated
+5. whether activeId is preserved
+6. whether the tickers query parameter is preserved, consumed, or removed
+7. request timeout
+8. response status handling
+9. whether the proxy parses/rebuilds JSON
+10. whether the proxy strips unknown fields
+11. whether the proxy has an LKG/cache
+12. whether the proxy returns {} on upstream failure
+
+The backend now adds:
+
+ticker_activity
+hyperscaler_articles
+rss_activity_meta
+
+The proxy must pass these through unchanged.
+
+Do not create a new proxy path if an existing canonical Watchlist proxy exists.
+
+Preserve the current path.
+
+PART D — COMPARE THREE REQUESTS
+
+Using the same activeId and active Watchlist, compare:
+
+A. Exact browser/frontend-origin request:
+
+GET /api/watchlist/{activeId}/news?tickers=<same current ticker query>
+
+B. Frontend server/proxy upstream FastAPI request after URL construction.
+
+C. Direct FastAPI request:
+
+GET /api/watchlist/{activeId}/news
+
+Also test direct FastAPI with the same ticker query if the current endpoint accepts extra query parameters:
+
+GET /api/watchlist/{activeId}/news?tickers=<same query>
+
+For each report:
+
+HTTP status
+response bytes
+top-level keys
+articles ticker-key count
+ticker_activity length
+hyperscaler_articles length
+rss_activity_meta.last_full_sweep_at
+
+Create a comparison table.
+
+The purpose is to locate the exact hop where the three new fields disappear.
+
+Do not guess.
+
+PART E — VERIFY THE BY-ID BACKEND ENDPOINT, NOT ONLY DEFAULT /news
+
+Previous backend validation prominently referenced:
+
+/api/watchlist/news
+
+The frontend actually requests:
+
+/api/watchlist/{activeId}/news
+
+Confirm the exact by-ID response contains all three additive fields.
+
+Required:
+
+articles
+ticker_activity
+hyperscaler_articles
+rss_activity_meta
+
+If direct:
+
+/api/watchlist/news
+
+contains the fields but:
+
+/api/watchlist/{activeId}/news
+
+does not, report that clearly.
+
+Do not patch around this in React.
+
+That is an upstream response-path mismatch.
+
+PART F — CHECK THE ACTIVE WATCHLIST ID
+
+Report:
+
+activeId from React
+active watchlist name
+watchlist.tickers.length
+first 10 watchlist tickers
+
+Then compare activeId with the backend Watchlist record used by the direct endpoint test.
+
+Confirm the news request is not asking for:
+
+a deleted Watchlist
+a stale Watchlist ID
+a default Watchlist ID while the page displays another Watchlist
+a newly-created Watchlist with no matching persisted backend row
+
+Do not assume all active Watchlists use "default".
+
+PART G — CHECK FOR PAYLOAD / TIMEOUT FAILURE
+
+The backend RSS archive contains roughly 30K unique associations globally.
+
+The normal /news response must not accidentally serialize the full 72-hour archive into:
+
+articles
+
+The intended architecture is:
+
+ticker_activity:
+compact 370-row activity list
+
+hyperscaler_articles:
+small filtered list
+
+articles:
+existing bounded visible-news per-ticker map
+
+Audit the live response size.
+
+Report:
+
+response bytes
+articles ticker count
+total visible articles in articles
+maximum visible articles for one ticker
+ticker_activity count
+hyperscaler_articles count
+
+Confirm the new backend did not accidentally put all ~30K archived rows into the normal /news response.
+
+If the response is unexpectedly enormous and the frontend Express proxy times out or rejects it, fix the actual upstream payload regression in the appropriate repo.
+
+Do not increase proxy timeout blindly before measuring payload size.
+
+PART H — VERIFY FRONTEND DATA DERIVATIONS AFTER RESPONSE IS FIXED
+
+Once the runtime response is confirmed populated, print structural counts from the actual React data:
+
+newsData top-level keys
+newsData.ticker_activity.length
+Object.keys(newsData.articles ?? {}).length
+flattenNews(newsData.articles ?? {}).length
+newsData.hyperscaler_articles.length
+
+Then inspect:
+
+activityRows before sorting
+sortedActivityRows
+allNews
+hyperscalerRows
+
+Report their lengths.
+
+If newsData is populated but one derived list becomes zero, locate the exact filter causing it.
+
+PART I — WATCH FOR SYMBOL FILTER MISMATCHES
+
+The frontend implementation report says:
+
+NEWS ACTIVITY is filtered by allTickerSymbols
+HYPERSCALER DEALS is filtered by allTickerSymbols
+
+Audit the exact normalization.
+
+Compare:
+
+first 20 ticker_activity ticker values
+
+first 20 allTickerSymbols values
+
+hyperscaler article:
+symbol
+related_watchlist_symbols if present
+
+Check:
+
+uppercase/lowercase
+whitespace
+exchange prefixes such as AIM:TRT
+symbol vs ticker field
+empty symbol values
+
+Use one canonical helper or Set normalization if necessary:
+
+String(symbol || '').trim().toUpperCase()
+
+Do not strip exchange prefixes unless the existing Watchlist display path already defines a canonical alias rule.
+
+Report:
+
+ticker_activity before scope filter
+ticker_activity after scope filter
+
+hyperscaler_articles before scope filter
+hyperscaler_articles after scope filter
+
+If 370 becomes 0 because of a frontend symbol filter, fix that filter.
+
+PART J — ALL NEWS MUST REMAIN newsData.articles
+
+Do not undo the correct source fix.
+
+ALL NEWS must remain:
+
+flattenNews(newsData?.articles ?? {})
+
+Do not restore:
+
+topArticles.length > 0
+? topArticles
+: ...
+
+If newsData.articles is absent at runtime, find why the response path lost it.
+
+Do not use top_articles as a visual band-aid.
+
+PART K — VALIDATE THE FIX IN THE ACTUAL BROWSER
+
+After fixing the root cause, validate the running page.
+
+Required visible results:
+
+NEWS ACTIVITY:
+must display ticker rows
+during current warm-up:
+24H NEWS values visible
+Δ VS PREV 24H displays —
+
+ALL NEWS:
+must display merged Watchlist article rows
+
+HYPERSCALER DEALS:
+must display the current backend hyperscaler list if still inside the 72-hour archive
+
+Previously validated examples included:
+
+IREN — Nvidia partnership
+NBIS — Meta cloud report
+
+Use current live examples if those have aged out.
+
+NETWORK:
+
+Switch:
+
+NEWS ACTIVITY
+→ ALL NEWS
+→ HYPERSCALER DEALS
+→ NEWS ACTIVITY
+
+Confirm zero additional requests caused by toggling.
+
+The normal approximately one-minute /news polling request is allowed.
+
+FINAL RETURN
+
+Return:
+
+1. exact root cause
+2. whether newsData request was non-2xx
+3. exact HTTP status if non-2xx
+4. exact browser request URL
+5. exact Express proxy path
+6. exact FastAPI upstream URL
+7. A/B/C response comparison table
+8. activeId validation
+9. live response byte size
+10. live top-level response keys
+11. ticker_activity response length
+12. articles ticker-key count
+13. flattened ALL NEWS count
+14. hyperscaler_articles response length
+15. activity rows before/after scope filtering
+16. hyperscaler rows before/after scope filtering
+17. exact files changed
+18. screenshots of all three populated toggles
+
+Do not report completion while all three views still show empty states.
+Do not use fallback fake data.
+Do not restore the old implicit top_articles priority.
+Do not modify the backend RSS collector unless the exact request-hop comparison proves the backend response is the failing hop.

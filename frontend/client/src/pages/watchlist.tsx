@@ -1799,23 +1799,25 @@ export default function WatchlistPage() {
   })(), [watchlist, activeId, wlMetas, sortKey, sortDir]);
 
   /* ── news for active watchlist ───────────────────────────────────── */
-  const { data: newsData, isFetching: newsFetching } = useQuery<NewsResponse>({
+  const { data: newsData, isFetching: newsFetching, isError: newsIsError } = useQuery<NewsResponse>({
     queryKey: ['/api/watchlist/news', activeId],
     queryFn: async () => {
       if (!activeId) return {};
-      // Pass tickers we already have so the Express proxy can skip re-fetching
-      // from FastAPI (which was the cause of timeouts → empty news results).
-      const wlTickers = (watchlist?.tickers || []).join(',');
-      const url = wlTickers
-        ? `/api/watchlist/${activeId}/news?tickers=${encodeURIComponent(wlTickers)}`
-        : `/api/watchlist/${activeId}/news`;
-      const r = await fetch(url);
-      if (!r.ok) return {};
-      return r.json();
+      const url = `/api/watchlist/${activeId}/news`;
+      const text = await fetch(url).then(r => {
+        if (!r.ok) {
+          console.error('[watchlist-news]', { activeId, url, status: r.status });
+          throw new Error(`Watchlist news failed (${r.status})`);
+        }
+        return r.text();
+      });
+      try { return JSON.parse(text); }
+      catch { throw new Error('Watchlist news: invalid JSON'); }
     },
     staleTime: 18 * 60_000,
     refetchInterval: 20 * 60 * 1000,
     enabled: !!activeId && !!watchlist?.analysis,
+    retry: 1,
   });
 
   /* ── major developments for active watchlist ─────────────────────── */
@@ -4422,8 +4424,19 @@ export default function WatchlistPage() {
                 {/* Body — Part E / H / I */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
 
+                  {/* ── Error state — Part B ── */}
+                  {newsIsError && (
+                    <div style={{
+                      margin: 12, padding: '10px 14px', borderRadius: 4,
+                      background: '#ef444412', border: '1px solid #ef444430',
+                      fontSize: 10, color: '#ef4444', fontFamily: C.font,
+                    }}>
+                      News data unavailable — server error. Will retry automatically.
+                    </div>
+                  )}
+
                   {/* ── NEWS ACTIVITY — Part E/F ── */}
-                  {newsView === 'activity' && (() => {
+                  {!newsIsError && newsView === 'activity' && (() => {
                     const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
                     const activityRows = (newsData?.ticker_activity ?? []).filter(
                       r => tickerSet.size === 0 || tickerSet.has(r.ticker.toUpperCase())
@@ -4533,7 +4546,7 @@ export default function WatchlistPage() {
                   })()}
 
                   {/* ── ALL NEWS — Part H ── */}
-                  {newsView === 'all' && (() => {
+                  {!newsIsError && newsView === 'all' && (() => {
                     const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
                     const visibleNews = tickerSet.size > 0
                       ? allNews.filter(item => tickerSet.has((item.ticker || '').toUpperCase()))
@@ -4624,10 +4637,14 @@ export default function WatchlistPage() {
                   })()}
 
                   {/* ── HYPERSCALER DEALS — Part I ── */}
-                  {newsView === 'hyperscaler' && (() => {
+                  {!newsIsError && newsView === 'hyperscaler' && (() => {
                     const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
                     const hyperItems = (newsData?.hyperscaler_articles ?? [])
-                      .filter(a => tickerSet.size === 0 || tickerSet.has((a.symbol ?? '').toUpperCase()))
+                      .filter(a => {
+                        const sym = (a.symbol ?? '').trim();
+                        // Show general (no-symbol) hyperscaler news always; ticker-tagged news only if in watchlist
+                        return sym === '' || tickerSet.size === 0 || tickerSet.has(sym.toUpperCase());
+                      })
                       .sort((a, b) => {
                         const sd = (b.major_news_score ?? 0) - (a.major_news_score ?? 0);
                         if (sd !== 0) return sd;
