@@ -62,7 +62,7 @@ export function SidebarNavigation({ className = "", isCollapsed, isMobile = fals
       items: [
         {
           id: 'home',
-          label: 'Home',
+          label: 'Confluence',
           icon: <Home className="w-4 h-4" />,
           path: '/app/home'
         },
