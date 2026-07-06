@@ -1,0 +1,430 @@
+Audit and fix only the blank ALL NEWS toggle inside Watchlist → LIVE NEWS.
+
+CURRENT STATE
+
+NEWS ACTIVITY is populated and working.
+
+HYPERSCALER DEALS is populated and working.
+
+ALL NEWS displays:
+
+"No news available yet"
+
+Therefore the shared /news React Query and backend request path are already functioning.
+
+Do not modify backend code.
+
+Do not modify NEWS ACTIVITY.
+
+Do not modify NEWS/MC.
+
+Do not modify HYPERSCALER DEALS.
+
+Do not modify StockDetailModal.
+
+Do not restore the old top_articles implicit priority behavior.
+
+This is a narrow ALL NEWS data-derivation/rendering bug.
+
+AUDIT FIRST.
+
+PART A — INSPECT THE ACTUAL RUNTIME newsData.articles SHAPE
+
+Using the running Watchlist page and actual Primary Watchlist, inspect the React Query response currently stored in newsData.
+
+Report only structural diagnostics:
+
+{
+topLevelKeys,
+articlesExists,
+articlesType,
+articlesIsArray,
+articlesIsObject,
+articleTickerKeyCount,
+first10ArticleTickerKeys,
+firstTickerValueIsArray,
+firstTickerArticleCount,
+totalArticleCountAcrossTickerArrays
+}
+
+Also report:
+
+ticker_activity length
+hyperscaler_articles length
+
+Do not log the full news payload.
+
+Expected backend contract is conceptually:
+
+{
+"articles": {
+"NVDA": [ ... ],
+"IREN": [ ... ]
+},
+"ticker_activity": [ ... ],
+"hyperscaler_articles": [ ... ]
+}
+
+Do not assume this shape from TypeScript.
+
+Inspect the live runtime object.
+
+PART B — TRACE THE EXACT allNews DERIVATION
+
+Report the exact current code for:
+
+flattenNews(...)
+
+and:
+
+const allNews = ...
+
+Also report every derived value between newsData.articles and the ALL NEWS JSX.
+
+Conceptually identify:
+
+rawArticlesMap
+flattenedNews
+scopedAllNews
+sortedAllNews
+renderedAllNews
+
+For each print only:
+
+length
+
+Example:
+
+newsData.articles ticker keys = 370
+flattenNews result = 1820
+after active ticker filter = 1820
+after another filter = 0
+rendered source length = 0
+
+Find the exact step where the populated article map becomes an empty array.
+
+Do not guess.
+
+PART C — VERIFY flattenNews AGAINST THE REAL BACKEND ARTICLE SHAPE
+
+Audit the current NewsItem interface and one real article object from:
+
+newsData.articles[firstTicker][0]
+
+Report its keys.
+
+Check whether real backend articles use:
+
+ticker
+symbol
+title
+summary
+url
+published_at
+source
+
+or another shape.
+
+The flatten helper should receive:
+
+Record<string, NewsItem[]>
+
+and inject the map key as the canonical ticker association.
+
+Preferred conceptual behavior:
+
+function flattenNews(
+newsMap: Record<string, NewsItem[]> | null | undefined
+): FlatNewsItem[] {
+if (!newsMap) return [];
+
+const rows: FlatNewsItem[] = [];
+
+for (const [ticker, articles] of Object.entries(newsMap)) {
+if (!Array.isArray(articles)) continue;
+
+```
+for (const article of articles) {
+  rows.push({
+    ...article,
+    ticker: ticker.toUpperCase(),
+  });
+}
+```
+
+}
+
+return rows.sort(
+(a, b) =>
+new Date(b.published_at || 0).getTime()
+- new Date(a.published_at || 0).getTime()
+);
+}
+
+Use the exact existing types/project style.
+
+Critical:
+
+The ticker map key must remain the ticker association.
+
+Do not depend on article.symbol existing.
+
+Do not depend on article.ticker already being populated.
+
+The backend visible-news article dict may not include ticker or symbol because the ticker identity is represented by the surrounding articles map key.
+
+PART D — AUDIT THE ACTIVE WATCHLIST SCOPE FILTER
+
+The previous frontend implementation added scope filtering for the three views.
+
+Inspect the ALL NEWS filter specifically.
+
+Report:
+
+allNews before scope filter
+allNews after scope filter
+
+Also report the first 20 values of:
+
+allNews.map(x => x.ticker)
+
+and:
+
+allTickerSymbols
+
+after normalization.
+
+Use:
+
+String(value || '').trim().toUpperCase()
+
+for comparison.
+
+Do not use:
+
+article.symbol
+
+as the ALL NEWS ticker identity.
+
+Do not use:
+
+related_watchlist_symbols
+
+as the ALL NEWS ticker identity.
+
+For ALL NEWS, the canonical association is the key from:
+
+newsData.articles
+
+Example:
+
+newsData.articles["AIM:ENSI"]
+
+The flattened article must receive:
+
+ticker = "AIM:ENSI"
+
+If the current flatten helper spreads in the article after assigning ticker:
+
+{
+ticker,
+...article
+}
+
+and article.ticker is empty/null, it can overwrite the correct ticker.
+
+Audit the property spread order carefully.
+
+Correct concept:
+
+{
+...article,
+ticker
+}
+
+so the canonical map key wins.
+
+This is a likely failure mode.
+
+PART E — CHECK FOR A STALE FIELD NAME AFTER THE MODAL REFACTOR
+
+The recent StockDetailModal work removed:
+
+newsItems
+
+and changed the modal news source.
+
+Search watchlist.tsx for every reference to:
+
+allNews
+flattenNews
+newsData.articles
+topArticles
+top_articles
+newsItems
+
+Confirm the modal refactor did not accidentally:
+
+remove the allNews derivation
+shadow allNews
+rename the rendered variable
+move allNews into modal-only logic
+leave the ALL NEWS JSX reading an obsolete filtered variable
+
+Report all relevant references.
+
+Do not restore newsItems to StockDetailModal.
+
+The modal's canonical 48H endpoint is correct and must remain unchanged.
+
+PART F — ALL NEWS SOURCE MUST REMAIN newsData.articles
+
+Final required source:
+
+const allNews =
+flattenNews(newsData?.articles ?? {});
+
+or the equivalent memoized derivation.
+
+Do not use:
+
+newsData.top_articles
+
+Do not use:
+
+majorNewsData
+
+Do not use:
+
+ticker_activity
+
+Do not use the per-ticker modal endpoint.
+
+ALL NEWS is the existing broader visible-news feed.
+
+The StockDetailModal News tab intentionally uses a different exact 48H archive source.
+
+Preserve that distinction.
+
+PART G — SORT NEWEST FIRST
+
+After flattening:
+
+sort by published_at descending.
+
+Newest first.
+
+Handle invalid/missing timestamps safely.
+
+Do not filter out an article merely because published_at is missing.
+
+Missing timestamps may sort last.
+
+PART H — VALIDATE LIVE ARTICLE COUNTS
+
+After the fix, using the actual runtime response, return:
+
+newsData.articles ticker-key count
+total arrays article count
+flattenNews result count
+ALL NEWS scoped result count
+ALL NEWS rendered count
+
+Then show the first 10 rendered articles:
+
+ticker
+title
+source
+published_at
+
+Confirm the ordering is newest-first.
+
+PART I — VALIDATE PREFIXED TICKERS IN ALL NEWS
+
+Confirm that article maps such as:
+
+AIM:ENSI
+EPA:SOI
+KRX:000660
+
+retain their full canonical ticker when flattened.
+
+Show at least three real examples where available:
+
+map key
+article ticker before flatten
+flattened ticker
+
+Expected:
+
+map key = AIM:ENSI
+flattened ticker = AIM:ENSI
+
+Do not strip prefixes.
+
+PART J — EMPTY AND ERROR STATES
+
+ALL NEWS should show:
+
+"No news available yet"
+
+only when:
+
+the /news request succeeded
+
+AND
+
+newsData.articles is a valid object
+
+AND
+
+the flattened/scoped article list is genuinely empty.
+
+If:
+
+newsData.articles is missing or malformed
+
+do not present that as a valid zero-news state during development validation.
+
+Use existing shared news request error handling for genuine request failures.
+
+Do not add another backend request.
+
+PART K — NETWORK / REGRESSION
+
+Confirm:
+
+1. ALL NEWS is populated.
+2. NEWS ACTIVITY remains populated.
+3. HYPERSCALER DEALS remains populated.
+4. StockDetailModal News still uses the canonical per-ticker 48H endpoint.
+5. Switching toggles generates zero HTTP requests.
+6. ALL NEWS uses the already-loaded /news response.
+7. No /api/proxy/news/ticker call is restored.
+8. Main /news approximately one-minute polling remains unchanged.
+9. NEWS/MC unchanged.
+10. Hyperscaler ticker badges unchanged.
+
+FINAL RETURN
+
+Return:
+
+* exact root cause
+* exact step where article count became zero
+* live newsData.articles structural diagnostics
+* current flattenNews before fix
+* final flattenNews after fix
+* before/after ALL NEWS derivation
+* exact file changed
+* raw article-map count
+* flattened article count
+* scoped article count
+* first 10 rendered ALL NEWS items
+* three prefixed ticker flatten validations
+* network validation
+* regression checklist
+
+Do not modify backend code.
+Do not modify StockDetailModal.
+Do not use top_articles as an ALL NEWS fallback.
+Do not report completion while ALL NEWS still displays "No news available yet."

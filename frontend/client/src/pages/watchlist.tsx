@@ -259,18 +259,21 @@ function extractAllStocks(analysis: any): any[] {
 }
 
 /* ── flatten news map ───────────────────────────────────────────────── */
-function flattenNews(newsMap: Record<string, NewsItem[]> | null | undefined): (NewsItem & { ticker: string })[] {
+function flattenNews(newsMap: Record<string, NewsItem[]> | null | undefined): FlatNewsItem[] {
   if (!newsMap) return [];
-  const items: (NewsItem & { ticker: string })[] = [];
-  for (const [ticker, articles] of Object.entries(newsMap)) {
-    if (Array.isArray(articles)) {
-      for (const a of articles) {
-        items.push({ ...a, ticker: a.ticker || ticker });
-      }
+  const rows: FlatNewsItem[] = [];
+  for (const [mapKey, articles] of Object.entries(newsMap)) {
+    if (!Array.isArray(articles)) continue;
+    const canonicalTicker = mapKey.toUpperCase();
+    for (const a of articles) {
+      // Map key is the canonical ticker association — always wins over any article-level ticker field
+      rows.push({ ...a, ticker: canonicalTicker });
     }
   }
-  items.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-  return items;
+  rows.sort((a, b) =>
+    new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
+  );
+  return rows;
 }
 
 /* ── check if analysis is new format ───────────────────────────────── */
