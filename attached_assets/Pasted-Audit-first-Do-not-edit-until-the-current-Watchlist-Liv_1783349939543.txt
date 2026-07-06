@@ -1,0 +1,739 @@
+Audit first. Do not edit until the current Watchlist Live News card, news React Query, favorites/Close Watch scoping, and article rendering paths are fully traced.
+
+Backend work is complete.
+
+The existing Watchlist /news endpoint now returns the original fields plus:
+
+ticker_activity
+hyperscaler_articles
+rss_activity_meta
+
+FEATURE:
+
+Convert the existing LIVE NEWS card on the right side of the Watchlist page into one card with three compact toggle views.
+
+Exact toggle order:
+
+1. NEWS ACTIVITY
+2. ALL NEWS
+3. HYPERSCALER DEALS
+
+Default:
+
+NEWS ACTIVITY
+
+This feature belongs only inside the existing LIVE NEWS card.
+
+Do not add columns to the main Watchlist ticker screener.
+
+Do not modify the Watchlist ticker-table sorting system.
+
+Do not move the Live News card.
+
+Do not create three separate cards.
+
+Do not add new backend endpoints.
+
+Do not make Yahoo, Google, FMP, or any other provider calls from the browser.
+
+CURRENT BACKEND SEMANTICS
+
+NEWS ACTIVITY:
+
+* RSS-only
+* Yahoo Finance RSS + Google News RSS
+* unique merged/deduplicated article associations per ticker
+* current rolling 24 hours
+* compared with previous rolling 24 hours
+* continuously collected by backend
+* values are already calculated by backend
+
+HYPERSCALER DEALS:
+
+* sourced from the full rolling 72-hour RSS archive
+* scored by the existing backend news_signal_scorer
+* backend filters catalyst_type == "hyperscaler_anchor"
+* no frontend hyperscaler classification is allowed
+
+ALL NEWS:
+
+* existing per-ticker article map
+* available under newsData.articles
+
+PART A — AUDIT CURRENT FRONTEND PATH BEFORE EDITING
+
+In frontend/client/src/pages/watchlist.tsx, report:
+
+1. Current NewsResponse type.
+2. Current TopArticle type.
+3. Current MajorNewsResponse type.
+4. Current flattenNews(...) implementation.
+5. Current newsData React Query:
+
+   * queryKey
+   * endpoint
+   * staleTime
+   * refetchInterval
+   * enabled guard
+6. Current majorNewsData React Query:
+
+   * queryKey
+   * endpoint
+   * staleTime
+   * refetchInterval
+7. Current derivation of:
+
+   * topArticles
+   * allNews
+   * majorNews
+8. Confirm whether allNews currently uses:
+   topArticles.length > 0 ? topArticles : flattenNews(...)
+9. Confirm whether raw ticker articles are now nested at:
+   newsData.articles
+10. Trace the existing LIVE NEWS card header and entire body.
+11. Trace the existing Major Developments rendering.
+12. Trace the existing All News rendering.
+13. Trace Close Watch/favorites ticker scoping that currently affects news.
+14. Trace the existing StockDetailModal click handler and whether ticker badges/rows can reuse it.
+
+Do not preserve the current implicit:
+
+top_articles if available
+otherwise generic news
+
+display behavior.
+
+The three explicit toggles replace that implicit frontend priority behavior.
+
+PART B — EXTEND NewsResponse ADDITIVELY
+
+Preserve every current field.
+
+Add the exact backend fields.
+
+Conceptually:
+
+type NewsActivityItem = {
+ticker: string;
+articles_24h: number | null;
+previous_articles_24h: number | null;
+delta_count: number | null;
+delta_pct: number | null;
+delta_label?: string | null;
+activity_as_of?: string | null;
+coverage_status?: string | null;
+};
+
+type RssActivityMeta = {
+providers?: string[];
+window_hours?: number;
+comparison_window_hours?: number;
+retention_hours?: number;
+collector_started_at?: string | null;
+last_full_sweep_at?: string | null;
+sweep_in_progress?: boolean;
+current_sweep_started_at?: string | null;
+last_sweep_duration_ms?: number | null;
+ticker_count?: number;
+};
+
+Extend NewsResponse with:
+
+articles?: Record<string, NewsItem[]>;
+ticker_activity?: NewsActivityItem[];
+hyperscaler_articles?: TopArticle[];
+rss_activity_meta?: RssActivityMeta;
+
+Use the exact existing article type if the file already has a better canonical NewsItem/article interface.
+
+Do not create competing duplicate article types unnecessarily.
+
+PART C — ADD LOCAL NEWS VIEW STATE
+
+Add:
+
+type NewsView =
+| "activity"
+| "all"
+| "hyperscaler";
+
+const [newsView, setNewsView] = useState<NewsView>("activity");
+
+Default must be:
+
+activity
+
+Do not use routing.
+
+Do not put the selection into the URL.
+
+Do not create a backend request per toggle.
+
+PART D — ADD THREE COMPACT TOGGLES TO THE EXISTING LIVE NEWS CARD
+
+Exact visible labels:
+
+NEWS ACTIVITY
+ALL NEWS
+HYPERSCALER DEALS
+
+Exact order.
+
+Place them directly beneath the LIVE NEWS card header or in the smallest visually natural header-adjacent toggle row.
+
+Match existing Watchlist/glass-card/terminal styling.
+
+Active toggle:
+
+* brighter text
+* subtle existing accent background/border
+* visually obvious but compact
+
+Inactive toggle:
+
+* dimmer text
+* dark/transparent background
+
+Do not create giant pills.
+
+Do not create oversized page tabs.
+
+Do not redesign the top split.
+
+Preserve the current Live News card width and location.
+
+PART E — NEWS ACTIVITY IS THE DEFAULT VIEW
+
+Render a compact sortable activity table.
+
+Columns:
+
+TICKER
+24H NEWS
+Δ VS PREV 24H
+
+Use only:
+
+newsData.ticker_activity
+
+Do not calculate article counts in React.
+
+Do not use:
+
+allNews.length
+
+Do not use:
+
+newsData.articles[ticker].length
+
+Do not recalculate 24-hour date windows in React.
+
+Backend values are authoritative.
+
+Default sort:
+
+articles_24h descending
+
+Rendering examples:
+
+NVDA    42    +17 (+68.0%)
+NBIS    28    +19 (+211.1%)
+CRDO    11    -8 (-42.1%)
+MU       7     0 (0.0%)
+XYZ      8    +8 (NEW)
+ABC      3     —
+DEF      —     —
+
+DISPLAY RULES
+
+articles_24h:
+
+numeric including zero:
+display number
+
+null/undefined:
+display —
+
+0 is a valid value and must not be treated as missing.
+
+DELTA RULES
+
+coverage_status == "warming":
+display —
+
+coverage_status == "stale":
+display —
+
+coverage_status == "provider_partial":
+display —
+
+If delta_label == "new":
+display:
++{delta_count} (NEW)
+
+If delta_count > 0 and delta_pct is numeric:
++17 (+68.0%)
+
+If delta_count < 0 and delta_pct is numeric:
+-8 (-42.1%)
+
+If delta_count == 0 and delta_pct is numeric:
+0 (0.0%)
+
+Never manufacture a percent when delta_pct is null.
+
+Never show Infinity%.
+
+Never show NaN%.
+
+COLOR RULES
+
+positive:
+existing green token
+
+negative:
+existing red token
+
+zero:
+existing dim/muted token
+
+NEW:
+existing teal/accent token
+
+warming/unavailable:
+muted
+
+PART F — NEWS ACTIVITY LOCAL SORTING
+
+This sorting is only for the table inside the Live News card.
+
+Do not use or modify the main Watchlist ticker-table sort state.
+
+Add local activity sort state.
+
+Sortable:
+
+TICKER
+24H NEWS
+Δ VS PREV 24H
+
+Default:
+
+24H NEWS descending
+
+First click behavior:
+
+TICKER:
+ascending
+
+24H NEWS:
+descending
+
+Δ VS PREV 24H:
+descending
+
+Same-column click toggles direction.
+
+Sort Δ numerically by:
+
+delta_count
+
+Missing values always last regardless of ascending/descending.
+
+A real zero is not missing.
+
+Sorting must cause zero network requests.
+
+PART G — RESPECT CURRENT ACTIVE TICKER / CLOSE WATCH SCOPE
+
+Audit existing news/favorites behavior first.
+
+Build or reuse one canonical active ticker Set for the currently visible Watchlist context.
+
+Apply the same ticker scope to all three views:
+
+NEWS ACTIVITY
+ALL NEWS
+HYPERSCALER DEALS
+
+If Close Watch currently filters visible news client-side, preserve that exact concept.
+
+For NEWS ACTIVITY:
+
+filter ticker_activity by ticker membership in active ticker Set.
+
+For ALL NEWS:
+
+filter per-ticker article map or flattened rows by active ticker Set.
+
+For HYPERSCALER DEALS:
+
+filter article symbol/related Watchlist symbol by active ticker Set following the existing article shape.
+
+Do not create separate backend requests.
+
+Do not create a separate Close Watch RSS collector.
+
+PART H — ALL NEWS VIEW MUST USE newsData.articles
+
+The current frontend previously used an implicit fallback where top_articles could replace generic news.
+
+Stop doing that.
+
+ALL NEWS source must explicitly be:
+
+newsData.articles
+
+Fix flattenNews or its caller so the input shape matches:
+
+Record<string, NewsItem[]>
+
+Conceptually:
+
+const allNews = flattenNews(newsData?.articles ?? {});
+
+Sort:
+
+published_at descending
+
+Newest first.
+
+Do not use top_articles as the ALL NEWS source.
+
+Do not fall back to top_articles when top_articles exists.
+
+Reuse the existing All News row/card design as closely as possible.
+
+Preserve existing useful fields where available:
+
+ticker badge
+catalyst badge
+bull/bear impact
+signal strength
+title
+why_it_matters
+source
+relative time
+external article link
+
+Do not redesign article cards unnecessarily.
+
+PART I — HYPERSCALER DEALS VIEW
+
+Use only:
+
+newsData.hyperscaler_articles ?? []
+
+Do not inspect titles for:
+
+Microsoft
+AWS
+Google
+Meta
+NVIDIA
+OpenAI
+partnership
+contract
+deal
+
+or any other keyword in TypeScript.
+
+No frontend classification logic.
+
+The backend existing news_signal_scorer is the classification authority.
+
+The backend currently builds this feed from the rolling 72-hour RSS archive and returns only:
+
+catalyst_type == "hyperscaler_anchor"
+
+Render using the existing Major Development-style visual language.
+
+Preserve where available:
+
+ticker/symbol
+Hyperscaler Deal label
+bullish/mixed impact
+matched entities
+title
+why_it_matters
+source
+relative time
+external article link
+
+Sort using backend order.
+
+Do not re-sort by title.
+
+If client sorting is currently unavoidable, preserve:
+
+major_news_score descending
+then published_at descending
+
+Empty state exact or very close to:
+
+No hyperscaler deal or partnership news detected for this Watchlist.
+
+Do not show government contracts.
+
+Do not show M&A.
+
+Do not show earnings shocks.
+
+Do not show financing articles.
+
+Do not use newsData.top_articles for this toggle.
+
+PART J — REMOVE IMPLICIT DISPLAY PRIORITY
+
+Current known behavior appeared conceptually like:
+
+const topArticles = newsData?.top_articles ?? [];
+
+const allNews =
+topArticles.length > 0
+? topArticles.map(...)
+: flattenNews(...);
+
+The three-toggle UI replaces this display logic.
+
+The active newsView now decides which dataset renders.
+
+activity:
+newsData.ticker_activity
+
+all:
+newsData.articles
+
+hyperscaler:
+newsData.hyperscaler_articles
+
+Preserve top_articles in response typing for backward compatibility.
+
+Do not remove backend fields.
+
+Do not delete MajorNewsResponse or the major query merely because this card no longer uses it unless audit proves there are no other consumers and removal is unquestionably safe.
+
+Prefer leaving compatibility code alone over broad cleanup.
+
+PART K — NEAR-REAL-TIME BACKEND SNAPSHOT POLLING
+
+The backend RSS collector continuously refreshes Yahoo + Google.
+
+The browser only reads the existing backend /news response.
+
+Update the existing newsData React Query cadence to approximately:
+
+staleTime: 30_000
+refetchInterval: 60_000
+
+Preserve the current enabled guard.
+
+Do not poll faster than 60 seconds.
+
+Do not add a WebSocket.
+
+Do not add Server-Sent Events.
+
+Do not call RSS feeds directly.
+
+When:
+
+newsData.rss_activity_meta?.sweep_in_progress === true
+
+reuse the existing Refreshing… indicator.
+
+For NEWS ACTIVITY freshness, prefer:
+
+rss_activity_meta.last_full_sweep_at
+
+for the displayed freshness age.
+
+Do not present newsData.cached_at as collector freshness if the RSS collector timestamp is more semantically correct.
+
+For ALL NEWS and HYPERSCALER DEALS, use the most semantically accurate existing freshness metadata without inventing fake precision.
+
+PART L — CARD HEADER COUNTS
+
+Audit the existing LIVE NEWS header count:
+
+({allNews.length})
+
+Do not leave one misleading universal count beside LIVE NEWS if it changes meaning across toggles.
+
+Preferred behavior:
+
+NEWS ACTIVITY:
+show number of ticker rows in current scope
+
+ALL NEWS:
+show flattened article count in current scope
+
+HYPERSCALER DEALS:
+show hyperscaler article count in current scope
+
+The count should update locally when toggles change.
+
+Switching views must not trigger a network request.
+
+PART M — LOADING / WARMING STATES
+
+NEWS ACTIVITY:
+
+If ticker_activity is unavailable while initial backend data is loading:
+reuse the existing card loading language/spinner.
+
+If ticker_activity is present but coverage_status is warming:
+show the 24H NEWS count immediately.
+Show — for the delta column.
+
+Do not hide the entire table because comparison coverage is warming.
+
+Optionally add one small muted note near the activity header:
+
+"24H comparison warming"
+
+only when the currently scoped activity rows are predominantly warming.
+
+Do not show 370 individual warming badges.
+
+Do not clutter every row.
+
+ALL NEWS:
+
+preserve current loading/empty behavior where reasonable.
+
+HYPERSCALER DEALS:
+
+use the explicit hyperscaler empty state.
+
+PART N — TICKER CLICK BEHAVIOR
+
+If the existing:
+
+handleTickerClick
+
+or equivalent StockDetailModal open path accepts a ticker symbol cleanly:
+
+NEWS ACTIVITY ticker/row click should reuse it.
+
+ALL NEWS ticker badges should preserve existing click behavior.
+
+HYPERSCALER DEALS ticker badges should preserve/reuse existing click behavior.
+
+Do not create a new news modal.
+
+Do not create a new stock modal.
+
+PART O — VALIDATION
+
+Use the live backend response from the real active Watchlist.
+
+NEWS ACTIVITY validation:
+
+Show at least:
+
+3 tickers with numeric articles_24h
+1 ticker with articles_24h = 0 if available
+3 warming tickers
+one positive/negative/zero delta case using controlled test data or a typed fixture if live coverage is still warming
+one NEW case using controlled test data or typed fixture
+
+For each report:
+
+ticker
+articles_24h
+previous_articles_24h
+delta_count
+delta_pct
+delta_label
+coverage_status
+rendered text
+
+Because the backend currently correctly reports 370/370 warming during the first 48-hour collector period, do not fabricate live complete deltas.
+
+Use a deterministic frontend fixture/unit-level calculation only to validate formatting/sorting for positive, negative, zero, and NEW delta cases.
+
+ALL NEWS validation:
+
+Prove:
+
+source = newsData.articles
+
+Show:
+
+raw ticker-map article count
+flattened article count
+first 5 published_at values after sorting
+
+Confirm newest-first.
+
+HYPERSCALER validation:
+
+Prove:
+
+source = newsData.hyperscaler_articles
+
+Show at least:
+
+IREN Nvidia partnership article
+NBIS Meta cloud report article
+
+or the current live hyperscaler examples if those articles age out of the rolling 72-hour archive.
+
+For each show:
+
+ticker
+title
+published_at
+catalyst_type
+major_news_score
+
+Confirm no frontend keyword detection exists.
+
+NETWORK validation:
+
+Using browser/network instrumentation or query-count logging, prove:
+
+1. Initial page load makes the normal /news request.
+2. Clicking NEWS ACTIVITY → ALL NEWS causes zero HTTP requests.
+3. Clicking ALL NEWS → HYPERSCALER DEALS causes zero HTTP requests.
+4. Clicking HYPERSCALER DEALS → NEWS ACTIVITY causes zero HTTP requests.
+5. Activity sorting causes zero HTTP requests.
+6. Automatic /news polling occurs approximately once per minute.
+7. No request from the browser targets Yahoo RSS.
+8. No request from the browser targets Google News RSS.
+9. No request from the browser targets FMP for this feature.
+
+REGRESSION VALIDATION
+
+Verify:
+
+1. Watchlist main ticker table is unchanged.
+2. Existing ticker-table sorting still works.
+3. Close Watch still works.
+4. Favorites filtering does not regress.
+5. StockDetailModal still opens.
+6. Existing news article external links still work.
+7. Existing article signal badges still render where fields exist.
+8. Existing Major Developments compatibility path is not accidentally deleted.
+9. Live News card remains in the same right-side location.
+10. Responsive overflow/scroll behavior remains usable.
+
+RETURN:
+
+* audit findings
+* exact files changed
+* before/after allNews derivation
+* final NewsResponse additions
+* toggle-state implementation
+* screenshots of all three toggle views
+* NEWS ACTIVITY sort/format validation
+* ALL NEWS source proof
+* HYPERSCALER DEALS source proof
+* network validation showing zero requests on toggle changes
+* final regression checklist
+
+Do not modify backend code.
+Do not create new endpoints.
+Do not add provider calls.
+Do not touch the main Watchlist ticker-table sorter.

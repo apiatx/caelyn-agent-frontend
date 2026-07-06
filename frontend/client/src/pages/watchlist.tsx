@@ -95,10 +95,41 @@ interface FlatNewsItem extends NewsItem {
   why_it_matters?:   string;
 }
 
+interface NewsActivityItem {
+  ticker: string;
+  articles_24h: number | null;
+  previous_articles_24h: number | null;
+  delta_count: number | null;
+  delta_pct: number | null;
+  delta_label?: string | null;
+  activity_as_of?: string | null;
+  coverage_status?: string | null;
+}
+
+interface RssActivityMeta {
+  providers?: string[];
+  window_hours?: number;
+  comparison_window_hours?: number;
+  retention_hours?: number;
+  collector_started_at?: string | null;
+  last_full_sweep_at?: string | null;
+  sweep_in_progress?: boolean;
+  current_sweep_started_at?: string | null;
+  last_sweep_duration_ms?: number | null;
+  ticker_count?: number;
+}
+
+type NewsView = 'activity' | 'all' | 'hyperscaler';
+type ActivitySortKey = 'ticker' | 'articles_24h' | 'delta_count';
+
 interface NewsResponse {
   top_articles?: TopArticle[];
   is_building?:  boolean;
   cache_age_s?:  number;
+  articles?: Record<string, NewsItem[]>;
+  ticker_activity?: NewsActivityItem[];
+  hyperscaler_articles?: TopArticle[];
+  rss_activity_meta?: RssActivityMeta;
   [ticker: string]: any;
 }
 
@@ -224,7 +255,7 @@ function extractAllStocks(analysis: any): any[] {
 }
 
 /* ── flatten news map ───────────────────────────────────────────────── */
-function flattenNews(newsMap: NewsResponse | null | undefined): (NewsItem & { ticker: string })[] {
+function flattenNews(newsMap: Record<string, NewsItem[]> | null | undefined): (NewsItem & { ticker: string })[] {
   if (!newsMap) return [];
   const items: (NewsItem & { ticker: string })[] = [];
   for (const [ticker, articles] of Object.entries(newsMap)) {
@@ -1646,6 +1677,10 @@ export default function WatchlistPage() {
   const [draftOp, setDraftOp]   = useState<FilterOperator>('gt');
   const [draftVal, setDraftVal]   = useState('');
   const [draftVal2, setDraftVal2] = useState('');
+  /* ── Live News view state ─────────────────────────────────────────── */
+  const [newsView, setNewsView] = useState<NewsView>('activity');
+  const [activitySort, setActivitySort] = useState<{ key: ActivitySortKey; dir: 'asc' | 'desc' }>({ key: 'articles_24h', dir: 'desc' });
+
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
@@ -2148,10 +2183,8 @@ export default function WatchlistPage() {
     ? (analysis?.sections?.length > 0)
     : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
   const allStocks = extractAllStocks(analysis);
-  const topArticles: TopArticle[] = newsData?.top_articles ?? [];
-  const allNews: FlatNewsItem[] = topArticles.length > 0
-    ? topArticles.map(a => ({ ...a, ticker: a.symbol ?? '' }))
-    : flattenNews(newsData);
+  // Part H/J: ALL NEWS always sources from newsData.articles — no topArticles priority
+  const allNews: FlatNewsItem[] = flattenNews(newsData?.articles ?? {});
   const newsIsBuilding: boolean = newsData?.is_building ?? false;
   const newsCacheAge: number | null = newsData?.cache_age_s ?? null;
   const majorNews: MajorNewsItem[] = (majorNewsData?.major_developments ?? []).slice(0, 20);
@@ -4323,154 +4356,334 @@ export default function WatchlistPage() {
                 : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
               }
 
-              {/* ── Live News (narrower) ── */}
+              {/* ── Live News (narrower) — three-toggle card ── */}
               <div style={{
                 background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 height: '100%', minHeight: 0,
               }}>
+                {/* Header: title + status */}
                 <div style={{
-                  padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
-                  display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+                  padding: '9px 14px 8px', borderBottom: `1px solid ${C.border}`,
+                  display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-                    LIVE NEWS
-                  </span>
-                  <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
-                  {newsCacheAge !== null && (
-                    <span style={{ fontSize: 9, color: C.dim, marginLeft: 2 }}>
-                      · Updated {newsCacheAge < 60
-                        ? `${newsCacheAge}s ago`
-                        : `${Math.round(newsCacheAge / 60)} min ago`}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+                      LIVE NEWS
                     </span>
-                  )}
-                  {(newsIsBuilding || newsFetching) && (
-                    <span style={{
-                      marginLeft: 'auto',
-                      fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
-                      padding: '2px 6px', borderRadius: 3,
-                      color: C.teal, background: C.teal + '18',
-                      border: `1px solid ${C.teal}30`,
-                      textTransform: 'uppercase' as const,
-                    }}>
-                      Refreshing…
-                    </span>
-                  )}
+                    {newsCacheAge !== null && (
+                      <span style={{ fontSize: 9, color: C.dim }}>
+                        · Updated {newsCacheAge < 60
+                          ? `${newsCacheAge}s ago`
+                          : `${Math.round(newsCacheAge / 60)} min ago`}
+                      </span>
+                    )}
+                    {(newsIsBuilding || newsFetching) && (
+                      <span style={{
+                        marginLeft: 'auto', fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
+                        padding: '2px 6px', borderRadius: 3,
+                        color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}30`,
+                        textTransform: 'uppercase' as const,
+                      }}>
+                        Refreshing…
+                      </span>
+                    )}
+                  </div>
+                  {/* Toggle row — Part D */}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
+                    {(['activity', 'all', 'hyperscaler'] as NewsView[]).map(v => {
+                      const labels: Record<NewsView, string> = {
+                        activity: 'NEWS ACTIVITY',
+                        all: 'ALL NEWS',
+                        hyperscaler: 'HYPERSCALER DEALS',
+                      };
+                      const active = newsView === v;
+                      return (
+                        <button
+                          key={v}
+                          onClick={() => setNewsView(v)}
+                          style={{
+                            fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                            padding: '3px 7px', borderRadius: 3, fontFamily: C.font,
+                            color: active ? C.teal : C.dim,
+                            background: active ? `${C.teal}14` : 'transparent',
+                            border: `1px solid ${active ? `${C.teal}40` : C.border}`,
+                            cursor: 'pointer', textTransform: 'uppercase' as const,
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          {labels[v]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
+                {/* Body — Part E / H / I */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '2px 0', minHeight: 0 }} className="wl-scrollbar">
-                  {/* ── Major Developments ── */}
-                  {majorNews.length > 0 && (() => {
-                    const impactColor = (impact?: string) => {
-                      if (impact === 'bullish')  return '#22c55e';
-                      if (impact === 'bearish')  return '#ef4444';
-                      if (impact === 'mixed')    return '#f59e0b';
-                      return C.dim;
+
+                  {/* ── NEWS ACTIVITY — Part E/F ── */}
+                  {newsView === 'activity' && (() => {
+                    const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
+                    const activityRows = (newsData?.ticker_activity ?? []).filter(
+                      r => tickerSet.size === 0 || tickerSet.has(r.ticker.toUpperCase())
+                    );
+
+                    const sorted = [...activityRows].sort((a, b) => {
+                      const { key, dir } = activitySort;
+                      let av: any, bv: any;
+                      if (key === 'ticker')       { av = a.ticker;       bv = b.ticker; }
+                      else if (key === 'articles_24h') { av = a.articles_24h; bv = b.articles_24h; }
+                      else                         { av = a.delta_count;  bv = b.delta_count; }
+                      if (av == null && bv == null) return 0;
+                      if (av == null) return 1;
+                      if (bv == null) return -1;
+                      if (key === 'ticker') return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+                      return dir === 'asc' ? av - bv : bv - av;
+                    });
+
+                    const toggleSort = (k: ActivitySortKey) => {
+                      setActivitySort(prev => {
+                        if (prev.key !== k) return { key: k, dir: k === 'ticker' ? 'asc' : 'desc' };
+                        return { key: k, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+                      });
                     };
+
+                    const fmtDelta = (row: NewsActivityItem): { text: string; color: string } => {
+                      const s = row.coverage_status;
+                      if (s === 'warming' || s === 'stale' || s === 'provider_partial') return { text: '—', color: C.dim };
+                      if (row.delta_count == null) return { text: '—', color: C.dim };
+                      const dc = row.delta_count;
+                      if (row.delta_label === 'new') return { text: `+${dc} (NEW)`, color: C.teal };
+                      if (row.delta_pct != null && isFinite(row.delta_pct) && !isNaN(row.delta_pct)) {
+                        const sign = dc > 0 ? '+' : '';
+                        const pSign = dc > 0 ? '+' : '';
+                        const text = `${sign}${dc} (${pSign}${row.delta_pct.toFixed(1)}%)`;
+                        return { text, color: dc > 0 ? '#22c55e' : dc < 0 ? '#ef4444' : C.dim };
+                      }
+                      const sign = dc > 0 ? '+' : '';
+                      return { text: `${sign}${dc}`, color: dc > 0 ? '#22c55e' : dc < 0 ? '#ef4444' : C.dim };
+                    };
+
+                    const thStyle = (k: ActivitySortKey, align: 'left' | 'right'): React.CSSProperties => ({
+                      padding: '5px 8px', fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                      color: activitySort.key === k ? C.teal : C.dim,
+                      textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none',
+                      background: '#ffffff04', whiteSpace: 'nowrap',
+                      borderBottom: `1px solid ${C.border}`,
+                      textAlign: align, fontFamily: C.font,
+                    });
+
+                    return activityRows.length === 0 ? (
+                      <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
+                        {newsFetching ? 'Loading activity data…' : 'No news activity data available yet.'}
+                      </div>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={thStyle('ticker', 'left')} onClick={() => toggleSort('ticker')}>
+                              TICKER{activitySort.key === 'ticker' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                            </th>
+                            <th style={thStyle('articles_24h', 'right')} onClick={() => toggleSort('articles_24h')}>
+                              24H NEWS{activitySort.key === 'articles_24h' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                            </th>
+                            <th style={thStyle('delta_count', 'right')} onClick={() => toggleSort('delta_count')}>
+                              Δ VS PREV 24H{activitySort.key === 'delta_count' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sorted.map(row => {
+                            const delta = fmtDelta(row);
+                            const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === row.ticker.toUpperCase());
+                            const col = newFmt
+                              ? (tickerStock?.section_id ? sectionAccent(tickerStock.section_id) : C.teal)
+                              : C.teal;
+                            return (
+                              <tr
+                                key={row.ticker}
+                                style={{ borderBottom: `1px solid ${C.border}`, cursor: 'pointer' }}
+                                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#ffffff06'}
+                                onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
+                                onClick={() => handleTickerClick(row.ticker)}
+                              >
+                                <td style={{ padding: '5px 8px' }}>
+                                  <span style={{
+                                    fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                                    padding: '2px 6px', borderRadius: 3,
+                                    color: col, background: col + '15', border: `1px solid ${col}25`,
+                                    textTransform: 'uppercase',
+                                  }}>
+                                    {row.ticker}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row.articles_24h != null ? C.text : C.dim, fontFamily: C.font }}>
+                                  {row.articles_24h != null ? row.articles_24h : '—'}
+                                </td>
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: C.font, whiteSpace: 'nowrap' }}>
+                                  {delta.text}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
+
+                  {/* ── ALL NEWS — Part H ── */}
+                  {newsView === 'all' && (() => {
+                    const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
+                    const visibleNews = tickerSet.size > 0
+                      ? allNews.filter(item => tickerSet.has((item.ticker || '').toUpperCase()))
+                      : allNews;
                     return (
                       <>
-                        <div style={{
-                          padding: '7px 14px 6px',
-                          borderBottom: `1px solid ${C.border}`,
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          background: '#ffffff05',
-                        }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: C.amber, letterSpacing: '0.12em' }}>
-                            MAJOR DEVELOPMENTS
-                          </span>
-                          <span style={{ fontSize: 9, color: C.dim }}>({majorNews.length})</span>
-                        </div>
-                        {majorNews.map((item, i) => {
-                          const col = impactColor(item.bull_bear_impact);
-                          const symbols = item.related_watchlist_symbols ?? [];
+                        {visibleNews.map((item, i) => {
+                          const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === (item.ticker || '').toUpperCase());
+                          const col = newFmt
+                            ? (tickerStock?.section_id ? sectionAccent(tickerStock.section_id) : C.teal)
+                            : signalColor(tickerStock?.signal);
+                          const impactCol = item.bull_bear_impact === 'bullish' ? '#22c55e'
+                            : item.bull_bear_impact === 'bearish' ? '#ef4444'
+                            : item.bull_bear_impact === 'mixed'   ? '#f59e0b'
+                            : null;
                           return (
                             <a
-                              key={`major-${i}`}
+                              key={`news-${item.ticker}-${i}`}
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{
-                                display: 'block',
-                                padding: '9px 14px',
+                                display: 'flex', alignItems: 'flex-start', gap: 10,
+                                padding: '9px 14px', borderBottom: `1px solid ${C.border}`,
+                                borderLeft: impactCol ? `2px solid ${impactCol}35` : undefined,
+                                textDecoration: 'none', cursor: 'pointer', transition: 'background 0.1s',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              {item.ticker && (
+                                <span style={{
+                                  flexShrink: 0, fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                                  padding: '2px 7px', borderRadius: 3,
+                                  color: col, background: col + '15', border: `1px solid ${col}25`,
+                                  textTransform: 'uppercase' as const,
+                                }}>
+                                  {item.ticker}
+                                </span>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                {(item.catalyst_type || item.signal_strength || (item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown')) && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
+                                    {item.catalyst_type && (
+                                      <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: C.amber, background: C.amber + '15', border: `1px solid ${C.amber}25`, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+                                        {item.catalyst_type}
+                                      </span>
+                                    )}
+                                    {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && impactCol && (
+                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: impactCol, background: impactCol + '12', border: `1px solid ${impactCol}22`, textTransform: 'capitalize' as const }}>
+                                        {item.bull_bear_impact}
+                                      </span>
+                                    )}
+                                    {item.signal_strength && (
+                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: C.dim, background: '#ffffff08', border: `1px solid ${C.border}`, textTransform: 'capitalize' as const }}>
+                                        {item.signal_strength}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: 11, color: C.text, lineHeight: 1.4, marginBottom: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                                  {item.title}
+                                </div>
+                                {item.why_it_matters && (
+                                  <div style={{ fontSize: 10, color: C.dim, fontFamily: C.font, lineHeight: 1.35, marginBottom: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
+                                    {item.why_it_matters}
+                                  </div>
+                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 9, color: C.dim }}>{item.source}</span>
+                                  <span style={{ fontSize: 9, color: C.dim }}>{timeAgo(item.published_at)}</span>
+                                </div>
+                              </div>
+                              <ExternalLink style={{ width: 11, height: 11, color: C.dim, flexShrink: 0, marginTop: 2 }} />
+                            </a>
+                          );
+                        })}
+                        {visibleNews.length === 0 && !newsIsBuilding && !newsFetching && (
+                          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
+                            {watchlist?.analysis ? 'No news available yet' : 'No news available'}
+                          </div>
+                        )}
+                        {visibleNews.length === 0 && (newsIsBuilding || newsFetching) && (
+                          <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>Building news feed…</div>
+                        )}
+                      </>
+                    );
+                  })()}
+
+                  {/* ── HYPERSCALER DEALS — Part I ── */}
+                  {newsView === 'hyperscaler' && (() => {
+                    const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
+                    const hyperItems = (newsData?.hyperscaler_articles ?? [])
+                      .filter(a => tickerSet.size === 0 || tickerSet.has((a.symbol ?? '').toUpperCase()))
+                      .sort((a, b) => {
+                        const sd = (b.major_news_score ?? 0) - (a.major_news_score ?? 0);
+                        if (sd !== 0) return sd;
+                        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+                      });
+                    const impactColor = (impact?: string) =>
+                      impact === 'bullish' ? '#22c55e' : impact === 'bearish' ? '#ef4444' : impact === 'mixed' ? '#f59e0b' : C.dim;
+
+                    return hyperItems.length === 0 ? (
+                      <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
+                        {newsFetching ? 'Loading hyperscaler deals…' : 'No hyperscaler deal or partnership news detected for this Watchlist.'}
+                      </div>
+                    ) : (
+                      <>
+                        {hyperItems.map((item, i) => {
+                          const col = impactColor(item.bull_bear_impact);
+                          const sym = item.symbol ?? '';
+                          return (
+                            <a
+                              key={`hyper-${i}`}
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'block', padding: '9px 14px',
                                 borderBottom: `1px solid ${C.border}`,
-                                textDecoration: 'none',
-                                cursor: 'pointer',
-                                transition: 'background 0.1s',
                                 borderLeft: `2px solid ${col}40`,
+                                textDecoration: 'none', cursor: 'pointer', transition: 'background 0.1s',
                               }}
                               onMouseEnter={e => e.currentTarget.style.background = `${col}06`}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
-                              {/* badges row */}
                               <div style={{ display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 4, marginBottom: 5 }}>
-                                {item.major_news_label && (
-                                  <span style={{
-                                    fontSize: 8, fontWeight: 700, fontFamily: C.font,
-                                    padding: '2px 6px', borderRadius: 3,
-                                    color: col, background: col + '18',
-                                    border: `1px solid ${col}30`,
-                                    textTransform: 'uppercase' as const, letterSpacing: '0.08em',
-                                  }}>
-                                    {item.major_news_label}
-                                  </span>
-                                )}
+                                <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '2px 6px', borderRadius: 3, color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}30`, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+                                  Hyperscaler Deal
+                                </span>
                                 {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && (
-                                  <span style={{
-                                    fontSize: 8, fontWeight: 600, fontFamily: C.font,
-                                    padding: '2px 5px', borderRadius: 3,
-                                    color: col, background: col + '10',
-                                    border: `1px solid ${col}20`,
-                                    textTransform: 'capitalize' as const,
-                                  }}>
+                                  <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '2px 5px', borderRadius: 3, color: col, background: col + '10', border: `1px solid ${col}20`, textTransform: 'capitalize' as const }}>
                                     {item.bull_bear_impact}
                                   </span>
                                 )}
-                                {symbols.slice(0, 4).map(sym => (
-                                  <span key={sym} style={{
-                                    fontSize: 8, fontWeight: 700, fontFamily: C.font,
-                                    padding: '2px 5px', borderRadius: 3,
-                                    color: C.teal, background: C.teal + '15',
-                                    border: `1px solid ${C.teal}25`,
-                                    textTransform: 'uppercase' as const,
-                                  }}>
+                                {sym && (
+                                  <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '2px 5px', borderRadius: 3, color: C.amber, background: C.amber + '15', border: `1px solid ${C.amber}25`, textTransform: 'uppercase' as const }}>
                                     {sym}
                                   </span>
-                                ))}
-                                {symbols.length > 4 && (
-                                  <span style={{ fontSize: 8, color: C.dim }}>+{symbols.length - 4}</span>
                                 )}
                                 <ExternalLink style={{ width: 9, height: 9, color: C.dim, marginLeft: 'auto' }} />
                               </div>
-                              {/* title */}
-                              <div style={{
-                                fontSize: 11, color: C.text, fontFamily: C.font,
-                                lineHeight: 1.4, marginBottom: 4,
-                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                              }}>
+                              <div style={{ fontSize: 11, color: C.text, fontFamily: C.font, lineHeight: 1.4, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
                                 {item.title}
                               </div>
-                              {/* why it matters */}
                               {item.why_it_matters && (
-                                <div style={{
-                                  fontSize: 10, color: C.dim, fontFamily: C.font,
-                                  lineHeight: 1.35, marginBottom: 4,
-                                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                                  fontStyle: 'italic',
-                                }}>
+                                <div style={{ fontSize: 10, color: C.dim, fontFamily: C.font, lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
                                   {item.why_it_matters}
                                 </div>
                               )}
-                              {/* matched entities */}
-                              {item.matched_entities && item.matched_entities.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
-                                  {item.matched_entities.slice(0, 3).map((ent, ei) => (
-                                    <span key={ei} style={{ fontSize: 8, color: C.dim, background: '#ffffff08', border: `1px solid ${C.border}`, borderRadius: 2, padding: '1px 4px', fontFamily: C.font }}>
-                                      {ent}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              {/* source + date */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 {item.source && <span style={{ fontSize: 9, color: C.dim }}>{item.source}</span>}
                                 {item.published_at && <span style={{ fontSize: 9, color: C.dim }}>{timeAgo(item.published_at)}</span>}
@@ -4478,140 +4691,10 @@ export default function WatchlistPage() {
                             </a>
                           );
                         })}
-                        {/* divider before normal feed */}
-                        <div style={{
-                          padding: '6px 14px 5px',
-                          borderBottom: `1px solid ${C.border}`,
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          background: '#ffffff03',
-                        }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.1em' }}>
-                            ALL NEWS
-                          </span>
-                          <span style={{ fontSize: 9, color: C.dim }}>({allNews.length})</span>
-                        </div>
                       </>
                     );
                   })()}
-                  {majorNews.length === 0 && majorNewsData && allNews.length === 0 && (
-                    <div style={{ padding: '6px 14px', fontSize: 10, color: C.dim, borderBottom: `1px solid ${C.border}` }}>
-                      No major developments detected in recent watchlist news.
-                    </div>
-                  )}
-                  {allNews.map((item, i) => {
-                    const tickerStock = allStocks.find(s => (s.ticker || '').toUpperCase() === (item.ticker || '').toUpperCase());
-                    const col = newFmt
-                      ? (tickerStock?.section_id ? sectionAccent(tickerStock.section_id) : C.teal)
-                      : signalColor(tickerStock?.signal);
-                    const impactCol = item.bull_bear_impact === 'bullish' ? '#22c55e'
-                      : item.bull_bear_impact === 'bearish' ? '#ef4444'
-                      : item.bull_bear_impact === 'mixed'   ? '#f59e0b'
-                      : null;
-                    return (
-                      <a
-                        key={`news-${item.ticker}-${i}`}
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'flex', alignItems: 'flex-start', gap: 10,
-                          padding: '9px 14px',
-                          borderBottom: `1px solid ${C.border}`,
-                          borderLeft: impactCol ? `2px solid ${impactCol}35` : undefined,
-                          textDecoration: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.1s',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = `${C.teal}08`}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
-                        {item.ticker && (
-                          <span style={{
-                            flexShrink: 0,
-                            fontSize: 8, fontWeight: 800, fontFamily: C.font,
-                            padding: '2px 7px', borderRadius: 3,
-                            color: col, background: col + '15',
-                            border: `1px solid ${col}25`,
-                            textTransform: 'uppercase' as const,
-                          }}>
-                            {item.ticker}
-                          </span>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          {/* badges row — only when rich fields are present */}
-                          {(item.catalyst_type || item.signal_strength || (item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown')) && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
-                              {item.catalyst_type && (
-                                <span style={{
-                                  fontSize: 8, fontWeight: 700, fontFamily: C.font,
-                                  padding: '1px 5px', borderRadius: 3,
-                                  color: C.amber, background: C.amber + '15',
-                                  border: `1px solid ${C.amber}25`,
-                                  textTransform: 'uppercase' as const, letterSpacing: '0.07em',
-                                }}>
-                                  {item.catalyst_type}
-                                </span>
-                              )}
-                              {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && impactCol && (
-                                <span style={{
-                                  fontSize: 8, fontWeight: 600, fontFamily: C.font,
-                                  padding: '1px 5px', borderRadius: 3,
-                                  color: impactCol, background: impactCol + '12',
-                                  border: `1px solid ${impactCol}22`,
-                                  textTransform: 'capitalize' as const,
-                                }}>
-                                  {item.bull_bear_impact}
-                                </span>
-                              )}
-                              {item.signal_strength && (
-                                <span style={{
-                                  fontSize: 8, fontWeight: 600, fontFamily: C.font,
-                                  padding: '1px 5px', borderRadius: 3,
-                                  color: C.dim, background: '#ffffff08',
-                                  border: `1px solid ${C.border}`,
-                                  textTransform: 'capitalize' as const,
-                                }}>
-                                  {item.signal_strength}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div style={{
-                            fontSize: 11, color: C.text,
-                            lineHeight: 1.4, marginBottom: 3,
-                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                          }}>
-                            {item.title}
-                          </div>
-                          {item.why_it_matters && (
-                            <div style={{
-                              fontSize: 10, color: C.dim, fontFamily: C.font,
-                              lineHeight: 1.35, marginBottom: 3,
-                              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                              fontStyle: 'italic',
-                            }}>
-                              {item.why_it_matters}
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 9, color: C.dim }}>{item.source}</span>
-                            <span style={{ fontSize: 9, color: C.dim }}>{timeAgo(item.published_at)}</span>
-                          </div>
-                        </div>
-                        <ExternalLink style={{ width: 11, height: 11, color: C.dim, flexShrink: 0, marginTop: 2 }} />
-                      </a>
-                    );
-                  })}
-                  {allNews.length === 0 && !newsIsBuilding && !newsFetching && (
-                    <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
-                      {watchlist?.analysis ? 'No news available yet' : 'No news available'}
-                    </div>
-                  )}
-                  {allNews.length === 0 && (newsIsBuilding || newsFetching) && (
-                    <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
-                      Building news feed…
-                    </div>
-                  )}
+
                 </div>
               </div>
             </div>
