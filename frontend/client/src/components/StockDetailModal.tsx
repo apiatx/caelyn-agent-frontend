@@ -59,22 +59,34 @@ function timeAgo(dateStr: string): string {
 }
 
 /* ── types ───────────────────────────────────────────────────────── */
-interface NewsItem {
-  ticker?: string;
-  title: string;
-  summary?: string;
-  url: string;
-  published_at: string;
-  source: string;
-}
-
 interface StockDetailModalProps {
   ticker: string;
   analysis: any;
   csvData?: any[];
-  newsItems: NewsItem[];
+  watchlistId?: string | null;
   earningsEntry?: any;
   onClose: () => void;
+}
+
+interface TickerActivityNewsArticle {
+  ticker: string;
+  article_key?: string;
+  title: string;
+  summary?: string;
+  source: string;
+  url: string;
+  published_at: string;
+  rss_providers?: string[];
+}
+
+interface TickerActivityNewsResponse {
+  ticker: string;
+  window_hours: number;
+  articles_48h: number;
+  articles: TickerActivityNewsArticle[];
+  activity_as_of?: string | null;
+  last_full_sweep_at?: string | null;
+  coverage_status?: string | null;
 }
 
 type TabId = 'overview' | 'fundamentals' | 'news' | 'deep-dive';
@@ -108,7 +120,7 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
 /* ═══════════════════════════════════════════════════════════════════
    STOCK DETAIL MODAL
    ═══════════════════════════════════════════════════════════════════ */
-export function StockDetailModal({ ticker, analysis, csvData, newsItems, earningsEntry, onClose }: StockDetailModalProps) {
+export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earningsEntry, onClose }: StockDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [deepDive, setDeepDive] = useState<any>(null);
   const [deepDiveLoading, setDeepDiveLoading] = useState(false);
@@ -310,7 +322,7 @@ export function StockDetailModal({ ticker, analysis, csvData, newsItems, earning
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} />}
           {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
-          {activeTab === 'news' && <NewsTab ticker={ticker} items={newsItems} />}
+          {activeTab === 'news' && <NewsTab ticker={ticker} watchlistId={watchlistId} isActive={activeTab === 'news'} />}
           {activeTab === 'deep-dive' && (
             <DeepDiveTab
               ticker={ticker}
@@ -582,84 +594,136 @@ function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
   );
 }
 
-/* ═══ News Tab ══════════════════════════════════════════════════════ */
-function NewsTab({ ticker, items }: { ticker: string; items: NewsItem[] }) {
-  const [fetched, setFetched] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [tried, setTried] = useState(false);
+/* ═══ News Tab — canonical 48H archive endpoint ═════════════════════ */
+function NewsTab({ ticker, watchlistId, isActive }: {
+  ticker: string;
+  watchlistId: string | null | undefined;
+  isActive: boolean;
+}) {
+  const { data, isLoading, isError } = useQuery<TickerActivityNewsResponse>({
+    queryKey: ['watchlist-ticker-activity-news', watchlistId, ticker],
+    queryFn: async () => {
+      const url = `/api/watchlist/${encodeURIComponent(watchlistId!)}/news/ticker/${encodeURIComponent(ticker)}`;
+      const r = await fetch(url, { credentials: 'include' });
+      if (!r.ok) throw new Error(`${r.status}`);
+      return r.json();
+    },
+    enabled: isActive && !!watchlistId && !!ticker,
+    staleTime: 30_000,
+    refetchInterval: isActive ? 60_000 : false,
+    retry: 1,
+  });
 
-  // If parent already provided news, use those. Otherwise fetch on demand.
-  useEffect(() => {
-    if (items.length > 0 || tried) return;
-    setTried(true);
-    setLoading(true);
-    fetch(`/api/proxy/news/ticker?tickers=${encodeURIComponent(ticker)}`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : {})
-      .then((data: any) => {
-        // data may be { [ticker]: NewsItem[] } or NewsItem[]
-        let arr: NewsItem[] = [];
-        if (Array.isArray(data)) {
-          arr = data;
-        } else if (typeof data === 'object') {
-          const key = Object.keys(data).find(k => k.toUpperCase() === ticker.toUpperCase());
-          if (key && Array.isArray(data[key])) arr = data[key];
-          else arr = Object.values(data).flat() as NewsItem[];
-        }
-        setFetched(arr);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [ticker, items.length, tried]);
+  if (!watchlistId) {
+    return (
+      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+        News requires an active Watchlist context.
+      </div>
+    );
+  }
 
-  const allItems = items.length > 0 ? items : fetched;
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12 }}>
         <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
-        Fetching latest news for {ticker}...
+        Loading latest 48H news for {ticker}…
+        <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  if (allItems.length === 0) {
+  if (isError) {
+    return (
+      <div style={{ color: C.red, fontSize: 12, fontFamily: C.sansFont }}>
+        News data unavailable for {ticker}. Retrying automatically.
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const articles = data.articles ?? [];
+  const backendCount = data.articles_48h;
+
+  // Count reconciliation — structural dev warning only
+  if (process.env.NODE_ENV !== 'production' && articles.length !== backendCount) {
+    console.warn('[NewsTab] count mismatch', { ticker, backendCount, articleArrayLength: articles.length });
+  }
+
+  if (articles.length === 0) {
     return (
       <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
-        No news available for <strong style={{ color: C.text }}>{ticker}</strong> right now.
+        No Yahoo or Google RSS articles detected for <strong style={{ color: C.text }}>{ticker}</strong> in the last 48 hours.
       </div>
     );
   }
 
+  const fmtProviders = (providers?: string[]): string | null => {
+    if (!providers?.length) return null;
+    return providers.map(p => p.toUpperCase()).join(' + ');
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {allItems.slice(0, 15).map((item, i) => (
-        <a
-          key={i}
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'flex', flexDirection: 'column', gap: 4,
-            padding: '11px 14px', borderRadius: 4,
-            textDecoration: 'none', transition: 'background 0.1s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = C.card}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-        >
-          <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>
-            {item.title}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {/* ── Header: count + window + freshness ── */}
+      <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: C.font }}>
+            {backendCount} ARTICLES
           </span>
-          {item.summary && (
-            <span style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
-              {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
+          <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, letterSpacing: '0.05em' }}>
+            · LAST {data.window_hours}H
+          </span>
+          {data.coverage_status === 'warming' && (
+            <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 4 }}>
+              Comparison warming
             </span>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
-            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>
-          </div>
-        </a>
-      ))}
+        </div>
+        <div style={{ marginTop: 3, fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>
+          {data.last_full_sweep_at
+            ? `Updated ${timeAgo(data.last_full_sweep_at)}`
+            : 'Collector warming'}
+        </div>
+      </div>
+
+      {/* ── Article list — all counted articles, no cap ── */}
+      {articles.map((item, i) => {
+        const providerLabel = fmtProviders(item.rss_providers);
+        return (
+          <a
+            key={i}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', flexDirection: 'column', gap: 4,
+              padding: '11px 14px', borderRadius: 4,
+              textDecoration: 'none', transition: 'background 0.1s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = C.card}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>
+              {item.title}
+            </span>
+            {item.summary && (
+              <span style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+                {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>
+              {providerLabel && (
+                <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, letterSpacing: '0.06em', marginLeft: 'auto' }}>
+                  {providerLabel}
+                </span>
+              )}
+            </div>
+          </a>
+        );
+      })}
     </div>
   );
 }

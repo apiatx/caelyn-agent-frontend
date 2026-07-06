@@ -4366,7 +4366,6 @@ export default function TradingAgent() {
         <StockDetailModal
           ticker={modalTicker}
           analysis={modalWatchlistData}
-          newsItems={[]}
           onClose={() => { setModalTicker(null); setModalWatchlistData(null); }}
         />
       )}

@@ -1,0 +1,681 @@
+Wire the existing Watchlist StockDetailModal → News tab to the completed canonical 48H News Activity article endpoint.
+
+Backend work is complete.
+
+The backend now guarantees:
+
+ticker_activity[ticker].articles_48h
+
+matches:
+
+GET /api/watchlist/{watchlist_id}/news/ticker/{ticker}
+
+response.articles_48h
+
+and:
+
+response.articles.length
+
+for the same stable archive state.
+
+The backend validated this invariant across 20+ live Watchlist tickers.
+
+Do not modify backend code.
+
+Do not redesign StockDetailModal.
+
+Do not modify the Watchlist LIVE NEWS toggles.
+
+Do not modify NEWS/MC.
+
+Do not add provider requests.
+
+CURRENT BUG
+
+The StockDetailModal → News tab still uses a different legacy news path.
+
+Current known architecture:
+
+watchlist.tsx passes:
+
+newsItems={
+allNews.filter(
+n => n.ticker?.toUpperCase() === selectedTicker.toUpperCase()
+)
+}
+
+into:
+
+StockDetailModal
+
+Then NewsTab behaves conceptually:
+
+if parent items.length > 0:
+use parent items
+else:
+fetch /api/proxy/news/ticker
+
+That is wrong for the new News Activity feature.
+
+The parent allNews dataset comes from the broader visible-news path.
+
+The backend audit confirmed that path is:
+
+_news_cache[ticker]
+→ 30-minute TTL
+→ on-demand Yahoo + Google + display-only FMP fallback
+→ articles[:15]
+
+The canonical NEWS ACTIVITY source is:
+
+watchlist_rss_article_archive
+→ continuous ~120-second RSS sweeper
+→ Yahoo + Google only
+→ exact unique current 48-hour article associations
+→ no 15-article cap
+
+The StockDetailModal News tab must now use the canonical archive endpoint.
+
+REQUIRED INVARIANT
+
+If the activity table shows:
+
+IREN
+48H NEWS = 39
+
+then:
+
+click IREN
+→ News tab
+
+must expose the exact 39 article associations behind that count.
+
+PART A — AUDIT CURRENT MODAL NEWS FLOW
+
+Before editing, report:
+
+1. exact StockDetailModal render call in watchlist.tsx
+2. current newsItems prop
+3. current StockDetailModalProps news fields
+4. current NewsTab props
+5. current NewsTab fetched/items/tried state
+6. current NewsTab useEffect
+7. current /api/proxy/news/ticker fallback
+8. exact allItems selection logic
+9. current slice(0, 15) or other article limit
+10. current loading, empty, and error handling
+
+Proceed directly after the audit.
+
+PART B — PASS THE ACTIVE WATCHLIST ID TO THE EXISTING MODAL
+
+StockDetailModal needs the active Watchlist ID to call the canonical endpoint.
+
+Add the minimum prop:
+
+watchlistId={activeId}
+
+Update StockDetailModalProps with:
+
+watchlistId: string
+
+or nullable if required by the current render lifecycle.
+
+Do not add global state.
+
+Do not add routing state.
+
+Do not create another modal.
+
+PART C — CANONICAL ENDPOINT
+
+Use the completed backend endpoint:
+
+GET /api/watchlist/{watchlist_id}/news/ticker/{ticker}
+
+The backend route uses a path ticker parameter and supports canonical prefixed symbols.
+
+Build the request safely:
+
+`/api/watchlist/${encodeURIComponent(watchlistId)}/news/ticker/${encodeURIComponent(ticker)}`
+
+Validate actual route/proxy behavior for encoded colons.
+
+Examples:
+
+IREN
+AIM:ENSI
+KRX:000660
+
+The frontend must preserve the exact canonical ticker.
+
+Do not do:
+
+ticker.split(':').pop()
+
+Do not strip exchange prefixes.
+
+Do not translate the ticker for RSS providers.
+
+That logic belongs in backend collection.
+
+PART D — USE REACT QUERY FOR NEWS TAB DATA
+
+Inside StockDetailModal or NewsTab, follow the existing React Query conventions.
+
+Preferred query key:
+
+[
+'watchlist-ticker-activity-news',
+watchlistId,
+ticker
+]
+
+Query the canonical ticker activity-news endpoint.
+
+Enable only when:
+
+activeTab === 'news'
+AND
+watchlistId is present
+AND
+ticker is present
+
+Recommended:
+
+staleTime: 30_000
+
+refetchInterval:
+activeTab === 'news'
+? 60_000
+: false
+
+retry: 1
+
+The request should happen when the user opens the News tab.
+
+Do not fetch ticker news while:
+
+Overview is active
+Fundamentals is active
+AI Deep Dive is active
+
+When the user switches away from News, interval polling must stop.
+
+Do not call Yahoo.
+
+Do not call Google News.
+
+Do not call FMP.
+
+PART E — REMOVE THE OLD MODAL NEWS SOURCE-OF-TRUTH LOGIC
+
+The StockDetailModal News tab must stop using:
+
+items.length > 0
+? items
+: fetched
+
+Remove the old NewsTab local state used only for the legacy fetch path:
+
+fetched
+loading
+tried
+
+and the legacy useEffect calling:
+
+/api/proxy/news/ticker?tickers=...
+
+The canonical endpoint is now the only source of truth for the Watchlist modal News tab.
+
+Do not leave the old endpoint as a hidden fallback.
+
+The backend audit reports /api/proxy/news/ticker is now a deprecated stub and has no active consumers.
+
+Do not delete the backend route from this frontend task.
+
+PART F — AUDIT WHETHER newsItems PROP CAN NOW BE REMOVED
+
+The News tab no longer needs allNews-filtered parent items.
+
+Search all StockDetailModal consumers.
+
+If this Watchlist page is the only consumer and newsItems is used only by NewsTab:
+
+remove:
+
+newsItems
+
+from:
+
+StockDetailModalProps
+
+and remove:
+
+newsItems={
+allNews.filter(...)
+}
+
+from watchlist.tsx.
+
+If another real consumer depends on the prop:
+
+preserve it for compatibility
+
+but do not use it as the Watchlist News-tab source.
+
+Prefer eliminating dead dual-path state when safe.
+
+PART G — TYPE THE CANONICAL RESPONSE
+
+Add an appropriate response type.
+
+Conceptually:
+
+interface TickerActivityNewsArticle {
+ticker: string;
+article_key?: string;
+title: string;
+summary?: string;
+source: string;
+url: string;
+published_at: string;
+rss_providers?: string[];
+}
+
+interface TickerActivityNewsResponse {
+ticker: string;
+window_hours: number;
+articles_48h: number;
+articles: TickerActivityNewsArticle[];
+activity_as_of?: string | null;
+last_full_sweep_at?: string | null;
+coverage_status?: string | null;
+}
+
+Use current project naming/style conventions.
+
+Do not expose article_key in the UI.
+
+PART H — NEWS TAB HEADER
+
+At the top of the News tab render a compact status/header row.
+
+Conceptually:
+
+39 ARTICLES · LAST 48H
+
+Updated 2 min ago
+
+Use backend:
+
+articles_48h
+window_hours
+last_full_sweep_at
+
+For the freshness label:
+
+If last_full_sweep_at exists:
+use relative time from last_full_sweep_at
+
+If last_full_sweep_at is null:
+do not use activity_as_of to pretend that data was freshly collected at request time
+
+Instead display something neutral such as:
+
+Collector warming
+
+or omit the freshness label until a completed sweep timestamp exists.
+
+The backend audit confirmed:
+
+activity_as_of = request time
+
+last_full_sweep_at = actual collector full-sweep timestamp
+
+Do not confuse the two.
+
+If coverage_status == "warming":
+
+show one small muted label:
+
+Comparison warming
+
+This refers to previous-48-hour delta coverage.
+
+Do not imply the current 48H article list is unavailable.
+
+PART I — RENDER EVERY COUNTED ARTICLE
+
+Use:
+
+response.articles
+
+directly.
+
+The backend returns newest-first.
+
+Do not apply:
+
+slice(0, 15)
+
+If:
+
+articles_48h = 122
+
+the user must be able to inspect all 122 counted article associations.
+
+The existing StockDetailModal already has vertical scrolling.
+
+Reuse it.
+
+Do not create pagination in this task.
+
+Do not create a "load more" cap that hides counted articles.
+
+Preserve the existing article visual language:
+
+title
+summary
+source
+relative published time
+external article link
+
+PART J — PROVIDER PROVENANCE
+
+When:
+
+rss_providers
+
+is present, show a small subtle provider label.
+
+Examples:
+
+["yahoo"]
+→ YAHOO
+
+["google"]
+→ GOOGLE
+
+["yahoo", "google"]
+→ YAHOO + GOOGLE
+
+Use a muted compact badge or text.
+
+This is useful because the purpose of this News tab is article verification.
+
+Do not make provider badges visually dominant.
+
+Do not show database fields.
+
+Do not show article_key.
+
+PART K — COUNT RECONCILIATION SAFETY
+
+At render time:
+
+const articles = response?.articles ?? [];
+
+The displayed header count must use:
+
+response.articles_48h
+
+The list must use:
+
+articles
+
+During development validation, structurally verify:
+
+articles.length === response.articles_48h
+
+Do not recalculate the 48-hour date window in React.
+
+Do not derive the header from allNews.
+
+Do not derive it from parent props.
+
+If a mismatch appears:
+
+log a concise development-only structural warning:
+
+{
+ticker,
+backendCount,
+articleArrayLength
+}
+
+Do not hide articles.
+
+Do not invent corrected counts in React.
+
+PART L — LOADING / ERROR / EMPTY STATES
+
+Loading exact or close to:
+
+Loading latest 48H news for IREN…
+
+Error exact or close to:
+
+News data unavailable for IREN. Retrying automatically.
+
+Do not convert HTTP errors to an empty valid response.
+
+Valid zero-news state:
+
+No Yahoo or Google RSS articles detected for IREN in the last 48 hours.
+
+For a prefixed ticker preserve the canonical display:
+
+No Yahoo or Google RSS articles detected for AIM:ENSI in the last 48 hours.
+
+PART M — PREFIXED TICKER VALIDATION
+
+Validate at minimum:
+
+AIM:ENSI
+
+EPA:SOI
+
+KRX:000660
+
+or current live prefixed examples.
+
+For each report:
+
+canonical ticker
+request URL
+HTTP status
+articles_48h
+articles.length
+rendered modal ticker
+rendered header count
+
+Confirm:
+
+AIM:ENSI remains AIM:ENSI
+
+The frontend does not display only ENSI.
+
+The frontend contains no RSS provider-symbol normalization.
+
+PART N — LIVE COUNT RECONCILIATION
+
+Using the actual Primary Watchlist, validate at least 20 tickers.
+
+Compare:
+
+NEWS ACTIVITY table articles_48h
+
+canonical ticker endpoint articles_48h
+
+canonical ticker endpoint articles.length
+
+rendered News-tab article rows
+
+Return:
+
+ticker
+activity_count
+endpoint_count
+endpoint_array_length
+rendered_rows
+match
+
+Include:
+
+MU
+AMD
+IREN
+one 20–30 count ticker
+five low-count tickers
+one zero ticker
+at least three prefixed tickers
+
+All tested rows must reconcile.
+
+The backend previously validated examples including:
+
+MU = 122
+AMD = 100
+IREN = 39
+AIM:ENSI = 1
+
+Use current values because the rolling window may change.
+
+PART O — ARTICLE VERIFICATION
+
+For at least five tickers, inspect the first five modal article rows.
+
+Include:
+
+at least two high-count US names
+
+at least two prefixed/foreign names
+
+one low-count name
+
+Return:
+
+ticker
+title
+source
+published relative/absolute timestamp
+rss provider badge
+URL present yes/no
+
+Confirm each displayed modal article is an item from the canonical ticker endpoint response.
+
+Do not claim every returned article is semantically relevant to the company.
+
+The backend audit has already flagged possible relevance contamination for:
+
+STO:ACCON
+
+and one EPA:SOI association.
+
+The purpose here is to make those exact counted associations visible and auditable to the user.
+
+Do not add frontend relevance filtering.
+
+PART P — FRESHNESS ACROSS A COMPLETED RSS SWEEP
+
+When practical:
+
+1. Open one ticker News tab.
+2. Record:
+   last_full_sweep_at
+   articles_48h
+3. Keep News active through one completed RSS sweep.
+4. Allow the approximately 60-second React Query refetch.
+5. Record:
+   new last_full_sweep_at
+   new articles_48h
+
+Report whether:
+
+last_full_sweep_at advanced
+
+and:
+
+React Query refreshed the News-tab response
+
+The article count does not need to change if no new article arrived.
+
+The collector timestamp should advance after the backend sweep and modal refetch.
+
+PART Q — NETWORK VALIDATION
+
+Validate:
+
+Open StockDetailModal:
+Overview active
+→ zero ticker activity-news requests
+
+Click Fundamentals:
+→ zero ticker activity-news requests
+
+Click News:
+→ one GET /api/watchlist/{wid}/news/ticker/{ticker}
+
+Remain on News:
+→ approximately one refetch per minute
+
+Switch to Overview:
+→ ticker-news interval polling stops
+
+Switch back to News:
+→ React Query follows current stale/cache semantics
+
+No browser requests to:
+
+Yahoo Finance RSS
+Google News RSS
+FMP
+
+PART R — REGRESSION VALIDATION
+
+Confirm:
+
+1. StockDetailModal still opens.
+2. Overview tab unchanged.
+3. Fundamentals tab unchanged.
+4. AI Deep Dive unchanged.
+5. News tab uses canonical current-48H archive data.
+6. ALL NEWS toggle unchanged.
+7. NEWS ACTIVITY table unchanged.
+8. NEWS/MC unchanged.
+9. HYPERSCALER DEALS unchanged.
+10. Main /news polling unchanged.
+11. External article links open in a new tab.
+12. Modal scrolling handles high article counts.
+13. No 15-article cap remains in modal News.
+14. No /api/proxy/news/ticker call remains in modal News.
+
+FINAL RETURN
+
+Return:
+
+* audit findings
+* exact files changed
+* old modal News source chain
+* new modal News source chain
+* whether newsItems prop was removed
+* final React Query key
+* final canonical endpoint URL construction
+* final response type
+* 20-ticker count reconciliation table
+* five-ticker article verification sample
+* prefixed ticker validation
+* freshness-across-sweep validation
+* network validation
+* regression checklist
+* screenshots of:
+
+  * high-count ticker News tab
+  * low-count ticker News tab
+  * prefixed ticker News tab
+
+Do not modify backend code.
+Do not use allNews as the News-tab source.
+Do not call /api/proxy/news/ticker from the modal.
+Do not truncate the canonical article list to 15.

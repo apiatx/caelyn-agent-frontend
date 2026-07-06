@@ -6221,7 +6221,7 @@ export default function WatchlistPage() {
           ticker={selectedTicker}
           analysis={analysis}
           csvData={watchlist?.csv_data}
-          newsItems={allNews.filter(n => n.ticker?.toUpperCase() === selectedTicker.toUpperCase())}
+          watchlistId={activeId}
           earningsEntry={earningsMap[selectedTicker.toUpperCase()]}
           onClose={() => setSelectedTicker(null)}
         />
