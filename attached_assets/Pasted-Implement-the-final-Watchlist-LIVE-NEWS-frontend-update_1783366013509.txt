@@ -1,0 +1,754 @@
+Implement the final Watchlist LIVE NEWS frontend update against the now-completed backend contract.
+
+Audit the current implementation first, but proceed directly with the implementation after the audit.
+
+Do not modify backend code.
+
+Do not add provider calls.
+
+Do not modify the main Watchlist ticker-table sorter.
+
+The existing three LIVE NEWS toggles are already working and populated:
+
+1. NEWS ACTIVITY
+2. ALL NEWS
+3. HYPERSCALER DEALS
+
+NEWS ACTIVITY remains the default.
+
+This task has three frontend changes:
+
+1. Update NEWS ACTIVITY from 24H semantics to the backend's new 48H semantics.
+2. Add a sortable NEWS/MC news-density column.
+3. Make HYPERSCALER DEALS clearly show the Watchlist ticker(s) and public anchor ticker(s) involved in each article.
+
+BACKEND CONTRACT — USE THESE EXACT SEMANTICS
+
+ticker_activity items now return:
+
+ticker
+articles_48h
+previous_articles_48h
+delta_count
+delta_pct
+delta_label
+activity_as_of
+coverage_status
+
+rss_activity_meta now returns:
+
+window_hours = 48
+comparison_window_hours = 48
+retention_hours = 120
+
+The backend requires 96 hours of collector observation history before comparison coverage becomes complete.
+
+During current warm-up:
+
+coverage_status = "warming"
+articles_48h is still numeric and usable
+previous_articles_48h = null
+delta_count = null
+delta_pct = null
+delta_label = null
+
+Hyperscaler articles now explicitly return:
+
+watchlist_symbols: string[]
+anchor_symbols: string[]
+highlight_symbols: string[]
+highlighted_tickers: Array<{
+ticker: string;
+role: "watchlist" | "anchor";
+}>
+symbol: string | null
+
+The backend already:
+
+* scores the full 72-hour hyperscaler archive
+* uses the existing news_signal_scorer
+* filters catalyst_type == "hyperscaler_anchor"
+* aggregates all Watchlist ticker associations for each article cluster
+* resolves already-matched public anchor entities to public ticker symbols
+
+Do not parse titles to identify symbols.
+
+Do not classify hyperscaler articles in TypeScript.
+
+PART A — AUDIT CURRENT FRONTEND IMPLEMENTATION
+
+In:
+
+frontend/client/src/pages/watchlist.tsx
+
+Report:
+
+1. current NewsActivityItem type
+2. current activity table headers
+3. current activity row rendering
+4. current ActivitySortKey
+5. current activity comparator
+6. exact market-cap field currently available in:
+
+   * allStocks
+   * baseMergedTickers
+   * mergedTickers
+7. existing market-cap aliases already handled by extractAllStocks()
+8. existing market-cap formatting helper on this page
+9. current hyperscaler article type
+10. current hyperscaler scope filter
+11. current hyperscaler card JSX
+12. existing ticker badge/card styling in:
+
+* ALL NEWS
+* previous Major Developments rendering
+
+13. current handleTickerClick / StockDetailModal path
+
+Do not invent a new market-cap source.
+
+PART B — UPDATE NEWS ACTIVITY TYPES TO 48H
+
+Replace the recently-added 24H activity fields with the exact backend fields:
+
+articles_48h
+previous_articles_48h
+
+Update all activity logic accordingly.
+
+Visible activity columns must now be:
+
+TICKER
+48H NEWS
+NEWS/MC
+Δ VS PREV 48H
+
+Update all visible activity text.
+
+Replace:
+
+24H NEWS
+
+with:
+
+48H NEWS
+
+Replace:
+
+Δ VS PREV 24H
+
+with:
+
+Δ VS PREV 48H
+
+Replace any:
+
+24H comparison warming
+
+with:
+
+48H comparison warming
+
+Search watchlist.tsx after implementation and confirm no stale user-facing 24H News Activity wording remains.
+
+Do not change the ALL NEWS or HYPERSCALER DEALS time semantics.
+
+PART C — ADD NEWS/MC
+
+Add NEWS/MC as the third activity column.
+
+NEWS/MC is a local frontend-derived news-density metric.
+
+Definition:
+
+unique Yahoo + Google RSS articles in the last 48 hours per $1 billion of market cap
+
+Formula:
+
+newsMc =
+articles_48h / (market_cap / 1_000_000_000)
+
+Equivalent:
+
+newsMc =
+articles_48h * 1_000_000_000 / market_cap
+
+Examples:
+
+20 articles
+$500M market cap
+→ 40.0
+
+20 articles
+$5B market cap
+→ 4.0
+
+20 articles
+$50B market cap
+→ 0.4
+
+Use the existing Watchlist market-cap data already available in the page.
+
+Do not call FMP.
+
+Do not call Tradier.
+
+Do not add a market-cap API request.
+
+Do not derive market cap from volume.
+
+Do not derive market cap from price unless the existing canonical Watchlist data already does so upstream.
+
+PART D — BUILD ONE CANONICAL marketCapByTicker MAP
+
+Use the richest existing Watchlist row source already available after the audit.
+
+Prefer mergedTickers if it preserves the existing canonical market-cap field.
+
+Build one memoized map:
+
+ticker
+→ numeric market cap
+
+Normalize ticker keys exactly like the activity ticker scope logic:
+
+String(ticker || "").trim().toUpperCase()
+
+Audit all existing market-cap aliases before choosing the value.
+
+Possible existing aliases may include:
+
+market_cap
+marketCap
+mkt_cap
+
+Use the actual current field path found in the repo.
+
+Do not silently mix unrelated fields.
+
+When multiple aliases exist, follow the same precedence already used by the Watchlist ticker table.
+
+PART E — NEWS/MC NULL / ZERO / FORMAT RULES
+
+If articles_48h is null or undefined:
+
+NEWS/MC = missing
+
+If market cap is:
+
+null
+undefined
+NaN
+Infinity
+<= 0
+
+NEWS/MC = missing
+
+Display missing as:
+
+—
+
+If articles_48h == 0 and market cap is valid:
+
+NEWS/MC = 0
+
+Display:
+
+0.0
+
+Zero is valid.
+
+For numeric values:
+
+value >= 0.1
+→ one decimal place
+
+value > 0 and value < 0.1
+→ two decimal places
+
+Examples:
+
+40
+→ 40.0
+
+4.04
+→ 4.0
+
+0.43
+→ 0.4
+
+0.04
+→ 0.04
+
+Do not add "x".
+
+Do not add "%".
+
+This is not a true financial ratio or multiple.
+
+PART F — NEWS/MC TOOLTIP
+
+Add a concise title/tooltip to the NEWS/MC header:
+
+"Unique Yahoo + Google RSS articles in the last 48 hours per $1B of market cap"
+
+Do not claim NEWS/MC predicts stock moves.
+
+Do not call it an official financial ratio.
+
+PART G — LOCAL ACTIVITY SORTING
+
+Extend the existing local activity sort only.
+
+Final ActivitySortKey should support:
+
+ticker
+articles_48h
+news_mc
+delta_count
+
+Default:
+
+articles_48h descending
+
+First click behavior:
+
+TICKER
+→ ascending
+
+48H NEWS
+→ descending
+
+NEWS/MC
+→ descending
+
+Δ VS PREV 48H
+→ descending
+
+Clicking the active column toggles asc/desc.
+
+NEWS/MC sorts numerically by the locally derived newsMc value.
+
+Missing values always last regardless of direction.
+
+Real zero is not missing.
+
+Do not modify:
+
+sortKey
+sortDir
+
+used by the main Watchlist ticker table.
+
+Activity sorting must cause zero HTTP requests.
+
+PART H — PRESERVE 48H DELTA RULES
+
+Use backend delta values only.
+
+Do not calculate the previous 48-hour comparison in React.
+
+coverage_status == "warming"
+→ display —
+
+coverage_status == "stale"
+→ display —
+
+coverage_status == "provider_partial"
+→ display —
+
+Even though the current backend does not emit provider_partial without real provider-health evidence, preserve rendering compatibility.
+
+If:
+
+delta_label == "new"
+
+render:
+
++8 (NEW)
+
+If delta_count > 0 and delta_pct is numeric:
+
++17 (+68.0%)
+
+If delta_count < 0 and delta_pct is numeric:
+
+-8 (-42.1%)
+
+If delta_count == 0 and delta_pct is numeric:
+
+0 (0.0%)
+
+Never show:
+
+Infinity%
+NaN%
+
+Never manufacture delta_pct from counts.
+
+PART I — HYPERSCALER DEALS: USE highlighted_tickers
+
+The backend now explicitly returns:
+
+highlighted_tickers: [
+{ ticker: "IREN", role: "watchlist" },
+{ ticker: "NVDA", role: "anchor" }
+]
+
+Use this field directly.
+
+Example desired rendering above the article title:
+
+[ IREN ] [ NVDA • ANCHOR ]
+
+Another example:
+
+[ AMD ] [ INTC ] [ AAPL • ANCHOR ] [ AVGO • ANCHOR ]
+
+Do not parse article titles.
+
+Do not use matched_entities to invent ticker symbols.
+
+Do not build:
+
+Amazon → AMZN
+Microsoft → MSFT
+NVIDIA → NVDA
+
+mappings in TypeScript.
+
+Backend is the symbol-resolution authority.
+
+PART J — HYPERSCALER TICKER BADGE DESIGN
+
+Reuse the closest existing small ticker badge/card styling already present in Watchlist news rendering.
+
+Do not make giant cards.
+
+Display highlighted ticker badges immediately above or immediately before the article title.
+
+role == "watchlist":
+
+* use the existing Watchlist primary teal/blue accent
+* ticker text prominent
+* no extra WATCHLIST label required unless the existing visual language needs it
+
+role == "anchor":
+
+* use a distinct existing secondary/accent treatment
+* visibly add:
+  ANCHOR
+
+Example:
+
+IREN
+
+NVDA
+ANCHOR
+
+or a compact inline equivalent.
+
+The Watchlist ticker must be identifiable instantly.
+
+The anchor ticker must be identifiable instantly.
+
+Do not describe Watchlist tickers as "deal subjects."
+
+The backend watchlist_symbols represent Watchlist ticker associations with the article cluster.
+
+For example an Apple/Broadcom deal article may be surfaced in AMD and INTC targeted feeds.
+
+Therefore use neutral ticker badges.
+
+Do not render text such as:
+
+DEAL SUBJECT: AMD
+
+unless the backend explicitly adds that semantic role in the future.
+
+PART K — HYPERSCALER ACTIVE-WATCHLIST SCOPING
+
+Remove the temporary architecture:
+
+article.symbol == null
+→ show regardless
+
+Do not rely on article.symbol alone.
+
+The backend now provides:
+
+watchlist_symbols
+
+and:
+
+highlighted_tickers role == "watchlist"
+
+For active Watchlist scoping:
+
+An article belongs in the current view when at least one backend-provided Watchlist symbol matches the active Watchlist ticker Set.
+
+Normalize both sides with:
+
+String(value || "").trim().toUpperCase()
+
+Preferred:
+
+const articleWatchlistSymbols =
+article.watchlist_symbols?.length
+? article.watchlist_symbols
+: article.highlighted_tickers
+?.filter(x => x.role === "watchlist")
+.map(x => x.ticker)
+?? [];
+
+Then test membership against the active ticker Set.
+
+Because the backend endpoint is already requested by active Watchlist ID, audit whether this redundant client filter is necessary.
+
+If the backend response is demonstrably already correctly scoped to activeId:
+
+prefer not to destructively re-filter a valid backend response.
+
+Do not restore the old symbol-null workaround.
+
+PART L — BADGE CLICK BEHAVIOR
+
+For:
+
+role == "watchlist"
+
+Click badge:
+
+handleTickerClick(ticker)
+
+Reuse existing StockDetailModal.
+
+For:
+
+role == "anchor"
+
+If the anchor ticker also belongs to the active Watchlist:
+
+allow handleTickerClick(ticker)
+
+If the anchor is not in the active Watchlist:
+
+leave the badge non-clickable unless an existing generic arbitrary-public-ticker detail path already works cleanly.
+
+Do not build a new modal.
+
+Do not build a new quote request.
+
+Do not build new stock-detail infrastructure.
+
+PART M — KEEP HYPERSCALER ARTICLE CONTENT
+
+Preserve the current useful article presentation:
+
+ticker badges
+Hyperscaler Deal catalyst badge
+bull/bear impact
+signal strength
+title
+why_it_matters
+source
+relative published time
+external article link
+
+Preserve backend ordering.
+
+Do not sort by ticker badge.
+
+Do not sort by article title.
+
+PART N — CARD COUNTS
+
+NEWS ACTIVITY:
+
+header count = number of scoped activity ticker rows
+
+ALL NEWS:
+
+header count = flattened visible article count
+
+HYPERSCALER DEALS:
+
+header count = visible hyperscaler article count
+
+Toggle changes update the count locally.
+
+Zero HTTP requests on toggle changes.
+
+PART O — RESPONSIVE ACTIVITY TABLE
+
+The activity table now has four columns.
+
+Preserve the existing LIVE NEWS card width and right-side placement.
+
+Do not widen the main Watchlist layout.
+
+Use compact numeric columns.
+
+Suggested visual proportions:
+
+TICKER
+compact
+
+48H NEWS
+small numeric
+
+NEWS/MC
+small numeric
+
+Δ VS PREV 48H
+remaining width
+
+Do not create oversized column gaps.
+
+PART P — VALIDATE NEWS/MC WITH LIVE DATA
+
+Using the real active Watchlist backend response and existing Watchlist market-cap data, return at least 10 validation rows.
+
+For each show:
+
+ticker
+articles_48h
+market_cap
+market_cap_billions
+calculated newsMc
+rendered NEWS/MC
+
+Include where available:
+
+one sub-$1B company with news
+one $1B–$10B company
+one >$10B company
+one zero-news ticker
+one missing-market-cap ticker
+
+Manually prove the formula for at least 3 live examples.
+
+Example format:
+
+Ticker: XYZ
+articles_48h = 20
+market_cap = 500000000
+market_cap_billions = 0.5
+20 / 0.5 = 40.0
+rendered NEWS/MC = 40.0
+
+PART Q — NEWS/MC SORT VALIDATION
+
+Sort NEWS/MC descending.
+
+Return the top 10 visible rows:
+
+ticker
+articles_48h
+market_cap
+newsMc
+
+Confirm:
+
+missing values last
+zero remains valid
+same-column click reverses sort
+sorting triggers zero HTTP requests
+
+PART R — 48H LABEL VALIDATION
+
+Search watchlist.tsx after editing for:
+
+24H NEWS
+PREV 24H
+24H comparison
+
+Report every match.
+
+There must be zero stale user-facing NEWS ACTIVITY 24H labels.
+
+Do not confuse unrelated 24-hour concepts elsewhere on the page with this feature.
+
+PART S — HYPERSCALER VALIDATION
+
+Use at least 3 live backend hyperscaler articles.
+
+Backend examples previously included:
+
+IREN / NVDA
+
+NBIS / META
+
+AMD + INTC / AAPL + AVGO
+
+For each show:
+
+title
+watchlist_symbols
+anchor_symbols
+highlighted_tickers
+rendered badges
+
+Expected examples conceptually:
+
+IREN Nvidia partnership:
+[ IREN ] [ NVDA • ANCHOR ]
+
+NBIS Meta cloud report:
+[ NBIS ] [ META • ANCHOR ]
+
+Broadcom / Apple article surfaced for AMD and INTC:
+[ AMD ] [ INTC ] [ AAPL • ANCHOR ] [ AVGO • ANCHOR ]
+
+Confirm:
+
+no title parsing
+no frontend entity→ticker mapping
+no frontend hyperscaler classifier
+no article.symbol-only scope filter
+
+PART T — NETWORK AND REGRESSION VALIDATION
+
+Confirm:
+
+1. NEWS ACTIVITY remains default.
+2. NEWS ACTIVITY is populated.
+3. ALL NEWS remains populated.
+4. HYPERSCALER DEALS remains populated.
+5. Toggle changes generate zero HTTP requests.
+6. Activity sort changes generate zero HTTP requests.
+7. NEWS/MC sorting generates zero HTTP requests.
+8. No Yahoo request originates in browser.
+9. No Google News request originates in browser.
+10. No FMP request was added.
+11. /news polling remains approximately once per minute.
+12. Main Watchlist ticker table is unchanged.
+13. Main Watchlist sorting is unchanged.
+14. Close Watch is unchanged.
+15. Favorites are unchanged.
+16. StockDetailModal still opens for Watchlist ticker badges.
+17. External article links still work.
+18. LIVE NEWS card remains in its existing right-side location.
+19. Responsive scroll/overflow remains usable.
+
+RETURN:
+
+* audit findings
+* exact file changed
+* canonical market-cap source field
+* final NewsActivityItem type
+* final NEWS/MC formula
+* final activity columns
+* final ActivitySortKey values
+* 10-row NEWS/MC live validation
+* top 10 NEWS/MC sort result
+* stale 24H label search result
+* 3 hyperscaler backend role-payload examples
+* rendered ticker badges for those 3 examples
+* network validation
+* regression checklist
+* screenshots of all three populated toggle views
+
+Do not modify backend code.
+Do not add provider calls.
+Do not touch the main Watchlist ticker-table sorter.

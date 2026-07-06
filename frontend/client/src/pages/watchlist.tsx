@@ -78,12 +78,16 @@ interface TopArticle {
   url:               string;
   source:            string;
   published_at:      string;
-  symbol?:           string;
+  symbol?:           string | null;
   major_news_score?: number;
   signal_strength?:  string;
   catalyst_type?:    string;
   bull_bear_impact?: string;
   why_it_matters?:   string;
+  watchlist_symbols?:   string[];
+  anchor_symbols?:      string[];
+  highlight_symbols?:   string[];
+  highlighted_tickers?: Array<{ ticker: string; role: 'watchlist' | 'anchor' }>;
 }
 
 interface FlatNewsItem extends NewsItem {
@@ -97,8 +101,8 @@ interface FlatNewsItem extends NewsItem {
 
 interface NewsActivityItem {
   ticker: string;
-  articles_24h: number | null;
-  previous_articles_24h: number | null;
+  articles_48h: number | null;
+  previous_articles_48h: number | null;
   delta_count: number | null;
   delta_pct: number | null;
   delta_label?: string | null;
@@ -120,7 +124,7 @@ interface RssActivityMeta {
 }
 
 type NewsView = 'activity' | 'all' | 'hyperscaler';
-type ActivitySortKey = 'ticker' | 'articles_24h' | 'delta_count';
+type ActivitySortKey = 'ticker' | 'articles_48h' | 'news_mc' | 'delta_count';
 
 interface NewsResponse {
   top_articles?: TopArticle[];
@@ -1679,7 +1683,7 @@ export default function WatchlistPage() {
   const [draftVal2, setDraftVal2] = useState('');
   /* ── Live News view state ─────────────────────────────────────────── */
   const [newsView, setNewsView] = useState<NewsView>('activity');
-  const [activitySort, setActivitySort] = useState<{ key: ActivitySortKey; dir: 'asc' | 'desc' }>({ key: 'articles_24h', dir: 'desc' });
+  const [activitySort, setActivitySort] = useState<{ key: ActivitySortKey; dir: 'asc' | 'desc' }>({ key: 'articles_48h', dir: 'desc' });
 
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
@@ -2288,6 +2292,22 @@ export default function WatchlistPage() {
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
+
+  /* ── market-cap lookup for NEWS/MC ──────────────────────────────────── */
+  const mcByTicker = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const t of mergedTickers) {
+      const key = String(t.ticker || '').trim().toUpperCase();
+      const mc = Number(t.market_cap);
+      if (key && isFinite(mc) && mc > 0) map.set(key, mc);
+    }
+    return map;
+  }, [mergedTickers]);
+
+  /* ── LIVE NEWS header counts ─────────────────────────────────────── */
+  const activityViewCount  = (newsData?.ticker_activity ?? []).length;
+  const allNewsViewCount   = allNews.length;
+  const hyperscalerViewCount = (newsData?.hyperscaler_articles ?? []).length;
 
   /* ── ticker table sorting ────────────────────────────────────────── */
   function getSortValue(stock: any, key: NonNullable<typeof sortKey>): { v: any; missing: boolean } {
@@ -4373,6 +4393,9 @@ export default function WatchlistPage() {
                     <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
                       LIVE NEWS
                     </span>
+                    <span style={{ fontSize: 9, color: C.dim }}>
+                      ({newsView === 'activity' ? activityViewCount : newsView === 'all' ? allNewsViewCount : hyperscalerViewCount})
+                    </span>
                     {newsCacheAge !== null && (
                       <span style={{ fontSize: 9, color: C.dim }}>
                         · Updated {newsCacheAge < 60
@@ -4435,19 +4458,38 @@ export default function WatchlistPage() {
                     </div>
                   )}
 
-                  {/* ── NEWS ACTIVITY — Part E/F ── */}
+                  {/* ── NEWS ACTIVITY — 48H semantics + NEWS/MC ── */}
                   {!newsIsError && newsView === 'activity' && (() => {
                     const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
                     const activityRows = (newsData?.ticker_activity ?? []).filter(
                       r => tickerSet.size === 0 || tickerSet.has(r.ticker.toUpperCase())
                     );
 
-                    const sorted = [...activityRows].sort((a, b) => {
+                    // Enrich rows with locally-derived NEWS/MC
+                    const fmtNewsMc = (v: number | null): string => {
+                      if (v == null) return '—';
+                      if (v === 0) return '0.0';
+                      if (v >= 0.1) return v.toFixed(1);
+                      return v.toFixed(2);
+                    };
+
+                    type EnrichedRow = NewsActivityItem & { _newsMc: number | null };
+                    const enriched: EnrichedRow[] = activityRows.map(row => {
+                      const mc = mcByTicker.get(String(row.ticker || '').trim().toUpperCase());
+                      const a48 = row.articles_48h;
+                      const _newsMc = (a48 != null && mc != null && isFinite(mc) && mc > 0)
+                        ? (a48 * 1_000_000_000) / mc
+                        : null;
+                      return { ...row, _newsMc };
+                    });
+
+                    const sorted = [...enriched].sort((a, b) => {
                       const { key, dir } = activitySort;
                       let av: any, bv: any;
-                      if (key === 'ticker')       { av = a.ticker;       bv = b.ticker; }
-                      else if (key === 'articles_24h') { av = a.articles_24h; bv = b.articles_24h; }
-                      else                         { av = a.delta_count;  bv = b.delta_count; }
+                      if (key === 'ticker')        { av = a.ticker;      bv = b.ticker; }
+                      else if (key === 'articles_48h') { av = a.articles_48h; bv = b.articles_48h; }
+                      else if (key === 'news_mc')   { av = a._newsMc;    bv = b._newsMc; }
+                      else                          { av = a.delta_count; bv = b.delta_count; }
                       if (av == null && bv == null) return 0;
                       if (av == null) return 1;
                       if (bv == null) return -1;
@@ -4471,8 +4513,7 @@ export default function WatchlistPage() {
                       if (row.delta_pct != null && isFinite(row.delta_pct) && !isNaN(row.delta_pct)) {
                         const sign = dc > 0 ? '+' : '';
                         const pSign = dc > 0 ? '+' : '';
-                        const text = `${sign}${dc} (${pSign}${row.delta_pct.toFixed(1)}%)`;
-                        return { text, color: dc > 0 ? '#22c55e' : dc < 0 ? '#ef4444' : C.dim };
+                        return { text: `${sign}${dc} (${pSign}${row.delta_pct.toFixed(1)}%)`, color: dc > 0 ? '#22c55e' : dc < 0 ? '#ef4444' : C.dim };
                       }
                       const sign = dc > 0 ? '+' : '';
                       return { text: `${sign}${dc}`, color: dc > 0 ? '#22c55e' : dc < 0 ? '#ef4444' : C.dim };
@@ -4498,11 +4539,18 @@ export default function WatchlistPage() {
                             <th style={thStyle('ticker', 'left')} onClick={() => toggleSort('ticker')}>
                               TICKER{activitySort.key === 'ticker' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                             </th>
-                            <th style={thStyle('articles_24h', 'right')} onClick={() => toggleSort('articles_24h')}>
-                              24H NEWS{activitySort.key === 'articles_24h' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                            <th style={thStyle('articles_48h', 'right')} onClick={() => toggleSort('articles_48h')}>
+                              48H NEWS{activitySort.key === 'articles_48h' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                            </th>
+                            <th
+                              style={{ ...thStyle('news_mc', 'right'), maxWidth: 60 }}
+                              onClick={() => toggleSort('news_mc')}
+                              title="Unique Yahoo + Google RSS articles in the last 48 hours per $1B of market cap"
+                            >
+                              NEWS/MC{activitySort.key === 'news_mc' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                             </th>
                             <th style={thStyle('delta_count', 'right')} onClick={() => toggleSort('delta_count')}>
-                              Δ VS PREV 24H{activitySort.key === 'delta_count' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                              Δ VS PREV 48H{activitySort.key === 'delta_count' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                             </th>
                           </tr>
                         </thead>
@@ -4531,8 +4579,11 @@ export default function WatchlistPage() {
                                     {row.ticker}
                                   </span>
                                 </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row.articles_24h != null ? C.text : C.dim, fontFamily: C.font }}>
-                                  {row.articles_24h != null ? row.articles_24h : '—'}
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row.articles_48h != null ? C.text : C.dim, fontFamily: C.font }}>
+                                  {row.articles_48h != null ? row.articles_48h : '—'}
+                                </td>
+                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row._newsMc != null ? C.text : C.dim, fontFamily: C.font }}>
+                                  {fmtNewsMc(row._newsMc)}
                                 </td>
                                 <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: C.font, whiteSpace: 'nowrap' }}>
                                   {delta.text}
@@ -4636,20 +4687,22 @@ export default function WatchlistPage() {
                     );
                   })()}
 
-                  {/* ── HYPERSCALER DEALS — Part I ── */}
+                  {/* ── HYPERSCALER DEALS — highlighted_tickers + watchlist scoping ── */}
                   {!newsIsError && newsView === 'hyperscaler' && (() => {
                     const tickerSet = new Set(allTickerSymbols.map((t: string) => t.toUpperCase()));
-                    const hyperItems = (newsData?.hyperscaler_articles ?? [])
-                      .filter(a => {
-                        const sym = (a.symbol ?? '').trim();
-                        // Show general (no-symbol) hyperscaler news always; ticker-tagged news only if in watchlist
-                        return sym === '' || tickerSet.size === 0 || tickerSet.has(sym.toUpperCase());
-                      })
-                      .sort((a, b) => {
-                        const sd = (b.major_news_score ?? 0) - (a.major_news_score ?? 0);
-                        if (sd !== 0) return sd;
-                        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
-                      });
+
+                    // Part K — scope filter: match via watchlist_symbols or highlighted watchlist role
+                    const hyperItems = (newsData?.hyperscaler_articles ?? []).filter(a => {
+                      const wlSyms: string[] = a.watchlist_symbols?.length
+                        ? a.watchlist_symbols
+                        : (a.highlighted_tickers ?? []).filter(x => x.role === 'watchlist').map(x => x.ticker);
+                      // If no watchlist symbols on the article, show regardless (general hyperscaler news)
+                      // Backend already scoped by wid, so treat empty wlSyms as "matches all"
+                      return wlSyms.length === 0 ||
+                        wlSyms.some(s => tickerSet.size === 0 || tickerSet.has(String(s || '').trim().toUpperCase()));
+                    });
+                    // Preserve backend ordering (Part M)
+
                     const impactColor = (impact?: string) =>
                       impact === 'bullish' ? '#22c55e' : impact === 'bearish' ? '#ef4444' : impact === 'mixed' ? '#f59e0b' : C.dim;
 
@@ -4661,7 +4714,9 @@ export default function WatchlistPage() {
                       <>
                         {hyperItems.map((item, i) => {
                           const col = impactColor(item.bull_bear_impact);
-                          const sym = item.symbol ?? '';
+                          const highlighted = item.highlighted_tickers ?? [];
+                          const wlBadges  = highlighted.filter(x => x.role === 'watchlist');
+                          const anchorBadges = highlighted.filter(x => x.role === 'anchor');
                           return (
                             <a
                               key={`hyper-${i}`}
@@ -4677,6 +4732,7 @@ export default function WatchlistPage() {
                               onMouseEnter={e => e.currentTarget.style.background = `${col}06`}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
+                              {/* ── Catalyst + impact badges row ── */}
                               <div style={{ display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 4, marginBottom: 5 }}>
                                 <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '2px 6px', borderRadius: 3, color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}30`, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
                                   Hyperscaler Deal
@@ -4686,13 +4742,54 @@ export default function WatchlistPage() {
                                     {item.bull_bear_impact}
                                   </span>
                                 )}
-                                {sym && (
-                                  <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '2px 5px', borderRadius: 3, color: C.amber, background: C.amber + '15', border: `1px solid ${C.amber}25`, textTransform: 'uppercase' as const }}>
-                                    {sym}
-                                  </span>
-                                )}
                                 <ExternalLink style={{ width: 9, height: 9, color: C.dim, marginLeft: 'auto' }} />
                               </div>
+
+                              {/* ── Part I/J: highlighted ticker badges — watchlist then anchor ── */}
+                              {highlighted.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginBottom: 6 }}>
+                                  {wlBadges.map(ht => {
+                                    const inWl = tickerSet.has(ht.ticker.toUpperCase());
+                                    return (
+                                      <span
+                                        key={`wl-${ht.ticker}`}
+                                        onClick={e => { e.preventDefault(); e.stopPropagation(); if (inWl) handleTickerClick(ht.ticker); }}
+                                        style={{
+                                          fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                                          padding: '2px 7px', borderRadius: 3,
+                                          color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}35`,
+                                          textTransform: 'uppercase' as const,
+                                          cursor: inWl ? 'pointer' : 'default',
+                                        }}
+                                      >
+                                        {ht.ticker}
+                                      </span>
+                                    );
+                                  })}
+                                  {anchorBadges.map(ht => {
+                                    const inWl = tickerSet.has(ht.ticker.toUpperCase());
+                                    return (
+                                      <span
+                                        key={`anc-${ht.ticker}`}
+                                        onClick={e => { e.preventDefault(); e.stopPropagation(); if (inWl) handleTickerClick(ht.ticker); }}
+                                        style={{
+                                          fontSize: 8, fontWeight: 700, fontFamily: C.font,
+                                          padding: '2px 6px', borderRadius: 3,
+                                          color: C.amber, background: C.amber + '14', border: `1px solid ${C.amber}30`,
+                                          textTransform: 'uppercase' as const,
+                                          cursor: inWl ? 'pointer' : 'default',
+                                          display: 'inline-flex', alignItems: 'center', gap: 3,
+                                        }}
+                                      >
+                                        {ht.ticker}
+                                        <span style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em', color: C.amber + 'cc' }}>ANCHOR</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* ── Title ── */}
                               <div style={{ fontSize: 11, color: C.text, fontFamily: C.font, lineHeight: 1.4, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
                                 {item.title}
                               </div>
