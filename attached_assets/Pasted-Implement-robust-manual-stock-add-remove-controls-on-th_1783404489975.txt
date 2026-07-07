@@ -1,0 +1,883 @@
+Implement robust manual stock add/remove controls on the existing Watchlist page using the completed backend canonical security-search and exact membership mutation endpoints.
+
+The backend work is complete.
+
+Do not modify backend code.
+
+Do not redesign the Watchlist page.
+
+Do not change Watchlist canonical ticker construction in React.
+
+Do not call FMP, Tradier, Yahoo, Google, or any provider directly from the browser.
+
+BACKEND ARCHITECTURE NOW COMPLETE
+
+The backend has:
+
+1. canonical security search
+2. exact canonical single-security add
+3. exact canonical single-security delete
+4. canonical security identity adapter
+5. exchange-family alias duplicate protection
+6. atomic membership mutations
+7. delete sanitization across all persisted membership structures
+
+The backend explicitly separates:
+
+provider_symbol
+provider_exchange
+canonical_ticker
+
+The frontend must use:
+
+canonical_ticker
+
+exactly as returned.
+
+Examples of existing Caelyn canonical identities:
+
+AIM:IQE
+EPA:SOI
+ETR:AIXA
+KRX:000660
+TSX:MAL
+TRT
+
+Do not construct or translate those values in React.
+
+CURRENT FRONTEND ADD PATH
+
+watchlist.tsx currently has:
+
+addTickerInput
+addTickerStatus
+addTickersMut
+handleAddTickers()
+
+The current manual add behavior:
+
+1. trims input
+2. splits on whitespace/comma/semicolon
+3. uppercases strings
+4. blindly PATCHes ticker strings to:
+   /api/watchlist/{activeId}/tickers
+
+This blind raw-text flow is no longer acceptable as the primary manual-add interaction.
+
+The backend now provides a canonical security search and exact selected-security mutation.
+
+CORE USER EXPERIENCE
+
+ADD
+
+User types:
+
+IQE
+
+Dropdown opens with security suggestions showing:
+
+canonical ticker
+company name
+exchange
+country
+
+Example conceptually:
+
+AIM:IQE
+IQE plc
+London / AIM · GB
+
+The exact company/exchange text must come from backend search results.
+
+User explicitly selects one security.
+
+Only then can Add be submitted.
+
+REMOVE
+
+Every ticker row in the Watchlist Screener gets a small trash/delete control.
+
+Click trash.
+
+Confirm exact ticker and company.
+
+Confirm Remove.
+
+The row disappears immediately.
+
+Backend permanently removes that exact canonical member.
+
+User may manually add it again later through security search.
+
+PART A — AUDIT CURRENT ADD/TABLE UI FIRST
+
+Before editing report:
+
+1. exact add input JSX
+2. exact Add button JSX
+3. addTickerInput state
+4. addTickerStatus state
+5. addTickersMut
+6. handleAddTickers
+7. current Enter behavior
+8. current ticker-cell JSX
+9. existing Star button JSX
+10. row onClick modal behavior
+11. ticker grid width / sticky-cell layout
+12. whether main TICKERS and CLOSE WATCH reuse the same row renderer
+13. every current addTickersMut consumer
+14. all React Query keys tied to active Watchlist membership
+
+Proceed directly after the audit.
+
+PART B — AUDIT FINAL BACKEND CONTRACTS
+
+Read the actual completed backend routes before editing.
+
+Report:
+
+security search endpoint path
+search response shape
+single-security add endpoint path
+add body shape
+add success response
+duplicate response
+exchange-family alias conflict response
+single-security delete endpoint path
+delete success response
+already-absent response
+
+Do not rely on the earlier conceptual prompt.
+
+Use the actual implemented contracts.
+
+PART C — TYPE SECURITY SEARCH RESULTS
+
+Create frontend types matching the actual backend.
+
+Expected conceptual fields include:
+
+canonical_ticker
+provider_symbol
+provider_exchange
+company_name
+exchange
+exchange_short_name
+country
+currency
+security_type
+is_actively_trading
+display_symbol
+
+Use only actual returned fields.
+
+The most important field is:
+
+canonical_ticker
+
+Never derive it from:
+
+provider_symbol
+provider_exchange
+
+Do not map:
+
+LSE → AIM
+PAR → EPA
+XETRA → ETR
+
+in frontend code.
+
+The backend canonical adapter owns that logic.
+
+PART D — ADD AUTOCOMPLETE SEARCH STATE
+
+Preserve:
+
+addTickerInput
+
+Add minimum state for:
+
+selectedSecurity
+suggestionsOpen
+highlightedSuggestionIndex
+
+Add a debounced search text.
+
+Debounce approximately:
+
+300ms
+
+Use React Query following current project conventions.
+
+Preferred query key:
+
+[
+  'watchlist-security-search',
+  debouncedSearchText
+]
+
+Call the final backend search endpoint.
+
+Enable only when:
+
+debouncedSearchText.trim() meets backend minimum query requirements
+
+Do not query on Watchlist page load.
+
+Do not search with an empty input.
+
+Do not issue one request for every raw keydown.
+
+PART E — SEARCH INPUT SUPPORTS SYMBOL OR COMPANY NAME
+
+The existing add input must support searches such as:
+
+TRT
+Trio Tech
+IQE
+Nvidia
+NVDA
+Soitec
+AIXA
+000660
+
+As the user types:
+
+render a dropdown directly underneath the current add input.
+
+Do not open a full-screen search modal.
+
+Keep the interaction compact and terminal-like.
+
+PART F — SUGGESTION DESIGN
+
+Every suggestion row must visibly identify the security.
+
+Display:
+
+canonical ticker
+company name
+exchange/provider exchange label
+country where present
+
+Conceptually:
+
+TRT
+[backend company name]
+AMEX · US
+
+AIM:TRT
+[backend company name]
+LSE/AIM · GB
+
+Do not hardcode company names.
+
+Use backend fields.
+
+Ticker:
+bold / bright / monospace
+
+Company:
+normal readable text
+
+Exchange + country:
+small muted metadata
+
+For an exact canonical ticker already in the active Watchlist:
+
+show:
+
+IN WATCHLIST
+
+Disable Add for that result.
+
+Do not hide duplicate results.
+
+The user should be able to see that they found the correct security and that it already exists.
+
+PART G — EXCHANGE-FAMILY CONFLICT DISPLAY
+
+The backend may reject a selected canonical ticker because an equivalent existing canonical alias already represents the same security.
+
+Example conceptual conflict:
+
+selected:
+LON:IQE
+
+existing:
+AIM:IQE
+
+If backend returns its exchange-family alias conflict contract:
+
+do not show generic Error.
+
+Display something conceptually like:
+
+Already tracked as AIM:IQE
+
+Use the exact backend fields:
+
+existing_ticker
+selected_ticker
+conflict_type
+
+when available.
+
+Do not try to resolve this conflict in React.
+
+Do not replace the selected canonical ticker with another one client-side.
+
+Backend remains authoritative.
+
+PART H — EXPLICIT SELECTION REQUIRED
+
+Typing text alone must never add a ticker.
+
+User must select one suggestion.
+
+On suggestion click:
+
+set selectedSecurity
+set addTickerInput to selectedSecurity.canonical_ticker
+close dropdown
+
+The Add button submits the selected security using the final backend add contract.
+
+If the user edits addTickerInput after making a selection:
+
+clear selectedSecurity
+
+A new search/result selection is required.
+
+Do not retain a stale selection while input text changes.
+
+Do not fall back to:
+
+handleAddTickers(rawInput)
+
+Do not blindly uppercase and submit arbitrary user text.
+
+PART I — KEYBOARD SUPPORT
+
+When suggestions are open:
+
+ArrowDown
+→ next suggestion
+
+ArrowUp
+→ previous suggestion
+
+Enter:
+if a suggestion is highlighted
+→ select it
+
+Escape
+→ close dropdown
+
+When a selectedSecurity exists and suggestions are closed:
+
+Enter may submit Add.
+
+Enter must never blindly add raw unselected text.
+
+Prevent default form submission behavior where necessary.
+
+PART J — SEARCH STATES
+
+Loading:
+
+Searching securities…
+
+Error:
+
+Security search unavailable. Try again.
+
+Valid zero result:
+
+No matching securities found.
+
+These must be distinct states.
+
+Do not convert a backend/server error into zero results.
+
+PART K — SINGLE-SECURITY ADD MUTATION
+
+Replace the old blind raw-text flow as the primary manual add.
+
+Use the completed exact backend add endpoint.
+
+Send the actual required backend body.
+
+The selected canonical security must come from:
+
+selectedSecurity.canonical_ticker
+
+Do not submit:
+
+addTickerInput
+
+as the authoritative ticker.
+
+On success:
+
+1. invalidate/reconcile:
+   ['/api/watchlist', activeId]
+2. invalidate:
+   ['/api/watchlist/list']
+3. invalidate Watchlist earnings
+4. invalidate Watchlist options-signals
+5. invalidate active Watchlist news
+6. update active Watchlist membership-derived UI
+7. clear addTickerInput
+8. clear selectedSecurity
+9. close suggestions
+10. show:
+    Added {canonical_ticker}
+
+Do not trigger full Claude analysis.
+
+The backend's existing skeleton path should allow the newly added ticker to appear immediately.
+
+PART L — DUPLICATE ADD STATE
+
+If backend returns:
+
+added = false
+duplicate = true
+
+show:
+
+Already in Watchlist
+
+Do not show a red generic error.
+
+Do not optimistically add another row.
+
+PART M — ADD BUTTON
+
+Disable Add when:
+
+no activeId
+no selectedSecurity
+mutation pending
+selected canonical ticker already belongs to current Watchlist
+
+Pending text:
+
+Adding…
+
+Prevent double submit.
+
+PART N — RETIRE THE BLIND RAW MANUAL ADD PATH
+
+Audit whether the existing PATCH /{id}/tickers path has other consumers.
+
+Do not delete backend compatibility routes.
+
+But the visible manual add bar on Watchlist must no longer call:
+
+handleAddTickers()
+
+with split raw strings as its primary UX.
+
+Remove or disconnect the raw:
+
+split(/[\s,;]+/)
+
+manual submission behavior from this input.
+
+If another internal bulk-add flow uses it:
+
+preserve that internal flow separately.
+
+Do not reuse it for the interactive autocomplete bar.
+
+PART O — ADD DELETE ICON TO TICKER CELL
+
+The existing ticker cell already contains:
+
+Star button
+ticker text
+
+Add a compact trash/remove button using the existing Lucide package.
+
+Preferred:
+
+Trash2
+
+Keep the ticker column compact.
+
+Possible visual order:
+
+STAR
+TICKER
+TRASH
+
+or:
+
+STAR
+TRASH
+TICKER
+
+Choose whichever does not break the sticky ticker-cell layout.
+
+Delete icon:
+
+muted by default
+red tint on hover
+
+Tooltip:
+
+Remove {ticker} from Watchlist
+
+Do not use a full red text button in every row.
+
+PART P — DELETE CLICK MUST NOT OPEN STOCK MODAL
+
+The row currently opens StockDetailModal when clicked.
+
+The delete control must:
+
+e.stopPropagation()
+e.preventDefault()
+
+Follow the same event-isolation pattern as the existing Star button.
+
+Clicking Trash must never open StockDetailModal.
+
+PART Q — DELETE CONFIRMATION
+
+Create or reuse a Watchlist-styled confirmation modal.
+
+Do not use window.confirm unless the existing Watchlist consistently uses native browser confirmations for destructive row actions.
+
+Confirmation must display:
+
+exact canonical ticker
+company name if available
+active Watchlist name
+
+Conceptually:
+
+Remove AIM:IQE from Primary?
+
+IQE plc
+
+This permanently removes the stock from this Watchlist.
+You can add it again later.
+
+Buttons:
+
+Cancel
+Remove
+
+The wording "permanently removes" means persistent Watchlist membership deletion.
+
+Do not imply global company/security deletion.
+
+PART R — DELETE MUTATION
+
+Use the completed backend exact delete endpoint.
+
+Build the ticker path safely from the exact canonical ticker.
+
+Examples:
+
+TRT
+AIM:IQE
+EPA:SOI
+KRX:000660
+
+Do not do:
+
+ticker.split(':').pop()
+
+Do not map prefixes.
+
+Do not use provider_symbol.
+
+Canonical ticker is authoritative.
+
+PART S — OPTIMISTIC DELETE
+
+On confirm:
+
+1. cancel active Watchlist query
+2. snapshot previous cached Watchlist data
+3. optimistically remove exact canonical ticker
+4. close confirmation or show deleting state following clean UX
+5. send DELETE mutation
+
+Use exact uppercase canonical equality.
+
+Deleting:
+
+AIM:TRT
+
+must not remove:
+
+TRT
+
+Use one small helper to sanitize the frontend cached Watchlist shape.
+
+Audit actual response shape first.
+
+At minimum remove the exact member from cached:
+
+top-level tickers
+
+csv_data rows
+
+analysis.sections[*].tickers
+
+top-level sections[*].tickers if the current frontend response has them
+
+legacy membership arrays only if they are present in the frontend cache and can render the ticker
+
+Do not add an enormous duplicate backend sanitizer to React.
+
+The frontend helper only needs to make visible cached membership consistent until refetch.
+
+PART T — DELETE ROLLBACK
+
+On delete error:
+
+restore the previous Watchlist query cache.
+
+Show:
+
+Could not remove {ticker}. No changes were saved.
+
+Do not leave the row hidden when backend persistence failed.
+
+PART U — DELETE SUCCESS
+
+After successful backend delete:
+
+invalidate/reconcile:
+
+['/api/watchlist', activeId]
+['/api/watchlist/list']
+watchlist options signals
+Watchlist earnings
+Watchlist news
+ticker activity-news query for deleted ticker
+favorites/Close Watch query where backend behavior requires it
+
+Use exact existing query keys after audit.
+
+Do not invalidate all React Query state.
+
+Do not reload the browser.
+
+If:
+
+selectedTicker === deletedTicker
+
+close StockDetailModal.
+
+PART V — CLOSE WATCH GHOST PREVENTION
+
+Audit how CLOSE WATCH rows are built.
+
+A deleted ticker must not remain visibly rendered in the active Watchlist's CLOSE WATCH table.
+
+If CLOSE WATCH already intersects:
+
+favoritesSet
+with current Watchlist rows
+
+verify that the optimistic membership removal is sufficient.
+
+If not:
+
+apply the narrowest active-Watchlist scope fix.
+
+Do not create a second favorites system.
+
+Do not globally unfavorite a ticker unless the backend's final favorites behavior explicitly does so.
+
+PART W — MULTIPLE WATCHLISTS
+
+All membership state must depend on:
+
+activeId
+
+Deleting a ticker from Watchlist A:
+
+must not remove it from Watchlist B.
+
+The suggestion:
+
+IN WATCHLIST
+
+state must recompute against the currently active Watchlist membership.
+
+Include activeId in all relevant memo/query dependencies.
+
+PART X — IDENTITY VALIDATION
+
+Using the final backend search behavior, validate:
+
+TRT
+IQE
+Soitec
+AIXA
+000660
+MAL
+
+For each search show:
+
+input
+suggestion count
+first five displayed:
+canonical ticker
+company
+exchange
+country
+
+For IQE confirm the dropdown uses:
+
+AIM:IQE
+
+for the existing known security when backend returns that canonical identity.
+
+For Soitec confirm the dropdown uses:
+
+EPA:SOI
+
+when backend returns that identity.
+
+Do not expect the frontend to transform LSE:IQE or PAR:SOI.
+
+PART Y — TRT CONTROL TEST
+
+Use a disposable/test Watchlist if possible.
+
+Search TRT.
+
+Use the exact actual backend results.
+
+Select/add the US TRT security.
+
+Select/add the distinct AIM:TRT security if returned.
+
+Both must coexist when backend identifies them as distinct.
+
+Delete AIM:TRT.
+
+TRT remains.
+
+Add AIM:TRT back.
+
+Delete TRT.
+
+AIM:TRT remains.
+
+Do not hardcode expected company names from earlier prompt examples.
+
+Use backend result identity/company names.
+
+PART Z — NETWORK VALIDATION
+
+Opening Watchlist without typing:
+
+0 security-search requests
+
+Typing quickly:
+
+T
+TR
+TRT
+
+with 300ms debounce:
+
+should result in the final debounced request pattern, not three overlapping searches.
+
+Report actual request count.
+
+Selecting a result:
+
+0 direct provider calls
+
+Add:
+
+1 backend membership mutation
+
+Delete:
+
+1 backend membership mutation
+
+No browser requests to:
+
+FMP
+Tradier
+Yahoo
+Google
+
+PART AA — REGRESSION
+
+Confirm:
+
+1. Watchlist page loads.
+2. Screener table intact.
+3. Stock row click still opens modal.
+4. Star still works.
+5. Trash does not open modal.
+6. Add input searches securities.
+7. Company-name search works.
+8. Raw unselected text cannot be added.
+9. Backend canonical_ticker is preserved exactly.
+10. Existing AIM/EPA/ETR/KRX canonical prefixes are preserved.
+11. Duplicate state is clear.
+12. Exchange-family conflict state is clear.
+13. Delete row disappears immediately.
+14. Delete failure rolls back.
+15. Deleted member remains absent after refetch.
+16. Deleted member can be explicitly added again.
+17. Multiple Watchlists remain isolated.
+18. REL VOL unchanged.
+19. VOL RANK unchanged.
+20. Vol/MC unchanged.
+21. NEWS ACTIVITY unchanged.
+22. ALL NEWS unchanged.
+23. HYPERSCALER DEALS unchanged.
+24. Stock modal 48H News unchanged.
+25. No full Claude refresh is triggered by add/delete.
+
+FINAL RETURN
+
+Return:
+
+- current add-bar audit
+- exact backend contracts consumed
+- exact files changed
+- security-search response type
+- React Query search key
+- debounce duration
+- dropdown design
+- keyboard behavior
+- selection rules
+- add endpoint/body
+- duplicate/conflict UX
+- delete endpoint
+- optimistic cache helper behavior
+- rollback behavior
+- query invalidations
+- Close Watch behavior
+- six-search validation
+- TRT control test
+- network request counts
+- screenshots:
+  - IQE autocomplete dropdown
+  - selected security ready to Add
+  - delete confirmation
+  - row removed after successful delete
+- regression checklist
+
+Do not modify backend code.
+Do not derive canonical ticker prefixes in React.
+Do not retain blind raw-text Add as the primary workflow.
+Do not auto-select the first search result.
+Do not delete by provider symbol.

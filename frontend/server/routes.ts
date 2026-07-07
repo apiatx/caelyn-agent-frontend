@@ -5459,6 +5459,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Canonical security search (must be before /:wid to avoid param capture)
+  app.get('/api/watchlist/security-search', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const q = String(req.query.q || '');
+      const limit = String(req.query.limit || '25');
+      const r = await fetch(
+        `${WL_URL}/api/watchlist/security-search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
+        { headers: wlHdr(), signal: ctrl.signal },
+      );
+      if (!r.ok) return res.status(r.status).json({ error: `security-search failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'security-search error') });
+    }
+  });
+
+  // Single-security canonical add
+  app.post('/api/watchlist/:wid/ticker', async (req, res) => {
+    const { wid } = req.params;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${encodeURIComponent(wid)}/ticker`, {
+        method: 'POST',
+        headers: { ...wlHdr() },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: (data as any).detail || (data as any).message || `Backend ${r.status}` });
+      res.json(data);
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'ticker add error') });
+    }
+  });
+
+  // Single-security canonical delete
+  app.delete('/api/watchlist/:wid/ticker/:ticker', async (req, res) => {
+    const { wid, ticker } = req.params;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(
+        `${WL_URL}/api/watchlist/${encodeURIComponent(wid)}/ticker/${encodeURIComponent(ticker)}`,
+        { method: 'DELETE', headers: wlHdr(), signal: ctrl.signal },
+      );
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: (data as any).detail || (data as any).message || `Backend ${r.status}` });
+      res.json(data);
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'ticker delete error') });
+    }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;

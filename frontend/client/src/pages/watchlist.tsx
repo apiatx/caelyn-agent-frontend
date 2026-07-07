@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2 } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -1644,6 +1644,15 @@ export default function WatchlistPage() {
   const [refreshStatus, setRefreshStatus] = useState<'idle' | 'running'>('idle');
   const [addTickerInput, setAddTickerInput] = useState('');
   const [addTickerStatus, setAddTickerStatus] = useState<null | 'success' | 'duplicate' | 'error'>(null);
+  const [addStatusMsg, setAddStatusMsg] = useState('');
+  const [selectedSecurity, setSelectedSecurity] = useState<{
+    canonical_ticker: string; company_name?: string | null;
+    exchange_short_name?: string | null; country?: string | null; exchange?: string | null;
+  } | null>(null);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [highlightedIdx, setHighlightedIdx] = useState(-1);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ ticker: string; company?: string | null; wid: string } | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
@@ -1693,6 +1702,13 @@ export default function WatchlistPage() {
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
 
   useEffect(() => { ensureBlinkStyle(); }, []);
+
+  // Debounce add input for security search (300ms); clear when security selected
+  useEffect(() => {
+    if (selectedSecurity) return; // don't re-query after selection
+    const id = setTimeout(() => setDebouncedSearch(addTickerInput.trim()), 300);
+    return () => clearTimeout(id);
+  }, [addTickerInput, selectedSecurity]);
 
   useEffect(() => {
     fetchPlaybooks().then(setStrategyPlaybooks).catch(() => {});
@@ -1899,6 +1915,29 @@ export default function WatchlistPage() {
       setFavoritesSet(new Set(favoritesData.favorites.map((t: string) => t.toUpperCase())));
     }
   }, [favoritesData]);
+
+  // Security search — fires only when actively searching (no selected security)
+  const searchEnabled = !selectedSecurity && debouncedSearch.length >= 1;
+  const { data: secSearchData, isFetching: secSearchLoading, isError: secSearchError } = useQuery<{
+    query: string;
+    results: Array<{
+      canonical_ticker: string; provider_symbol: string; provider_exchange: string;
+      company_name: string | null; exchange: string | null; exchange_short_name: string | null;
+      country: string | null; currency: string | null; security_type: string | null;
+      is_actively_trading: boolean; display_symbol: string;
+    }>;
+    count: number;
+  }>({
+    queryKey: ['watchlist-security-search', debouncedSearch],
+    queryFn: async () => {
+      const r = await fetch(`/api/watchlist/security-search?q=${encodeURIComponent(debouncedSearch)}&limit=25`);
+      if (!r.ok) throw new Error(`Search ${r.status}`);
+      return r.json();
+    },
+    enabled: searchEnabled,
+    staleTime: 30_000,
+    retry: false,
+  });
 
   const toggleFavorite = useCallback(async (ticker: string) => {
     const t = ticker.toUpperCase();
@@ -2107,6 +2146,126 @@ export default function WatchlistPage() {
     if (!tickers.length) return;
     addTickersMut.mutate(tickers);
   }
+
+  // Canonical single-security add mutation
+  const addSecurityMut = useMutation({
+    mutationFn: async ({ wid, security }: {
+      wid: string;
+      security: { canonical_ticker: string; company_name?: string | null; exchange_short_name?: string | null; country?: string | null };
+    }) => {
+      const r = await fetch(`/api/watchlist/${wid}/ticker`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          canonical_ticker: security.canonical_ticker,
+          company_name: security.company_name ?? null,
+          exchange_short_name: security.exchange_short_name ?? null,
+          country: security.country ?? null,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || data.detail || `Error ${r.status}`);
+      return data;
+    },
+    onSuccess: (data, { wid, security }) => {
+      const isDup = data.duplicate === true;
+      if (isDup) {
+        const existing = data.existing_ticker || security.canonical_ticker;
+        const msg = data.conflict_type === 'exchange_family_alias'
+          ? `Already tracked as ${existing}`
+          : 'Already in Watchlist';
+        setAddTickerStatus('duplicate');
+        setAddStatusMsg(msg);
+        setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
+      } else {
+        setAddTickerStatus('success');
+        setAddStatusMsg(`Added ${security.canonical_ticker}`);
+        setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 2500);
+        setAddTickerInput('');
+        setSelectedSecurity(null);
+        setSuggestionsOpen(false);
+        setDebouncedSearch('');
+      }
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/news', wid] });
+      qc.invalidateQueries({ queryKey: ['watchlist-options-signals', wid] });
+      qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+    },
+    onError: () => {
+      setAddTickerStatus('error');
+      setAddStatusMsg('Add failed. Try again.');
+      setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
+    },
+  });
+
+  // Optimistic cache sanitizer — removes a canonical ticker from cached Watchlist shape
+  function sanitizeWatchlistCache(data: any, ticker: string): any {
+    const canon = ticker.toUpperCase();
+    const matchesTicker = (t: string) => (t || '').toUpperCase() === canon;
+    return {
+      ...data,
+      tickers: Array.isArray(data.tickers)
+        ? data.tickers.filter((t: string) => !matchesTicker(t))
+        : data.tickers,
+      csv_data: Array.isArray(data.csv_data)
+        ? data.csv_data.filter((r: any) => !matchesTicker(r?.ticker || r?.symbol || ''))
+        : data.csv_data,
+      analysis: data.analysis ? {
+        ...data.analysis,
+        sections: Array.isArray(data.analysis.sections)
+          ? data.analysis.sections.map((s: any) => ({
+              ...s,
+              tickers: Array.isArray(s.tickers)
+                ? s.tickers.filter((t: any) =>
+                    typeof t === 'string'
+                      ? !matchesTicker(t)
+                      : !matchesTicker(t?.ticker || t?.symbol || ''))
+                : s.tickers,
+            }))
+          : data.analysis.sections,
+      } : data.analysis,
+    };
+  }
+
+  // Canonical single-security delete mutation with optimistic update
+  const deleteTickerMut = useMutation({
+    mutationFn: async ({ wid, ticker }: { wid: string; ticker: string }) => {
+      const r = await fetch(`/api/watchlist/${wid}/ticker/${encodeURIComponent(ticker)}`, {
+        method: 'DELETE',
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || data.detail || `Error ${r.status}`);
+      return data;
+    },
+    onMutate: async ({ wid, ticker }) => {
+      await qc.cancelQueries({ queryKey: ['/api/watchlist', wid] });
+      const prev = qc.getQueryData(['/api/watchlist', wid]);
+      qc.setQueryData(['/api/watchlist', wid], (old: any) => old ? sanitizeWatchlistCache(old, ticker) : old);
+      return { prev, wid };
+    },
+    onSuccess: (_, { wid }) => {
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist/news', wid] });
+      qc.invalidateQueries({ queryKey: ['watchlist-options-signals', wid] });
+      qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
+    },
+    onError: (_err, _vars, context: any) => {
+      if (context?.prev !== undefined) {
+        qc.setQueryData(['/api/watchlist', context.wid], context.prev);
+      }
+    },
+    onSettled: () => {
+      setDeleteConfirm(null);
+    },
+  });
+
+  // Current watchlist member set for "IN WATCHLIST" badge in autocomplete
+  const currentTickerSet = useMemo(() => {
+    if (!watchlist?.tickers) return new Set<string>();
+    return new Set((watchlist.tickers as string[]).map((t: string) => t.toUpperCase()));
+  }, [watchlist]);
 
   const handleTickerClick = useCallback((ticker: string) => {
     setSelectedTicker(ticker);
@@ -3630,6 +3789,17 @@ export default function WatchlistPage() {
                         />
                       </button>
                     )}
+                    {!isPending && stock.ticker && activeId && (
+                      <button
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); setDeleteConfirm({ ticker: stock.ticker!, company: stock.company || stock.name || null, wid: activeId }); }}
+                        title={`Remove ${stock.ticker} from Watchlist`}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1, color: '#333', transition: 'color 0.15s' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#333'; }}
+                      >
+                        <Trash2 size={9} />
+                      </button>
+                    )}
                     <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                       {stock.ticker || DASH}
                     </span>
@@ -4063,6 +4233,17 @@ export default function WatchlistPage() {
                   />
                 </button>
               )}
+              {stock.ticker && activeId && (
+                <button
+                  onClick={e => { e.stopPropagation(); e.preventDefault(); setDeleteConfirm({ ticker: stock.ticker!, company: stock.company || stock.name || null, wid: activeId }); }}
+                  title={`Remove ${stock.ticker} from Watchlist`}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1, color: '#333', transition: 'color 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#333'; }}
+                >
+                  <Trash2 size={9} />
+                </button>
+              )}
               <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>
                 {stock.ticker || '\u2014'}
               </span>
@@ -4156,72 +4337,200 @@ export default function WatchlistPage() {
             </div>
 
             {/* Add tickers inline input */}
-            {activeId && (
-              <form
-                onSubmit={e => { e.preventDefault(); handleAddTickers(); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, margin: 0 }}
-              >
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <input
-                    ref={addInputRef}
-                    type="text"
-                    value={addTickerInput}
-                    onChange={e => { setAddTickerInput(e.target.value); setAddTickerStatus(null); }}
-                    placeholder="Add tickers"
-                    disabled={addTickersMut.isPending}
-                    style={{
-                      width: 130,
-                      height: 26,
-                      padding: '0 28px 0 8px',
-                      borderRadius: 4,
-                      background: addTickerStatus === 'success' ? `${C.green}15`
-                        : addTickerStatus === 'error' ? `${C.red}15`
-                        : addTickerStatus === 'duplicate' ? `${C.amber}15`
-                        : C.card2,
-                      border: `1px solid ${
-                        addTickerStatus === 'success' ? `${C.green}60`
-                        : addTickerStatus === 'error' ? `${C.red}60`
-                        : addTickerStatus === 'duplicate' ? `${C.amber}60`
-                        : C.border
-                      }`,
-                      color: addTickerStatus === 'success' ? C.green
-                        : addTickerStatus === 'error' ? C.red
-                        : addTickerStatus === 'duplicate' ? C.amber
-                        : C.dim,
-                      fontFamily: C.font,
-                      fontSize: 10,
-                      outline: 'none',
-                      transition: 'border-color 0.15s, background 0.15s',
-                      opacity: addTickersMut.isPending ? 0.6 : 1,
-                    }}
-                    onFocus={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.teal; }}
-                    onBlur={e => { if (!addTickerStatus) e.currentTarget.style.borderColor = C.border; }}
-                  />
-                  {/* Submit button inside the input */}
+            {activeId && (() => {
+              const searchResults = secSearchData?.results ?? [];
+              const isAlreadyInWl = selectedSecurity
+                ? currentTickerSet.has(selectedSecurity.canonical_ticker.toUpperCase())
+                : false;
+              const addDisabled = !selectedSecurity || addSecurityMut.isPending || isAlreadyInWl;
+
+              const handleSelectSecurity = (s: typeof searchResults[0]) => {
+                setSelectedSecurity(s);
+                setAddTickerInput(s.canonical_ticker);
+                setSuggestionsOpen(false);
+                setHighlightedIdx(-1);
+              };
+
+              const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (!suggestionsOpen || searchResults.length === 0) {
+                  if (e.key === 'Enter' && selectedSecurity && !addDisabled) {
+                    e.preventDefault();
+                    addSecurityMut.mutate({ wid: activeId!, security: selectedSecurity });
+                  }
+                  return;
+                }
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setHighlightedIdx(prev => Math.min(prev + 1, searchResults.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setHighlightedIdx(prev => Math.max(prev - 1, -1));
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (highlightedIdx >= 0 && searchResults[highlightedIdx]) {
+                    handleSelectSecurity(searchResults[highlightedIdx]);
+                  }
+                } else if (e.key === 'Escape') {
+                  setSuggestionsOpen(false);
+                  setHighlightedIdx(-1);
+                }
+              };
+
+              const inputBorderColor = addTickerStatus === 'success' ? `${C.green}60`
+                : addTickerStatus === 'error' ? `${C.red}60`
+                : addTickerStatus === 'duplicate' ? `${C.amber}60`
+                : selectedSecurity ? `${C.teal}80`
+                : C.border;
+              const inputBg = addTickerStatus === 'success' ? `${C.green}15`
+                : addTickerStatus === 'error' ? `${C.red}15`
+                : addTickerStatus === 'duplicate' ? `${C.amber}15`
+                : selectedSecurity ? `${C.teal}08` : C.card2;
+              const inputColor = addTickerStatus === 'success' ? C.green
+                : addTickerStatus === 'error' ? C.red
+                : addTickerStatus === 'duplicate' ? C.amber
+                : selectedSecurity ? '#fff' : C.dim;
+
+              const showDropdown = suggestionsOpen && !selectedSecurity && (
+                secSearchLoading || secSearchError ||
+                (searchResults.length > 0) ||
+                (debouncedSearch.length > 0 && !secSearchLoading && !secSearchError)
+              );
+
+              return (
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  {/* Search input */}
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      ref={addInputRef}
+                      type="text"
+                      value={addTickerInput}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setAddTickerInput(v);
+                        setAddTickerStatus(null);
+                        setAddStatusMsg('');
+                        if (selectedSecurity) setSelectedSecurity(null);
+                        setSuggestionsOpen(true);
+                        setHighlightedIdx(-1);
+                      }}
+                      onFocus={() => { if (!selectedSecurity) setSuggestionsOpen(true); }}
+                      onBlur={() => { setTimeout(() => setSuggestionsOpen(false), 180); }}
+                      onKeyDown={handleInputKeyDown}
+                      placeholder="Search security…"
+                      disabled={addSecurityMut.isPending}
+                      autoComplete="off"
+                      style={{
+                        width: 148,
+                        height: 26,
+                        padding: '0 8px',
+                        borderRadius: 4,
+                        background: inputBg,
+                        border: `1px solid ${inputBorderColor}`,
+                        color: inputColor,
+                        fontFamily: C.font,
+                        fontSize: 10,
+                        outline: 'none',
+                        transition: 'border-color 0.15s, background 0.15s',
+                        opacity: addSecurityMut.isPending ? 0.6 : 1,
+                      }}
+                    />
+                    {/* Autocomplete dropdown */}
+                    {showDropdown && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, marginTop: 3, zIndex: 200,
+                        width: 360, maxHeight: 260, overflowY: 'auto',
+                        background: '#0a0a12', border: `1px solid ${C.border}`,
+                        borderRadius: 5, boxShadow: '0 8px 28px rgba(0,0,0,0.7)',
+                      }}>
+                        {secSearchLoading && (
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: C.font }}>
+                            Searching securities…
+                          </div>
+                        )}
+                        {secSearchError && !secSearchLoading && (
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.red, fontFamily: C.font }}>
+                            Security search unavailable. Try again.
+                          </div>
+                        )}
+                        {!secSearchLoading && !secSearchError && searchResults.length === 0 && debouncedSearch.length > 0 && (
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: C.font }}>
+                            No matching securities found.
+                          </div>
+                        )}
+                        {!secSearchLoading && !secSearchError && searchResults.map((r, idx) => {
+                          const inWl = currentTickerSet.has(r.canonical_ticker.toUpperCase());
+                          const isHl = idx === highlightedIdx;
+                          const exLabel = r.exchange_short_name || r.provider_exchange || '';
+                          const country = r.country ? ` · ${r.country}` : '';
+                          return (
+                            <div
+                              key={r.canonical_ticker + idx}
+                              onMouseDown={() => handleSelectSecurity(r)}
+                              onMouseEnter={() => setHighlightedIdx(idx)}
+                              style={{
+                                padding: '7px 12px',
+                                cursor: 'pointer',
+                                background: isHl ? 'rgba(255,255,255,0.06)' : 'transparent',
+                                borderBottom: `1px solid ${C.border}28`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontFamily: C.font, fontWeight: 800, fontSize: 11, color: '#fff', letterSpacing: '0.04em' }}>
+                                    {r.canonical_ticker}
+                                  </span>
+                                  {inWl && (
+                                    <span style={{ fontSize: 7, fontWeight: 700, color: C.teal, background: `${C.teal}18`, border: `1px solid ${C.teal}40`, padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em' }}>
+                                      IN WATCHLIST
+                                    </span>
+                                  )}
+                                </div>
+                                {r.company_name && (
+                                  <div style={{ fontSize: 10, color: C.text, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {r.company_name}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: 9, color: '#484848', marginTop: 1 }}>
+                                  {exLabel}{country}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {/* Add button — enabled only when security selected */}
                   <button
-                    type="submit"
-                    disabled={!addTickerInput.trim() || addTickersMut.isPending}
+                    disabled={addDisabled}
+                    onClick={() => {
+                      if (selectedSecurity && activeId && !addDisabled) {
+                        addSecurityMut.mutate({ wid: activeId, security: selectedSecurity });
+                      }
+                    }}
                     style={{
-                      position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                      fontSize: 11, lineHeight: 1,
-                      background: 'none', border: 'none', padding: 0, margin: 0,
-                      cursor: addTickerInput.trim() && !addTickersMut.isPending ? 'pointer' : 'default',
+                      height: 26, padding: '0 10px', borderRadius: 4, flexShrink: 0,
+                      background: addDisabled ? 'transparent' : `${C.teal}22`,
+                      border: `1px solid ${addDisabled ? C.border : `${C.teal}60`}`,
                       color: addTickerStatus === 'success' ? C.green
                         : addTickerStatus === 'error' ? C.red
                         : addTickerStatus === 'duplicate' ? C.amber
-                        : addTickerInput.trim() ? C.teal : C.dim,
-                      transition: 'color 0.15s',
+                        : addDisabled ? '#333' : C.teal,
+                      fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                      cursor: addDisabled ? 'default' : 'pointer',
+                      transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }}
                   >
-                    {addTickersMut.isPending ? '…'
-                      : addTickerStatus === 'success' ? '✓'
-                      : addTickerStatus === 'duplicate' ? '='
-                      : addTickerStatus === 'error' ? '✕'
-                      : '+'}
+                    {addSecurityMut.isPending ? 'Adding…'
+                      : addTickerStatus === 'success' ? `✓ ${addStatusMsg}`
+                      : addTickerStatus === 'duplicate' ? `= ${addStatusMsg}`
+                      : addTickerStatus === 'error' ? '✕ Failed'
+                      : 'Add'}
                   </button>
                 </div>
-              </form>
-            )}
+              );
+            })()}
 
             {/* Center: summary text */}
             <div style={{
@@ -6213,6 +6522,48 @@ export default function WatchlistPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Delete Confirmation Modal ═══ */}
+      {deleteConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9980, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#0d0d14', border: `1px solid ${C.border}`, borderRadius: 8, padding: '24px 28px', minWidth: 320, maxWidth: 400, boxShadow: '0 12px 40px rgba(0,0,0,0.7)', fontFamily: C.font }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
+              Remove from {wlMetas?.find(m => m.id === deleteConfirm.wid)?.name || 'Watchlist'}?
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: C.font, letterSpacing: '0.04em' }}>{deleteConfirm.ticker}</span>
+              {deleteConfirm.company && <span style={{ fontSize: 11, color: C.dim }}>{deleteConfirm.company}</span>}
+            </div>
+            <div style={{ fontSize: 10, color: '#484848', marginBottom: 20, lineHeight: 1.6 }}>
+              This permanently removes the stock from this Watchlist.<br />You can add it again later through security search.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                style={{ padding: '6px 16px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, fontFamily: C.font, fontSize: 11, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleteTickerMut.isPending}
+                onClick={() => {
+                  if (!deleteConfirm) return;
+                  deleteTickerMut.mutate({ wid: deleteConfirm.wid, ticker: deleteConfirm.ticker });
+                }}
+                style={{ padding: '6px 16px', borderRadius: 4, background: deleteTickerMut.isPending ? '#2a0a0a' : '#3a0a0a', border: '1px solid #ef444440', color: deleteTickerMut.isPending ? '#666' : '#ef4444', fontFamily: C.font, fontSize: 11, fontWeight: 700, cursor: deleteTickerMut.isPending ? 'default' : 'pointer', transition: 'all 0.15s' }}
+              >
+                {deleteTickerMut.isPending ? 'Removing…' : 'Remove'}
+              </button>
             </div>
           </div>
         </div>
