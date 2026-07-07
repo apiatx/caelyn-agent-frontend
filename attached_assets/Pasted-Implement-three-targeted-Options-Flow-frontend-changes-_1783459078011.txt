@@ -1,0 +1,516 @@
+Implement three targeted Options Flow frontend changes.
+
+Frontend only.
+
+The existing TradingView-style heatmap is successful.
+
+Do not rebuild the heatmap.
+Do not change SVG layout.
+Do not change squarify.
+Do not change zoom/pan.
+Do not change crisp screen-space labels.
+Do not change P/C semantics.
+Do not touch backend.
+
+Backend is simultaneously:
+
+* moving Crypto Equities / Blockchain to Technology in canonical taxonomy
+* guaranteeing instrument_type on every ticker leaf
+* exposing a canonical company/fund display name
+
+Your job is strict tab separation and name rendering.
+
+==================================================
+PART 1 — STRICT ETF / STOCK TAB SEPARATION
+==========================================
+
+Current bug:
+Some ETFs still appear in All Stocks.
+
+The current implementation reportedly uses behavior similar to:
+
+All Stocks excludes:
+instrument_type === "etf"
+
+but rows with absent instrument_type still remain in All Stocks for backward compatibility.
+
+Remove that fallback.
+
+Backend classification is now authoritative.
+
+ALL STOCKS leaf universe must be STRICTLY:
+
+instrument_type === "stock"
+
+ETFs leaf universe must be STRICTLY:
+
+instrument_type === "etf"
+
+Do not use:
+
+instrument_type !== "etf"
+
+for All Stocks.
+
+Do not use:
+
+instrument_type !== "stock"
+
+for ETFs.
+
+Correct:
+
+const stockLeaves = tickerLeaves.filter(
+t => t.instrument_type === "stock"
+)
+
+const etfLeaves = tickerLeaves.filter(
+t => t.instrument_type === "etf"
+)
+
+Conceptual only — preserve current code style/helpers.
+
+Unknown/missing instrument type:
+Do not put it in All Stocks.
+Do not put it in ETFs.
+Do not guess.
+
+If an unexpected unresolved row appears:
+
+* exclude from both strict leaf universes
+* log one concise development warning
+* preserve diagnostics
+
+Do not hardcode ETF symbols.
+
+Do not inspect ticker names for "ETF".
+
+Do not guess by three-letter symbols.
+
+Do not maintain a frontend ETF list.
+
+---
+
+## UNGROUPED
+
+All Stocks:
+
+* each unique stock symbol once
+* zero ETFs
+
+ETFs:
+
+* each unique ETF symbol once
+* zero common stocks
+
+---
+
+## GROUPED
+
+All Stocks grouped:
+
+* existing group-by-theme behavior
+* stock children only
+* zero ETF child leaves
+
+ETFs grouped:
+
+* existing group-by-theme behavior
+* ETF children only
+* zero stock child leaves
+
+Within each parent:
+dedupe by normalized symbol.
+
+Preserve intentional multi-theme membership across different parents.
+
+==================================================
+PART 2 — CRYPTO EQUITIES / BLOCKCHAIN SECTOR
+============================================
+
+Do not hardcode this move in frontend.
+
+Backend is changing the canonical theme sector from Financials to Technology.
+
+The frontend must consume the canonical sector assignment already returned by the current theme/Options Flow payload.
+
+Audit for any frontend mapping that forces:
+
+Crypto Equities / Blockchain
+→ Financials
+
+If no hardcode exists:
+do nothing except validate the backend-driven result.
+
+If a stale local mapping/override exists:
+remove only that stale mapping so canonical backend taxonomy wins.
+
+Expected:
+Themes → Grouped:
+Technology
+→ Crypto Equities / Blockchain
+
+Financials:
+must not contain Crypto Equities / Blockchain.
+
+Do not duplicate the theme.
+
+Do not alter its ticker membership.
+
+==================================================
+PART 3 — COMPANY / ETF NAMES UNDER TICKER
+=========================================
+
+Add the human-readable company/fund name directly beneath the ticker symbol in STOCK and ETF heatmap tiles.
+
+Use the canonical backend field.
+
+Audit exact live field name first:
+
+* display_name
+* company_name
+* name
+
+Use the actual backend field.
+Do not invent a frontend lookup service.
+
+Examples:
+
+NVDA
+NVIDIA Corporation
+0.22
+P/C
+
+SMH
+VanEck Semiconductor ETF
+<0.01
+P/C
+
+The company/fund name should visually sit directly under the ticker.
+
+Hierarchy:
+
+TICKER
+Company or ETF Name
+P/C VALUE
+P/C
+NET / additional metrics as space allows
+
+Use existing font tokens/style.
+
+Suggested visual treatment:
+
+* ticker: existing strong/bold label
+* company/fund name: smaller secondary text
+* muted white/silver, approximately 65–75% opacity
+* one line
+* ellipsis when too long
+
+Do not make the name compete with P/C.
+
+==================================================
+PROGRESSIVE LABEL RULES
+=======================
+
+The name must integrate into the existing screen-space progressive label system.
+
+Do not force names into tiny tiles at base zoom.
+
+Visibility must depend on zoomed screen dimensions, exactly like the current ticker/P/C labels.
+
+Suggested tiers:
+
+TINY:
+
+* no text
+
+SMALL:
+
+* ticker only
+
+MEDIUM:
+
+* ticker
+* company/fund name if vertical room allows
+* P/C
+
+LARGE:
+
+* ticker
+* company/fund name
+* P/C
+* P/C label
+* NET
+
+EXTRA LARGE:
+
+* ticker
+* company/fund name
+* P/C
+* NET
+* CALL
+* PUT
+* volume/contracts if current renderer supports it
+
+The key requirement:
+When the user zooms into a small ETF or stock tile, its company/fund name must appear as the tile gains enough screen-space.
+
+Company/fund names must remain crystal clear using the existing non-scaled screen-space label overlay.
+
+Do not render the name inside a blurry CSS-scaled layer.
+
+==================================================
+NAME FORMATTING
+===============
+
+Use the canonical backend display name.
+
+Fallback:
+If the name is null/blank:
+
+* do not repeat the symbol as the name
+* simply omit the subtitle line
+
+Do not display:
+NVDA
+NVDA
+
+Do not frontend-fetch profile data.
+
+Do not call FMP.
+
+Do not call another endpoint per tile.
+
+Tooltip:
+Also show the full untruncated company/fund name.
+
+Examples:
+
+SMH
+VanEck Semiconductor ETF
+ETF
+NF P/C <0.01
+...
+
+NVDA
+NVIDIA Corporation
+Stock
+NF P/C 0.22
+...
+
+==================================================
+ETF RENDERER
+============
+
+Update sfRenderEtf and sfTooltipEtf.
+
+Tile:
+
+* symbol
+* fund/ETF display name underneath
+* NF P/C
+* existing progressive detail metrics
+
+Tooltip:
+
+* symbol
+* full ETF name
+* ETF badge
+* P/C
+* Net
+* Calls
+* Puts
+* existing scope/pending details
+
+Preserve:
+
+* one-sided <0.01 / >100 formatting
+* nf_snapshot_pending behavior
+* canonical scope checking
+
+==================================================
+STOCK RENDERER
+==============
+
+Update the existing stock ticker tile renderer.
+
+Tile:
+
+* symbol
+* company display name underneath
+* P/C
+* existing progressive details
+
+Tooltip:
+
+* symbol
+* full company name
+* Stock badge if visually appropriate
+* current options details
+
+Preserve stock click popup.
+
+Do not change its API call/data source.
+
+==================================================
+TYPES / NORMALIZATION
+=====================
+
+Extend SFTicker with the actual canonical name field returned by backend.
+
+If backend field is:
+
+display_name
+
+use:
+
+display_name?: string | null
+
+Do not create several overlapping frontend properties unless the backend response genuinely has legacy variants that need normalization.
+
+Prefer one normalization point:
+
+normalized display name =
+canonical backend display name
+
+Then all stock/ETF renderers consume that normalized property.
+
+Likewise, keep stock/ETF dataset helpers centralized.
+
+Do not scatter instrument_type filters through JSX.
+
+==================================================
+PRESERVE
+========
+
+Preserve exactly:
+
+* Sectors | Themes | ETFs | All Stocks order
+* successful ungrouped heatmaps
+* successful grouped hierarchical heatmaps
+* current color logic
+* current materiality sizing
+* breadth P/C semantics
+* premium P/C tooltip semantics
+* canonical Net Flow scope checks
+* <0.01 / >100 display logic
+* zoom/pan
+* reset zoom
+* crisp labels
+* tooltips
+* stock popup
+* summary card
+* refresh behavior
+* diagnostics
+
+==================================================
+DO NOT
+======
+
+Do not rebuild SFHeatmap.
+
+Do not create new routes.
+
+Do not request another backend audit.
+
+Do not hardcode ETF symbols.
+
+Do not down-weight ETFs.
+
+Do not put missing instrument_type rows into All Stocks.
+
+Do not classify in frontend.
+
+Do not hardcode Crypto Equities to Technology.
+
+Do not fetch company names from frontend.
+
+Do not make a request per tile.
+
+Do not force long names into tiny tiles.
+
+==================================================
+VALIDATION
+==========
+
+1. Tabs remain:
+   Sectors | Themes | ETFs | All Stocks
+
+2. ALL STOCKS UNGROUPED:
+
+   * every leaf has instrument_type="stock"
+   * zero ETFs
+   * unique symbols only
+
+3. ALL STOCKS GROUPED:
+
+   * every child has instrument_type="stock"
+   * zero ETF children
+
+4. ETFs UNGROUPED:
+
+   * every leaf has instrument_type="etf"
+   * zero stocks
+   * unique symbols only
+
+5. ETFs GROUPED:
+
+   * every child has instrument_type="etf"
+   * zero stock children
+
+6. Log exact stock count and ETF count after filtering.
+
+7. Compare ETF symbols against All Stocks:
+   intersection must equal zero.
+
+8. Crypto Equities / Blockchain appears under Technology in grouped Themes.
+
+9. Crypto Equities / Blockchain does not appear under Financials.
+
+10. Large stock tiles show:
+    ticker
+    company name
+    P/C
+
+11. Large ETF tiles show:
+    ticker
+    ETF/fund name
+    P/C
+
+12. Zoom into a tiny stock:
+    ticker appears
+    then company name/P/C appear as screen-space allows
+
+13. Zoom into a tiny ETF:
+    ticker appears
+    then ETF name/P/C appear as screen-space allows
+
+14. Names remain crisp at deep zoom.
+
+15. Long names truncate cleanly inside the tile.
+
+16. Full name is visible in tooltip.
+
+17. No extra network request occurs per tile or on hover.
+
+18. Stock popup still opens.
+
+19. No heatmap layout regression.
+
+20. No blurry zoom regression.
+
+21. No page-scroll regression.
+
+22. Browser console has no new runtime errors.
+
+Do not claim complete from TypeScript compile alone.
+
+Visually inspect:
+
+* Themes grouped with Crypto Equities under Technology
+* ETFs ungrouped
+* ETFs grouped
+* All Stocks ungrouped
+
+Also prove:
+ETF symbol set ∩ All Stocks symbol set = empty.

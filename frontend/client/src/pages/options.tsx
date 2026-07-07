@@ -2941,6 +2941,7 @@ interface SFTicker {
   reason?: string | null;
   // Net Flow fields (ETF/Stock NF separation)
   instrument_type?: string | null;         // "stock" | "etf" | null
+  display_name?: string | null;            // canonical company / fund display name from backend
   premium_scope_id?: string | null;        // "net_flow_single_expiry_7_60dte_v1" = canonical NF
   nf_snapshot_pending?: boolean | null;    // true = NF snapshot not yet computed
   raw_premium_pcr?: number | null;         // NF put/call ratio (raw, for display)
@@ -3550,6 +3551,7 @@ function sfTooltipTheme(t: SFTheme): ReactNode {
 }
 function sfTooltipTicker(tk: SFTicker): ReactNode {
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const name      = (tk.display_name && tk.display_name !== sym) ? tk.display_name : null;
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
   const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
@@ -3558,7 +3560,10 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
   const sig       = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <div style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font, marginBottom: 2 }}>{sym}</div>
+      <div style={{ marginBottom: 2 }}>
+        <div style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font }}>{sym}</div>
+        {name && <div style={{ fontSize: 10, color: C.dim, fontFamily: font, opacity: 0.75, marginTop: 1 }}>{name}</div>}
+      </div>
       <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{isPending ? "Pending" : sfSentiment(pcr)}</div>
       {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
       {!isPending && sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
@@ -4474,6 +4479,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   if (sw < 30 || sh < 20) return null;
   const pad       = 4;
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const name      = (tk.display_name && tk.display_name !== sym) ? tk.display_name : null;
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
   const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
@@ -4483,9 +4489,10 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   const askPct    = isPending ? null : (tk.interval_ask_premium_pct ?? null);
   const bidPct    = isPending ? null : (tk.interval_bid_premium_pct ?? null);
   const cov       = isPending ? null : (tk.interval_classified_trade_side_pct ?? null);
-  const symFs = Math.max(9,  Math.min(18, sw / 5.5));
-  const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
-  const subFs = Math.max(8,  Math.min(11, sw / 12));
+  const symFs  = Math.max(9,  Math.min(18, sw / 5.5));
+  const nameFs = Math.max(7,  Math.min(9,  sw / 14));
+  const pcrFs  = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
+  const subFs  = Math.max(8,  Math.min(11, sw / 12));
   const showPcr      = sh >= 36;
   const showPcrLabel = sw >= 86 && sh >= 60;
   const showVpcr     = sw >= 72 && sh >= 52;
@@ -4501,7 +4508,16 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
       fontSize={symFs} fontFamily={font} fontWeight={800} fill={C.bright} dominantBaseline="hanging"
     >{sym}</text>
   );
-  y += symFs + 3;
+  y += symFs + 2;
+  // Company name — medium+ tiles only; only if vertical room before pcr
+  if (name && sw >= 50 && sh >= 50 && y + nameFs < sy + sh - (showPcr ? pcrFs + 3 : 0) - 2) {
+    els.push(
+      <text key="name" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={nameFs} fontFamily={font} fontWeight={400} fill={C.dim} opacity={0.7} dominantBaseline="hanging"
+      >{name}</text>
+    );
+    y += nameFs + 2;
+  }
   if (showPcr && y + pcrFs < sy + sh - 2) {
     els.push(
       <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
@@ -4562,14 +4578,16 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
   if (sw < 30 || sh < 20) return null;
   const pad       = 4;
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const name      = (tk.display_name && tk.display_name !== sym) ? tk.display_name : null;
   const isPending = sfIsNfPending(tk);
   const pcr       = isPending ? null : sfNfPcr(tk);
   const net       = isPending ? null : tk.net_premium;
   const ppc       = isPending ? null : (tk.premium_per_contract ?? null);
   const contracts = isPending ? null : (tk.total_contract_volume ?? null);
-  const symFs = Math.max(9,  Math.min(18, sw / 5.5));
-  const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
-  const subFs = Math.max(8,  Math.min(11, sw / 12));
+  const symFs  = Math.max(9,  Math.min(18, sw / 5.5));
+  const nameFs = Math.max(7,  Math.min(9,  sw / 14));
+  const pcrFs  = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
+  const subFs  = Math.max(8,  Math.min(11, sw / 12));
   const showPcr      = sh >= 36;
   const showPcrLabel = sw >= 86 && sh >= 60;
   const showNet      = sw >= 86 && sh >= 60;
@@ -4582,7 +4600,16 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
       fontSize={symFs} fontFamily={font} fontWeight={800} fill={C.bright} dominantBaseline="hanging"
     >{sym}</text>
   );
-  y += symFs + 3;
+  y += symFs + 2;
+  // Fund/ETF name — medium+ tiles only; only if vertical room before pcr
+  if (name && sw >= 50 && sh >= 50 && y + nameFs < sy + sh - (showPcr ? pcrFs + 3 : 0) - 2) {
+    els.push(
+      <text key="name" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={nameFs} fontFamily={font} fontWeight={400} fill={C.dim} opacity={0.7} dominantBaseline="hanging"
+      >{name}</text>
+    );
+    y += nameFs + 2;
+  }
   if (showPcr && y + pcrFs < sy + sh - 2) {
     const dispStr = isPending ? "…" : sfDisplayNfPcr(tk);
     els.push(
@@ -4621,6 +4648,7 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
 // ── ETF tooltip ───────────────────────────────────────────────────────────────
 function sfTooltipEtf(tk: SFTicker): ReactNode {
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const name      = (tk.display_name && tk.display_name !== sym) ? tk.display_name : null;
   const isPending = sfIsNfPending(tk);
   const pcr       = isPending ? null : sfNfPcr(tk);
   const dispPcr   = sfDisplayNfPcr(tk);
@@ -4628,9 +4656,12 @@ function sfTooltipEtf(tk: SFTicker): ReactNode {
   const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-        <span style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font }}>{sym}</span>
-        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}25`, color: C.blue, fontFamily: font }}>ETF</span>
+      <div style={{ marginBottom: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font }}>{sym}</span>
+          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}25`, color: C.blue, fontFamily: font }}>ETF</span>
+        </div>
+        {name && <div style={{ fontSize: 10, color: C.dim, fontFamily: font, opacity: 0.75, marginTop: 1 }}>{name}</div>}
       </div>
       <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>
         {isPending ? "NF Pending" : sfSentiment(pcr)}
@@ -4946,8 +4977,18 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
 
   // All tickers (stocks only) — deduplicated by symbol, sorted by sortBy
   const allTickers = useMemo(() => {
-    // When instrument_type is absent (old backend), include everything (backward compat)
-    const stocks = _dedupTickers.filter(tk => tk.instrument_type !== "etf");
+    // Strict: only instrument_type === "stock". Unknown/absent types are excluded.
+    const stocks: SFTicker[] = [];
+    let unknownCount = 0;
+    _dedupTickers.forEach(tk => {
+      if (tk.instrument_type === "stock") { stocks.push(tk); }
+      else if (tk.instrument_type === "etf") { /* goes to allEtfs */ }
+      else { unknownCount++; }
+    });
+    if (unknownCount > 0) {
+      console.warn(`[SectorsFlow] ${unknownCount} ticker(s) excluded from All Stocks and ETFs — unknown/absent instrument_type`);
+    }
+    console.debug(`[SectorsFlow] filtered: ${stocks.length} stocks | ETFs counted separately`);
     return sfSortItems(stocks, sortBy, tk => {
       switch (sortBy) {
         case "pcr":          return tk.put_call_ratio;
@@ -4963,9 +5004,10 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
     });
   }, [_dedupTickers, sortBy]);
 
-  // ETFs — deduplicated by symbol, use effective_premium_pcr for PCR sort key, sorted by sortBy
+  // ETFs — deduplicated by symbol, strict instrument_type === "etf"
   const allEtfs = useMemo(() => {
     const etfs = _dedupTickers.filter(tk => tk.instrument_type === "etf");
+    console.debug(`[SectorsFlow] ETF count: ${etfs.length}`);
     // For ETF tiles, color/size uses sfNfPcr (effective_premium_pcr); also set put_call_ratio
     // to effective_premium_pcr so the standard sfSortRaw("pcr") path works naturally
     const etfsMapped = etfs.map(tk => {
@@ -5357,19 +5399,26 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
         // Sort theme groups by sortBy, and children within each group by sortBy
         const rawThemes = (data?.themes ?? [])
           .filter(th => (th.classification ?? "").toLowerCase() !== "sector")
-          .filter(th => (th.tickers ?? []).length > 0);
+          .filter(th => (th.tickers ?? []).some(tk => tk.instrument_type === "stock"));
         const sortedThemeArr = sfSortItems(rawThemes, sortBy, th => sfSortRaw(th, sortBy));
-        const themeGroups: SFGroupDef<SFTicker>[] = sortedThemeArr.map(theme => ({
-          key:          theme.theme_id ?? theme.theme_name,
-          name:         theme.theme_name,
-          pcr:          theme.put_call_ratio,
-          call_premium: theme.call_premium ?? null,
-          put_premium:  theme.put_premium  ?? null,
-          net_premium:  theme.net_premium  ?? null,
-          children:     sfSortItems(theme.tickers ?? [], sortBy, tk => sfSortRaw(tk, sortBy)),
-        }));
+        const themeGroups: SFGroupDef<SFTicker>[] = sortedThemeArr.map(theme => {
+          // Strict: stock children only — no ETFs in All Stocks grouped view
+          const stockChildren = sfSortItems(
+            (theme.tickers ?? []).filter(tk => tk.instrument_type === "stock"),
+            sortBy, tk => sfSortRaw(tk, sortBy),
+          );
+          return {
+            key:          theme.theme_id ?? theme.theme_name,
+            name:         theme.theme_name,
+            pcr:          theme.put_call_ratio,
+            call_premium: theme.call_premium ?? null,
+            put_premium:  theme.put_premium  ?? null,
+            net_premium:  theme.net_premium  ?? null,
+            children:     stockChildren,
+          };
+        });
         // Build sort-aware score map for tile sizing (same object refs as children arrays above)
-        const allGroupTickers = sortedThemeArr.flatMap(th => th.tickers ?? []);
+        const allGroupTickers = themeGroups.flatMap(g => g.children);
         const groupScoreMap = sfBuildSortedScore(
           allGroupTickers, sortBy,
           tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0),
