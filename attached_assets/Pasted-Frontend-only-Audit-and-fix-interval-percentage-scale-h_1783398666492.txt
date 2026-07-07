@@ -1,0 +1,131 @@
+Frontend only. Audit and fix interval percentage scale handling before market-open interval data becomes non-null.
+
+Backend validation has now confirmed:
+
+`interval_ask_premium_pct`
+`interval_bid_premium_pct`
+`interval_midpoint_unknown_premium_pct`
+`interval_classified_trade_side_pct`
+
+are returned on a 0–100 percentage scale.
+
+Examples:
+
+* 80.0 = 80%
+* 15.0 = 15%
+* 96.7 = 96.7%
+
+The previous frontend implementation summary stated:
+
+* `sfFmtIntPct(v)` assumes 0–1 floats
+* `sfBuildSortedScore` handles a 0–1 pct range
+* coverage thresholds use values like 0.70 / 0.40
+
+That likely does not match the actual backend contract.
+
+Audit exact current frontend code first.
+
+Fix all interval percentage handling to use the backend's real 0–100 scale consistently.
+
+Requirements:
+
+1. Display formatting:
+
+* 80.0 → "80%"
+* 81.4 → "81%"
+  or "81.4%" if existing formatting supports one decimal cleanly
+* null → "—"
+
+Do NOT multiply interval percentages by 100.
+
+2. Coverage thresholds:
+   Use:
+
+* > = 70 for normal/high-confidence
+* > = 40 and < 70 for partial classification
+* < 40 for low trade-side coverage
+
+Do not use 0.70 / 0.40.
+
+3. Interval signal thresholds:
+
+* Ask >= 70 → "Aggressive ask-side premium"
+* Bid >= 70 → "Heavy bid-side premium"
+* Ask >= 55 → "Moderate ask-side pressure"
+* Bid >= 55 → "Moderate bid-side pressure"
+* otherwise balanced when interval data exists
+
+Do not use 0.70 / 0.55.
+
+4. Sort:
+   Ask Premium % descending
+   Bid Premium % descending
+
+Use raw backend values directly:
+80.0 > 65.0 > 40.0
+
+Do not normalize to 0–1 unless a helper explicitly converts everything consistently.
+
+5. `sfBuildSortedScore`:
+   Audit how treemap/order scoring uses Ask/Bid percentages.
+   Ensure the expected numeric range is 0–100.
+
+6. Tile rendering:
+   Example backend:
+   interval_ask_premium_pct = 81.0
+   interval_bid_premium_pct = 19.0
+
+Must render:
+Ask 81% · Bid 19%
+
+Not:
+Ask 8100% · Bid 1900%
+
+7. Tooltips:
+   Trade-side Coverage = 96.7
+   Must render:
+   96.7%
+
+Not:
+9670%
+
+8. Verify all four interval percentage fields:
+
+* interval_ask_premium_pct
+* interval_bid_premium_pct
+* interval_midpoint_unknown_premium_pct
+* interval_classified_trade_side_pct
+
+use the same scale assumptions.
+
+9. Do not change broader metrics:
+
+* put_call_ratio
+* volume_put_call_ratio
+
+Those are ratios, not percentages.
+
+Do not multiply or reinterpret Premium P/C or Vol P/C.
+
+10. Validate synthetically in the frontend with:
+    ask = 81.0
+    bid = 14.0
+    mid = 5.0
+    coverage = 95.0
+
+Expected:
+Ask Premium 81%
+Bid Premium 14%
+Mid/Unknown 5%
+Trade-side Coverage 95%
+Signal = Aggressive ask-side premium
+
+Also validate sorting:
+81 > 64 > 22 > null
+
+Null always last.
+
+No backend changes.
+No API changes.
+No new calls.
+Preserve treemap color behavior.

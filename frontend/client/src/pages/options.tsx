@@ -3364,7 +3364,7 @@ function sfSignalText(pcr: number | null, vpcr: number | null): string | null {
 // ── Interval flow helpers ──────────────────────────────────────────────────────
 function sfFmtIntPct(v: number | null): string {
   if (v == null) return "—";
-  return Math.round(v * 100) + "%";
+  return Math.round(v) + "%";
 }
 // Returns signal text based on interval ask/bid pct — interval-only, not full session
 function sfIntervalSignalText(
@@ -3374,10 +3374,10 @@ function sfIntervalSignalText(
 ): string | null {
   if (askPct == null || bidPct == null) return null;
   if (totalPremium == null || totalPremium <= 0) return null;
-  if (askPct >= 0.70) return "Aggressive ask-side premium";
-  if (bidPct >= 0.70) return "Heavy bid-side premium";
-  if (askPct >= 0.55) return "Moderate ask-side pressure";
-  if (bidPct >= 0.55) return "Moderate bid-side pressure";
+  if (askPct >= 70) return "Aggressive ask-side premium";
+  if (bidPct >= 70) return "Heavy bid-side premium";
+  if (askPct >= 55) return "Moderate ask-side pressure";
+  if (bidPct >= 55) return "Moderate bid-side pressure";
   return "Balanced bid/ask premium";
 }
 // Tooltip section for interval flow data (shared by sector/theme/ticker tooltips)
@@ -3401,9 +3401,9 @@ function sfIntervalTTSection(n: SFIntervalNode): ReactNode {
   const newCts = n.interval_new_contract_volume ?? null;
   const secs   = n.interval_seconds ?? null;
   const hasAny = total != null || askPct != null;
-  const covGe70    = cov != null && cov >= 0.70;
-  const covPartial = cov != null && cov >= 0.40 && cov < 0.70;
-  const covLow     = cov != null && cov < 0.40;
+  const covGe70    = cov != null && cov >= 70;
+  const covPartial = cov != null && cov >= 40 && cov < 70;
+  const covLow     = cov != null && cov < 40;
   const pctCol     = covLow ? "#666" : C.dim;
   const intStr     = secs != null ? (secs < 120 ? `${Math.round(secs)}s` : `${Math.round(secs / 60)}m`) : null;
   return (
@@ -3446,7 +3446,7 @@ function sfTooltipSector(s: SFSector): ReactNode {
   const vpcr = s.volume_put_call_ratio ?? null;
   const cov  = s.interval_classified_trade_side_pct ?? null;
   const intSig = sfIntervalSignalText(s.interval_ask_premium_pct ?? null, s.interval_bid_premium_pct ?? null, s.interval_total_premium ?? null);
-  const sig  = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
+  const sig  = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{s.sector_name}</div>
@@ -3473,7 +3473,7 @@ function sfTooltipTheme(t: SFTheme): ReactNode {
   const vpcr = t.volume_put_call_ratio ?? null;
   const cov  = t.interval_classified_trade_side_pct ?? null;
   const intSig = sfIntervalSignalText(t.interval_ask_premium_pct ?? null, t.interval_bid_premium_pct ?? null, t.interval_total_premium ?? null);
-  const sig  = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
+  const sig  = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{t.theme_name}</div>
@@ -3501,7 +3501,7 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
   const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
   const cov       = isPending ? null : (tk.interval_classified_trade_side_pct ?? null);
   const intSig    = isPending ? null : sfIntervalSignalText(tk.interval_ask_premium_pct ?? null, tk.interval_bid_premium_pct ?? null, tk.interval_total_premium ?? null);
-  const sig       = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
+  const sig       = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font, marginBottom: 2 }}>{sym}</div>
@@ -3625,7 +3625,7 @@ function sfBuildSortedScore<T extends object>(
     return new Map(items.map((t, i) => [t, Math.max(MIN, devs[i] / maxDev)]));
   }
 
-  // ask_pct / bid_pct: 0-1 range — normalize directly (higher pct = bigger tile)
+  // ask_pct / bid_pct: 0-100 range — normalize directly (higher pct = bigger tile)
   if (sortKey === "ask_pct" || sortKey === "bid_pct") {
     const raws = items.map(t => {
       const v = getSortRaw(t);
@@ -4269,7 +4269,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
   const showNet      = sw >= 88 && sh >= 60;
   const showPpc      = sw >= 120 && sh >= 80;
   const showCount    = sw >= 150 && sh >= 96;
-  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4352,7 +4352,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
   const showNet      = sw >= 88 && sh >= 58;
   const showPpc      = sw >= 118 && sh >= 78;
   const showCount    = sw >= 145 && sh >= 92;
-  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4439,7 +4439,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   const showNet      = sw >= 86 && sh >= 60;
   const showPpc      = sw >= 110 && sh >= 76;
   const showContracts= sw >= 130 && sh >= 90;
-  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
