@@ -1594,13 +1594,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body || {};
-    // Try FastAPI backend first
+    // Try FastAPI backend first — 5s timeout so local fallback kicks in quickly if FastAPI is slow/down
     try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 5000);
       const response = await fetch(`${AGENT_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': AGENT_KEY },
         body: JSON.stringify(req.body),
+        signal: ctrl.signal,
       });
+      clearTimeout(tid);
       if (response.ok) {
         const data = await response.json();
         // Augment with is_admin — LOCAL_USERNAME never reaches the browser
@@ -1609,7 +1613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           is_admin: !!(LOCAL_USERNAME && data.user_id && data.user_id === LOCAL_USERNAME),
         });
       }
-    } catch (_) { /* FastAPI unavailable — fall through to local */ }
+    } catch (_) { /* FastAPI unavailable or timed out — fall through to local */ }
     // Local fallback: check CAELYN_USERNAME / CAELYN_PASSWORD secrets
     // If local fallback succeeds, the user IS the admin (only admin creds stored here)
     if (LOCAL_USERNAME && LOCAL_PASSWORD && username === LOCAL_USERNAME && password === LOCAL_PASSWORD) {
@@ -1622,11 +1626,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/verify', async (req, res) => {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    // Try FastAPI backend first
+    // Try FastAPI backend first — 5s timeout so local fallback kicks in quickly if FastAPI is slow/down
     try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 5000);
       const headers: Record<string, string> = { 'X-API-Key': AGENT_KEY };
       if (authHeader) headers['Authorization'] = authHeader;
-      const response = await fetch(`${AGENT_URL}/api/auth/verify`, { headers });
+      const response = await fetch(`${AGENT_URL}/api/auth/verify`, { headers, signal: ctrl.signal });
+      clearTimeout(tid);
       if (response.ok) {
         const data = await response.json();
         // Augment with is_admin — LOCAL_USERNAME never reaches the browser
@@ -1635,7 +1642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           is_admin: !!(LOCAL_USERNAME && data.user_id && data.user_id === LOCAL_USERNAME),
         });
       }
-    } catch (_) { /* FastAPI unavailable — fall through to local */ }
+    } catch (_) { /* FastAPI unavailable or timed out — fall through to local */ }
     // Local fallback: verify JWT signed by us
     if (token) {
       const payload = verifyLocalToken(token);
