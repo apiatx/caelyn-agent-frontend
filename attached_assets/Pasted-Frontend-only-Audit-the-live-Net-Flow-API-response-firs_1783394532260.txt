@@ -1,0 +1,305 @@
+Frontend only. Audit the live Net Flow API response first, then implement the new interval Ask/Bid Premium metrics in the glasscards and sort controls.
+
+Backend has completed the incremental volume-delta implementation.
+
+Important semantic distinction:
+
+Broader Net Flow metrics:
+
+* put_call_ratio = Premium P/C
+* volume_put_call_ratio = Vol P/C
+* net_premium
+* premium_per_contract
+* total_contract_volume
+* call_premium
+* put_premium
+
+Short-window interval flow metrics:
+
+* interval_ask_premium
+* interval_bid_premium
+* interval_midpoint_unknown_premium
+* interval_total_premium
+* interval_new_contract_volume
+* interval_ask_premium_pct
+* interval_bid_premium_pct
+* interval_midpoint_unknown_premium_pct
+* interval_classified_trade_side_pct
+* interval_started_at
+* interval_ended_at
+* interval_seconds
+* trade_side_data_age_seconds
+
+The interval fields estimate trade-side premium only for newly observed option volume since the prior chain snapshot.
+
+Do not label these as full-session executed Ask/Bid Premium.
+
+Before editing:
+
+1. Inspect live JSON from:
+
+   * `/api/options-flow/sectors?view=sectors`
+   * `/api/options-flow/sectors?view=themes`
+2. Confirm the exact interval field names and actual null/value behavior.
+3. Confirm ticker rows also expose these interval fields.
+4. Report any field mismatch before implementation.
+
+Then implement.
+
+GLASSCARD CONTENT
+
+Desired visible hierarchy:
+
+Semiconductors
+
+Premium P/C        0.42
+Vol P/C            0.71
+
+Ask Premium         81%
+Bid Premium         19%
+
+Net Premium         +$48M
+
+The visible labels can remain:
+
+* Ask Premium
+* Bid Premium
+
+But add a clear tooltip/help explanation:
+
+"Ask/Bid Premium estimates the side of newly observed option volume since the prior Net Flow chain scan. It is an interval estimate, not full-session trade tape."
+
+Also show interval context in tooltip/detail:
+
+* Interval: 8m
+* New Contracts: 1,284
+* Trade-side Coverage: 92%
+* Data Age: 3m
+
+Use the actual backend fields.
+
+DISPLAY RULES
+
+For Ask Premium / Bid Premium:
+
+* Use interval_ask_premium_pct
+* Use interval_bid_premium_pct
+
+Format as percentages:
+0.81 → 81%
+0.194 → 19%
+
+Do not derive these from raw dollars in frontend unless fields are null and backend contract explicitly requires calculation. Prefer backend percentages.
+
+If interval fields are null because:
+
+* first snapshot
+* backend restart baseline
+* no new volume
+* stale/LKG-only row
+
+show:
+Ask Premium      —
+Bid Premium      —
+
+Do not show 0% / 0% unless the backend actually returned numeric zero.
+
+Coverage handling using interval_classified_trade_side_pct:
+
+* > = 0.70:
+  > normal display
+* 0.40 to < 0.70:
+  show subtle "Partial classification" note in tooltip/detail
+* < 0.40:
+  visually mute Ask/Bid percentages and show "Low trade-side coverage"
+
+Do not hide the raw percentages.
+
+SIGNAL TEXT
+
+Use interval metrics only for these new signals:
+
+* interval_ask_premium_pct >= 0.70:
+  "Aggressive ask-side premium"
+
+* interval_bid_premium_pct >= 0.70:
+  "Heavy bid-side premium"
+
+* interval_ask_premium_pct >= 0.55:
+  "Moderate ask-side pressure"
+
+* interval_bid_premium_pct >= 0.55:
+  "Moderate bid-side pressure"
+
+* otherwise, when interval data exists:
+  "Balanced bid/ask premium"
+
+Do not replace the existing Premium P/C / Vol P/C signal logic unless the current UI only supports one signal line.
+
+If there is one signal line only:
+Prefer the interval Ask/Bid signal when interval_classified_trade_side_pct >= 0.70 and interval_total_premium > 0.
+Otherwise fall back to the existing Premium P/C × Vol P/C signal.
+
+SORT CONTROLS
+
+Final sort options:
+
+* Premium P/C
+* Vol P/C
+* Ask Premium %
+* Bid Premium %
+* Net Premium
+* Prem/Contract
+* Contracts
+* Call Premium
+* Put Premium
+
+Sort directions:
+
+* Premium P/C: ascending
+* Vol P/C: ascending
+* Ask Premium %: descending
+* Bid Premium %: descending
+* Net Premium: descending
+* Prem/Contract: descending
+* Contracts: descending
+* Call Premium: descending
+* Put Premium: descending
+
+Nulls always last.
+
+The selected sort must actually reorder treemap input.
+
+ALL STOCKS UNGROUPED:
+
+* build/dedupe final ticker array as currently designed
+* apply selected sort to final ticker array
+* pass sorted array into treemap layout
+
+ALL STOCKS GROUPED:
+
+* parent theme groups sort by canonical theme metric
+* child ticker arrays sort by selected metric
+* for Ask Premium % / Bid Premium %, use canonical theme interval percentage for parent group sorting
+* do not average child percentages
+
+THEMES GROUPED:
+
+* parent sector groups continue using canonical sector nodes
+* child theme tiles use theme nodes
+* sort parent sectors by selected canonical sector metric
+* sort child themes by selected theme metric
+
+SECTORS:
+
+* sort canonical sector nodes by selected metric
+
+IMPORTANT:
+For All Stocks ticker dedupe/aggregation, do NOT weighted-average interval_ask_premium_pct or interval_bid_premium_pct.
+
+If the same ticker appears through multiple theme memberships:
+
+* dedupe ticker identity
+* retain one canonical ticker interval node if available
+
+Do not aggregate the same ticker's interval dollars multiple times because of theme membership overlap.
+
+TILE LAYOUT
+
+Preserve:
+
+* Premium P/C as primary large metric
+* Premium P/C as heatmap color driver
+* existing exact green/red/gray color rules
+* compressed treemap size weighting
+
+Add Ask Premium / Bid Premium after Vol P/C when tile dimensions allow.
+
+Suggested responsive hierarchy:
+
+1. Name/symbol
+2. Premium P/C
+3. Vol P/C
+4. Ask Premium
+5. Bid Premium
+6. Net Premium
+7. Prem/Contract
+8. Contracts
+
+For medium tiles:
+Name
+Premium P/C
+Ask 81% · Bid 19%
+Net +$48M
+
+For small tiles:
+Name
+Premium P/C
+
+Do not cram unreadable labels into tiny tiles.
+
+TOOLTIPS / GLASSCARD DETAIL
+
+Show all available metrics:
+
+Premium P/C
+Vol P/C
+Ask Premium %
+Bid Premium %
+Mid/Unknown Premium %
+Trade-side Coverage
+Interval Premium
+New Contracts
+Interval Length
+Data Age
+Net Premium
+Premium/Contract
+Contracts
+Call Premium
+Put Premium
+
+For raw interval premium dollars:
+
+* interval_ask_premium
+* interval_bid_premium
+* interval_midpoint_unknown_premium
+* interval_total_premium
+
+Clearly separate sections:
+
+BROADER NET FLOW
+Premium P/C
+Vol P/C
+Net Premium
+Prem/Contract
+Contracts
+
+RECENT INTERVAL FLOW
+Ask Premium
+Bid Premium
+Mid/Unknown
+Trade-side Coverage
+Interval Premium
+New Contracts
+Interval
+Data Age
+
+No new API calls.
+Do not call `/api/options/screener/{symbol}`.
+Do not modify backend.
+Do not change scanner behavior.
+Do not invent values for null interval data.
+
+Validation:
+
+1. Find one live node with non-null interval metrics.
+2. Show exact API values and rendered percentages.
+3. Verify Ask Premium % sort descending.
+4. Verify Bid Premium % sort descending.
+5. Verify grouped parent sorting uses canonical parent metrics.
+6. Verify child sorting works.
+7. Verify null interval rows sort last for Ask/Bid sorts.
+8. Verify first-snapshot/null rows display — rather than 0%.
+9. Verify duplicate ticker theme memberships do not double-count or average interval percentages.
+10. Verify current Premium P/C color behavior is unchanged.
+11. Vite build passes.

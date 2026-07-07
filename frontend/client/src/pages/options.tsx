@@ -2939,6 +2939,19 @@ interface SFTicker {
   bias: string | null;
   heat_score: number | null;
   reason?: string | null;
+  // Interval flow fields (null = first snapshot / no new volume / LKG-only)
+  interval_ask_premium?: number | null;
+  interval_bid_premium?: number | null;
+  interval_midpoint_unknown_premium?: number | null;
+  interval_total_premium?: number | null;
+  interval_new_contract_volume?: number | null;
+  interval_ask_premium_pct?: number | null;
+  interval_bid_premium_pct?: number | null;
+  interval_midpoint_unknown_premium_pct?: number | null;
+  interval_classified_trade_side_pct?: number | null;
+  interval_seconds?: number | null;
+  interval_started_at?: string | null;
+  interval_ended_at?: string | null;
 }
 interface SFTheme {
   theme_id: string;
@@ -2959,6 +2972,19 @@ interface SFTheme {
   put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
   tickers: SFTicker[];
+  // Interval flow fields
+  interval_ask_premium?: number | null;
+  interval_bid_premium?: number | null;
+  interval_midpoint_unknown_premium?: number | null;
+  interval_total_premium?: number | null;
+  interval_new_contract_volume?: number | null;
+  interval_ask_premium_pct?: number | null;
+  interval_bid_premium_pct?: number | null;
+  interval_midpoint_unknown_premium_pct?: number | null;
+  interval_classified_trade_side_pct?: number | null;
+  interval_seconds?: number | null;
+  interval_started_at?: string | null;
+  interval_ended_at?: string | null;
 }
 interface SFSector {
   sector_id: string;
@@ -2978,6 +3004,19 @@ interface SFSector {
   put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
   themes: SFTheme[];
+  // Interval flow fields
+  interval_ask_premium?: number | null;
+  interval_bid_premium?: number | null;
+  interval_midpoint_unknown_premium?: number | null;
+  interval_total_premium?: number | null;
+  interval_new_contract_volume?: number | null;
+  interval_ask_premium_pct?: number | null;
+  interval_bid_premium_pct?: number | null;
+  interval_midpoint_unknown_premium_pct?: number | null;
+  interval_classified_trade_side_pct?: number | null;
+  interval_seconds?: number | null;
+  interval_started_at?: string | null;
+  interval_ended_at?: string | null;
 }
 interface SFCoverage {
   theme_universe_total?: number | null;
@@ -3322,6 +3361,70 @@ function sfSignalText(pcr: number | null, vpcr: number | null): string | null {
   return "Put-heavy premium and activity"; // pcr > 1 && vpcr > 1
 }
 
+// ── Interval flow helpers ──────────────────────────────────────────────────────
+function sfFmtIntPct(v: number | null): string {
+  if (v == null) return "—";
+  return Math.round(v * 100) + "%";
+}
+// Returns signal text based on interval ask/bid pct — interval-only, not full session
+function sfIntervalSignalText(
+  askPct: number | null,
+  bidPct: number | null,
+  totalPremium: number | null,
+): string | null {
+  if (askPct == null || bidPct == null) return null;
+  if (totalPremium == null || totalPremium <= 0) return null;
+  if (askPct >= 0.70) return "Aggressive ask-side premium";
+  if (bidPct >= 0.70) return "Heavy bid-side premium";
+  if (askPct >= 0.55) return "Moderate ask-side pressure";
+  if (bidPct >= 0.55) return "Moderate bid-side pressure";
+  return "Balanced bid/ask premium";
+}
+// Tooltip section for interval flow data (shared by sector/theme/ticker tooltips)
+interface SFIntervalNode {
+  interval_ask_premium_pct?: number | null;
+  interval_bid_premium_pct?: number | null;
+  interval_midpoint_unknown_premium_pct?: number | null;
+  interval_classified_trade_side_pct?: number | null;
+  interval_ask_premium?: number | null;
+  interval_bid_premium?: number | null;
+  interval_total_premium?: number | null;
+  interval_new_contract_volume?: number | null;
+  interval_seconds?: number | null;
+}
+function sfIntervalTTSection(n: SFIntervalNode): ReactNode {
+  const askPct = n.interval_ask_premium_pct ?? null;
+  const bidPct = n.interval_bid_premium_pct ?? null;
+  const midPct = n.interval_midpoint_unknown_premium_pct ?? null;
+  const cov    = n.interval_classified_trade_side_pct ?? null;
+  const total  = n.interval_total_premium ?? null;
+  const newCts = n.interval_new_contract_volume ?? null;
+  const secs   = n.interval_seconds ?? null;
+  const hasAny = total != null || askPct != null;
+  const covGe70    = cov != null && cov >= 0.70;
+  const covPartial = cov != null && cov >= 0.40 && cov < 0.70;
+  const covLow     = cov != null && cov < 0.40;
+  const pctCol     = covLow ? "#666" : C.dim;
+  const intStr     = secs != null ? (secs < 120 ? `${Math.round(secs)}s` : `${Math.round(secs / 60)}m`) : null;
+  return (
+    <>
+      <div style={{ height: 1, background: C.border, margin: "5px 0 4px" }} />
+      <div style={{ fontSize: 8, color: "#484848", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Recent Interval Flow</div>
+      <div style={{ fontSize: 8, color: "#383838", fontFamily: font, fontStyle: "italic", marginBottom: 4, lineHeight: 1.35 }}>Est. trade-side of newly observed volume since prior scan — not full-session tape.</div>
+      {sfTTRow("Ask Premium", sfFmtIntPct(askPct), pctCol)}
+      {sfTTRow("Bid Premium", sfFmtIntPct(bidPct), pctCol)}
+      {midPct != null && sfTTRow("Mid/Unknown", sfFmtIntPct(midPct), "#444")}
+      {cov != null && sfTTRow("Trade-side Coverage", sfFmtIntPct(cov), covGe70 ? C.dim : covPartial ? C.yellow : C.orange)}
+      {covPartial && sfTTNote("Partial classification — interpret directional signal with caution")}
+      {covLow && sfTTNote("Low trade-side coverage — ask/bid % unreliable")}
+      {total != null && sfTTRow("Interval Premium", fmtCurrencyShort(total), C.dim)}
+      {newCts != null && sfTTRow("New Contracts", newCts.toLocaleString(), C.dim)}
+      {intStr != null && sfTTRow("Interval Length", intStr, C.dim)}
+      {!hasAny && <div style={{ fontSize: 9, color: "#3a3a3a", fontFamily: font, fontStyle: "italic", marginTop: 2 }}>No interval data — first snapshot or no new volume</div>}
+    </>
+  );
+}
+
 // ── Tooltip row helper ────────────────────────────────────────────────────────
 function sfTTRow(label: string, val: string, col: string): ReactNode {
   return (
@@ -3341,7 +3444,9 @@ function sfTTNote(text: string): ReactNode {
 function sfTooltipSector(s: SFSector): ReactNode {
   const pcr  = s.put_call_ratio;
   const vpcr = s.volume_put_call_ratio ?? null;
-  const sig  = sfSignalText(pcr, vpcr);
+  const cov  = s.interval_classified_trade_side_pct ?? null;
+  const intSig = sfIntervalSignalText(s.interval_ask_premium_pct ?? null, s.interval_bid_premium_pct ?? null, s.interval_total_premium ?? null);
+  const sig  = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{s.sector_name}</div>
@@ -3359,13 +3464,16 @@ function sfTooltipSector(s: SFSector): ReactNode {
       {s.total_contract_volume != null && sfTTRow("Contracts", s.total_contract_volume.toLocaleString(), C.dim)}
       {s.contributing_ticker_count != null && sfTTRow("Tickers", String(s.contributing_ticker_count), C.dim)}
       {s.themes != null && sfTTRow("Themes", String(s.themes.length), C.dim)}
+      {sfIntervalTTSection(s)}
     </div>
   );
 }
 function sfTooltipTheme(t: SFTheme): ReactNode {
   const pcr  = t.put_call_ratio;
   const vpcr = t.volume_put_call_ratio ?? null;
-  const sig  = sfSignalText(pcr, vpcr);
+  const cov  = t.interval_classified_trade_side_pct ?? null;
+  const intSig = sfIntervalSignalText(t.interval_ask_premium_pct ?? null, t.interval_bid_premium_pct ?? null, t.interval_total_premium ?? null);
+  const sig  = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{t.theme_name}</div>
@@ -3382,6 +3490,7 @@ function sfTooltipTheme(t: SFTheme): ReactNode {
       {t.premium_per_contract != null && sfTTNote("est. premium per traded contract")}
       {t.total_contract_volume != null && sfTTRow("Contracts", t.total_contract_volume.toLocaleString(), C.dim)}
       {(t.contributing_ticker_count != null || t.ticker_count != null) && sfTTRow("Coverage", `${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0}`, C.dim)}
+      {sfIntervalTTSection(t)}
     </div>
   );
 }
@@ -3390,7 +3499,9 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
   const isPending = (tk.scan_status || "").toLowerCase() === "pending";
   const pcr       = isPending ? null : tk.put_call_ratio;
   const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
-  const sig       = sfSignalText(pcr, vpcr);
+  const cov       = isPending ? null : (tk.interval_classified_trade_side_pct ?? null);
+  const intSig    = isPending ? null : sfIntervalSignalText(tk.interval_ask_premium_pct ?? null, tk.interval_bid_premium_pct ?? null, tk.interval_total_premium ?? null);
+  const sig       = (cov != null && cov >= 0.70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font, marginBottom: 2 }}>{sym}</div>
@@ -3406,15 +3517,18 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
       {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
       {!isPending && tk.premium_per_contract != null && sfTTNote("est. premium per traded contract — higher = larger contracts")}
       {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
+      {!isPending && sfIntervalTTSection(tk)}
     </div>
   );
 }
 
 // ── Sort key type + sort options (used by SectorsFlowTab + render helpers) ────
-type SFSortKey = "pcr" | "vpcr" | "net_premium" | "ppc" | "contracts" | "call_premium" | "put_premium";
+type SFSortKey = "pcr" | "vpcr" | "ask_pct" | "bid_pct" | "net_premium" | "ppc" | "contracts" | "call_premium" | "put_premium";
 const SF_SORT_OPTIONS: Array<{ key: SFSortKey; label: string; desc: boolean }> = [
   { key: "pcr",          label: "Premium P/C",  desc: false }, // ascending — lower is more bullish
   { key: "vpcr",         label: "Vol P/C",       desc: false },
+  { key: "ask_pct",      label: "Ask Prem %",    desc: true  }, // descending — higher = more ask-side aggression
+  { key: "bid_pct",      label: "Bid Prem %",    desc: true  },
   { key: "net_premium",  label: "Net Premium",   desc: true  }, // descending — largest net first
   { key: "ppc",          label: "Prem/Contract", desc: true  },
   { key: "contracts",    label: "Contracts",     desc: true  },
@@ -3461,17 +3575,29 @@ function sfScored<T extends object>(
 
 // Raw sort value accessor — same fields exist on SFSector, SFTheme, SFTicker
 function sfSortRaw(
-  item: { put_call_ratio?: number | null; volume_put_call_ratio?: number | null; net_premium?: number | null; premium_per_contract?: number | null; total_contract_volume?: number | null; call_premium?: number | null; put_premium?: number | null },
+  item: {
+    put_call_ratio?: number | null;
+    volume_put_call_ratio?: number | null;
+    net_premium?: number | null;
+    premium_per_contract?: number | null;
+    total_contract_volume?: number | null;
+    call_premium?: number | null;
+    put_premium?: number | null;
+    interval_ask_premium_pct?: number | null;
+    interval_bid_premium_pct?: number | null;
+  },
   key: SFSortKey,
 ): number | null {
   switch (key) {
-    case "pcr":          return item.put_call_ratio          ?? null;
-    case "vpcr":         return item.volume_put_call_ratio   ?? null;
-    case "net_premium":  return item.net_premium             ?? null;
-    case "ppc":          return item.premium_per_contract    ?? null;
-    case "contracts":    return item.total_contract_volume   ?? null;
-    case "call_premium": return item.call_premium            ?? null;
-    case "put_premium":  return item.put_premium             ?? null;
+    case "pcr":          return item.put_call_ratio             ?? null;
+    case "vpcr":         return item.volume_put_call_ratio      ?? null;
+    case "ask_pct":      return item.interval_ask_premium_pct   ?? null;
+    case "bid_pct":      return item.interval_bid_premium_pct   ?? null;
+    case "net_premium":  return item.net_premium                ?? null;
+    case "ppc":          return item.premium_per_contract       ?? null;
+    case "contracts":    return item.total_contract_volume      ?? null;
+    case "call_premium": return item.call_premium               ?? null;
+    case "put_premium":  return item.put_premium                ?? null;
   }
 }
 
@@ -3497,6 +3623,16 @@ function sfBuildSortedScore<T extends object>(
     });
     const maxDev = Math.max(...devs, 1);
     return new Map(items.map((t, i) => [t, Math.max(MIN, devs[i] / maxDev)]));
+  }
+
+  // ask_pct / bid_pct: 0-1 range — normalize directly (higher pct = bigger tile)
+  if (sortKey === "ask_pct" || sortKey === "bid_pct") {
+    const raws = items.map(t => {
+      const v = getSortRaw(t);
+      return v != null ? Math.max(0, v) : 0;
+    });
+    const maxRaw = Math.max(...raws, 0.01);
+    return new Map(items.map((t, i) => [t, Math.max(MIN, raws[i] / maxRaw)]));
   }
 
   // All other keys: log-normalised absolute magnitude
@@ -4120,15 +4256,20 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
   const pcr  = s.put_call_ratio;
   const vpcr = s.volume_put_call_ratio ?? null;
   const ppc  = s.premium_per_contract ?? null;
+  const askPct = s.interval_ask_premium_pct ?? null;
+  const bidPct = s.interval_bid_premium_pct ?? null;
+  const cov    = s.interval_classified_trade_side_pct ?? null;
   const nameFs = Math.max(9,  Math.min(13, sw / 10));
   const pcrFs  = Math.max(11, Math.min(26, Math.min(sw / 4.5, sh / 2.8)));
   const subFs  = Math.max(8,  Math.min(11, sw / 14));
   const showPcr      = sh >= 36;
   const showPcrLabel = sw >= 88 && sh >= 60;
   const showVpcr     = sw >= 76 && sh >= 54;
+  const showAskBid   = sw >= 88 && sh >= 72;
   const showNet      = sw >= 88 && sh >= 60;
   const showPpc      = sw >= 120 && sh >= 80;
   const showCount    = sw >= 150 && sh >= 96;
+  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4152,6 +4293,19 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
       >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
+  }
+  if (showAskBid && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="ab" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
+      >
+        <tspan>{sfFmtIntPct(askPct)}</tspan>
+        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan>{sfFmtIntPct(bidPct)}</tspan>
+        <tspan opacity={0.6}>{" Bid"}</tspan>
+      </text>
+    );
+    y += subFs * 0.9 + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4185,15 +4339,20 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
   const pcr  = t.put_call_ratio;
   const vpcr = t.volume_put_call_ratio ?? null;
   const ppc  = t.premium_per_contract ?? null;
+  const askPct = t.interval_ask_premium_pct ?? null;
+  const bidPct = t.interval_bid_premium_pct ?? null;
+  const cov    = t.interval_classified_trade_side_pct ?? null;
   const nameFs = Math.max(8,  Math.min(13, sw / 10));
   const pcrFs  = Math.max(10, Math.min(24, Math.min(sw / 4.5, sh / 2.8)));
   const subFs  = Math.max(8,  Math.min(11, sw / 14));
   const showPcr      = sh >= 34;
   const showPcrLabel = sw >= 88 && sh >= 58;
   const showVpcr     = sw >= 74 && sh >= 52;
+  const showAskBid   = sw >= 86 && sh >= 70;
   const showNet      = sw >= 88 && sh >= 58;
   const showPpc      = sw >= 118 && sh >= 78;
   const showCount    = sw >= 145 && sh >= 92;
+  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4217,6 +4376,19 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
       >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
+  }
+  if (showAskBid && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="ab" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
+      >
+        <tspan>{sfFmtIntPct(askPct)}</tspan>
+        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan>{sfFmtIntPct(bidPct)}</tspan>
+        <tspan opacity={0.6}>{" Bid"}</tspan>
+      </text>
+    );
+    y += subFs * 0.9 + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4254,15 +4426,20 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   const net       = isPending ? null : tk.net_premium;
   const ppc       = isPending ? null : (tk.premium_per_contract ?? null);
   const contracts = isPending ? null : (tk.total_contract_volume ?? null);
+  const askPct    = isPending ? null : (tk.interval_ask_premium_pct ?? null);
+  const bidPct    = isPending ? null : (tk.interval_bid_premium_pct ?? null);
+  const cov       = isPending ? null : (tk.interval_classified_trade_side_pct ?? null);
   const symFs = Math.max(9,  Math.min(18, sw / 5.5));
   const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
   const subFs = Math.max(8,  Math.min(11, sw / 12));
   const showPcr      = sh >= 36;
   const showPcrLabel = sw >= 86 && sh >= 60;
   const showVpcr     = sw >= 72 && sh >= 52;
+  const showAskBid   = sw >= 86 && sh >= 72;
   const showNet      = sw >= 86 && sh >= 60;
   const showPpc      = sw >= 110 && sh >= 76;
   const showContracts= sw >= 130 && sh >= 90;
+  const intPctFill   = (cov != null && cov < 0.40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4286,6 +4463,19 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
       >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
+  }
+  if (showAskBid && !isPending && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="ab" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
+      >
+        <tspan>{sfFmtIntPct(askPct)}</tspan>
+        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan>{sfFmtIntPct(bidPct)}</tspan>
+        <tspan opacity={0.6}>{" Bid"}</tspan>
+      </text>
+    );
+    y += subFs * 0.9 + 2;
   }
   if (showNet && y + subFs < sy + sh - 2) {
     els.push(
@@ -4524,6 +4714,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       switch (sortBy) {
         case "pcr":          return t.put_call_ratio;
         case "vpcr":         return t.volume_put_call_ratio ?? null;
+        case "ask_pct":      return t.interval_ask_premium_pct ?? null;
+        case "bid_pct":      return t.interval_bid_premium_pct ?? null;
         case "net_premium":  return t.net_premium;
         case "ppc":          return t.premium_per_contract ?? null;
         case "contracts":    return t.total_contract_volume ?? null;
@@ -4541,6 +4733,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       switch (sortBy) {
         case "pcr":          return s.put_call_ratio;
         case "vpcr":         return s.volume_put_call_ratio ?? null;
+        case "ask_pct":      return s.interval_ask_premium_pct ?? null;
+        case "bid_pct":      return s.interval_bid_premium_pct ?? null;
         case "net_premium":  return s.net_premium;
         case "ppc":          return s.premium_per_contract ?? null;
         case "contracts":    return s.total_contract_volume ?? null;
@@ -4555,6 +4749,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
     const raw: SFTicker[] = [];
     (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => raw.push(tk)));
     // Deduplicate by symbol: aggregate premiums, recompute PCR + new fields
+    // Interval fields: keep canonical (first non-null occurrence) — do NOT sum across theme memberships
     const bySymbol = new Map<string, SFTicker>();
     raw.forEach(tk => {
       const sym = tk.symbol || tk.ticker || tk.underlying || "";
@@ -4570,8 +4765,29 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       const vpcr = (existVpcr != null || tkVpcr != null)
         ? ((existVpcr ?? 0) * (existing.total_contract_volume ?? 0) + (tkVpcr ?? 0) * (tk.total_contract_volume ?? 0)) / Math.max(1, cts)
         : null;
+      // Interval fields: prefer non-null canonical node; `...existing` already preserves
+      // existing interval data — only override if existing was null and tk has data
+      const useNewInterval = (
+        existing.interval_ask_premium_pct == null &&
+        tk.interval_ask_premium_pct != null
+      );
+      const intervalOverride: Partial<SFTicker> = useNewInterval ? {
+        interval_ask_premium:                  tk.interval_ask_premium ?? null,
+        interval_bid_premium:                  tk.interval_bid_premium ?? null,
+        interval_midpoint_unknown_premium:     tk.interval_midpoint_unknown_premium ?? null,
+        interval_total_premium:                tk.interval_total_premium ?? null,
+        interval_new_contract_volume:          tk.interval_new_contract_volume ?? null,
+        interval_ask_premium_pct:              tk.interval_ask_premium_pct ?? null,
+        interval_bid_premium_pct:              tk.interval_bid_premium_pct ?? null,
+        interval_midpoint_unknown_premium_pct: tk.interval_midpoint_unknown_premium_pct ?? null,
+        interval_classified_trade_side_pct:    tk.interval_classified_trade_side_pct ?? null,
+        interval_seconds:                      tk.interval_seconds ?? null,
+        interval_started_at:                   tk.interval_started_at ?? null,
+        interval_ended_at:                     tk.interval_ended_at ?? null,
+      } : {};
       bySymbol.set(sym, {
         ...existing,
+        ...intervalOverride,
         call_premium:           call,
         put_premium:            put,
         net_premium:            call - put,
@@ -4587,6 +4803,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       switch (sortBy) {
         case "pcr":          return tk.put_call_ratio;
         case "vpcr":         return tk.volume_put_call_ratio ?? null;
+        case "ask_pct":      return tk.interval_ask_premium_pct ?? null;
+        case "bid_pct":      return tk.interval_bid_premium_pct ?? null;
         case "net_premium":  return tk.net_premium;
         case "ppc":          return tk.premium_per_contract ?? null;
         case "contracts":    return tk.total_contract_volume ?? null;
