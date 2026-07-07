@@ -1,0 +1,493 @@
+Validate the completed Watchlist manual add/remove UI in the live browser.
+
+Do not redesign anything.
+
+Do not modify backend code.
+
+Do not make speculative cleanup edits.
+
+The implementation is already in place.
+
+This task is runtime validation and narrow bug fixing only if a live validation fails.
+
+CURRENT IMPLEMENTATION REPORTED
+
+ADD:
+
+* 300ms debounced GET /api/watchlist/security-search?q=...
+* suggestion dropdown
+* canonical ticker
+* company
+* exchange/country
+* IN WATCHLIST badge
+* keyboard navigation
+* explicit selection required
+* exact canonical add endpoint
+* duplicate / exchange-family conflict messages
+
+DELETE:
+
+* Trash2 in TICKERS and CLOSE WATCH
+* click isolation from row modal
+* confirmation modal
+* optimistic cache removal
+* rollback on error
+* targeted query invalidations
+
+PART A — SECURITY SEARCH BROWSER VALIDATION
+
+Using the actual Watchlist page, search:
+
+TRT
+IQE
+Soitec
+AIXA
+000660
+MAL
+
+For each report:
+
+input
+security-search HTTP request URL
+HTTP status
+suggestion count
+first five displayed suggestions:
+
+* canonical ticker
+* company
+* exchange
+* country
+
+Explicitly validate:
+
+IQE:
+the known existing security is displayed as AIM:IQE when backend returns AIM:IQE
+
+Soitec:
+the known existing security is displayed as EPA:SOI when backend returns EPA:SOI
+
+Do not derive or transform canonical ticker in the browser.
+
+PART B — DEBOUNCE NETWORK TEST
+
+Clear the input.
+
+Type quickly:
+
+T
+TR
+TRT
+
+faster than the 300ms debounce.
+
+Inspect browser network requests.
+
+Report:
+
+raw keystrokes
+security-search request count
+actual queries sent
+
+Expected:
+
+no three overlapping T / TR / TRT requests.
+
+Prefer one final TRT request after debounce.
+
+Then type slowly with pauses longer than 300ms and confirm multiple searches may occur normally.
+
+PART C — RAW TEXT SAFETY TEST
+
+Enter:
+
+ZZZZZZZZZ
+
+Do not select a result.
+
+Press Enter.
+
+Click Add if possible.
+
+Expected:
+
+no add mutation.
+
+Confirm the Add button is disabled or submission is blocked because selectedSecurity is null.
+
+Repeat with:
+
+TRT
+
+but do not click a suggestion.
+
+Press Enter with no highlighted selection.
+
+Expected:
+
+raw unselected text is not blindly added.
+
+PART D — EXPLICIT SELECTION TEST
+
+Search:
+
+IQE
+
+Click the AIM:IQE suggestion.
+
+Report:
+
+input value after selection
+selected canonical ticker
+Add button enabled yes/no
+
+Edit the input manually after selection.
+
+Expected:
+
+selectedSecurity clears
+Add button disables
+new selection is required
+
+PART E — ACTUAL ADD REQUEST CONTRACT
+
+Use a disposable/test Watchlist where practical.
+
+Select one security not already present.
+
+Click Add.
+
+Capture:
+
+request method
+request URL
+request body
+HTTP status
+response body structural fields
+
+Confirm the authoritative ticker in the body comes from:
+
+selectedSecurity.canonical_ticker
+
+not raw input text.
+
+Confirm:
+
+one backend add mutation
+
+and zero browser calls to:
+
+FMP
+Tradier
+Yahoo
+Google
+
+PART F — ADD SUCCESS UI
+
+After successful add confirm:
+
+ticker appears in Watchlist
+success message shows exact canonical ticker
+input clears
+selectedSecurity clears
+suggestions close
+Watchlist count updates
+new row appears without full Claude refresh
+
+Inspect network and confirm no Watchlist refresh/analyze endpoint was triggered automatically.
+
+PART G — DUPLICATE / IN WATCHLIST TEST
+
+Search a ticker already in the active Watchlist.
+
+Confirm the suggestion shows:
+
+IN WATCHLIST
+
+Confirm Add is disabled for that result.
+
+If possible, exercise backend duplicate response by forcing the same add mutation through the UI state or a controlled frontend test.
+
+Confirm UI displays:
+
+Already in Watchlist
+
+or:
+
+Already tracked as {existing_ticker}
+
+for exchange-family alias conflict.
+
+Do not show generic Failed for a duplicate/conflict response.
+
+PART H — MULTIPLE WATCHLIST ADDED STATE
+
+Use two Watchlists if available.
+
+Choose ticker X that exists in Watchlist A but not Watchlist B.
+
+In Watchlist A:
+
+search X
+→ IN WATCHLIST shown
+
+Switch to Watchlist B.
+
+Search X again.
+
+Expected:
+
+IN WATCHLIST state recalculates from Watchlist B membership.
+
+It must not remain globally sticky from Watchlist A.
+
+Report activeId and displayed badge state in both.
+
+PART I — TRT FRONTEND IDENTITY TEST
+
+Use the actual backend results.
+
+Search:
+
+TRT
+
+Report all distinct TRT-related suggestions displayed.
+
+For each show:
+
+canonical ticker
+company
+exchange
+country
+
+Do not use earlier hardcoded company assumptions.
+
+If both TRT and AIM:TRT are returned as distinct securities:
+
+select/add TRT
+select/add AIM:TRT
+
+Confirm both can coexist.
+
+Delete AIM:TRT.
+
+Confirm TRT remains.
+
+Add AIM:TRT back.
+
+Delete TRT.
+
+Confirm AIM:TRT remains.
+
+Use a disposable Watchlist for this controlled test.
+
+PART J — DELETE CLICK ISOLATION
+
+On an existing row:
+
+click Trash2.
+
+Confirm:
+
+delete confirmation opens
+StockDetailModal does not open
+
+Cancel.
+
+Confirm row remains.
+
+Then click the ticker text/row.
+
+Confirm StockDetailModal still opens normally.
+
+PART K — DELETE CONFIRMATION CONTENT
+
+Open delete confirmation for a prefixed ticker if available.
+
+Report displayed:
+
+canonical ticker
+company name
+active Watchlist name
+destructive wording
+Cancel button
+Remove button
+
+Confirm canonical ticker remains exact, e.g.:
+
+AIM:IQE
+
+not:
+
+IQE
+
+PART L — DELETE REQUEST CONTRACT
+
+Confirm deletion.
+
+Capture:
+
+request method
+request URL
+HTTP status
+response structural fields
+
+For prefixed ticker verify URL/path preserves canonical ticker identity safely.
+
+Do not strip prefix.
+
+Deleting AIM:TRT must target AIM:TRT exactly.
+
+PART M — OPTIMISTIC REMOVE TEST
+
+On confirmed delete:
+
+record time from Remove click to visible row disappearance.
+
+Confirm row disappears before or immediately with mutation completion according to optimistic behavior.
+
+Inspect React Query cache/UI.
+
+Then confirm backend success causes normal refetch/reconciliation.
+
+Do not reload the browser.
+
+PART N — DELETE ROLLBACK TEST
+
+Using a controlled frontend/dev technique, force the delete request to fail for one test ticker without changing backend persistence.
+
+Examples:
+
+temporarily intercept the request in browser dev validation
+or use an invalid test route in a local validation branch
+
+Do not permanently alter production code solely for the test.
+
+Expected:
+
+row initially disappears optimistically
+request fails
+previous Watchlist cache is restored
+row reappears
+error message says:
+
+Could not remove {ticker}. No changes were saved.
+
+Confirm the row is not left hidden.
+
+PART O — CLOSE WATCH GHOST TEST
+
+Choose a ticker that is starred / in CLOSE WATCH.
+
+Delete it from the active Watchlist.
+
+Confirm:
+
+it disappears from main TICKERS
+it disappears from CLOSE WATCH for that active Watchlist
+
+Report whether favorites metadata itself remains globally stored or is removed.
+
+The critical UI invariant:
+
+no ghost row remains in the active Watchlist CLOSE WATCH view.
+
+PART P — PERSISTENCE VALIDATION
+
+Delete one test ticker.
+
+Then:
+
+refetch Watchlist
+switch away and back
+hard refresh browser
+restart frontend if practical
+
+Confirm ticker remains absent.
+
+Backend already validated Neon restart persistence; this test is only frontend consumption.
+
+Then manually search/select/add the same ticker again.
+
+Confirm it can be restored explicitly.
+
+PART Q — QUERY INVALIDATION / NETWORK AUDIT
+
+For one add and one delete report which queries refetched or invalidated:
+
+active Watchlist
+Watchlist list
+Watchlist news
+options signals
+earnings
+favorites if applicable
+ticker activity-news if applicable
+
+Confirm the entire React Query cache is not invalidated.
+
+Confirm no full browser reload.
+
+PART R — REGRESSION
+
+Confirm live:
+
+1. Watchlist page loads.
+2. Screener table renders.
+3. Ticker row opens modal.
+4. Star works.
+5. Trash does not open modal.
+6. Security suggestions display.
+7. Company-name search works.
+8. Raw text cannot be added.
+9. Canonical ticker preserved.
+10. AIM/EPA/ETR/KRX prefixes preserved.
+11. IN WATCHLIST state works.
+12. Add success works.
+13. Duplicate/conflict messaging works.
+14. Delete confirmation works.
+15. Optimistic delete works.
+16. Failed delete rolls back.
+17. CLOSE WATCH has no ghost row.
+18. Deleted ticker stays absent after refresh.
+19. Deleted ticker can be added back.
+20. Multiple Watchlists remain isolated.
+21. REL VOL unchanged.
+22. VOL RANK unchanged.
+23. Vol/MC unchanged.
+24. NEWS ACTIVITY unchanged.
+25. ALL NEWS unchanged.
+26. HYPERSCALER DEALS unchanged.
+27. Stock modal 48H News unchanged.
+28. No Claude analysis is triggered by add/delete.
+
+FINAL RETURN
+
+Return:
+
+* six-search validation table
+* debounce request counts
+* raw-text safety results
+* explicit-selection results
+* exact add request URL/body
+* add success validation
+* duplicate/conflict validation
+* multiple-Watchlist badge validation
+* TRT identity control test
+* delete isolation test
+* confirmation content
+* exact delete request URL
+* optimistic removal timing
+* rollback validation
+* CLOSE WATCH ghost validation
+* persistence/add-back validation
+* query invalidation/network audit
+* regression checklist
+* screenshots of:
+
+  * IQE search dropdown
+  * selected security ready to Add
+  * delete confirmation
+  * deleted row absent
+
+Do not modify backend code.
+Do not redesign the UI.
+Only make a frontend change if one of these live validations exposes a real bug.

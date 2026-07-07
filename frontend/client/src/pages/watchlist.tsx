@@ -1653,6 +1653,7 @@ export default function WatchlistPage() {
   const [highlightedIdx, setHighlightedIdx] = useState(-1);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ ticker: string; company?: string | null; wid: string } | null>(null);
+  const [deleteErrMsg, setDeleteErrMsg] = useState<string | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const autoTriggeredRef = useRef<Set<string>>(new Set());
@@ -2245,19 +2246,19 @@ export default function WatchlistPage() {
       return { prev, wid };
     },
     onSuccess: (_, { wid }) => {
+      setDeleteConfirm(null);
+      setDeleteErrMsg(null);
       qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/news', wid] });
       qc.invalidateQueries({ queryKey: ['watchlist-options-signals', wid] });
       qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
     },
-    onError: (_err, _vars, context: any) => {
+    onError: (_err, vars, context: any) => {
       if (context?.prev !== undefined) {
         qc.setQueryData(['/api/watchlist', context.wid], context.prev);
       }
-    },
-    onSettled: () => {
-      setDeleteConfirm(null);
+      setDeleteErrMsg(`Could not remove ${vars.ticker}. No changes were saved.`);
     },
   });
 
@@ -6531,7 +6532,7 @@ export default function WatchlistPage() {
       {deleteConfirm && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9980, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setDeleteConfirm(null)}
+          onClick={() => { setDeleteConfirm(null); setDeleteErrMsg(null); }}
         >
           <div
             onClick={e => e.stopPropagation()}
@@ -6547,9 +6548,14 @@ export default function WatchlistPage() {
             <div style={{ fontSize: 10, color: '#484848', marginBottom: 20, lineHeight: 1.6 }}>
               This permanently removes the stock from this Watchlist.<br />You can add it again later through security search.
             </div>
+            {deleteErrMsg && (
+              <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: '#3a0a0a', border: '1px solid #ef444430', fontSize: 10, color: '#ef4444', fontFamily: C.font, lineHeight: 1.5 }}>
+                {deleteErrMsg}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
-                onClick={() => setDeleteConfirm(null)}
+                onClick={() => { setDeleteConfirm(null); setDeleteErrMsg(null); }}
                 style={{ padding: '6px 16px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, fontFamily: C.font, fontSize: 11, cursor: 'pointer' }}
               >
                 Cancel
@@ -6558,6 +6564,7 @@ export default function WatchlistPage() {
                 disabled={deleteTickerMut.isPending}
                 onClick={() => {
                   if (!deleteConfirm) return;
+                  setDeleteErrMsg(null);
                   deleteTickerMut.mutate({ wid: deleteConfirm.wid, ticker: deleteConfirm.ticker });
                 }}
                 style={{ padding: '6px 16px', borderRadius: 4, background: deleteTickerMut.isPending ? '#2a0a0a' : '#3a0a0a', border: '1px solid #ef444440', color: deleteTickerMut.isPending ? '#666' : '#ef4444', fontFamily: C.font, fontSize: 11, fontWeight: 700, cursor: deleteTickerMut.isPending ? 'default' : 'pointer', transition: 'all 0.15s' }}
