@@ -1,0 +1,1026 @@
+Implement the final Options Flow → Net Flow stock/ETF separation and P/C semantics.
+
+FRONTEND ONLY.
+
+Backend work is complete and validated.
+
+Do not touch backend.
+Do not ask for backend changes.
+Do not create new API routes.
+Do not change scanning, Tradier, LKG, pending, classification, theme membership, or aggregation logic.
+
+This should be a one-pass frontend implementation using the EXISTING Options Flow data payload and the EXISTING successful TradingView-style heatmap engine.
+
+==================================================
+CURRENT SUCCESSFUL UI — PROTECT IT
+==================================
+
+The current Net Flow heatmap is working well.
+
+Preserve exactly:
+
+* current TradingView-style treemap layout
+* current hierarchical grouped treemap renderer
+* current ungrouped treemap renderer
+* current squarified tile layout
+* current viewport fit
+* current SVG rendering
+* current zoom/pan
+* cursor-centered wheel zoom
+* reset zoom
+* crisp screen-space label overlay
+* progressive labels while zooming
+* hover tooltips
+* ticker click/detail behavior
+* current dark styling
+* current color intensity styling
+* current tile materiality sizing architecture
+* current Sectors grouped/drill behavior
+* current Themes grouped/ungrouped behavior
+* current All Stocks grouped/ungrouped behavior except ETF removal
+* summary card styling
+* coverage/live/LKG/pending diagnostics
+* refresh behavior
+* Net Flow / Unusual Flow toggle
+
+Do not rebuild SFHeatmap/SFTreemap.
+
+Do not replace the heatmap engine.
+
+Do not revert to cards, grids, stacked sections, or scroll-heavy layouts.
+
+The task is to wire the existing successful heatmap to the finalized backend semantics and add the ETF tab.
+
+==================================================
+BACKEND SEMANTICS NOW AVAILABLE
+===============================
+
+Backend now separates canonical Net Flow from Unusual Flow.
+
+Canonical Net Flow ticker rows use:
+
+premium_scope_id =
+"net_flow_single_expiry_7_60dte_v1"
+
+Rows without a canonical Net Flow snapshot may expose:
+
+nf_snapshot_pending = true
+
+Their unusual-flow premium must NOT be displayed as Net Flow premium.
+
+Backend ticker fields may include:
+
+* instrument_type
+* instrument_type_source
+* instrument_type_inferred
+* premium_scope_id
+* nf_snapshot_pending
+* raw_premium_pcr
+* effective_premium_pcr
+* one_sided_flow
+* call_premium
+* put_premium
+* net_premium
+* total_contract_volume
+* call_volume
+* put_volume
+* expiration_used
+* dte_used
+* scan_status
+
+Aggregate fields may include:
+
+* breadth_pcr
+* net_flow_breadth_pcr
+* premium_weighted_pcr
+* etf_breadth_pcr
+* etf_premium_weighted_pcr
+* total_stock_tickers
+* valid_stock_pcr_tickers
+* missing_stock_pcr_tickers
+* stock_pcr_coverage_pct
+* total_etf_tickers
+* valid_etf_pcr_tickers
+* missing_etf_pcr_tickers
+* etf_pcr_coverage_pct
+* net_flow_scoped_stock_tickers
+* net_flow_missing_snapshot_stock_tickers
+* unresolved_instrument_type_tickers
+
+Audit the exact live frontend response shape first and map to the EXISTING field names.
+
+Do not invent replacement field names if the current backend names differ slightly.
+
+==================================================
+TAB STRUCTURE
+=============
+
+Current Net Flow navigation:
+
+Sectors | Themes | All Stocks
+
+Change to:
+
+Sectors | Themes | ETFs | All Stocks
+
+Order must be exactly:
+
+1. Sectors
+2. Themes
+3. ETFs
+4. All Stocks
+
+Place ETFs directly before All Stocks.
+
+Use the existing tab/toggle styling.
+
+Do not create a separate page.
+
+==================================================
+CORE SEMANTIC RULE
+==================
+
+The four tabs now answer four different questions:
+
+SECTORS:
+What is the broad options posture across individual STOCKS in each sector?
+
+THEMES:
+What is the broad options posture across individual STOCKS in each theme/sub-theme?
+
+ETFs:
+What is ETF options flow doing across thematic baskets?
+
+ALL STOCKS:
+Which individual STOCKS have the strongest bullish/bearish Net Flow signals?
+
+Do not mix ETFs into stock breadth.
+
+Do not down-weight ETFs.
+
+Do not use arbitrary ETF weighting coefficients.
+
+ETFs are a separate analytical universe.
+
+==================================================
+SECTORS TAB
+===========
+
+Keep the existing Sectors heatmap layout and behavior.
+
+PRIMARY displayed P/C:
+Use the backend stock breadth P/C.
+
+Preferred field order:
+
+1. net_flow_breadth_pcr, if this is the canonical field in the response
+2. breadth_pcr
+
+Audit the exact response and use the canonical backend field.
+
+Do NOT use:
+
+* put_call_ratio
+* all-symbol premium-weighted P/C
+* etf_breadth_pcr
+* unusual-flow P/C
+
+Use stock breadth P/C for:
+
+* large displayed P/C
+* bullish/bearish/neutral direction
+* green/red/gray color
+* color intensity deviation
+* tile P/C deviation component in the existing size score
+* sentiment label
+
+Keep the current premium-materiality size component unless the existing helper needs a field remap.
+
+The primary sector signal is stock breadth.
+
+Tooltip should clearly show:
+
+Breadth P/C
+Premium P/C
+Stock Options Coverage
+
+Example:
+
+Materials
+Breadth P/C        0.54
+Premium P/C        1.31
+Stock Coverage     15 / 20
+Call Premium       $...
+Put Premium        $...
+Net Premium        $...
+
+Definitions:
+
+* Breadth P/C = equal-weight geometric mean across unique valid STOCK ticker effective P/C values
+* Premium P/C = aggregate stock put premium / aggregate stock call premium
+
+Do not average child theme P/C values on the frontend.
+
+Use backend aggregate fields.
+
+If stock valid P/C coverage is zero:
+
+* display P/C as —
+* neutral gray
+* do not substitute 1.00
+
+If there are missing canonical Net Flow snapshots:
+Show coverage honestly.
+
+Example:
+15 / 20 stocks
+
+Do not count pending/missing rows as neutral.
+
+==================================================
+THEMES TAB
+==========
+
+Keep the current successful canonical leaf behavior.
+
+Canonical Themes heatmap leaves remain:
+
+* classification === "theme"
+* classification === "sub_theme"
+
+Exclude:
+
+* classification === "sector"
+
+Ungrouped:
+
+* all canonical theme/sub_theme leaves in one flat heatmap
+
+Grouped:
+
+* SAME exact leaf universe
+* grouped hierarchically by sector
+* parent group = sector
+* children = theme/sub_theme leaves
+
+Do not change this logic.
+
+PRIMARY displayed theme/sub-theme P/C:
+Use stock breadth P/C:
+
+* net_flow_breadth_pcr if canonical
+* otherwise breadth_pcr
+
+Use it for:
+
+* tile displayed P/C
+* direction
+* color
+* intensity
+* deviation component of tile sizing
+
+Do NOT use ETF breadth in the primary Themes heatmap.
+
+Grouped sector parent headers:
+Use the canonical backend stock sector breadth aggregate already associated with that sector.
+
+The grouped parent P/C must represent the same stock breadth semantics as the Sectors tab.
+
+Do not:
+
+* copy a child P/C
+* use first child P/C
+* use max child P/C
+* average child ratios
+* recompute from theme aggregates
+
+If the existing frontend already maps sector aggregate nodes to grouped parent headers, preserve that path and switch the displayed metric to canonical stock breadth P/C.
+
+Theme tooltip:
+
+Theme Name
+Breadth P/C        0.22
+Premium P/C        1.20
+Stock Coverage     6 / 7
+Call Premium       $...
+Put Premium        $...
+Net Premium        $...
+
+Keep existing theme count/ticker count details if already displayed.
+
+==================================================
+NEW ETFs TAB
+============
+
+Create a new ETFs Net Flow view using the SAME successful heatmap engine.
+
+Do not create a new card component.
+
+Do not create a separate heatmap architecture.
+
+Reuse:
+
+* SFHeatmap/SFTreemap
+* current size-map helper
+* current zoom/pan
+* current screen-space label overlay
+* current tooltip architecture
+* current hierarchical grouped renderer
+
+ETF LEAF UNIVERSE:
+
+Use ticker rows where:
+
+instrument_type === "etf"
+
+Also require canonical Net Flow semantics for premium display.
+
+If:
+nf_snapshot_pending === true
+
+or:
+premium_scope_id !== "net_flow_single_expiry_7_60dte_v1"
+
+then:
+
+* do not display unusual-flow premium as Net Flow P/C
+* treat canonical Net Flow premium as pending
+* use neutral/minimum visual treatment
+* show pending in tooltip
+
+Do not frontend-hardcode ETF symbols.
+
+Do not use ETF ticker-name guessing.
+
+Do not use symbol patterns.
+
+Trust backend instrument_type.
+
+---
+
+## ETFs — UNGROUPED
+
+Show every unique ETF symbol once.
+
+Deduplicate by normalized symbol.
+
+One full-panel TradingView-style treemap.
+
+Each ETF leaf uses its own canonical Net Flow:
+
+raw_premium_pcr
+effective_premium_pcr
+call_premium
+put_premium
+net_premium
+
+For size/deviation:
+Use effective_premium_pcr.
+
+For factual display:
+Use raw_premium_pcr + one_sided_flow semantics.
+
+Keep existing materiality logic:
+P/C deviation × premium materiality
+
+Use:
+effective_premium_pcr
+
+for log deviation math because it is bounded/log-safe.
+
+Do not use raw 0 directly in Math.log().
+
+---
+
+## ETFs — GROUPED
+
+Add the same Grouped/Ungrouped toggle behavior used by All Stocks.
+
+Grouped ETFs:
+
+* parent groups = canonical Themes
+* child leaves = ETFs
+
+Use the existing canonical theme membership already represented in the Options Flow tree/payload.
+
+Do not invent ETF theme memberships from:
+
+* ETF names
+* FMP sector weighting
+* frontend logic
+* ticker guessing
+
+The project's canonical Themes taxonomy determines grouping.
+
+A single ETF may appear in multiple separate theme parent groups if it intentionally belongs to multiple canonical themes.
+
+Within one parent theme:
+
+* deduplicate ETF by symbol
+
+Ungrouped ETF universe:
+
+* each ETF once
+
+Grouped:
+
+* same canonical ETF universe
+* visually organized by theme membership
+
+Do not silently drop ETFs with multiple memberships.
+
+If an ETF has no theme membership:
+Place it in an "Unmapped" parent group temporarily.
+
+Do not remove it from the ETF universe.
+
+---
+
+## ETF GROUP P/C
+
+Grouped ETF parent headers use:
+
+etf_breadth_pcr
+
+Primary ETF group P/C semantics:
+equal-weight geometric mean across unique valid ETF effective premium P/C values.
+
+Secondary:
+etf_premium_weighted_pcr
+
+Do not use stock breadth_pcr for ETF group parents.
+
+Do not average child raw ratios on the frontend.
+
+Use backend ETF aggregate fields.
+
+ETF grouped parent tooltip:
+
+Theme Name
+ETF Breadth P/C       0.18
+ETF Premium P/C       0.06
+ETF Coverage          4 / 5
+Call Premium          $...
+Put Premium           $...
+Net Premium           $...
+
+==================================================
+ALL STOCKS TAB
+==============
+
+Remove ETFs from All Stocks.
+
+Leaf universe:
+
+instrument_type === "stock"
+
+Exclude:
+instrument_type === "etf"
+
+Do not frontend-hardcode an ETF list.
+
+Do not identify ETFs by ticker symbol.
+
+Use backend instrument_type.
+
+UNGROUPED:
+
+* each unique STOCK symbol appears once
+
+GROUPED:
+
+* preserve current group-by-theme hierarchical behavior
+* parent groups = themes
+* child leaves = stock tickers
+* same current visual layout
+
+A stock may appear in multiple separate theme groups if it intentionally belongs to multiple canonical themes.
+
+Within a single theme parent:
+
+* deduplicate stock symbol
+
+Do not change grouped layout aesthetics.
+
+Do not change grouped zoom.
+
+Do not change grouped label rendering.
+
+Canonical Net Flow rule:
+
+If a stock has:
+premium_scope_id === "net_flow_single_expiry_7_60dte_v1"
+
+use its canonical Net Flow premium fields.
+
+If:
+nf_snapshot_pending === true
+
+or no canonical Net Flow premium scope exists:
+
+do not display master/unusual-flow P/C.
+
+Show:
+P/C —
+or a small PENDING treatment.
+
+Tile should be:
+
+* minimum size
+* neutral/dark gray
+* not strongly bullish/bearish
+
+Tooltip:
+Canonical Net Flow snapshot pending
+
+Do not let unusual-flow P/C leak back into the Net Flow stock heatmap.
+
+==================================================
+RAW / EFFECTIVE P/C DISPLAY
+===========================
+
+This is important.
+
+For an individual Stock or ETF leaf:
+
+CASE A:
+put_premium === 0
+call_premium > 0
+one_sided_flow === "call_only"
+
+Raw mathematical P/C is 0.
+
+DISPLAY:
+<0.01
+
+Do NOT display:
+0.00
+
+Tooltip:
+
+Raw P/C                 0
+Effective P/C           0.01
+Call Premium            $...
+Put Premium             $0
+No qualifying put premium in canonical Net Flow scope
+
+CASE B:
+call_premium === 0
+put_premium > 0
+one_sided_flow === "put_only"
+
+DISPLAY:
+
+> 100
+
+Tooltip:
+
+Effective P/C           100
+Call Premium            $0
+Put Premium             $...
+No qualifying call premium in canonical Net Flow scope
+
+CASE C:
+call_premium === 0
+put_premium === 0
+
+DISPLAY:
+—
+
+Neutral gray.
+
+Do not fake 1.00.
+
+CASE D:
+normal two-sided finite ratio
+
+Display raw_premium_pcr rounded appropriately.
+
+Suggested:
+
+* > = 10: 1 decimal
+* 0.01–9.99: 2 decimals
+* tiny positive below 0.01: <0.01
+
+Keep the existing visual formatting if it is already clean.
+
+For TILE COLOR / SIZE DEVIATION:
+Use effective_premium_pcr.
+
+For FACTUAL DISPLAY:
+Use raw_premium_pcr / one_sided_flow formatting.
+
+==================================================
+HEATMAP COLOR
+=============
+
+Keep the current successful color helper.
+
+Direction:
+
+* effective P/C < 1 = green
+* effective P/C > 1 = red
+* near 1 = gray/muted
+
+Neutral band:
+preserve the current working threshold.
+
+Use the correct P/C source:
+
+Sectors:
+stock breadth P/C
+
+Themes:
+stock breadth P/C
+
+ETF leaf:
+ETF's own effective premium P/C
+
+ETF grouped parent:
+ETF breadth P/C
+
+Stock leaf:
+stock's own effective premium P/C
+
+Do not use premium_weighted_pcr for primary tile direction.
+
+==================================================
+HEATMAP SIZING
+==============
+
+Preserve the current working combined sizing model.
+
+Continue using:
+
+P/C deviation from 1
+×
+normalized premium materiality
+
+P/C deviation input:
+
+Sectors:
+stock breadth P/C
+
+Themes:
+stock breadth P/C
+
+ETF leaf:
+effective_premium_pcr
+
+Stock leaf:
+effective_premium_pcr
+
+Grouped ETF parent:
+sum existing child size scores
+
+Grouped Stock parent:
+preserve current child-size sum logic
+
+Do not size category tiles by raw NET premium alone.
+
+Do not revert to pure P/C deviation.
+
+Do not change squarify behavior.
+
+==================================================
+PROGRESSIVE ZOOM LABELS
+=======================
+
+Preserve current crisp screen-space labels.
+
+ETF tab must get exactly the same label behavior.
+
+As an ETF tile becomes visually larger while zooming:
+
+Tiny:
+
+* no label
+
+Small:
+
+* symbol
+
+Medium:
+
+* symbol
+* P/C
+
+Large:
+
+* symbol
+* P/C
+* NET
+
+Extra large:
+
+* symbol
+* P/C
+* NET
+* CALL
+* PUT
+* contracts/volume if current renderer supports it
+
+Text must remain crisp.
+
+Do not scale/rasterize the label layer.
+
+Do not rebuild the zoom renderer.
+
+==================================================
+TOOLTIPS
+========
+
+SECTOR:
+
+* name
+* Breadth P/C
+* Premium P/C
+* stock options coverage
+* call premium
+* put premium
+* net premium
+* ticker count
+* theme count if available
+
+THEME/SUB-THEME:
+
+* name
+* classification
+* Breadth P/C
+* Premium P/C
+* stock options coverage
+* call premium
+* put premium
+* net premium
+* ticker count
+
+ETF:
+
+* symbol/name
+* raw/display P/C
+* effective P/C if one-sided
+* one-sided flow explanation if applicable
+* net premium
+* call premium
+* put premium
+* volume/contracts
+* expiration used
+* DTE used
+* scan status
+* canonical Net Flow pending status
+
+STOCK:
+Preserve current tooltip and update P/C formatting/scope semantics:
+
+* symbol/name
+* P/C
+* net premium
+* call premium
+* put premium
+* volume/contracts
+* signal/score/IV/expected move if already locally available
+* expiration/DTE if already available
+* pending state when canonical Net Flow snapshot is missing
+
+Do not add new API calls on hover.
+
+==================================================
+STOCK CLICK POPUP
+=================
+
+Preserve the existing stock detail popup behavior.
+
+Do not remove:
+
+* Score
+* Signal
+* confidence/strength
+* IV
+* P/C Ratio
+* Exp Move
+* Volume
+* Net Flow
+* Calls
+* Puts
+
+The popup may continue using the existing detail endpoint/data source.
+
+Do not make clicking a stock trigger a new Net Flow scanning path.
+
+ETF click:
+If the existing detail popup safely supports ETF symbols, reuse it.
+
+If not:
+ETF tile click may use the existing tooltip/details interaction only.
+
+Do not create a new backend endpoint.
+
+==================================================
+SUMMARY BAR / DIAGNOSTICS
+=========================
+
+Audit the current summary bar semantics before reusing totals blindly.
+
+For each active tab:
+
+SECTORS:
+Use existing sector/global stock aggregate summary where currently intended.
+
+THEMES:
+Use existing theme/global stock aggregate summary where currently intended.
+
+ETFs:
+Summary should describe ETF Net Flow data.
+
+At minimum:
+
+* ETF count
+* valid canonical Net Flow ETF snapshots
+* pending/missing ETF snapshots
+* aggregate ETF call premium
+* aggregate ETF put premium
+* aggregate ETF net premium
+
+ALL STOCKS:
+Summary should describe stock Net Flow data.
+
+At minimum:
+
+* stock count
+* valid canonical Net Flow stock snapshots
+* pending/missing stock snapshots
+* aggregate stock call premium
+* aggregate stock put premium
+* aggregate stock net premium
+
+Do not show combined stock+ETF premium totals on the ETFs or All Stocks tab unless explicitly labeled as GLOBAL.
+
+If the current summary card is intentionally global:
+preserve the card but clearly label global totals.
+
+Prefer dataset-specific summary when data is already available locally.
+
+Do not add API calls.
+
+==================================================
+DATASET HELPERS
+===============
+
+Avoid scattering filtering logic through render blocks.
+
+Create/reuse clear helpers based on the existing frontend architecture.
+
+Conceptually:
+
+getCanonicalNetFlowTickers(...)
+getStockHeatmapLeaves(...)
+getEtfHeatmapLeaves(...)
+getThemeHeatmapLeaves(...)
+
+Do not duplicate the full mapping pipeline four times.
+
+Possible semantics:
+
+canonicalNetFlowTickers:
+
+* normalized ticker rows
+* preserve pending rows
+* annotate canonical scope validity
+
+stockLeaves:
+
+* instrument_type === "stock"
+
+etfLeaves:
+
+* instrument_type === "etf"
+
+themeLeaves:
+
+* classification theme/sub_theme
+* use backend stock breadth aggregates
+
+Deduplicate leaf symbols in ungrouped views.
+
+Preserve source objects for tooltip/click behavior.
+
+==================================================
+DO NOT
+======
+
+Do not touch backend.
+
+Do not request another backend audit.
+
+Do not create new routes.
+
+Do not create new Tradier calls.
+
+Do not use FMP from frontend.
+
+Do not hardcode ETFs.
+
+Do not weight ETFs less inside All Stocks.
+
+Do not include ETFs in Sectors/Themes primary stock breadth.
+
+Do not change Net Flow breadth math.
+
+Do not calculate geometric mean on frontend.
+
+Do not let unusual-flow P/C appear in Net Flow leaves.
+
+Do not rebuild the heatmap.
+
+Do not break grouped views.
+
+Do not break crisp zoom labels.
+
+Do not change the current successful layout.
+
+Do not report only "compiled clean."
+
+==================================================
+VALIDATION — REQUIRED BEFORE CLAIMING DONE
+==========================================
+
+A. TAB STRUCTURE
+
+1. Net Flow tabs read exactly:
+   Sectors | Themes | ETFs | All Stocks
+2. ETFs appears before All Stocks.
+
+B. ALL STOCKS
+3. All Stocks ungrouped contains zero instrument_type=etf rows.
+4. All Stocks grouped contains zero ETF child leaves.
+5. Each stock appears once in ungrouped.
+6. Existing stock group-by-theme behavior still works.
+7. Stock zoom/labels remain crisp.
+
+C. ETFs
+8. ETF ungrouped contains only instrument_type=etf rows.
+9. Each ETF appears once in ETF ungrouped.
+10. ETF grouped uses themes as parent groups.
+11. ETF grouped uses the same canonical ETF leaf universe.
+12. ETFs may appear across multiple intentional theme groups.
+13. No duplicate ETF occurs twice inside one theme parent.
+14. Unmapped ETFs are not silently dropped.
+15. ETF zoom/pan works identically to All Stocks.
+16. Tiny ETF symbols appear as the user zooms.
+17. P/C appears with further zoom.
+18. Labels remain crystal clear.
+
+D. P/C SEMANTICS
+19. Sectors use stock breadth P/C.
+20. Themes use stock breadth P/C.
+21. Themes grouped sector parent headers match canonical stock sector breadth semantics.
+22. ETF leaves use their own canonical Net Flow premium P/C.
+23. ETF grouped parent headers use ETF breadth P/C.
+24. Stock leaves use canonical Net Flow premium P/C.
+25. No premium_scope_id=unusual_flow_7_45dte_2exp_5k_v1 row displays unusual P/C as Net Flow.
+26. nf_snapshot_pending rows show neutral/pending treatment.
+27. Call-only flow displays <0.01, not 0.00.
+28. Put-only flow displays >100.
+29. No-flow rows display —, not fake 1.00.
+
+E. TOOLTIP
+30. Sector tooltip shows Breadth P/C + Premium P/C + stock coverage.
+31. Theme tooltip shows Breadth P/C + Premium P/C + stock coverage.
+32. ETF group tooltip shows ETF Breadth P/C + ETF Premium P/C + ETF coverage.
+33. ETF leaf tooltip explains one-sided flow where applicable.
+34. Stock tooltip remains functional.
+
+F. VISUAL REGRESSION
+35. Ungrouped Sectors visually unchanged except corrected P/C semantics.
+36. Ungrouped Themes visually unchanged except corrected P/C semantics.
+37. Grouped Themes retains current TradingView-style hierarchical appearance.
+38. Grouped All Stocks retains current TradingView-style hierarchical appearance.
+39. No large black dead zones.
+40. No runway-style regression.
+41. No page-level scroll regression.
+42. Zoom cannot drift out of frame.
+43. Reset zoom works.
+44. No blurry labels.
+
+G. RUNTIME
+45. Refresh still works.
+46. Coverage/live/LKG/pending diagnostics still render.
+47. Stock detail popup still opens.
+48. No new network requests are introduced by switching tabs.
+49. Browser console has no runtime errors.
+
+FINAL VISUAL VALIDATION:
+Capture/inspect all four:
+
+* Sectors
+* Themes grouped
+* ETFs grouped
+* All Stocks ungrouped
+
+Also inspect:
+
+* one call-only ETF showing <0.01
+* one pending canonical Net Flow stock/ETF row
+* one grouped ETF theme with multiple ETF children
+
+Do not claim complete until the four-tab Net Flow experience is visually and semantically correct.

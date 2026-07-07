@@ -2939,6 +2939,13 @@ interface SFTicker {
   bias: string | null;
   heat_score: number | null;
   reason?: string | null;
+  // Net Flow fields (ETF/Stock NF separation)
+  instrument_type?: string | null;         // "stock" | "etf" | null
+  premium_scope_id?: string | null;        // "net_flow_single_expiry_7_60dte_v1" = canonical NF
+  nf_snapshot_pending?: boolean | null;    // true = NF snapshot not yet computed
+  raw_premium_pcr?: number | null;         // NF put/call ratio (raw, for display)
+  effective_premium_pcr?: number | null;   // NF PCR clamped for color/sizing
+  one_sided_flow?: string | null;          // "call_only" | "put_only" | null
   // Interval flow fields (null = first snapshot / no new volume / LKG-only)
   interval_ask_premium?: number | null;
   interval_bid_premium?: number | null;
@@ -2971,6 +2978,10 @@ interface SFTheme {
   call_premium_per_contract?: number | null;
   put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
+  // Net Flow breadth P/C fields
+  breadth_pcr?: number | null;
+  net_flow_breadth_pcr?: number | null;
+  etf_breadth_pcr?: number | null;
   tickers: SFTicker[];
   // Interval flow fields
   interval_ask_premium?: number | null;
@@ -3003,6 +3014,10 @@ interface SFSector {
   call_premium_per_contract?: number | null;
   put_premium_per_contract?: number | null;
   aggregation_scope?: string | null;
+  // Net Flow breadth P/C fields
+  breadth_pcr?: number | null;
+  net_flow_breadth_pcr?: number | null;
+  etf_breadth_pcr?: number | null;
   themes: SFTheme[];
   // Interval flow fields
   interval_ask_premium?: number | null;
@@ -3350,6 +3365,35 @@ function sfSentiment(pcr: number | null): string {
   return dev > 1.5 ? "Very Bearish" : "Bearish";
 }
 
+// ── Net Flow helpers (ETF/Stock NF separation, NF snapshot state) ─────────────
+const NF_CANONICAL_SCOPE = "net_flow_single_expiry_7_60dte_v1";
+function sfIsNfPending(tk: SFTicker): boolean {
+  if (tk.nf_snapshot_pending === true) return true;
+  if (tk.premium_scope_id != null && tk.premium_scope_id !== NF_CANONICAL_SCOPE) return true;
+  return false;
+}
+// Display string for NF P/C — handles one-sided flow edge cases
+function sfDisplayNfPcr(tk: SFTicker): string {
+  if (sfIsNfPending(tk)) return "…";
+  const os = tk.one_sided_flow ?? null;
+  if (os === "call_only") return "<0.01";
+  if (os === "put_only")  return ">100";
+  if (tk.raw_premium_pcr == null) return "—";
+  return tk.raw_premium_pcr.toFixed(2);
+}
+// PCR to use for color/sizing on ETF tiles (effective, clamped)
+function sfNfPcr(tk: SFTicker): number | null {
+  if (sfIsNfPending(tk)) return null;
+  const os = tk.one_sided_flow ?? null;
+  if (os === "call_only") return 0.01;
+  if (os === "put_only")  return 100;
+  return tk.effective_premium_pcr ?? tk.raw_premium_pcr ?? null;
+}
+// Effective breadth PCR for sector/theme tiles (Net Flow aware, falls back gracefully)
+function sfBreadthPcr(item: { net_flow_breadth_pcr?: number | null; breadth_pcr?: number | null; put_call_ratio: number | null }): number | null {
+  return item.net_flow_breadth_pcr ?? item.breadth_pcr ?? item.put_call_ratio;
+}
+
 // ── Signal text (Premium P/C × Vol P/C combo) ────────────────────────────────
 function sfSignalText(pcr: number | null, vpcr: number | null): string | null {
   if (pcr == null) return null;
@@ -3442,20 +3486,24 @@ function sfTTNote(text: string): ReactNode {
 }
 
 function sfTooltipSector(s: SFSector): ReactNode {
-  const pcr  = s.put_call_ratio;
+  const pcr  = sfBreadthPcr(s);
   const vpcr = s.volume_put_call_ratio ?? null;
   const cov  = s.interval_classified_trade_side_pct ?? null;
   const intSig = sfIntervalSignalText(s.interval_ask_premium_pct ?? null, s.interval_bid_premium_pct ?? null, s.interval_total_premium ?? null);
   const sig  = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
+  const hasBreadth = (s.net_flow_breadth_pcr ?? s.breadth_pcr) != null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{s.sector_name}</div>
       <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{sfSentiment(pcr)}</div>
       {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
-      {sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
-      {sfTTNote("put ÷ call premium — lower is more call-heavy")}
+      {hasBreadth && sfTTRow("Breadth P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {hasBreadth && sfTTNote("net-flow breadth: put ÷ call across stock tickers")}
+      {!hasBreadth && sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {!hasBreadth && sfTTNote("put ÷ call premium — lower is more call-heavy")}
       {vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
       {vpcr != null && sfTTNote("put ÷ call contracts — lower is more call-active")}
+      {hasBreadth && s.put_call_ratio != null && sfTTRow("Premium P/C", s.put_call_ratio.toFixed(2), sfPcrTextCol(s.put_call_ratio))}
       {sfTTRow("Net Premium", fmtCurrencyShort(s.net_premium), sfNetColor(s.net_premium))}
       {sfTTRow("Call Premium", fmtCurrencyShort(s.call_premium ?? null), C.green)}
       {sfTTRow("Put Premium", fmtCurrencyShort(s.put_premium ?? null), C.red)}
@@ -3469,20 +3517,26 @@ function sfTooltipSector(s: SFSector): ReactNode {
   );
 }
 function sfTooltipTheme(t: SFTheme): ReactNode {
-  const pcr  = t.put_call_ratio;
+  const pcr  = sfBreadthPcr(t);
   const vpcr = t.volume_put_call_ratio ?? null;
   const cov  = t.interval_classified_trade_side_pct ?? null;
   const intSig = sfIntervalSignalText(t.interval_ask_premium_pct ?? null, t.interval_bid_premium_pct ?? null, t.interval_total_premium ?? null);
   const sig  = (cov != null && cov >= 70 && intSig) ? intSig : sfSignalText(pcr, vpcr);
+  const hasBreadth = (t.net_flow_breadth_pcr ?? t.breadth_pcr) != null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontWeight: 700, color: C.bright, fontSize: 12, fontFamily: sans, marginBottom: 2 }}>{t.theme_name}</div>
       <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: sig ? 1 : 3 }}>{sfSentiment(pcr)}</div>
       {sig && <div style={{ fontSize: 9, color: C.yellow, fontFamily: font, fontStyle: "italic", marginBottom: 3 }}>{sig}</div>}
-      {sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
-      {sfTTNote("put ÷ call premium — lower is more call-heavy")}
+      {hasBreadth && sfTTRow("Breadth P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {hasBreadth && sfTTNote("net-flow breadth: put ÷ call across stock tickers")}
+      {!hasBreadth && sfTTRow("Premium P/C", pcr?.toFixed(2) ?? "—", sfPcrTextCol(pcr))}
+      {!hasBreadth && sfTTNote("put ÷ call premium — lower is more call-heavy")}
       {vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
       {vpcr != null && sfTTNote("put ÷ call contracts — lower is more call-active")}
+      {hasBreadth && t.put_call_ratio != null && sfTTRow("Premium P/C", t.put_call_ratio.toFixed(2), sfPcrTextCol(t.put_call_ratio))}
+      {t.etf_breadth_pcr != null && sfTTRow("ETF Breadth P/C", t.etf_breadth_pcr.toFixed(2), sfPcrTextCol(t.etf_breadth_pcr))}
+      {t.etf_breadth_pcr != null && sfTTNote("net-flow breadth: put ÷ call across ETFs in theme")}
       {sfTTRow("Net Premium", fmtCurrencyShort(t.net_premium), sfNetColor(t.net_premium))}
       {sfTTRow("Call Premium", fmtCurrencyShort(t.call_premium ?? null), C.green)}
       {sfTTRow("Put Premium", fmtCurrencyShort(t.put_premium ?? null), C.red)}
@@ -4253,7 +4307,7 @@ function SFGroupedHeatmap<T extends object>({
 function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: number): ReactNode {
   if (sw < 30 || sh < 20) return null;
   const pad  = 5;
-  const pcr  = s.put_call_ratio;
+  const pcr  = sfBreadthPcr(s);
   const vpcr = s.volume_put_call_ratio ?? null;
   const ppc  = s.premium_per_contract ?? null;
   const askPct = s.interval_ask_premium_pct ?? null;
@@ -4336,7 +4390,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
 function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: number): ReactNode {
   if (sw < 28 || sh < 18) return null;
   const pad  = 4;
-  const pcr  = t.put_call_ratio;
+  const pcr  = sfBreadthPcr(t);
   const vpcr = t.volume_put_call_ratio ?? null;
   const ppc  = t.premium_per_contract ?? null;
   const askPct = t.interval_ask_premium_pct ?? null;
@@ -4503,6 +4557,101 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   return <>{els}</>;
 }
 
+// ── ETF tile renderer ─────────────────────────────────────────────────────────
+function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: number): ReactNode {
+  if (sw < 30 || sh < 20) return null;
+  const pad       = 4;
+  const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const isPending = sfIsNfPending(tk);
+  const pcr       = isPending ? null : sfNfPcr(tk);
+  const net       = isPending ? null : tk.net_premium;
+  const ppc       = isPending ? null : (tk.premium_per_contract ?? null);
+  const contracts = isPending ? null : (tk.total_contract_volume ?? null);
+  const symFs = Math.max(9,  Math.min(18, sw / 5.5));
+  const pcrFs = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
+  const subFs = Math.max(8,  Math.min(11, sw / 12));
+  const showPcr      = sh >= 36;
+  const showPcrLabel = sw >= 86 && sh >= 60;
+  const showNet      = sw >= 86 && sh >= 60;
+  const showPpc      = sw >= 110 && sh >= 76;
+  const showContracts= sw >= 130 && sh >= 90;
+  const els: ReactNode[] = [];
+  let y = sy + pad;
+  els.push(
+    <text key="sym" x={Math.round(sx + pad)} y={Math.round(y)}
+      fontSize={symFs} fontFamily={font} fontWeight={800} fill={C.bright} dominantBaseline="hanging"
+    >{sym}</text>
+  );
+  y += symFs + 3;
+  if (showPcr && y + pcrFs < sy + sh - 2) {
+    const dispStr = isPending ? "…" : sfDisplayNfPcr(tk);
+    els.push(
+      <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
+      >{dispStr}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" NF P/C"}</tspan>}</text>
+    );
+    y += pcrFs + 3;
+  }
+  if (showNet && y + subFs < sy + sh - 2) {
+    els.push(
+      <text key="net" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfNetColor(net)} dominantBaseline="hanging"
+      >{isPending ? "pending" : fmtCurrencyShort(net)}</text>
+    );
+    y += subFs + 2;
+  }
+  if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
+    els.push(
+      <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+    );
+    y += subFs * 0.85 + 2;
+  }
+  if (showContracts && contracts != null && y + subFs * 0.8 < sy + sh - 2) {
+    els.push(
+      <text key="cts" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
+      >{contracts.toLocaleString()}<tspan opacity={0.65}>{" cts"}</tspan></text>
+    );
+  }
+  return <>{els}</>;
+}
+
+// ── ETF tooltip ───────────────────────────────────────────────────────────────
+function sfTooltipEtf(tk: SFTicker): ReactNode {
+  const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
+  const isPending = sfIsNfPending(tk);
+  const pcr       = isPending ? null : sfNfPcr(tk);
+  const dispPcr   = sfDisplayNfPcr(tk);
+  const os        = tk.one_sided_flow ?? null;
+  const vpcr      = isPending ? null : (tk.volume_put_call_ratio ?? null);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+        <span style={{ fontWeight: 800, color: C.bright, fontSize: 13, fontFamily: font }}>{sym}</span>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: `${C.blue}15`, border: `1px solid ${C.blue}25`, color: C.blue, fontFamily: font }}>ETF</span>
+      </div>
+      <div style={{ color: sfPcrTextCol(pcr), fontWeight: 700, fontSize: 10, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>
+        {isPending ? "NF Pending" : sfSentiment(pcr)}
+      </div>
+      {isPending && sfTTNote("Net Flow snapshot pending — NF PCR not yet available")}
+      {!isPending && sfTTRow("NF P/C", dispPcr, sfPcrTextCol(pcr))}
+      {!isPending && sfTTNote("net-flow put ÷ call (7–60 DTE single expiry scope)")}
+      {os === "call_only" && sfTTNote("one-sided: calls only — no put premium")}
+      {os === "put_only"  && sfTTNote("one-sided: puts only — no call premium")}
+      {!isPending && tk.raw_premium_pcr != null && tk.raw_premium_pcr !== tk.effective_premium_pcr && sfTTRow("Raw NF P/C", tk.raw_premium_pcr.toFixed(2), sfPcrTextCol(tk.raw_premium_pcr))}
+      {!isPending && vpcr != null && sfTTRow("Vol P/C", vpcr.toFixed(2), sfPcrTextCol(vpcr))}
+      {!isPending && sfTTRow("Net Premium", fmtCurrencyShort(tk.net_premium), sfNetColor(tk.net_premium))}
+      {!isPending && sfTTRow("Call Premium", fmtCurrencyShort(tk.call_premium ?? null), C.green)}
+      {!isPending && sfTTRow("Put Premium", fmtCurrencyShort(tk.put_premium ?? null), C.red)}
+      {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
+      {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
+      {!isPending && sfIntervalTTSection(tk)}
+    </div>
+  );
+}
+
 // ── Canonical theme leaf helper ────────────────────────────────────────────────
 // Returns the same leaf universe for both grouped and ungrouped Themes views.
 // Canonical = classification "theme" or "sub_theme" (never "sector").
@@ -4589,7 +4738,7 @@ function getThemeHeatmapLeaves(data: SFData): {
   return { flatLeaves, bySector };
 }
 
-function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) {
+function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allstocks" }) {
   const [data,           setData]           = useState<SFData | null>(null);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string | null>(null);
@@ -4606,8 +4755,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
   const [canonSectors, setCanonSectors] = useState<SFData | null>(null);
   const [canonThemes,  setCanonThemes]  = useState<SFData | null>(null);
 
-  // allstocks + themes both fetch ?view=themes; sectors fetches ?view=sectors
-  const fetchView = view === "allstocks" ? "themes" : view;
+  // allstocks + themes + etfs all fetch ?view=themes; sectors fetches ?view=sectors
+  const fetchView = (view === "allstocks" || view === "etfs") ? "themes" : view;
 
   const load = useCallback(async (bg = false) => {
     if (bg) { setRefreshing(true); } else { setLoading(true); setError(null); }
@@ -4744,12 +4893,10 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
     },
   ), [data, sortBy]);
 
-  // All tickers flattened from themes — deduplicated by symbol, sorted by sortBy
-  const allTickers = useMemo(() => {
+  // Shared dedup helper for both allTickers and allEtfs
+  const _dedupTickers = useMemo(() => {
     const raw: SFTicker[] = [];
     (data?.themes ?? []).forEach(th => (th.tickers ?? []).forEach(tk => raw.push(tk)));
-    // Deduplicate by symbol: aggregate premiums, recompute PCR + new fields
-    // Interval fields: keep canonical (first non-null occurrence) — do NOT sum across theme memberships
     const bySymbol = new Map<string, SFTicker>();
     raw.forEach(tk => {
       const sym = tk.symbol || tk.ticker || tk.underlying || "";
@@ -4759,14 +4906,11 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
       const call  = (existing.call_premium ?? 0) + (tk.call_premium ?? 0);
       const put   = (existing.put_premium  ?? 0) + (tk.put_premium  ?? 0);
       const cts   = (existing.total_contract_volume ?? 0) + (tk.total_contract_volume ?? 0);
-      // volume_put_call_ratio: weight-average by contracts (fallback: take latest non-null)
       const existVpcr = existing.volume_put_call_ratio ?? null;
       const tkVpcr    = tk.volume_put_call_ratio ?? null;
       const vpcr = (existVpcr != null || tkVpcr != null)
         ? ((existVpcr ?? 0) * (existing.total_contract_volume ?? 0) + (tkVpcr ?? 0) * (tk.total_contract_volume ?? 0)) / Math.max(1, cts)
         : null;
-      // Interval fields: prefer non-null canonical node; `...existing` already preserves
-      // existing interval data — only override if existing was null and tk has data
       const useNewInterval = (
         existing.interval_ask_premium_pct == null &&
         tk.interval_ask_premium_pct != null
@@ -4794,12 +4938,17 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         put_call_ratio:         call > 0 ? put / call : existing.put_call_ratio,
         volume_put_call_ratio:  vpcr,
         total_contract_volume:  cts,
-        // premium_per_contract recomputed from aggregated totals
         premium_per_contract:   cts > 0 ? Math.abs(call + put) / (cts * 100) : null,
       });
     });
-    const deduped = Array.from(bySymbol.values());
-    return sfSortItems(deduped, sortBy, tk => {
+    return Array.from(bySymbol.values());
+  }, [data]);
+
+  // All tickers (stocks only) — deduplicated by symbol, sorted by sortBy
+  const allTickers = useMemo(() => {
+    // When instrument_type is absent (old backend), include everything (backward compat)
+    const stocks = _dedupTickers.filter(tk => tk.instrument_type !== "etf");
+    return sfSortItems(stocks, sortBy, tk => {
       switch (sortBy) {
         case "pcr":          return tk.put_call_ratio;
         case "vpcr":         return tk.volume_put_call_ratio ?? null;
@@ -4812,20 +4961,45 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         case "put_premium":  return tk.put_premium;
       }
     });
-  }, [data, sortBy]);
+  }, [_dedupTickers, sortBy]);
+
+  // ETFs — deduplicated by symbol, use effective_premium_pcr for PCR sort key, sorted by sortBy
+  const allEtfs = useMemo(() => {
+    const etfs = _dedupTickers.filter(tk => tk.instrument_type === "etf");
+    // For ETF tiles, color/size uses sfNfPcr (effective_premium_pcr); also set put_call_ratio
+    // to effective_premium_pcr so the standard sfSortRaw("pcr") path works naturally
+    const etfsMapped = etfs.map(tk => {
+      const nfPcr = sfNfPcr(tk);
+      return { ...tk, put_call_ratio: nfPcr ?? tk.put_call_ratio };
+    });
+    return sfSortItems(etfsMapped, sortBy, tk => {
+      switch (sortBy) {
+        case "pcr":          return tk.put_call_ratio;
+        case "vpcr":         return tk.volume_put_call_ratio ?? null;
+        case "ask_pct":      return tk.interval_ask_premium_pct ?? null;
+        case "bid_pct":      return tk.interval_bid_premium_pct ?? null;
+        case "net_premium":  return tk.net_premium;
+        case "ppc":          return tk.premium_per_contract ?? null;
+        case "contracts":    return tk.total_contract_volume ?? null;
+        case "call_premium": return tk.call_premium;
+        case "put_premium":  return tk.put_premium;
+      }
+    });
+  }, [_dedupTickers, sortBy]);
 
   // Navigation level
   const level: "top" | "themes" | "tickers" =
     view === "allstocks" ? "top"
+    : view === "etfs"    ? "top"
     : view === "themes"  ? (activeTheme ? "tickers" : "top")
     :                      (activeTheme ? "tickers" : activeSector ? "themes" : "top");
 
-  const rootLabel = view === "themes" ? "Themes" : view === "allstocks" ? "All Stocks" : "Sectors";
+  const rootLabel = view === "themes" ? "Themes" : view === "allstocks" ? "All Stocks" : view === "etfs" ? "ETFs" : "Sectors";
 
   if (loading) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 10, color: C.dim, fontFamily: font, fontSize: 12 }}>
       <Loader2 className="w-6 h-6" style={{ color: C.blue, animation: "spin 1s linear infinite" }} />
-      {view === "sectors" ? "Loading sectors flow…" : view === "themes" ? "Loading themes flow…" : "Loading stocks flow…"}
+      {view === "sectors" ? "Loading sectors flow…" : view === "themes" ? "Loading themes flow…" : view === "etfs" ? "Loading ETF flow…" : "Loading stocks flow…"}
     </div>
   );
 
@@ -4948,7 +5122,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
               }}
             >{label}</button>
           ))}
-          {(view === "themes" || view === "allstocks") && (
+          {(view === "themes" || view === "allstocks" || view === "etfs") && (
             <>
               <div style={{ width: 1, height: 16, background: C.border, flexShrink: 0, marginLeft: 2 }} />
               <span style={{ fontSize: 9, color: C.dim, fontFamily: font, flexShrink: 0 }}>
@@ -5217,6 +5391,72 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "allstocks" }) 
         );
       })()}
 
+      {/* ══ ETFs — ungrouped ══ */}
+      {view === "etfs" && !grouped && (() => {
+        const { sorted, valueOf } = sfScoredWithSort(allEtfs, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => sfIsNfPending(tk) ? null : sfNfPcr(tk), tk => sfSortRaw(tk, sortBy));
+        return (
+          <SFHeatmap
+            items={sorted}
+            valueOf={valueOf}
+            getPcr={tk => sfIsNfPending(tk) ? null : sfNfPcr(tk)}
+            noData={tk => !sfIsNfPending(tk) && (tk.options_available === false || (tk.scan_status || "").toLowerCase() === "confirmed_no_options")}
+            onClick={tk => setSelectedTicker(tk)}
+            renderTile={sfRenderEtf}
+            renderTooltip={sfTooltipEtf}
+            keyOf={(tk, i) => `${tk.symbol || tk.ticker || "etf"}-${i}`}
+          />
+        );
+      })()}
+
+      {/* ══ ETFs — grouped by theme ══ */}
+      {view === "etfs" && grouped && (() => {
+        // Build per-theme groups of ETF tickers only; group P/C = etf_breadth_pcr
+        const rawThemes = (data?.themes ?? [])
+          .filter(th => (th.classification ?? "").toLowerCase() !== "sector")
+          .filter(th => (th.tickers ?? []).some(tk => tk.instrument_type === "etf"));
+        const sortedThemeArr = sfSortItems(rawThemes, sortBy, th => sfSortRaw(th, sortBy));
+        const etfGroups: SFGroupDef<SFTicker>[] = sortedThemeArr.map(theme => {
+          const etfChildren = (theme.tickers ?? []).filter(tk => tk.instrument_type === "etf");
+          // Map each ETF child to use effective_premium_pcr as put_call_ratio for sort/sizing
+          const mappedChildren = sfSortItems(
+            etfChildren.map(tk => {
+              const nfPcr = sfNfPcr(tk);
+              return { ...tk, put_call_ratio: nfPcr ?? tk.put_call_ratio };
+            }),
+            sortBy, tk => sfSortRaw(tk, sortBy),
+          );
+          return {
+            key:          theme.theme_id ?? theme.theme_name,
+            name:         theme.theme_name,
+            pcr:          theme.etf_breadth_pcr ?? theme.put_call_ratio,
+            call_premium: theme.call_premium ?? null,
+            put_premium:  theme.put_premium  ?? null,
+            net_premium:  theme.net_premium  ?? null,
+            children:     mappedChildren,
+          };
+        });
+        const allGroupEtfs = etfGroups.flatMap(g => g.children);
+        const groupScoreMap = sfBuildSortedScore(
+          allGroupEtfs, sortBy,
+          tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0),
+          tk => sfIsNfPending(tk) ? null : sfNfPcr(tk),
+          tk => sfSortRaw(tk, sortBy),
+        );
+        return (
+          <SFGroupedHeatmap
+            groups={etfGroups}
+            getGross={(tk: SFTicker) => (tk.call_premium ?? 0) + (tk.put_premium ?? 0)}
+            getPcr={(tk: SFTicker) => sfIsNfPending(tk) ? null : sfNfPcr(tk)}
+            getItemScore={(tk: SFTicker) => groupScoreMap.get(tk) ?? 0.04}
+            noData={(tk: SFTicker) => !sfIsNfPending(tk) && (tk.options_available === false || (tk.scan_status || "").toLowerCase() === "confirmed_no_options")}
+            onClick={(tk: SFTicker) => setSelectedTicker(tk)}
+            renderTile={sfRenderEtf}
+            renderTooltip={sfTooltipEtf}
+            keyOf={(tk: SFTicker, i) => `${tk.symbol || tk.ticker || "etf"}-${i}`}
+          />
+        );
+      })()}
+
     </div>{/* end treemap section */}
     </div>{/* end outer flex column */}
 
@@ -5297,7 +5537,7 @@ export default function OptionsPage() {
   })(), [screenerData]);
 
   const [topTab, setTopTab]           = useState<"sectors" | "screener">("sectors");
-  const [netFlowSubTab, setNetFlowSubTab] = useState<"sectors" | "themes" | "allstocks">("sectors");
+  const [netFlowSubTab, setNetFlowSubTab] = useState<"sectors" | "themes" | "etfs" | "allstocks">("sectors");
   const [pageRefreshing, setPageRefreshing] = useState(false);
   const [fetchError, setFetchError]     = useState("");
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -5409,7 +5649,7 @@ export default function OptionsPage() {
       {topTab === "sectors" && (
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
           <div style={{ padding: "3px 16px 0", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0, display: "flex", gap: 1 }}>
-            {(["sectors", "themes", "allstocks"] as const).map(t => (
+            {(["sectors", "themes", "etfs", "allstocks"] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setNetFlowSubTab(t)}
@@ -5421,7 +5661,7 @@ export default function OptionsPage() {
                   transition: "all 0.15s",
                 }}
               >
-                {t === "sectors" ? "Sectors" : t === "themes" ? "Themes" : "All Stocks"}
+                {t === "sectors" ? "Sectors" : t === "themes" ? "Themes" : t === "etfs" ? "ETFs" : "All Stocks"}
               </button>
             ))}
           </div>
