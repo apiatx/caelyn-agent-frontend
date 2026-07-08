@@ -2960,6 +2960,16 @@ interface SFTicker {
   interval_seconds?: number | null;
   interval_started_at?: string | null;
   interval_ended_at?: string | null;
+  // Historical Net Premium comparison fields (null until backend has enough history)
+  net_premium_1d_ago?: number | null;
+  net_premium_delta_1d?: number | null;
+  net_premium_trend_1d?: string | null;
+  net_premium_7d_ago?: number | null;
+  net_premium_delta_7d?: number | null;
+  net_premium_trend_7d?: string | null;
+  net_premium_30d_ago?: number | null;
+  net_premium_delta_30d?: number | null;
+  net_premium_trend_30d?: string | null;
 }
 interface SFTheme {
   theme_id: string;
@@ -2997,6 +3007,16 @@ interface SFTheme {
   interval_seconds?: number | null;
   interval_started_at?: string | null;
   interval_ended_at?: string | null;
+  // Historical Net Premium comparison fields (null until backend has enough history)
+  net_premium_1d_ago?: number | null;
+  net_premium_delta_1d?: number | null;
+  net_premium_trend_1d?: string | null;
+  net_premium_7d_ago?: number | null;
+  net_premium_delta_7d?: number | null;
+  net_premium_trend_7d?: string | null;
+  net_premium_30d_ago?: number | null;
+  net_premium_delta_30d?: number | null;
+  net_premium_trend_30d?: string | null;
 }
 interface SFSector {
   sector_id: string;
@@ -3033,6 +3053,16 @@ interface SFSector {
   interval_seconds?: number | null;
   interval_started_at?: string | null;
   interval_ended_at?: string | null;
+  // Historical Net Premium comparison fields (null until backend has enough history)
+  net_premium_1d_ago?: number | null;
+  net_premium_delta_1d?: number | null;
+  net_premium_trend_1d?: string | null;
+  net_premium_7d_ago?: number | null;
+  net_premium_delta_7d?: number | null;
+  net_premium_trend_7d?: string | null;
+  net_premium_30d_ago?: number | null;
+  net_premium_delta_30d?: number | null;
+  net_premium_trend_30d?: string | null;
 }
 interface SFCoverage {
   theme_universe_total?: number | null;
@@ -3486,6 +3516,68 @@ function sfTTNote(text: string): ReactNode {
   return <div style={{ fontSize: 8, color: "#484848", fontFamily: font, marginTop: -1, marginBottom: 2, paddingLeft: 2, lineHeight: 1.3 }}>{text}</div>;
 }
 
+// ── Net premium trend helpers ──────────────────────────────────────────────────
+interface SFNetDeltaNode {
+  net_premium?: number | null;
+  net_premium_1d_ago?: number | null;
+  net_premium_delta_1d?: number | null;
+  net_premium_trend_1d?: string | null;
+  net_premium_7d_ago?: number | null;
+  net_premium_delta_7d?: number | null;
+  net_premium_trend_7d?: string | null;
+  net_premium_30d_ago?: number | null;
+  net_premium_delta_30d?: number | null;
+  net_premium_trend_30d?: string | null;
+}
+interface SFTrendMeta { color: string; arrow: string; label: string; }
+function sfNetTrendMeta(trend: string | null | undefined): SFTrendMeta {
+  switch (trend) {
+    case "more_positive":    return { color: C.green, arrow: "↑",  label: "More Positive"    };
+    case "less_negative":    return { color: C.green, arrow: "↑",  label: "Less Negative"    };
+    case "crossed_positive": return { color: C.green, arrow: "↗", label: "Crossed Positive" };
+    case "more_negative":    return { color: C.red,   arrow: "↓",  label: "More Negative"    };
+    case "less_positive":    return { color: C.red,   arrow: "↓",  label: "Less Positive"    };
+    case "crossed_negative": return { color: C.red,   arrow: "↘", label: "Crossed Negative" };
+    case "unchanged":        return { color: C.dim,   arrow: "→",  label: "Unchanged"        };
+    default:                 return { color: "#555",  arrow: "",   label: ""                 };
+  }
+}
+// Shared tooltip section: Net Premium Trend — used by all four entity types
+function sfNetTrendTTSection(n: SFNetDeltaNode): ReactNode {
+  function periodBlock(label: string, delta: number | null | undefined, trend: string | null | undefined, ago: number | null | undefined): ReactNode {
+    if (delta == null) {
+      return (
+        <div key={label} style={{ marginBottom: 3 }}>
+          {sfTTRow(label, "—", "#555")}
+          <div style={{ fontSize: 8, color: "#3a3a3a", fontFamily: font, paddingLeft: 2, lineHeight: 1.3 }}>History unavailable</div>
+        </div>
+      );
+    }
+    const meta   = sfNetTrendMeta(trend);
+    const sign   = delta >= 0 ? "+" : "";
+    const valStr = `${sign}${fmtCurrencyShort(delta)}${meta.arrow ? " " + meta.arrow : ""}`;
+    return (
+      <div key={label} style={{ marginBottom: 3 }}>
+        {sfTTRow(label, valStr, meta.color)}
+        {meta.label && <div style={{ fontSize: 8, color: meta.color, fontFamily: font, opacity: 0.75, paddingLeft: 2, lineHeight: 1.3 }}>{meta.label}</div>}
+        {ago != null && <div style={{ fontSize: 8, color: "#454545", fontFamily: font, paddingLeft: 2, lineHeight: 1.3 }}>Prior  {fmtCurrencyShort(ago)}</div>}
+      </div>
+    );
+  }
+  return (
+    <>
+      <div style={{ height: 1, background: C.border, margin: "5px 0 4px" }} />
+      <div style={{ fontSize: 8, color: "#484848", fontFamily: font, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Net Premium Trend</div>
+      {sfTTRow("Current", fmtCurrencyShort(n.net_premium ?? null), sfNetColor(n.net_premium ?? null))}
+      <div style={{ marginTop: 3 }}>
+        {periodBlock("1D", n.net_premium_delta_1d, n.net_premium_trend_1d, n.net_premium_1d_ago)}
+        {periodBlock("7D", n.net_premium_delta_7d, n.net_premium_trend_7d, n.net_premium_7d_ago)}
+        {periodBlock("30D", n.net_premium_delta_30d, n.net_premium_trend_30d, n.net_premium_30d_ago)}
+      </div>
+    </>
+  );
+}
+
 function sfTooltipSector(s: SFSector): ReactNode {
   const pcr  = sfBreadthPcr(s);
   const vpcr = s.volume_put_call_ratio ?? null;
@@ -3513,6 +3605,7 @@ function sfTooltipSector(s: SFSector): ReactNode {
       {s.total_contract_volume != null && sfTTRow("Contracts", s.total_contract_volume.toLocaleString(), C.dim)}
       {s.contributing_ticker_count != null && sfTTRow("Tickers", String(s.contributing_ticker_count), C.dim)}
       {s.themes != null && sfTTRow("Themes", String(s.themes.length), C.dim)}
+      {sfNetTrendTTSection(s)}
       {sfIntervalTTSection(s)}
     </div>
   );
@@ -3545,6 +3638,7 @@ function sfTooltipTheme(t: SFTheme): ReactNode {
       {t.premium_per_contract != null && sfTTNote("est. premium per traded contract")}
       {t.total_contract_volume != null && sfTTRow("Contracts", t.total_contract_volume.toLocaleString(), C.dim)}
       {(t.contributing_ticker_count != null || t.ticker_count != null) && sfTTRow("Coverage", `${t.contributing_ticker_count ?? 0} / ${t.ticker_count ?? 0}`, C.dim)}
+      {sfNetTrendTTSection(t)}
       {sfIntervalTTSection(t)}
     </div>
   );
@@ -3576,6 +3670,7 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
       {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
       {!isPending && tk.premium_per_contract != null && sfTTNote("est. premium per traded contract — higher = larger contracts")}
       {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
+      {!isPending && sfNetTrendTTSection(tk)}
       {!isPending && sfIntervalTTSection(tk)}
     </div>
   );
@@ -4325,9 +4420,11 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
   const showPcrLabel = sw >= 88 && sh >= 60;
   const showVpcr     = sw >= 76 && sh >= 54;
   const showAskBid   = sw >= 88 && sh >= 72;
-  const showNet      = sw >= 88 && sh >= 60;
-  const showPpc      = sw >= 120 && sh >= 80;
-  const showCount    = sw >= 150 && sh >= 96;
+  const showNet        = sw >= 88 && sh >= 60;
+  const showDelta1d    = sw >= 112 && sh >= 82;
+  const showDelta7d30d = sw >= 162 && sh >= 114;
+  const showPpc        = sw >= 120 && sh >= 80;
+  const showCount      = sw >= 150 && sh >= 96;
   const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
@@ -4374,6 +4471,36 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     );
     y += subFs + 2;
   }
+  if (showDelta1d && y + subFs * 0.88 < sy + sh - 2) {
+    const d1 = s.net_premium_delta_1d ?? null;
+    const m1 = sfNetTrendMeta(s.net_premium_trend_1d);
+    els.push(
+      <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d7 = s.net_premium_delta_7d ?? null;
+    const m7 = sfNetTrendMeta(s.net_premium_trend_7d);
+    els.push(
+      <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d30 = s.net_premium_delta_30d ?? null;
+    const m30 = sfNetTrendMeta(s.net_premium_trend_30d);
+    els.push(
+      <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
@@ -4408,8 +4535,10 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
   const showPcrLabel = sw >= 88 && sh >= 58;
   const showVpcr     = sw >= 74 && sh >= 52;
   const showAskBid   = sw >= 86 && sh >= 70;
-  const showNet      = sw >= 88 && sh >= 58;
-  const showPpc      = sw >= 118 && sh >= 78;
+  const showNet        = sw >= 88 && sh >= 58;
+  const showDelta1d    = sw >= 110 && sh >= 80;
+  const showDelta7d30d = sw >= 158 && sh >= 112;
+  const showPpc        = sw >= 118 && sh >= 78;
   const showCount    = sw >= 145 && sh >= 92;
   const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
@@ -4457,6 +4586,36 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     );
     y += subFs + 2;
   }
+  if (showDelta1d && y + subFs * 0.88 < sy + sh - 2) {
+    const d1 = t.net_premium_delta_1d ?? null;
+    const m1 = sfNetTrendMeta(t.net_premium_trend_1d);
+    els.push(
+      <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d7 = t.net_premium_delta_7d ?? null;
+    const m7 = sfNetTrendMeta(t.net_premium_trend_7d);
+    els.push(
+      <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d30 = t.net_premium_delta_30d ?? null;
+    const m30 = sfNetTrendMeta(t.net_premium_trend_30d);
+    els.push(
+      <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
@@ -4495,11 +4654,13 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   const subFs  = Math.max(8,  Math.min(11, sw / 12));
   const showPcr      = sh >= 36;
   const showPcrLabel = sw >= 86 && sh >= 60;
-  const showVpcr     = sw >= 72 && sh >= 52;
-  const showAskBid   = sw >= 86 && sh >= 72;
-  const showNet      = sw >= 86 && sh >= 60;
-  const showPpc      = sw >= 110 && sh >= 76;
-  const showContracts= sw >= 130 && sh >= 90;
+  const showVpcr       = sw >= 72 && sh >= 52;
+  const showAskBid     = sw >= 86 && sh >= 72;
+  const showNet        = sw >= 86 && sh >= 60;
+  const showDelta1d    = sw >= 108 && sh >= 80;
+  const showDelta7d30d = sw >= 155 && sh >= 110;
+  const showPpc        = sw >= 110 && sh >= 76;
+  const showContracts  = sw >= 130 && sh >= 90;
   const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
   const els: ReactNode[] = [];
   let y = sy + pad;
@@ -4555,6 +4716,36 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     );
     y += subFs + 2;
   }
+  if (!isPending && showDelta1d && y + subFs * 0.88 < sy + sh - 2) {
+    const d1 = tk.net_premium_delta_1d ?? null;
+    const m1 = sfNetTrendMeta(tk.net_premium_trend_1d);
+    els.push(
+      <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (!isPending && showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d7 = tk.net_premium_delta_7d ?? null;
+    const m7 = sfNetTrendMeta(tk.net_premium_trend_7d);
+    els.push(
+      <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (!isPending && showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d30 = tk.net_premium_delta_30d ?? null;
+    const m30 = sfNetTrendMeta(tk.net_premium_trend_30d);
+    els.push(
+      <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
@@ -4589,10 +4780,12 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
   const pcrFs  = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
   const subFs  = Math.max(8,  Math.min(11, sw / 12));
   const showPcr      = sh >= 36;
-  const showPcrLabel = sw >= 86 && sh >= 60;
-  const showNet      = sw >= 86 && sh >= 60;
-  const showPpc      = sw >= 110 && sh >= 76;
-  const showContracts= sw >= 130 && sh >= 90;
+  const showPcrLabel   = sw >= 86 && sh >= 60;
+  const showNet        = sw >= 86 && sh >= 60;
+  const showDelta1d    = sw >= 108 && sh >= 80;
+  const showDelta7d30d = sw >= 155 && sh >= 110;
+  const showPpc        = sw >= 110 && sh >= 76;
+  const showContracts  = sw >= 130 && sh >= 90;
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4626,6 +4819,36 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
       >{isPending ? "pending" : fmtCurrencyShort(net)}</text>
     );
     y += subFs + 2;
+  }
+  if (!isPending && showDelta1d && y + subFs * 0.88 < sy + sh - 2) {
+    const d1 = tk.net_premium_delta_1d ?? null;
+    const m1 = sfNetTrendMeta(tk.net_premium_trend_1d);
+    els.push(
+      <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (!isPending && showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d7 = tk.net_premium_delta_7d ?? null;
+    const m7 = sfNetTrendMeta(tk.net_premium_trend_7d);
+    els.push(
+      <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
+  }
+  if (!isPending && showDelta7d30d && y + subFs * 0.88 < sy + sh - 2) {
+    const d30 = tk.net_premium_delta_30d ?? null;
+    const m30 = sfNetTrendMeta(tk.net_premium_trend_30d);
+    els.push(
+      <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
+        fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
+      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+    );
+    y += subFs * 0.88 + 2;
   }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
@@ -4678,6 +4901,7 @@ function sfTooltipEtf(tk: SFTicker): ReactNode {
       {!isPending && sfTTRow("Put Premium", fmtCurrencyShort(tk.put_premium ?? null), C.red)}
       {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
       {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
+      {!isPending && sfNetTrendTTSection(tk)}
       {!isPending && sfIntervalTTSection(tk)}
     </div>
   );

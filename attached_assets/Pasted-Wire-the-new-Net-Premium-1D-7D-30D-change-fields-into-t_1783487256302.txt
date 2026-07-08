@@ -1,0 +1,478 @@
+Wire the new Net Premium 1D / 7D / 30D change fields into the existing Options Flow → Net Flow frontend.
+
+Frontend only.
+
+Backend is complete and already exposes historical Net Premium comparison fields on existing Net Flow entities.
+
+Do not touch backend.
+Do not add API calls.
+Do not rebuild the heatmap.
+Do not change P/C math.
+Do not change tile sizing.
+Do not change heatmap color semantics.
+
+This is a targeted display feature.
+
+==================================================
+BACKEND FIELDS
+==============
+
+Existing Net Flow entities may now include:
+
+net_premium_1d_ago
+net_premium_delta_1d
+net_premium_trend_1d
+
+net_premium_7d_ago
+net_premium_delta_7d
+net_premium_trend_7d
+
+net_premium_30d_ago
+net_premium_delta_30d
+net_premium_trend_30d
+
+Trend values:
+
+more_positive
+less_positive
+more_negative
+less_negative
+crossed_positive
+crossed_negative
+unchanged
+null
+
+These fields are available on existing Net Flow entities including:
+
+* stock ticker
+* ETF ticker
+* theme
+* sub-theme
+* sector
+
+Use the exact live backend field names.
+
+Do not recompute deltas on the frontend.
+
+==================================================
+IMPORTANT HISTORY AVAILABILITY
+==============================
+
+Historical Net Premium persistence started now.
+
+Therefore some or all historical periods may initially be null.
+
+Expected:
+
+* 1D unavailable until a previous market-day snapshot exists
+* 7D unavailable until enough history exists
+* 30D unavailable until enough history exists
+
+If a delta/history field is null:
+
+display:
+—
+
+Do not display:
+0
+0%
+UNCHANGED
+
+Do not fake historical data.
+
+==================================================
+CORE USER GOAL
+==============
+
+The user needs to see not only current Net Premium, but whether Net Premium is becoming:
+
+* increasingly positive
+* decreasingly positive
+* increasingly negative
+* decreasingly negative
+
+Examples:
+
++$2M → +$5M
+= more positive
+= bullish flow accelerating
+
++$8M → +$5M
+= less positive
+= bullish flow decelerating
+
+-$3M → -$8M
+= more negative
+= bearish flow accelerating
+
+-$8M → -$3M
+= less negative
+= bearish flow easing
+
+-$2M → +$3M
+= crossed positive
+
++$2M → -$3M
+= crossed negative
+
+The backend trend field is authoritative.
+
+Do not infer trend from delta sign alone.
+
+==================================================
+HEATMAP TILE DISPLAY
+====================
+
+Add compact Net Premium delta information to the existing progressive heatmap labels.
+
+Preserve the current crisp screen-space SVG label architecture.
+
+Do not force all three delta periods into small tiles.
+
+Suggested progressive layout:
+
+TINY:
+
+* no text
+
+SMALL:
+
+* ticker/name as currently implemented
+
+MEDIUM:
+
+* ticker
+* company/fund name
+* P/C
+
+LARGE:
+
+* ticker
+* company/fund name
+* P/C
+* NET
+* 1D Δ
+
+EXTRA LARGE:
+
+* ticker
+* company/fund name
+* P/C
+* NET
+* 1D Δ
+* 7D Δ
+* 30D Δ
+
+For sector/theme tiles without ticker/company subtitle:
+use the same progressive concept.
+
+Example large tile:
+
+NVDA
+NVIDIA Corporation
+
+0.22
+P/C
+
++$8.4M NET
+1D +$3.2M ↑
+
+Example extra-large tile:
+
++$8.4M NET
+1D +$3.2M ↑
+7D +$6.8M ↑
+30D —
+
+Keep it compact.
+
+==================================================
+DELTA LABELS
+============
+
+Use labels:
+
+1D
+7D
+30D
+
+Format currency using the existing compact dollar formatter.
+
+Examples:
+
+1D +$3.2M
+1D -$850K
+7D +$12.4M
+30D —
+
+Do not show excessive decimals.
+
+==================================================
+TREND ICON / DIRECTION
+======================
+
+Add a small direction indicator after the delta.
+
+Recommended:
+
+more_positive:
+↑
+
+less_positive:
+↓
+
+more_negative:
+↓
+
+less_negative:
+↑
+
+crossed_positive:
+↗
+
+crossed_negative:
+↘
+
+unchanged:
+→
+
+Important:
+
+The arrow represents improvement/deterioration in Net Premium direction, not merely whether the numeric delta is positive.
+
+Use the backend trend field.
+
+Examples:
+
+Current +$5M
+1D delta +$3M
+trend more_positive
+
+Display:
+1D +$3M ↑
+
+Current -$8M
+1D delta -$5M
+trend more_negative
+
+Display:
+1D -$5M ↓
+
+Current -$3M
+1D delta +$5M
+trend less_negative
+
+Display:
+1D +$5M ↑
+
+==================================================
+TREND COLORS
+============
+
+This is separate from the main heatmap tile color.
+
+Do not change the tile's existing P/C-based green/red/neutral color.
+
+Only color the small delta text/icon.
+
+Use existing positive/negative semantic colors.
+
+Bullish/improving:
+
+* more_positive
+* less_negative
+* crossed_positive
+
+Use green.
+
+Bearish/deteriorating:
+
+* more_negative
+* less_positive
+* crossed_negative
+
+Use red.
+
+Unchanged:
+use neutral silver/gray.
+
+Null:
+display — with muted neutral text.
+
+Do not color a positive numeric delta green blindly.
+
+Use net_premium_trend_*.
+
+==================================================
+TOOLTIPS
+========
+
+Add a clear Net Premium Trend section to:
+
+* sector tooltip
+* theme/sub-theme tooltip
+* ETF tooltip
+* stock tooltip
+
+Example:
+
+NET PREMIUM TREND
+
+Current          +$8.4M
+
+1D               +$3.2M ↑
+More Positive
+Prior            +$5.2M
+
+7D               +$6.8M ↑
+Crossed Positive
+Prior            -$1.6M
+
+30D              —
+History unavailable
+
+Use the backend:
+
+* current net_premium
+* net_premium_{n}d_ago
+* net_premium_delta_{n}d
+* net_premium_trend_{n}d
+
+Convert trend enum to readable text:
+
+more_positive → More Positive
+less_positive → Less Positive
+more_negative → More Negative
+less_negative → Less Negative
+crossed_positive → Crossed Positive
+crossed_negative → Crossed Negative
+unchanged → Unchanged
+
+Keep the tooltip clean and compact.
+
+==================================================
+ALL FOUR NET FLOW TABS
+======================
+
+Apply to:
+
+Sectors
+Themes
+ETFs
+All Stocks
+
+Sector tiles:
+use sector delta fields.
+
+Theme/sub-theme tiles:
+use their own delta fields.
+
+ETF leaves:
+use ETF ticker delta fields.
+
+Stock leaves:
+use stock ticker delta fields.
+
+Grouped parent headers:
+If the parent entity itself carries backend delta fields, show its own delta.
+
+Do not average child deltas on frontend.
+
+Do not sum frontend child deltas to create parent trend.
+
+Backend entity fields are authoritative.
+
+==================================================
+TYPES
+=====
+
+Extend the existing SF entity/ticker/theme/sector types with optional nullable fields matching the backend.
+
+Conceptually:
+
+net_premium_1d_ago?: number | null
+net_premium_delta_1d?: number | null
+net_premium_trend_1d?: string | null
+
+net_premium_7d_ago?: number | null
+net_premium_delta_7d?: number | null
+net_premium_trend_7d?: string | null
+
+net_premium_30d_ago?: number | null
+net_premium_delta_30d?: number | null
+net_premium_trend_30d?: string | null
+
+Use a shared helper/type if clean.
+
+Avoid copying trend formatting logic into four separate renderers.
+
+Create small shared helpers such as:
+
+sfNetTrendMeta(...)
+sfFormatNetDelta(...)
+sfNetTrendLabel(...)
+
+Names are conceptual. Follow current frontend style.
+
+==================================================
+DO NOT
+======
+
+Do not touch backend.
+
+Do not add Tradier calls.
+
+Do not add a historical API endpoint.
+
+Do not calculate historical Net Premium from current options data.
+
+Do not fake 7D/30D data.
+
+Do not calculate trend from delta sign alone.
+
+Do not change heatmap P/C color.
+
+Do not use delta to resize heatmap tiles yet.
+
+Do not rebuild SFHeatmap or SFGroupedHeatmap.
+
+Do not change zoom/pan.
+
+Do not break company/fund name labels.
+
+Do not clutter tiny tiles.
+
+==================================================
+VALIDATION
+==========
+
+1. Existing Net Flow page loads normally.
+2. Sectors tooltip includes Net Premium Trend.
+3. Themes tooltip includes Net Premium Trend.
+4. ETF tooltip includes Net Premium Trend.
+5. Stock tooltip includes Net Premium Trend.
+6. Null history displays —.
+7. Null history does not display 0 or unchanged.
+8. Large tiles show 1D delta when available.
+9. Extra-large tiles show 1D / 7D / 30D when available.
+10. more_positive renders green/up.
+11. less_negative renders green/up.
+12. crossed_positive renders green/up-right.
+13. more_negative renders red/down.
+14. less_positive renders red/down.
+15. crossed_negative renders red/down-right.
+16. unchanged renders neutral/right.
+17. Main tile color remains driven by existing P/C semantics.
+18. Tile sizing remains unchanged.
+19. No new network requests.
+20. No heatmap layout/zoom regression.
+21. Company and ETF names remain readable.
+22. Browser console has no new runtime errors.
+
+Because production history has only just started accumulating, use existing local fixture/test data or a temporary frontend-only mocked entity to visually verify all trend states.
+
+Do not persist mock data.
+Do not change backend data.
+Remove the mock immediately after validation.
+
+Implement the display feature now.
