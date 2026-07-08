@@ -4425,7 +4425,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
   const showDelta7d30d = sw >= 162 && sh >= 114;
   const showPpc        = sw >= 120 && sh >= 80;
   const showCount      = sw >= 150 && sh >= 96;
-  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#aaa" : "#ddd";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4438,7 +4438,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} fill="#bbb">{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
   }
@@ -4446,7 +4446,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="vp" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
-      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} fill="#bbb">{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
   }
@@ -4456,9 +4456,9 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
         fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
       >
         <tspan>{sfFmtIntPct(askPct)}</tspan>
-        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan fill="#bbb">{" Ask · "}</tspan>
         <tspan>{sfFmtIntPct(bidPct)}</tspan>
-        <tspan opacity={0.6}>{" Bid"}</tspan>
+        <tspan fill="#bbb">{" Bid"}</tspan>
       </text>
     );
     y += subFs * 0.9 + 2;
@@ -4477,7 +4477,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#aaa"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4487,7 +4487,7 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#aaa"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4497,22 +4497,22 @@ function sfRenderSector(s: SFSector, sx: number, sy: number, sw: number, sh: num
     els.push(
       <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#aaa"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
-      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+        fontSize={subFs * 0.85} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan fill="#bbb">{"/ct"}</tspan></text>
     );
     y += subFs * 0.85 + 2;
   }
   if (showCount && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
+        fontSize={subFs * 0.8} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
       >{(s.contributing_ticker_count ?? s.ticker_count ?? 0)} tickers · {s.themes?.length ?? 0} themes</text>
     );
   }
@@ -4540,7 +4540,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
   const showDelta7d30d = sw >= 158 && sh >= 112;
   const showPpc        = sw >= 118 && sh >= 78;
   const showCount    = sw >= 145 && sh >= 92;
-  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#aaa" : "#ddd";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4553,7 +4553,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="p" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} fill="#bbb">{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
   }
@@ -4561,7 +4561,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="vp" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
-      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} fill="#bbb">{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
   }
@@ -4571,9 +4571,9 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
         fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
       >
         <tspan>{sfFmtIntPct(askPct)}</tspan>
-        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan fill="#bbb">{" Ask · "}</tspan>
         <tspan>{sfFmtIntPct(bidPct)}</tspan>
-        <tspan opacity={0.6}>{" Bid"}</tspan>
+        <tspan fill="#bbb">{" Bid"}</tspan>
       </text>
     );
     y += subFs * 0.9 + 2;
@@ -4592,7 +4592,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#aaa"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4602,7 +4602,7 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#aaa"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4612,22 +4612,22 @@ function sfRenderTheme(t: SFTheme, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#aaa"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
-      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+        fontSize={subFs * 0.85} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan fill="#bbb">{"/ct"}</tspan></text>
     );
     y += subFs * 0.85 + 2;
   }
   if (showCount && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cnt" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
+        fontSize={subFs * 0.8} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
       >{t.contributing_ticker_count ?? 0} / {t.ticker_count ?? 0} tickers</text>
     );
   }
@@ -4661,7 +4661,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   const showDelta7d30d = sw >= 155 && sh >= 110;
   const showPpc        = sw >= 110 && sh >= 76;
   const showContracts  = sw >= 130 && sh >= 90;
-  const intPctFill   = (cov != null && cov < 40) ? "#555" : "#777";
+  const intPctFill   = (cov != null && cov < 40) ? "#aaa" : "#ddd";
   const els: ReactNode[] = [];
   let y = sy + pad;
   els.push(
@@ -4683,7 +4683,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" P/C"}</tspan>}</text>
+      >{isPending ? "…" : pcr != null ? pcr.toFixed(2) : "—"}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} fill="#bbb">{" P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
   }
@@ -4691,7 +4691,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="vpcr" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs} fontFamily={font} fontWeight={600} fill={sfPcrTextCol(vpcr)} dominantBaseline="hanging"
-      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} opacity={0.55}>{" Vol P/C"}</tspan></text>
+      >{vpcr.toFixed(2)}<tspan fontSize={subFs * 0.85} fill="#bbb">{" Vol P/C"}</tspan></text>
     );
     y += subFs + 2;
   }
@@ -4701,9 +4701,9 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
         fontSize={subFs * 0.9} fontFamily={font} fontWeight={600} fill={intPctFill} dominantBaseline="hanging"
       >
         <tspan>{sfFmtIntPct(askPct)}</tspan>
-        <tspan opacity={0.6}>{" Ask · "}</tspan>
+        <tspan fill="#bbb">{" Ask · "}</tspan>
         <tspan>{sfFmtIntPct(bidPct)}</tspan>
-        <tspan opacity={0.6}>{" Bid"}</tspan>
+        <tspan fill="#bbb">{" Bid"}</tspan>
       </text>
     );
     y += subFs * 0.9 + 2;
@@ -4722,7 +4722,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#aaa"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4732,7 +4732,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#aaa"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4742,23 +4742,23 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
     els.push(
       <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#aaa"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
-      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+        fontSize={subFs * 0.85} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan fill="#bbb">{"/ct"}</tspan></text>
     );
     y += subFs * 0.85 + 2;
   }
   if (showContracts && contracts != null && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cts" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
-      >{contracts.toLocaleString()}<tspan opacity={0.65}>{" cts"}</tspan></text>
+        fontSize={subFs * 0.8} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{contracts.toLocaleString()}<tspan fill="#bbb">{" cts"}</tspan></text>
     );
   }
   return <>{els}</>;
@@ -4808,7 +4808,7 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="pcr" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={pcrFs} fontFamily={font} fontWeight={900} fill={sfPcrTextCol(pcr)} dominantBaseline="hanging"
-      >{dispStr}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} opacity={0.55}>{" NF P/C"}</tspan>}</text>
+      >{dispStr}{showPcrLabel && <tspan fontSize={pcrFs * 0.56} fill="#bbb">{" NF P/C"}</tspan>}</text>
     );
     y += pcrFs + 3;
   }
@@ -4826,7 +4826,7 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d1" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#555"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"1D "}</tspan><tspan fill={d1 != null ? m1.color : "#aaa"}>{d1 != null ? `${d1 >= 0 ? "+" : ""}${fmtCurrencyShort(d1)}${m1.arrow ? " " + m1.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4836,7 +4836,7 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d7" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#555"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"7D "}</tspan><tspan fill={d7 != null ? m7.color : "#aaa"}>{d7 != null ? `${d7 >= 0 ? "+" : ""}${fmtCurrencyShort(d7)}${m7.arrow ? " " + m7.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
@@ -4846,23 +4846,23 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
     els.push(
       <text key="d30" x={Math.round(sx + pad)} y={Math.round(y)}
         fontSize={subFs * 0.88} fontFamily={font} fontWeight={600} dominantBaseline="hanging"
-      ><tspan fill="#666">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#555"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
+      ><tspan fill="#bbb">{"30D "}</tspan><tspan fill={d30 != null ? m30.color : "#aaa"}>{d30 != null ? `${d30 >= 0 ? "+" : ""}${fmtCurrencyShort(d30)}${m30.arrow ? " " + m30.arrow : ""}` : "—"}</tspan></text>
     );
     y += subFs * 0.88 + 2;
   }
   if (showPpc && ppc != null && y + subFs * 0.85 < sy + sh - 2) {
     els.push(
       <text key="ppc" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.85} fontFamily={font} fill="#666" dominantBaseline="hanging"
-      >{fmtCurrencyShort(ppc)}<tspan opacity={0.65}>{"/ct"}</tspan></text>
+        fontSize={subFs * 0.85} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{fmtCurrencyShort(ppc)}<tspan fill="#bbb">{"/ct"}</tspan></text>
     );
     y += subFs * 0.85 + 2;
   }
   if (showContracts && contracts != null && y + subFs * 0.8 < sy + sh - 2) {
     els.push(
       <text key="cts" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={subFs * 0.8} fontFamily={font} fill="#555" dominantBaseline="hanging"
-      >{contracts.toLocaleString()}<tspan opacity={0.65}>{" cts"}</tspan></text>
+        fontSize={subFs * 0.8} fontFamily={font} fill="#ccc" dominantBaseline="hanging"
+      >{contracts.toLocaleString()}<tspan fill="#bbb">{" cts"}</tspan></text>
     );
   }
   return <>{els}</>;
