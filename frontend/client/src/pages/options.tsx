@@ -4674,7 +4674,7 @@ function sfRenderTicker(tk: SFTicker, sx: number, sy: number, sw: number, sh: nu
   if (name && sw >= 50 && sh >= 50 && y + nameFs < sy + sh - (showPcr ? pcrFs + 3 : 0) - 2) {
     els.push(
       <text key="name" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={nameFs} fontFamily={font} fontWeight={400} fill={C.dim} opacity={0.7} dominantBaseline="hanging"
+        fontSize={nameFs} fontFamily={font} fontWeight={400} fill="#ffffff" opacity={0.85} dominantBaseline="hanging"
       >{name}</text>
     );
     y += nameFs + 2;
@@ -4798,7 +4798,7 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
   if (name && sw >= 50 && sh >= 50 && y + nameFs < sy + sh - (showPcr ? pcrFs + 3 : 0) - 2) {
     els.push(
       <text key="name" x={Math.round(sx + pad)} y={Math.round(y)}
-        fontSize={nameFs} fontFamily={font} fontWeight={400} fill={C.dim} opacity={0.7} dominantBaseline="hanging"
+        fontSize={nameFs} fontFamily={font} fontWeight={400} fill="#ffffff" opacity={0.85} dominantBaseline="hanging"
       >{name}</text>
     );
     y += nameFs + 2;
@@ -5260,7 +5260,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
     : view === "themes"  ? (activeTheme ? "tickers" : "top")
     :                      (activeTheme ? "tickers" : activeSector ? "themes" : "top");
 
-  const rootLabel = view === "themes" ? "Themes" : view === "allstocks" ? "All Stocks" : view === "etfs" ? "ETFs" : "Sectors";
+  const rootLabel = view === "themes" ? "Themes" : view === "allstocks" ? "Stocks" : view === "etfs" ? "ETFs" : "Sectors";
 
   if (loading) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", gap: 10, color: C.dim, fontFamily: font, fontSize: 12 }}>
@@ -5934,7 +5934,7 @@ export default function OptionsPage() {
                   transition: "all 0.15s",
                 }}
               >
-                {t === "sectors" ? "Sectors" : t === "themes" ? "Themes" : t === "etfs" ? "ETFs" : "All Stocks"}
+                {t === "sectors" ? "Sectors" : t === "themes" ? "Themes" : t === "etfs" ? "ETFs" : "Stocks"}
               </button>
             ))}
           </div>
