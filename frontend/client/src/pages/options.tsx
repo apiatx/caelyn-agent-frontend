@@ -3398,7 +3398,13 @@ function sfSentiment(pcr: number | null): string {
 
 // ── Net Flow helpers (ETF/Stock NF separation, NF snapshot state) ─────────────
 const NF_CANONICAL_SCOPE = "net_flow_single_expiry_7_60dte_v1";
+/** Confirmed no-options tickers — scan_status wins over nf_snapshot_pending. */
+function sfIsNoOptions(tk: SFTicker): boolean {
+  const ss = (tk.scan_status || "").toLowerCase();
+  return ss === "no_options" || ss === "confirmed_no_options" || tk.options_available === false;
+}
 function sfIsNfPending(tk: SFTicker): boolean {
+  if (sfIsNoOptions(tk)) return false;   // no-options confirmed — never treat as pending
   if (tk.nf_snapshot_pending === true) return true;
   if (tk.premium_scope_id != null && tk.premium_scope_id !== NF_CANONICAL_SCOPE) return true;
   return false;
@@ -4770,11 +4776,12 @@ function sfRenderEtf(tk: SFTicker, sx: number, sy: number, sw: number, sh: numbe
   const pad       = 4;
   const sym       = tk.symbol || tk.ticker || tk.underlying || "—";
   const name      = (tk.display_name && tk.display_name !== sym) ? tk.display_name : null;
+  const isNoOptions = sfIsNoOptions(tk);
   const isPending = sfIsNfPending(tk);
-  const pcr       = isPending ? null : sfNfPcr(tk);
-  const net       = isPending ? null : tk.net_premium;
-  const ppc       = isPending ? null : (tk.premium_per_contract ?? null);
-  const contracts = isPending ? null : (tk.total_contract_volume ?? null);
+  const pcr       = (isPending || isNoOptions) ? null : sfNfPcr(tk);
+  const net       = (isPending || isNoOptions) ? null : tk.net_premium;
+  const ppc       = (isPending || isNoOptions) ? null : (tk.premium_per_contract ?? null);
+  const contracts = (isPending || isNoOptions) ? null : (tk.total_contract_volume ?? null);
   const symFs  = Math.max(9,  Math.min(18, sw / 5.5));
   const nameFs = Math.max(7,  Math.min(9,  sw / 14));
   const pcrFs  = Math.max(10, Math.min(28, Math.min(sw / 3.5, sh / 2.2)));
@@ -5471,7 +5478,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
+        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (sfIsNoOptions(tk) || (tk.scan_status||"").toLowerCase() === "pending") ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
@@ -5483,8 +5490,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
               <SFHeatmap
                 items={sorted}
                 valueOf={valueOf}
-                getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
-                noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && ((tk.scan_status||"").toLowerCase()==="confirmed_no_options" || tk.options_available===false)}
+                getPcr={tk => (sfIsNoOptions(tk) || (tk.scan_status || "").toLowerCase() === "pending") ? null : tk.put_call_ratio}
+                noData={tk => sfIsNoOptions(tk)}
                 onClick={tk => setSelectedTicker(tk)}
                 renderTile={sfRenderTicker}
                 renderTooltip={sfTooltipTicker}
@@ -5577,7 +5584,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
         const tks  = activeTheme.tickers;
         const wd   = tks.filter(tk => tk.net_premium != null).length;
         const pend = tks.filter(tk => (tk.scan_status || "").toLowerCase() === "pending").length;
-        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
+        const { sorted, valueOf } = sfScoredWithSort(tks, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (sfIsNoOptions(tk) || (tk.scan_status||"").toLowerCase() === "pending") ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <div style={{ flexShrink: 0, display: "flex", gap: 10, marginBottom: 6, fontSize: 10, fontFamily: font, color: C.dim, alignItems: "center", flexWrap: "wrap" }}>
@@ -5589,8 +5596,8 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
               <SFHeatmap
                 items={sorted}
                 valueOf={valueOf}
-                getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
-                noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+                getPcr={tk => (sfIsNoOptions(tk) || (tk.scan_status || "").toLowerCase() === "pending") ? null : tk.put_call_ratio}
+                noData={tk => sfIsNoOptions(tk)}
                 onClick={tk => setSelectedTicker(tk)}
                 renderTile={sfRenderTicker}
                 renderTooltip={sfTooltipTicker}
@@ -5603,13 +5610,13 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
 
       {/* ══ ALL STOCKS — ungrouped: fills panel, zoom for small tiles ══ */}
       {view === "allstocks" && !grouped && (() => {
-        const { sorted, valueOf } = sfScoredWithSort(allTickers, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (tk.scan_status||"").toLowerCase() === "pending" ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
+        const { sorted, valueOf } = sfScoredWithSort(allTickers, sortBy, tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0), tk => (sfIsNoOptions(tk) || (tk.scan_status||"").toLowerCase() === "pending") ? null : tk.put_call_ratio, tk => sfSortRaw(tk, sortBy));
         return (
           <SFHeatmap
             items={sorted}
             valueOf={valueOf}
-            getPcr={tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
-            noData={tk => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+            getPcr={tk => (sfIsNoOptions(tk) || (tk.scan_status || "").toLowerCase() === "pending") ? null : tk.put_call_ratio}
+            noData={tk => sfIsNoOptions(tk)}
             onClick={tk => setSelectedTicker(tk)}
             renderTile={sfRenderTicker}
             renderTooltip={sfTooltipTicker}
@@ -5646,16 +5653,16 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
         const groupScoreMap = sfBuildSortedScore(
           allGroupTickers, sortBy,
           tk => (tk.call_premium ?? 0) + (tk.put_premium ?? 0),
-          tk => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio,
+          tk => (sfIsNoOptions(tk) || (tk.scan_status || "").toLowerCase() === "pending") ? null : tk.put_call_ratio,
           tk => sfSortRaw(tk, sortBy),
         );
         return (
           <SFGroupedHeatmap
             groups={themeGroups}
             getGross={(tk: SFTicker) => (tk.call_premium ?? 0) + (tk.put_premium ?? 0)}
-            getPcr={(tk: SFTicker) => (tk.scan_status || "").toLowerCase() === "pending" ? null : tk.put_call_ratio}
+            getPcr={(tk: SFTicker) => (sfIsNoOptions(tk) || (tk.scan_status || "").toLowerCase() === "pending") ? null : tk.put_call_ratio}
             getItemScore={(tk: SFTicker) => groupScoreMap.get(tk) ?? 0.04}
-            noData={(tk: SFTicker) => !((tk.scan_status||"").toLowerCase()==="pending") && (tk.options_available===false || (tk.scan_status||"").toLowerCase()==="confirmed_no_options")}
+            noData={(tk: SFTicker) => sfIsNoOptions(tk)}
             onClick={(tk: SFTicker) => setSelectedTicker(tk)}
             renderTile={sfRenderTicker}
             renderTooltip={sfTooltipTicker}
@@ -5672,7 +5679,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
             items={sorted}
             valueOf={valueOf}
             getPcr={tk => sfIsNfPending(tk) ? null : sfNfPcr(tk)}
-            noData={tk => !sfIsNfPending(tk) && (tk.options_available === false || (tk.scan_status || "").toLowerCase() === "confirmed_no_options")}
+            noData={tk => sfIsNoOptions(tk)}
             onClick={tk => setSelectedTicker(tk)}
             renderTile={sfRenderEtf}
             renderTooltip={sfTooltipEtf}
@@ -5721,7 +5728,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
             getGross={(tk: SFTicker) => (tk.call_premium ?? 0) + (tk.put_premium ?? 0)}
             getPcr={(tk: SFTicker) => sfIsNfPending(tk) ? null : sfNfPcr(tk)}
             getItemScore={(tk: SFTicker) => groupScoreMap.get(tk) ?? 0.04}
-            noData={(tk: SFTicker) => !sfIsNfPending(tk) && (tk.options_available === false || (tk.scan_status || "").toLowerCase() === "confirmed_no_options")}
+            noData={(tk: SFTicker) => sfIsNoOptions(tk)}
             onClick={(tk: SFTicker) => setSelectedTicker(tk)}
             renderTile={sfRenderEtf}
             renderTooltip={sfTooltipEtf}
