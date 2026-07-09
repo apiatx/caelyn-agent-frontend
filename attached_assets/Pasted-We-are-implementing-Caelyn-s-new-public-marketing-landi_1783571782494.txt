@@ -1,0 +1,776 @@
+We are implementing Caelyn's new public marketing landing page.
+
+IMPORTANT: AUDIT FIRST. Do not modify code until you have traced the current routing, app entrypoint, login page route, authentication redirect behavior, global styles/theme primitives, existing glass-card components, buttons, navigation, and any shared UI components that can be reused.
+
+This is the frontend repo only.
+
+DO NOT:
+
+* change the backend
+* change authentication logic
+* replace the existing login page
+* rename or move the existing login route
+* invent a new auth flow
+* change protected application routes
+* modify API calls
+* modify market-data refresh behavior
+* modify watchlist, portfolio, options, themes, AI, or screener logic
+* add Stripe or subscription billing yet
+* implement plan entitlements yet
+* create fake live market data
+* pull new market-data APIs for the landing page
+* create an entirely separate design system if the existing app already has glass/card/button primitives
+
+The landing page must sit IN FRONT OF the current app/login experience.
+
+The existing login page and auth path must be preserved exactly.
+
+Before editing, report:
+
+1. current public/root route behavior
+2. exact existing login route
+3. current auth redirect/protected route behavior
+4. main frontend routing files involved
+5. reusable existing Caelyn glass-card/button/layout components
+6. global theme/style files involved
+7. whether the current root route can safely become the landing page without breaking authenticated navigation
+
+Then implement the landing page.
+
+==================================================
+ROUTING REQUIREMENTS
+====================
+
+The public root route `/` should become the new Caelyn marketing landing page.
+
+The existing login page must remain at its existing route and retain its existing authentication behavior.
+
+LANDING PAGE BUTTON BEHAVIOR:
+
+"LOG IN"
+→ navigate to the EXISTING login route
+
+"START FREE"
+→ for now navigate to the EXISTING login/account-entry route
+→ do not create a fake signup system
+→ do not modify auth
+→ this will later become the registration entrypoint
+
+Pricing CTAs:
+FREE "EXPLORE FREE"
+STARTER "START BUILDING"
+PLUS "GET CAELYN PLUS"
+
+For this first pass, all three should route to the existing account-entry/login route.
+
+PRO "JOIN THE PRO WAITLIST"
+→ no checkout
+→ no Stripe
+→ create a visually complete CTA but keep it frontend-only for now
+→ clicking can open a small inline "Pro waitlist coming soon" state/modal/toast using existing UI patterns if available
+→ do not invent backend persistence
+
+If authenticated users currently hit `/` and are automatically routed into the app, preserve the correct authenticated experience where practical.
+
+Do not strand existing authenticated users on the marketing page.
+
+Audit the current auth redirect behavior and make the smallest route change necessary.
+
+==================================================
+DESIGN DIRECTION
+================
+
+The page should feel:
+
+Linear × Bloomberg × Palantir
+
+Not generic fintech SaaS.
+
+Keep it:
+
+* real
+* shiny
+* extremely polished
+* dark
+* restrained
+* minimal
+* expensive-looking
+* data-first
+
+Avoid:
+
+* purple SaaS gradients
+* giant rainbow blobs
+* crypto-bro visuals
+* cheesy stock photography
+* fake candlestick animations everywhere
+* excessive glowing borders
+* dozens of badges
+* generic "AI powered insights" copy
+* cartoon illustrations
+* long walls of text
+
+Base visual direction:
+
+* near-black background around #050506
+* use existing Caelyn accent colors where appropriate
+* subtle blue-white spectral glow
+* subtle glass surfaces
+* thin borders
+* generous spacing
+* large confident typography
+* restrained motion
+* subtle background grain/noise only if it can be implemented cleanly without a heavy dependency
+* faint market/data texture in the background
+* reuse existing Caelyn glass styling where possible
+
+The landing page should look unmistakably related to the existing Caelyn app.
+
+Do not make the marketing site feel like a different product.
+
+==================================================
+PAGE NAVIGATION
+===============
+
+Sticky or floating top nav.
+
+LEFT:
+CAELYN wordmark/logo using the current brand treatment if one exists
+
+CENTER / DESKTOP:
+ABOUT
+STRATEGY
+PRICING
+
+These should smooth-scroll to sections on the landing page.
+
+RIGHT:
+LOG IN
+START FREE
+
+START FREE should be the strongest nav CTA.
+
+Mobile:
+collapse navigation cleanly using existing responsive patterns if available.
+
+==================================================
+SECTION 1 — HERO
+================
+
+Primary headline:
+
+"See the market as a system."
+
+Supporting copy:
+
+"Themes. Flows. Catalysts. Fundamentals. Social intelligence. Your portfolio."
+
+Secondary copy:
+
+"Caelyn connects the signals investors normally analyze in isolation — and helps you understand what actually matters now."
+
+Primary CTA:
+START FREE
+
+Secondary CTA:
+EXPLORE THE PLATFORM
+
+EXPLORE THE PLATFORM should scroll to the product/convergence section.
+
+Small lower line:
+
+"Built for investors who want more than another stock screener."
+
+VISUAL:
+
+Below or alongside the hero, create a large premium product preview using the REAL Caelyn visual language.
+
+Do not hardcode fake price quotes or fake market claims.
+
+Prefer one of these approaches, in order:
+
+1. reuse safe existing frontend components with static structural/demo content
+2. create a composed visual shell inspired by actual Caelyn cards
+3. use labeled modules without fabricated live values
+
+The preview can visually reference:
+
+* Market Regime
+* Leading Themes
+* Options Flow
+* Watchlist
+* Caelyn Agent
+
+The purpose is to show the product ecosystem.
+
+It does not need to be interactive.
+
+It MUST NOT trigger new API requests.
+
+It MUST NOT alter existing caches.
+
+It MUST NOT claim values are live if they are static presentation data.
+
+A subtle perspective/float effect is fine, but keep motion tasteful.
+
+Respect prefers-reduced-motion.
+
+==================================================
+SECTION 2 — SIGNAL CONVERGENCE
+==============================
+
+Large centered headline:
+
+"You don't need more data."
+
+Then emphasized line:
+
+"You need the data to agree."
+
+Show five signal categories:
+
+TECHNICALS
+FUNDAMENTALS
+OPTIONS FLOW
+CATALYSTS
+SOCIAL INTELLIGENCE
+
+Visually show these signals converging toward:
+
+CAELYN
+
+Then:
+
+CONVICTION
+
+This should be one of the most visually memorable sections of the page.
+
+Use CSS/SVG lines, subtle particles, light paths, or restrained connection geometry.
+
+Do not add a heavy visualization dependency unless the repo already uses one.
+
+Copy around this section should communicate:
+
+"Caelyn connects the signals investors normally analyze separately so you can see when the setup starts to align."
+
+Do not say Caelyn tells users what to buy.
+
+==================================================
+SECTION 3 — ABOUT
+=================
+
+Section ID:
+about
+
+Headline:
+
+"Built because investing tools still make you do the thinking between the tabs."
+
+Body copy:
+
+"Market data lives in one platform. Options activity lives somewhere else. Social sentiment moves in real time. Fundamentals update quarterly. Catalysts arrive without context.
+
+The investor is left connecting everything manually.
+
+Caelyn was built to connect it.
+
+It organizes market structure, themes, technical strength, fundamentals, options positioning, catalysts and real-time intelligence into one investing workspace.
+
+Not to tell you what to buy.
+
+To help you see the full setup before you make the decision."
+
+Visually break this up.
+
+Do not render it as one giant text block.
+
+Use large typography, whitespace, and subtle cards or progressively revealed lines.
+
+Core product positioning:
+
+"Intelligence infrastructure for self-directed investors."
+
+This may appear as a small section label or concluding statement.
+
+==================================================
+SECTION 4 — STRATEGY
+====================
+
+Section ID:
+strategy
+
+Primary headline:
+
+"The market doesn't forget your rules. You do."
+
+This is a major product-positioning line.
+
+Give it visual weight.
+
+Supporting copy:
+
+"Your investing process should be part of your investing platform."
+
+Then create three strategy concepts.
+
+CARD / CONCEPT 1
+
+Title:
+"Your market. Your process."
+
+Copy:
+
+"Choose a predefined investing strategy and refine it around the way you invest.
+
+Momentum. Growth. Thematic. Breakout. Position trading. Long-term compounders.
+
+Build on rules that have been tested against the platform's signals instead of starting from a blank page."
+
+CARD / CONCEPT 2
+
+Title:
+"Rules become guardrails."
+
+Show example rules:
+
+"Don't chase extended charts."
+
+"Cut broken positions."
+
+"Add when relative strength confirms."
+
+"Trim into extreme extensions."
+
+Then copy:
+
+"Caelyn can surface your own rules against your watchlist and portfolio context.
+
+Not as constant alerts.
+
+At the decision point."
+
+CARD / CONCEPT 3
+
+Title:
+"Keep the lessons."
+
+Copy:
+
+"Markets change. Good advice compounds.
+
+Save the principles, observations and practical lessons that shape how you invest — and build a permanent investing playbook around them.
+
+Your strategy should get smarter every cycle."
+
+Add a large premium coming-soon card:
+
+PERSONAL STRATEGY ENGINE
+
+COMING TO CAELYN PRO
+
+Optional visual concept, implemented only if clean:
+show a subtle chart-like line becoming extended while a strategy rule activates:
+
+"DON'T CHASE > 12% ABOVE 21EMA"
+
+Then show:
+
+"A good rule is useless if you remember it after the trade."
+
+Do not use market API data for this visual.
+
+It is illustrative only.
+
+==================================================
+SECTION 5 — PRICING
+===================
+
+Section ID:
+pricing
+
+Headline direction:
+
+"Start with the market. Build your system."
+
+Use four pricing cards.
+
+Desktop:
+4-card layout if visually comfortable at the available width.
+
+If 4 equal cards feels cramped, use:
+
+* 3 primary cards in one row
+* Pro as a wider coming-soon card beneath
+
+Choose the better visual result after inspecting the current app's page width/layout system.
+
+---
+
+## FREE
+
+Plan:
+FREE
+
+Tagline:
+"Explore the system"
+
+Price:
+$0
+
+Description:
+
+"Understand the market through Caelyn's curated intelligence platform."
+
+Features:
+
+* Full market platform access
+* Curated thematic watchlist
+* Themes & market leadership
+* Options Flow
+* Catalysts & calendar
+* Screeners
+* Social intelligence signals
+* No AI analysis
+* No personal watchlists
+* No portfolios
+* No Terminal
+
+CTA:
+EXPLORE FREE
+
+---
+
+## STARTER
+
+Plan:
+STARTER
+
+Tagline:
+"Build your process"
+
+Price:
+$19 / month
+
+Features:
+
+* Everything in Free
+* 1 custom watchlist
+* Up to 50 stocks
+* 1 portfolio
+* Up to 10 holdings
+* Terminal access
+* Single-agent AI
+* 1 AI analysis per day
+* No multi-agent collaboration
+
+CTA:
+START BUILDING
+
+This is the entry paid conversion tier.
+
+---
+
+## PLUS
+
+Plan:
+PLUS
+
+Badge:
+MOST POPULAR
+
+Tagline:
+"Connect the signals"
+
+Price:
+$59 / month
+
+Features:
+
+* Everything in Starter
+* Full Caelyn AI access
+* Single-agent analysis
+* Multi-agent collaboration
+* 30 AI analyses per month
+* 2 custom watchlists
+* Up to 100 stocks per watchlist
+* Flexible portfolio configuration
+* 3 portfolios × 15 holdings
+* or 2 portfolios × 25 holdings
+* Full Terminal access
+
+CTA:
+GET CAELYN PLUS
+
+This must be the visually emphasized pricing card.
+
+Use a premium restrained outline/glow.
+
+Do not turn it into a neon casino sign.
+
+---
+
+## PRO
+
+Plan:
+PRO
+
+Badge:
+COMING SOON
+
+Tagline:
+"Build your investing operating system"
+
+Price:
+$299 / month
+
+Features:
+
+* Everything in Plus
+* Personal Strategy Engine
+* Predefined strategy frameworks
+* Custom investing rules
+* Decision guardrails
+* Personal investing playbook
+* Custom page layouts
+* Rearrange platform pages
+* Custom sidebar
+* Advanced financial history
+* Advanced technical price history
+* Build custom theme baskets
+* Stocks & ETFs
+* 5 custom watchlists
+* 100 tickers each
+* 5 portfolios
+* 20 holdings each
+* High-volume AI access
+* Up to 200 AI analyses per month
+* Up to 100 multi-agent collaborations
+
+CTA:
+JOIN THE PRO WAITLIST
+
+Pro should feel aspirational and clearly unfinished/unavailable.
+
+Do not imply it can be purchased today.
+
+==================================================
+PRICING UX
+==========
+
+Features that are unavailable on a plan should visually read differently from included features.
+
+Do not use huge ugly red X icons.
+
+Use:
+
+* reduced opacity
+* subtle lock/minus icon
+* subdued text
+
+Included:
+small check or brand-accent indicator
+
+Pricing cards should be easy to compare without looking like a spreadsheet.
+
+The words must remain readable.
+
+Do not make glass transparency so aggressive that the pricing copy becomes muddy.
+
+==================================================
+SECTION 6 — FINAL CTA
+=====================
+
+Create a strong final CTA.
+
+Headline:
+
+"Stop analyzing the market one tab at a time."
+
+Supporting copy:
+
+"Build your market view in one system."
+
+Primary CTA:
+START FREE
+
+Secondary:
+LOG IN
+
+Optional microcopy:
+
+"No credit card required."
+
+ONLY include "No credit card required" if the current account flow actually supports starting without payment.
+
+Do not invent this claim if it is not currently true.
+
+==================================================
+FOOTER
+======
+
+Simple.
+
+CAELYN
+
+Navigation:
+ABOUT
+STRATEGY
+PRICING
+LOG IN
+
+Small positioning line:
+
+"Intelligence infrastructure for self-directed investors."
+
+Add a restrained disclaimer area appropriate for an investing analytics platform.
+
+Do not create aggressive legal language.
+
+At minimum:
+
+"Caelyn provides market data, research tools and analytical software for informational purposes. It does not provide personalized investment advice."
+
+Do not imply SEC registration or advisory status.
+
+==================================================
+MOTION / INTERACTION
+====================
+
+Motion should be subtle and premium.
+
+Allowed:
+
+* section fade/reveal
+* slight hero product float
+* subtle line convergence animation
+* soft button illumination
+* border sheen
+* restrained card hover lift
+* smooth-scroll navigation
+
+Do not:
+
+* animate every piece of text
+* use bouncing CTA buttons
+* use rapid ticker motion
+* use giant parallax effects
+* make scrolling laggy
+
+Respect:
+prefers-reduced-motion
+
+==================================================
+RESPONSIVE REQUIREMENTS
+=======================
+
+Must look intentional at:
+
+* large desktop
+* normal laptop
+* tablet
+* mobile
+
+Test specifically for:
+
+* pricing card wrapping
+* nav collapse
+* hero headline clipping
+* product preview overflow
+* convergence visual overflow
+* long Pro feature content
+* strategy example rules
+* CTA button stacking
+
+No horizontal page overflow.
+
+==================================================
+PERFORMANCE
+===========
+
+Landing page should not initialize the full authenticated Caelyn application in the background unnecessarily.
+
+Do not trigger:
+
+* quote polling
+* Tradier fetches
+* FMP requests
+* Options Flow refreshes
+* AI calls
+* watchlist fetch loops
+
+The public landing route should be visually rich but operationally light.
+
+Reuse visual styling, not authenticated data-fetch behavior.
+
+Avoid major new UI dependencies unless clearly justified.
+
+==================================================
+CODE ORGANIZATION
+=================
+
+Do not dump the entire landing page into one massive existing app file.
+
+Use the project's existing component organization pattern.
+
+Create sensible components such as, names adapted to current repo conventions:
+
+* LandingPage
+* LandingNav
+* HeroSection
+* ProductPreview
+* SignalConvergence
+* AboutSection
+* StrategySection
+* PricingSection
+* PricingCard
+* FinalCTA
+* LandingFooter
+
+Do not over-componentize tiny one-line elements.
+
+Use existing shared primitives where they are genuinely compatible.
+
+Do not alter existing shared components in ways that visually regress authenticated pages.
+
+If a landing-specific variant is necessary, make that variant additive.
+
+==================================================
+ACCEPTANCE CHECKS
+=================
+
+Before reporting completion, verify:
+
+1. `/` displays the landing page for the correct public state.
+2. Existing login route still works.
+3. Existing auth logic was not rewritten.
+4. Existing authenticated app routes still load.
+5. LOG IN reaches the existing login page.
+6. START FREE reaches the existing account-entry/login path.
+7. About nav scrolls to About.
+8. Strategy nav scrolls to Strategy.
+9. Pricing nav scrolls to Pricing.
+10. EXPLORE THE PLATFORM scrolls to the signal/product section.
+11. Landing page triggers no new market-data provider calls.
+12. Landing page triggers no AI calls.
+13. No fake "live" values are presented as live market data.
+14. Plus is visually emphasized.
+15. Pro is clearly Coming Soon.
+16. Pro cannot be purchased.
+17. Page has no horizontal overflow at mobile width.
+18. prefers-reduced-motion is respected.
+19. Existing app design has not regressed.
+20. Production frontend build/typecheck passes.
+
+At the end, report:
+
+A. exact files changed
+B. exact route behavior before vs after
+C. existing login route preserved
+D. components reused from the existing Caelyn design system
+E. new landing components created
+F. confirmation that no backend/API/provider logic changed
+G. confirmation that no pricing entitlements or Stripe logic were implemented
+H. build/typecheck result
+I. any visual compromises caused by the existing frontend architecture
+
+Do not expand scope beyond this landing page.

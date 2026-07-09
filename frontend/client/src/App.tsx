@@ -70,6 +70,7 @@ import ChartRadarPage from "@/pages/chart-radar";
 
 import NotFound from "@/pages/not-found";
 import { GlobalPrefetch } from "@/contexts/GlobalDataContext";
+import LandingPage from "@/pages/landing";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -95,7 +96,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      <Route path="/"><Redirect to="/app/home" /></Route>
+      <Route path="/" component={LandingPage} />
       <Route path="/app"><Redirect to="/app/home" /></Route>
       <Route path="/app/home" component={HomePage} />
       <Route path="/home" component={HomePage} />
@@ -211,7 +212,7 @@ function AppInner() {
 
   const isMultichartsRoute = location === '/app/multicharts' || location === '/multicharts';
 
-  if (location === '/login') {
+  if (location === '/login' || location === '/') {
     return (
       <>
         <Toaster />

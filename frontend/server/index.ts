@@ -30,16 +30,9 @@ app.get("/", (req, res, next) => {
   const host = req.get('Host') || '';
   
   // Check if this is a browser request (has text/html in Accept header)
+  // / is now the landing page — serve the SPA for all browser requests on all domains
   if (acceptHeader.includes('text/html') && userAgent.includes('Mozilla')) {
-    // For custom domains like cryptohippo.locker, always serve the frontend directly
-    // This ensures domain functionality works correctly
-    if (host.includes('cryptohippo.locker') || host.includes('.replit.app') || host.includes('.replit.dev')) {
-      // Let this fall through to the catch-all route that serves the frontend
-      return next();
-    } else {
-      // Redirect browsers to the frontend application for other domains
-      return res.redirect(302, '/app');
-    }
+    return next();
   }
   
   // For deployment health checks and monitoring tools
