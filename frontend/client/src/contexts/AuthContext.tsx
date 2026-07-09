@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUserId(null);
     setIsAdmin(false);
-    navigate('/login');
+    navigate('/');
   }, [navigate]);
 
   const getAuthHeaders = useCallback((): Record<string, string> => {

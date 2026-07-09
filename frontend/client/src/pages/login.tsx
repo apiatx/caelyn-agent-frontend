@@ -372,6 +372,24 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Back to landing */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              marginBottom: '1.5rem',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.08em',
+              color: 'var(--lp-text-muted)', transition: 'color 0.18s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--lp-text-primary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--lp-text-muted)')}
+          >
+            ← BACK TO LANDING
+          </button>
+
           {/* Section label */}
           <p style={{
             fontFamily: "'JetBrains Mono', monospace",

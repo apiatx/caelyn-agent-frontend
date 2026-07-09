@@ -1,0 +1,234 @@
+The landing page implementation is visually complete, but the actual public navigation flow is wrong.
+
+Current observed behavior:
+
+* I log out
+* I am sent directly to `/login`
+* therefore I cannot naturally reach the new landing page at `/`
+
+We need to fix the PUBLIC NAVIGATION FLOW only.
+
+AUDIT FIRST. Trace the exact current logout handler and post-logout redirect before editing.
+
+Do not redesign the landing page.
+Do not change authentication behavior.
+Do not change backend auth.
+Do not modify protected-route logic beyond the smallest redirect/navigation changes required.
+Do not change API calls.
+Do not touch pricing, entitlements, or Stripe.
+
+==================================================
+DESIRED ROUTE FLOW
+==================
+
+PUBLIC LANDING PAGE:
+`/`
+
+LOGIN PAGE:
+`/login`
+
+AUTHENTICATED APP:
+existing `/app/...` routes remain exactly as they are
+
+The intended user flow is:
+
+Unauthenticated visit to `/`
+→ landing page
+
+Landing page "LOG IN"
+→ `/login`
+
+Landing page "START FREE"
+→ `/login` for now
+
+Login success
+→ preserve the EXISTING successful-login destination and auth behavior
+
+Authenticated user navigating to `/`
+→ preserve the existing LandingPage behavior that redirects them to `/app/home`
+
+Logout
+→ `/`
+
+NOT:
+logout → `/login`
+
+The landing page is now the public front door.
+
+==================================================
+PART 1 — FIX LOGOUT DESTINATION
+===============================
+
+Find the canonical logout action/handler currently sending users to `/login`.
+
+Change the post-logout destination to:
+
+`/`
+
+Do not duplicate logout logic in individual pages.
+
+Change the canonical/shared logout navigation path if one exists.
+
+Logout must still:
+
+* clear the same auth/session state
+* call the same existing logout behavior
+* preserve all security behavior
+
+Only change the destination after logout.
+
+Acceptance:
+
+authenticated user
+→ clicks logout
+→ session/auth is cleared exactly as before
+→ browser lands on `/`
+→ landing page renders
+
+==================================================
+PART 2 — VERIFY LANDING PAGE LOGIN BUTTON
+=========================================
+
+The new landing page should already have a `LOG IN` action.
+
+Verify its exact behavior.
+
+It must route to:
+
+`/login`
+
+Do not use `/app`.
+Do not use `/app/home`.
+Do not trigger auth automatically.
+
+Also verify:
+
+`START FREE`
+→ `/login`
+
+for this first version.
+
+Report the exact component and handler used for both.
+
+==================================================
+PART 3 — ADD "BACK TO LANDING" TO LOGIN PAGE
+============================================
+
+Update the existing login page at:
+
+`frontend/client/src/pages/login.tsx`
+
+Add a subtle navigation action:
+
+`← BACK TO LANDING`
+
+or:
+
+`← Back to Caelyn`
+
+Preferred wording:
+
+`← BACK TO LANDING`
+
+Behavior:
+
+click
+→ navigate to `/`
+
+Placement:
+
+* above the login card, aligned naturally with the existing login layout
+  OR
+* top-left inside the login page content area
+
+Choose whichever visually fits the current login page best.
+
+Design:
+
+* understated
+* small
+* muted white/gray text
+* subtle hover to brighter white or existing ice-blue accent
+* no large button
+* no filled CTA
+* should feel like navigation, not a primary action
+
+Use the existing routing library (`wouter`) and existing navigation patterns.
+
+Do not use a raw hard refresh unless the current page architecture requires it.
+
+==================================================
+PART 4 — VERIFY PUBLIC ROUTING
+==============================
+
+Test all of these exact flows:
+
+FLOW A
+
+Open `/` while logged out
+→ landing page renders
+
+FLOW B
+
+Landing page
+→ click LOG IN
+→ `/login`
+
+FLOW C
+
+Login page
+→ click BACK TO LANDING
+→ `/`
+
+FLOW D
+
+Login successfully
+→ existing successful login destination remains unchanged
+
+FLOW E
+
+Authenticated user visits `/`
+→ redirects to `/app/home` as currently implemented
+
+FLOW F
+
+Authenticated user logs out
+→ `/`
+→ landing page renders
+
+FLOW G
+
+Directly open `/login` while logged out
+→ existing login page renders
+
+==================================================
+IMPORTANT
+=========
+
+Do not reintroduce the old Express redirect:
+
+`/` → `/app`
+
+The previous implementation correctly removed that redirect because `/` is now the public landing route.
+
+The problem is specifically that the logout flow still treats `/login` as the public destination.
+
+The landing page must now be the public front door.
+
+==================================================
+FINAL REPORT
+============
+
+At completion report:
+
+A. exact logout handler/file traced
+B. previous logout destination
+C. new logout destination
+D. landing LOG IN route confirmed
+E. landing START FREE route confirmed
+F. login page file changed
+G. exact placement of BACK TO LANDING
+H. confirmation successful login behavior was not changed
+I. results of Flows A through G
+
+Keep this change tightly scoped to public navigation.
