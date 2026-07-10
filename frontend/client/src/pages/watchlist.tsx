@@ -14,6 +14,9 @@ import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -2068,6 +2071,64 @@ export default function WatchlistPage() {
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  /* ── Admin Theme assign/reassign (Screener THEME column) ────────────
+     Reuses existing authenticated admin capability + existing Theme
+     Universe query key ("themes-unified") so cache is shared with the
+     Sectors/Themes page. Backend is authoritative — no local Theme map. */
+  const { isAdmin, token } = useAuth();
+  const getThemeJwt = useCallback(
+    () => token ?? localStorage.getItem('caelyn_jwt') ?? sessionStorage.getItem('caelyn_jwt') ?? '',
+    [token]
+  );
+  const { data: themeUniverseResp } = useQuery({
+    queryKey: ['themes-unified', 'all', '7D'],
+    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=7D&classification=all`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled: isAdmin,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+  const themeUniverse: Array<{ theme_id: string; display_name: string }> = useMemo(() => {
+    const list = (themeUniverseResp?.themes ?? []) as Array<{ theme_id: string; display_name: string }>;
+    return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
+  }, [themeUniverseResp]);
+
+  const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);
+  const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
+
+  const assignPrimaryThemeMutation = useMutation({
+    mutationFn: async ({ ticker, themeId }: { ticker: string; themeId: string }) => {
+      const r = await fetch('/api/themes/admin/assign-primary-theme', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getThemeJwt()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker, theme_id: themeId }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({} as any));
+        const detail = e.detail ?? e.error ?? '';
+        if (r.status === 401) throw new Error('Your admin session is missing or expired. Sign in again.');
+        if (r.status === 403) throw new Error('Your account is not authorized to assign Themes.');
+        if (r.status === 404) throw new Error(detail || 'Theme not found.');
+        if (r.status === 400) throw new Error(detail || 'Invalid Theme assignment request.');
+        throw new Error(detail || `Theme assignment failed (${r.status})`);
+      }
+      return r.json();
+    },
+    onMutate: ({ ticker }) => { setThemeAssignPendingTicker(ticker); setThemeAssignFeedback(null); },
+    onSuccess: (_, { ticker }) => {
+      setThemeAssignFeedback({ ticker, type: 'ok', msg: 'Theme updated' });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
+      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId, 'performance/theme'] });
+      qc.invalidateQueries({ queryKey: ['themes-unified'] });
+      setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 4000);
+    },
+    onError: (e: any, { ticker }) => {
+      setThemeAssignFeedback({ ticker, type: 'err', msg: e?.message || 'Theme assignment failed' });
+      setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 6000);
+    },
+    onSettled: () => setThemeAssignPendingTicker(null),
+  });
   const optionsSignalsByTicker = (optionsResp?.signals ?? {}) as Record<string, any>;
   const optionsMeta = optionsResp?.options_meta as Record<string, any> | undefined;
 
@@ -3969,9 +4030,62 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
                   </span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || stock.theme || ''}>
-                    {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
-                  </span>
+                  {isAdmin && stock.ticker ? (() => {
+                    const currentThemeName = stock.canonical_theme_name || stock.section_title || stock.theme || null;
+                    const rowThemePending = themeAssignPendingTicker === stock.ticker;
+                    const rowThemeFeedback = themeAssignFeedback?.ticker === stock.ticker ? themeAssignFeedback : null;
+                    return (
+                      <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={e => e.stopPropagation()}
+                              disabled={rowThemePending}
+                              title={currentThemeName ? `Reassign primary Theme for ${stock.ticker}` : `Assign a primary Theme to ${stock.ticker}`}
+                              style={{
+                                background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
+                                display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
+                                fontSize: 10, fontFamily: C.font,
+                                color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
+                                opacity: rowThemePending ? 0.6 : 1,
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                                {rowThemePending ? 'Updating…' : (currentThemeName || '+ Assign Theme')}
+                              </span>
+                              {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                            {themeUniverse.length === 0 && (
+                              <DropdownMenuItem disabled>Loading Theme universe…</DropdownMenuItem>
+                            )}
+                            {themeUniverse.map(t => (
+                              <DropdownMenuItem
+                                key={t.theme_id}
+                                onClick={() => {
+                                  if (!stock.ticker || t.theme_id === undefined) return;
+                                  assignPrimaryThemeMutation.mutate({ ticker: stock.ticker, themeId: t.theme_id });
+                                }}
+                                style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
+                              >
+                                {t.display_name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {rowThemeFeedback && (
+                          <span style={{ fontSize: 8.5, color: rowThemeFeedback.type === 'ok' ? C.green : C.red, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {rowThemeFeedback.msg}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })() : (
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || stock.theme || ''}>
+                      {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
+                    </span>
+                  )}
                   <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
                     {formatPrice(stock.price)}
                     {!isPending && stock.price_source && (

@@ -6058,6 +6058,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/themes/admin/assign-primary-theme', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${PB_URL}/api/themes/admin/assign-primary-theme`, {
+        method: 'POST', headers: adminHdr(req), body: JSON.stringify(req.body), signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json(await r.json().catch(() => ({ error: 'admin/assign-primary-theme POST failed' })));
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[themes/admin/assign-primary-theme POST]', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post('/api/themes/admin/leaders', async (req, res) => {
     try {
       const ctrl = new AbortController();

@@ -1,0 +1,719 @@
+WATCHLIST SCREENER — DEV/ADMIN PRIMARY THEME ASSIGN + EDIT DROPDOWN
+
+Work only in the existing FRONTEND Replit project.
+
+The backend manual Theme assignment/write path has now been fully repaired and validated.
+
+This is a frontend-only Watchlist Screener task.
+
+Do not modify backend code.
+Do not invent a new Theme write endpoint.
+Do not create a frontend ticker→Theme map.
+Do not create a frontend list of hardcoded Themes.
+Do not add AI/LLM calls.
+Do not add provider calls.
+Do not modify Theme RS.
+Do not modify Theme Rotation.
+Do not modify Trade Alignment.
+Do not modify Actionability.
+Do not modify Options Alignment.
+Do not modify Entry Structure.
+Do not modify the lower Watchlist Theme performance grouping calculation.
+Do not modify the Themes page in this task.
+Do not implement multi-theme membership.
+
+==================================================
+BACKEND CONTRACT — ALREADY IMPLEMENTED
+======================================
+
+Primary Theme assignment/reassignment endpoint:
+
+POST /api/themes/admin/assign-primary-theme
+
+Request body:
+
+{
+"ticker": "...",
+"theme_id": "...",
+"note": optional,
+"created_by": optional
+}
+
+This endpoint:
+
+* uses the existing authoritative Theme write helper
+* uses the existing Theme membership/override stores
+* safely removes matching stale prior manual state
+* performs primary Theme reassignment
+* refreshes the enriched Theme universe
+* updates the canonical resolver result
+* updates Watchlist Theme identity downstream
+* preserves the existing Themes-page membership architecture
+
+The backend has already validated:
+
+Unassigned → Assigned
+
+Assigned → Reassigned
+
+Reassigned → Restored
+
+Manual Remove
+
+with no stale matching file/category overrides remaining.
+
+The endpoint requires the existing admin browser authentication path:
+
+Authorization: Bearer <JWT>
+
+Do not expose an API key in frontend code.
+
+Do not use X-API-Key from the browser.
+
+==================================================
+PRODUCT INTENT
+==============
+
+The UPPER Watchlist Screener contains a THEME column.
+
+This Theme field is the ticker's canonical primary Theme identity.
+
+The authenticated dev/admin user needs to assign or edit that Theme directly from the ticker row.
+
+---
+
+## UNASSIGNED TICKER
+
+Conceptually:
+
+ACOG    [ + Assign Theme ▾ ]
+
+or:
+
+ACOG    Unassigned ▾
+
+The exact visual should fit the existing Watchlist table design.
+
+Clicking the control opens a single-select Theme dropdown.
+
+Select one Theme.
+
+The frontend calls:
+
+POST /api/themes/admin/assign-primary-theme
+
+The Watchlist row then updates to the canonical backend Theme result.
+
+---
+
+## ASSIGNED TICKER
+
+Conceptually:
+
+AAOI    AI Networking ▾
+
+For the authenticated dev/admin user, the displayed Theme is interactive.
+
+Clicking it opens the same Theme selector.
+
+Selecting another Theme performs a canonical primary Theme reassignment.
+
+The user must NOT manually remove the old Theme first.
+
+The backend already handles reassignment semantics.
+
+---
+
+## NON-ADMIN USER
+
+Preserve plain read-only Theme text.
+
+Do not show an assign/edit control.
+
+==================================================
+PART 0 — AUDIT THE ACTUAL WATCHLIST FRONTEND
+============================================
+
+Before editing, trace the actual rendered upper Watchlist Screener.
+
+Find:
+
+Watchlist page file
+
+upper Screener component
+
+ticker-row renderer
+
+THEME column cell renderer
+
+exact row Theme field
+
+current Unassigned/null rendering
+
+current Watchlist query/data source
+
+current Watchlist query key
+
+existing authenticated user/session hook
+
+existing admin/dev capability field
+
+existing authenticated API/fetch client
+
+existing Bearer JWT injection behavior
+
+existing mutation conventions
+
+existing toast/error conventions
+
+existing dropdown/popover/combobox components
+
+existing Theme Universe query/data already used anywhere in the frontend
+
+Do not edit until these paths are known.
+
+The backend and frontend repos are separate.
+
+Do not claim backend implementation details beyond the contract above.
+
+==================================================
+PART 1 — TRACE THE CURRENT AUTH FAILURE
+=======================================
+
+The old Themes-page manual interaction previously surfaced:
+
+"Unauthorized — provide a valid X-API-Key header (scripts) or an Authorization: Bearer <JWT> from an admin session (browser)"
+
+The backend has now proven its Bearer JWT admin path already works.
+
+Audit the current frontend API request architecture.
+
+Determine:
+
+Does the existing authenticated API client automatically inject:
+
+Authorization: Bearer <JWT>
+
+?
+
+Does the Watchlist page currently use that client?
+
+Did the old Themes-page manual write bypass the authenticated client?
+
+Is there another successful authenticated browser write mutation in the frontend that demonstrates the correct convention?
+
+Return the exact frontend root cause.
+
+Do not modify the Themes page in this task.
+
+==================================================
+PART 2 — DEV/ADMIN CAPABILITY
+=============================
+
+Use the existing authenticated admin/dev capability state.
+
+Do not infer dev/admin from:
+
+NODE_ENV
+
+localhost
+
+build mode
+
+browser hostname
+
+a hardcoded username
+
+a hardcoded email
+
+Use the current auth/session state already available to the frontend.
+
+Only authenticated authorized users should see:
+
+Assign Theme
+
+or the editable Theme chevron/dropdown affordance.
+
+Non-admin users retain read-only Theme text.
+
+The backend remains the final authorization gate.
+
+==================================================
+PART 3 — CANONICAL THEME LIST SOURCE
+====================================
+
+The dropdown must contain the current Theme Universe choices.
+
+Reuse an EXISTING frontend query/API contract that exposes:
+
+canonical Theme ID
+
+Theme display name
+
+Do not hardcode:
+
+AI Networking
+
+Biotech
+
+Clean Energy
+
+or any other Theme list.
+
+Do not create a static Theme array.
+
+Do not generate Theme IDs by slugifying names.
+
+Use exact backend-provided IDs.
+
+Audit the existing Themes page frontend/data layer for a reusable Theme Universe read query.
+
+If the same data client/service can be imported safely:
+
+reuse it.
+
+If a small frontend query hook around an already-existing backend read endpoint is necessary:
+
+add only that frontend wrapper.
+
+Do not request a backend change.
+
+Sort using an existing canonical Theme display order when one is already present.
+
+Otherwise sort alphabetically by display name.
+
+==================================================
+PART 4 — THEME CELL UI
+======================
+
+Preserve the existing Watchlist Screener table density and design.
+
+For dev/admin:
+
+ASSIGNED:
+
+render current Theme text with a subtle edit/dropdown affordance.
+
+Conceptually:
+
+AI Networking ˅
+
+The full cell should not look like a large primary button.
+
+UNASSIGNED:
+
+render a small subtle action such as:
+
+* Assign Theme
+
+or:
+
+Unassigned ˅
+
+Reuse existing table/button styling.
+
+Do not materially widen the Theme column unless required.
+
+Do not disturb:
+
+TICKER
+
+COMPANY
+
+PRICE
+
+CHG %
+
+VOLUME
+
+VOLX
+
+or other existing columns.
+
+Preserve mobile/responsive behavior.
+
+==================================================
+PART 5 — SINGLE-SELECT THEME DROPDOWN
+=====================================
+
+On Theme-cell click:
+
+open an existing dropdown/popover/combobox component.
+
+Display Theme names.
+
+Mutation value must be the exact canonical Theme ID supplied by backend Theme data.
+
+Exactly one Theme may be selected.
+
+No checkboxes for multiple Themes.
+
+No multi-select.
+
+No "Additional Themes" UI.
+
+No sub-themes.
+
+Show the current Theme as selected/checked when the component supports it.
+
+A searchable selector is acceptable only if an existing searchable combobox component can be reused cleanly.
+
+Do not build a complex new selector from scratch.
+
+==================================================
+PART 6 — ASSIGN / REASSIGN MUTATION
+===================================
+
+On selecting a Theme:
+
+call:
+
+POST /api/themes/admin/assign-primary-theme
+
+Body:
+
+{
+ticker: exact current Watchlist row ticker/symbol,
+theme_id: exact selected canonical Theme ID
+}
+
+Use the existing AUTHENTICATED frontend API client.
+
+The request must carry the existing browser Bearer JWT using the normal frontend auth mechanism.
+
+Do not:
+
+send X-API-Key
+
+hardcode AGENT_API_KEY
+
+manually paste a JWT
+
+store a new token
+
+derive Theme ID from display name
+
+While pending:
+
+disable duplicate submissions for that row
+
+show a subtle pending state in that Theme cell
+
+Do not block the entire Watchlist.
+
+==================================================
+PART 7 — SUCCESS STATE / QUERY INVALIDATION
+===========================================
+
+After a successful mutation:
+
+invalidate/refetch the existing Watchlist row query so the Theme cell renders the canonical backend result.
+
+Also invalidate the existing lower Watchlist Theme performance-grouping query because the ticker may need to move to another Theme glasscard.
+
+If shared frontend query keys for Themes-page membership are already imported/known in the repo:
+
+invalidate those as well.
+
+Do not duplicate backend Theme state in local frontend maps.
+
+Do not manually move a ticker between Theme groups in frontend state.
+
+Backend is authoritative.
+
+Use existing React Query/TanStack Query or exact current cache architecture.
+
+Do not reload the full page unless the current app architecture has no viable query invalidation path.
+
+==================================================
+PART 8 — ERROR HANDLING
+=======================
+
+Use existing toast/error conventions.
+
+Handle:
+
+401:
+session missing or expired
+
+403:
+authenticated but not authorized as admin
+
+400:
+invalid assignment request
+
+404:
+Theme not found if backend returns it
+
+For auth failures:
+
+do not tell the user to paste an API key.
+
+Use a clear browser-session message such as:
+
+"Your admin session is missing or expired. Sign in again."
+
+Use exact existing tone/conventions where possible.
+
+If mutation fails:
+
+keep the currently canonical Theme displayed
+
+do not leave an optimistic incorrect Theme behind
+
+re-enable the selector
+
+==================================================
+PART 9 — UNASSIGNED → ASSIGNED VALIDATION
+=========================================
+
+Use a current genuinely Unassigned Watchlist row.
+
+Do not hardcode ACOG because its backend state has recently been used in validation and may change.
+
+Find a live row where the exact upper Screener Theme field is null/Unassigned.
+
+Using the actual frontend UI:
+
+open the Theme selector
+
+choose a canonical Theme
+
+confirm:
+
+authenticated mutation succeeds
+
+no Unauthorized error appears
+
+row updates to selected canonical Theme
+
+lower Theme performance grouping query is invalidated/refetched
+
+Then restore the original state only if the frontend has an existing supported authoritative remove action.
+
+Do not invent a remove endpoint in this task.
+
+If a reversible live mutation cannot safely be performed:
+
+validate request/auth mechanics using an assigned→reassigned→restored ticker instead and report the limitation honestly.
+
+==================================================
+PART 10 — ASSIGNED → REASSIGNED → RESTORED VALIDATION
+=====================================================
+
+Choose one currently assigned Watchlist ticker with a known current Theme.
+
+Capture:
+
+ticker
+
+original Theme display name
+
+original Theme ID
+
+Using the actual Watchlist Screener Theme dropdown:
+
+Theme A
+→ Theme B
+
+Confirm:
+
+POST /api/themes/admin/assign-primary-theme succeeds
+
+Bearer JWT is attached
+
+Watchlist row updates to Theme B
+
+Theme cell shows Theme B
+
+no stale Theme A text remains
+
+lower Theme grouping invalidates/refetches
+
+Then use the same UI:
+
+Theme B
+→ Theme A
+
+Confirm exact restoration.
+
+Return:
+
+ticker
+
+Theme A
+
+Theme B
+
+restored Theme A
+
+HTTP results
+
+query invalidations
+
+==================================================
+PART 11 — DYNAMIC WATCHLIST BEHAVIOR
+====================================
+
+No static ticker list.
+
+The Theme edit control must render from current Watchlist rows.
+
+Ticker added to Watchlist:
+
+if Theme is Unassigned
+→ shows Assign Theme control for dev/admin
+
+Ticker removed:
+→ control disappears with row
+
+Ticker primary Theme reassigned:
+→ current row refetch displays new Theme
+
+The frontend must not maintain independent assignment state across rows.
+
+==================================================
+PART 12 — REGRESSION PROOF
+==========================
+
+Prove unchanged:
+
+upper Screener sorting
+
+Theme filter chips
+
+Technical/Fundamental toggle
+
+ticker search if present
+
+price/change fields
+
+volume/VolX fields
+
+ticker add
+
+ticker delete
+
+favorites
+
+lower Theme performance calculation
+
+Fundamental performance grouping
+
+Market Cap performance grouping
+
+Golden Zone
+
+HC Trade Zone
+
+HC Investment Zone
+
+Growth Momentum
+
+Themes page frontend
+
+Actionability frontend
+
+==================================================
+FINAL RESPONSE
+==============
+
+Return:
+
+WATCHLIST SCREENER THEME DROPDOWN REPORT
+
+FILES CHANGED:
+[list]
+
+WATCHLIST PAGE:
+[path]
+
+SCREENER COMPONENT:
+[path/component]
+
+THEME CELL FIELD:
+[field]
+
+AUTHENTICATED API CLIENT:
+[path/helper]
+
+FRONTEND AUTH ROOT CAUSE:
+[exact finding]
+
+ADMIN/DEV CAPABILITY:
+[field/hook]
+
+THEME LIST SOURCE:
+[endpoint/query + ID/name fields]
+
+ASSIGN ENDPOINT:
+[path]
+
+THEME CELL UX:
+[implementation]
+
+MUTATION:
+[implementation]
+
+QUERY INVALIDATION:
+[queries/keys]
+
+UNASSIGNED FLOW:
+[results]
+
+REASSIGN / RESTORE FLOW:
+[results]
+
+ERROR HANDLING:
+[results]
+
+REGRESSION:
+[results]
+
+End exactly:
+
+WATCHLIST SCREENER THEME DROPDOWN VERDICT
+
+DEV/ADMIN-ONLY CONTROL:
+[PASS / FAIL]
+
+EXISTING BEARER JWT PATH REUSED:
+[YES / NO]
+
+API KEY EXPOSED TO BROWSER:
+[NO expected]
+
+CANONICAL THEME IDS USED:
+[YES / NO]
+
+UNASSIGNED → ASSIGNED:
+[PASS / FAIL / NOT SAFELY TESTED]
+
+ASSIGNED → REASSIGNED:
+[PASS / FAIL]
+
+REASSIGNED → RESTORED:
+[PASS / FAIL]
+
+WATCHLIST ROW UPDATES:
+[PASS / FAIL]
+
+LOWER THEME GROUPING INVALIDATED:
+[YES / NO]
+
+MULTI-THEME IMPLEMENTED:
+[NO expected]
+
+INCREMENTAL PROVIDER CALLS:
+[0 expected]
+
+NEXT IMPLEMENTATION:
+MULTI-THEME MEMBERSHIP ARCHITECTURE AUDIT
+
+Do not implement multi-theme membership.
+
+Do not modify Actionability.
+
+Do not modify Trade Alignment.
+
+Do not make unrelated changes.
