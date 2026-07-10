@@ -5459,6 +5459,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deterministic Theme performance grouping (backend-authoritative; no AI/LLM)
+  app.get('/api/watchlist/:wid/performance/theme', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 30000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/performance/theme`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist performance/theme failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'watchlist performance/theme error') });
+    }
+  });
+
   // Canonical security search (must be before /:wid to avoid param capture)
   app.get('/api/watchlist/security-search', async (req, res) => {
     try {

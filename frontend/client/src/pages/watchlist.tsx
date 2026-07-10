@@ -790,6 +790,154 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   THEME PERFORMANCE GROUPINGS — backend-authoritative, deterministic
+   Consumes GET /api/watchlist/{id}/performance/theme (no AI/LLM, no re-sort)
+   ═══════════════════════════════════════════════════════════════════════ */
+function normalizeThemeGroups(resp: any): any[] {
+  if (!resp) return [];
+  if (Array.isArray(resp)) return resp;
+  // Backend contract (GET /api/watchlist/:wid/performance/theme): { theme_cards: [...] }
+  return resp.theme_cards || resp.themes || resp.groups || resp.sections || resp.theme_groups || [];
+}
+
+function themeGroupName(group: any): string {
+  return group?.theme_name || group?.canonical_theme_name || group?.theme || group?.name || group?.label || 'Unassigned';
+}
+
+function themeGroupPct1d(group: any): number | null {
+  const v = group?.theme_1d_pct ?? group?.theme_change_pct_1d ?? group?.avg_change_pct_1d ??
+    group?.performance_1d ?? group?.change_pct_1d ?? group?.avg_1d_pct ?? null;
+  return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
+}
+
+function themeGroupTickers(group: any): any[] {
+  return group?.tickers || group?.symbols || group?.holdings || [];
+}
+
+function themeTickerSymbol(t: any): string {
+  return (t?.symbol || t?.ticker || '').toString().toUpperCase();
+}
+
+function themeTickerPct1d(t: any): number | null {
+  const v = t?.change_pct_1d ?? t?.change_pct ?? t?.change_percent ?? t?.day_change_percent ?? null;
+  return v != null && Number.isFinite(Number(v)) ? Number(v) : null;
+}
+
+function ThemePerformanceGroupings({ resp, isLoading, isError, onTickerClick }: { resp: any; isLoading: boolean; isError: boolean; onTickerClick?: (t: string) => void }) {
+  if (isLoading) {
+    return (
+      <div style={{ padding: 24, fontSize: 10, color: C.dim, textAlign: 'center' as const }}>
+        Loading Theme performance groupings…
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div style={{
+        padding: 16, fontSize: 10, color: C.amber, textAlign: 'center' as const,
+        background: `${C.amber}10`, border: `1px solid ${C.amber}30`, borderRadius: 6,
+      }}>
+        Theme performance grouping is temporarily unavailable. Other groupings remain usable.
+      </div>
+    );
+  }
+  const groups = normalizeThemeGroups(resp);
+  if (!groups.length) {
+    return (
+      <div style={{ padding: 24, fontSize: 10, color: C.dim, textAlign: 'center' as const }}>
+        No Theme groupings returned.
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+      {groups.map((group: any, gi: number) => {
+        const name = themeGroupName(group);
+        const isUnassigned = name.toLowerCase() === 'unassigned';
+        const accent = isUnassigned ? C.dim : (SECTION_ACCENTS[group.canonical_theme_id || group.theme_id || name] || C.teal);
+        const pct = themeGroupPct1d(group);
+        const hasPct = pct != null;
+        const pctColor = hasPct ? (pct >= 0 ? C.green : C.red) : C.dim;
+        const tickers = themeGroupTickers(group);
+        return (
+          <div key={group.theme_id || group.canonical_theme_id || name || gi} style={{
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderLeft: `3px solid ${accent}`,
+            borderRadius: 6,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, background: `${accent}10` }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+                  {name}
+                </div>
+                {hasPct && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 800, fontFamily: C.font,
+                    color: pctColor,
+                    background: pctColor + '18',
+                    padding: '2px 7px', borderRadius: 4,
+                    flexShrink: 0,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {pct! > 0 ? '+' : ''}{pct!.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 8, color: C.dim, marginTop: 3, fontFamily: C.font }}>
+                {tickers.length} ticker{tickers.length === 1 ? '' : 's'}
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 340 }} className="wl-scrollbar">
+              {tickers.length === 0 ? (
+                <div style={{ padding: 14, fontSize: 10, color: C.dim, textAlign: 'center' as const }}>No tickers</div>
+              ) : tickers.map((t: any, i: number) => {
+                const sym = themeTickerSymbol(t);
+                const chg = themeTickerPct1d(t);
+                const chgColor = changeColor(chg ?? undefined);
+                return (
+                  <div
+                    key={sym || i}
+                    onClick={() => sym && onTickerClick?.(sym)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '7px 14px',
+                      borderBottom: i < tickers.length - 1 ? `1px solid ${C.border}` : 'none',
+                      cursor: sym ? 'pointer' : 'default',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
+                      {sym || DASH}
+                    </span>
+                    {t.price != null && (
+                      <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, flex: 1, textAlign: 'left' as const }}>
+                        {formatPrice(t.price)}
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                      padding: '1px 6px', borderRadius: 3, flexShrink: 0, marginLeft: 'auto',
+                      color: chgColor, background: chgColor + '18',
+                    }}>
+                      {chg != null ? formatChgPct(chg) : DASH}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    WATCHLIST PAGE — Bloomberg Terminal Style
    ═══════════════════════════════════════════════════════════════════════ */
 /* ═══════════════════════════════════════════════════════════════════
@@ -1904,6 +2052,19 @@ export default function WatchlistPage() {
     },
     enabled: !!activeId && (innerView === 'tickers' || innerView === 'close-watch'),
     staleTime: 120_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const { data: themePerfResp, isLoading: themePerfLoading, isError: themePerfIsError } = useQuery({
+    queryKey: ['/api/watchlist', activeId, 'performance/theme'],
+    queryFn: async () => {
+      const r = await fetch(`/api/watchlist/${activeId}/performance/theme`);
+      if (!r.ok) throw new Error(`watchlist performance/theme: ${r.status}`);
+      return r.json();
+    },
+    enabled: !!activeId && bottomView === 'themes',
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -5198,16 +5359,15 @@ export default function WatchlistPage() {
             {/* ── Canonical theme section cards / Market Cap buckets / Fundamentals ── */}
             <div style={{ padding: '4px 20px 24px', position: 'relative', minHeight: refreshMut.isPending && bottomView === 'themes' ? 280 : undefined }}>
               {(() => {
-                /* ── THEMES ── */
+                /* ── THEMES (backend-authoritative performance/theme endpoint) ── */
                 if (bottomView === 'themes') {
                   return (
-                    <>
-                      {refreshMut.isPending && <AnalysisLoadingOverlay />}
-                      {newFmt
-                        ? <NewFormatSections analysis={analysis} onTickerClick={handleTickerClick} allTickerSymbols={allTickerSymbols} realtimeQuotes={realtimeQuotes} />
-                        : <WatchlistAnalysis data={analysis} onTickerClick={handleTickerClick} />
-                      }
-                    </>
+                    <ThemePerformanceGroupings
+                      resp={themePerfResp}
+                      isLoading={themePerfLoading}
+                      isError={themePerfIsError}
+                      onTickerClick={handleTickerClick}
+                    />
                   );
                 }
 
