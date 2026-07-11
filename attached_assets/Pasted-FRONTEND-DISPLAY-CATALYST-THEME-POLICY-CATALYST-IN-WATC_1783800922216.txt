@@ -1,0 +1,262 @@
+FRONTEND — DISPLAY CATALYST + THEME POLICY CATALYST IN WATCHLIST ALIGNMENT / CONFLUENCE UI
+
+Work only in the frontend Replit project unless you hit a confirmed backend response-shape bug.
+
+Do not change backend scoring.
+
+Do not change backend endpoints.
+
+Do not change Catalyst logic.
+
+Do not change Trade Alignment weights.
+
+Goal:
+
+Show both layers of Catalyst intelligence:
+
+1. Ticker Catalyst
+   scheduled / RSS / combined catalyst for the individual ticker
+
+2. Theme Policy Catalyst
+   government / Trump / White House / federal strategic investment or policy catalyst that boosts the ticker’s theme
+
+Backend fields now available:
+
+Ticker Catalyst fields:
+
+catalyst_alignment_score
+catalyst_model_version
+catalyst_primary_source
+catalyst_primary_event
+catalyst_scheduled_event
+catalyst_rss_event
+catalyst_bearish_conflict
+catalyst_v2_available
+catalyst_v2_score
+catalyst_v2_state
+catalyst_v2_primary_event
+catalyst_v2_conflicts
+
+Watchlist alignment nested shape:
+
+catalyst: {
+  available
+  score
+  model_version
+  primary_source
+  primary_event
+  scheduled_event
+  rss_event
+  bearish_conflict
+  v2_available
+  v2_score
+  v2_state
+  v2_primary_event
+  v2_conflicts
+}
+
+Theme Policy fields:
+
+theme_policy_available
+theme_policy_score
+theme_policy_boost
+theme_policy_event
+theme_policy_source
+theme_policy_theme
+theme_policy_relevance
+theme_policy_reason_codes
+
+UI requirements:
+
+1. In the Alignment / Confluence row, show a compact Catalyst area.
+
+Recommended compact layout:
+
+Catalyst
+Score: 88
+Source: RSS + Theme Policy
+Event: “Micron–GM U.S. Chip Supply Pact”
+Policy: Semiconductors +12.5
+Conflict: none
+
+2. Ticker Catalyst display:
+
+Show:
+
+score
+primary source
+state if available
+primary event title
+bearish conflict if present
+
+Source label mapping:
+
+rss_v2 → RSS
+scheduled → Scheduled
+combined → Combined
+theme_policy → Theme Policy
+rss_v2_plus_theme_policy → RSS + Theme Policy
+scheduled_plus_theme_policy → Scheduled + Theme Policy
+null/none → None
+
+3. Theme Policy display:
+
+If theme_policy_available is true or theme_policy_boost > 0, show a small secondary pill/card:
+
+Theme Policy
+[theme name] +[boost]
+
+Example:
+
+Theme Policy: Semiconductors +12.5
+
+Tooltip / expanded detail:
+
+policy title
+policy event type
+policy source
+theme_policy_score
+theme_policy_relevance
+reason codes
+published date if present
+
+4. Make the distinction clear:
+
+Ticker Catalyst = company-specific event.
+
+Theme Policy = theme-wide tailwind.
+
+Do not make a theme-policy-only ticker look like it has a direct company catalyst.
+
+For theme-policy-only rows, display:
+
+Catalyst: Theme Policy Tailwind
+Policy: Semiconductors +12.5
+
+not:
+
+“Company catalyst”
+
+5. Conflict display:
+
+If bearish_conflict exists:
+
+show warning badge:
+
+Conflict: financing / investigation / guidance cut
+
+Tooltip should include conflict title and materiality if available.
+
+If no conflict:
+
+omit or show “No major conflict.”
+
+6. Null handling:
+
+Rows with no catalyst and no theme policy should render cleanly:
+
+Catalyst: None
+
+No raw JSON.
+
+No giant article table.
+
+7. UI placement:
+
+Use existing Watchlist Alignment / Confluence row area.
+
+Keep it compact.
+
+Do not redesign the page.
+
+Use existing glass card / pill styling.
+
+8. Validation symbols:
+
+Use live rows where possible:
+
+AMD
+MU
+MRVL
+PLTR
+ABCL
+SOFI
+OKLO
+TSM
+GLW
+NVDA
+
+Confirm:
+
+ticker catalyst displays
+theme policy boost displays
+RSS + Theme Policy source displays
+theme-policy-only rows display correctly
+bearish conflict displays when present
+null rows render cleanly
+mobile does not break
+
+9. Final response:
+
+FRONTEND CATALYST + THEME POLICY DISPLAY REPORT
+
+FILES CHANGED:
+[list]
+
+DATA SHAPE USED:
+[flat confluence / nested watchlist catalyst]
+
+UI PLACEMENT:
+[where shown]
+
+TICKER CATALYST DISPLAY:
+[summary]
+
+THEME POLICY DISPLAY:
+[summary]
+
+SOURCE LABELS:
+[summary]
+
+CONFLICT DISPLAY:
+[summary]
+
+NULL HANDLING:
+[summary]
+
+VALIDATED SYMBOLS:
+[list]
+
+BACKEND CHANGES:
+[NO expected]
+
+End exactly:
+
+FRONTEND CATALYST DISPLAY VERDICT
+
+TICKER CATALYST DISPLAYED:
+[YES/NO]
+
+THEME POLICY BOOST DISPLAYED:
+[YES/NO]
+
+PRIMARY EVENT DISPLAYED:
+[YES/NO]
+
+SOURCE DISPLAYED:
+[YES/NO]
+
+BEARISH CONFLICT DISPLAYED:
+[YES/NO]
+
+THEME-POLICY-ONLY ROWS CLEAR:
+[YES/NO]
+
+NULL ROWS SAFE:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]

@@ -1,0 +1,672 @@
+FRONTEND — BUILD CAELYN CONFLUENCE COMMAND CENTER + EXPANDABLE WATCHLIST BREAKDOWN
+
+Work in the frontend Replit project.
+
+Do not change backend scoring.
+
+Do not change backend endpoints unless you find a confirmed response-shape bug.
+
+Do not change Trade Alignment weights.
+
+Do not change Catalyst logic.
+
+Do not call LLMs.
+
+Goal:
+
+Add a real Caelyn Confluence UI to the Watchlist page.
+
+This must show the detailed backend reasoning we spent days building:
+
+Investment Alignment
+Trade Alignment
+Actionability
+Entry Structure
+Options Alignment
+Catalyst
+Theme Policy Catalyst
+Elite Asset Rebound
+Theme / Stage / Social components
+Bearish conflicts / risk
+
+Do not create a vague “bullish / bearish” label.
+
+Do not add a bunch of cramped columns to the main ticker table.
+
+Build:
+
+1. A Caelyn Confluence command-center section on the Watchlist page.
+2. Expandable ticker-row breakdowns in the Watchlist table.
+
+Current Watchlist page layout:
+
+Top area:
+Screener table on the left
+Live News panel on the right
+
+Below:
+Ticker tape
+Upcoming Earnings
+Setups / Performance Groupings
+
+Place the new Caelyn Confluence section between:
+
+Screener / Live News block
+
+and
+
+Upcoming Earnings
+
+Use existing dark/glass/pill styling.
+
+Do not redesign the whole page.
+
+==================================================
+PART 0 — INSPECT EXISTING FRONTEND DATA SHAPES
+==================================================
+
+Before coding, inspect the Watchlist page hooks/components and the API payload shapes currently available.
+
+Find existing fields for:
+
+trade_alignment_score
+trade_alignment_archetype
+actionability / actionability_verdict
+investment_alignment_score
+investment_alignment_available
+elite_asset_rebound fields if present
+entry_state
+entry_score
+entry_grade
+base_archetype
+extension_state
+theme_alignment_score
+stage_score
+options_alignment_score
+options_alignment_state
+catalyst_alignment_score
+social_bonus
+theme / primary_theme
+stage
+verdict
+
+Catalyst fields:
+
+catalyst_model_version
+catalyst_primary_source
+catalyst_primary_event
+catalyst_scheduled_event
+catalyst_rss_event
+catalyst_bearish_conflict
+catalyst_v2_available
+catalyst_v2_score
+catalyst_v2_state
+catalyst_v2_primary_event
+catalyst_v2_conflicts
+
+Theme Policy fields:
+
+theme_policy_available
+theme_policy_score
+theme_policy_boost
+theme_policy_event
+theme_policy_source
+theme_policy_theme
+theme_policy_relevance
+theme_policy_reason_codes
+
+If field names differ, adapt to live payload.
+
+Do not invent fields.
+
+Do not break existing table behavior.
+
+==================================================
+PART 1 — CAELYN CONFLUENCE SECTION
+==================================================
+
+Add a full-width glass card:
+
+Title:
+
+CAELYN CONFLUENCE
+
+Subtitle:
+
+Actionability, investment quality, catalysts, policy tailwinds, and risk
+
+Use tabs / segmented pills:
+
+Actionable Setups
+Investment Quality
+Theme Policy Tailwinds
+New Catalysts
+Risk / Conflicts
+
+Default tab:
+
+Actionable Setups
+
+==================================================
+TAB 1 — ACTIONABLE SETUPS
+==================================================
+
+Purpose:
+
+Show what is closest to actionable now.
+
+Rank rows using frontend-only logic:
+
+1. Actionability state priority:
+READY / BUY / ADD first
+WAIT_FOR_RETEST / WAIT_FOR_BREAKOUT next
+WATCH / EARLY_WATCH next
+
+2. Trade Alignment score descending
+
+3. Entry constructive states ahead of broken/extended states
+
+4. Catalyst / Options confirmation as tie breakers
+
+Show 8–12 cards max.
+
+Each card must show:
+
+Ticker
+Company if available
+Actionability badge
+Trade Alignment score
+Investment Alignment score if available
+Entry state
+Catalyst score
+Catalyst source
+Theme Policy boost if present
+Options state/score if present
+Primary theme
+
+Example:
+
+MRVL
+Actionability: WATCH
+Trade: 81
+Investment: 78
+Entry: WAIT_FOR_RETEST
+Catalyst: 78 · RSS + Theme Policy
+Policy: Semiconductors +12.5
+Options: Bullish pressure
+
+Why:
+Strong trade setup and policy tailwind, but entry is not ready yet.
+
+Do not say only:
+
+“Bullish.”
+
+==================================================
+TAB 2 — INVESTMENT QUALITY
+==================================================
+
+Purpose:
+
+Separate long-term asset quality from near-term trade timing.
+
+Rank by:
+
+investment_alignment_score descending
+
+Show 8–12 cards.
+
+Each card should show:
+
+Ticker
+Investment Alignment score
+Trade Alignment score
+Actionability
+Entry state
+Catalyst score
+Primary theme
+Elite Asset Rebound flag if present
+
+Derived labels:
+
+Strong Investment / Weak Trade Setup
+Strong Investment / Trade Setup Improving
+Hot Trade / Weak Investment
+Elite Rebound Candidate
+
+Examples:
+
+PLTR
+Investment: 91
+Trade: 62
+Actionability: WAIT
+Entry: SUPPORT_LOST
+
+Label:
+Great asset, bad entry.
+
+QUBT
+Investment: 42
+Trade: 73
+Actionability: WATCH
+
+Label:
+Speculative trade, weak investment profile.
+
+Use available backend fields only.
+
+If Investment Alignment is missing for a row, show “Investment: unavailable” rather than hiding the card entirely.
+
+==================================================
+TAB 3 — THEME POLICY TAILWINDS
+==================================================
+
+Purpose:
+
+Show government / Trump / federal strategic investment theme boosts.
+
+Group rows where:
+
+theme_policy_available = true
+
+or:
+
+theme_policy_boost > 0
+
+Group by:
+
+theme_policy_theme
+
+For each theme card, show:
+
+Theme name
+Policy boost
+Policy score
+Policy event title
+Affected ticker count
+Top affected tickers
+Reason codes if concise
+
+Example:
+
+Semiconductors +12.5
+Micron boosts U.S. investment plan, commits $250B through 2035
+
+Affected:
+AMD, TSM, GLW, SLAB, APH, TXN, NVDA, VLN
+
+Make clear:
+
+Theme Policy Tailwind is theme-level, not company-specific.
+
+For theme-policy-only rows, do not imply a direct company catalyst.
+
+==================================================
+TAB 4 — NEW CATALYSTS
+==================================================
+
+Purpose:
+
+Show ticker-specific events and scheduled catalysts.
+
+Include rows/cards where:
+
+catalyst_primary_event exists
+
+or catalyst_rss_event exists
+
+or catalyst_scheduled_event exists
+
+or catalyst_v2_primary_event exists
+
+Sort by:
+
+catalyst_alignment_score descending
+then event recency if available
+
+Show:
+
+ticker
+catalyst score
+source
+state
+event type
+event title
+published date if available
+theme policy boost if also present
+bearish conflict badge if present
+
+Source label mapping:
+
+rss_v2 -> RSS
+scheduled -> Scheduled
+calendar -> Scheduled
+combined -> Combined
+theme_policy -> Theme Policy
+rss_v2_plus_theme_policy -> RSS + Theme Policy
+scheduled_plus_theme_policy -> Scheduled + Theme Policy
+none/null -> None
+
+For source = theme_policy only, keep it secondary and direct the user to the Theme Policy tab.
+
+==================================================
+TAB 5 — RISK / CONFLICTS
+==================================================
+
+Purpose:
+
+Show reasons not to chase.
+
+Include rows where any of these are present:
+
+catalyst_bearish_conflict exists
+catalyst_v2_conflicts non-empty
+entry_state indicates SUPPORT_LOST / FAILED_BREAKOUT / EXTREME_EXTENSION / TOO_EXTENDED / VERTICAL / CROWDED_MOVE
+actionability indicates AVOID / TOO_EXTENDED
+investment_alignment_score is low while trade_alignment_score is high
+bearish financing / investigation / guidance cut events exist
+
+Show:
+
+Ticker
+Risk type
+Relevant score
+Short explanation
+Related event title if available
+
+Examples:
+
+BE
+Risk: Bearish catalyst conflict
+Investigation offsets commercial catalyst.
+
+PLTR
+Risk: Entry not ready
+Excellent investment quality but support lost / broken structure.
+
+==================================================
+PART 2 — EXPANDABLE WATCHLIST ROW BREAKDOWN
+==================================================
+
+Add expandable detail rows to the main Watchlist ticker table.
+
+Do not add many new columns.
+
+Use a chevron or click-to-expand.
+
+On expand, show:
+
+CAELYN BREAKDOWN
+
+Section A — Decision
+
+Actionability
+Trade Alignment
+Investment Alignment
+Entry state
+
+Example:
+
+Decision:
+WATCH
+Trade 81 · Investment 78 · Entry WAIT_FOR_RETEST
+
+Section B — Trade Components
+
+Theme score
+Stage score
+Options score
+Catalyst score
+Social bonus
+
+Use compact bars/pills.
+
+Section C — Investment Case
+
+Investment Alignment score
+Investment label
+Elite Asset Rebound flag if present
+Any available investment component breakdown fields
+
+If investment component fields are not present, show only the score and availability.
+
+Section D — Catalyst
+
+Ticker Catalyst:
+source
+score
+event title
+event type
+state
+
+Theme Policy:
+theme
+boost
+policy title
+policy score
+
+Bearish Conflict:
+type
+title
+or None
+
+Section E — Entry Structure
+
+entry_state
+entry_score
+entry_grade
+base_archetype
+extension_state
+
+Section F — Why / Why Not Now
+
+Frontend-derived deterministic explanation:
+
+If actionability READY / BUY:
+“Actionable because Trade Alignment is high and Entry is constructive.”
+
+If Investment high but Entry bad:
+“Strong investment profile, but entry is not ready.”
+
+If Catalyst high but Entry not ready:
+“Catalyst is active, but waiting for entry confirmation.”
+
+If Theme Policy only:
+“Theme-wide policy tailwind is active; no company-specific catalyst detected.”
+
+If Bearish conflict:
+“Bullish catalyst is offset by bearish conflict.”
+
+If Trade high but Investment low:
+“Trade setup is stronger than long-term investment quality.”
+
+Do not call AI.
+
+==================================================
+PART 3 — VISUAL PRIORITY
+==================================================
+
+Top-level card order should be:
+
+1. Actionability
+2. Trade Alignment
+3. Investment Alignment
+4. Entry
+5. Catalyst / Theme Policy
+6. Options
+7. Risk/conflict
+
+This keeps the decision clear.
+
+Catalyst should not overpower Entry or Actionability.
+
+Investment should not be confused with Trade.
+
+Use labels:
+
+Trade
+Investment
+Entry
+Catalyst
+Policy
+Options
+Risk
+
+==================================================
+PART 4 — NULL / PLACEHOLDER HANDLING
+==================================================
+
+Rows with no Catalyst:
+
+Catalyst: None
+
+Rows with no Theme Policy:
+
+Policy: None or omit
+
+Rows with no Investment Alignment:
+
+Investment: unavailable
+
+Rows with no Entry:
+
+Entry: unavailable
+
+Never render:
+
+undefined
+null
+[object Object]
+raw JSON
+
+==================================================
+PART 5 — VALIDATION SYMBOLS
+==================================================
+
+Validate with live rows where possible:
+
+AMD
+MU
+MRVL
+PLTR
+ABCL
+SOFI
+OKLO
+TSM
+GLW
+NVDA
+BE
+RCAT
+QUBT
+RGTI
+A weak/no-catalyst ticker if available
+
+Confirm:
+
+Actionable Setups renders
+Investment Quality renders
+Theme Policy Tailwinds renders
+New Catalysts renders
+Risk / Conflicts renders
+Expandable row renders complete breakdown
+Investment and Trade are displayed separately
+Actionability is visible
+Theme Policy is clearly theme-level
+Null rows safe
+No backend changes
+
+==================================================
+PART 6 — FINAL RESPONSE
+==================================================
+
+Return:
+
+FRONTEND CAELYN CONFLUENCE REPORT
+
+FILES CHANGED:
+[list]
+
+PLACEMENT:
+[where section was added]
+
+DATA SOURCE:
+[endpoint / hook used]
+
+ACTIONABLE SETUPS TAB:
+[summary]
+
+INVESTMENT QUALITY TAB:
+[summary]
+
+THEME POLICY TAB:
+[summary]
+
+NEW CATALYSTS TAB:
+[summary]
+
+RISK / CONFLICTS TAB:
+[summary]
+
+EXPANDABLE ROW:
+[summary]
+
+TRADE VS INVESTMENT DISPLAY:
+[summary]
+
+ACTIONABILITY DISPLAY:
+[summary]
+
+FIELDS DISPLAYED:
+[list]
+
+NULL HANDLING:
+[summary]
+
+VALIDATED SYMBOLS:
+[list]
+
+BACKEND CHANGES:
+[NO expected]
+
+End exactly:
+
+FRONTEND CAELYN CONFLUENCE VERDICT
+
+CAELYN CONFLUENCE SECTION ADDED:
+[YES/NO]
+
+ACTIONABLE SETUPS DISPLAYED:
+[YES/NO]
+
+INVESTMENT QUALITY DISPLAYED:
+[YES/NO]
+
+THEME POLICY TAILWINDS DISPLAYED:
+[YES/NO]
+
+NEW CATALYST EVENTS DISPLAYED:
+[YES/NO]
+
+RISK / CONFLICTS DISPLAYED:
+[YES/NO]
+
+EXPANDABLE ROW BREAKDOWN ADDED:
+[YES/NO]
+
+TRADE AND INVESTMENT SHOWN SEPARATELY:
+[YES/NO]
+
+ACTIONABILITY SHOWN CLEARLY:
+[YES/NO]
+
+DETAILED BREAKDOWN SHOWN, NOT GENERIC BULLISH LABEL:
+[YES/NO]
+
+NULL ROWS SAFE:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]

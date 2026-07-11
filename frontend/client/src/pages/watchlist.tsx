@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,8 +15,9 @@ import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { CaelynConfluenceSection, CaelynRowBreakdown } from '@/components/caelyn-confluence';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 const C = {
@@ -1852,6 +1853,12 @@ export default function WatchlistPage() {
   /* ── Close Watch / favorites ─────────────────────────────────────── */
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
+  const [expandedTickers, setExpandedTickers] = useState<Set<string>>(new Set());
+  const toggleExpandedTicker = (sym: string) => setExpandedTickers(prev => {
+    const next = new Set(prev);
+    if (next.has(sym)) next.delete(sym); else next.add(sym);
+    return next;
+  });
 
   useEffect(() => { ensureBlinkStyle(); }, []);
 
@@ -3975,9 +3982,11 @@ export default function WatchlistPage() {
               const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
               const _oVol = _oUn ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
               const _oOI = _oUn ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
+              const _sym = (stock.ticker || stock.symbol || '') as string;
+              const _isExpanded = expandedTickers.has(_sym);
               return (
+                <Fragment key={`row-frag-${_sym}-${i}`}>
                 <div
-                  key={`row-${stock.ticker}-${i}`}
                   onClick={() => !isPending && stock.ticker && handleTickerClick(stock.ticker)}
                   style={{
                     display: 'grid',
@@ -4026,6 +4035,15 @@ export default function WatchlistPage() {
                     <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                       {stock.ticker || DASH}
                     </span>
+                    {!isPending && _sym && (
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleExpandedTicker(_sym); }}
+                        title={_isExpanded ? 'Collapse Caelyn Breakdown' : 'Expand Caelyn Breakdown'}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, color: _isExpanded ? C.teal : C.dim, opacity: _isExpanded ? 1 : 0.5, transition: 'all 0.12s' }}
+                      >
+                        {_isExpanded ? <ChevronUp size={9} /> : <ChevronDown size={9} style={{ transform: 'rotate(0deg)' }} />}
+                      </button>
+                    )}
                   </span>
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
@@ -4237,6 +4255,8 @@ export default function WatchlistPage() {
                     );
                   })(_s2?.technical_metrics, _s2?.technical_state, _s2?.technical_timing_score)}
                 </div>
+                {_isExpanded && _sym && <CaelynRowBreakdown stock={stock} />}
+                </Fragment>
               );
             })}
             {visibleRows.length === 0 && (
@@ -5403,6 +5423,11 @@ export default function WatchlistPage() {
 
             {/* ── Signal Summary Strip (ticker chips) ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
+            {/* ── Caelyn Confluence ── */}
+            {csvMergedScreenerRows.length > 0 && (
+              <CaelynConfluenceSection rows={csvMergedScreenerRows} />
+            )}
 
             {/* ── Upcoming Earnings ── */}
             {renderEarningsSection()}
