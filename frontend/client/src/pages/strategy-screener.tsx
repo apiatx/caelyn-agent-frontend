@@ -3106,7 +3106,7 @@ export default function StrategyScreenerPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
       <div style={{ borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 0, padding: '0 24px', background: C.surface }}>
-        <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>Smart Options</button>
+        <button style={tabStyle(tab === 'smart-options')} onClick={() => setTab('smart-options')}>HL Futures</button>
         <button style={tabStyle(tab === 'defiance')} onClick={() => setTab('defiance')}>Defiance 2×</button>
         <button style={tabStyle(tab === 'vix-risk-regime')} onClick={() => setTab('vix-risk-regime')}>VIX Risk Regime</button>
         <button style={tabStyle(tab === 'weekly-price-movements')} onClick={() => setTab('weekly-price-movements')}>Weekly Movements</button>
