@@ -689,28 +689,70 @@ function EmptyState({ msg }: { msg: string }) {
 const ACTIONABLE_BUCKETS = new Set(['ACTIONABLE', 'NEAR_ACTIONABLE', 'CONFLUENCE_AT_SUPPORT']);
 const EXCLUDED_BUCKETS   = new Set(['WATCH_FOR_RESET', 'RISK_CONFLICT', 'NO_CLEAR_CONFLUENCE']);
 
+type SortKey = 'ticker' | 'score' | 'bucket' | 'actionability' | 'trade' | 'investment' | 'catalyst' | 'policy' | 'entry_state';
+
+const COL_DEFS: { key: SortKey; label: string; width: string; numeric?: boolean }[] = [
+  { key: 'ticker',       label: 'Ticker',            width: '54px'  },
+  { key: 'score',        label: 'Confluence Score',  width: '68px',  numeric: true },
+  { key: 'bucket',       label: 'Confluence Bucket', width: '120px' },
+  { key: 'actionability',label: 'Actionability',     width: '90px'  },
+  { key: 'trade',        label: 'Trade Score',       width: '58px',  numeric: true },
+  { key: 'investment',   label: 'Investment',        width: '62px',  numeric: true },
+  { key: 'catalyst',     label: 'Catalyst',          width: '56px',  numeric: true },
+  { key: 'policy',       label: 'Policy Boost',      width: '62px'  },
+  { key: 'entry_state',  label: 'Entry State',       width: '100px' },
+];
+
+const GRID_COLS = `20px ${COL_DEFS.map(c => c.width).join(' ')}`;
+
 function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
   const sorted = useMemo(() => {
+    const dir = sortDir === 'desc' ? -1 : 1;
     return [...rows].sort((a, b) => {
-      const sa = Number(a.caelyn_confluence_score ?? 0);
-      const sb = Number(b.caelyn_confluence_score ?? 0);
-      if (sb !== sa) return sb - sa;
-      return getTradeScore(b) - getTradeScore(a);
+      const ta = fmtTicker(a), tb = fmtTicker(b);
+      const getVal = (r: any): number | string => {
+        switch (sortKey) {
+          case 'ticker':       return fmtTicker(r);
+          case 'score':        return Number(r.caelyn_confluence_score ?? 0);
+          case 'bucket':       return r.caelyn_confluence_bucket ?? '';
+          case 'actionability':return actionPriority(deriveActionability(r));
+          case 'trade':        return getTradeScore(r);
+          case 'investment':   return getInvScore(r) ?? -1;
+          case 'catalyst': {
+            const cs = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
+            return cs != null ? Number(cs) : -1;
+          }
+          case 'policy':       return Number(r.theme_policy_boost ?? 0);
+          case 'entry_state':  return (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '');
+        }
+      };
+      const va = getVal(a), vb = getVal(b);
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return (vb - va) * dir || (ta < tb ? -1 : ta > tb ? 1 : 0);
+      }
+      return (String(va) < String(vb) ? -1 : String(va) > String(vb) ? 1 : 0) * dir;
     });
-  }, [rows]);
+  }, [rows, sortKey, sortDir]);
 
   if (!sorted.length) return <EmptyState msg="No confluence data available." />;
 
-  const dim = { fontSize: 8, color: CC.dim, fontFamily: CC.font } as const;
-  const hdr = { fontSize: 6, color: CC.dim, fontFamily: CC.font, letterSpacing: '0.07em', textTransform: 'uppercase' as const } as const;
-  const cell = { fontSize: 8, fontFamily: CC.font, color: CC.text, fontWeight: 600 } as const;
-
-  const hasCcs   = sorted.some(r => r.caelyn_confluence_score != null);
+  const hasCcs    = sorted.some(r => r.caelyn_confluence_score != null);
   const hasBucket = sorted.some(r => r.caelyn_confluence_bucket);
 
   if (!hasCcs && !hasBucket) {
-    const cntSample = Math.min(sorted.length, 3);
-    const sampleKeys = cntSample > 0 ? Object.keys(sorted[0]).sort().join(', ') : '—';
+    const sampleKeys = sorted.length > 0 ? Object.keys(sorted[0]).sort().join(', ') : '—';
     return (
       <div style={{ padding: '16px 0', fontFamily: CC.font }}>
         <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.8 }}>
@@ -723,54 +765,102 @@ function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?
     );
   }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column' as const }}>
-      {/* Header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '28px 52px 42px 1fr 60px 42px 42px 42px 36px 36px', gap: '0 6px', padding: '4px 4px 4px 0', borderBottom: `1px solid ${CC.border}`, marginBottom: 2 }}>
-        {['#','Ticker','CCS','Bucket','Action','Trade','Inv','Cat','Pol','ERR'].map(h => (
-          <span key={h} style={hdr}>{h}</span>
-        ))}
-      </div>
-      {/* Data rows */}
-      {sorted.map((r, i) => {
-        const ticker  = fmtTicker(r);
-        const ccs     = r.caelyn_confluence_score != null ? Math.round(Number(r.caelyn_confluence_score)) : '—';
-        const bucket  = r.caelyn_confluence_bucket ?? null;
-        const action  = deriveActionability(r);
-        const trade   = getTradeScore(r);
-        const inv     = getInvScore(r);
-        const catScore = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
-        const catNum  = catScore != null && Number.isFinite(Number(catScore)) ? Math.round(Number(catScore)) : null;
-        const pol     = r.theme_policy_boost != null && Number(r.theme_policy_boost) > 0 ? `+${Number(r.theme_policy_boost).toFixed(0)}` : (r.theme_policy_available ? '✓' : '—');
-        const errRaw  = r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? null;
-        const errDisp = errRaw ? errRaw.replace(/_/g,'·').toUpperCase().slice(0,8) : '—';
-        const errClr  = errRaw === 'STRONG_ASSET_EXTENDED_WAIT' ? CC.amber : errRaw === 'BROKEN_SUPPORT_AVOID' ? CC.red : CC.dim;
-        const bucketCfg = bucket ? (BUCKET_LABELS[bucket] ?? { clr: CC.dim }) : { clr: CC.dim };
-        const ccsColor = typeof ccs === 'number' ? scoreColor(ccs) : CC.dim;
+  const hdrBase: React.CSSProperties = {
+    fontSize: 7, fontFamily: CC.font, letterSpacing: '0.06em',
+    textTransform: 'uppercase', color: CC.dim,
+    cursor: 'pointer', userSelect: 'none',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+    display: 'flex', alignItems: 'center', gap: 2,
+  };
+  const cell: React.CSSProperties = { fontSize: 8, fontFamily: CC.font, color: CC.text, fontWeight: 600 };
+  const dim:  React.CSSProperties = { fontSize: 7, color: CC.dim, fontFamily: CC.font };
 
-        return (
-          <div
-            key={`all-${ticker}-${i}`}
-            style={{ display: 'grid', gridTemplateColumns: '28px 52px 42px 1fr 60px 42px 42px 42px 36px 36px', gap: '0 6px', padding: '4px 4px', borderBottom: `1px solid ${CC.border}22`, alignItems: 'center' }}
-          >
-            <span style={{ ...dim, fontSize: 7, opacity: 0.5 }}>{i + 1}</span>
-            <span
-              onClick={() => onTickerClick?.(ticker)}
-              style={{ fontSize: 10, fontWeight: 800, color: onTickerClick ? CC.teal : CC.text, fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
-            >{ticker}</span>
-            <span style={{ ...cell, color: ccsColor }}>{ccs}</span>
-            <span style={{ fontSize: 7, fontWeight: 700, color: bucketCfg.clr, fontFamily: CC.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {bucket ? (BUCKET_LABELS[bucket]?.label ?? bucket) : '—'}
+  const sortArrow = (key: SortKey) => {
+    if (key !== sortKey) return <span style={{ opacity: 0.25, fontSize: 6 }}>↕</span>;
+    return <span style={{ color: CC.teal, fontSize: 6 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>;
+  };
+
+  return (
+    <div style={{ overflowX: 'auto' as const }}>
+      <div style={{ minWidth: 680 }}>
+        {/* Header row */}
+        <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 8px', padding: '5px 4px 5px 0', borderBottom: `1px solid ${CC.border}`, marginBottom: 2 }}>
+          <span style={{ ...dim, opacity: 0.4, fontSize: 6 }}>#</span>
+          {COL_DEFS.map(col => (
+            <span key={col.key} style={hdrBase} onClick={() => handleSort(col.key)} title={`Sort by ${col.label}`}>
+              {col.label} {sortArrow(col.key)}
             </span>
-            <span style={{ ...dim, fontSize: 7 }}>{action.replace(/_/g, ' ')}</span>
-            <span style={{ ...cell, color: scoreColor(trade) }}>{trade}</span>
-            <span style={{ ...cell, color: inv != null ? scoreColor(inv) : CC.dim }}>{inv ?? '—'}</span>
-            <span style={{ ...cell, color: catNum != null ? scoreColor(catNum) : CC.dim }}>{catNum ?? '—'}</span>
-            <span style={{ ...dim, fontSize: 7, color: r.theme_policy_available || Number(r.theme_policy_boost) > 0 ? CC.purple : CC.dim }}>{pol}</span>
-            <span style={{ fontSize: 7, fontFamily: CC.font, color: errClr, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{errDisp}</span>
-          </div>
-        );
-      })}
+          ))}
+        </div>
+
+        {/* Data rows */}
+        {sorted.map((r, i) => {
+          const ticker   = fmtTicker(r);
+          const ccs      = r.caelyn_confluence_score != null ? Math.round(Number(r.caelyn_confluence_score)) : null;
+          const bucket   = r.caelyn_confluence_bucket ?? null;
+          const action   = deriveActionability(r);
+          const trade    = getTradeScore(r);
+          const inv      = getInvScore(r);
+          const catScore = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
+          const catNum   = catScore != null && Number.isFinite(Number(catScore)) ? Math.round(Number(catScore)) : null;
+          const polBoost = Number(r.theme_policy_boost ?? 0);
+          const polDisp  = polBoost > 0 ? `+${polBoost.toFixed(0)}` : (r.theme_policy_available ? '✓' : '—');
+          const errRaw   = r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? null;
+          const errDisp  = errRaw ? errRaw.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()) : '—';
+          const errClr   = errRaw === 'STRONG_ASSET_EXTENDED_WAIT' ? CC.amber : errRaw === 'BROKEN_SUPPORT_AVOID' ? CC.red : CC.dim;
+          const bucketCfg = bucket ? (BUCKET_LABELS[bucket] ?? { clr: CC.dim, label: bucket }) : null;
+          const ccsColor = ccs != null ? scoreColor(ccs) : CC.dim;
+
+          return (
+            <div
+              key={`all-${ticker}-${i}`}
+              style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 8px', padding: '4px 4px', borderBottom: `1px solid ${CC.border}22`, alignItems: 'center' }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+              onMouseOut={e => { e.currentTarget.style.background = ''; }}
+            >
+              <span style={{ ...dim, fontSize: 6, opacity: 0.4 }}>{i + 1}</span>
+
+              {/* Ticker */}
+              <span
+                onClick={() => onTickerClick?.(ticker)}
+                style={{ fontSize: 10, fontWeight: 800, color: onTickerClick ? CC.teal : CC.text, fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+              >{ticker}</span>
+
+              {/* Confluence Score */}
+              <span style={{ ...cell, color: ccsColor }}>{ccs ?? '—'}</span>
+
+              {/* Confluence Bucket */}
+              <span style={{ fontSize: 7, fontWeight: 700, color: bucketCfg?.clr ?? CC.dim, fontFamily: CC.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {bucketCfg ? (BUCKET_LABELS[bucket!]?.label ?? bucket) : '—'}
+              </span>
+
+              {/* Actionability */}
+              <span style={{ ...dim, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {action.replace(/_/g, ' ')}
+              </span>
+
+              {/* Trade Score */}
+              <span style={{ ...cell, color: scoreColor(trade) }}>{trade}</span>
+
+              {/* Investment */}
+              <span style={{ ...cell, color: inv != null ? scoreColor(inv) : CC.dim }}>{inv ?? '—'}</span>
+
+              {/* Catalyst */}
+              <span style={{ ...cell, color: catNum != null ? scoreColor(catNum) : CC.dim }}>{catNum ?? '—'}</span>
+
+              {/* Policy Boost */}
+              <span style={{ fontSize: 7, fontFamily: CC.font, fontWeight: polBoost > 0 ? 700 : 400, color: polBoost > 0 || r.theme_policy_available ? CC.purple : CC.dim }}>
+                {polDisp}
+              </span>
+
+              {/* Entry State */}
+              <span style={{ fontSize: 7, fontFamily: CC.font, color: errClr, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={errRaw ?? ''}>
+                {errDisp}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
