@@ -164,15 +164,30 @@ function getCatalystInfo(row: any): CatInfo | null {
 
 interface PolicyInfo { available: boolean; boost: number; theme: string | null; event: string | null; score: number | null; reasonCodes: string[] }
 
+/** Safely coerce a theme_policy_event or theme_policy_theme value to a display string.
+ *  The backend may return a full policy object instead of a plain string. */
+function policyStr(val: any): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') return val || null;
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'object') {
+    /* Policy event objects: prefer policy_title, then article key fields */
+    return val.policy_title ?? val.title ?? val.name ?? val.event_type ?? val.policy_event_type ?? null;
+  }
+  return null;
+}
+
 function getThemePolicyInfo(row: any): PolicyInfo {
-  const flat   = row.theme_policy_available === true || (row.theme_policy_boost && Number(row.theme_policy_boost) > 0) || !!row.theme_policy_event;
+  const rawEvent  = row.theme_policy_event  ?? row.catalyst?.theme_policy_event  ?? null;
+  const rawTheme  = row.theme_policy_theme  ?? row.catalyst?.theme_policy_theme  ?? null;
+  const flat   = row.theme_policy_available === true || (row.theme_policy_boost && Number(row.theme_policy_boost) > 0) || !!rawEvent;
   const nested = row.catalyst?.theme_policy_boost && Number(row.catalyst.theme_policy_boost) > 0;
   if (flat || nested) {
     const boost = Number(row.theme_policy_boost ?? row.catalyst?.theme_policy_boost ?? 0);
     return {
       available: true, boost,
-      theme: row.theme_policy_theme ?? row.catalyst?.theme_policy_theme ?? null,
-      event: row.theme_policy_event ?? row.catalyst?.theme_policy_event ?? null,
+      theme: policyStr(rawTheme),
+      event: policyStr(rawEvent),
       score: row.theme_policy_score != null ? Number(row.theme_policy_score)
         : row.catalyst?.theme_policy_score != null ? Number(row.catalyst.theme_policy_score) : null,
       reasonCodes: row.theme_policy_reason_codes ?? row.catalyst?.theme_policy_reason_codes ?? [],
