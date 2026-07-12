@@ -5426,7 +5426,7 @@ export default function WatchlistPage() {
 
             {/* ── Caelyn Confluence ── */}
             {csvMergedScreenerRows.length > 0 && (
-              <CaelynConfluenceSection rows={csvMergedScreenerRows} onTickerClick={handleTickerClick} />
+              <CaelynConfluenceSection rows={csvMergedScreenerRows} onTickerClick={handleTickerClick} totalTickers={allTickerSymbols.length} />
             )}
 
             {/* ── Upcoming Earnings ── */}

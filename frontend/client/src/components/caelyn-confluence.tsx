@@ -278,6 +278,22 @@ export function deriveActionability(row: any): ActionabilityState {
   /* Confirmed loss — must have active_support_status = lost_confirmed OR lower_low_confirmed OR major_support_lost */
   if (as.isConfirmedLoss) return 'SUPPORT_LOST';
 
+  /* Backend entry_risk_reward_state — authoritative when present */
+  const errState = (
+    row.entry_risk_reward_state ??
+    row.actionability?.entry_risk_reward_state ??
+    ''
+  ).toUpperCase();
+  if (errState === 'STRONG_ASSET_EXTENDED_WAIT') return 'TOO_EXTENDED';
+  if (errState === 'BROKEN_SUPPORT_AVOID')       return 'SUPPORT_LOST';
+
+  /* Backend flat actionability verdict (when returned as string or nested verdict) */
+  const beAct = typeof row.actionability === 'string'
+    ? row.actionability.toUpperCase()
+    : (row.actionability?.verdict ?? row.actionability?.state ?? '').toUpperCase();
+  if (beAct === 'TOO_EXTENDED' || beAct === 'AVOID') return 'TOO_EXTENDED';
+  if (beAct === 'BROKEN_SUPPORT_AVOID')              return 'SUPPORT_LOST';
+
   /* CRITICAL: if backend entry_state says SUPPORT_LOST / LOWER_LOW_CONFIRMED
      but active support data says it is NOT lost_confirmed → use WATCH, not SUPPORT_LOST */
   if ((es === 'LOWER_LOW_CONFIRMED' || es === 'SUPPORT_LOST') && as.hasActiveSupport && !as.isConfirmedLoss) return 'WATCH';
@@ -324,11 +340,14 @@ function riskSeverity(r: any): number {
   const { tm }   = stageMeta(r);
   const extRaw   = (r.extension_state ?? tm.extension_risk ?? '').toLowerCase().replace(/\s+/g, '_');
   const optConflict = r.actionability?.options_entry_conflict === true;
+  const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
 
   if (cat?.bearish)                                                              sev += 100;
   if (as.status === 'lost_confirmed')                                            sev +=  95;
   if (as.lowerLowConfirmed)                                                      sev +=  90;
+  if (errState === 'BROKEN_SUPPORT_AVOID')                                       sev +=  92;
   if (action === 'SUPPORT_LOST' || action === 'TOO_EXTENDED')                    sev +=  90;
+  if (errState === 'STRONG_ASSET_EXTENDED_WAIT')                                 sev +=  85;
   if (['extreme_extension','vertical','crowded_move'].includes(extRaw))          sev +=  85;
   if (optConflict)                                                               sev +=  80;
   if (as.status === 'broken_unconfirmed')                                        sev +=  75;
@@ -617,14 +636,38 @@ function EmptyState({ msg }: { msg: string }) {
 
 /* ─── Tab: Actionable Setups ─────────────────────────────────────── */
 
+function isExcludedFromSetups(r: any, action: ActionabilityState): boolean {
+  if (action === 'TOO_EXTENDED' || action === 'SUPPORT_LOST') return true;
+  const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
+  if (errState === 'STRONG_ASSET_EXTENDED_WAIT' || errState === 'BROKEN_SUPPORT_AVOID') return true;
+  const beAct = typeof r.actionability === 'string' ? r.actionability.toUpperCase() : '';
+  if (beAct === 'TOO_EXTENDED' || beAct === 'AVOID' || beAct === 'BROKEN_SUPPORT_AVOID') return true;
+  const es = rawEntryState(r);
+  if (es === 'LOWER_LOW_CONFIRMED' || es === 'FAILED_BREAKOUT') return true;
+  const as = getActiveSupportInfo(r);
+  if (as.isConfirmedLoss) return true;
+  return false;
+}
+
 function TabActionableSetups({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const sorted = useMemo(() => {
     return [...rows]
-      .map(r => ({ r, action: deriveActionability(r), trade: getTradeScore(r) }))
-      .filter(x => x.action !== 'TOO_EXTENDED' && x.action !== 'SUPPORT_LOST')
+      .map(r => ({
+        r,
+        action: deriveActionability(r),
+        trade:  getTradeScore(r),
+        cat:    getCatalystInfo(r)?.score ?? 0,
+        opts:   getOptionsInfo(r).alignScore ?? 0,
+        errScr: Number(r.entry_risk_reward_score ?? r.actionability?.entry_risk_reward_score ?? 0),
+      }))
+      .filter(x => !isExcludedFromSetups(x.r, x.action))
       .sort((a, b) => {
         const d = actionPriority(a.action) - actionPriority(b.action);
-        return d !== 0 ? d : b.trade - a.trade;
+        if (d !== 0) return d;
+        if (b.trade !== a.trade) return b.trade - a.trade;
+        if (b.errScr !== a.errScr) return b.errScr - a.errScr;
+        if (b.cat !== a.cat) return b.cat - a.cat;
+        return b.opts - a.opts;
       })
       .slice(0, 12).map(x => x.r);
   }, [rows]);
@@ -667,12 +710,19 @@ function TabThemePolicy({ rows, onTickerClick }: { rows: any[]; onTickerClick?: 
     [rows],
   );
   if (!policyRows.length) {
+    const cntAvail  = rows.filter(r => r.theme_policy_available === true).length;
+    const cntBoost  = rows.filter(r => r.theme_policy_boost && Number(r.theme_policy_boost) > 0).length;
+    const cntEvent  = rows.filter(r => !!r.theme_policy_event).length;
+    const cntNested = rows.filter(r => r.catalyst?.theme_policy_boost && Number(r.catalyst.theme_policy_boost) > 0).length;
     return (
-      <EmptyState msg={
-        'No Theme Policy tailwinds detected in current watchlist.\n' +
-        'Appears when backend returns theme_policy_available=true, theme_policy_boost>0, ' +
-        'theme_policy_event, or catalyst.theme_policy_boost>0.'
-      } />
+      <div style={{ padding: '20px 0', textAlign: 'center' as const, fontFamily: CC.font }}>
+        <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.7 }}>
+          No Theme Policy tailwinds detected in current watchlist.<br />
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>
+            Rows scanned: {rows.length} · theme_policy_available: {cntAvail} · theme_policy_boost{'>'}: 0: {cntBoost} · theme_policy_event: {cntEvent} · catalyst.theme_policy_boost: {cntNested}
+          </span>
+        </div>
+      </div>
     );
   }
   const grouped = new Map<string, any[]>();
@@ -728,12 +778,23 @@ function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t
       .map(x => x.r);
   }, [rows]);
   if (!catRows.length) {
+    const cntFlatPrimary   = rows.filter(r => !!r.catalyst_primary_event).length;
+    const cntFlatRss       = rows.filter(r => !!r.catalyst_rss_event).length;
+    const cntFlatSched     = rows.filter(r => !!r.catalyst_scheduled_event).length;
+    const cntFlatV2        = rows.filter(r => !!r.catalyst_v2_primary_event).length;
+    const cntNestedPrimary = rows.filter(r => !!r.catalyst?.primary_event).length;
+    const cntNestedRss     = rows.filter(r => !!r.catalyst?.rss_event).length;
+    const cntScore         = rows.filter(r => (r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? 0) > 0).length;
     return (
-      <EmptyState msg={
-        'No catalyst events detected in current watchlist.\n' +
-        'Appears when backend returns catalyst_primary_event, catalyst_rss_event, catalyst_scheduled_event, ' +
-        'catalyst_v2_primary_event, or any of those nested under the catalyst{} object.'
-      } />
+      <div style={{ padding: '20px 0', textAlign: 'center' as const, fontFamily: CC.font }}>
+        <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.7 }}>
+          No catalyst events detected in current watchlist.<br />
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>
+            Rows scanned: {rows.length} · catalyst_primary_event: {cntFlatPrimary} · catalyst_rss_event: {cntFlatRss} · catalyst_scheduled_event: {cntFlatSched} · catalyst_v2_primary_event: {cntFlatV2}<br />
+            catalyst.primary_event: {cntNestedPrimary} · catalyst.rss_event: {cntNestedRss} · catalyst score{'>'} 0: {cntScore}
+          </span>
+        </div>
+      </div>
     );
   }
   return (
@@ -785,16 +846,20 @@ function TabRisk({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: str
       const optConflict = r.actionability?.options_entry_conflict === true;
       const opts        = getOptionsInfo(r);
 
-      if (cat?.bearish)                                   risks.push('Bearish catalyst conflict');
+      const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
+
+      if (cat?.bearish)                                        risks.push('Bearish catalyst conflict');
+      if (errState === 'BROKEN_SUPPORT_AVOID')                 risks.push('Broken support — avoid');
       if (as.status === 'lost_confirmed' || as.lowerLowConfirmed) risks.push('Confirmed support lost');
-      if (action === 'TOO_EXTENDED')                      risks.push('Vertical / extreme extension');
-      if (as.status === 'broken_unconfirmed')             risks.push('Support break unconfirmed');
-      if (es === 'LOWER_HIGH_WARNING')                    risks.push('Lower-high warning');
-      if (as.status === 'testing_support')                risks.push('Testing active support');
-      if (es === 'SUPPORT_TEST' && !as.hasActiveSupport)  risks.push('Testing support');
-      if (optConflict && opts.sigLabel)                   risks.push(`Options ${opts.sigLabel} — entry conflict`);
-      if (inv !== null && inv < 40 && trade > 65)         risks.push('Hot trade / weak investment quality');
-      if (as.priorPivotStatus === 'lost_now_overhead')    risks.push('Prior pivot lost — overhead resistance');
+      if (errState === 'STRONG_ASSET_EXTENDED_WAIT')           risks.push('Strong asset — extended, wait');
+      if (action === 'TOO_EXTENDED')                           risks.push('Vertical / extreme extension');
+      if (as.status === 'broken_unconfirmed')                  risks.push('Support break unconfirmed');
+      if (es === 'LOWER_HIGH_WARNING')                         risks.push('Lower-high warning');
+      if (as.status === 'testing_support')                     risks.push('Testing active support');
+      if (es === 'SUPPORT_TEST' && !as.hasActiveSupport)       risks.push('Testing support');
+      if (optConflict && opts.sigLabel)                        risks.push(`Options ${opts.sigLabel} — entry conflict`);
+      if (inv !== null && inv < 40 && trade > 65)              risks.push('Hot trade / weak investment quality');
+      if (as.priorPivotStatus === 'lost_now_overhead')         risks.push('Prior pivot lost — overhead resistance');
 
       if (!risks.length) continue;
 
@@ -1048,9 +1113,28 @@ const CONF_TABS = [
 ] as const;
 type ConfTab = (typeof CONF_TABS)[number]['key'];
 
-export function CaelynConfluenceSection({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
+export function CaelynConfluenceSection({
+  rows,
+  onTickerClick,
+  totalTickers,
+}: {
+  rows: any[];
+  onTickerClick?: (t: string) => void;
+  totalTickers?: number;
+}) {
   const [tab, setTab]   = useState<ConfTab>('setups');
   const [open, setOpen] = useState(true);
+
+  /* Filter out pending rows (no analysis data yet) */
+  const analyzedRows = useMemo(() => rows.filter(r => !r._pending), [rows]);
+
+  const coverageLabel = useMemo(() => {
+    const analyzed = analyzedRows.length;
+    const total    = totalTickers != null ? totalTickers : rows.length;
+    if (total === 0) return '';
+    return `${analyzed} / ${total} scored`;
+  }, [analyzedRows.length, rows.length, totalTickers]);
+
   if (!rows.length) return null;
   return (
     <div style={{ margin: '0 20px 6px', background: CC.surface, border: `1px solid ${CC.border}`, borderRadius: 10, overflow: 'hidden' }}>
@@ -1062,7 +1146,12 @@ export function CaelynConfluenceSection({ rows, onTickerClick }: { rows: any[]; 
           <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
           <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, marginTop: 1 }}>Actionability · Investment quality · Catalysts · Policy tailwinds · Risk</div>
         </div>
-        <span style={{ color: CC.dim, fontSize: 10, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {coverageLabel && (
+            <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, opacity: 0.7 }}>{coverageLabel}</span>
+          )}
+          <span style={{ color: CC.dim, fontSize: 10, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
+        </div>
       </div>
       {open && (
         <>
@@ -1088,11 +1177,11 @@ export function CaelynConfluenceSection({ rows, onTickerClick }: { rows: any[]; 
             })}
           </div>
           <div style={{ padding: '12px 14px', maxHeight: 430, overflowY: 'auto' as const }}>
-            {tab === 'setups'   && <TabActionableSetups   rows={rows} onTickerClick={onTickerClick} />}
-            {tab === 'quality'  && <TabInvestmentQuality  rows={rows} onTickerClick={onTickerClick} />}
-            {tab === 'policy'   && <TabThemePolicy        rows={rows} onTickerClick={onTickerClick} />}
-            {tab === 'catalyst' && <TabCatalysts          rows={rows} onTickerClick={onTickerClick} />}
-            {tab === 'risk'     && <TabRisk               rows={rows} onTickerClick={onTickerClick} />}
+            {tab === 'setups'   && <TabActionableSetups   rows={analyzedRows} onTickerClick={onTickerClick} />}
+            {tab === 'quality'  && <TabInvestmentQuality  rows={analyzedRows} onTickerClick={onTickerClick} />}
+            {tab === 'policy'   && <TabThemePolicy        rows={analyzedRows} onTickerClick={onTickerClick} />}
+            {tab === 'catalyst' && <TabCatalysts          rows={analyzedRows} onTickerClick={onTickerClick} />}
+            {tab === 'risk'     && <TabRisk               rows={analyzedRows} onTickerClick={onTickerClick} />}
           </div>
         </>
       )}

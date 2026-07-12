@@ -1,0 +1,366 @@
+FRONTEND — CAELYN CONFLUENCE FULL-UNIVERSE DATA SOURCE + TAB REPAIR
+
+Frontend only unless a confirmed backend response-shape bug is found.
+
+Do not change backend scoring.
+Do not change backend endpoints unless the frontend proves no existing endpoint can supply the full watchlist confluence universe.
+Do not call LLMs.
+Do not add new model logic.
+
+Goal:
+
+Make Caelyn Confluence use the full Watchlist universe, not a partial/stale/top-50 subset, and make all tabs work from that same full row set.
+
+Current issues:
+
+1. Overextended names still appear in Actionable Setups even though backend now returns:
+   entry_risk_reward_state = STRONG_ASSET_EXTENDED_WAIT
+   actionability = TOO_EXTENDED
+   for CRWD / FTNT-style names.
+
+2. Theme Policy Tailwinds tab is empty even though backend has theme_policy_* fields.
+
+3. New Catalysts tab is empty even though backend has catalyst provenance fields.
+
+4. Risk / Conflicts tab is empty or wrong.
+
+5. It is unclear whether all 375 watchlist tickers are being scored/displayed.
+
+==================================================
+PART 0 — DATA SOURCE AUDIT BEFORE EDITING
+==================================================
+
+Before changing UI logic, inspect the actual data source used by caelyn-confluence.tsx.
+
+Return:
+
+endpoint used
+watchlist id used
+row count received
+symbols received
+whether response is limited to top 50
+whether response is retained snapshot or watchlist alignment
+whether rows are flat or nested
+whether rows include catalyst/theme_policy/entry_rr fields
+
+Log counts from the actual frontend data array:
+
+total rows
+unique symbols
+rows with trade_alignment_score
+rows with actionability
+rows with entry_risk_reward_state
+rows with investment_alignment_score
+rows with catalyst_alignment_score
+rows with catalyst_primary_event OR catalyst.primary_event
+rows with theme_policy_boost > 0
+rows with bearish conflict
+rows with active_support_status
+rows with options_entry_conflict
+
+Expected:
+
+If watchlist says 375 tickers, frontend Confluence should receive close to 375 rows, or explain every missing row.
+
+Do not proceed blindly if row count is 50, 7, or only visible table rows.
+
+==================================================
+PART 1 — USE FULL WATCHLIST CONFLUENCE UNIVERSE
+==================================================
+
+Use the endpoint that returns the full watchlist confluence/alignment row set.
+
+Prefer:
+
+GET /api/watchlist/{watchlist_id}/alignment
+
+if it returns full watchlist rows.
+
+Do not use:
+
+GET /api/alpha/confluence
+
+if it defaults to 50 and does not return the full watchlist universe.
+
+If no existing endpoint returns the full watchlist confluence rows, stop and report the backend gap instead of faking it.
+
+The Caelyn Confluence tabs must all derive from the same full row array.
+
+==================================================
+PART 2 — FIX ACTIONABLE SETUPS FILTER
+==================================================
+
+Actionable Setups must not include overextended/broken setups.
+
+Exclude rows where any of these are true:
+
+actionability verdict/state is TOO_EXTENDED or AVOID
+entry_risk_reward_state = STRONG_ASSET_EXTENDED_WAIT
+entry_risk_reward_state = BROKEN_SUPPORT_AVOID
+extension_state in EXTREME_EXTENSION / VERTICAL / CROWDED_MOVE
+entry_state in LOWER_LOW_CONFIRMED / SUPPORT_LOST / FAILED_BREAKOUT
+active_support_status = lost_confirmed
+lower_low_confirmed = true
+
+Then rank remaining candidates by:
+
+actionability priority
+trade_alignment_score
+entry_risk_reward_score
+catalyst_alignment_score
+options_alignment_score
+
+CRWD / FTNT validation:
+
+If backend returns STRONG_ASSET_EXTENDED_WAIT or TOO_EXTENDED, they must not appear in Actionable Setups.
+They may appear in Risk / Conflicts or Wait for Reset.
+
+==================================================
+PART 3 — INVESTMENT QUALITY TAB
+==================================================
+
+Clarify behavior:
+
+Investment Quality is not the same as Actionable Setups.
+
+Investment Quality should rank by:
+
+investment_alignment_score descending
+
+and display:
+
+investment score
+trade score
+actionability
+entry_risk_reward_state
+entry state
+catalyst score
+reason if investment unavailable
+
+It can include extended names, but must label them clearly:
+
+Strong investment, entry extended
+Strong investment, support test
+Strong investment, broken entry
+
+Do not imply Actionable just because Investment is strong.
+
+==================================================
+PART 4 — THEME POLICY TAB
+==================================================
+
+Use the full row set.
+
+Detect rows with:
+
+row.theme_policy_available === true
+row.theme_policy_boost > 0
+row.theme_policy_event exists
+row.catalyst?.theme_policy_boost > 0
+
+Group by theme_policy_theme.
+
+Show:
+
+theme
+boost
+policy event title
+policy score
+affected ticker count
+affected tickers
+
+If the tab is empty, print/debug:
+
+row count
+sample row keys
+count of theme_policy_boost > 0
+count of theme_policy_event present
+
+Do not silently show empty if fields exist.
+
+==================================================
+PART 5 — NEW CATALYSTS TAB
+==================================================
+
+Use the full row set.
+
+Detect rows with:
+
+row.catalyst_primary_event
+row.catalyst_rss_event
+row.catalyst_scheduled_event
+row.catalyst_v2_primary_event
+row.catalyst?.primary_event
+row.catalyst?.rss_event
+row.catalyst?.scheduled_event
+row.catalyst?.v2_primary_event
+
+Show:
+
+ticker
+score
+source
+event title
+event type
+published date
+bearish conflict if present
+theme policy boost if present
+
+If empty, debug:
+
+row count
+sample row keys
+count catalyst score > 0
+count event objects present
+
+==================================================
+PART 6 — RISK / CONFLICTS TAB
+==================================================
+
+Use full row set.
+
+Risk tab should include:
+
+TOO_EXTENDED
+AVOID
+STRONG_ASSET_EXTENDED_WAIT
+BROKEN_SUPPORT_AVOID
+bearish conflict
+active_support_status = lost_confirmed
+lower_low_confirmed
+options_entry_conflict
+catalyst high but entry bad
+investment high but entry bad
+
+Sort by severity, not alphabet.
+
+Expected:
+
+If CRWD / FTNT are overextended, they should appear here or in a Wait for Reset group, not Actionable Setups.
+
+==================================================
+PART 7 — FULL COVERAGE STATUS
+==================================================
+
+Add a small coverage line in Caelyn Confluence header:
+
+Confluence coverage:
+[rows received] / [watchlist tickers]
+
+Example:
+
+Confluence coverage: 317 / 375 US tickers
+58 excluded: foreign/no bars/no confluence row
+
+If exclusions exist, show a tooltip/list by reason if available.
+
+Do not hide the coverage issue.
+
+==================================================
+PART 8 — VALIDATION SYMBOLS
+==================================================
+
+Validate:
+
+CRWD
+FTNT
+BE
+NVEC
+MARA
+INTC
+AMD
+MU
+MRVL
+PLTR
+ABCL
+SOFI
+OKLO
+TSM
+GLW
+NVDA
+
+Return for each:
+
+present in frontend confluence rows yes/no
+actionability
+entry_risk_reward_state
+entry_state
+investment_alignment_score
+catalyst score
+theme_policy_boost
+which tab(s) it appears in
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+Return:
+
+FRONTEND CONFLUENCE FULL-UNIVERSE REPAIR REPORT
+
+FILES CHANGED:
+[list]
+
+DATA SOURCE BEFORE:
+[endpoint, row count, issue]
+
+DATA SOURCE AFTER:
+[endpoint, row count]
+
+COVERAGE:
+[rows / watchlist count]
+
+ACTIONABLE SETUPS FIX:
+[summary + CRWD/FTNT result]
+
+INVESTMENT QUALITY TAB:
+[summary]
+
+THEME POLICY TAB:
+[summary + counts]
+
+NEW CATALYSTS TAB:
+[summary + counts]
+
+RISK / CONFLICTS TAB:
+[summary + top 20]
+
+VALIDATED SYMBOLS:
+[table]
+
+BACKEND CHANGES:
+[NO expected unless proven necessary]
+
+End exactly:
+
+FRONTEND CONFLUENCE FULL-UNIVERSE VERDICT
+
+USES FULL WATCHLIST CONFLUENCE ROW SET:
+[YES/NO]
+
+COVERAGE DISPLAYED:
+[YES/NO]
+
+OVEREXTENDED NAMES EXCLUDED FROM ACTIONABLE SETUPS:
+[YES/NO]
+
+ACTIONABLE SETUPS AND INVESTMENT QUALITY SEPARATED:
+[YES/NO]
+
+THEME POLICY TAB WORKING:
+[YES/NO]
+
+NEW CATALYSTS TAB WORKING:
+[YES/NO]
+
+RISK / CONFLICTS TAB WORKING:
+[YES/NO]
+
+ALL VALIDATION SYMBOLS ACCOUNTED FOR:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]
