@@ -515,7 +515,7 @@ function SupportDetailBlock({ as: asSup, dimStyle, boldStyle }: {
 
 /* ─── Conf Card ──────────────────────────────────────────────────── */
 
-function ConfCard({ row }: { row: any }) {
+function ConfCard({ row, onTickerClick }: { row: any; onTickerClick?: (t: string) => void }) {
   const ticker  = fmtTicker(row);
   const company = fmtCompany(row);
   const action  = deriveActionability(row);
@@ -539,7 +539,10 @@ function ConfCard({ row }: { row: any }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: CC.font }}>{ticker}</div>
+          <div
+            onClick={() => onTickerClick?.(ticker)}
+            style={{ fontSize: 12, fontWeight: 800, color: onTickerClick ? CC.teal : '#fff', fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+          >{ticker}</div>
           {company && <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 130 }}>{company}</div>}
         </div>
         <ActionabilityBadge action={action} />
@@ -600,10 +603,10 @@ function ConfCard({ row }: { row: any }) {
 
 /* ─── Layout helpers ─────────────────────────────────────────────── */
 
-function CardGrid({ rows }: { rows: any[] }) {
+function CardGrid({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 10 }}>
-      {rows.map((r, i) => <ConfCard key={`cc-${fmtTicker(r)}-${i}`} row={r} />)}
+      {rows.map((r, i) => <ConfCard key={`cc-${fmtTicker(r)}-${i}`} row={r} onTickerClick={onTickerClick} />)}
     </div>
   );
 }
@@ -614,7 +617,7 @@ function EmptyState({ msg }: { msg: string }) {
 
 /* ─── Tab: Actionable Setups ─────────────────────────────────────── */
 
-function TabActionableSetups({ rows }: { rows: any[] }) {
+function TabActionableSetups({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const sorted = useMemo(() => {
     return [...rows]
       .map(r => ({ r, action: deriveActionability(r), trade: getTradeScore(r) }))
@@ -626,12 +629,12 @@ function TabActionableSetups({ rows }: { rows: any[] }) {
       .slice(0, 12).map(x => x.r);
   }, [rows]);
   if (!sorted.length) return <EmptyState msg="No actionable setups in current watchlist." />;
-  return <CardGrid rows={sorted} />;
+  return <CardGrid rows={sorted} onTickerClick={onTickerClick} />;
 }
 
 /* ─── Tab: Investment Quality ────────────────────────────────────── */
 
-function TabInvestmentQuality({ rows }: { rows: any[] }) {
+function TabInvestmentQuality({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const sorted = useMemo(() => {
     return [...rows]
       .sort((a, b) => {
@@ -651,14 +654,14 @@ function TabInvestmentQuality({ rows }: { rows: any[] }) {
           Investment Alignment score not yet available. Ranked by Trade signal as proxy.
         </div>
       )}
-      <CardGrid rows={sorted} />
+      <CardGrid rows={sorted} onTickerClick={onTickerClick} />
     </>
   );
 }
 
 /* ─── Tab: Theme Policy Tailwinds ────────────────────────────────── */
 
-function TabThemePolicy({ rows }: { rows: any[] }) {
+function TabThemePolicy({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const policyRows = useMemo(
     () => rows.filter(r => getThemePolicyInfo(r).available),
     [rows],
@@ -690,8 +693,18 @@ function TabThemePolicy({ rows }: { rows: any[] }) {
             {pi.event && <div style={{ fontSize: 9, color: CC.text, fontFamily: CC.font, marginTop: 3, lineHeight: 1.4 }}>{pi.event}</div>}
             {pi.score != null && <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, marginTop: 2 }}>Policy score: {Math.round(pi.score)}</div>}
             {pi.reasonCodes.length > 0 && <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, marginTop: 2 }}>Codes: {pi.reasonCodes.join(' · ')}</div>}
-            <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, marginTop: 5 }}>
-              Affected ({trows.length}): {trows.slice(0, 12).map(fmtTicker).join(', ')}
+            <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, marginTop: 5, display: 'flex', flexWrap: 'wrap' as const, gap: 4, alignItems: 'center' }}>
+              <span>Affected ({trows.length}):</span>
+              {trows.slice(0, 12).map((r, i) => {
+                const t = fmtTicker(r);
+                return (
+                  <span
+                    key={`${t}-${i}`}
+                    onClick={() => onTickerClick?.(t)}
+                    style={{ cursor: onTickerClick ? 'pointer' : 'default', color: onTickerClick ? CC.teal : CC.dim, textDecoration: onTickerClick ? 'underline' : 'none', fontWeight: onTickerClick ? 700 : 400 }}
+                  >{t}</span>
+                );
+              })}
             </div>
             <div style={{ marginTop: 4, fontSize: 7, color: CC.dim, fontFamily: CC.font, fontStyle: 'italic' }}>
               Theme Policy is sector/macro level — not a company-specific catalyst.
@@ -705,7 +718,7 @@ function TabThemePolicy({ rows }: { rows: any[] }) {
 
 /* ─── Tab: New Catalysts ─────────────────────────────────────────── */
 
-function TabCatalysts({ rows }: { rows: any[] }) {
+function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const catRows = useMemo(() => {
     return [...rows]
       .map(r => ({ r, cat: getCatalystInfo(r) }))
@@ -731,7 +744,10 @@ function TabCatalysts({ rows }: { rows: any[] }) {
         return (
           <div key={`cat-${ticker}-${i}`} style={{ background: CC.card, border: `1px solid ${CC.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: CC.font }}>{ticker}</span>
+              <span
+                onClick={() => onTickerClick?.(ticker)}
+                style={{ fontSize: 12, fontWeight: 800, color: onTickerClick ? CC.teal : '#fff', fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+              >{ticker}</span>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 {cat.score != null && <span style={{ fontSize: 9, color: scoreColor(cat.score), fontWeight: 700, fontFamily: CC.font }}>Score {Math.round(cat.score)}</span>}
                 {cat.state && <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: 'rgba(255,255,255,0.06)', color: CC.dim, fontFamily: CC.font }}>{cat.state}</span>}
@@ -752,7 +768,7 @@ function TabCatalysts({ rows }: { rows: any[] }) {
 
 /* ─── Tab: Risk / Conflicts ──────────────────────────────────────── */
 
-function TabRisk({ rows }: { rows: any[] }) {
+function TabRisk({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   interface RiskEntry { r: any; sev: number; risks: string[]; detail: string }
 
   const riskEntries = useMemo<RiskEntry[]>(() => {
@@ -822,7 +838,10 @@ function TabRisk({ rows }: { rows: any[] }) {
         return (
           <div key={`risk-${ticker}-${i}`} style={{ background: CC.card, border: `1px solid ${CC.red}35`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: CC.font }}>{ticker}</span>
+              <span
+                onClick={() => onTickerClick?.(ticker)}
+                style={{ fontSize: 12, fontWeight: 800, color: onTickerClick ? CC.teal : '#fff', fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+              >{ticker}</span>
               <div style={{ display: 'flex', gap: 6 }}>
                 <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Trade {trade}</span>
                 <span style={{ fontSize: 7, color: CC.red, fontFamily: CC.font, opacity: 0.7 }}>sev {sev}</span>
@@ -1029,7 +1048,7 @@ const CONF_TABS = [
 ] as const;
 type ConfTab = (typeof CONF_TABS)[number]['key'];
 
-export function CaelynConfluenceSection({ rows }: { rows: any[] }) {
+export function CaelynConfluenceSection({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const [tab, setTab]   = useState<ConfTab>('setups');
   const [open, setOpen] = useState(true);
   if (!rows.length) return null;
@@ -1069,11 +1088,11 @@ export function CaelynConfluenceSection({ rows }: { rows: any[] }) {
             })}
           </div>
           <div style={{ padding: '12px 14px', maxHeight: 430, overflowY: 'auto' as const }}>
-            {tab === 'setups'   && <TabActionableSetups   rows={rows} />}
-            {tab === 'quality'  && <TabInvestmentQuality  rows={rows} />}
-            {tab === 'policy'   && <TabThemePolicy        rows={rows} />}
-            {tab === 'catalyst' && <TabCatalysts          rows={rows} />}
-            {tab === 'risk'     && <TabRisk               rows={rows} />}
+            {tab === 'setups'   && <TabActionableSetups   rows={rows} onTickerClick={onTickerClick} />}
+            {tab === 'quality'  && <TabInvestmentQuality  rows={rows} onTickerClick={onTickerClick} />}
+            {tab === 'policy'   && <TabThemePolicy        rows={rows} onTickerClick={onTickerClick} />}
+            {tab === 'catalyst' && <TabCatalysts          rows={rows} onTickerClick={onTickerClick} />}
+            {tab === 'risk'     && <TabRisk               rows={rows} onTickerClick={onTickerClick} />}
           </div>
         </>
       )}
