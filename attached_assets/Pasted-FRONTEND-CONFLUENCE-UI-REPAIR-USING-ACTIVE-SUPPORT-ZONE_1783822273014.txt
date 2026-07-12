@@ -1,0 +1,392 @@
+FRONTEND — CONFLUENCE UI REPAIR USING ACTIVE SUPPORT ZONE FIELDS
+
+Frontend only.
+
+Do not change backend scoring.
+Do not change backend endpoints.
+Do not call LLMs.
+Do not add APIs.
+
+Backend just shipped Active Support Zone fields that separate:
+
+prior pivot lost
+from
+active critical support lost
+
+Frontend must now stop displaying support tests / lower support bounces as “support lost.”
+
+New backend fields available in Entry / Confluence rows when forwarded:
+
+prior_pivot_level
+prior_pivot_status
+active_support_zone
+active_support_type
+active_support_status
+critical_break_level
+next_downside_support
+reclaim_level
+major_support_lost
+lower_low_confirmed
+structure_state
+
+Also still available:
+
+entry_state
+entry_score
+entry_grade
+base_archetype
+extension_state
+actionability.options_entry_conflict
+actionability.options_primary_signal
+actionability.setup_summary
+options.primary_signal
+investment_alignment.unavailable_reason
+
+==================================================
+PART 1 — ENTRY / SUPPORT DISPLAY MAPPING
+==================================================
+
+Replace crude “Support lost” display logic.
+
+Use the new support fields.
+
+Display rules:
+
+If active_support_status is:
+above_support:
+  show “Active support intact”
+
+testing_support:
+  show “Testing active support”
+
+bounced_from_support:
+  show “Bounced from active support”
+
+broken_unconfirmed:
+  show “Support break unconfirmed”
+
+lost_confirmed:
+  show “Confirmed support lost”
+
+If prior_pivot_status = lost_now_overhead and active_support_status is not lost_confirmed:
+
+show secondary note:
+
+“Prior pivot lost; reclaim needed at [reclaim_level]”
+
+Do not show “Support lost” unless:
+
+active_support_status = lost_confirmed
+
+or:
+
+lower_low_confirmed = true
+
+or:
+
+entry_state is LOWER_LOW_CONFIRMED / SUPPORT_LOST and active_support_status confirms it.
+
+For BE-like case:
+
+Expected display:
+
+Entry:
+No clear entry / active support intact
+
+Support:
+Active support around 234
+Critical break below 229.55
+Reclaim level 321.42
+Next downside support 169.43
+
+Label:
+Prior pivot lost; active support intact
+
+Not:
+Support lost
+
+For NVEC/MARA:
+
+Use active support status and trend/base state.
+
+For INTC:
+
+If prior pivot lost but active support above/support testing:
+show lower-high warning / prior pivot lost / active support intact, not confirmed support lost unless lower_low_confirmed.
+
+==================================================
+PART 2 — ASYMMETRIC RR / OPTIONS DISPLAY
+==================================================
+
+Keep options signal isolated.
+
+If options.primary_signal or actionability.options_primary_signal = asymmetric_rr:
+
+show only inside Options section:
+
+Options: Asymmetric RR
+
+If actionability.options_entry_conflict = true:
+
+main decision label should be:
+
+“Options asymmetric, entry extended”
+
+or:
+
+“Extended — wait for reset”
+
+Never use “Asymmetric RR” as the main setup label.
+
+==================================================
+PART 3 — RISK / CONFLICTS SORTING
+==================================================
+
+Risk tab must sort by severity, not alphabet.
+
+Use severity score:
+
+bearish conflict exists: +100
+active_support_status = lost_confirmed: +95
+lower_low_confirmed: +90
+actionability AVOID / TOO_EXTENDED: +90
+extension_state EXTREME_EXTENSION / VERTICAL / CROWDED_MOVE: +85
+actionability.options_entry_conflict: +80
+active_support_status = broken_unconfirmed: +75
+prior_pivot_status = lost_now_overhead and active_support_status != lost_confirmed: +45
+LOWER_HIGH_WARNING: +60
+SUPPORT_TEST / RANGE_SUPPORT_TEST: +35
+
+Sort:
+
+risk_severity desc
+trade_alignment_score desc
+catalyst_alignment_score desc
+
+Then slice top 20.
+
+Do not show alphabetical A-list unless those truly rank highest.
+
+==================================================
+PART 4 — THEME POLICY TAB
+==================================================
+
+Fix field reading.
+
+Detect rows with:
+
+theme_policy_available === true
+theme_policy_boost > 0
+theme_policy_event exists
+row.catalyst?.theme_policy_boost > 0 if nested
+
+Group by theme_policy_theme.
+
+Show:
+
+theme
+boost
+policy title
+policy score
+affected tickers
+
+==================================================
+PART 5 — NEW CATALYSTS TAB
+==================================================
+
+Fix field reading.
+
+Detect:
+
+row.catalyst_primary_event
+row.catalyst_rss_event
+row.catalyst_scheduled_event
+row.catalyst_v2_primary_event
+row.catalyst?.primary_event
+row.catalyst?.rss_event
+row.catalyst?.scheduled_event
+row.catalyst?.v2_primary_event
+
+Show ticker-specific catalysts.
+
+Theme-policy-only events belong mainly in Theme Policy tab.
+
+==================================================
+PART 6 — INVESTMENT UNAVAILABLE
+==================================================
+
+Show unavailable reason.
+
+Read:
+
+investment_alignment.unavailable_reason
+
+or actual payload equivalent.
+
+Map:
+
+fundamentals_missing -> Investment unavailable — fundamentals missing
+insufficient_data -> Investment unavailable — insufficient data
+not_in_investment_universe -> Investment unavailable — not in investment universe
+cache_missing -> Investment unavailable — cache missing
+unknown -> Investment unavailable — unknown reason
+
+==================================================
+PART 7 — EXPANDED ROW BREAKDOWN
+==================================================
+
+Expanded row should show:
+
+Decision:
+actionability verdict
+setup_summary
+
+Trade:
+trade_alignment_score
+
+Investment:
+investment_alignment_score or unavailable reason
+
+Entry / Support:
+entry_state
+entry_score
+active_support_status
+active_support_zone midpoint/range
+critical_break_level
+reclaim_level
+next_downside_support
+prior_pivot_status
+
+Options:
+options.primary_signal
+options_alignment_score
+options_entry_conflict
+
+Catalyst:
+catalyst score
+primary event
+theme policy boost
+bearish conflict
+
+==================================================
+PART 8 — VALIDATION SYMBOLS
+==================================================
+
+Validate:
+
+BE
+NVEC
+MARA
+INTC
+CRWD
+FTNT
+AMD
+MU
+MRVL
+PLTR
+ABCL
+SOFI
+OKLO
+TSM
+GLW
+NVDA
+
+Expected:
+
+BE:
+Does not say support lost.
+Shows prior pivot lost, active support intact, reclaim level, critical break, next support.
+
+NVEC:
+Does not say support lost if active support intact/testing.
+
+MARA:
+Does not say support lost if active support testing / low base.
+
+INTC:
+Does not say support lost unless active_support_status/lower_low confirms.
+
+CRWD / FTNT:
+Do not show Asymmetric RR as main label.
+Show extended / wait for reset if options-entry conflict exists.
+
+Theme Policy:
+Semiconductor policy boost visible if rows contain theme_policy_boost.
+
+New Catalysts:
+Ticker catalyst events visible if rows contain catalyst events.
+
+Risk:
+Sorted by severity, not alphabet.
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+Return:
+
+FRONTEND ACTIVE SUPPORT CONFLUENCE REPAIR REPORT
+
+FILES CHANGED:
+[list]
+
+SUPPORT DISPLAY FIX:
+[summary]
+
+BE / NVEC / MARA / INTC DISPLAY:
+[before/after]
+
+ASYMMETRIC RR DISPLAY:
+[summary]
+
+RISK SORTING:
+[summary + top 20]
+
+THEME POLICY TAB:
+[summary]
+
+NEW CATALYST TAB:
+[summary]
+
+INVESTMENT UNAVAILABLE:
+[summary]
+
+EXPANDED ROW:
+[summary]
+
+BACKEND CHANGES:
+[NO expected]
+
+End exactly:
+
+FRONTEND ACTIVE SUPPORT VERDICT
+
+SUPPORT TESTS NO LONGER DISPLAY AS SUPPORT LOST:
+[YES/NO]
+
+PRIOR PIVOT LOST DISPLAYED SEPARATELY FROM ACTIVE SUPPORT LOST:
+[YES/NO]
+
+CRITICAL BREAK / RECLAIM / NEXT SUPPORT DISPLAYED:
+[YES/NO]
+
+ASYMMETRIC RR OPTIONS-ONLY:
+[YES/NO]
+
+RISK SORTED BY SEVERITY:
+[YES/NO]
+
+THEME POLICY TAB WORKING:
+[YES/NO]
+
+NEW CATALYST TAB WORKING:
+[YES/NO]
+
+INVESTMENT UNAVAILABLE EXPLAINED:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]
