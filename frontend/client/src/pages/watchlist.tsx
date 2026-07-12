@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -3985,7 +3985,7 @@ export default function WatchlistPage() {
               const _sym = (stock.ticker || stock.symbol || '') as string;
               const _isExpanded = expandedTickers.has(_sym);
               return (
-                <Fragment key={`row-frag-${_sym}-${i}`}>
+                <div key={`row-frag-${_sym}-${i}`} style={{ display: 'contents' }}>
                 <div
                   onClick={() => !isPending && stock.ticker && handleTickerClick(stock.ticker)}
                   style={{
@@ -4256,7 +4256,7 @@ export default function WatchlistPage() {
                   })(_s2?.technical_metrics, _s2?.technical_state, _s2?.technical_timing_score)}
                 </div>
                 {_isExpanded && _sym && <CaelynRowBreakdown stock={stock} />}
-                </Fragment>
+                </div>
               );
             })}
             {visibleRows.length === 0 && (

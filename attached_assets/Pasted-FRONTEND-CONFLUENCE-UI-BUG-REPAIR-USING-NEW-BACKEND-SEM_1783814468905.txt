@@ -1,0 +1,399 @@
+FRONTEND — CONFLUENCE UI BUG REPAIR USING NEW BACKEND SEMANTICS
+
+Frontend only.
+
+Do not change backend scoring.
+Do not change backend endpoints.
+Do not call LLMs.
+Do not add new APIs.
+
+Backend just shipped Confluence signal-semantics fixes. The frontend must now use the new fields correctly.
+
+New backend fields available:
+
+actionability.options_entry_conflict
+actionability.options_primary_signal
+actionability.setup_summary
+
+options.primary_signal
+
+entry_state may now include:
+SUPPORT_TEST
+LOWER_HIGH_WARNING
+LOWER_LOW_CONFIRMED
+
+investment_alignment.unavailable_reason
+
+Goal:
+
+Fix the Caelyn Confluence UI so it displays the backend reasoning correctly.
+
+Observed frontend bugs:
+
+1. Risk / Conflicts tab is sorted alphabetically.
+2. Theme Policy Tailwinds tab is empty despite backend theme_policy_* fields.
+3. New Catalyst Events tab is empty despite backend catalyst fields.
+4. “Asymmetric RR” appears like an overall setup label instead of an options-only signal.
+5. Support tests are displayed as confirmed support lost.
+6. Investment unavailable has no reason.
+
+==================================================
+PART 1 — RISK / CONFLICTS SORTING
+==================================================
+
+Risk tab must not slice alphabetically.
+
+Build risk_severity first, then sort.
+
+Suggested severity:
+
+bearish conflict exists: +100
+actionability AVOID / TOO_EXTENDED: +90
+entry_state LOWER_LOW_CONFIRMED / SUPPORT_LOST / FAILED_BREAKOUT: +85
+extension_state EXTREME_EXTENSION / VERTICAL / CROWDED_MOVE: +80
+actionability.options_entry_conflict === true: +75
+entry_state LOWER_HIGH_WARNING: +65
+entry_state SUPPORT_TEST: +45
+trade high but investment low: +60
+catalyst high but entry broken: +60
+investment high but entry broken: +50
+
+Then sort:
+
+risk_severity descending
+trade_alignment_score descending
+catalyst_alignment_score descending
+
+Then slice top 20.
+
+Do not show alphabetic A-ticker lists unless they actually rank highest by severity.
+
+==================================================
+PART 2 — THEME POLICY TAB
+==================================================
+
+Fix field reading.
+
+Detect Theme Policy rows using actual payload shape:
+
+row.theme_policy_available === true
+row.theme_policy_boost > 0
+row.theme_policy_event exists
+row.catalyst?.theme_policy_boost > 0 if nested
+
+Group by:
+
+theme_policy_theme
+
+Show:
+
+theme
+boost
+policy event title
+policy score
+affected tickers
+
+Example:
+
+Semiconductors +12.5
+Micron boosts U.S. investment plan, commits $250B through 2035
+
+Affected:
+AMD, TSM, GLW, SLAB, APH, TXN, NVDA, VLN
+
+If data is missing, log the exact payload path checked.
+
+==================================================
+PART 3 — NEW CATALYST EVENTS TAB
+==================================================
+
+Fix field reading.
+
+Detect catalysts using actual payload shape:
+
+row.catalyst_primary_event
+row.catalyst_rss_event
+row.catalyst_scheduled_event
+row.catalyst_v2_primary_event
+row.catalyst?.primary_event
+row.catalyst?.rss_event
+row.catalyst?.scheduled_event
+row.catalyst?.v2_primary_event
+
+Do not count pure theme-policy-only events as ticker-specific company catalysts unless clearly labeled Theme Policy.
+
+Show:
+
+ticker
+score
+source
+state
+event type
+event title
+published date if available
+bearish conflict badge if present
+theme policy boost if also present
+
+==================================================
+PART 4 — ASYMMETRIC RR DISPLAY
+==================================================
+
+“Asymmetric RR” is an Options signal.
+
+It must not display as the overall setup label.
+
+If backend returns:
+
+options.primary_signal = "asymmetric_rr"
+
+or:
+
+actionability.options_primary_signal = "asymmetric_rr"
+
+display it only inside the Options component:
+
+Options: Asymmetric RR
+
+If:
+
+actionability.options_entry_conflict === true
+
+show the main label as:
+
+Options asymmetric, entry extended
+
+or:
+
+Extended — wait for reset
+
+Use backend setup_summary when available:
+
+actionability.setup_summary
+
+Never show “Asymmetric RR” as the main setup/actionability label for CRWD / FTNT-style parabolic names.
+
+==================================================
+PART 5 — SUPPORT TEST VS SUPPORT LOST DISPLAY
+==================================================
+
+Use the new backend entry states.
+
+Display mapping:
+
+SUPPORT_TEST:
+Testing support
+
+LOWER_HIGH_WARNING:
+Lower-high warning
+
+LOWER_LOW_CONFIRMED:
+Confirmed lower low / structure broken
+
+SUPPORT_LOST:
+Support lost
+
+FAILED_BREAKOUT:
+Failed breakout
+
+Do not show SUPPORT_TEST as “support lost.”
+
+Do not show LOWER_HIGH_WARNING as confirmed breakdown.
+
+For BE / NVEC / MARA / INTC, verify the UI displays the exact backend state and a sane label.
+
+==================================================
+PART 6 — INVESTMENT UNAVAILABLE REASON
+==================================================
+
+If investment_alignment is unavailable, show reason.
+
+Read:
+
+investment_alignment.unavailable_reason
+
+or equivalent actual payload path.
+
+Mapping:
+
+fundamentals_missing:
+Investment unavailable — fundamentals missing
+
+insufficient_data:
+Investment unavailable — insufficient data
+
+not_in_investment_universe:
+Investment unavailable — not in investment universe
+
+cache_missing:
+Investment unavailable — cache missing
+
+unknown:
+Investment unavailable — unknown reason
+
+If no reason exists:
+
+Investment unavailable — reason not provided
+
+Do not show plain “Investment unavailable” with no explanation.
+
+==================================================
+PART 7 — EXPANDABLE ROW / BREAKDOWN DISPLAY
+==================================================
+
+In the expanded row breakdown, show:
+
+Decision:
+actionability verdict
+setup_summary if available
+
+Trade:
+trade_alignment_score
+
+Investment:
+investment_alignment_score
+investment unavailable reason if unavailable
+
+Entry:
+entry_state
+entry_score
+entry_grade
+base_archetype
+extension_state
+
+Options:
+options.primary_signal
+options_alignment_score
+options_entry_conflict if true
+
+Catalyst:
+catalyst score
+primary event
+theme policy boost
+bearish conflict
+
+Make clear:
+
+Trade ≠ Investment
+Options signal ≠ Entry quality
+Theme Policy ≠ company-specific catalyst
+
+==================================================
+PART 8 — VALIDATION SYMBOLS
+==================================================
+
+Validate with:
+
+CRWD
+FTNT
+BE
+NVEC
+MARA
+INTC
+AAOI
+ACLS
+ADEA
+ADPT
+AEHR
+AEVA
+ALAB
+ALGM
+AMAT
+AMKR
+AMPG
+AMD
+MU
+MRVL
+PLTR
+ABCL
+SOFI
+OKLO
+TSM
+GLW
+NVDA
+
+Confirm:
+
+1. Risk tab top 20 is not alphabetical.
+2. Theme Policy tab shows policy boosts when backend returns them.
+3. New Catalyst tab shows live catalyst events.
+4. CRWD / FTNT do not show Asymmetric RR as the main setup label.
+5. Options Asymmetric RR appears only in Options.
+6. BE / NVEC / MARA / INTC show support test / warning / confirmed breakdown correctly.
+7. Investment unavailable rows show a reason.
+8. Null rows render cleanly.
+9. Backend unchanged.
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+Return:
+
+FRONTEND CONFLUENCE UI BUG REPAIR REPORT
+
+FILES CHANGED:
+[list]
+
+RISK SORTING FIX:
+[summary + top 20]
+
+THEME POLICY TAB FIX:
+[summary + validation]
+
+NEW CATALYST TAB FIX:
+[summary + validation]
+
+ASYMMETRIC RR DISPLAY FIX:
+[summary]
+
+SUPPORT TEST DISPLAY:
+[summary]
+
+INVESTMENT UNAVAILABLE DISPLAY:
+[summary]
+
+EXPANDED ROW BREAKDOWN:
+[summary]
+
+VALIDATED SYMBOLS:
+[table]
+
+BACKEND CHANGES:
+[NO expected]
+
+End exactly:
+
+FRONTEND CONFLUENCE UI VERDICT
+
+RISK TAB SORTED BY SEVERITY, NOT ALPHABET:
+[YES/NO]
+
+THEME POLICY TAB WORKING:
+[YES/NO]
+
+NEW CATALYST TAB WORKING:
+[YES/NO]
+
+ASYMMETRIC RR NOT USED AS MAIN SETUP LABEL:
+[YES/NO]
+
+OPTIONS SIGNAL DISPLAYED ONLY INSIDE OPTIONS:
+[YES/NO]
+
+SUPPORT TESTS DISPLAYED SEPARATELY FROM CONFIRMED SUPPORT LOST:
+[YES/NO]
+
+INVESTMENT UNAVAILABLE EXPLAINED:
+[YES/NO]
+
+EXPANDED ROW BREAKDOWN WORKING:
+[YES/NO]
+
+NULL ROWS SAFE:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]
