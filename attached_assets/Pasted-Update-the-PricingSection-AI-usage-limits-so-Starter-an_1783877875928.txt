@@ -1,0 +1,188 @@
+Update the PricingSection AI usage limits so Starter and Plus have clearly different AI access.
+
+This is a pricing copy/UI cleanup only.
+
+Do not:
+
+* change routing
+* change auth
+* change backend
+* change pricing amounts
+* change Stripe/entitlements
+* implement feature gating
+* change actual AI usage logic
+* change confluence logic
+* redesign the page
+
+Current problem:
+Starter and Plus are too similar in AI wording. Starter has 1 AI analysis/day and Plus previously had 30 AI analyses/month, which feels like the same basic usage. Plus needs to clearly unlock more daily usage and multi-agent collaboration.
+
+==================================================
+AI PACKAGING RULE
+=================
+
+Use this AI ladder:
+
+FREE:
+
+* No AI analysis
+* No multi-agent collaboration
+
+STARTER:
+
+* Single-agent AI
+* 1 single-agent analysis / day
+* No multi-agent collaboration
+
+PLUS:
+
+* Single-agent AI
+* 2 single-agent analyses / day
+* Multi-agent collaboration
+* 1 multi-agent collaboration / day
+
+PRO:
+
+* High-volume Caelyn AI
+* 200 AI analyses / month
+* 100 multi-agent collaborations / month
+
+Do not use:
+
+* Full AI
+* Full Caelyn AI access
+* Unlimited AI
+* 30 AI analyses / month for Plus
+
+==================================================
+UPDATED PRICING FEATURE COPY
+============================
+
+FREE
+
+Included features:
+
+* Curated market intelligence
+* Market leadership views
+* Limited curated thematic watchlist
+* Options Flow
+* Catalysts & calendar
+* Screeners
+* Social intelligence signals
+
+Unavailable features:
+
+* AI analysis
+* Personal watchlists
+* Portfolios
+* Terminal access
+* Confluence views
+* Multi-agent collaboration
+* Custom rules & strategies
+
+==================================================
+
+STARTER
+
+Included features:
+
+* Everything in Free
+* 1 watchlist · 50 tickers
+* 1 portfolio · 10 holdings
+* Terminal access
+* Single-agent AI
+* 1 single-agent analysis / day
+
+Unavailable features:
+
+* Multi-agent collaboration
+* Curated confluence views
+* Full curated ticker universe
+* Custom confluence rules
+* Custom trading rules & strategies
+* Personal Strategy Engine
+
+==================================================
+
+PLUS
+
+Included features:
+
+* Everything in Starter
+* Full curated ticker universe
+* 500+ noteworthy tickers
+* Dozens of market themes
+* Curated confluence views
+* Technical, options, catalyst & fundamentals alignment
+* 2 single-agent analyses / day
+* Multi-agent collaboration
+* 1 multi-agent collaboration / day
+* 2 watchlists · 100 tickers each
+* 3 portfolios · 15 holdings each
+* or 2 portfolios · 25 holdings each
+
+Unavailable features:
+
+* Custom confluence rules
+* Custom trading rules & strategies
+* Personal Strategy Engine
+* Custom theme baskets
+* Custom page layouts & sidebar
+* Advanced financial + technical history
+
+Notes:
+Plus inherits Single-agent AI from Starter through "Everything in Starter," but it should still explicitly show the higher Plus limit:
+"2 single-agent analyses / day"
+
+Plus also explicitly adds:
+"Multi-agent collaboration"
+"1 multi-agent collaboration / day"
+
+Do not list "30 AI analyses / month" anywhere.
+
+==================================================
+
+PRO
+
+Included features:
+
+* Everything in Plus
+* Custom confluence rules
+* Custom trading rules & strategies
+* Personal Strategy Engine
+* Predefined strategy frameworks
+* Decision guardrails
+* Personal investing playbook
+* Custom theme baskets
+* Advanced financial + technical history
+* Custom page layouts & sidebar
+* 5 watchlists · 100 tickers each
+* 5 portfolios · 20 holdings each
+* High-volume Caelyn AI
+* 200 AI analyses / month
+* 100 multi-agent collaborations / month
+
+Unavailable features:
+None.
+
+==================================================
+ACCEPTANCE CHECKS
+=================
+
+Verify:
+
+1. Free clearly marks AI analysis unavailable.
+2. Starter says "Single-agent AI."
+3. Starter says "1 single-agent analysis / day."
+4. Starter clearly marks multi-agent collaboration unavailable.
+5. Plus says "2 single-agent analyses / day."
+6. Plus says "Multi-agent collaboration."
+7. Plus says "1 multi-agent collaboration / day."
+8. Plus does not say "30 AI analyses / month."
+9. Plus does not say "Full AI."
+10. Pro says "High-volume Caelyn AI."
+11. Pro says "200 AI analyses / month."
+12. Pro says "100 multi-agent collaborations / month."
+13. No "Unlimited AI" wording exists.
+14. No auth/routing/backend/API changes were made.
+15. Pricing still shows $0 / $19 / $59 / $299.
