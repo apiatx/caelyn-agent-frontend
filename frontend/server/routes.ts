@@ -5446,6 +5446,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e: any) { res.status(502).json({ error: e.message || 'watchlist/favorites DELETE error' }); }
   });
 
+  // Caelyn Confluence alignment rows for a specific watchlist
+  app.get('/api/watchlist/:wid/alignment', async (req, res) => {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 30000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${req.params.wid}/alignment`, { headers: wlHdr(), signal: ctrl.signal });
+      if (!r.ok) return res.status(r.status).json({ error: `watchlist alignment failed: ${r.status}` });
+      res.json(await r.json());
+    } catch (e: any) {
+      res.status(502).json({ error: e.message || 'watchlist alignment error' });
+    }
+  });
+
   // Options signals for a specific watchlist
   app.get('/api/watchlist/:wid/options-signals', async (req, res) => {
     try {

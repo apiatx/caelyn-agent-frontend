@@ -566,7 +566,9 @@ function ConfCard({ row, onTickerClick }: { row: any; onTickerClick?: (t: string
   const action  = deriveActionability(row);
   const trade   = getTradeScore(row);
   const entry   = deriveEntryState(row);
-  const theme   = row.canonical_theme_name || row.theme || null;
+  const theme   = row.canonical_theme_name
+    || (typeof row.theme === 'string' ? row.theme : (row.theme?.name ?? row.theme?.label ?? row.theme?.canonical_name ?? null))
+    || null;
   const { label: stageLabel } = stageMeta(row);
   const inv       = getInvScore(row);
   const invReason = inv === null ? getInvUnavailableReason(row) : null;
@@ -814,18 +816,39 @@ function TabActionableSetups({ rows, onTickerClick }: { rows: any[]; onTickerCli
 /* ─── Tab: Investment Quality ────────────────────────────────────── */
 
 function invEntryLabel(r: any): { label: string; clr: string } {
-  const bucket  = r.caelyn_confluence_bucket ?? '';
-  const action  = deriveActionability(r);
+  const bucket   = r.caelyn_confluence_bucket ?? '';
+  const action   = deriveActionability(r);
   const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
-  const as      = getActiveSupportInfo(r);
-  if (errState === 'BROKEN_SUPPORT_AVOID' || as.isConfirmedLoss || action === 'SUPPORT_LOST' || bucket === 'RISK_CONFLICT')
-    return { label: 'Strong Investment, Broken/Risk', clr: CC.red };
+  const as       = getActiveSupportInfo(r);
+  const beAct    = typeof r.actionability === 'string' ? r.actionability.toUpperCase() : '';
+
+  /* CONFIRMED break evidence required for Broken/Risk label (Part 3) */
+  const isTrulyBroken =
+    bucket === 'RISK_CONFLICT' ||
+    as.status === 'lost_confirmed' ||
+    as.lowerLowConfirmed ||
+    errState === 'BROKEN_SUPPORT_AVOID' ||
+    beAct === 'AVOID';
+
+  if (isTrulyBroken) return { label: 'Investment — Broken / Risk', clr: CC.red };
+
+  /* prior_pivot_status = lost_now_overhead with active support still intact → nuanced label */
+  const priorLost = as.priorPivotStatus === 'lost_now_overhead';
+  const activeIntact = ['above_support', 'testing_support', 'bounced_from_support'].includes(as.status ?? '');
+  if (priorLost && activeIntact) return { label: 'Prior Pivot Lost — Active Support Intact', clr: CC.amber };
+  if (priorLost && !activeIntact) return { label: 'Support Test / Reclaim Needed', clr: CC.amber };
+
+  /* Extension without break */
   if (errState === 'STRONG_ASSET_EXTENDED_WAIT' || action === 'TOO_EXTENDED' || bucket === 'WATCH_FOR_RESET')
-    return { label: 'Strong Investment, Entry Extended', clr: CC.amber };
-  if (as.status === 'testing_support' || as.status === 'bounced_from_support' || bucket === 'CONFLUENCE_AT_SUPPORT')
-    return { label: 'Strong Investment, Near Support', clr: CC.teal };
-  if (bucket === 'NEAR_ACTIONABLE')
-    return { label: 'Strong Investment, Watch for Reset', clr: CC.blue };
+    return { label: 'Strong Investment — Entry Extended', clr: CC.amber };
+
+  /* Near support */
+  if (as.status === 'testing_support') return { label: 'Strong Investment — Support Test (Constructive)', clr: CC.teal };
+  if (as.status === 'bounced_from_support' || bucket === 'CONFLUENCE_AT_SUPPORT')
+    return { label: 'Strong Investment — Near Support', clr: CC.teal };
+
+  if (bucket === 'NEAR_ACTIONABLE') return { label: 'Strong Investment — Watch for Reset', clr: CC.blue };
+  if (bucket === 'ACTIONABLE') return { label: 'Strong Investment — Actionable', clr: CC.green };
   return { label: 'Strong Investment', clr: CC.green };
 }
 
@@ -1385,10 +1408,12 @@ export function CaelynConfluenceSection({
   rows,
   onTickerClick,
   totalTickers,
+  usingAlignmentEndpoint,
 }: {
   rows: any[];
   onTickerClick?: (t: string) => void;
   totalTickers?: number;
+  usingAlignmentEndpoint?: boolean;
 }) {
   const [tab, setTab]   = useState<ConfTab>('all');
   const [open, setOpen] = useState(true);
@@ -1408,6 +1433,7 @@ export function CaelynConfluenceSection({
     if (analyzedRows.length === 0) return;
     const audit = auditRows(analyzedRows);
     console.group('[CaelynConfluence] Part 0 — Data Source Audit');
+    console.log('DATA SOURCE:', usingAlignmentEndpoint ? '✅ /api/watchlist/:wid/alignment (true confluence rows)' : '⚠️  csvMergedScreenerRows FALLBACK (may lack confluence fields)');
     console.log('Row count:', audit.total, '| totalTickers prop:', totalTickers);
     console.log('with caelyn_confluence_score:', audit.with_ccs);
     console.log('with caelyn_confluence_bucket:', audit.with_bucket);

@@ -2066,6 +2066,20 @@ export default function WatchlistPage() {
     retry: 1,
   });
 
+  /* ── Caelyn Confluence alignment rows (true backend confluence row source) ── */
+  const { data: alignmentResp } = useQuery({
+    queryKey: ['watchlist-alignment', activeId],
+    queryFn: async () => {
+      const r = await fetch(`/api/watchlist/${activeId}/alignment`);
+      if (!r.ok) throw new Error(`watchlist alignment: ${r.status}`);
+      return r.json();
+    },
+    enabled: !!activeId,
+    staleTime: 120_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
   const { data: themePerfResp, isLoading: themePerfLoading, isError: themePerfIsError } = useQuery({
     queryKey: ['/api/watchlist', activeId, 'performance/theme'],
     queryFn: async () => {
@@ -2872,6 +2886,93 @@ export default function WatchlistPage() {
       })
       .map(r => r.s);
   }, [mergedTickers, sortKey, sortDir]);
+
+  /* ── Caelyn Confluence true rows — from backend alignment endpoint ── */
+  const confluenceRows = useMemo(() => {
+    if (!alignmentResp) return null;
+    /* Handle multiple possible response shapes from FastAPI */
+    let rows: any[] = [];
+    if (Array.isArray(alignmentResp)) {
+      rows = alignmentResp;
+    } else if (Array.isArray(alignmentResp.rows)) {
+      rows = alignmentResp.rows;
+    } else if (Array.isArray(alignmentResp.alignment_rows)) {
+      rows = alignmentResp.alignment_rows;
+    } else if (Array.isArray(alignmentResp.tickers)) {
+      rows = alignmentResp.tickers;
+    } else if (alignmentResp.data && Array.isArray(alignmentResp.data)) {
+      rows = alignmentResp.data;
+    }
+    if (!rows.length) return null;
+    /* Flatten nested alignment row objects into the flat shape that
+       caelyn-confluence.tsx helpers expect. Keep nested objects too
+       so helpers with optional-chaining paths still work. */
+    return rows.map((r: any) => {
+      const act  = r.actionability  && typeof r.actionability  === 'object' ? r.actionability  : {};
+      const tr   = r.trade_alignment && typeof r.trade_alignment === 'object' ? r.trade_alignment : {};
+      const inv  = r.investment_alignment && typeof r.investment_alignment === 'object' ? r.investment_alignment : {};
+      const ent  = r.entry           && typeof r.entry           === 'object' ? r.entry           : {};
+      const cat  = r.catalyst        && typeof r.catalyst        === 'object' ? r.catalyst        : {};
+      const tp   = r.theme_policy    && typeof r.theme_policy    === 'object' ? r.theme_policy    : {};
+      const opts = r.options         && typeof r.options         === 'object' ? r.options         : {};
+
+      /* Derive caelyn_confluence_bucket from actionability.state when backend hasn't computed it.
+         Full mapping from backend actionability.state values → spec bucket taxonomy. */
+      const actState = (act.state ?? (typeof r.actionability === 'string' ? r.actionability : '')).toUpperCase();
+      const derivedBucket: string | null = r.caelyn_confluence_bucket ?? (
+        actState === 'READY' || actState === 'BUY'                        ? 'ACTIONABLE'          :
+        actState === 'WATCH' || actState === 'EARLY_WATCH'                ? 'NEAR_ACTIONABLE'     :
+        actState === 'REVERSAL_WATCH'                                     ? 'AT_SUPPORT'          :
+        actState === 'WAIT_FOR_RETEST' || actState === 'WAIT_FOR_BREAKOUT'? 'WATCH_FOR_RESET'     :
+        actState === 'AVOID' || actState === 'SHORT_AVOID'
+          || actState === 'TOO_EXTENDED'                                  ? 'RISK_CONFLICT'       :
+        actState === 'NEUTRAL'                                            ? 'NO_CLEAR_CONFLUENCE' :
+        null
+      );
+
+      return {
+        /* Keep nested objects so helpers using optional-chaining still work */
+        ...r,
+        /* Normalise ticker / company */
+        ticker:  r.ticker  ?? r.symbol ?? '',
+        company: r.company ?? r.name   ?? '',
+        /* Flat actionability */
+        actionability_state: actState,
+        options_entry_conflict: r.options_entry_conflict ?? act.options_entry_conflict ?? false,
+        setup_summary:          r.setup_summary          ?? act.setup_summary          ?? null,
+        /* Flat trade */
+        trade_alignment_score:  r.trade_alignment_score  ?? tr.score  ?? null,
+        trade_archetype:        r.trade_archetype         ?? tr.archetype ?? null,
+        /* Flat investment */
+        investment_alignment_score:            r.investment_alignment_score            ?? inv.score              ?? null,
+        investment_alignment_state:            r.investment_alignment_state            ?? inv.state              ?? null,
+        investment_alignment_available:        r.investment_alignment_available        ?? inv.available          ?? false,
+        investment_alignment_unavailable_reason: r.investment_alignment_unavailable_reason ?? inv.unavailable_reason ?? null,
+        /* Flat entry (entry = entry_risk_reward in helpers) */
+        entry_risk_reward_state: r.entry_risk_reward_state ?? ent.state ?? null,
+        entry_risk_reward_score: r.entry_risk_reward_score ?? ent.score ?? null,
+        entry_grade:             r.entry_grade             ?? ent.grade ?? null,
+        /* Flat catalyst */
+        catalyst_alignment_score:   r.catalyst_alignment_score   ?? cat.score            ?? null,
+        catalyst_primary_event:     r.catalyst_primary_event     ?? cat.primary_event    ?? null,
+        catalyst_rss_event:         r.catalyst_rss_event         ?? cat.rss_event        ?? null,
+        catalyst_scheduled_event:   r.catalyst_scheduled_event   ?? cat.scheduled_event  ?? null,
+        catalyst_bearish_conflict:  r.catalyst_bearish_conflict  ?? cat.bearish_conflict ?? null,
+        catalyst_v2_score:          r.catalyst_v2_score          ?? cat.v2_score         ?? null,
+        catalyst_v2_primary_event:  r.catalyst_v2_primary_event  ?? cat.v2_primary_event ?? null,
+        /* Flat theme policy */
+        theme_policy_boost:     r.theme_policy_boost     ?? tp.boost     ?? null,
+        theme_policy_event:     r.theme_policy_event     ?? tp.event      ?? null,
+        theme_policy_available: r.theme_policy_available ?? tp.available  ?? false,
+        theme_policy_theme:     r.theme_policy_theme     ?? tp.theme ?? tp.name ?? null,
+        /* Flat options */
+        options_alignment_score: r.options_alignment_score ?? opts.alignment_score ?? null,
+        /* Confluence — null from backend until computed, derived bucket present */
+        caelyn_confluence_score:  r.caelyn_confluence_score  ?? null,
+        caelyn_confluence_bucket: derivedBucket,
+      };
+    });
+  }, [alignmentResp]);
 
   /* ── unified CSV-merged rows for filter evaluation ───────────────── */
   const csvMergedScreenerRows = useMemo(() => {
@@ -5424,9 +5525,14 @@ export default function WatchlistPage() {
             {/* ── Signal Summary Strip (ticker chips) ── */}
             {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
 
-            {/* ── Caelyn Confluence ── */}
-            {csvMergedScreenerRows.length > 0 && (
-              <CaelynConfluenceSection rows={csvMergedScreenerRows} onTickerClick={handleTickerClick} totalTickers={allTickerSymbols.length} />
+            {/* ── Caelyn Confluence ── use alignment rows when available, else CSV-merged fallback */}
+            {(confluenceRows ?? csvMergedScreenerRows).length > 0 && (
+              <CaelynConfluenceSection
+                rows={confluenceRows ?? csvMergedScreenerRows}
+                onTickerClick={handleTickerClick}
+                totalTickers={allTickerSymbols.length}
+                usingAlignmentEndpoint={confluenceRows != null}
+              />
             )}
 
             {/* ── Upcoming Earnings ── */}

@@ -1,0 +1,400 @@
+FRONTEND — STOP USING FUNDAMENTAL ROWS FOR CAELYN CONFLUENCE; WIRE TRUE BACKEND CONFLUENCE ROWS
+
+Frontend only.
+
+Do not change backend scoring.
+Do not change catalyst scoring.
+Do not change UI styling yet.
+Do not call LLMs.
+
+The current Caelyn Confluence UI is still using the wrong row shape.
+
+Evidence from the live UI:
+
+All Confluence tab says:
+
+"caelyn_confluence_score not present in rows yet.
+Rows: 375 · Sample keys: 52-Week High Price, 52-Week Low Price, ATR, Debt / Equity, EBIT..."
+
+That proves the frontend has 375 rows, but they are fundamental/watchlist rows, not backend Confluence rows.
+
+Backend already produced Confluence rows with:
+
+caelyn_confluence_score
+caelyn_confluence_bucket
+caelyn_confluence_reason_codes
+confluence_at_support
+confluence_at_support_score
+confluence_at_support_state
+confluence_at_support_reason_codes
+entry_risk_reward_state
+entry_risk_reward_score
+active_support_status
+lower_low_confirmed
+catalyst_alignment_score
+catalyst_primary_event
+catalyst_rss_event
+catalyst_scheduled_event
+theme_policy_boost
+theme_policy_event
+investment_alignment_score
+investment_alignment_available
+
+Goal:
+
+Wire Caelyn Confluence to the actual backend Confluence/Watchlist Alignment row set, not the fundamentals row set.
+
+==================================================
+PART 0 — HARD DATA SOURCE PROOF
+==================================================
+
+Before changing card logic, print the actual endpoint and row shape.
+
+Report:
+
+1. endpoint currently used by caelyn-confluence.tsx
+2. row count
+3. first row keys
+4. whether caelyn_confluence_score exists
+5. whether caelyn_confluence_bucket exists
+6. whether catalyst_alignment_score exists
+7. whether theme_policy_boost exists
+8. whether entry_risk_reward_state exists
+9. whether active_support_status exists
+
+Current UI shows caelyn_confluence_score is missing, so this is not acceptable.
+
+==================================================
+PART 1 — SWITCH TO TRUE CONFLUENCE ROW SOURCE
+==================================================
+
+Find the existing frontend API call that returns the backend Confluence / Watchlist Alignment rows.
+
+Do not use the watchlist fundamentals row array as the source for Caelyn Confluence.
+
+Acceptable row source must contain:
+
+caelyn_confluence_score
+caelyn_confluence_bucket
+entry_risk_reward_state
+confluence_at_support_state
+catalyst_alignment_score
+theme_policy_boost
+
+If no current frontend API helper exposes this endpoint, add one.
+
+Likely backend source is one of:
+
+/api/watchlist/{watchlist_id}/alignment
+/api/alpha/confluence
+/api/debug/caelyn-confluence-ranking only for debug, not production
+
+Use the production endpoint that returns full watchlist confluence rows.
+
+If /api/alpha/confluence only returns top/retained rows and not the full universe, do not use it for the full page.
+
+The final UI must prove:
+
+rows received: 375 or expected full universe count
+rows with caelyn_confluence_score: same count
+rows with caelyn_confluence_bucket: same count
+
+==================================================
+PART 2 — ALL CONFLUENCE TAB
+==================================================
+
+All Confluence must become the default full ranked table.
+
+Sort by:
+
+caelyn_confluence_score descending
+
+Show:
+
+rank
+ticker
+company
+caelyn_confluence_score
+caelyn_confluence_bucket
+actionability
+trade_alignment_score
+investment_alignment_score
+entry_risk_reward_state
+confluence_at_support_state
+catalyst_alignment_score
+theme_policy_boost
+
+Do not show "caelyn_confluence_score not present" after this fix.
+
+==================================================
+PART 3 — FIX INVESTMENT QUALITY LABELS
+==================================================
+
+Do not show vague red "Strong Investment, Broken/Risk" unless there is actual confirmed break evidence.
+
+Only use Broken/Risk if one of these is true:
+
+caelyn_confluence_bucket = RISK_CONFLICT
+active_support_status = lost_confirmed
+lower_low_confirmed = true
+entry_risk_reward_state = BROKEN_SUPPORT_AVOID
+actionability = AVOID
+
+If prior_pivot_status = lost_now_overhead but active_support_status is above_support / testing_support / bounced_from_support, label as:
+
+Strong Investment Near Support
+or:
+Prior Pivot Lost; Active Support Intact
+or:
+Support Test / Reclaim Needed
+
+If bucket = WATCH_FOR_RESET:
+
+Strong Investment, Entry Extended
+
+If bucket = CONFLUENCE_AT_SUPPORT:
+
+Strong Investment Near Support
+
+If investment_alignment_score is unavailable:
+
+Do not show "reason not provided" unless backend truly gives no reason.
+Show actual unavailable reason when present.
+
+==================================================
+PART 4 — CATALYST DISPLAY
+==================================================
+
+Do not show Catalyst: None when catalyst_alignment_score > 0.
+
+Rules:
+
+If catalyst_alignment_score > 0 and event exists:
+Catalyst: [score] — [event title]
+
+If catalyst_alignment_score > 0 and no event object:
+Catalyst: [score] — details unavailable
+
+If catalyst_alignment_score is 0/null:
+Catalyst: None
+
+This applies to all cards and all tabs.
+
+==================================================
+PART 5 — THEME POLICY TAB
+==================================================
+
+Use the true confluence rows.
+
+Rows qualify if:
+
+theme_policy_boost > 0
+theme_policy_available = true
+theme_policy_event exists
+
+Group by theme_policy_theme.
+
+Show:
+
+theme
+boost
+event title
+affected tickers
+
+If empty, show debug counts:
+
+total confluence rows
+rows with theme_policy_boost > 0
+rows with theme_policy_event
+
+==================================================
+PART 6 — NEW CATALYSTS TAB
+==================================================
+
+Use the true confluence rows.
+
+Rows qualify if:
+
+catalyst_alignment_score > 0
+or catalyst_primary_event exists
+or catalyst_rss_event exists
+or catalyst_scheduled_event exists
+
+Show:
+
+ticker
+catalyst_alignment_score
+source
+event title if available
+event type if available
+
+If score exists but no event object:
+
+show "details unavailable" rather than hiding row.
+
+==================================================
+PART 7 — RISK / CONFLICTS TAB
+==================================================
+
+Use true confluence rows.
+
+Include:
+
+caelyn_confluence_bucket = RISK_CONFLICT
+caelyn_confluence_bucket = WATCH_FOR_RESET
+active_support_status = lost_confirmed
+lower_low_confirmed = true
+entry_risk_reward_state = BROKEN_SUPPORT_AVOID
+entry_risk_reward_state = STRONG_ASSET_EXTENDED_WAIT
+actionability = AVOID
+actionability = TOO_EXTENDED
+catalyst_bearish_conflict exists
+
+But label risks specifically:
+
+Confirmed support lost
+Lower low confirmed
+Watch for reset — extended
+Options/entry conflict
+Bearish catalyst conflict
+Broken support avoid
+
+Do not use vague "Broken/Risk" everywhere.
+
+==================================================
+PART 8 — VALIDATION
+==================================================
+
+Validate these symbols:
+
+BE
+NVEC
+MARA
+INTC
+CRWD
+FTNT
+AMD
+MU
+MRVL
+GLW
+VRT
+ANET
+TSM
+PLTR
+OKLO
+SOFI
+NVDA
+
+For each, return:
+
+present yes/no
+caelyn_confluence_score
+caelyn_confluence_bucket
+entry_risk_reward_state
+active_support_status
+lower_low_confirmed
+investment_alignment_score
+catalyst_alignment_score
+theme_policy_boost
+which tab(s) shown in
+
+Expected:
+
+BE:
+not "Broken/Risk" unless active support lost or lower low confirmed.
+Should show support/reclaim nuance if fields are present.
+
+NVEC/MARA:
+should not show Broken/Risk if active support intact/testing.
+
+CRWD/FTNT/AMD/MU/MRVL:
+should be Watch for Reset / Extended, not Actionable.
+
+GLW/VRT:
+should show catalyst scores if backend confluence row includes them.
+
+PLTR/OKLO/SOFI:
+Risk only if backend confirms RISK_CONFLICT / lower low / avoid.
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+Return:
+
+FRONTEND TRUE CONFLUENCE ROW SOURCE REPAIR REPORT
+
+FILES CHANGED:
+[list]
+
+DATA SOURCE BEFORE:
+[endpoint, row count, sample keys]
+
+DATA SOURCE AFTER:
+[endpoint, row count, sample keys]
+
+ROW FIELD COVERAGE:
+caelyn_confluence_score:
+caelyn_confluence_bucket:
+entry_risk_reward_state:
+catalyst_alignment_score:
+theme_policy_boost:
+active_support_status:
+
+ALL CONFLUENCE FIX:
+[summary]
+
+INVESTMENT QUALITY LABEL FIX:
+[summary]
+
+CATALYST DISPLAY FIX:
+[summary]
+
+THEME POLICY TAB:
+[summary + counts]
+
+NEW CATALYSTS TAB:
+[summary + counts]
+
+RISK / CONFLICTS TAB:
+[summary + counts]
+
+VALIDATED SYMBOLS:
+[table]
+
+BACKEND CHANGES:
+[NO expected]
+
+End exactly:
+
+FRONTEND TRUE CONFLUENCE VERDICT
+
+USING TRUE BACKEND CONFLUENCE ROWS:
+[YES/NO]
+
+CAELYN_CONFLUENCE_SCORE PRESENT:
+[YES/NO]
+
+ALL 375 ROWS HAVE CONFLUENCE SCORE:
+[YES/NO]
+
+CATALYST SCORE DISPLAY WORKS:
+[YES/NO]
+
+THEME POLICY TAB WORKS:
+[YES/NO]
+
+NEW CATALYSTS TAB WORKS:
+[YES/NO]
+
+RISK LABELS ARE SPECIFIC, NOT VAGUE:
+[YES/NO]
+
+INVESTMENT QUALITY DOES NOT MISLABEL SUPPORT TESTS AS BROKEN:
+[YES/NO]
+
+BACKEND UNCHANGED:
+[YES/NO]
+
+READY FOR USER REVIEW:
+[YES/NO]
