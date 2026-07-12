@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 /* ── Color palette matches watchlist.tsx ─────────────────────────── */
 const CC = {
@@ -341,19 +341,24 @@ function riskSeverity(r: any): number {
   const extRaw   = (r.extension_state ?? tm.extension_risk ?? '').toLowerCase().replace(/\s+/g, '_');
   const optConflict = r.actionability?.options_entry_conflict === true;
   const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
+  const bucket   = (r.caelyn_confluence_bucket ?? '').toUpperCase();
+  const beAct    = typeof r.actionability === 'string' ? r.actionability.toUpperCase() : '';
 
-  if (cat?.bearish)                                                              sev += 100;
-  if (as.status === 'lost_confirmed')                                            sev +=  95;
-  if (as.lowerLowConfirmed)                                                      sev +=  90;
-  if (errState === 'BROKEN_SUPPORT_AVOID')                                       sev +=  92;
-  if (action === 'SUPPORT_LOST' || action === 'TOO_EXTENDED')                    sev +=  90;
-  if (errState === 'STRONG_ASSET_EXTENDED_WAIT')                                 sev +=  85;
-  if (['extreme_extension','vertical','crowded_move'].includes(extRaw))          sev +=  85;
-  if (optConflict)                                                               sev +=  80;
-  if (as.status === 'broken_unconfirmed')                                        sev +=  75;
-  if (es === 'LOWER_HIGH_WARNING')                                               sev +=  60;
-  if (as.priorPivotStatus === 'lost_now_overhead' && as.status !== 'lost_confirmed') sev += 45;
-  if (es === 'SUPPORT_TEST' || as.status === 'testing_support')                  sev +=  35;
+  /* Spec severity weights (Part 6) */
+  if (bucket === 'RISK_CONFLICT')                                                sev += 100;
+  if (as.lowerLowConfirmed)                                                      sev +=  95;
+  if (errState === 'BROKEN_SUPPORT_AVOID' || as.status === 'lost_confirmed')     sev +=  90;
+  if (beAct === 'AVOID' || action === 'SUPPORT_LOST')                            sev +=  90;
+  if (cat?.bearish)                                                              sev +=  70;
+  if (bucket === 'WATCH_FOR_RESET')                                              sev +=  75;
+  if (errState === 'STRONG_ASSET_EXTENDED_WAIT')                                 sev +=  75;
+  if (action === 'TOO_EXTENDED')                                                 sev +=  70;
+  if (['extreme_extension','vertical','crowded_move'].includes(extRaw))          sev +=  65;
+  if (optConflict)                                                               sev +=  55;
+  if (as.status === 'broken_unconfirmed')                                        sev +=  50;
+  if (es === 'LOWER_HIGH_WARNING')                                               sev +=  40;
+  if (as.priorPivotStatus === 'lost_now_overhead' && as.status !== 'lost_confirmed') sev += 35;
+  if (es === 'SUPPORT_TEST' || as.status === 'testing_support')                  sev +=  25;
 
   return sev;
 }
@@ -437,6 +442,27 @@ function fmtSource(src: string | null | undefined): string {
 }
 
 /* ─── Visual atoms ───────────────────────────────────────────────── */
+
+/* ─── Bucket badge (caelyn_confluence_bucket) ────────────────────── */
+
+const BUCKET_LABELS: Record<string, { label: string; clr: string; bg: string }> = {
+  ACTIONABLE:            { label: 'ACTIONABLE',       clr: '#22c55e', bg: 'rgba(34,197,94,0.18)'   },
+  NEAR_ACTIONABLE:       { label: 'NEAR ACTIONABLE',  clr: '#0ea5e9', bg: 'rgba(14,165,233,0.14)'  },
+  CONFLUENCE_AT_SUPPORT: { label: 'AT SUPPORT',       clr: '#3b82f6', bg: 'rgba(59,130,246,0.14)'  },
+  WATCH_FOR_RESET:       { label: 'WATCH / RESET',    clr: '#f59e0b', bg: 'rgba(245,158,11,0.14)'  },
+  RISK_CONFLICT:         { label: 'RISK / CONFLICT',  clr: '#ef4444', bg: 'rgba(239,68,68,0.14)'   },
+  NO_CLEAR_CONFLUENCE:   { label: 'NO CONFLUENCE',    clr: '#a9aaa6', bg: 'transparent'            },
+};
+
+function BucketBadge({ bucket }: { bucket?: string | null }) {
+  if (!bucket) return null;
+  const c = BUCKET_LABELS[bucket] ?? { label: bucket, clr: '#a9aaa6', bg: 'transparent' };
+  return (
+    <span style={{ fontSize: 7, fontWeight: 800, letterSpacing: '0.06em', padding: '2px 5px', borderRadius: 3, background: c.bg, color: c.clr, fontFamily: "'JetBrains Mono','Fira Code',monospace", whiteSpace: 'nowrap' as const }}>
+      {c.label}
+    </span>
+  );
+}
 
 function ActionabilityBadge({ action }: { action: ActionabilityState }) {
   type Cfg = { label: string; clr: string; bg: string };
@@ -601,10 +627,17 @@ function ConfCard({ row, onTickerClick }: { row: any; onTickerClick?: (t: string
 
       {/* Catalyst / Policy / Theme / Conflict */}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-        {cat?.event
-          ? <span style={{ ...dim, color: CC.amber }}>● {cat.eventTitle}</span>
-          : <span style={dim}>Catalyst: None</span>
-        }
+        {(() => {
+          const rawCatScore = row.catalyst_alignment_score ?? row.catalyst?.alignment_score ?? row.catalyst?.score ?? null;
+          const catScore = rawCatScore != null && Number.isFinite(Number(rawCatScore)) ? Number(rawCatScore) : null;
+          if (cat?.event) {
+            return <span style={{ ...dim, color: CC.amber }}>● {cat.eventTitle}</span>;
+          } else if (catScore != null && catScore > 0) {
+            return <span style={{ ...dim, color: CC.amber }}>Catalyst: {Math.round(catScore)} — event details unavailable</span>;
+          } else {
+            return <span style={{ ...dim, color: 'rgba(255,255,255,0.2)' }}>Catalyst: None</span>;
+          }
+        })()}
         {policy.available && (
           <span style={{ ...dim, color: CC.purple }}>
             Policy: {policy.theme} +{policy.boost}{policy.event ? ` · ${policy.event}` : ''}
@@ -634,9 +667,106 @@ function EmptyState({ msg }: { msg: string }) {
   return <div style={{ padding: '20px 0', textAlign: 'center' as const, fontSize: 9, color: CC.dim, fontFamily: CC.font, lineHeight: 1.6 }}>{msg}</div>;
 }
 
+/* ─── Tab: All Confluence ─────────────────────────────────────────── */
+
+const ACTIONABLE_BUCKETS = new Set(['ACTIONABLE', 'NEAR_ACTIONABLE', 'CONFLUENCE_AT_SUPPORT']);
+const EXCLUDED_BUCKETS   = new Set(['WATCH_FOR_RESET', 'RISK_CONFLICT', 'NO_CLEAR_CONFLUENCE']);
+
+function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
+  const sorted = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const sa = Number(a.caelyn_confluence_score ?? 0);
+      const sb = Number(b.caelyn_confluence_score ?? 0);
+      if (sb !== sa) return sb - sa;
+      return getTradeScore(b) - getTradeScore(a);
+    });
+  }, [rows]);
+
+  if (!sorted.length) return <EmptyState msg="No confluence data available." />;
+
+  const dim = { fontSize: 8, color: CC.dim, fontFamily: CC.font } as const;
+  const hdr = { fontSize: 6, color: CC.dim, fontFamily: CC.font, letterSpacing: '0.07em', textTransform: 'uppercase' as const } as const;
+  const cell = { fontSize: 8, fontFamily: CC.font, color: CC.text, fontWeight: 600 } as const;
+
+  const hasCcs   = sorted.some(r => r.caelyn_confluence_score != null);
+  const hasBucket = sorted.some(r => r.caelyn_confluence_bucket);
+
+  if (!hasCcs && !hasBucket) {
+    const cntSample = Math.min(sorted.length, 3);
+    const sampleKeys = cntSample > 0 ? Object.keys(sorted[0]).sort().join(', ') : '—';
+    return (
+      <div style={{ padding: '16px 0', fontFamily: CC.font }}>
+        <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.8 }}>
+          caelyn_confluence_score not present in rows yet.<br />
+          <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)' }}>
+            Rows: {sorted.length} · Sample keys: {sampleKeys.slice(0, 200)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' as const }}>
+      {/* Header row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '28px 52px 42px 1fr 60px 42px 42px 42px 36px 36px', gap: '0 6px', padding: '4px 4px 4px 0', borderBottom: `1px solid ${CC.border}`, marginBottom: 2 }}>
+        {['#','Ticker','CCS','Bucket','Action','Trade','Inv','Cat','Pol','ERR'].map(h => (
+          <span key={h} style={hdr}>{h}</span>
+        ))}
+      </div>
+      {/* Data rows */}
+      {sorted.map((r, i) => {
+        const ticker  = fmtTicker(r);
+        const ccs     = r.caelyn_confluence_score != null ? Math.round(Number(r.caelyn_confluence_score)) : '—';
+        const bucket  = r.caelyn_confluence_bucket ?? null;
+        const action  = deriveActionability(r);
+        const trade   = getTradeScore(r);
+        const inv     = getInvScore(r);
+        const catScore = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
+        const catNum  = catScore != null && Number.isFinite(Number(catScore)) ? Math.round(Number(catScore)) : null;
+        const pol     = r.theme_policy_boost != null && Number(r.theme_policy_boost) > 0 ? `+${Number(r.theme_policy_boost).toFixed(0)}` : (r.theme_policy_available ? '✓' : '—');
+        const errRaw  = r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? null;
+        const errDisp = errRaw ? errRaw.replace(/_/g,'·').toUpperCase().slice(0,8) : '—';
+        const errClr  = errRaw === 'STRONG_ASSET_EXTENDED_WAIT' ? CC.amber : errRaw === 'BROKEN_SUPPORT_AVOID' ? CC.red : CC.dim;
+        const bucketCfg = bucket ? (BUCKET_LABELS[bucket] ?? { clr: CC.dim }) : { clr: CC.dim };
+        const ccsColor = typeof ccs === 'number' ? scoreColor(ccs) : CC.dim;
+
+        return (
+          <div
+            key={`all-${ticker}-${i}`}
+            style={{ display: 'grid', gridTemplateColumns: '28px 52px 42px 1fr 60px 42px 42px 42px 36px 36px', gap: '0 6px', padding: '4px 4px', borderBottom: `1px solid ${CC.border}22`, alignItems: 'center' }}
+          >
+            <span style={{ ...dim, fontSize: 7, opacity: 0.5 }}>{i + 1}</span>
+            <span
+              onClick={() => onTickerClick?.(ticker)}
+              style={{ fontSize: 10, fontWeight: 800, color: onTickerClick ? CC.teal : CC.text, fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+            >{ticker}</span>
+            <span style={{ ...cell, color: ccsColor }}>{ccs}</span>
+            <span style={{ fontSize: 7, fontWeight: 700, color: bucketCfg.clr, fontFamily: CC.font, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {bucket ? (BUCKET_LABELS[bucket]?.label ?? bucket) : '—'}
+            </span>
+            <span style={{ ...dim, fontSize: 7 }}>{action.replace(/_/g, ' ')}</span>
+            <span style={{ ...cell, color: scoreColor(trade) }}>{trade}</span>
+            <span style={{ ...cell, color: inv != null ? scoreColor(inv) : CC.dim }}>{inv ?? '—'}</span>
+            <span style={{ ...cell, color: catNum != null ? scoreColor(catNum) : CC.dim }}>{catNum ?? '—'}</span>
+            <span style={{ ...dim, fontSize: 7, color: r.theme_policy_available || Number(r.theme_policy_boost) > 0 ? CC.purple : CC.dim }}>{pol}</span>
+            <span style={{ fontSize: 7, fontFamily: CC.font, color: errClr, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{errDisp}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─── Tab: Actionable Setups ─────────────────────────────────────── */
 
 function isExcludedFromSetups(r: any, action: ActionabilityState): boolean {
+  /* Backend bucket is authoritative when present */
+  const bucket = r.caelyn_confluence_bucket;
+  if (bucket) {
+    if (EXCLUDED_BUCKETS.has(bucket)) return true;
+    if (!ACTIONABLE_BUCKETS.has(bucket)) return true;
+  }
   if (action === 'TOO_EXTENDED' || action === 'SUPPORT_LOST') return true;
   const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
   if (errState === 'STRONG_ASSET_EXTENDED_WAIT' || errState === 'BROKEN_SUPPORT_AVOID') return true;
@@ -646,6 +776,9 @@ function isExcludedFromSetups(r: any, action: ActionabilityState): boolean {
   if (es === 'LOWER_LOW_CONFIRMED' || es === 'FAILED_BREAKOUT') return true;
   const as = getActiveSupportInfo(r);
   if (as.isConfirmedLoss) return true;
+  const { tm } = stageMeta(r);
+  const ext = (tm.extension_risk ?? '').toLowerCase();
+  if (ext === 'extreme_extension' || ext === 'vertical' || ext === 'crowded_move') return true;
   return false;
 }
 
@@ -655,13 +788,16 @@ function TabActionableSetups({ rows, onTickerClick }: { rows: any[]; onTickerCli
       .map(r => ({
         r,
         action: deriveActionability(r),
+        ccs:    Number(r.caelyn_confluence_score ?? 0),
         trade:  getTradeScore(r),
-        cat:    getCatalystInfo(r)?.score ?? 0,
+        cat:    Number(r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? 0),
         opts:   getOptionsInfo(r).alignScore ?? 0,
         errScr: Number(r.entry_risk_reward_score ?? r.actionability?.entry_risk_reward_score ?? 0),
       }))
       .filter(x => !isExcludedFromSetups(x.r, x.action))
       .sort((a, b) => {
+        /* Sort by caelyn_confluence_score first when available */
+        if (b.ccs !== a.ccs) return b.ccs - a.ccs;
         const d = actionPriority(a.action) - actionPriority(b.action);
         if (d !== 0) return d;
         if (b.trade !== a.trade) return b.trade - a.trade;
@@ -677,27 +813,100 @@ function TabActionableSetups({ rows, onTickerClick }: { rows: any[]; onTickerCli
 
 /* ─── Tab: Investment Quality ────────────────────────────────────── */
 
+function invEntryLabel(r: any): { label: string; clr: string } {
+  const bucket  = r.caelyn_confluence_bucket ?? '';
+  const action  = deriveActionability(r);
+  const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
+  const as      = getActiveSupportInfo(r);
+  if (errState === 'BROKEN_SUPPORT_AVOID' || as.isConfirmedLoss || action === 'SUPPORT_LOST' || bucket === 'RISK_CONFLICT')
+    return { label: 'Strong Investment, Broken/Risk', clr: CC.red };
+  if (errState === 'STRONG_ASSET_EXTENDED_WAIT' || action === 'TOO_EXTENDED' || bucket === 'WATCH_FOR_RESET')
+    return { label: 'Strong Investment, Entry Extended', clr: CC.amber };
+  if (as.status === 'testing_support' || as.status === 'bounced_from_support' || bucket === 'CONFLUENCE_AT_SUPPORT')
+    return { label: 'Strong Investment, Near Support', clr: CC.teal };
+  if (bucket === 'NEAR_ACTIONABLE')
+    return { label: 'Strong Investment, Watch for Reset', clr: CC.blue };
+  return { label: 'Strong Investment', clr: CC.green };
+}
+
 function TabInvestmentQuality({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const sorted = useMemo(() => {
     return [...rows]
+      .map(r => ({
+        r,
+        inv:   getInvScore(r),
+        ccs:   Number(r.caelyn_confluence_score ?? 0),
+        trade: getTradeScore(r),
+      }))
       .sort((a, b) => {
-        const ia = getInvScore(a), ib = getInvScore(b);
-        if (ia !== null && ib !== null) return ib - ia;
-        if (ia !== null) return -1;
-        if (ib !== null) return 1;
-        return getTradeScore(b) - getTradeScore(a);
+        if (a.inv !== null && b.inv !== null) return b.inv - a.inv;
+        if (a.inv !== null) return -1;
+        if (b.inv !== null) return 1;
+        if (b.ccs !== a.ccs) return b.ccs - a.ccs;
+        return b.trade - a.trade;
       })
-      .slice(0, 12);
+      .slice(0, 12)
+      .map(x => x.r);
   }, [rows]);
   const allUnavailable = rows.every(r => getInvScore(r) === null);
+
+  const dim  = { fontSize: 8, color: CC.dim, fontFamily: CC.font } as const;
+
   return (
     <>
       {allUnavailable && (
         <div style={{ padding: '0 0 8px', fontSize: 8, color: CC.dim, fontFamily: CC.font }}>
-          Investment Alignment score not yet available. Ranked by Trade signal as proxy.
+          Investment Alignment score not yet available. Ranked by Confluence then Trade signal as proxy.
         </div>
       )}
-      <CardGrid rows={sorted} onTickerClick={onTickerClick} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 10 }}>
+        {sorted.map((r, i) => {
+          const { label: entryLabel, clr: entryClr } = invEntryLabel(r);
+          const inv = getInvScore(r);
+          const reason = inv === null ? getInvUnavailableReason(r) : null;
+          const ticker = fmtTicker(r);
+          const company = fmtCompany(r);
+          const catScore = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
+          const catNum = catScore != null && Number.isFinite(Number(catScore)) ? Math.round(Number(catScore)) : null;
+          const ccs = r.caelyn_confluence_score != null ? Math.round(Number(r.caelyn_confluence_score)) : null;
+          const trade = getTradeScore(r);
+          const errState = r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? null;
+          return (
+            <div key={`iq-${ticker}-${i}`} style={{ background: CC.card, border: `1px solid ${CC.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                <div>
+                  <div
+                    onClick={() => onTickerClick?.(ticker)}
+                    style={{ fontSize: 12, fontWeight: 800, color: onTickerClick ? CC.teal : '#fff', fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
+                  >{ticker}</div>
+                  {company && <div style={{ ...dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 130 }}>{company}</div>}
+                </div>
+                <BucketBadge bucket={r.caelyn_confluence_bucket} />
+              </div>
+              {/* Entry label */}
+              <span style={{ fontSize: 8, fontWeight: 700, color: entryClr, fontFamily: CC.font }}>{entryLabel}</span>
+              {/* Scores */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, alignItems: 'flex-end' }}>
+                {inv !== null
+                  ? <ScoreChip label="Investment" value={inv} color={scoreColor(inv)} />
+                  : <span style={{ display: 'inline-flex', flexDirection: 'column' as const, alignItems: 'center', gap: 1 }}>
+                      <span style={{ fontSize: 6, color: CC.dim, textTransform: 'uppercase' as const, fontFamily: CC.font }}>Investment</span>
+                      <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, maxWidth: 80, textAlign: 'center' as const, lineHeight: 1.2 }}>{reason}</span>
+                    </span>
+                }
+                {ccs !== null && <ScoreChip label="CCS" value={ccs} color={scoreColor(ccs)} />}
+                <ScoreChip label="Trade" value={trade} color={scoreColor(trade)} />
+                {catNum !== null && <ScoreChip label="Catalyst" value={catNum} color={scoreColor(catNum)} />}
+              </div>
+              {errState && (
+                <span style={{ ...dim, fontSize: 7, color: errState === 'BROKEN_SUPPORT_AVOID' ? CC.red : CC.amber }}>
+                  {errState.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }
@@ -769,15 +978,22 @@ function TabThemePolicy({ rows, onTickerClick }: { rows: any[]; onTickerClick?: 
 /* ─── Tab: New Catalysts ─────────────────────────────────────────── */
 
 function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
-  const catRows = useMemo(() => {
+  const catItems = useMemo(() => {
     return [...rows]
-      .map(r => ({ r, cat: getCatalystInfo(r) }))
-      .filter(x => !!x.cat)
-      .sort((a, b) => (b.cat?.score ?? 0) - (a.cat?.score ?? 0))
-      .slice(0, 20)
-      .map(x => x.r);
+      .map(r => {
+        const cat      = getCatalystInfo(r);
+        const rawScore = r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? null;
+        const catScore = rawScore != null && Number.isFinite(Number(rawScore)) ? Number(rawScore) : null;
+        const hasEvent = !!cat;
+        const hasScore = catScore != null && catScore > 0;
+        return { r, cat, catScore, hasEvent, hasScore };
+      })
+      .filter(x => x.hasEvent || x.hasScore)
+      .sort((a, b) => (b.catScore ?? 0) - (a.catScore ?? 0))
+      .slice(0, 20);
   }, [rows]);
-  if (!catRows.length) {
+
+  if (!catItems.length) {
     const cntFlatPrimary   = rows.filter(r => !!r.catalyst_primary_event).length;
     const cntFlatRss       = rows.filter(r => !!r.catalyst_rss_event).length;
     const cntFlatSched     = rows.filter(r => !!r.catalyst_scheduled_event).length;
@@ -788,7 +1004,7 @@ function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t
     return (
       <div style={{ padding: '20px 0', textAlign: 'center' as const, fontFamily: CC.font }}>
         <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.7 }}>
-          No catalyst events detected in current watchlist.<br />
+          No catalyst events or scores detected in current watchlist.<br />
           <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>
             Rows scanned: {rows.length} · catalyst_primary_event: {cntFlatPrimary} · catalyst_rss_event: {cntFlatRss} · catalyst_scheduled_event: {cntFlatSched} · catalyst_v2_primary_event: {cntFlatV2}<br />
             catalyst.primary_event: {cntNestedPrimary} · catalyst.rss_event: {cntNestedRss} · catalyst score{'>'} 0: {cntScore}
@@ -799,9 +1015,8 @@ function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-      {catRows.map((r, i) => {
+      {catItems.map(({ r, cat, catScore, hasEvent }, i) => {
         const ticker = fmtTicker(r);
-        const cat    = getCatalystInfo(r)!;
         return (
           <div key={`cat-${ticker}-${i}`} style={{ background: CC.card, border: `1px solid ${CC.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -810,16 +1025,20 @@ function TabCatalysts({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t
                 style={{ fontSize: 12, fontWeight: 800, color: onTickerClick ? CC.teal : '#fff', fontFamily: CC.font, cursor: onTickerClick ? 'pointer' : 'default', textDecoration: onTickerClick ? 'underline' : 'none' }}
               >{ticker}</span>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {cat.score != null && <span style={{ fontSize: 9, color: scoreColor(cat.score), fontWeight: 700, fontFamily: CC.font }}>Score {Math.round(cat.score)}</span>}
-                {cat.state && <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: 'rgba(255,255,255,0.06)', color: CC.dim, fontFamily: CC.font }}>{cat.state}</span>}
+                {catScore != null && <span style={{ fontSize: 9, color: scoreColor(catScore), fontWeight: 700, fontFamily: CC.font }}>Score {Math.round(catScore)}</span>}
+                {cat?.state && <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: 'rgba(255,255,255,0.06)', color: CC.dim, fontFamily: CC.font }}>{cat.state}</span>}
+                {!hasEvent && <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: 'rgba(245,158,11,0.12)', color: CC.amber, fontFamily: CC.font }}>event details unavailable</span>}
               </div>
             </div>
-            <span style={{ fontSize: 8, color: CC.amber, fontFamily: CC.font, lineHeight: 1.4 }}>● {cat.eventTitle}</span>
-            {cat.eventType && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Type: {cat.eventType}</span>}
-            {cat.source && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Source: {fmtSource(cat.source)}</span>}
-            {cat.published && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Published: {String(cat.published).slice(0, 10)}</span>}
-            {cat.pBoost != null && <span style={{ fontSize: 8, color: CC.purple, fontFamily: CC.font }}>Theme Policy: +{cat.pBoost}</span>}
-            {cat.bearish && <span style={{ fontSize: 8, color: CC.red, fontFamily: CC.font }}>⚠ Conflict: {fmtCatalystEvent(cat.bearish)}</span>}
+            {hasEvent && cat
+              ? <span style={{ fontSize: 8, color: CC.amber, fontFamily: CC.font, lineHeight: 1.4 }}>● {cat.eventTitle}</span>
+              : <span style={{ fontSize: 8, color: 'rgba(245,158,11,0.5)', fontFamily: CC.font, fontStyle: 'italic' as const }}>Catalyst score {catScore != null ? Math.round(catScore) : '?'} — event details unavailable from backend shape</span>
+            }
+            {cat?.eventType && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Type: {cat.eventType}</span>}
+            {cat?.source && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Source: {fmtSource(cat.source)}</span>}
+            {cat?.published && <span style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font }}>Published: {String(cat.published).slice(0, 10)}</span>}
+            {cat?.pBoost != null && <span style={{ fontSize: 8, color: CC.purple, fontFamily: CC.font }}>Theme Policy: +{cat.pBoost}</span>}
+            {cat?.bearish && <span style={{ fontSize: 8, color: CC.red, fontFamily: CC.font }}>⚠ Conflict: {fmtCatalystEvent(cat.bearish)}</span>}
           </div>
         );
       })}
@@ -845,31 +1064,42 @@ function TabRisk({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: str
       const sev         = riskSeverity(r);
       const optConflict = r.actionability?.options_entry_conflict === true;
       const opts        = getOptionsInfo(r);
+      const errState    = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
+      const bucket      = r.caelyn_confluence_bucket ?? '';
+      const beAct       = typeof r.actionability === 'string' ? r.actionability.toUpperCase() : '';
 
-      const errState = (r.entry_risk_reward_state ?? r.actionability?.entry_risk_reward_state ?? '').toUpperCase();
-
-      if (cat?.bearish)                                        risks.push('Bearish catalyst conflict');
-      if (errState === 'BROKEN_SUPPORT_AVOID')                 risks.push('Broken support — avoid');
-      if (as.status === 'lost_confirmed' || as.lowerLowConfirmed) risks.push('Confirmed support lost');
-      if (errState === 'STRONG_ASSET_EXTENDED_WAIT')           risks.push('Strong asset — extended, wait');
-      if (action === 'TOO_EXTENDED')                           risks.push('Vertical / extreme extension');
-      if (as.status === 'broken_unconfirmed')                  risks.push('Support break unconfirmed');
-      if (es === 'LOWER_HIGH_WARNING')                         risks.push('Lower-high warning');
-      if (as.status === 'testing_support')                     risks.push('Testing active support');
-      if (es === 'SUPPORT_TEST' && !as.hasActiveSupport)       risks.push('Testing support');
-      if (optConflict && opts.sigLabel)                        risks.push(`Options ${opts.sigLabel} — entry conflict`);
-      if (inv !== null && inv < 40 && trade > 65)              risks.push('Hot trade / weak investment quality');
-      if (as.priorPivotStatus === 'lost_now_overhead')         risks.push('Prior pivot lost — overhead resistance');
+      /* Bucket-based inclusion (Part 6 spec) */
+      if (bucket === 'RISK_CONFLICT')                              risks.push('Risk / Conflict bucket');
+      if (bucket === 'WATCH_FOR_RESET')                           risks.push('Watch for Reset bucket');
+      /* Field-based flags */
+      if (cat?.bearish)                                           risks.push('Bearish catalyst conflict');
+      if (as.lowerLowConfirmed)                                   risks.push('Lower-low confirmed');
+      if (errState === 'BROKEN_SUPPORT_AVOID')                    risks.push('Broken support — avoid');
+      if (as.status === 'lost_confirmed')                         risks.push('Confirmed support lost');
+      if (beAct === 'AVOID')                                      risks.push('Actionability: Avoid');
+      if (errState === 'STRONG_ASSET_EXTENDED_WAIT')              risks.push('Strong asset — extended, wait');
+      if (action === 'TOO_EXTENDED')                              risks.push('Vertical / extreme extension');
+      if (as.status === 'broken_unconfirmed')                     risks.push('Support break unconfirmed');
+      if (es === 'LOWER_HIGH_WARNING')                            risks.push('Lower-high warning');
+      if (as.status === 'testing_support')                        risks.push('Testing active support');
+      if (es === 'SUPPORT_TEST' && !as.hasActiveSupport)          risks.push('Testing support');
+      if (optConflict && opts.sigLabel)                           risks.push(`Options ${opts.sigLabel} — entry conflict`);
+      if (inv !== null && inv < 40 && trade > 65)                 risks.push('Hot trade / weak investment quality');
+      if (as.priorPivotStatus === 'lost_now_overhead')            risks.push('Prior pivot lost — overhead resistance');
 
       if (!risks.length) continue;
 
       const detail =
-        as.lowerLowConfirmed || as.status === 'lost_confirmed'
+        bucket === 'RISK_CONFLICT'
+          ? `Backend flags as Risk / Conflict — ${risks.filter(r => r !== 'Risk / Conflict bucket').join(', ') || 'review structure before entry'}.`
+        : as.lowerLowConfirmed || as.status === 'lost_confirmed'
           ? `Confirmed support lost${as.zoneDisplay ? ` (was ${as.zoneDisplay})` : ''}. Wait for base rebuild.${as.reclaim != null ? ` Reclaim level: ${as.reclaim.toFixed(2)}.` : ''}`
         : as.status === 'broken_unconfirmed'
           ? `Support break not yet confirmed. Watch for close below${as.criticalBreak != null ? ` ${as.criticalBreak.toFixed(2)}` : ' key level'}.`
         : as.status === 'testing_support'
           ? `Testing active support${as.zoneDisplay ? ` around ${as.zoneDisplay}` : ''}. Holding is constructive.`
+        : errState === 'STRONG_ASSET_EXTENDED_WAIT' || bucket === 'WATCH_FOR_RESET'
+          ? 'Extended beyond normal range or flagged for reset — waiting for pullback before re-entry.'
         : action === 'TOO_EXTENDED'
           ? 'Extended beyond normal range — waiting for pullback reduces entry risk.'
         : cat?.bearish
@@ -885,15 +1115,29 @@ function TabRisk({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: str
     return out
       .sort((a, b) => {
         if (b.sev !== a.sev) return b.sev - a.sev;
-        const ta = getTradeScore(a.r), tb = getTradeScore(b.r);
-        if (tb !== ta) return tb - ta;
-        const ca = getCatalystInfo(a.r)?.score ?? 0, cb = getCatalystInfo(b.r)?.score ?? 0;
-        return cb - ca;
+        const csa = Number(a.r.caelyn_confluence_score ?? 0);
+        const csb = Number(b.r.caelyn_confluence_score ?? 0);
+        return csb - csa;
       })
       .slice(0, 20);
   }, [rows]);
 
-  if (!riskEntries.length) return <EmptyState msg="No significant risk flags detected in current watchlist." />;
+  if (!riskEntries.length) {
+    const cntBucketRisk  = rows.filter(r => r.caelyn_confluence_bucket === 'RISK_CONFLICT').length;
+    const cntBucketWatch = rows.filter(r => r.caelyn_confluence_bucket === 'WATCH_FOR_RESET').length;
+    const cntErrBroken   = rows.filter(r => (r.entry_risk_reward_state ?? '').toUpperCase() === 'BROKEN_SUPPORT_AVOID').length;
+    const cntErrExt      = rows.filter(r => (r.entry_risk_reward_state ?? '').toUpperCase() === 'STRONG_ASSET_EXTENDED_WAIT').length;
+    return (
+      <div style={{ padding: '20px 0', textAlign: 'center' as const, fontFamily: CC.font }}>
+        <div style={{ fontSize: 9, color: CC.dim, lineHeight: 1.7 }}>
+          No significant risk flags detected.<br />
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8 }}>
+            Rows scanned: {rows.length} · RISK_CONFLICT bucket: {cntBucketRisk} · WATCH_FOR_RESET bucket: {cntBucketWatch} · BROKEN_SUPPORT_AVOID: {cntErrBroken} · STRONG_ASSET_EXTENDED_WAIT: {cntErrExt}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -1105,13 +1349,37 @@ export function CaelynRowBreakdown({ stock }: { stock: any }) {
 /* ─── Main Section ───────────────────────────────────────────────── */
 
 const CONF_TABS = [
-  { key: 'setups',   label: 'Actionable Setups'     },
-  { key: 'quality',  label: 'Investment Quality'     },
-  { key: 'policy',   label: 'Theme Policy Tailwinds' },
-  { key: 'catalyst', label: 'New Catalysts'          },
-  { key: 'risk',     label: 'Risk / Conflicts'       },
+  { key: 'all',      label: 'All Confluence'         },
+  { key: 'setups',   label: 'Actionable Setups'      },
+  { key: 'quality',  label: 'Investment Quality'      },
+  { key: 'policy',   label: 'Theme Policy Tailwinds'  },
+  { key: 'catalyst', label: 'New Catalysts'           },
+  { key: 'risk',     label: 'Risk / Conflicts'        },
 ] as const;
 type ConfTab = (typeof CONF_TABS)[number]['key'];
+
+/* ─── Part 0 audit helper ─────────────────────────────────────────── */
+function auditRows(rows: any[]): Record<string, number> {
+  return {
+    total:                  rows.length,
+    with_ccs:               rows.filter(r => r.caelyn_confluence_score != null).length,
+    with_bucket:            rows.filter(r => r.caelyn_confluence_bucket).length,
+    cat_score_gt0:          rows.filter(r => Number(r.catalyst_alignment_score ?? r.catalyst?.alignment_score ?? r.catalyst?.score ?? 0) > 0).length,
+    cat_primary_event:      rows.filter(r => !!r.catalyst_primary_event).length,
+    cat_rss_event:          rows.filter(r => !!r.catalyst_rss_event).length,
+    cat_scheduled_event:    rows.filter(r => !!r.catalyst_scheduled_event).length,
+    theme_policy_boost_gt0: rows.filter(r => Number(r.theme_policy_boost ?? 0) > 0).length,
+    theme_policy_event:     rows.filter(r => !!r.theme_policy_event).length,
+    cat_bearish_conflict:   rows.filter(r => !!r.catalyst_bearish_conflict || !!r.catalyst?.bearish_conflict).length,
+    confluence_at_support:  rows.filter(r => r.confluence_at_support_state).length,
+    entry_risk_reward_state:rows.filter(r => r.entry_risk_reward_state).length,
+    bucket_WATCH_FOR_RESET: rows.filter(r => r.caelyn_confluence_bucket === 'WATCH_FOR_RESET').length,
+    bucket_RISK_CONFLICT:   rows.filter(r => r.caelyn_confluence_bucket === 'RISK_CONFLICT').length,
+    bucket_ACTIONABLE:      rows.filter(r => r.caelyn_confluence_bucket === 'ACTIONABLE').length,
+    bucket_NEAR_ACTIONABLE: rows.filter(r => r.caelyn_confluence_bucket === 'NEAR_ACTIONABLE').length,
+    bucket_AT_SUPPORT:      rows.filter(r => r.caelyn_confluence_bucket === 'CONFLUENCE_AT_SUPPORT').length,
+  };
+}
 
 export function CaelynConfluenceSection({
   rows,
@@ -1122,7 +1390,7 @@ export function CaelynConfluenceSection({
   onTickerClick?: (t: string) => void;
   totalTickers?: number;
 }) {
-  const [tab, setTab]   = useState<ConfTab>('setups');
+  const [tab, setTab]   = useState<ConfTab>('all');
   const [open, setOpen] = useState(true);
 
   /* Filter out pending rows (no analysis data yet) */
@@ -1134,6 +1402,38 @@ export function CaelynConfluenceSection({
     if (total === 0) return '';
     return `${analyzed} / ${total} scored`;
   }, [analyzedRows.length, rows.length, totalTickers]);
+
+  /* Part 0 — audit logging: fires once per distinct analyzedRows length */
+  useEffect(() => {
+    if (analyzedRows.length === 0) return;
+    const audit = auditRows(analyzedRows);
+    console.group('[CaelynConfluence] Part 0 — Data Source Audit');
+    console.log('Row count:', audit.total, '| totalTickers prop:', totalTickers);
+    console.log('with caelyn_confluence_score:', audit.with_ccs);
+    console.log('with caelyn_confluence_bucket:', audit.with_bucket);
+    console.log('cat_score > 0:', audit.cat_score_gt0, '| cat_primary_event:', audit.cat_primary_event, '| cat_rss_event:', audit.cat_rss_event, '| cat_scheduled_event:', audit.cat_scheduled_event);
+    console.log('theme_policy_boost > 0:', audit.theme_policy_boost_gt0, '| theme_policy_event:', audit.theme_policy_event, '| bearish_conflict:', audit.cat_bearish_conflict);
+    console.log('confluence_at_support:', audit.confluence_at_support, '| entry_risk_reward_state:', audit.entry_risk_reward_state);
+    console.log('Buckets → ACTIONABLE:', audit.bucket_ACTIONABLE, '| NEAR_ACTIONABLE:', audit.bucket_NEAR_ACTIONABLE, '| AT_SUPPORT:', audit.bucket_AT_SUPPORT, '| WATCH_FOR_RESET:', audit.bucket_WATCH_FOR_RESET, '| RISK_CONFLICT:', audit.bucket_RISK_CONFLICT);
+    /* Validation symbols */
+    const CHECK_TICKERS = ['GLW','VRT','AME','TSM','BE','NVEC','MARA','CRWD','FTNT','AMD','MU','MRVL','PLTR','OKLO','SOFI','NVDA'];
+    const valRows = analyzedRows.filter(r => CHECK_TICKERS.includes((r.ticker ?? r.symbol ?? '').toUpperCase()));
+    if (valRows.length > 0) {
+      console.group('Validation symbols:');
+      for (const r of valRows) {
+        const sym = (r.ticker ?? r.symbol ?? '').toUpperCase();
+        console.log(sym, '| CCS:', r.caelyn_confluence_score, '| bucket:', r.caelyn_confluence_bucket, '| errState:', r.entry_risk_reward_state, '| inv:', r.investment_alignment_score, '| cat:', r.catalyst_alignment_score, '| policy_boost:', r.theme_policy_boost);
+      }
+      console.groupEnd();
+    }
+    /* Sample row keys for debugging */
+    if (analyzedRows.length > 0) {
+      const sampleSym = (analyzedRows[0].ticker ?? analyzedRows[0].symbol ?? 'unknown').toUpperCase();
+      console.log('Sample row keys (' + sampleSym + '):', Object.keys(analyzedRows[0]).sort().join(', '));
+    }
+    console.groupEnd();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analyzedRows.length]);
 
   if (!rows.length) return null;
   return (
@@ -1177,6 +1477,7 @@ export function CaelynConfluenceSection({
             })}
           </div>
           <div style={{ padding: '12px 14px', maxHeight: 430, overflowY: 'auto' as const }}>
+            {tab === 'all'      && <TabAllConfluence      rows={analyzedRows} onTickerClick={onTickerClick} />}
             {tab === 'setups'   && <TabActionableSetups   rows={analyzedRows} onTickerClick={onTickerClick} />}
             {tab === 'quality'  && <TabInvestmentQuality  rows={analyzedRows} onTickerClick={onTickerClick} />}
             {tab === 'policy'   && <TabThemePolicy        rows={analyzedRows} onTickerClick={onTickerClick} />}
