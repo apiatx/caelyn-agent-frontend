@@ -692,18 +692,18 @@ const EXCLUDED_BUCKETS   = new Set(['WATCH_FOR_RESET', 'RISK_CONFLICT', 'NO_CLEA
 type SortKey = 'ticker' | 'score' | 'bucket' | 'actionability' | 'trade' | 'investment' | 'catalyst' | 'policy' | 'entry_state';
 
 const COL_DEFS: { key: SortKey; label: string; width: string; numeric?: boolean }[] = [
-  { key: 'ticker',       label: 'Ticker',            width: '54px'  },
-  { key: 'score',        label: 'Confluence Score',  width: '68px',  numeric: true },
-  { key: 'bucket',       label: 'Confluence Bucket', width: '120px' },
-  { key: 'actionability',label: 'Actionability',     width: '90px'  },
-  { key: 'trade',        label: 'Trade Score',       width: '58px',  numeric: true },
-  { key: 'investment',   label: 'Investment',        width: '62px',  numeric: true },
-  { key: 'catalyst',     label: 'Catalyst',          width: '56px',  numeric: true },
-  { key: 'policy',       label: 'Policy Boost',      width: '62px'  },
-  { key: 'entry_state',  label: 'Entry State',       width: '100px' },
+  { key: 'ticker',       label: 'Ticker',            width: '1fr'   },
+  { key: 'score',        label: 'Confluence Score',  width: '1.2fr', numeric: true },
+  { key: 'bucket',       label: 'Confluence Bucket', width: '2fr'   },
+  { key: 'actionability',label: 'Actionability',     width: '1.6fr' },
+  { key: 'trade',        label: 'Trade Score',       width: '1fr',   numeric: true },
+  { key: 'investment',   label: 'Investment',        width: '1fr',   numeric: true },
+  { key: 'catalyst',     label: 'Catalyst',          width: '1fr',   numeric: true },
+  { key: 'policy',       label: 'Policy Boost',      width: '1fr'   },
+  { key: 'entry_state',  label: 'Entry State',       width: '1.8fr' },
 ];
 
-const GRID_COLS = `20px ${COL_DEFS.map(c => c.width).join(' ')}`;
+const GRID_COLS = `22px ${COL_DEFS.map(c => c.width).join(' ')}`;
 
 function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?: (t: string) => void }) {
   const [sortKey, setSortKey] = useState<SortKey>('score');
@@ -719,7 +719,7 @@ function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?
   };
 
   const sorted = useMemo(() => {
-    const dir = sortDir === 'desc' ? -1 : 1;
+    const dir = sortDir === 'desc' ? 1 : -1;
     return [...rows].sort((a, b) => {
       const ta = fmtTicker(a), tb = fmtTicker(b);
       const getVal = (r: any): number | string => {
@@ -781,9 +781,8 @@ function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?
   };
 
   return (
-    <div style={{ overflowX: 'auto' as const }}>
-      <div style={{ minWidth: 680 }}>
-        {/* Header row */}
+    <div style={{ width: '100%' }}>
+      {/* Header row */}
         <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 8px', padding: '5px 4px 5px 0', borderBottom: `1px solid ${CC.border}`, marginBottom: 2 }}>
           <span style={{ ...dim, opacity: 0.4, fontSize: 6 }}>#</span>
           {COL_DEFS.map(col => (
@@ -860,7 +859,6 @@ function TabAllConfluence({ rows, onTickerClick }: { rows: any[]; onTickerClick?
             </div>
           );
         })}
-      </div>
     </div>
   );
 }
