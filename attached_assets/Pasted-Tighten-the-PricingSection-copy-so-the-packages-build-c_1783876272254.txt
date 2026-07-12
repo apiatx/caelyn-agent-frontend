@@ -1,0 +1,280 @@
+Tighten the PricingSection copy so the packages build cleanly on each other and do not repeat the same feature in different wording.
+
+This is a landing-page pricing copy/UI cleanup only.
+
+Do not:
+
+* change routing
+* change auth
+* change backend
+* change pricing amounts
+* change Stripe/entitlements
+* implement feature gating
+* change AI logic
+* change confluence logic
+* redesign the page
+
+Focus only on the pricing card feature lists and wording.
+
+Current issue:
+The pricing cards are too verbose and repeat concepts in slightly different ways, for example:
+
+* "Single-agent AI" vs "Single-agent analysis"
+* "Full Caelyn AI access" plus separate single/multi-agent bullets
+* overlapping watchlist/portfolio lines
+* Pro repeats Plus concepts instead of feeling like a higher-level upgrade
+
+Important AI packaging clarification:
+Do NOT describe Plus as "Full AI" or "Full Caelyn AI access."
+
+Starter and Plus both include Caelyn AI usage.
+
+The difference is:
+
+* Starter includes single-agent AI only, capped at 1 AI analysis per day
+* Plus includes single-agent AI plus multi-agent collaboration, capped at 30 AI analyses per month
+* Pro includes higher-volume AI usage, capped at 200 AI analyses per month and 100 multi-agent collaborations per month
+
+Use "AI analyses" as the user-facing usage unit.
+
+Do not imply unlimited AI.
+
+Do not imply Plus has unlimited or unrestricted AI.
+
+Desired packaging ladder:
+
+FREE = observe Caelyn's curated market intelligence
+STARTER = personalize a lightweight workspace + limited single-agent AI
+PLUS = unlock curated confluence across Caelyn's ticker universe + multi-agent collaboration
+PRO = build custom confluence, rules, and strategy systems
+
+==================================================
+REPLACE PRICING FEATURE COPY WITH THIS STRUCTURE
+================================================
+
+FREE
+
+Plan name:
+FREE
+
+Tagline:
+Explore Caelyn's market intelligence
+
+Price:
+$0
+
+Features:
+
+* Curated market intelligence
+* Curated thematic watchlist
+* Market leadership views
+* Options Flow
+* Catalysts & calendar
+* Screeners
+* Social intelligence signals
+* No AI analysis
+* No personal watchlists
+* No portfolio tracking
+* No Terminal access
+
+CTA:
+EXPLORE FREE
+
+Notes:
+This card should feel useful but clearly non-personalized.
+Do not say "Full market platform access" here.
+Free should not imply everything is fully unlocked.
+
+==================================================
+
+STARTER
+
+Plan name:
+STARTER
+
+Tagline:
+Start personalizing your workspace
+
+Price:
+$19 / month
+
+Features:
+
+* Everything in Free
+* 1 custom watchlist · 50 tickers
+* 1 portfolio · 10 holdings
+* Terminal access
+* Single-agent AI
+* 1 AI analysis per day
+* No multi-agent collaboration
+
+CTA:
+START BUILDING
+
+Notes:
+Use "Single-agent AI" only.
+Do not also say "Single-agent analysis."
+Keep this card short.
+
+==================================================
+
+PLUS
+
+Plan name:
+PLUS
+
+Badge:
+MOST POPULAR
+
+Tagline:
+See confluence across the market
+
+Price:
+$59 / month
+
+Features:
+
+* Everything in Starter
+* Curated confluence views
+* 500+ noteworthy tickers
+* Dozens of market themes
+* Technical, options, catalyst & fundamentals alignment
+* Multi-agent collaboration
+* 30 AI analyses per month
+* 2 custom watchlists · 100 tickers each
+* Flexible portfolios:
+  3 portfolios · 15 holdings each
+  or 2 portfolios · 25 holdings each
+
+CTA:
+GET CAELYN PLUS
+
+Notes:
+This is the main paid product.
+It should sell CONFLUENCE, not generic "more AI."
+
+Do not say:
+
+* Full AI
+* Full Caelyn AI access
+* Unlimited AI
+* Single-agent analysis
+* Single-agent + multi-agent AI
+
+Because "Everything in Starter" already includes single-agent AI.
+
+Plus only needs to add:
+
+* Multi-agent collaboration
+* 30 AI analyses per month
+
+Do not say "Full Terminal access" because Starter already says Terminal access.
+"Everything in Starter" covers it.
+
+==================================================
+
+PRO
+
+Plan name:
+PRO
+
+Badge:
+COMING SOON
+
+Tagline:
+Build your own confluence engine
+
+Price:
+$299 / month
+
+Features:
+
+* Everything in Plus
+* Custom confluence rules
+* Custom trading rules & strategies
+* Personal Strategy Engine
+* Predefined strategy frameworks
+* Decision guardrails
+* Personal investing playbook
+* Custom theme baskets
+* Advanced financial + technical history
+* Custom page layouts & sidebar
+* 5 custom watchlists · 100 tickers each
+* 5 portfolios · 20 holdings each
+* High-volume AI access
+* 200 AI analyses per month
+* 100 multi-agent collaborations per month
+
+CTA:
+JOIN THE PRO WAITLIST
+
+Notes:
+Pro should feel like customization and control.
+It should not feel like a longer Plus card.
+Keep "Coming Soon" visually obvious.
+Do not make Pro purchasable.
+
+"High-volume AI access" is okay.
+"Unlimited AI" is not okay.
+
+==================================================
+VISUAL / UX CLEANUP
+===================
+
+Keep the same overall design, but improve readability:
+
+1. Make all cards feel closer in density.
+   The Plus card can be taller, but not dramatically cluttered.
+
+2. Use concise feature bullets.
+   Prefer:
+   "1 custom watchlist · 50 tickers"
+   over:
+   "1 custom watchlist" and "Up to 50 stocks"
+
+3. Use the same noun consistently:
+   Use "tickers" for watchlists.
+   Use "holdings" for portfolios.
+
+4. Keep unavailable items only where they create useful contrast.
+   Free should show unavailable personal/AI features.
+   Starter should show unavailable multi-agent.
+   Plus should not list unavailable items.
+   Pro should not list unavailable items.
+
+5. Keep Plus visually emphasized.
+
+6. Keep Pro muted/aspirational.
+
+7. Do not add more total words than the current section.
+
+==================================================
+ACCEPTANCE CHECKS
+=================
+
+Verify:
+
+1. No "Full AI" wording remains.
+2. No "Full Caelyn AI access" wording remains.
+3. No "Unlimited AI" wording appears.
+4. Starter says "Single-agent AI" only once.
+5. Starter says "1 AI analysis per day."
+6. Plus says "Multi-agent collaboration."
+7. Plus says "30 AI analyses per month."
+8. Plus does not redundantly mention single-agent AI because it is inherited from Starter.
+9. Plus clearly includes curated confluence.
+10. Plus clearly includes 500+ noteworthy tickers.
+11. Plus card does not redundantly mention Terminal.
+12. Pro clearly includes custom confluence rules.
+13. Pro clearly includes custom trading rules & strategies.
+14. Watchlist/portfolio limits use concise one-line formatting.
+15. Pro remains Coming Soon and not purchasable.
+16. No route/auth/backend/API changes were made.
+17. Pricing still shows $0 / $19 / $59 / $299.
+
+At completion report:
+A. exact file changed
+B. before/after summary of pricing copy cleanup
+C. confirmation Plus is positioned as multi-agent + curated confluence, not "Full AI"
+D. confirmation no auth/routing/backend changes
+E. screenshot/visual confirmation if available
