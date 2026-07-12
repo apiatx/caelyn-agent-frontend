@@ -32,16 +32,19 @@ const PLANS: Plan[] = [
     comingSoon: false,
     features: [
       { text: "Curated market intelligence", included: true },
-      { text: "Curated thematic watchlist", included: true },
       { text: "Market leadership views", included: true },
+      { text: "Limited curated thematic watchlist", included: true },
       { text: "Options Flow", included: true },
       { text: "Catalysts & calendar", included: true },
       { text: "Screeners", included: true },
       { text: "Social intelligence signals", included: true },
       { text: "AI analysis", included: false },
       { text: "Personal watchlists", included: false },
-      { text: "Portfolio tracking", included: false },
+      { text: "Portfolios", included: false },
       { text: "Terminal access", included: false },
+      { text: "Confluence views", included: false },
+      { text: "Multi-agent collaboration", included: false },
+      { text: "Custom rules & strategies", included: false },
     ],
   },
   {
@@ -54,12 +57,17 @@ const PLANS: Plan[] = [
     comingSoon: false,
     features: [
       { text: "Everything in Free", included: true },
-      { text: "1 custom watchlist · 50 tickers", included: true },
+      { text: "1 watchlist · 50 tickers", included: true },
       { text: "1 portfolio · 10 holdings", included: true },
       { text: "Terminal access", included: true },
       { text: "Single-agent AI", included: true },
-      { text: "1 AI analysis per day", included: true },
+      { text: "1 AI analysis / day", included: true },
       { text: "Multi-agent collaboration", included: false },
+      { text: "Curated confluence views", included: false },
+      { text: "Full curated ticker universe", included: false },
+      { text: "Custom confluence rules", included: false },
+      { text: "Custom trading rules & strategies", included: false },
+      { text: "Personal Strategy Engine", included: false },
     ],
   },
   {
@@ -73,15 +81,22 @@ const PLANS: Plan[] = [
     badge: "MOST POPULAR",
     features: [
       { text: "Everything in Starter", included: true },
-      { text: "Curated confluence views", included: true },
+      { text: "Full curated ticker universe", included: true },
       { text: "500+ noteworthy tickers", included: true },
       { text: "Dozens of market themes", included: true },
+      { text: "Curated confluence views", included: true },
       { text: "Technical, options, catalyst & fundamentals alignment", included: true },
       { text: "Multi-agent collaboration", included: true },
-      { text: "30 AI analyses per month", included: true },
-      { text: "2 custom watchlists · 100 tickers each", included: true },
+      { text: "30 AI analyses / month", included: true },
+      { text: "2 watchlists · 100 tickers each", included: true },
       { text: "3 portfolios · 15 holdings each", included: true },
       { text: "or 2 portfolios · 25 holdings each", included: true },
+      { text: "Custom confluence rules", included: false },
+      { text: "Custom trading rules & strategies", included: false },
+      { text: "Personal Strategy Engine", included: false },
+      { text: "Custom theme baskets", included: false },
+      { text: "Custom page layouts & sidebar", included: false },
+      { text: "Advanced financial + technical history", included: false },
     ],
   },
   {
@@ -104,28 +119,28 @@ const PLANS: Plan[] = [
       { text: "Custom theme baskets", included: true },
       { text: "Advanced financial + technical history", included: true },
       { text: "Custom page layouts & sidebar", included: true },
-      { text: "5 custom watchlists · 100 tickers each", included: true },
+      { text: "5 watchlists · 100 tickers each", included: true },
       { text: "5 portfolios · 20 holdings each", included: true },
-      { text: "High-volume AI access", included: true },
-      { text: "200 AI analyses per month", included: true },
-      { text: "100 multi-agent collaborations per month", included: true },
+      { text: "High-volume Caelyn AI", included: true },
+      { text: "200 AI analyses / month", included: true },
+      { text: "100 multi-agent collaborations / month", included: true },
     ],
   },
 ];
 
 function FeatureRow({ feature }: { feature: Feature }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "5px 0" }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "4px 0" }}>
       <div style={{ width: 14, height: 14, flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {feature.included ? (
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
             <path d="M2 6l3 3 5-5" stroke={ICE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          <div style={{ width: 10, height: 1, background: "rgba(255,255,255,0.18)" }} />
+          <div style={{ width: 8, height: 1, background: "rgba(255,255,255,0.15)" }} />
         )}
       </div>
-      <span style={{ fontSize: "clamp(0.78rem, 1.2vw, 0.85rem)", color: feature.included ? "rgba(255,255,255,0.68)" : "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
+      <span style={{ fontSize: "clamp(0.75rem, 1.15vw, 0.82rem)", color: feature.included ? "rgba(255,255,255,0.68)" : "rgba(255,255,255,0.22)", lineHeight: 1.5 }}>
         {feature.text}
       </span>
     </div>
@@ -135,6 +150,9 @@ function FeatureRow({ feature }: { feature: Feature }) {
 function PricingCard({ plan, onCta }: { plan: Plan; onCta: () => void }) {
   const isHighlight = plan.highlight;
   const isComingSoon = plan.comingSoon;
+
+  const included = plan.features.filter(f => f.included);
+  const unavailable = plan.features.filter(f => !f.included);
 
   return (
     <div style={{
@@ -179,15 +197,32 @@ function PricingCard({ plan, onCta }: { plan: Plan; onCta: () => void }) {
       </div>
 
       {/* Price */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 20 }}>
         <span style={{ fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>{plan.price}</span>
         {plan.priceSuffix && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: 400 }}>{plan.priceSuffix}</span>}
       </div>
 
-      {/* Features */}
-      <div style={{ flex: 1, marginBottom: 24, display: "flex", flexDirection: "column" }}>
-        {plan.features.map((f, i) => <FeatureRow key={i} feature={f} />)}
+      {/* Included features */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {included.map((f, i) => <FeatureRow key={i} feature={f} />)}
+        </div>
+
+        {/* Divider between included and unavailable */}
+        {unavailable.length > 0 && (
+          <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "10px 0" }} />
+        )}
+
+        {/* Unavailable features */}
+        {unavailable.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {unavailable.map((f, i) => <FeatureRow key={i} feature={f} />)}
+          </div>
+        )}
       </div>
+
+      {/* Spacer before CTA */}
+      <div style={{ height: 20 }} />
 
       {/* CTA */}
       <button
@@ -256,7 +291,7 @@ export default function PricingSection() {
           ))}
         </div>
 
-        {/* Features note */}
+        {/* Footer note */}
         <div style={{ textAlign: "center", marginTop: 40, fontSize: 11, color: "rgba(255,255,255,0.22)", letterSpacing: "0.04em" }}>
           All plans include access to the core Caelyn intelligence platform. No credit card required to explore.
         </div>
