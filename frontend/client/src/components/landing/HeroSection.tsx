@@ -30,11 +30,11 @@ export default function HeroSection() {
         {/* Label */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.18em", color: "hsl(200,85%,55%)", textTransform: "uppercase", border: "1px solid rgba(41,189,232,0.22)", borderRadius: 4, padding: "4px 10px", background: "rgba(41,189,232,0.06)" }}>
-            Market Intelligence Platform
+            Investing Confluence Engine
           </span>
         </div>
 
-        {/* Headline — div, not h1, to avoid global mobile font-size override */}
+        {/* Headline */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: "clamp(2.6rem, 5.5vw, 4.6rem)", fontWeight: 700, lineHeight: 1.08, letterSpacing: "-0.02em", color: "#fff" }}>
             See the market
@@ -44,15 +44,24 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Supporting copy */}
-        <div style={{ textAlign: "center", maxWidth: 580, margin: "0 auto 14px" }}>
-          <div style={{ fontSize: "clamp(1rem, 2vw, 1.2rem)", color: "rgba(255,255,255,0.55)", fontWeight: 400, letterSpacing: "0.01em" }}>
-            Themes. Flows. Catalysts. Fundamentals. Social intelligence. Your portfolio.
+        {/* Subheadline */}
+        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 16px" }}>
+          <div style={{ fontSize: "clamp(1.05rem, 2.1vw, 1.25rem)", color: "rgba(255,255,255,0.72)", fontWeight: 500, letterSpacing: "-0.01em", lineHeight: 1.4 }}>
+            Most platforms give you more signals. Caelyn shows you when they agree.
           </div>
         </div>
+
+        {/* Supporting signal list */}
+        <div style={{ textAlign: "center", maxWidth: 580, margin: "0 auto 14px" }}>
+          <div style={{ fontSize: "clamp(0.88rem, 1.6vw, 1rem)", color: "rgba(255,255,255,0.42)", fontWeight: 400, letterSpacing: "0.01em" }}>
+            Themes. Technicals. Options flow. Fundamentals. Catalysts. Social intelligence. Your portfolio.
+          </div>
+        </div>
+
+        {/* Body */}
         <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto 40px" }}>
-          <div style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)", color: "rgba(255,255,255,0.38)", lineHeight: 1.65 }}>
-            Caelyn connects the signals investors normally analyze in isolation — and helps you understand what actually matters now.
+          <div style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)", color: "rgba(255,255,255,0.35)", lineHeight: 1.65 }}>
+            Caelyn connects the signals investors normally analyze in isolation — so you can spot confluence before conviction.
           </div>
         </div>
 

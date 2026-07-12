@@ -26,7 +26,7 @@ export default function AboutSection() {
           <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.16em", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" }}>About</span>
         </div>
 
-        {/* Main headline — split for visual weight */}
+        {/* Main headline */}
         <div style={{ maxWidth: 780, marginBottom: 64 }}>
           <div style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)", fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#fff", marginBottom: 12 }}>
             Built because investing tools still make you do the thinking between the tabs.
@@ -36,8 +36,8 @@ export default function AboutSection() {
         {/* Body — staggered layout */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 72 }}>
           <FactCard text="Market data lives in one platform. Options activity lives somewhere else. Social sentiment moves in real time. Fundamentals update quarterly. Catalysts arrive without context." />
-          <FactCard text="The investor is left connecting everything manually — tab by tab, platform by platform, with no single view of whether the setup actually makes sense." />
-          <FactCard text="Caelyn was built to connect it. It organizes market structure, themes, technical strength, fundamentals, options positioning, catalysts and real-time intelligence into one investing workspace." />
+          <FactCard text="Swing setup tools can show attractive charts. Screeners can show interesting names. AI can summarize a ticker. But the decision still depends on whether the evidence actually lines up." />
+          <FactCard text="Caelyn was built around that missing layer: confluence. It organizes market structure, themes, technical strength, fundamentals, options positioning, catalysts and real-time intelligence into one investing workspace." />
         </div>
 
         {/* Large statement */}
@@ -54,7 +54,7 @@ export default function AboutSection() {
 
           {/* Positioning line */}
           <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>
-            Intelligence infrastructure for self-directed investors.
+            Confluence infrastructure for self-directed investors.
           </div>
         </div>
       </div>

@@ -49,8 +49,13 @@ export default function StrategySection() {
             You do.
           </div>
         </div>
-        <div style={{ fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)", color: "rgba(255,255,255,0.42)", marginBottom: 64, maxWidth: 480 }}>
-          Your investing process should be part of your investing platform.
+        <div style={{ maxWidth: 520, marginBottom: 64 }}>
+          <div style={{ fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)", color: "rgba(255,255,255,0.42)", marginBottom: 8 }}>
+            Your rules matter most when confluence appears.
+          </div>
+          <div style={{ fontSize: "clamp(0.88rem, 1.4vw, 1rem)", color: "rgba(255,255,255,0.28)" }}>
+            Caelyn Pro is designed to let investors define the conditions that matter to their own process — then evaluate setups against those rules.
+          </div>
         </div>
 
         {/* Three concept cards */}
@@ -109,12 +114,12 @@ export default function StrategySection() {
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 24 }}>
             <div style={{ flex: "1 1 320px" }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: "#fff" }}>PERSONAL STRATEGY ENGINE</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: "0.04em", color: "#fff" }}>PERSONAL STRATEGY + CONFLUENCE ENGINE</div>
                 <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: ICE, border: `1px solid rgba(41,189,232,0.3)`, borderRadius: 4, padding: "3px 8px", background: "rgba(41,189,232,0.06)" }}>COMING TO CAELYN PRO</span>
               </div>
               <div style={{ fontSize: "clamp(0.85rem, 1.3vw, 0.95rem)", color: "rgba(255,255,255,0.42)", lineHeight: 1.7, maxWidth: 520 }}>
-                Define your investing rules once. Let the platform surface them against real positions at the moment a decision is forming — not after the trade.
+                Define your strategy, choose tested rule frameworks, write your own trading guardrails, and build custom confluence logic around the signals that matter to you.
               </div>
             </div>
 

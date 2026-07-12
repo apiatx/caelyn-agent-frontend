@@ -15,15 +15,12 @@ export default function FinalCTA() {
 
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: "clamp(2rem, 4vw, 3.4rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff", lineHeight: 1.12 }}>
-            Stop analyzing the market
-          </div>
-          <div style={{ fontSize: "clamp(2rem, 4vw, 3.4rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff", lineHeight: 1.12 }}>
-            one tab at a time.
+            Stop crossing the wires manually.
           </div>
         </div>
 
-        <div style={{ fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)", color: "rgba(255,255,255,0.42)", marginBottom: 48, lineHeight: 1.5 }}>
-          Build your market view in one system.
+        <div style={{ fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)", color: "rgba(255,255,255,0.42)", marginBottom: 48, lineHeight: 1.65, maxWidth: 560, margin: "0 auto 48px" }}>
+          Caelyn brings the signals together so you can see when the market, the setup and your process start to align.
         </div>
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>

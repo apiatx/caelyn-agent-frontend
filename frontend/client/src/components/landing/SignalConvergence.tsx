@@ -8,7 +8,9 @@ const SIGNALS = [
   { label: "SOCIAL INTEL", x: 670, y: 55 },
 ];
 const CX = 370;
-const CY = 210;
+const CY = 200;
+const CONFLUENCE_Y = 280;
+const CONVICTION_Y = 360;
 
 export default function SignalConvergence() {
   return (
@@ -21,6 +23,10 @@ export default function SignalConvergence() {
           0%,100% { opacity: 0.7; }
           50% { opacity: 1; }
         }
+        @keyframes caelyFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
         @media (prefers-reduced-motion: no-preference) {
           .conv-line { animation: caelyLineDraw 1.8s ease-out forwards; }
           .conv-line:nth-child(1) { animation-delay: 0.0s; }
@@ -29,6 +35,8 @@ export default function SignalConvergence() {
           .conv-line:nth-child(4) { animation-delay: 0.45s; }
           .conv-line:nth-child(5) { animation-delay: 0.6s; }
           .conv-center { animation: caelyPulse 3s ease-in-out infinite; }
+          .conv-confluence { animation: caelyFade 1s ease-out 1.4s both; }
+          .conv-conviction { animation: caelyFade 1s ease-out 1.9s both; }
         }
         @media (prefers-reduced-motion: reduce) {
           .conv-line { stroke-dashoffset: 0; }
@@ -49,10 +57,10 @@ export default function SignalConvergence() {
           </div>
         </div>
 
-        {/* Convergence visual */}
+        {/* Convergence visual — SIGNALS → CAELYN → CONFLUENCE → CONVICTION */}
         <div style={{ maxWidth: 760, margin: "0 auto 60px", position: "relative" }}>
-          <svg viewBox="0 0 740 320" style={{ width: "100%", display: "block", overflow: "visible" }} aria-hidden>
-            {/* Lines from each signal to center CAELYN box */}
+          <svg viewBox="0 0 740 400" style={{ width: "100%", display: "block", overflow: "visible" }} aria-hidden>
+            {/* Lines from each signal to CAELYN box */}
             {SIGNALS.map((s, i) => {
               const len = Math.sqrt((s.x - CX) ** 2 + (s.y - CY) ** 2);
               return (
@@ -69,8 +77,11 @@ export default function SignalConvergence() {
               );
             })}
 
-            {/* Vertical line from CAELYN to CONVICTION */}
-            <line x1={CX} y1={CY + 18} x2={CX} y2={280} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+            {/* Vertical connector: CAELYN → CONFLUENCE */}
+            <line x1={CX} y1={CY + 18} x2={CX} y2={CONFLUENCE_Y - 16} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+
+            {/* Vertical connector: CONFLUENCE → CONVICTION */}
+            <line x1={CX} y1={CONFLUENCE_Y + 16} x2={CX} y2={CONVICTION_Y - 8} stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
 
             {/* Signal nodes */}
             {SIGNALS.map((s, i) => (
@@ -98,20 +109,33 @@ export default function SignalConvergence() {
               </text>
             </g>
 
+            {/* CONFLUENCE box — the key intermediate step */}
+            <g className="conv-confluence">
+              <rect x={CX - 64} y={CONFLUENCE_Y - 16} width={128} height={32} rx={5}
+                fill="rgba(41,189,232,0.08)" stroke="rgba(41,189,232,0.35)" strokeWidth={1} />
+              <text x={CX} y={CONFLUENCE_Y + 5} textAnchor="middle" fontSize={10} fontFamily="'Inter', sans-serif" fontWeight={700}
+                fill="rgba(41,189,232,0.85)" letterSpacing="4">
+                CONFLUENCE
+              </text>
+            </g>
+
             {/* Arrow dot */}
-            <circle cx={CX} cy={280} r={2.5} fill="rgba(255,255,255,0.25)" />
+            <circle className="conv-conviction" cx={CX} cy={CONVICTION_Y - 4} r={2} fill="rgba(255,255,255,0.2)" />
 
             {/* CONVICTION */}
-            <text x={CX} y={310} textAnchor="middle" fontSize={11} fontFamily="'Inter', sans-serif" fontWeight={700} fill="rgba(255,255,255,0.7)" letterSpacing="5">
+            <text className="conv-conviction" x={CX} y={CONVICTION_Y + 14} textAnchor="middle" fontSize={11} fontFamily="'Inter', sans-serif" fontWeight={700} fill="rgba(255,255,255,0.45)" letterSpacing="5">
               CONVICTION
             </text>
           </svg>
         </div>
 
         {/* Copy below */}
-        <div style={{ textAlign: "center", maxWidth: 540, margin: "0 auto" }}>
-          <div style={{ fontSize: "clamp(0.9rem, 1.6vw, 1.05rem)", color: "rgba(255,255,255,0.42)", lineHeight: 1.7 }}>
-            Caelyn connects the signals investors normally analyze separately so you can see when the setup starts to align.
+        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
+          <div style={{ fontSize: "clamp(0.9rem, 1.6vw, 1.05rem)", color: "rgba(255,255,255,0.55)", lineHeight: 1.7, marginBottom: 20 }}>
+            Confluence is the point where separate signals start confirming the same idea.
+          </div>
+          <div style={{ fontSize: "clamp(0.88rem, 1.5vw, 1rem)", color: "rgba(255,255,255,0.35)", lineHeight: 1.7 }}>
+            Caelyn is built to surface that alignment across tickers, themes, watchlists and portfolios.
           </div>
         </div>
       </div>

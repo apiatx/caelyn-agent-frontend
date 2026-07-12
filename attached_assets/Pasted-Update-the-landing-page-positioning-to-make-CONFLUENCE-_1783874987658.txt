@@ -1,0 +1,394 @@
+Update the landing page positioning to make CONFLUENCE the central differentiator.
+
+Do not redesign the entire landing page.
+Do not change routing/auth/logout/login behavior.
+Do not change backend.
+Do not add API calls.
+Do not implement confluence logic yet.
+This is copy/positioning/UI messaging only.
+
+The current landing page is good, but it needs sharper product positioning.
+
+Core idea:
+
+Most investing/trading platforms offer data, screeners, swing setups, alerts, watchlists, and AI summaries.
+
+The problem is that users still have to manually connect everything:
+
+* technical setup
+* trend strength
+* theme leadership
+* options flow
+* fundamentals
+* catalysts
+* social sentiment
+* portfolio exposure
+* personal rules
+
+Most people do not have the time, process, or discipline to cross-check all of that well enough to make high-conviction decisions.
+
+What they are missing is CONFLUENCE.
+
+Caelyn's differentiator is that it helps investors see when multiple independent signals are lining up around the same ticker, theme, setup, or portfolio decision.
+
+==================================================
+GLOBAL POSITIONING UPDATE
+=========================
+
+The landing page should consistently position Caelyn as:
+
+"an investing confluence engine"
+
+or:
+
+"the confluence layer for self-directed investors"
+
+Use this naturally. Do not overuse the word in every paragraph.
+
+Preferred core language:
+
+"More signals don't create better decisions. Confluence does."
+
+"Caelyn connects market structure, themes, technicals, options flow, fundamentals, catalysts and AI analysis into one confluence layer."
+
+"Instead of forcing you to cross-check everything manually, Caelyn shows when the setup starts to align."
+
+Avoid implying Caelyn guarantees better outcomes.
+
+Avoid saying Caelyn tells users what to buy.
+
+Avoid making performance claims.
+
+==================================================
+HERO UPDATE
+===========
+
+Current hero headline:
+
+"See the market as a system."
+
+Keep this as either the headline or a secondary line.
+
+Add/replace supporting hero language so the hero includes this concept:
+
+"Most platforms give you more signals. Caelyn shows you when they agree."
+
+Recommended hero structure:
+
+Headline:
+"See the market as a system."
+
+Subheadline:
+"Most platforms give you more signals. Caelyn shows you when they agree."
+
+Supporting line:
+"Themes. Technicals. Options flow. Fundamentals. Catalysts. Social intelligence. Your portfolio."
+
+Body:
+"Caelyn connects the signals investors normally analyze in isolation — so you can spot confluence before conviction."
+
+CTA buttons unchanged:
+START FREE
+EXPLORE THE PLATFORM
+
+Small lower line:
+"Built for investors who want more than another stock screener."
+
+==================================================
+SIGNAL CONVERGENCE SECTION UPDATE
+=================================
+
+Current section:
+
+"You don't need more data."
+"You need the data to agree."
+
+Keep this.
+
+Add the word/concept CONFLUENCE visually.
+
+The convergence visual should flow like:
+
+TECHNICALS
+FUNDAMENTALS
+OPTIONS FLOW
+CATALYSTS
+SOCIAL INTELLIGENCE
+
+→ CAELYN
+
+→ CONFLUENCE
+
+→ CONVICTION
+
+If the current visual only ends at CONVICTION, add CONFLUENCE as the intermediate concept.
+
+Add short supporting copy:
+
+"Confluence is the point where separate signals start confirming the same idea."
+
+Then:
+
+"Caelyn is built to surface that alignment across tickers, themes, watchlists and portfolios."
+
+Keep it concise.
+
+==================================================
+ABOUT SECTION UPDATE
+====================
+
+Update the About section to strengthen the pain:
+
+Current idea:
+Investing tools make you think between tabs.
+
+Add:
+
+"Swing setup tools can show attractive charts. Screeners can show interesting names. AI can summarize a ticker. But the decision still depends on whether the evidence actually lines up."
+
+Then connect it:
+
+"Caelyn was built around that missing layer: confluence."
+
+Suggested revised copy:
+
+"Market data lives in one platform. Options activity lives somewhere else. Social sentiment moves in real time. Fundamentals update quarterly. Catalysts arrive without context.
+
+Swing setup tools can show attractive charts. Screeners can show interesting names. AI can summarize a ticker.
+
+But the investor is still left asking the only question that matters:
+
+Does the evidence actually line up?
+
+Caelyn was built around that missing layer: confluence.
+
+It organizes market structure, themes, technical strength, fundamentals, options positioning, catalysts and real-time intelligence into one investing workspace.
+
+Not to tell you what to buy.
+
+To help you see the full setup before you make the decision."
+
+Keep the existing closing positioning, but update it if needed to:
+
+"Confluence infrastructure for self-directed investors."
+
+==================================================
+STRATEGY SECTION UPDATE
+=======================
+
+Keep the main headline:
+
+"The market doesn't forget your rules. You do."
+
+But add that strategy and confluence are connected.
+
+Add language:
+
+"Your rules matter most when confluence appears."
+
+"Caelyn Pro is designed to let investors define the conditions that matter to their own process — then evaluate setups against those rules."
+
+In the Pro Strategy Engine card, make the future feature more explicit:
+
+PERSONAL STRATEGY + CONFLUENCE ENGINE
+
+COMING TO CAELYN PRO
+
+Description:
+
+"Define your strategy, choose tested rule frameworks, write your own trading guardrails, and build custom confluence logic around the signals that matter to you."
+
+Do not imply this is already available.
+
+Clearly mark it as Pro / Coming Soon.
+
+==================================================
+PRICING SECTION UPDATE
+======================
+
+Update pricing cards so Confluence is visible in Plus and Pro.
+
+FREE:
+Keep mostly as-is.
+
+Make sure Free does NOT imply full personalized confluence.
+
+Free can include:
+
+* Curated market intelligence
+* Curated thematic watchlist
+* Market leadership views
+
+STARTER:
+Starter should include:
+
+* Everything in Free
+* 1 custom watchlist
+* 1 portfolio
+* Terminal access
+* Single-agent AI
+* 1 AI analysis per day
+
+Do not position Starter as full confluence.
+
+PLUS:
+Plus must include the main confluence product.
+
+Update Plus tagline from:
+"Connect the signals"
+
+To:
+"See confluence across the market"
+
+or:
+"Confluence for serious investors"
+
+Preferred:
+"See confluence across the market"
+
+Plus features should include:
+
+* Everything in Starter
+* Confluence views for Caelyn's curated ticker universe
+* 500+ noteworthy tickers across dozens of themes
+* Theme, technical, options, catalyst and fundamentals alignment
+* Full Caelyn AI access
+* Single-agent analysis
+* Multi-agent collaboration
+* 30 AI analyses per month
+* 2 custom watchlists
+* Up to 100 stocks per watchlist
+* Flexible portfolio configuration
+* 3 portfolios × 15 holdings
+* or 2 portfolios × 25 holdings
+* Full Terminal access
+
+Important:
+Use "curated ticker universe" not "currated ticker list" in the UI.
+Use "500+ noteworthy tickers" only if the app/product direction supports that target. This is the intended positioning.
+
+PRO:
+Pro is where custom confluence becomes the big differentiator.
+
+Update Pro tagline from:
+"Build your investing operating system"
+
+To:
+"Build your own confluence engine"
+
+Pro features should include:
+
+* Everything in Plus
+* Custom confluence rules
+* Custom trading rules and strategies
+* Personal Strategy Engine
+* Predefined strategy frameworks
+* Decision guardrails
+* Personal investing playbook
+* Custom theme baskets
+* Stocks & ETFs
+* Custom page layouts
+* Rearrange platform pages
+* Custom sidebar
+* Advanced financial history
+* Advanced technical price history
+* 5 custom watchlists
+* 100 tickers each
+* 5 portfolios
+* 20 holdings each
+* High-volume AI access
+* Up to 200 AI analyses per month
+* Up to 100 multi-agent collaborations
+
+Pro should feel like:
+"Caelyn adapts to the way you invest."
+
+Plus should feel like:
+"Caelyn shows you confluence across the curated market universe."
+
+Starter should feel like:
+"Start personalizing your investing workspace."
+
+Free should feel like:
+"Explore Caelyn's market intelligence."
+
+==================================================
+FINAL CTA UPDATE
+================
+
+Current final CTA:
+
+"Stop analyzing the market one tab at a time."
+
+Keep or update to:
+
+"Stop crossing the wires manually."
+
+Supporting copy:
+
+"Caelyn brings the signals together so you can see when the market, the setup and your process start to align."
+
+CTA unchanged:
+START FREE
+
+Secondary:
+LOG IN
+
+==================================================
+COPY RULES
+==========
+
+Do not claim:
+
+* users will win more
+* users will beat the market
+* Caelyn guarantees high-confidence decisions
+* Caelyn removes risk
+* Caelyn gives personalized investment advice
+* Caelyn tells users exactly what to buy
+
+Allowed:
+
+* "helps you see"
+* "surfaces"
+* "organizes"
+* "connects"
+* "shows when signals align"
+* "supports better decision-making"
+* "built for self-directed investors"
+
+Use:
+"high-conviction decisions" carefully as an aspiration, not a guarantee.
+
+Preferred phrase:
+"before conviction"
+
+or:
+"the evidence behind conviction"
+
+==================================================
+ACCEPTANCE CHECKS
+=================
+
+Verify:
+
+1. The hero clearly communicates that Caelyn shows when signals agree.
+2. The convergence section includes CONFLUENCE between CAELYN and CONVICTION.
+3. The About section clearly identifies confluence as the missing layer.
+4. Plus pricing includes "Confluence views for Caelyn's curated ticker universe."
+5. Plus pricing mentions "500+ noteworthy tickers across dozens of themes."
+6. Pro pricing includes "Custom confluence rules."
+7. Pro pricing includes "Custom trading rules and strategies."
+8. Pro card clearly remains Coming Soon.
+9. No backend/API logic was changed.
+10. No confluence engine was implemented yet.
+11. No performance or investment-result claims were added.
+12. The landing page remains visually polished and not text-heavy.
+13. Existing login/logout/public routing behavior remains intact.
+
+At completion, report:
+A. exact files changed
+B. exact copy sections updated
+C. confirmation pricing tiers now reflect Plus = curated confluence and Pro = custom confluence
+D. confirmation no backend/API/auth changes
+E. screenshots or visual verification if available
