@@ -4717,6 +4717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body });
       }
       const data = await r.json();
+      // Clear the social dashboard cache so the next visit re-fetches with fresh screener data
+      _socialDashCache.data = null;
+      _socialDashCache.at = 0;
+      _socialDashCache.complete = false;
+      _socialDashCache.generatedAt = null;
       return res.json({ ok: true, trending_on_x: data?.trending_on_x ?? null, _refreshed_at: Date.now() });
     } catch (e: any) {
       clearTimeout(tid);
@@ -4749,7 +4754,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Social — X intelligence dashboard (flat payload: top_tickers + new sibling keys) ===
+  // Social dashboard cache — keyed by generated_at so a new daily run auto-invalidates.
+  // TTL is 24 h once the screener is populated; 30 s while it's still building so we
+  // re-check FastAPI soon without hammering it.
+  const _socialDashCache: { data: any; at: number; complete: boolean; generatedAt: string | null } =
+    { data: null, at: 0, complete: false, generatedAt: null };
+  const SOCIAL_TTL_COMPLETE = 24 * 3600_000; // full day once screener is ready
+  const SOCIAL_TTL_BUILDING = 30_000;         // 30 s while screener is still computing
+
   app.get('/api/social/x-dashboard', async (req, res) => {
+    const now = Date.now();
+    const entry = _socialDashCache;
+    if (entry.data) {
+      const ttl = entry.complete ? SOCIAL_TTL_COMPLETE : SOCIAL_TTL_BUILDING;
+      if (now - entry.at < ttl) {
+        return res.json({ ...entry.data, _express_cache_age_ms: now - entry.at });
+      }
+    }
+
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 25_000);
     try {
@@ -4760,12 +4782,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(tid);
       if (!r.ok) {
         const body = await r.text().catch(() => '');
+        if (entry.data) return res.json({ ...entry.data, _express_cache_age_ms: now - entry.at });
         return res.status(r.status).json({ error: `Backend ${r.status}`, detail: body });
       }
       const data = await r.json();
+      const hasScreener = (data?.social_screener?.rows?.length ?? 0) > 0;
+      _socialDashCache.data = data;
+      _socialDashCache.at = now;
+      _socialDashCache.complete = hasScreener;
+      _socialDashCache.generatedAt = data?.generated_at ?? null;
       return res.json(data);
     } catch (e: any) {
       clearTimeout(tid);
+      if (entry.data) return res.json({ ...entry.data, _express_cache_age_ms: now - entry.at });
       const msg = e?.name === 'AbortError' ? 'Social X dashboard timed out (25s)' : (e?.message || 'Fetch failed');
       return res.status(500).json({ error: msg });
     }

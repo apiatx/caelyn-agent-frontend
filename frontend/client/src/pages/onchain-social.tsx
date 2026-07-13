@@ -2170,13 +2170,7 @@ export default function OnchainSocialPage() {
     queryFn: () => fetch('/api/social/x-dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     staleTime: 0,
     gcTime: 5 * 60_000,
-    // When social_screener rows are missing (backend computes them asynchronously),
-    // poll every 30s until they arrive, then back off to 15 min.
-    refetchInterval: (query) => {
-      const d = query.state.data as any;
-      const hasScreener = (d?.social_screener?.rows?.length ?? 0) > 0;
-      return hasScreener ? 15 * 60_000 : 30_000;
-    },
+    refetchInterval: 15 * 60_000,
     refetchOnWindowFocus: true,
     retry: 1,
   });
