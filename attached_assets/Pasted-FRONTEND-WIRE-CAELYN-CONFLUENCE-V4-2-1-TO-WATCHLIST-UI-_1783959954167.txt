@@ -1,0 +1,423 @@
+FRONTEND — WIRE CAELYN CONFLUENCE V4.2.1 TO WATCHLIST UI
+
+Frontend only.
+
+Do not change backend.
+Do not change scoring formulas.
+Do not derive scores in frontend.
+Do not call new APIs.
+Do not add provider calls.
+Do not reintroduce legacy Trade Alignment as the main score.
+
+Goal:
+
+Update the Watchlist Confluence / AI section to consume the new backend V4.2.1 fields directly and display the score in a clear screener-style table.
+
+Backend is now the source of truth.
+
+Use the existing alignment endpoint that returns rows with:
+
+caelyn_confluence_score
+caelyn_confluence_core_score
+caelyn_confluence_bonus_score
+caelyn_confluence_max_score
+caelyn_confluence_confidence_score
+caelyn_confluence_bucket
+actionability_state
+
+theme_alignment_points
+stage_quality_points
+options_alignment_points
+technical_setup_points
+entry_exit_points
+catalyst_alignment_points
+investment_alignment_points
+
+social_bonus_points
+whale_insider_bonus_points
+bottleneck_bonus_points
+
+technical_setup_label
+entry_exit_status
+investment_quality_label
+investment_pillar_count
+financial_health_strong
+current_growth_strong
+forward_growth_strong
+
+options_status
+options_symbol_classification
+options_not_scanned_reason
+options_scanner_queue_status
+options_backfill_priority
+options_scanner_scope_reason
+
+catalyst_status
+direct_catalyst_present
+direct_catalyst_type
+direct_catalyst_polarity
+catalyst_lkg_source
+
+is_actionable_setup
+is_near_actionable
+is_watch_for_reset
+is_risk_conflict
+is_investment_quality
+
+==================================================
+MAIN TABLE COLUMNS
+==================================================
+
+Use these columns:
+
+Ticker
+Confluence
+Decision
+Setup
+Theme
+Options
+Entry / Exit
+Catalyst
+Investment
+Bonuses
+Confidence
+
+Do not show old Trade Score as a primary column.
+
+If legacy_trade_alignment_score exists, hide it in a debug drawer only.
+
+==================================================
+COLUMN DEFINITIONS
+==================================================
+
+Ticker:
+- Symbol
+- Company name if already available
+
+Confluence:
+- Show caelyn_confluence_score
+- Display as “Score”, not percent
+- Max is 125
+- Also show core_score + bonus_score in tooltip:
+  Core: X / 100
+  Bonus: Y / 25
+
+Decision:
+- Use actionability_state
+- Do not derive from score
+- Badge examples:
+  READY
+  NEAR_ACTIONABLE
+  WATCH
+  WATCH_FOR_RESET
+  AVOID
+  RISK_CONFLICT
+
+Setup:
+- Show technical_setup_label
+- Show technical_setup_points / 8
+- Tooltip should show technical_setup_reason_codes if available
+
+Theme:
+- Show theme_alignment_points / 15
+- Show theme name / theme label if available
+- Include theme policy only as part of theme tooltip, not standalone bonus
+
+Options:
+- Show options_alignment_points / 20
+- Show options_status
+- If options_status = available_cached, show normal
+- If confirmed_no_options, show “No listed options”
+- If not_scanned, show “Queued” / “Not scanned” using:
+  options_not_scanned_reason
+  options_scanner_queue_status
+  options_backfill_priority
+  options_scanner_scope_reason
+- Do not treat not_scanned as bearish
+
+Entry / Exit:
+- Show entry_exit_points / 12
+- Show entry_exit_status
+- If level fields exist, show support/resistance/target/invalidation in tooltip
+- Do not invent target levels if null
+
+Catalyst:
+- Show catalyst_alignment_points / 15
+- Show direct_catalyst_type if present
+- Show catalyst_lkg_source in tooltip
+- If catalyst LKG is warming or unavailable, show neutral/warning state, not bearish
+
+Investment:
+- Show investment_alignment_points / 15
+- Show investment_quality_label
+- Show pillar count:
+  0 / 3
+  1 / 3
+  2 / 3
+  3 / 3
+- Show pillar badges:
+  Financial Health
+  Current Growth
+  Forward Growth
+
+Bonuses:
+- Show combined bonus:
+  social_bonus_points
+  whale_insider_bonus_points
+  bottleneck_bonus_points
+- Whale/Insider currently may return not_wired. If not_wired, grey it out or hide from the visible bonus chips.
+- Do not display Whale/Insider as active unless whale_insider_status indicates active/available.
+- Bottleneck should show anchor count if available.
+- Social should show section hits if available.
+
+Confidence:
+- Show caelyn_confluence_confidence_score
+- This is data completeness, not score strength.
+- Tooltip:
+  “Confidence reflects completeness/trustworthiness of available data, not bullishness.”
+
+==================================================
+TABS / FILTERS
+==================================================
+
+Use backend booleans directly.
+
+Do not derive these in frontend.
+
+Tabs:
+
+All Confluence:
+- all rows
+- default sort by caelyn_confluence_score descending
+
+Actionable:
+- is_actionable_setup === true
+
+Near Actionable:
+- is_near_actionable === true
+
+Watch for Reset:
+- is_watch_for_reset === true
+
+Risk / Conflicts:
+- is_risk_conflict === true
+
+Investment Quality:
+- is_investment_quality === true
+
+==================================================
+SORTING
+==================================================
+
+Every main score column should be sortable:
+
+Confluence
+Theme
+Stage
+Options
+Setup
+Entry / Exit
+Catalyst
+Investment
+Bonuses
+Confidence
+
+Default sort:
+caelyn_confluence_score descending
+
+Do not sort by old Trade Alignment.
+
+==================================================
+VISUAL RULES
+==================================================
+
+Confluence score:
+- Do not show as percent.
+- Show as “68.6 / 125” or just “68.6” with tooltip “max 125”.
+
+Decision:
+- More prominent than bucket.
+- Bucket can be secondary.
+
+Options:
+- available_cached = normal
+- confirmed_no_options = neutral
+- not_scanned + queued_high_priority = pending/queued
+- prefixed_foreign_or_otc_symbol = excluded/non-standard
+- Do not make missing options look bearish.
+
+Whale/Insider:
+- If whale_insider_status = not_wired, do not show as active.
+- Optional grey chip: “Whale/Insider not wired yet.”
+
+Catalyst:
+- If catalyst_lkg_source = disk_lkg or memory, show normally.
+- If unavailable_cold_start, show “Catalyst warming” not bearish.
+
+==================================================
+DETAIL DRAWER
+==================================================
+
+On row click, show a details drawer with:
+
+Score Breakdown:
+- Core Score
+- Bonus Score
+- Max Score
+
+Components:
+- Theme
+- Stage
+- Options
+- Technical Setup
+- Entry / Exit
+- Catalyst
+- Investment
+- Social
+- Whale/Insider
+- Bottleneck
+
+Investment Details:
+- Financial Health strong true/false
+- Current Growth strong true/false
+- Forward Growth strong true/false
+- Pillar count
+- Label
+
+Options Details:
+- status
+- classification
+- queue status
+- reason
+
+Catalyst Details:
+- direct catalyst present
+- type
+- polarity
+- LKG source
+
+Debug section collapsed by default:
+- legacy_trade_alignment_score
+- legacy_actionability_state
+- caelyn_confluence_v42_* fields
+- reason codes
+
+==================================================
+VALIDATION SYMBOLS
+==================================================
+
+After implementation, validate the table displays correctly for:
+
+ANET
+KLIC
+MU
+OSCR
+NBIS
+ADPT
+SNDK
+LITE
+AMD
+NVDA
+MSFT
+SMCI
+CRWD
+CRDO
+FSLR
+FTNT
+MRVL
+MARA
+TSM
+VRT
+GLW
+AMKR
+KLAC
+PENG
+
+Specifically verify:
+
+NVDA / MSFT / SMCI:
+- not classified as foreign/OTC
+- options status shows queued/pending if not scanned
+- does not look bearish because options are pending
+
+Whale/Insider:
+- does not appear as active if status = not_wired
+
+Confluence:
+- score comes from caelyn_confluence_score
+- not legacy trade alignment
+
+Tabs:
+- use backend booleans only
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND V4.2.1 CONFLUENCE WIRING REPORT
+
+FILES CHANGED:
+[list]
+
+DATA SOURCE:
+[endpoint used]
+
+COLUMNS WIRED:
+[list]
+
+TABS WIRED:
+[list]
+
+SORTING:
+[summary]
+
+DETAIL DRAWER:
+[summary]
+
+LEGACY TRADE ALIGNMENT:
+[hidden/debug only confirmation]
+
+OPTIONS DISPLAY:
+[summary]
+
+CATALYST DISPLAY:
+[summary]
+
+BONUS DISPLAY:
+[summary]
+
+VALIDATION SYMBOLS:
+[table]
+
+End exactly:
+
+FRONTEND V4.2.1 WIRING VERDICT
+
+USES_CANONICAL_CAELYN_CONFLUENCE_SCORE:
+[YES/NO]
+
+DOES_NOT_DERIVE_SCORE_IN_FRONTEND:
+[YES/NO]
+
+TRADE_ALIGNMENT_NOT_PRIMARY:
+[YES/NO]
+
+USES_BACKEND_ACTIONABILITY_BOOLEANS:
+[YES/NO]
+
+OPTIONS_PENDING_STATES_DISPLAYED_CORRECTLY:
+[YES/NO]
+
+WHALE_INSIDER_NOT_WIRED_HANDLED_SAFELY:
+[YES/NO]
+
+CATALYST_LKG_STATE_HANDLED_SAFELY:
+[YES/NO]
+
+SORTABLE_COMPONENT_COLUMNS:
+[YES/NO]
+
+READY_FOR_USER_REVIEW:
+[YES/NO]
