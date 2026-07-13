@@ -5127,7 +5127,7 @@ export default function WatchlistPage() {
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' as const }}>
                     {(['activity', 'all', 'hyperscaler'] as NewsView[]).map(v => {
                       const labels: Record<NewsView, string> = {
-                        activity: 'NEWS ACTIVITY',
+                        activity: 'ACTIVITY',
                         all: 'ALL NEWS',
                         hyperscaler: 'HYPERSCALER DEALS',
                       };
