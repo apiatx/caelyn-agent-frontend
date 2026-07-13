@@ -1859,7 +1859,7 @@ function SocialScreenerSection({ socialScreener, bundledFundamental, onTickerCli
 
   // Empty / loading messaging
   const socialEmptyMsg = !socialScreener || socialRows.length === 0
-    ? 'Social screener unavailable from latest run.'
+    ? 'Social screener is building… refreshing automatically.'
     : null;
 
   const retryFundamental = () => {
@@ -2168,14 +2168,15 @@ export default function OnchainSocialPage() {
   const { data: dashData, isLoading: dashLoading } = useQuery<any>({
     queryKey: ['/api/social/x-dashboard'],
     queryFn: () => fetch('/api/social/x-dashboard').then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    // staleTime: 0 — always fetch fresh on mount/focus so users never see stale data.
-    // gcTime: short so in-memory cache is discarded quickly and won't be served stale
-    // when the user returns to the page after the backend's 10 AM CT refresh.
-    // refetchInterval: 15 min — auto-polls so fresh Grok/XAI data surfaces within
-    // 15 minutes of the daily 10 AM CT backend refresh, even when page stays open.
     staleTime: 0,
     gcTime: 5 * 60_000,
-    refetchInterval: 15 * 60_000,
+    // When social_screener rows are missing (backend computes them asynchronously),
+    // poll every 30s until they arrive, then back off to 15 min.
+    refetchInterval: (query) => {
+      const d = query.state.data as any;
+      const hasScreener = (d?.social_screener?.rows?.length ?? 0) > 0;
+      return hasScreener ? 15 * 60_000 : 30_000;
+    },
     refetchOnWindowFocus: true,
     retry: 1,
   });
