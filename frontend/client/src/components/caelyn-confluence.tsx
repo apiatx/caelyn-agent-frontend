@@ -687,6 +687,104 @@ function EmptyState({ msg }: { msg: string }) {
 /* ─── Tab: All Confluence — V4.2.1 Screener Table ─────────────────── */
 
 /* Decision badge map — uses backend actionability_state directly */
+/* ─── V4.2 Contract Helpers ──────────────────────────────────────── */
+
+const ACTION_LABEL_DISPLAY: Record<string, string> = {
+  READY:                 'Ready to Enter',
+  ACTIONABLE:            'Ready to Enter',
+  NEAR_ACTIONABLE:       'Near Entry',
+  WAIT_FOR_BREAKOUT:     'Wait for Breakout',
+  WAIT_FOR_RETEST:       'Wait for Retest',
+  WATCH_FOR_RESET:       'Watch for Reset',
+  WATCH:                 'Watch',
+  CONFLUENCE_AT_SUPPORT: 'Confluence at Support',
+  AVOID:                 'Avoid',
+  RISK_CONFLICT:         'Avoid (Conflict)',
+  NO_CLEAR_CONFLUENCE:   'No Confluence',
+  INSUFFICIENT_DATA:     'Insufficient Data',
+};
+
+/** Normalize a confluence_v42 object from either the nested confluence_v42
+ *  (from /api/alpha/confluence/{symbol}) or flat caelyn_confluence_v42_* fields
+ *  (from /api/watchlist/{id}/alignment). Returns null if no CCS data present. */
+function readV42(row: any) {
+  if (row?.confluence_v42) return row.confluence_v42 as V42Shape;
+  const ccs  = row.caelyn_confluence_score;
+  const core = row.caelyn_confluence_core_score ?? row.caelyn_confluence_v42_core_score;
+  const bonus= row.caelyn_confluence_bonus_score ?? row.caelyn_confluence_v42_bonus_score;
+  if (ccs == null && core == null) return null;
+  const compsRaw = row.caelyn_confluence_v42_components ?? {};
+  const bonusRaw = row.caelyn_confluence_v42_bonus_breakdown ?? {};
+  const actRaw   = ((row.actionability_state ?? row.caelyn_confluence_v42_actionability ?? '') as string).toUpperCase();
+  function comp(c: any, ptsFallback: number | null, maxPts: number, statusFallback?: string): V42Component {
+    return {
+      raw_score:    c?.raw_score ?? null,
+      points:       c?.points ?? ptsFallback,
+      max_points:   c?.max_points ?? maxPts,
+      available:    c?.available ?? (ptsFallback != null),
+      status:       c?.status ?? statusFallback ?? 'available',
+      reason_codes: c?.reason_codes ?? [],
+      label:        c?.label,
+      quality_label:c?.quality_label,
+      pillar_count: c?.pillar_count,
+    };
+  }
+  const socialPts = Number(row.social_bonus_points ?? bonusRaw.social?.points ?? 0);
+  const botlPts   = Number(row.bottleneck_bonus_points ?? bonusRaw.bottleneck?.points ?? 0);
+  return {
+    score: {
+      total: Number(ccs ?? 0), core: Number(core ?? 0), bonus: Number(bonus ?? 0),
+      core_max: 100, bonus_max: 25, total_max: row.caelyn_confluence_v42_max_score ?? 125,
+    },
+    action: {
+      label: actRaw, bucket: row.caelyn_confluence_bucket ?? actRaw,
+      label_display: ACTION_LABEL_DISPLAY[actRaw] ?? actRaw.replace(/_/g, ' '),
+      invalidation_level: null as number | null, target_zone: null,
+      why_now: [] as string[], why_wait: [] as string[],
+    },
+    booleans: {
+      is_actionable_setup:   row.is_actionable_setup   ?? false,
+      is_near_actionable:    row.is_near_actionable    ?? false,
+      is_watch_for_reset:    row.is_watch_for_reset    ?? false,
+      is_risk_conflict:      row.is_risk_conflict      ?? false,
+      is_investment_quality: row.is_investment_quality ?? false,
+    },
+    components: {
+      theme:          comp(compsRaw.theme_alignment,     row.theme_alignment_points,                          15),
+      stage:          comp(compsRaw.stage_quality,       row.stage_quality_points,                            15),
+      options:        comp(compsRaw.options_alignment,   row.options_alignment_points,                        20, row.options_status ?? row.options_snapshot_status),
+      technical_setup:comp(compsRaw.technical_setup,    row.technical_setup_points,                          8),
+      entry_exit:     comp(compsRaw.entry_exit,          row.entry_exit_points ?? row.entry_risk_reward_points, 12),
+      catalyst:       comp(compsRaw.catalyst_alignment,  row.catalyst_alignment_points,                       15),
+      investment:     comp(compsRaw.investment_alignment,row.investment_alignment_points,                     15),
+    },
+    bonuses: {
+      social:        { points: socialPts, max_points: 15, sections_hit: row.social_sections_hit ?? 0, status: row.social_confluence_hit ? 'available' : 'no_social_coverage', confluence_hit: row.social_confluence_hit },
+      whale_insider: { points: 0, max_points: 5, status: 'not_wired' },
+      bottleneck:    { points: botlPts, max_points: 5, anchor_count: row.bottleneck_anchor_count ?? bonusRaw.bottleneck?.anchor_count ?? 0, status: botlPts > 0 ? 'available' : 'not_in_screener' },
+    },
+    metadata: {
+      confidence_score: Number(row.caelyn_confluence_confidence_score ?? row.caelyn_confluence_v42_confidence_score ?? 0),
+      data_status_flags: [] as string[],
+    },
+    risk:      { risk_flags: [] as string[] },
+    technical: undefined as V42Technical | undefined,
+  } satisfies V42Shape;
+}
+
+type V42Component = { raw_score: number | null; points: number | null; max_points: number; available: boolean; status: string; reason_codes: string[]; label?: string; quality_label?: string; pillar_count?: number };
+type V42Technical = { stage_label?: string; stage_score?: number; technical_setup_label?: string; entry_state?: string; entry_score?: number; extension_state?: string; extension_quality?: string; fib_context?: string; nearest_fib_label?: string; nearest_fib_level?: number; distance_to_fib_pct?: number; fib_confidence?: number; fib_wave_status?: string; wave_structure?: string; wave_score?: number };
+type V42Shape = {
+  score:    { total: number; core: number; bonus: number; core_max: number; bonus_max: number; total_max: number; display_mode?: string; percent_of_total_max?: number };
+  action:   { label: string; bucket: string; label_display: string; invalidation_level: number | null; target_zone: any; why_now: string[]; why_wait: string[] };
+  components: Record<string, V42Component>;
+  bonuses:  { social: { points: number; max_points: number; sections_hit: number; status: string; confluence_hit?: boolean }; whale_insider: { points: number; max_points: number; status: string }; bottleneck: { points: number; max_points: number; anchor_count: number; status: string } };
+  booleans: { is_actionable_setup: boolean; is_near_actionable: boolean; is_watch_for_reset: boolean; is_risk_conflict: boolean; is_investment_quality: boolean };
+  metadata: { confidence_score: number; data_status_flags: string[]; reason_codes?: string[] };
+  risk:     { risk_flags: string[]; major_lower_low_confirmed?: boolean; lower_low_confirmed?: boolean; chase_extension?: boolean; critical_break_level?: number; active_support_status?: string; distance_to_active_support_pct?: number };
+  technical?: V42Technical;
+};
+
 const DECISION_BADGE: Record<string, { label: string; clr: string; bg: string }> = {
   READY:                 { label: 'READY',         clr: '#22c55e', bg: 'rgba(34,197,94,0.18)'   },
   ACTIONABLE:            { label: 'ACTIONABLE',     clr: '#22c55e', bg: 'rgba(34,197,94,0.18)'   },
@@ -699,13 +797,14 @@ const DECISION_BADGE: Record<string, { label: string; clr: string; bg: string }>
   NO_CLEAR_CONFLUENCE:   { label: 'NO CONFLUENCE',  clr: '#a9aaa6', bg: 'transparent'            },
 };
 
-function DecisionBadge({ state }: { state?: string | null }) {
+function DecisionBadge({ state, display }: { state?: string | null; display?: string | null }) {
   if (!state) return <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>;
   const key = state.toUpperCase();
-  const cfg = DECISION_BADGE[key] ?? { label: key, clr: CC.dim, bg: 'transparent' };
+  const cfg = DECISION_BADGE[key] ?? { label: ACTION_LABEL_DISPLAY[key] ?? key.replace(/_/g, ' '), clr: CC.dim, bg: 'transparent' };
+  const text = display ?? cfg.label;
   return (
     <span style={{ fontSize: 7, fontWeight: 800, letterSpacing: '0.05em', padding: '2px 5px', borderRadius: 3, background: cfg.bg, color: cfg.clr, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>
-      {cfg.label}
+      {text}
     </span>
   );
 }
@@ -756,25 +855,21 @@ function OptionsStatusCell({ row }: { row: any }) {
 }
 
 function BonusCell({ row }: { row: any }) {
-  const social   = row.social_bonus_points != null ? Number(row.social_bonus_points) : null;
-  const whalePts = row.whale_insider_bonus_points != null ? Number(row.whale_insider_bonus_points)
-    : (row.caelyn_confluence_v42_bonus_breakdown?.whale_insider?.points != null ? Number(row.caelyn_confluence_v42_bonus_breakdown.whale_insider.points) : null);
-  const botl     = row.bottleneck_bonus_points != null ? Number(row.bottleneck_bonus_points) : null;
-  const whaleSt  = row.whale_insider_status ?? row.caelyn_confluence_v42_bonus_breakdown?.whale_insider?.status ?? null;
-  const whaleActive = whaleSt !== 'not_wired';
-  const total = (social ?? 0) + (whaleActive && whalePts != null ? whalePts : 0) + (botl ?? 0);
+  const v42b   = readV42(row)?.bonuses;
+  const social = v42b?.social.points ?? null;
+  const botl   = v42b?.bottleneck.points ?? null;
+  const total  = (social ?? 0) + (botl ?? 0);
 
-  if (social == null && whalePts == null && botl == null) {
+  if (social == null && botl == null) {
     return <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>;
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 1 }}>
       <span style={{ fontSize: 9, fontWeight: 700, color: total > 2 ? CC.purple : total > 0 ? 'rgba(168,85,247,0.6)' : CC.dim, fontFamily: CC.font }}>+{total.toFixed(1)}</span>
       <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' as const }}>
-        {social != null && social > 0 && <span style={{ fontSize: 6, padding: '1px 3px', borderRadius: 2, background: 'rgba(168,85,247,0.15)', color: CC.purple, fontFamily: CC.font }}>S{social.toFixed(0)}</span>}
-        {whaleActive && whalePts != null && whalePts > 0 && <span style={{ fontSize: 6, padding: '1px 3px', borderRadius: 2, background: 'rgba(59,130,246,0.15)', color: CC.blue, fontFamily: CC.font }}>W{whalePts.toFixed(0)}</span>}
-        {!whaleActive && <span style={{ fontSize: 6, color: 'rgba(169,170,166,0.3)', fontFamily: CC.font }}>W—</span>}
-        {botl != null && botl > 0 && <span style={{ fontSize: 6, padding: '1px 3px', borderRadius: 2, background: 'rgba(251,146,60,0.15)', color: CC.orange, fontFamily: CC.font }}>B{botl.toFixed(1)}</span>}
+        {social != null && social > 0 && <span style={{ fontSize: 6, padding: '1px 3px', borderRadius: 2, background: 'rgba(168,85,247,0.15)', color: CC.purple, fontFamily: CC.font }}>S{social.toFixed(0)}/15</span>}
+        <span style={{ fontSize: 6, color: 'rgba(169,170,166,0.25)', fontFamily: CC.font }} title="Whale/Insider not wired yet">W—</span>
+        {botl != null && botl > 0 && <span style={{ fontSize: 6, padding: '1px 3px', borderRadius: 2, background: 'rgba(251,146,60,0.15)', color: CC.orange, fontFamily: CC.font }}>B{botl.toFixed(1)}/5</span>}
       </div>
     </div>
   );
@@ -897,33 +992,31 @@ function V42ScreenerTable({
       {sorted.map((r, i) => {
         const ticker     = fmtTicker(r);
         const company    = fmtCompany(r);
+        const v42        = readV42(r);
         const ccs        = r.caelyn_confluence_score != null ? Number(r.caelyn_confluence_score) : null;
-        const core       = r.caelyn_confluence_core_score ?? r.caelyn_confluence_v42_core_score ?? null;
-        const bonus      = r.caelyn_confluence_bonus_score ?? r.caelyn_confluence_v42_bonus_score ?? null;
-        const maxScr     = r.caelyn_confluence_v42_max_score ?? 125;
-        const decision   = r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null;
-        const conf       = r.caelyn_confluence_confidence_score ?? r.caelyn_confluence_v42_confidence_score ?? null;
-        const confNum    = conf != null ? Number(conf) : null;
+        const maxScr     = v42?.score.total_max ?? r.caelyn_confluence_v42_max_score ?? 125;
+        const confNum    = v42 ? v42.metadata.confidence_score : (r.caelyn_confluence_confidence_score ?? r.caelyn_confluence_v42_confidence_score ?? null);
 
-        const stagePts   = getV42Pts(r, 'technical_setup_points', 'technical_setup') ?? getV42Pts(r, 'stage_quality_points', 'stage_quality');
-        const stageLabel = r.technical_setup_label ?? (r.stage_quality_score != null ? `Score ${Math.round(r.stage_quality_score)}` : null);
-        const themePts   = getV42Pts(r, 'theme_alignment_points', 'theme_alignment');
+        const comps      = v42?.components ?? {};
+        const themePts   = comps.theme?.points ?? getV42Pts(r, 'theme_alignment_points', 'theme_alignment');
         const themeName  = r.canonical_theme_name ?? r.leadership_theme ?? (typeof r.theme === 'string' ? r.theme : (r.theme?.name ?? null));
-        const optsPts    = getV42Pts(r, 'options_alignment_points', 'options_alignment');
-        const entryPts   = getV42Pts(r, 'entry_exit_points', 'entry_exit') ?? getV42Pts(r, 'entry_risk_reward_points', 'entry');
-        const entryStatus= r.entry_exit_status ?? r.entry?.state ?? null;
-        const catPts     = getV42Pts(r, 'catalyst_alignment_points', 'catalyst_alignment');
+        const stagePts   = comps.technical_setup?.points ?? getV42Pts(r, 'technical_setup_points', 'technical_setup') ?? comps.stage?.points ?? getV42Pts(r, 'stage_quality_points', 'stage_quality');
+        const stageMax   = comps.technical_setup?.points != null ? 8 : (comps.stage?.points != null ? 15 : 8);
+        const stageLabel = comps.technical_setup?.label ?? r.technical_setup_label ?? (r.stage_quality_score != null ? `Score ${Math.round(r.stage_quality_score)}` : null);
+        const entryPts   = comps.entry_exit?.points ?? getV42Pts(r, 'entry_exit_points', 'entry_exit') ?? getV42Pts(r, 'entry_risk_reward_points', 'entry');
+        const entryStatus= comps.entry_exit?.reason_codes?.[0] ?? r.entry_exit_status ?? r.entry?.state ?? null;
+        const catPts     = comps.catalyst?.points ?? getV42Pts(r, 'catalyst_alignment_points', 'catalyst_alignment');
         const catType    = r.direct_catalyst_type ?? (r.direct_catalyst_present ? 'Present' : null);
         const catLkgSrc  = r.catalyst_lkg_source ?? null;
         const catWarming = catLkgSrc === 'unavailable_cold_start';
-        const invPts     = getV42Pts(r, 'investment_alignment_points', 'investment_alignment');
-        const invLabel   = r.investment_quality_label ?? null;
-        const invPillars = r.investment_pillar_count ?? null;
-        const ccsClr     = ccs != null ? ccsColor(ccs) : CC.dim;
+        const invPts     = comps.investment?.points ?? getV42Pts(r, 'investment_alignment_points', 'investment_alignment');
+        const invLabel   = comps.investment?.quality_label ?? r.investment_quality_label ?? null;
+        const invPillars = comps.investment?.pillar_count ?? r.investment_pillar_count ?? null;
+        const ccsClr     = v42 ? ccsColor(v42.score.core) : (ccs != null ? ccsColor(ccs) : CC.dim);
 
-        const coreStr  = core  != null ? `Core: ${Number(core).toFixed(1)} / 100`  : '';
-        const bonusStr = bonus != null ? `Bonus: ${Number(bonus).toFixed(1)} / 25` : '';
-        const ccsTooltip = [coreStr, bonusStr].filter(Boolean).join('\n') || `max ${maxScr}`;
+        const ccsTooltip = v42
+          ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}`
+          : `max ${maxScr}`;
 
         return (
           <div
@@ -941,19 +1034,28 @@ function V42ScreenerTable({
               {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 100 }}>{company}</div>}
             </div>
 
-            {/* Confluence */}
+            {/* Confluence — Core/100 + Bonus, not Total/125 */}
             <div title={ccsTooltip} style={{ cursor: 'help' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs != null ? ccs.toFixed(1) : '—'}</div>
-              <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
+              {v42
+                ? <>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{v42.score.core.toFixed(1)}</div>
+                    <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/100 · <span style={{ color: v42.score.bonus > 0 ? CC.purple : CC.dim }}>+{v42.score.bonus.toFixed(1)}</span></div>
+                  </>
+                : ccs != null
+                  ? <>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs.toFixed(1)}</div>
+                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
+                    </>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
 
-            {/* Decision — from backend, not derived */}
-            <DecisionBadge state={decision} />
+            {/* Decision — label_display from backend */}
+            <DecisionBadge state={v42?.action.label ?? r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null} display={v42?.action.label_display} />
 
             {/* Setup */}
             <div>
               {stagePts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(stagePts, 8), fontFamily: CC.font }}>{stagePts.toFixed(1)} / 8</div>
+                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(stagePts, stageMax), fontFamily: CC.font }}>{stagePts.toFixed(1)} / {stageMax}</div>
                     {stageLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{stageLabel}</div>}</>
                 : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
@@ -1633,30 +1735,31 @@ export function CaelynRowBreakdown({ stock }: { stock: any }) {
 /* ─── V4.2.1 Detail Drawer ────────────────────────────────────────── */
 
 function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
-  const ticker    = fmtTicker(row);
-  const company   = fmtCompany(row);
-  const ccs       = row.caelyn_confluence_score != null ? Number(row.caelyn_confluence_score) : null;
-  const core      = row.caelyn_confluence_core_score ?? row.caelyn_confluence_v42_core_score ?? null;
-  const bonus     = row.caelyn_confluence_bonus_score ?? row.caelyn_confluence_v42_bonus_score ?? null;
-  const maxScr    = row.caelyn_confluence_v42_max_score ?? 125;
-  const conf      = row.caelyn_confluence_confidence_score ?? row.caelyn_confluence_v42_confidence_score ?? null;
-  const decision  = row.actionability_state ?? row.caelyn_confluence_v42_actionability ?? null;
-  const bucket    = row.caelyn_confluence_bucket ?? null;
+  const ticker  = fmtTicker(row);
+  const company = fmtCompany(row);
 
-  const themePts  = getV42Pts(row, 'theme_alignment_points', 'theme_alignment');
-  const stagePts  = getV42Pts(row, 'technical_setup_points', 'technical_setup') ?? getV42Pts(row, 'stage_quality_points', 'stage_quality');
-  const optsPts   = getV42Pts(row, 'options_alignment_points', 'options_alignment');
-  const entryPts  = getV42Pts(row, 'entry_exit_points', 'entry_exit') ?? getV42Pts(row, 'entry_risk_reward_points', 'entry');
-  const catPts    = getV42Pts(row, 'catalyst_alignment_points', 'catalyst_alignment');
-  const invPts    = getV42Pts(row, 'investment_alignment_points', 'investment_alignment');
-  const socialPts = row.social_bonus_points != null ? Number(row.social_bonus_points) : null;
-  const whalePts  = row.whale_insider_bonus_points != null ? Number(row.whale_insider_bonus_points)
-    : (row.caelyn_confluence_v42_bonus_breakdown?.whale_insider?.points != null ? Number(row.caelyn_confluence_v42_bonus_breakdown.whale_insider.points) : null);
-  const botlPts   = row.bottleneck_bonus_points != null ? Number(row.bottleneck_bonus_points) : null;
-  const whaleSt   = row.whale_insider_status ?? row.caelyn_confluence_v42_bonus_breakdown?.whale_insider?.status ?? null;
-  const whaleActive = whaleSt !== 'not_wired';
+  const [alphaData, setAlphaData] = useState<any | null>(null);
+  const [alphaLoading, setAlphaLoading] = useState(false);
+  const [showDebug, setShowDebug]       = useState(false);
 
-  const [showDebug, setShowDebug] = useState(false);
+  useEffect(() => {
+    if (!ticker) return;
+    setAlphaLoading(true);
+    fetch(`/api/alpha/confluence/${encodeURIComponent(ticker)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setAlphaData(d ?? null); setAlphaLoading(false); })
+      .catch(() => setAlphaLoading(false));
+  }, [ticker]);
+
+  const v42  = (alphaData?.confluence_v42 ?? readV42(row)) as V42Shape | null;
+  const sc   = v42?.score;
+  const act  = v42?.action;
+  const comps= v42?.components ?? {};
+  const bon  = v42?.bonuses;
+  const risk = v42?.risk;
+  const meta = v42?.metadata;
+  const tech = (alphaData?.confluence_v42?.technical ?? v42?.technical) as V42Technical | undefined;
+  const ccs  = row.caelyn_confluence_score != null ? Number(row.caelyn_confluence_score) : sc?.total ?? null;
 
   const sec:  React.CSSProperties = { marginBottom: 16 };
   const lbl_: React.CSSProperties = { fontSize: 7, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font, marginBottom: 6, display: 'block' };
@@ -1668,14 +1771,14 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
     if (v == null || v === '') return null;
     return <div style={rr}><span style={kk}>{k}</span><span style={{ ...vv, color: clr ?? CC.text }}>{String(v)}</span></div>;
   }
-
-  function PR({ k, pts, max, clr }: { k: string; pts: number | null; max: number; clr?: string }) {
+  function PR({ k, pts, max, raw, clr }: { k: string; pts: number | null; max: number; raw?: number | null; clr?: string }) {
     if (pts == null) return null;
     const c = clr ?? ptsColor(pts, max);
     return (
       <div style={rr}>
         <span style={kk}>{k}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {raw != null && <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>qual {Math.round(raw)}</span>}
           <MiniBar value={(pts / max) * 100} color={c} />
           <span style={{ ...vv, color: c, width: 64, textAlign: 'right' as const }}>{pts.toFixed(1)} / {max}</span>
         </div>
@@ -1686,7 +1789,7 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9998 }} />
-      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 380, zIndex: 9999, background: '#0d0d12', borderLeft: `1px solid ${CC.border}`, display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const }}>
+      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 400, zIndex: 9999, background: '#0d0d12', borderLeft: `1px solid ${CC.border}`, display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const }}>
 
         {/* Header */}
         <div style={{ padding: '14px 16px', borderBottom: `1px solid ${CC.border}`, position: 'sticky', top: 0, background: '#0d0d12', zIndex: 1 }}>
@@ -1697,11 +1800,25 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
             </div>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: CC.dim, fontSize: 20, cursor: 'pointer', padding: '0 4px', fontFamily: CC.font, lineHeight: 1 }}>×</button>
           </div>
-          {ccs != null && (
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' as const }}>
+          {sc != null && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' as const }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: ccsColor(sc.core), fontFamily: CC.font }}>{sc.core.toFixed(1)}</span>
+                <span style={{ fontSize: 10, color: CC.dim, fontFamily: CC.font }}>/100</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: CC.purple, fontFamily: CC.font }}>+{sc.bonus.toFixed(1)}</span>
+                <span style={{ fontSize: 9, color: CC.dim, fontFamily: CC.font }}>bonus</span>
+                {act && <DecisionBadge state={act.label} display={act.label_display} />}
+              </div>
+              <div style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, marginTop: 2 }}>
+                Total {sc.total.toFixed(1)} · Core max 100 · Bonus max 25
+                {alphaLoading && <span style={{ marginLeft: 8, color: CC.amber }}>loading…</span>}
+              </div>
+            </div>
+          )}
+          {sc == null && ccs != null && (
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontSize: 22, fontWeight: 900, color: ccsColor(ccs), fontFamily: CC.font }}>{ccs.toFixed(1)}</span>
-              <span style={{ fontSize: 10, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</span>
-              {decision && <DecisionBadge state={decision} />}
+              {alphaLoading && <span style={{ fontSize: 9, color: CC.amber, fontFamily: CC.font }}>loading…</span>}
             </div>
           )}
         </div>
@@ -1709,89 +1826,171 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
         {/* Body */}
         <div style={{ padding: '14px 16px', flex: 1 }}>
 
-          {/* Score Breakdown */}
-          <div style={sec}>
-            <span style={lbl_}>Score Breakdown</span>
-            <PR k="Core Score"  pts={core  != null ? Number(core)  : null} max={100} />
-            <PR k="Bonus Score" pts={bonus != null ? Number(bonus) : null} max={25}  />
-            <DR k="Max Score"   v={maxScr} />
-            {conf != null && <DR k="Confidence" v={`${Number(conf).toFixed(0)}%`} clr={Number(conf) >= 80 ? CC.green : Number(conf) >= 50 ? CC.amber : CC.red} />}
-            {bucket && <DR k="Bucket" v={BUCKET_LABELS[bucket]?.label ?? bucket} clr={BUCKET_LABELS[bucket]?.clr} />}
-          </div>
-
-          {/* Component Points */}
-          <div style={sec}>
-            <span style={lbl_}>Components</span>
-            <PR k="Theme Alignment"      pts={themePts} max={15} />
-            <PR k="Technical Setup"      pts={stagePts} max={8}  />
-            <PR k="Options Alignment"    pts={optsPts}  max={20} />
-            <PR k="Entry / Exit"         pts={entryPts} max={12} />
-            <PR k="Catalyst Alignment"   pts={catPts}   max={15} />
-            <PR k="Investment Alignment" pts={invPts}   max={15} />
-            {socialPts != null && <PR k="Social Bonus"       pts={socialPts}            max={10} clr={CC.purple} />}
-            {whaleActive && whalePts != null && <PR k="Whale/Insider Bonus" pts={Number(whalePts)} max={10} clr={CC.blue} />}
-            {!whaleActive && <DR k="Whale/Insider" v="not wired yet" clr={CC.dim} />}
-            {botlPts != null && <PR k="Bottleneck Bonus"     pts={botlPts}              max={5}  clr={CC.orange} />}
-          </div>
-
-          {/* Investment Details */}
-          {(row.investment_quality_label || row.investment_pillar_count != null || row.financial_health_strong != null) && (
+          {/* Action: bucket + why_now / why_wait */}
+          {act && (
             <div style={sec}>
-              <span style={lbl_}>Investment Details</span>
-              <DR k="Label"   v={row.investment_quality_label} />
-              {row.investment_pillar_count != null && <DR k="Pillars" v={`${row.investment_pillar_count} / 3`} clr={row.investment_pillar_count >= 2 ? CC.green : row.investment_pillar_count >= 1 ? CC.amber : CC.dim} />}
-              <DR k="Financial Health" v={row.financial_health_strong === true ? '✓ Strong' : row.financial_health_strong === false ? '✗ Not strong' : null} clr={row.financial_health_strong === true ? CC.green : CC.dim} />
-              <DR k="Current Growth"  v={row.current_growth_strong  === true ? '✓ Strong' : row.current_growth_strong  === false ? '✗ Not strong' : null} clr={row.current_growth_strong  === true ? CC.green : CC.dim} />
-              <DR k="Forward Growth"  v={row.forward_growth_strong  === true ? '✓ Strong' : row.forward_growth_strong  === false ? '✗ Not strong' : null} clr={row.forward_growth_strong  === true ? CC.green : CC.dim} />
-              <DR k="is_investment_quality" v={row.is_investment_quality === true ? '✓ Yes' : '✗ No'} clr={row.is_investment_quality ? CC.green : CC.dim} />
+              <span style={lbl_}>Action</span>
+              <DR k="Decision"   v={act.label_display}   clr={DECISION_BADGE[act.label]?.clr} />
+              <DR k="Bucket"     v={act.bucket?.replace(/_/g, ' ')} />
+              {act.invalidation_level != null && <DR k="Invalidation" v={`$${Number(act.invalidation_level).toFixed(2)}`} clr={CC.red} />}
+              {act.target_zone?.target_1 && <DR k="Target 1"    v={`$${Number(act.target_zone.target_1).toFixed(2)}`} clr={CC.green} />}
+              {act.target_zone?.target_2 && <DR k="Target 2"    v={`$${Number(act.target_zone.target_2).toFixed(2)}`} clr={CC.teal} />}
+              {act.target_zone?.risk_reward_ratio != null && <DR k="Risk/Reward" v={`${Number(act.target_zone.risk_reward_ratio).toFixed(1)}x`} />}
+              {act.why_now?.length > 0 && (
+                <div style={{ marginTop: 6 }}>
+                  <span style={{ fontSize: 7, color: CC.green, fontFamily: CC.font, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>Why Now</span>
+                  {act.why_now.map((b: string, i: number) => (
+                    <div key={i} style={{ fontSize: 8, color: CC.text, fontFamily: CC.font, paddingLeft: 8, paddingTop: 2, lineHeight: 1.4 }}>· {b}</div>
+                  ))}
+                </div>
+              )}
+              {act.why_wait?.length > 0 && (
+                <div style={{ marginTop: 6 }}>
+                  <span style={{ fontSize: 7, color: CC.amber, fontFamily: CC.font, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>Why Wait</span>
+                  {act.why_wait.map((b: string, i: number) => (
+                    <div key={i} style={{ fontSize: 8, color: CC.dim, fontFamily: CC.font, paddingLeft: 8, paddingTop: 2, lineHeight: 1.4 }}>· {b}</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Options Details */}
+          {/* Risk Flags — true risk warnings */}
+          {risk?.risk_flags?.length > 0 && (
+            <div style={sec}>
+              <span style={lbl_}>⚠ Risk Flags</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
+                {risk.risk_flags.map((f: string, i: number) => (
+                  <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: CC.red, fontFamily: CC.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Data Coverage — neutral, not bearish */}
+          {meta?.data_status_flags?.length > 0 && (
+            <div style={sec}>
+              <span style={lbl_}>Data Coverage</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
+                {meta.data_status_flags.map((f: string, i: number) => (
+                  <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: CC.dim, fontFamily: CC.font }}>{f.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+              <div style={{ fontSize: 7, color: 'rgba(169,170,166,0.5)', fontFamily: CC.font, marginTop: 4 }}>Coverage gaps — not bearish signals</div>
+            </div>
+          )}
+
+          {/* Score Breakdown */}
+          {sc && (
+            <div style={sec}>
+              <span style={lbl_}>Score Breakdown</span>
+              <PR k="Core Score"  pts={sc.core}  max={sc.core_max ?? 100} />
+              <PR k="Bonus Score" pts={sc.bonus} max={sc.bonus_max ?? 25} clr={CC.purple} />
+              {meta?.confidence_score != null && meta.confidence_score > 0 && (
+                <DR k="Confidence" v={`${meta.confidence_score.toFixed(0)}%`}
+                   clr={meta.confidence_score >= 80 ? CC.green : meta.confidence_score >= 50 ? CC.amber : CC.red} />
+              )}
+            </div>
+          )}
+
+          {/* Components — raw_score (quality) + points (contribution) */}
+          {Object.keys(comps).length > 0 && (
+            <div style={sec}>
+              <span style={lbl_}>Components</span>
+              {([
+                ['theme',          'Theme',           15],
+                ['stage',          'Stage',           15],
+                ['technical_setup','Technical Setup',  8],
+                ['options',        'Options',         20],
+                ['entry_exit',     'Entry / Exit',    12],
+                ['catalyst',       'Catalyst',        15],
+                ['investment',     'Investment',      15],
+              ] as [string, string, number][]).map(([key, label, defMax]) => {
+                const c = comps[key];
+                if (!c) return null;
+                const pts = c.points;
+                const max = c.max_points ?? defMax;
+                const raw = c.raw_score;
+                if (pts == null) return null;
+                const subLabel = c.label ?? c.quality_label ?? (c.pillar_count != null ? `${c.pillar_count}/3 pillars` : null);
+                return (
+                  <div key={key}>
+                    <PR k={label} pts={pts} max={max} raw={raw} />
+                    {subLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, paddingLeft: 8, paddingBottom: 2 }}>{subLabel}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Bonuses */}
+          {bon && (
+            <div style={sec}>
+              <span style={lbl_}>Bonuses</span>
+              <PR k="Social"     pts={bon.social.points}     max={15} clr={CC.purple} />
+              {bon.social.sections_hit > 0 && <DR k="Social sections" v={`${bon.social.sections_hit} hit`} />}
+              <div style={rr}><span style={kk}>Whale / Insider</span><span style={{ ...vv, color: CC.dim }}>not wired yet</span></div>
+              <PR k="Bottleneck" pts={bon.bottleneck.points} max={5}  clr={CC.orange} />
+              {bon.bottleneck.anchor_count > 0 && <DR k="Bottleneck anchors" v={`${bon.bottleneck.anchor_count}`} />}
+            </div>
+          )}
+
+          {/* Technical */}
+          {tech && (
+            <div style={sec}>
+              <span style={lbl_}>Technical</span>
+              <DR k="Stage"          v={tech.stage_label?.replace(/_/g, ' ')}           clr={CC.teal} />
+              <DR k="Stage Score"    v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
+              <DR k="Setup"          v={tech.technical_setup_label}                      clr={CC.teal} />
+              <DR k="Entry State"    v={tech.entry_state?.replace(/_/g, ' ')} />
+              <DR k="Entry Score"    v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
+              <DR k="Extension"      v={tech.extension_state?.replace(/_/g, ' ')} clr={tech.extension_state?.includes('EXTREME') || tech.extension_state?.includes('CHASE') ? CC.red : tech.extension_state?.includes('MODERATE') ? CC.amber : CC.dim} />
+              <DR k="Nearest Fib"    v={tech.nearest_fib_label} />
+              <DR k="Distance Fib"   v={tech.distance_to_fib_pct != null ? `${Number(tech.distance_to_fib_pct).toFixed(1)}%` : null} />
+              {tech.fib_wave_status && (
+                <DR k="Fib/Wave Status" v={tech.fib_wave_status === 'pending_10y_backfill' ? 'Pending 10Y backfill' : tech.fib_wave_status.replace(/_/g, ' ')}
+                   clr={tech.fib_wave_status === 'pending_10y_backfill' ? CC.amber : CC.dim} />
+              )}
+              <DR k="Wave Structure" v={tech.wave_structure?.replace(/_/g, ' ')} />
+              <DR k="Wave Score"     v={tech.wave_score != null ? `${Math.round(tech.wave_score)}` : null} />
+            </div>
+          )}
+
+          {/* Options & Catalyst details from row */}
           {(row.options_status || row.options_snapshot_status) && (
             <div style={sec}>
-              <span style={lbl_}>Options Details</span>
-              <DR k="Status"           v={row.options_status ?? row.options_snapshot_status} />
-              <DR k="Classification"   v={row.options_symbol_classification} />
-              <DR k="Queue Status"     v={row.options_scanner_queue_status} />
-              <DR k="Not Scanned Reason" v={row.options_not_scanned_reason} />
+              <span style={lbl_}>Options Coverage</span>
+              <DR k="Status"            v={row.options_status ?? row.options_snapshot_status} />
+              <DR k="Classification"    v={row.options_symbol_classification} />
+              <DR k="Queue Status"      v={row.options_scanner_queue_status} />
               <DR k="Backfill Priority" v={row.options_backfill_priority} />
-              <DR k="Scope Reason"     v={row.options_scanner_scope_reason} />
             </div>
           )}
-
-          {/* Catalyst Details */}
-          {(row.direct_catalyst_present != null || row.catalyst_status || row.catalyst_lkg_source) && (
+          {(row.direct_catalyst_present != null || row.catalyst_status) && (
             <div style={sec}>
-              <span style={lbl_}>Catalyst Details</span>
+              <span style={lbl_}>Catalyst</span>
               <DR k="Status"          v={row.catalyst_status} />
               <DR k="Direct Catalyst" v={row.direct_catalyst_present === true ? '✓ Present' : row.direct_catalyst_present === false ? 'None' : null} clr={row.direct_catalyst_present ? CC.green : CC.dim} />
               <DR k="Type"            v={row.direct_catalyst_type} />
-              <DR k="Polarity"        v={row.direct_catalyst_polarity} />
               <DR k="LKG Source"      v={row.catalyst_lkg_source} clr={row.catalyst_lkg_source === 'unavailable_cold_start' ? CC.amber : undefined} />
             </div>
           )}
 
-          {/* Debug — collapsed by default */}
+          {/* Debug */}
           <div style={sec}>
-            <button
-              onClick={() => setShowDebug(v => !v)}
-              style={{ background: 'none', border: `1px solid ${CC.border}`, borderRadius: 4, color: CC.dim, fontSize: 7, padding: '3px 8px', cursor: 'pointer', fontFamily: CC.font, letterSpacing: '0.05em' }}
-            >
+            <button onClick={() => setShowDebug(v => !v)}
+              style={{ background: 'none', border: `1px solid ${CC.border}`, borderRadius: 4, color: CC.dim, fontSize: 7, padding: '3px 8px', cursor: 'pointer', fontFamily: CC.font, letterSpacing: '0.05em' }}>
               {showDebug ? '▲ HIDE DEBUG' : '▼ DEBUG'}
             </button>
             {showDebug && (
               <div style={{ marginTop: 8 }}>
-                <DR k="Legacy Trade Alignment"  v={row.legacy_trade_alignment_score ?? row.trade_alignment_score}  clr={CC.dim} />
-                <DR k="Legacy Actionability"    v={row.legacy_actionability_state}   clr={CC.dim} />
-                <DR k="V4.2.1 Score"            v={row.caelyn_confluence_v42_score}  clr={CC.dim} />
-                <DR k="V4.0 Score"              v={row.caelyn_confluence_v4_score}   clr={CC.dim} />
-                <DR k="Raw Score"               v={row.caelyn_confluence_raw_score}  clr={CC.dim} />
-                <DR k="Normalized Score"        v={row.caelyn_confluence_normalized_score} clr={CC.dim} />
-                {Array.isArray(row.caelyn_confluence_reason_codes) && row.caelyn_confluence_reason_codes.length > 0 && (
+                <DR k="Alpha v42 loaded" v={alphaData?.confluence_v42 ? '✓ Yes' : alphaLoading ? 'Loading…' : '✗ Not loaded'} />
+                <DR k="V4.2 Score"       v={row.caelyn_confluence_v42_score}  clr={CC.dim} />
+                <DR k="Normalized Score" v={row.caelyn_confluence_normalized_score} clr={CC.dim} />
+                {Array.isArray(meta?.reason_codes) && meta.reason_codes.length > 0 && (
                   <div style={{ marginTop: 6 }}>
-                    <span style={{ ...kk, display: 'block', marginBottom: 3 }}>Reason Codes ({row.caelyn_confluence_reason_codes.length}):</span>
-                    {row.caelyn_confluence_reason_codes.slice(0, 15).map((rc: string, i: number) => (
+                    <span style={{ ...kk, display: 'block', marginBottom: 3 }}>Reason Codes ({meta.reason_codes.length}):</span>
+                    {meta.reason_codes.slice(0, 20).map((rc: string, i: number) => (
                       <div key={i} style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, paddingLeft: 8 }}>· {rc}</div>
                     ))}
                   </div>
@@ -1940,11 +2139,11 @@ export function CaelynConfluenceSection({
           </div>
           <div style={{ padding: '12px 14px', maxHeight: 480, overflowY: 'auto' as const }}>
             {tab === 'all'               && <V42ScreenerTable rows={analyzedRows}                                                    onTickerClick={onTickerClick} />}
-            {tab === 'actionable'        && <V42ScreenerTable rows={analyzedRows.filter((r: any) => r.is_actionable_setup === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_actionable_setup = true." />}
-            {tab === 'near_actionable'   && <V42ScreenerTable rows={analyzedRows.filter((r: any) => r.is_near_actionable === true)}  onTickerClick={onTickerClick} emptyMsg="No rows with is_near_actionable = true." />}
-            {tab === 'watch_reset'       && <V42ScreenerTable rows={analyzedRows.filter((r: any) => r.is_watch_for_reset === true)}  onTickerClick={onTickerClick} emptyMsg="No rows with is_watch_for_reset = true." />}
-            {tab === 'risk_conflict'     && <V42ScreenerTable rows={analyzedRows.filter((r: any) => r.is_risk_conflict === true)}    onTickerClick={onTickerClick} emptyMsg="No rows with is_risk_conflict = true." />}
-            {tab === 'investment_quality'&& <V42ScreenerTable rows={analyzedRows.filter((r: any) => r.is_investment_quality === true)}onTickerClick={onTickerClick} emptyMsg="No rows with is_investment_quality = true." />}
+            {tab === 'actionable'        && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_actionable_setup   ?? r.is_actionable_setup)   === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_actionable_setup = true." />}
+            {tab === 'near_actionable'   && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_near_actionable    ?? r.is_near_actionable)    === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_near_actionable = true." />}
+            {tab === 'watch_reset'       && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_watch_for_reset     ?? r.is_watch_for_reset)     === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_watch_for_reset = true." />}
+            {tab === 'risk_conflict'     && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_risk_conflict        ?? r.is_risk_conflict)        === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_risk_conflict = true." />}
+            {tab === 'investment_quality'&& <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_investment_quality   ?? r.is_investment_quality)   === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_investment_quality = true." />}
           </div>
         </>
       )}

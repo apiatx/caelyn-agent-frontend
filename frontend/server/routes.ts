@@ -5937,6 +5937,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /* ── Alpha Confluence — single symbol detail (full confluence_v42) ── */
+  app.get('/api/alpha/confluence/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15_000);
+      const r = await fetch(`${AGENT_URL}/api/alpha/confluence/${encodeURIComponent(symbol)}`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `alpha/confluence/${symbol} failed` });
+      res.json(await r.json());
+    } catch (e: any) {
+      console.error('[alpha/confluence/:symbol] error:', e.message);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/strategy/smart-options', async (req, res) => {
     try {
       const ctrl = new AbortController();

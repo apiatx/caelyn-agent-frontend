@@ -1,0 +1,551 @@
+FRONTEND ONLY — ALIGN CONFLUENCE UI TO BACKEND confluence_v42 CONTRACT
+
+Frontend repo only.
+
+Do not change backend.
+Do not invent fields.
+Do not compute Confluence logic in frontend.
+Do not use legacy Trade Alignment fields.
+Do not use deprecated flat fields unless explicitly listed as fallback.
+Do not touch provider logic.
+Do not touch backend API routes.
+
+Goal:
+
+Backend now exposes a normalized confluence_v42 object on Confluence rows. Frontend must migrate to this object and stop using legacy Trade Alignment / old Confluence fields.
+
+Use only the backend contract described below.
+
+==================================================
+PART 1 — FIND EXISTING CONFLUENCE / TRADE ALIGNMENT UI
+==================================================
+
+Search frontend for:
+
+confluence
+tradeAlignment
+trade_alignment
+trade alignment
+caelyn_confluence
+caelynConfluence
+actionability
+action_label
+bucket
+score
+confluence_verdict
+confluence_grade
+signal_breakdown
+risk_flags
+
+Return every file/component that currently displays or consumes these fields.
+
+For each return:
+
+file
+component
+endpoint used
+fields consumed
+legacy fields used
+current display behavior
+recommended change
+
+Do not edit yet until audit is complete.
+
+==================================================
+PART 2 — ENDPOINTS TO USE
+==================================================
+
+Use backend endpoints exactly as follows:
+
+Watchlist page:
+GET /api/watchlist/{watchlist_id}/alignment
+
+Discovery / all-symbols Confluence view:
+GET /api/alpha/confluence
+
+Single-symbol panel/modal:
+GET /api/alpha/confluence/{symbol}
+
+Do not use:
+/api/watchlist/{watchlist_id}/confluence/v4-report
+/debug endpoints
+legacy Trade Alignment endpoints
+
+Do not expose any API key in the browser. Backend report says /api/alpha/confluence is public/no X-API-Key required.
+
+==================================================
+PART 3 — PRIMARY FRONTEND CONTRACT
+==================================================
+
+For each row, use:
+
+row.confluence_v42
+
+Primary score:
+
+confluence_v42.score.total
+confluence_v42.score.core
+confluence_v42.score.bonus
+confluence_v42.score.core_max
+confluence_v42.score.bonus_max
+confluence_v42.score.total_max
+confluence_v42.score.display_mode
+confluence_v42.score.percent_of_total_max
+
+Display rule:
+
+Main score should emphasize:
+
+Core / 100
+Bonus +X / 25
+
+Do NOT make /125 the main visual denominator.
+
+Good display examples:
+
+Score: 72.6
+Core: 69.5 / 100
+Bonus: +3.1 / 25
+
+or:
+
+72.6 total
+Core 69.5/100 · Bonus +3.1
+
+The total max is 125, but do not visually make 72.6/125 look like a weak 58% score.
+
+==================================================
+PART 4 — ACTION DISPLAY
+==================================================
+
+Use:
+
+confluence_v42.action.label
+confluence_v42.action.label_display
+confluence_v42.action.bucket
+
+Primary action label:
+
+confluence_v42.action.label_display
+
+Examples:
+
+READY → Ready to Enter
+NEAR_ACTIONABLE → Near Entry
+WAIT_FOR_BREAKOUT → Wait for Breakout
+WAIT_FOR_RETEST → Wait for Retest
+WATCH_FOR_RESET → Watch for Reset
+WATCH → Watch
+AVOID → Avoid
+INSUFFICIENT_DATA → Insufficient Data
+
+Display bucket as a secondary badge/category, not the primary decision.
+
+Important:
+
+action.label = what to do now
+action.bucket = why/what type of setup category
+
+Do not use:
+
+actionability_state
+legacy_actionability_state
+confluence_verdict
+confluence_grade
+
+==================================================
+PART 5 — BOOLEAN FILTERS
+==================================================
+
+Use:
+
+confluence_v42.booleans.is_actionable_setup
+confluence_v42.booleans.is_near_actionable
+confluence_v42.booleans.is_watch_for_reset
+confluence_v42.booleans.is_risk_conflict
+confluence_v42.booleans.is_investment_quality
+
+These were fixed backend-side.
+
+Do not use old flat is_watch_for_reset unless using it only as a fallback and it matches confluence_v42.booleans.
+
+Preferred:
+
+row.confluence_v42.booleans.is_watch_for_reset
+
+==================================================
+PART 6 — COMPONENT BREAKDOWN
+==================================================
+
+Use:
+
+confluence_v42.components.theme
+confluence_v42.components.stage
+confluence_v42.components.options
+confluence_v42.components.technical_setup
+confluence_v42.components.entry_exit
+confluence_v42.components.catalyst
+confluence_v42.components.investment
+
+Each component has:
+
+raw_score
+points
+max_points
+available
+status
+reason_codes
+
+Display both concepts clearly:
+
+raw_score = signal quality, usually 0–100
+points = actual contribution to Confluence score
+max_points = max contribution
+
+Example:
+
+Theme
+Quality: 49.5 / 100
+Contribution: 7.42 / 15
+
+Do not confuse raw_score with points.
+
+==================================================
+PART 7 — BONUSES
+==================================================
+
+Use:
+
+confluence_v42.bonuses.social
+confluence_v42.bonuses.whale_insider
+confluence_v42.bonuses.bottleneck
+
+Social:
+show points / 15 and sections hit.
+
+Whale/Insider:
+backend status is currently "not_wired".
+Do not show this as a bearish 0.
+Either hide it or show quietly as "Not wired" in a data coverage section.
+
+Bottleneck:
+show points / 5 and anchor_count where available.
+
+==================================================
+PART 8 — RISK FLAGS VS DATA STATUS FLAGS
+==================================================
+
+True risk flags:
+
+confluence_v42.risk.risk_flags
+
+These can be shown as risk warnings.
+
+Examples:
+EXTREME_EXTENSION
+CHASE_EXTENSION
+MAJOR_LOWER_LOW_CONFIRMED
+LOWER_LOW_CONFIRMED
+RISK_CONFLICT
+AVOID_SIGNAL
+NO_CLEAR_ENTRY
+
+Data / coverage / pending flags:
+
+confluence_v42.metadata.data_status_flags
+
+These are NOT bearish by default.
+
+Examples:
+FIB_PENDING
+OPTIONS_UNAVAILABLE
+CATALYST_UNAVAILABLE
+WHALE_INSIDER_NOT_WIRED
+
+Display data_status_flags separately as neutral coverage badges, not red risk warnings.
+
+Important:
+
+FIB_PENDING means waiting for 10Y backfill / Fib-Wave population.
+It does not mean the stock is technically bad.
+
+==================================================
+PART 9 — TECHNICAL / ENTRY DETAILS
+==================================================
+
+Use:
+
+confluence_v42.technical.stage_label
+confluence_v42.technical.stage_score
+confluence_v42.technical.technical_setup_label
+confluence_v42.technical.entry_state
+confluence_v42.technical.entry_score
+confluence_v42.technical.extension_state
+confluence_v42.technical.extension_quality
+confluence_v42.technical.fib_context
+confluence_v42.technical.fib_timeframe
+confluence_v42.technical.nearest_fib_label
+confluence_v42.technical.nearest_fib_level
+confluence_v42.technical.distance_to_fib_pct
+confluence_v42.technical.fib_confidence
+confluence_v42.technical.fib_wave_status
+confluence_v42.technical.wave_structure
+confluence_v42.technical.wave_score
+
+If fib_wave_status = "pending_10y_backfill":
+
+Show neutral pending state.
+Do not show as bearish.
+Do not hide the whole technical section.
+
+==================================================
+PART 10 — WHY NOW / WHY WAIT
+==================================================
+
+Use:
+
+confluence_v42.action.why_now
+confluence_v42.action.why_wait
+
+Display as short explanation bullets.
+
+Keep them compact.
+
+If empty, do not render an empty section.
+
+==================================================
+PART 11 — INVALIDATION / TARGETS
+==================================================
+
+Use:
+
+confluence_v42.action.invalidation_level
+confluence_v42.action.target_zone
+
+target_zone may be null.
+
+If present, it may include:
+
+target_1
+target_2
+breakout_trigger
+risk_reward_ratio
+
+Do not inspect nested backend component internals for these unless needed as fallback.
+
+==================================================
+PART 12 — FIELDS TO IGNORE
+==================================================
+
+Do not use these for new UI:
+
+caelyn_confluence_v4_*
+trade_alignment_score
+legacy_trade_alignment_score
+legacy_trade_alignment_archetype
+legacy_actionability_state
+social_bonus_score
+base_trade_alignment_score
+confluence_verdict
+confluence_grade
+signal_breakdown
+prediction_market_bonus_points
+theme_policy_bonus_points
+bare actionability_state
+
+Only use flat fields as fallback when confluence_v42 is missing.
+
+==================================================
+PART 13 — UI PLACEMENT
+==================================================
+
+Update existing Confluence / Trade Alignment displays to use confluence_v42.
+
+Recommended row/card structure:
+
+1. Score block
+   - total score
+   - core /100
+   - bonus +X /25
+
+2. Primary action badge
+   - action.label_display
+
+3. Secondary setup badge
+   - action.bucket
+
+4. Component mini-breakdown
+   - Theme
+   - Stage
+   - Options
+   - Technical
+   - Entry
+   - Catalyst
+   - Investment
+
+5. Risk badges
+   - true risk_flags only
+
+6. Data coverage badges
+   - data_status_flags, neutral style
+
+7. Technical detail drawer/modal
+   - stage/entry/extension/fib/wave/support/invalidation/targets
+
+8. Why now / why wait drawer
+   - short deterministic explanation bullets
+
+Do not overcrowd the main table. Put detail into tooltip/drawer/modal where needed.
+
+==================================================
+PART 14 — FALLBACK BEHAVIOR
+==================================================
+
+If confluence_v42 is missing:
+
+Show:
+"Confluence data unavailable"
+
+Do not fall back to legacy Trade Alignment as if it were equivalent.
+
+Acceptable temporary fallback:
+- caelyn_confluence_score for score only
+- caelyn_confluence_v42_actionability for action only
+
+But prefer hiding the Confluence block if confluence_v42 is absent.
+
+==================================================
+PART 15 — VALIDATION
+==================================================
+
+Use mocked API response or live backend response, but do not modify backend.
+
+Validate these symbols if present:
+
+ABCL
+ALGM
+VRT
+CRDO
+MARA
+OUST
+SOFI
+HOOD
+HIMS
+NVDA
+TSM
+
+Expected examples:
+
+ABCL:
+action.label_display = "Watch for Reset"
+booleans.is_watch_for_reset = true
+booleans.is_near_actionable = false
+risk_flags should include EXTREME_EXTENSION / CHASE_EXTENSION
+data_status_flags should include FIB_PENDING and WHALE_INSIDER_NOT_WIRED
+
+VRT:
+NEAR_ACTIONABLE / Near Entry
+risk_flags may be empty
+data_status_flags may include FIB_PENDING
+
+CRDO:
+May show action WATCH with bucket INVESTMENT_QUALITY
+Do not treat that as contradiction:
+action = what to do now
+bucket = setup/category
+
+TSM:
+Near Entry with social bonus
+
+MSFT:
+May be absent. If absent, show unavailable/not tracked, not error.
+
+Return:
+
+symbol
+confluence_v42_present
+score_display_correct
+action_display_correct
+bucket_display_correct
+risk_flags_displayed_as_risk
+data_status_flags_displayed_neutral
+legacy_fields_not_used
+plain_english_explanation
+
+==================================================
+PART 16 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND CONFLUENCE V4.2 ALIGNMENT REPORT
+
+FILES CHANGED:
+[list]
+
+OLD FIELD USAGE REMOVED:
+[summary]
+
+NEW confluence_v42 USAGE:
+[summary]
+
+SCORE DISPLAY:
+[summary]
+
+ACTION / BUCKET DISPLAY:
+[summary]
+
+COMPONENT BREAKDOWN:
+[summary]
+
+RISK VS DATA STATUS DISPLAY:
+[summary]
+
+TECHNICAL DETAIL DISPLAY:
+[summary]
+
+WHY_NOW / WHY_WAIT DISPLAY:
+[summary]
+
+FALLBACK BEHAVIOR:
+[summary]
+
+VALIDATION:
+[table]
+
+REMAINING FRONTEND GAPS:
+[list]
+
+End exactly:
+
+FRONTEND CONFLUENCE V4.2 VERDICT
+
+USES_CONFLUENCE_V42_OBJECT:
+[YES/NO]
+
+LEGACY_TRADE_ALIGNMENT_NOT_PRIMARY:
+[YES/NO]
+
+SCORE_DISPLAY_CORE_100_PLUS_BONUS_25:
+[YES/NO]
+
+ACTION_LABEL_DISPLAY_ALIGNED:
+[YES/NO]
+
+BUCKET_DISPLAY_SECONDARY:
+[YES/NO]
+
+TRUE_RISK_FLAGS_SEPARATED_FROM_DATA_STATUS:
+[YES/NO]
+
+FIB_PENDING_DISPLAYED_NEUTRAL:
+[YES/NO]
+
+WHY_NOW_WHY_WAIT_RENDERED:
+[YES/NO]
+
+NO_FRONTEND_SCORING_LOGIC_RECOMPUTED:
+[YES/NO]
+
+READY_FOR_POST_10Y_BACKFILL_CALIBRATION:
+[YES/NO]
