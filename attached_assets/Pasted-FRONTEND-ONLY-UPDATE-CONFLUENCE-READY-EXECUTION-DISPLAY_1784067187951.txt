@@ -1,0 +1,98 @@
+FRONTEND ONLY — UPDATE CONFLUENCE READY / EXECUTION DISPLAY
+
+Frontend repo only.
+
+Do not change backend.
+Do not recompute Confluence logic.
+Do not broaden Ready filters.
+Do not use legacy Trade Alignment fields.
+
+Backend added semantic precision fields to confluence_v42.
+
+Update frontend Confluence UI to consume:
+
+confluence_v42.action.execution_state
+confluence_v42.action.execution_label
+confluence_v42.risk.caution_flags
+confluence_v42.technical.entry_state_display
+
+Also support flat fallbacks:
+
+entry_execution_state
+entry_execution_label
+caution_flags
+entry_state_display
+
+Rules:
+
+1. Ready tab should continue filtering:
+confluence_v42.booleans.is_actionable_setup === true
+
+Do not include SET_ALERT_FOR_RETEST or WAIT_FOR_RETEST rows in Ready.
+
+2. In table/card rows, primary action remains:
+confluence_v42.action.label_display
+
+3. Add secondary timing label:
+confluence_v42.action.execution_label
+
+Examples:
+Ready at Entry
+Retest in Progress
+Breakout Trigger Ready
+Set Retest Alert
+Wait for Retest
+
+4. Render risk_flags as red warnings.
+
+5. Render caution_flags as amber cautions.
+
+Examples:
+EXTREME_EXTENSION_CONSTRUCTIVE_RESET should be amber, not red.
+
+6. Render data_status_flags as neutral coverage badges.
+
+Examples:
+FIB_PENDING
+WHALE_INSIDER_NOT_WIRED
+OPTIONS_UNAVAILABLE
+
+7. Technical detail drawer should prefer:
+confluence_v42.technical.entry_state_display
+
+over raw:
+confluence_v42.technical.entry_state
+
+So a support-entry row does not display “NO_CLEAR_ENTRY” when backend provides SUPPORT_ZONE_ENTRY.
+
+8. Validate:
+- Ready tab populates with about 49 rows.
+- SET_ALERT_FOR_RETEST rows do not appear in Ready.
+- WAIT_FOR_RETEST rows far from support do not appear in Ready.
+- EXTREME_EXTENSION_CONSTRUCTIVE_RESET appears amber, not red.
+- SHLS displays SUPPORT_ZONE_ENTRY, not NO_CLEAR_ENTRY.
+
+End with:
+
+FRONTEND READY EXECUTION DISPLAY VERDICT
+
+READY_FILTER_UNCHANGED:
+[YES/NO]
+
+EXECUTION_LABEL_RENDERED:
+[YES/NO]
+
+SET_ALERT_ROWS_EXCLUDED_FROM_READY:
+[YES/NO]
+
+CAUTION_FLAGS_RENDERED_AMBER:
+[YES/NO]
+
+DATA_STATUS_FLAGS_RENDERED_NEUTRAL:
+[YES/NO]
+
+ENTRY_STATE_DISPLAY_USED:
+[YES/NO]
+
+NO_FRONTEND_SCORING_LOGIC_RECOMPUTED:
+[YES/NO]

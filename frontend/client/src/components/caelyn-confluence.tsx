@@ -739,6 +739,8 @@ function readV42(row: any) {
     action: {
       label: actRaw, bucket: row.caelyn_confluence_bucket ?? actRaw,
       label_display: ACTION_LABEL_DISPLAY[actRaw] ?? actRaw.replace(/_/g, ' '),
+      execution_state: (row.entry_execution_state ?? null) as string | undefined,
+      execution_label: (row.entry_execution_label ?? null) as string | undefined,
       invalidation_level: null as number | null, target_zone: null,
       why_now: [] as string[], why_wait: [] as string[],
     },
@@ -767,21 +769,21 @@ function readV42(row: any) {
       confidence_score: Number(row.caelyn_confluence_confidence_score ?? row.caelyn_confluence_v42_confidence_score ?? 0),
       data_status_flags: [] as string[],
     },
-    risk:      { risk_flags: [] as string[] },
+    risk:      { risk_flags: [] as string[], caution_flags: (row.caution_flags ?? []) as string[] },
     technical: undefined as V42Technical | undefined,
   } satisfies V42Shape;
 }
 
 type V42Component = { raw_score: number | null; points: number | null; max_points: number; available: boolean; status: string; reason_codes: string[]; label?: string; quality_label?: string; pillar_count?: number };
-type V42Technical = { stage_label?: string; stage_score?: number; technical_setup_label?: string; entry_state?: string; entry_score?: number; extension_state?: string; extension_quality?: string; fib_context?: string; nearest_fib_label?: string; nearest_fib_level?: number; distance_to_fib_pct?: number; fib_confidence?: number; fib_wave_status?: string; wave_structure?: string; wave_score?: number };
+type V42Technical = { stage_label?: string; stage_score?: number; technical_setup_label?: string; entry_state?: string; entry_state_display?: string; entry_score?: number; extension_state?: string; extension_quality?: string; fib_context?: string; nearest_fib_label?: string; nearest_fib_level?: number; distance_to_fib_pct?: number; fib_confidence?: number; fib_wave_status?: string; wave_structure?: string; wave_score?: number };
 type V42Shape = {
   score:    { total: number; core: number; bonus: number; core_max: number; bonus_max: number; total_max: number; display_mode?: string; percent_of_total_max?: number };
-  action:   { label: string; bucket: string; label_display: string; invalidation_level: number | null; target_zone: any; why_now: string[]; why_wait: string[] };
+  action:   { label: string; bucket: string; label_display: string; execution_state?: string; execution_label?: string; invalidation_level: number | null; target_zone: any; why_now: string[]; why_wait: string[] };
   components: Record<string, V42Component>;
   bonuses:  { social: { points: number; max_points: number; sections_hit: number; status: string; confluence_hit?: boolean }; whale_insider: { points: number; max_points: number; status: string }; bottleneck: { points: number; max_points: number; anchor_count: number; status: string } };
   booleans: { is_actionable_setup: boolean; is_near_actionable: boolean; is_watch_for_reset: boolean; is_risk_conflict: boolean; is_investment_quality: boolean };
   metadata: { confidence_score: number; data_status_flags: string[]; reason_codes?: string[] };
-  risk:     { risk_flags: string[]; major_lower_low_confirmed?: boolean; lower_low_confirmed?: boolean; chase_extension?: boolean; critical_break_level?: number; active_support_status?: string; distance_to_active_support_pct?: number };
+  risk:     { risk_flags: string[]; caution_flags?: string[]; major_lower_low_confirmed?: boolean; lower_low_confirmed?: boolean; chase_extension?: boolean; critical_break_level?: number; active_support_status?: string; distance_to_active_support_pct?: number };
   technical?: V42Technical;
 };
 
@@ -1049,8 +1051,15 @@ function V42ScreenerTable({
                   : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
 
-            {/* Decision — label_display from backend */}
-            <DecisionBadge state={v42?.action.label ?? r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null} display={v42?.action.label_display} />
+            {/* Decision — label_display + execution_label timing */}
+            <div>
+              <DecisionBadge state={v42?.action.label ?? r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null} display={v42?.action.label_display} />
+              {(v42?.action.execution_label ?? r.entry_execution_label) && (
+                <div style={{ fontSize: 6, color: CC.amber, fontFamily: CC.font, marginTop: 2, whiteSpace: 'nowrap' as const }}>
+                  {v42?.action.execution_label ?? r.entry_execution_label}
+                </div>
+              )}
+            </div>
 
             {/* Setup */}
             <div>
@@ -1831,6 +1840,7 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
             <div style={sec}>
               <span style={lbl_}>Action</span>
               <DR k="Decision"   v={act.label_display}   clr={DECISION_BADGE[act.label]?.clr} />
+              {act.execution_label && <DR k="Timing" v={act.execution_label} clr={CC.amber} />}
               <DR k="Bucket"     v={act.bucket?.replace(/_/g, ' ')} />
               {act.invalidation_level != null && <DR k="Invalidation" v={`$${Number(act.invalidation_level).toFixed(2)}`} clr={CC.red} />}
               {act.target_zone?.target_1 && <DR k="Target 1"    v={`$${Number(act.target_zone.target_1).toFixed(2)}`} clr={CC.green} />}
@@ -1862,6 +1872,18 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
                 {risk.risk_flags.map((f: string, i: number) => (
                   <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: CC.red, fontFamily: CC.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Caution Flags — amber warnings, not hard risk */}
+          {(risk?.caution_flags ?? []).length > 0 && (
+            <div style={sec}>
+              <span style={lbl_}>⚡ Caution Flags</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
+                {(risk!.caution_flags!).map((f: string, i: number) => (
+                  <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: CC.amber, fontFamily: CC.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
                 ))}
               </div>
             </div>
@@ -1942,7 +1964,7 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
               <DR k="Stage"          v={tech.stage_label?.replace(/_/g, ' ')}           clr={CC.teal} />
               <DR k="Stage Score"    v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
               <DR k="Setup"          v={tech.technical_setup_label}                      clr={CC.teal} />
-              <DR k="Entry State"    v={tech.entry_state?.replace(/_/g, ' ')} />
+              <DR k="Entry State"    v={(tech.entry_state_display ?? tech.entry_state)?.replace(/_/g, ' ')} />
               <DR k="Entry Score"    v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
               <DR k="Extension"      v={tech.extension_state?.replace(/_/g, ' ')} clr={tech.extension_state?.includes('EXTREME') || tech.extension_state?.includes('CHASE') ? CC.red : tech.extension_state?.includes('MODERATE') ? CC.amber : CC.dim} />
               <DR k="Nearest Fib"    v={tech.nearest_fib_label} />
