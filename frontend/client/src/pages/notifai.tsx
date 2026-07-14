@@ -895,15 +895,15 @@ export default function NotifAIPage() {
             <NewsFeed />
           </div>
 
-          {/* Right: Ask Caelyn + Top Stories */}
+          {/* Right: Top Stories + Ask Caelyn */}
           <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <NewsAgent />
             <div style={{
               height: 600, flexShrink: 0, borderRadius: 12, overflow: 'hidden',
               border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
             }}>
               <TopStoriesWidget />
             </div>
+            <NewsAgent />
           </div>
 
         </div>
