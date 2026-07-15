@@ -754,11 +754,12 @@ function readV42(row: any) {
     components: {
       theme:          comp(compsRaw.theme_alignment,     row.theme_alignment_points,                          15),
       stage:          comp(compsRaw.stage_quality,       row.stage_quality_points,                            15),
-      options:        comp(compsRaw.options_alignment,   row.options_alignment_points,                        20, row.options_status ?? row.options_snapshot_status),
+      options:        comp(compsRaw.options_alignment,   row.options_alignment_points,                        18, row.options_status ?? row.options_snapshot_status),
       technical_setup:comp(compsRaw.technical_setup,    row.technical_setup_points,                          8),
       entry_exit:     comp(compsRaw.entry_exit,          row.entry_exit_points ?? row.entry_risk_reward_points, 12),
-      catalyst:       comp(compsRaw.catalyst_alignment,  row.catalyst_alignment_points,                       15),
-      investment:     comp(compsRaw.investment_alignment,row.investment_alignment_points,                     15),
+      catalyst:       comp(compsRaw.catalyst_alignment,  row.catalyst_alignment_points,                       12),
+      investment:     comp(compsRaw.investment_alignment,row.investment_alignment_points,                     12),
+      valuation:      comp(compsRaw.valuation,           row.valuation_points,                                8, row.valuation_coverage_status ?? 'coverage_unknown'),
     },
     bonuses: {
       social:        { points: socialPts, max_points: 15, sections_hit: row.social_sections_hit ?? 0, status: row.social_confluence_hit ? 'available' : 'no_social_coverage', confluence_hit: row.social_confluence_hit },
@@ -1919,10 +1920,11 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
                 ['theme',          'Theme',           15],
                 ['stage',          'Stage',           15],
                 ['technical_setup','Technical Setup',  8],
-                ['options',        'Options',         20],
+                ['options',        'Options',         18],
                 ['entry_exit',     'Entry / Exit',    12],
-                ['catalyst',       'Catalyst',        15],
-                ['investment',     'Investment',      15],
+                ['catalyst',       'Catalyst',        12],
+                ['investment',     'Investment',      12],
+                ['valuation',      'Valuation',        8],
               ] as [string, string, number][]).map(([key, label, defMax]) => {
                 const c = comps[key];
                 if (!c) return null;
