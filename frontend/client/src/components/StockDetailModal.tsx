@@ -257,7 +257,9 @@ export function StockDetailModal({
         credentials: 'include',
       });
       if (!r.ok) return null;
-      return r.json();
+      const raw = await r.json();
+      /* Normalize response envelope: { data: { data: {} } } | { data: {} } | { result: {} } | flat */
+      return raw?.data?.data ?? raw?.data ?? raw?.result ?? raw;
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
@@ -379,7 +381,7 @@ export function StockDetailModal({
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} />}
           {activeTab === 'technical' && <TechnicalTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} useRowFallback={useRowFallback} />}
-          {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} />}
+          {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} />}
           {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} />}
           {activeTab === 'deep-dive' && <DeepDiveTab ticker={ticker} data={deepDive} loading={deepDiveLoading} error={deepDiveError} selectedModels={selectedModels} setSelectedModels={setSelectedModels} reportModel={reportModel} setReportModel={setReportModel} onGenerate={generateDeepDive} />}
         </div>
@@ -437,8 +439,8 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
   const [descExpanded, setDescExpanded] = useState(false);
 
-  const company = detail?.company;
-  const conf = detail?.confluence_v42;
+  const company = detail?.company ?? detail?.company_profile ?? detail?.profile ?? null;
+  const conf = detail?.confluence_v42 ?? detail?.confluence ?? null;
   const isNewFmt = stock?._format === 'new';
 
   return (
@@ -464,29 +466,43 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
 
       {/* 3. About */}
       {detailLoading && !detail && <LoadingRow label="Loading company profile…" />}
-      {company && (
+      {(!detailLoading || detail) && (
         <div>
           <SectionLabel>About</SectionLabel>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 10 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>{company.name ?? ticker}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>
+                {company?.name ?? company?.company_name ?? stock?.name ?? stock?.company ?? ticker}
+              </span>
               <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{ticker}</span>
-              {company.exchange && (
-                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: `rgba(255,255,255,0.05)`, color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>{company.exchange}</span>
+              {company?.exchange && (
+                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: `rgba(255,255,255,0.05)`, color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>
+                  {company.exchange}
+                </span>
               )}
             </div>
             {/* Info chips */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 6, marginBottom: 12 }}>
-              {company.sector    && <MetricBox label="Sector"    value={company.sector}                 raw />}
-              {company.industry  && <MetricBox label="Industry"  value={company.industry}               raw />}
-              {company.market_cap != null && <MetricBox label="Mkt Cap"   value={fmtLarge(company.market_cap)} raw />}
-              {company.country   && <MetricBox label="Country"   value={company.country}                raw />}
-              {company.employees != null  && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
+              {(company?.sector ?? confluenceRow?.sector ?? stock?.sector) && (
+                <MetricBox label="Sector" value={String(company?.sector ?? confluenceRow?.sector ?? stock?.sector)} raw />
+              )}
+              {(company?.industry ?? confluenceRow?.industry ?? stock?.industry) && (
+                <MetricBox label="Industry" value={String(company?.industry ?? confluenceRow?.industry ?? stock?.industry)} raw />
+              )}
+              {(company?.market_cap ?? confluenceRow?.market_cap) != null && (
+                <MetricBox label="Mkt Cap" value={fmtLarge(company?.market_cap ?? confluenceRow?.market_cap)} raw />
+              )}
+              {company?.country && <MetricBox label="Country" value={company.country} raw />}
+              {company?.employees != null && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
             </div>
             {/* Description */}
-            {company.description ? (() => {
-              const full = String(company.description);
+            {(() => {
+              const desc = company?.description ?? company?.profile?.description ?? detail?.overview?.description ?? null;
+              if (!desc) {
+                return <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.</p>;
+              }
+              const full = String(desc);
               const LIMIT = 500;
               const isLong = full.length > LIMIT;
               const shown = isLong && !descExpanded ? full.slice(0, LIMIT) + '…' : full;
@@ -500,15 +516,13 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
                   )}
                 </div>
               );
-            })() : (
-              <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.</p>
-            )}
+            })()}
           </div>
         </div>
       )}
 
       {/* 4. Confluence Summary */}
-      {conf && <ConfluenceSummarySection detail={detail} confluenceRow={confluenceRow} />}
+      {(conf || confluenceRow) && <ConfluenceSummarySection detail={detail} confluenceRow={confluenceRow} />}
 
       {/* Legacy analysis fallback (no backend detail) */}
       {!detailLoading && !conf && isNewFmt && stock && (
@@ -558,7 +572,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
 function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; confluenceRow?: any }) {
   const [showDebug, setShowDebug] = useState(false);
 
-  const v42   = detail?.confluence_v42;
+  const v42 = detail?.confluence_v42 ?? detail?.confluence ?? null;
   if (!v42) return null;
 
   const sc    = v42.score;
@@ -945,11 +959,14 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
       const v = tech[k];
       if (v !== null && v !== undefined && v !== '') return v;
     }
-    if (useRowFallback) {
-      for (const k of keys) {
-        const v = crRow[k];
-        if (v !== null && v !== undefined && v !== '') return v;
-      }
+    /* Always fall back to confluenceRow then stock — regardless of quote status */
+    for (const k of keys) {
+      const v = crRow[k];
+      if (v !== null && v !== undefined && v !== '') return v;
+    }
+    for (const k of keys) {
+      const v = (stock as any)?.[k];
+      if (v !== null && v !== undefined && v !== '') return v;
     }
     return undefined;
   }
@@ -1070,13 +1087,27 @@ function formatFundVal(val: any, fmt: string): string {
   }
 }
 
-function FundamentalsTab({ detail, detailLoading }: { detail?: any; detailLoading: boolean }) {
+function FundamentalsTab({ detail, detailLoading, confluenceRow, stock }: {
+  detail?: any; detailLoading: boolean; confluenceRow?: any; stock?: any;
+}) {
   if (detailLoading && !detail) return <LoadingRow label="Loading fundamentals…" />;
 
   const fund = detail?.fundamentals ?? {};
   const src  = detail?.fundamentals_source;
-  const hasForwardPE = fund.forward_pe != null;
-  const hasAnyData = FUND_GROUPS.some(g => g.fields.some(f => fund[f.key] != null && fund[f.key] !== '')) || hasForwardPE;
+  const rowFb = confluenceRow ?? stock ?? {};
+
+  /* Resolve a field: detail.fundamentals first, then row/stock fallback */
+  function getFund(key: string): any {
+    const v = fund[key];
+    if (v !== null && v !== undefined && v !== '') return v;
+    const rv = rowFb[key];
+    if (rv !== null && rv !== undefined && rv !== '') return rv;
+    return null;
+  }
+
+  const fwdPE = getFund('forward_pe');
+  const hasForwardPE = fwdPE != null;
+  const hasAnyData = FUND_GROUPS.some(g => g.fields.some(f => getFund(f.key) != null)) || hasForwardPE;
 
   if (!hasAnyData) {
     return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>No fundamental data available for this ticker.</div>;
@@ -1088,6 +1119,10 @@ function FundamentalsTab({ detail, detailLoading }: { detail?: any; detailLoadin
       <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
     </div>
   );
+
+  const fwdPEApprox = getFund('forward_pe_is_approximate');
+  const fwdPEWarnings: string[] = getFund('forward_pe_warning_codes') ?? [];
+  const fwdPESrc = getFund('forward_pe_source');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1102,7 +1137,7 @@ function FundamentalsTab({ detail, detailLoading }: { detail?: any; detailLoadin
       {FUND_GROUPS.map(group => {
         const isValuation = group.label === 'Valuation Multiples';
         const visibleFields = group.fields
-          .map(f => ({ ...f, val: fund[f.key] }))
+          .map(f => ({ ...f, val: getFund(f.key) }))
           .filter(f => f.val != null && f.val !== '');
 
         if (!isValuation && visibleFields.length === 0) return null;
@@ -1117,18 +1152,18 @@ function FundamentalsTab({ detail, detailLoading }: { detail?: any; detailLoadin
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
                   <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{Number(fund.forward_pe).toFixed(1)}x</span>
-                    {fund.forward_pe_is_approximate && (
+                    <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{Number(fwdPE).toFixed(1)}x</span>
+                    {fwdPEApprox && (
                       <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700, letterSpacing: '0.05em' }}>APPROX.</span>
                     )}
-                    {(fund.forward_pe_warning_codes ?? []).map((wc: string, i: number) => (
+                    {fwdPEWarnings.map((wc: string, i: number) => (
                       <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
                     ))}
                   </div>
                 </div>
               )}
-              {isValuation && fund.forward_pe_source && (
-                fRow('F.P/E Source', String(fund.forward_pe_source), 'fwd_pe_src')
+              {isValuation && fwdPESrc && (
+                fRow('F.P/E Source', String(fwdPESrc), 'fwd_pe_src')
               )}
             </div>
           </div>
@@ -1152,12 +1187,22 @@ function NewsTab({ detail, detailLoading, ticker }: { detail?: any; detailLoadin
     );
   }
 
-  const newsData = detail?.news;
-  const directArticles: any[] = newsData?.direct_catalyst_articles ?? [];
-  const regularArticles: any[] = newsData?.articles ?? [];
+  const newsData = detail?.news ?? {};
+  /* Support multiple backend shapes for articles */
+  const directArticles: any[] =
+    newsData?.direct_catalyst_articles
+    ?? detail?.direct_catalyst?.articles
+    ?? (detail?.direct_catalyst?.article ? [detail.direct_catalyst.article] : undefined)
+    ?? detail?.direct_catalyst_articles
+    ?? [];
+  const regularArticles: any[] =
+    newsData?.articles
+    ?? detail?.news_articles
+    ?? [];
   const totalCount = directArticles.length + regularArticles.length;
 
-  if (!newsData) {
+  /* Only show "unavailable" if detail loaded and truly has no news */
+  if (!detail) {
     return (
       <div style={{ padding: 14, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
         <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>

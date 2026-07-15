@@ -1015,8 +1015,20 @@ function V42ScreenerTable({
         const invPts     = comps.investment?.points ?? getV42Pts(r, 'investment_alignment_points', 'investment_alignment');
         const invLabel   = comps.investment?.quality_label ?? r.investment_quality_label ?? null;
         const invPillars = comps.investment?.pillar_count ?? r.investment_pillar_count ?? null;
-        const valPts     = comps.valuation?.points ?? null;
-        const valLabel   = comps.valuation?.label ?? comps.valuation?.quality_label ?? r.valuation_label ?? null;
+        const valPts: number | null =
+          comps.valuation?.points != null ? Number(comps.valuation.points)
+          : r.valuation_alignment_points != null ? Number(r.valuation_alignment_points)
+          : r.confluence_v42?.components?.valuation?.points != null ? Number(r.confluence_v42.components.valuation.points)
+          : r.confluence_v42?.valuation_alignment_points != null ? Number(r.confluence_v42.valuation_alignment_points)
+          : null;
+        const valLabel: string | null =
+          comps.valuation?.label
+          ?? comps.valuation?.quality_label
+          ?? r.valuation_label
+          ?? r.valuation_coverage_status
+          ?? r.confluence_v42?.valuation_label
+          ?? r.confluence_v42?.components?.valuation?.label
+          ?? null;
         const ccsClr     = v42 ? ccsColor(v42.score.core) : (ccs != null ? ccsColor(ccs) : CC.dim);
 
         const ccsTooltip = v42

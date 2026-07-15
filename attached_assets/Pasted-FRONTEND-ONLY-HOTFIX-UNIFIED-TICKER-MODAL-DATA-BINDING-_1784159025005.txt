@@ -1,0 +1,482 @@
+FRONTEND ONLY — HOTFIX UNIFIED TICKER MODAL DATA BINDING + VALUATION COLUMN
+
+Frontend repo only.
+
+Do not touch backend.
+Do not rewrite the modal again.
+Do not redesign the UI again.
+Do not remove the grouped sections.
+Do not create new endpoints.
+Do not create new provider calls.
+Do not change Confluence scoring.
+Do not change actionability logic.
+
+Problem:
+
+The latest frontend pass broke data display.
+
+Observed:
+
+1. Main Confluence table now has Valuation column, but values show blank / "—".
+2. In the ticker modal, Upcoming Earnings renders immediately.
+3. But About section disappears after loading.
+4. Confluence Analysis disappears after loading.
+5. Technical tab says "Technical data unavailable for this ticker."
+6. Fundamentals tab says "No fundamental data available for this ticker."
+7. News tab regressed and says "News data is not available for AMKR."
+
+This means the modal layout exists, but the ticker-detail data contract is not being read correctly.
+
+Backend endpoint is already implemented:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Do not assume response shape. Inspect it.
+
+==================================================
+PART 1 — INSPECT ACTUAL FRONTEND FETCH + RESPONSE SHAPE
+==================================================
+
+Find the modal fetch code in StockDetailModal.tsx or its hook.
+
+For AMKR, TSM, ENTG, and ABCL, inspect/log the actual response from:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Confirm:
+
+- Is the request being made?
+- What exact URL is frontend calling?
+- Is it going through the correct API proxy/base URL?
+- What is the HTTP status?
+- Is the response shape:
+  - raw object?
+  - { data: object }?
+  - { ok, data }?
+  - { result }?
+  - something else?
+- Are these keys present in the actual response:
+  - company
+  - confluence_v42
+  - technical
+  - fundamentals
+  - fundamentals_source
+  - news
+  - direct_catalyst
+  - quote
+  - overview
+
+Do not guess. Inspect the actual response object.
+
+Add temporary console diagnostics if needed, then remove or gate them before final.
+
+==================================================
+PART 2 — FIX MODAL DATA NORMALIZATION
+==================================================
+
+Add a small local normalizer in StockDetailModal.tsx or the modal data hook.
+
+Example intent:
+
+const raw = apiResponse
+const detail =
+  raw?.data?.data ??
+  raw?.data ??
+  raw?.result ??
+  raw
+
+Then normalize:
+
+company = detail.company ?? {}
+confluence = detail.confluence_v42 ?? detail.confluence ?? selectedRow.confluence_v42 ?? null
+technical = detail.technical ?? selectedRow.technical ?? selectedRow
+fundamentals = detail.fundamentals ?? selectedRow.fundamentals ?? {}
+news = detail.news ?? {}
+directCatalyst = detail.direct_catalyst ?? null
+quote = detail.quote ?? {}
+
+Important:
+
+Do not require every section to exist before rendering the modal.
+Each section should render independently.
+
+If company is missing but confluence exists, show Confluence.
+If technical is missing but selectedRow has technical fields, show selectedRow fallback.
+If fundamentals is missing but backend fundamentals exists under a nested key, map it correctly.
+If news.articles exists, show it.
+
+==================================================
+PART 3 — RESTORE NEWS TAB DATA
+==================================================
+
+The News tab worked before. It now says unavailable.
+
+Fix the News tab to read all valid backend shapes:
+
+news.direct_catalyst_articles
+news.articles
+direct_catalyst.articles
+direct_catalyst.article
+detail.direct_catalyst_articles
+detail.news_articles
+
+Use backend contract first:
+
+news.direct_catalyst_articles
+news.articles
+
+But add safe fallbacks if the actual response shape differs.
+
+Do not fetch a new news endpoint.
+Do not break Watchlist Live News.
+Do not show scary red retry text.
+
+Empty state should only show if:
+- request succeeded
+- and articles array is truly empty
+- and direct catalyst array is truly empty
+
+If request failed, show calm endpoint error.
+
+==================================================
+PART 4 — RESTORE TECHNICAL TAB DATA
+==================================================
+
+The Technical tab should not say unavailable when row data exists.
+
+Fix data source priority:
+
+1. detail.technical from ticker-detail endpoint
+2. selectedRow technical fields
+3. confluence_v42 technical subfields where available
+
+The tab should render grouped sections even if only partial data exists.
+
+Do not hide the whole tab because one object is missing.
+
+Required groups remain:
+
+- Price / Volume
+- Stage / Trend
+- Moving Average / Extension
+- 52-Week Position
+- Entry / Breakout
+- Options Overlay
+
+For each missing field show "—".
+
+Do not show "Technical data unavailable" unless absolutely no fields are available across endpoint + selected row.
+
+==================================================
+PART 5 — RESTORE FUNDAMENTALS TAB DATA
+==================================================
+
+The Fundamentals tab should not say unavailable when backend returned fundamentals.
+
+Fix data source priority:
+
+1. detail.fundamentals from ticker-detail endpoint
+2. selectedRow fundamentals if available
+3. selectedRow flat fundamental fields as last fallback
+
+Important:
+
+Backend uses normalized snake_case fields:
+market_cap
+revenue
+revenue_growth_q
+revenue_growth_y
+gross_margin
+fcf_margin
+free_cash_flow
+operating_income
+ebit
+pe_ratio
+ps_ratio
+ev_ebitda
+eps_growth
+debt_equity
+net_debt_ebitda
+insider_percent
+earnings_date
+revenue_growth_est
+revenue_growth_next_quarter
+revenue_growth_next_year
+eps_growth_est
+eps_growth_this_quarter
+eps_growth_next_quarter
+eps_growth_this_year
+eps_growth_next_year
+forward_pe
+forward_pe_source
+forward_pe_is_approximate
+forward_pe_warning_codes
+
+If these fields exist, grouped Fundamentals must render.
+
+Do not require old CSV/title-case fields.
+
+==================================================
+PART 6 — RESTORE ABOUT SECTION
+==================================================
+
+About currently disappears.
+
+Fix source priority:
+
+company.description
+company.profile?.description
+detail.company_profile?.description
+detail.profile?.description
+
+Header fields:
+company.company_name
+company.name
+detail.company_name
+selectedRow.company
+
+Sector/industry/market cap:
+company.sector / fundamentals.sector / selectedRow.sector
+company.industry / fundamentals.industry / selectedRow.industry
+company.market_cap / fundamentals.market_cap / selectedRow.market_cap
+
+If description missing, show:
+"Company profile unavailable."
+
+But still show company metadata cards if available.
+
+Do not hide About section entirely.
+
+Fix layout:
+- no overlapping sector/industry text
+- wrap long industry names
+- responsive grid
+
+==================================================
+PART 7 — RESTORE CONFLUENCE ANALYSIS SECTION
+==================================================
+
+Confluence Analysis currently loads then disappears.
+
+Fix source priority:
+
+1. detail.confluence_v42
+2. detail.confluence
+3. selectedRow.confluence_v42
+4. readV42(selectedRow)
+
+The section should render if any V4.2 data exists.
+
+Do not require every subfield.
+
+Show all 8 components with fallbacks:
+
+theme:
+components.theme_alignment OR theme_alignment_points
+stage:
+components.stage_quality OR stage_quality_points
+options:
+components.options_alignment OR options_alignment_points
+technical setup:
+components.technical_setup OR technical_setup_points
+entry:
+components.entry_exit OR entry_exit_points
+catalyst:
+components.catalyst_alignment OR catalyst_alignment_points
+investment:
+components.investment_alignment OR investment_alignment_points
+valuation:
+components.valuation OR valuation_alignment_points
+
+Maxes:
+theme /15
+stage /15
+options /18
+technical /8
+entry /12
+catalyst /12
+investment /12
+valuation /8
+
+Valuation detail fallbacks:
+valuation_alignment_points
+valuation_quality_score
+valuation_label
+valuation_coverage_status
+valuation_pe_ratio
+valuation_ps_ratio
+valuation_forward_pe
+valuation_forward_pe_source
+valuation_forward_pe_is_approximate
+valuation_forward_pe_warning_codes
+valuation_pe_value_score
+valuation_ps_value_score
+valuation_forward_pe_value_score
+valuation_explanation
+
+==================================================
+PART 8 — FIX VISIBLE CONFLUENCE TABLE VALUATION COLUMN
+==================================================
+
+The visible Valuation column exists but is blank.
+
+Find the actual row data shape used by the visible Confluence table.
+
+Add robust fallback:
+
+valuation points =
+  readV42(row)?.components?.valuation?.points
+  ?? row.components?.valuation?.points
+  ?? row.valuation_alignment_points
+  ?? row.confluence_v42?.valuation_alignment_points
+  ?? row.confluence_v42?.components?.valuation?.points
+
+valuation label =
+  readV42(row)?.components?.valuation?.label
+  ?? row.valuation_label
+  ?? row.confluence_v42?.valuation_label
+  ?? row.confluence_v42?.components?.valuation?.label
+  ?? row.valuation_coverage_status
+
+Show:
+X.X / 8
+sublabel = valuation label or coverage status
+
+If valuation points are 0, show 0.0 / 8, not blank.
+
+Only show "—" if all valuation fields are truly missing.
+
+Also verify visible table maxes:
+Options /18
+Catalyst /12
+Investment /12
+Valuation /8
+
+==================================================
+PART 9 — DO NOT BREAK EXISTING GOOD WORK
+==================================================
+
+Keep:
+
+- grouped fundamentals sections
+- grouped technical sections
+- news direct catalyst card layout
+- valuation detail UI
+- approximate Forward P/E badge
+- warning badges
+- one-popup behavior
+
+Fix data binding only.
+
+==================================================
+PART 10 — VALIDATION
+==================================================
+
+Validate manually with:
+
+AMKR
+TSM
+NBIS
+ENTG
+MU
+ABCL
+ALGM
+VRT
+HIMS
+CRWD
+
+For each confirm:
+
+1. Network request to /api/watchlist/ticker-detail/{symbol} succeeds.
+2. Modal Overview shows About section.
+3. About does not disappear after loading.
+4. Confluence Analysis appears.
+5. Technical tab does not say unavailable when selected row has data.
+6. Fundamentals tab does not say unavailable when backend returns fundamentals.
+7. News tab shows articles/direct catalysts when backend returns them.
+8. Empty states only show when arrays are truly empty.
+9. Visible Confluence table Valuation column shows numeric X.X / 8 or 0.0 / 8.
+10. Options visible table max is /18.
+11. Catalyst visible table max is /12.
+12. Investment visible table max is /12.
+13. Valuation visible table max is /8.
+14. No duplicate drawer opens.
+15. No new provider calls or endpoints.
+
+==================================================
+PART 11 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND DATA BINDING HOTFIX REPORT
+
+ROOT CAUSE:
+[exact issue: wrong response shape, wrong nesting, failed URL, bad conditional rendering, etc.]
+
+FILES CHANGED:
+[list]
+
+TICKER DETAIL FETCH:
+[summary]
+
+MODAL NORMALIZATION:
+[summary]
+
+ABOUT RESTORED:
+[summary]
+
+CONFLUENCE RESTORED:
+[summary]
+
+TECHNICAL RESTORED:
+[summary]
+
+FUNDAMENTALS RESTORED:
+[summary]
+
+NEWS RESTORED:
+[summary]
+
+VALUATION COLUMN FIX:
+[summary]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+FRONTEND HOTFIX VERDICT
+
+TICKER_DETAIL_FETCH_WORKING:
+[YES/NO]
+
+RESPONSE_SHAPE_NORMALIZED:
+[YES/NO]
+
+ABOUT_SECTION_RESTORED:
+[YES/NO]
+
+CONFLUENCE_ANALYSIS_RESTORED:
+[YES/NO]
+
+TECHNICAL_TAB_RESTORED:
+[YES/NO]
+
+FUNDAMENTALS_TAB_RESTORED:
+[YES/NO]
+
+NEWS_TAB_RESTORED:
+[YES/NO]
+
+VALUATION_COLUMN_NUMERIC:
+[YES/NO]
+
+VISIBLE_TABLE_MAXES_CORRECT:
+[YES/NO]
+
+ONE_POPUP_ONLY:
+[YES/NO]
+
+NO_NEW_FRONTEND_PROVIDER_PIPELINES:
+[YES/NO]
