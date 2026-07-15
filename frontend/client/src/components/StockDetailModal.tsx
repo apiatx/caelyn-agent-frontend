@@ -130,6 +130,51 @@ function pick(obj: any, ...keys: string[]): any {
   }
   return undefined;
 }
+/** Safely coerce any backend value to a display string */
+function safeStr(val: any): string {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'string') return val || '—';
+  if (typeof val === 'number') return isFinite(val) ? String(val) : '—';
+  if (typeof val === 'boolean') return String(val);
+  if (typeof val === 'object') {
+    return val.name ?? val.label ?? val.display_name ?? val.title ?? (val.id != null ? String(val.id) : '—');
+  }
+  return String(val);
+}
+
+/* ── Module-level V42 display primitives (must be OUTSIDE all components) ── */
+const V42_RR: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' };
+const V42_KK: React.CSSProperties = { fontSize: 8, color: C.dim, fontFamily: C.font };
+const V42_VV: React.CSSProperties = { fontSize: 8, color: C.text, fontWeight: 600, fontFamily: C.font };
+const V42_SEC: React.CSSProperties = { marginBottom: 14 };
+const V42_LBL: React.CSSProperties = { fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: C.font, marginBottom: 5, display: 'block' };
+
+function V42DR({ k, v, clr }: { k: string; v?: string | number | null; clr?: string }) {
+  if (v == null || v === '') return null;
+  return (
+    <div style={V42_RR}>
+      <span style={V42_KK}>{k}</span>
+      <span style={{ ...V42_VV, color: clr ?? C.text }}>{safeStr(v)}</span>
+    </div>
+  );
+}
+function V42PR({ k, pts, max, raw, clr }: { k: string; pts: number | null; max: number; raw?: number | null; clr?: string }) {
+  if (pts == null) return null;
+  const c = clr ?? ptsColor(pts, max);
+  const pct = max > 0 ? (pts / max) * 100 : 0;
+  return (
+    <div style={V42_RR}>
+      <span style={V42_KK}>{k}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {raw != null && <span style={{ fontSize: 7, color: C.dim, fontFamily: C.font }}>q{Math.round(raw)}</span>}
+        <div style={{ width: 40, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+          <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, height: '100%', background: c, borderRadius: 2 }} />
+        </div>
+        <span style={{ ...V42_VV, color: c, minWidth: 60, textAlign: 'right' as const }}>{pts.toFixed(1)} / {max}</span>
+      </div>
+    </div>
+  );
+}
 
 /* ── types ───────────────────────────────────────────────────────── */
 interface StockDetailModalProps {
@@ -505,34 +550,6 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
   const fund  = detail?.fundamentals;
   const valComp = comps.valuation;
 
-  /* shared row/key/value styles */
-  const rr: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: `1px solid rgba(255,255,255,0.04)` };
-  const kk: React.CSSProperties = { fontSize: 8, color: C.dim, fontFamily: C.font };
-  const vv: React.CSSProperties = { fontSize: 8, color: C.text, fontWeight: 600, fontFamily: C.font };
-  const sec: React.CSSProperties = { marginBottom: 14 };
-  const lbl: React.CSSProperties = { fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: C.font, marginBottom: 5, display: 'block' };
-
-  function DR({ k, v, clr }: { k: string; v?: string | number | null; clr?: string }) {
-    if (v == null || v === '') return null;
-    return <div style={rr}><span style={kk}>{k}</span><span style={{ ...vv, color: clr ?? C.text }}>{String(v)}</span></div>;
-  }
-  function PR({ k, pts, max, raw, clr }: { k: string; pts: number | null; max: number; raw?: number | null; clr?: string }) {
-    if (pts == null) return null;
-    const c = clr ?? ptsColor(pts, max);
-    const pct = max > 0 ? (pts / max) * 100 : 0;
-    return (
-      <div style={rr}>
-        <span style={kk}>{k}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {raw != null && <span style={{ fontSize: 7, color: C.dim, fontFamily: C.font }}>q{Math.round(raw)}</span>}
-          <div style={{ width: 40, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, height: '100%', background: c, borderRadius: 2 }} />
-          </div>
-          <span style={{ ...vv, color: c, minWidth: 60, textAlign: 'right' as const }}>{pts.toFixed(1)} / {max}</span>
-        </div>
-      </div>
-    );
-  }
   const decisionCfg = act ? (DECISION_BADGE_MAP[act.label?.toUpperCase()] ?? { label: act.label_display ?? act.label, clr: C.dim }) : null;
 
   return (
@@ -572,15 +589,15 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
           <div>
             {/* Action */}
             {act && (
-              <div style={sec}>
-                <span style={lbl}>Action</span>
-                <DR k="Decision"     v={act.label_display}              clr={decisionCfg?.clr} />
-                {act.execution_label && <DR k="Timing"       v={act.execution_label}           clr={C.amber} />}
-                <DR k="Bucket"       v={act.bucket?.replace(/_/g, ' ')} />
-                {act.invalidation_level != null && <DR k="Invalidation" v={`$${Number(act.invalidation_level).toFixed(2)}`} clr={C.red} />}
-                {act.target_zone?.target_1 && <DR k="Target 1" v={`$${Number(act.target_zone.target_1).toFixed(2)}`} clr={C.green} />}
-                {act.target_zone?.target_2 && <DR k="Target 2" v={`$${Number(act.target_zone.target_2).toFixed(2)}`} clr={C.teal} />}
-                {act.target_zone?.risk_reward_ratio != null && <DR k="Risk/Reward" v={`${Number(act.target_zone.risk_reward_ratio).toFixed(1)}x`} />}
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Action</span>
+                <V42DR k="Decision"     v={act.label_display}              clr={decisionCfg?.clr} />
+                {act.execution_label && <V42DR k="Timing"       v={act.execution_label}           clr={C.amber} />}
+                <V42DR k="Bucket"       v={act.bucket?.replace(/_/g, ' ')} />
+                {act.invalidation_level != null && <V42DR k="Invalidation" v={`$${Number(act.invalidation_level).toFixed(2)}`} clr={C.red} />}
+                {act.target_zone?.target_1 && <V42DR k="Target 1" v={`$${Number(act.target_zone.target_1).toFixed(2)}`} clr={C.green} />}
+                {act.target_zone?.target_2 && <V42DR k="Target 2" v={`$${Number(act.target_zone.target_2).toFixed(2)}`} clr={C.teal} />}
+                {act.target_zone?.risk_reward_ratio != null && <V42DR k="Risk/Reward" v={`${Number(act.target_zone.risk_reward_ratio).toFixed(1)}x`} />}
                 {act.why_now?.length > 0 && (
                   <div style={{ marginTop: 6 }}>
                     <span style={{ fontSize: 7, color: C.green, fontFamily: C.font, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>Why Now</span>
@@ -602,8 +619,8 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 
             {/* Risk Flags */}
             {risk?.risk_flags?.length > 0 && (
-              <div style={sec}>
-                <span style={lbl}>⚠ Risk</span>
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>⚠ Risk</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
                   {risk.risk_flags.map((f: string, i: number) => (
                     <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: C.red, fontFamily: C.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
@@ -614,8 +631,8 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 
             {/* Caution Flags */}
             {(risk?.caution_flags ?? []).length > 0 && (
-              <div style={sec}>
-                <span style={lbl}>⚡ Caution</span>
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>⚡ Caution</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
                   {(risk!.caution_flags!).map((f: string, i: number) => (
                     <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: C.amber, fontFamily: C.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
@@ -626,12 +643,12 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 
             {/* Score Breakdown */}
             {sc && (
-              <div style={sec}>
-                <span style={lbl}>Score Breakdown</span>
-                <PR k="Core Score"  pts={sc.core}  max={sc.core_max ?? 100} />
-                <PR k="Bonus Score" pts={sc.bonus} max={sc.bonus_max ?? 25}  clr={C.purple} />
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Score Breakdown</span>
+                <V42PR k="Core Score"  pts={sc.core}  max={sc.core_max ?? 100} />
+                <V42PR k="Bonus Score" pts={sc.bonus} max={sc.bonus_max ?? 25}  clr={C.purple} />
                 {meta?.confidence_score > 0 && (
-                  <DR k="Confidence" v={`${meta.confidence_score.toFixed(0)}%`}
+                  <V42DR k="Confidence" v={`${meta.confidence_score.toFixed(0)}%`}
                      clr={meta.confidence_score >= 80 ? C.green : meta.confidence_score >= 50 ? C.amber : C.red} />
                 )}
               </div>
@@ -639,8 +656,8 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 
             {/* Data Coverage */}
             {meta?.data_status_flags?.length > 0 && (
-              <div style={sec}>
-                <span style={lbl}>Data Coverage</span>
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Data Coverage</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
                   {meta.data_status_flags.map((f: string, i: number) => (
                     <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font }}>{f.replace(/_/g, ' ')}</span>
@@ -654,8 +671,8 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
           <div>
             {/* Components */}
             {Object.keys(comps).length > 0 && (
-              <div style={sec}>
-                <span style={lbl}>Components</span>
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Components</span>
                 {([
                   ['theme',          'Theme',          15],
                   ['stage',          'Stage',          15],
@@ -674,8 +691,8 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
                   const subLabel = c.label ?? c.quality_label ?? (c.pillar_count != null ? `${c.pillar_count}/3 pillars` : null);
                   return (
                     <div key={key}>
-                      <PR k={label} pts={pts} max={max} raw={c.raw_score} />
-                      {subLabel && <div style={{ fontSize: 6, color: C.dim, fontFamily: C.font, paddingLeft: 8, paddingBottom: 2 }}>{subLabel}</div>}
+                      <V42PR k={label} pts={pts} max={max} raw={c.raw_score} />
+                      {subLabel && <div style={{ fontSize: 6, color: C.dim, fontFamily: C.font, paddingLeft: 8, paddingBottom: 2 }}>{safeStr(subLabel)}</div>}
                     </div>
                   );
                 })}
@@ -684,51 +701,51 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 
             {/* Bonuses */}
             {bon && (
-              <div style={sec}>
-                <span style={lbl}>Bonuses</span>
-                <PR k="Social"     pts={bon.social?.points ?? null}    max={15} clr={C.purple} />
-                {bon.social?.sections_hit > 0 && <DR k="Social sections" v={`${bon.social.sections_hit} hit`} />}
-                <PR k="Whale / Insider" pts={bon.whale_insider?.points ?? null} max={5} clr={C.teal} />
-                <PR k="Bottleneck" pts={bon.bottleneck?.points ?? null} max={5}  clr={C.orange} />
-                {bon.bottleneck?.anchor_count > 0 && <DR k="Bottleneck anchors" v={`${bon.bottleneck.anchor_count}`} />}
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Bonuses</span>
+                <V42PR k="Social"     pts={bon.social?.points ?? null}    max={15} clr={C.purple} />
+                {bon.social?.sections_hit > 0 && <V42DR k="Social sections" v={`${bon.social.sections_hit} hit`} />}
+                <V42PR k="Whale / Insider" pts={bon.whale_insider?.points ?? null} max={5} clr={C.teal} />
+                <V42PR k="Bottleneck" pts={bon.bottleneck?.points ?? null} max={5}  clr={C.orange} />
+                {bon.bottleneck?.anchor_count > 0 && <V42DR k="Bottleneck anchors" v={`${bon.bottleneck.anchor_count}`} />}
               </div>
             )}
 
             {/* Technical Confluence Details */}
             {tech && (
-              <div style={sec}>
-                <span style={lbl}>Technical Details</span>
-                <DR k="Stage"          v={tech.stage_label?.replace(/_/g, ' ')}           clr={C.teal} />
-                <DR k="Stage Score"    v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
-                <DR k="Setup"          v={tech.technical_setup_label}                      clr={C.teal} />
-                <DR k="Entry State"    v={(tech.entry_state_display ?? tech.entry_state)?.replace(/_/g, ' ')} />
-                <DR k="Entry Score"    v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
-                <DR k="Extension"      v={tech.extension_state?.replace(/_/g, ' ')}
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Technical Details</span>
+                <V42DR k="Stage"          v={tech.stage_label?.replace(/_/g, ' ')}           clr={C.teal} />
+                <V42DR k="Stage Score"    v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
+                <V42DR k="Setup"          v={tech.technical_setup_label}                      clr={C.teal} />
+                <V42DR k="Entry State"    v={(tech.entry_state_display ?? tech.entry_state)?.replace(/_/g, ' ')} />
+                <V42DR k="Entry Score"    v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
+                <V42DR k="Extension"      v={tech.extension_state?.replace(/_/g, ' ')}
                    clr={tech.extension_state?.includes('EXTREME') || tech.extension_state?.includes('CHASE') ? C.red : tech.extension_state?.includes('MODERATE') ? C.amber : C.dim} />
-                {tech.extension_quality && <DR k="Ext Quality" v={tech.extension_quality.replace(/_/g, ' ')} />}
-                <DR k="Nearest Fib"    v={tech.nearest_fib_label} />
-                <DR k="Distance Fib"   v={tech.distance_to_fib_pct != null ? `${Number(tech.distance_to_fib_pct).toFixed(1)}%` : null} />
+                {tech.extension_quality && <V42DR k="Ext Quality" v={tech.extension_quality.replace(/_/g, ' ')} />}
+                <V42DR k="Nearest Fib"    v={tech.nearest_fib_label} />
+                <V42DR k="Distance Fib"   v={tech.distance_to_fib_pct != null ? `${Number(tech.distance_to_fib_pct).toFixed(1)}%` : null} />
                 {tech.fib_wave_status && (
-                  <DR k="Fib/Wave"
+                  <V42DR k="Fib/Wave"
                      v={tech.fib_wave_status === 'pending_10y_backfill' ? 'Pending 10Y backfill' : tech.fib_wave_status.replace(/_/g, ' ')}
                      clr={tech.fib_wave_status === 'pending_10y_backfill' ? C.amber : C.dim} />
                 )}
-                <DR k="Wave Structure" v={tech.wave_structure?.replace(/_/g, ' ')} />
-                <DR k="Wave Score"     v={tech.wave_score != null ? `${Math.round(tech.wave_score)}` : null} />
+                <V42DR k="Wave Structure" v={tech.wave_structure?.replace(/_/g, ' ')} />
+                <V42DR k="Wave Score"     v={tech.wave_score != null ? `${Math.round(tech.wave_score)}` : null} />
               </div>
             )}
 
             {/* Options Coverage */}
             {comps.options?.status && (
-              <div style={sec}>
-                <span style={lbl}>Options Coverage</span>
-                <DR k="Status" v={comps.options.status.replace(/_/g, ' ')} />
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Options Coverage</span>
+                <V42DR k="Status" v={comps.options.status.replace(/_/g, ' ')} />
               </div>
             )}
 
             {/* Catalyst */}
-            <div style={sec}>
-              <span style={lbl}>Catalyst</span>
+            <div style={V42_SEC}>
+              <span style={V42_LBL}>Catalyst</span>
               {(() => {
                 const catComp = comps.catalyst;
                 const catPts = catComp?.points ?? null;
@@ -736,19 +753,17 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
                   const catMax = catComp?.max_points ?? 12;
                   return (
                     <>
-                      <PR k="Catalyst Score" pts={catPts} max={catMax} />
-                      {/* Bearish conflict */}
+                      <V42PR k="Catalyst Score" pts={catPts} max={catMax} />
                       {(catComp?.status === 'bearish_conflict' || catComp?.reason_codes?.includes('BEARISH_CATALYST_CONFLICT')) && (
                         <div style={{ fontSize: 8, color: C.amber, fontFamily: C.font, marginTop: 4 }}>Bearish catalyst conflict — catalyst points suppressed.</div>
                       )}
-                      {/* Direct catalyst */}
                       {dc ? (
                         <>
-                          <DR k="Type" v={dc.catalyst_event_type ?? dc.event_type} />
-                          <DR k="Tier" v={dc.catalyst_event_tier ?? dc.event_tier ?? dc.tier} clr={tierColor(dc.catalyst_event_tier ?? dc.tier)} />
-                          {dc.catalyst_freshness_score != null && <DR k="Freshness" v={Number(dc.catalyst_freshness_score).toFixed(1)} />}
-                          {dc.catalyst_relevance_score != null && <DR k="Relevance" v={Number(dc.catalyst_relevance_score).toFixed(1)} />}
-                          {dc.catalyst_materiality_score != null && <DR k="Materiality" v={Number(dc.catalyst_materiality_score).toFixed(1)} />}
+                          <V42DR k="Type" v={dc.catalyst_event_type ?? dc.event_type} />
+                          <V42DR k="Tier" v={dc.catalyst_event_tier ?? dc.event_tier ?? dc.tier} clr={tierColor(dc.catalyst_event_tier ?? dc.tier)} />
+                          {dc.catalyst_freshness_score != null && <V42DR k="Freshness" v={Number(dc.catalyst_freshness_score).toFixed(1)} />}
+                          {dc.catalyst_relevance_score != null && <V42DR k="Relevance" v={Number(dc.catalyst_relevance_score).toFixed(1)} />}
+                          {dc.catalyst_materiality_score != null && <V42DR k="Materiality" v={Number(dc.catalyst_materiality_score).toFixed(1)} />}
                           {dc.catalyst_reason_codes?.length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
                               {dc.catalyst_reason_codes.slice(0, 5).map((rc: string, i: number) => (
@@ -759,9 +774,9 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
                           {dc.catalyst_explanation && (
                             <div style={{ marginTop: 6, padding: '7px 10px', background: `${tierColor(dc.tier)}0a`, border: `1px solid ${tierColor(dc.tier)}25`, borderRadius: 4 }}>
                               <div style={{ fontSize: 7, fontWeight: 800, color: tierColor(dc.tier), fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>
-                                {dc.tier ? `Catalyst — ${(dc.tier).replace('_', ' ')}` : 'Catalyst Explanation'}
+                                {dc.tier ? `Catalyst — ${safeStr(dc.tier).replace('_', ' ')}` : 'Catalyst Explanation'}
                               </div>
-                              <p style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>{dc.catalyst_explanation}</p>
+                              <p style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>{safeStr(dc.catalyst_explanation)}</p>
                             </div>
                           )}
                         </>
@@ -771,30 +786,29 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
                     </>
                   );
                 }
-                return <DR k="Status" v="No catalyst data available." />;
+                return <V42DR k="Status" v="No catalyst data available." />;
               })()}
             </div>
 
             {/* Valuation */}
             {(valComp || fund?.pe_ratio != null || fund?.ps_ratio != null || fund?.forward_pe != null) && (
-              <div style={sec}>
-                <span style={lbl}>Valuation</span>
-                {valComp?.points != null && <PR k="Valuation Score" pts={valComp.points} max={valComp.max_points ?? 8} />}
+              <div style={V42_SEC}>
+                <span style={V42_LBL}>Valuation</span>
+                {valComp?.points != null && <V42PR k="Valuation Score" pts={valComp.points} max={valComp.max_points ?? 8} />}
                 {(valComp?.label || valComp?.quality_label) && (
-                  <DR k="Label" v={valComp.label ?? valComp.quality_label} clr={C.teal} />
+                  <V42DR k="Label" v={valComp.label ?? valComp.quality_label} clr={C.teal} />
                 )}
                 {valComp?.status && (
-                  <DR k="Coverage" v={valComp.status.replace(/_/g, ' ')}
-                     clr={valComp.status === 'partial' ? C.amber : valComp.status === 'unavailable' ? C.dim : C.dim} />
+                  <V42DR k="Coverage" v={valComp.status.replace(/_/g, ' ')}
+                     clr={valComp.status === 'partial' ? C.amber : C.dim} />
                 )}
-                {fund?.pe_ratio != null && <DR k="P/E"     v={`${Number(fund.pe_ratio).toFixed(1)}x`} />}
-                {fund?.ps_ratio != null && <DR k="P/S"     v={`${Number(fund.ps_ratio).toFixed(1)}x`} />}
-                {/* Forward P/E with Approx. badge and warning codes */}
-                <div style={rr}>
-                  <span style={kk}>Forward P/E</span>
+                {fund?.pe_ratio != null && <V42DR k="P/E"     v={`${Number(fund.pe_ratio).toFixed(1)}x`} />}
+                {fund?.ps_ratio != null && <V42DR k="P/S"     v={`${Number(fund.ps_ratio).toFixed(1)}x`} />}
+                <div style={V42_RR}>
+                  <span style={V42_KK}>Forward P/E</span>
                   {fund?.forward_pe != null ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ ...vv }}>{Number(fund.forward_pe).toFixed(1)}x</span>
+                      <span style={{ ...V42_VV }}>{Number(fund.forward_pe).toFixed(1)}x</span>
                       {fund.forward_pe_is_approximate && (
                         <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700 }}>APPROX.</span>
                       )}
@@ -803,15 +817,15 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
                       ))}
                     </div>
                   ) : (
-                    <span style={{ ...vv, color: C.dim }}>—</span>
+                    <span style={{ ...V42_VV, color: C.dim }}>—</span>
                   )}
                 </div>
-                {fund?.forward_pe_source && <DR k="F.P/E Source" v={fund.forward_pe_source} />}
-                {fund?.valuation_pe_score != null && <DR k="P/E Score" v={`${Number(fund.valuation_pe_score).toFixed(1)}`} />}
-                {fund?.valuation_ps_score != null && <DR k="P/S Score" v={`${Number(fund.valuation_ps_score).toFixed(1)}`} />}
-                {fund?.valuation_forward_pe_score != null && <DR k="F.P/E Score" v={`${Number(fund.valuation_forward_pe_score).toFixed(1)}`} />}
+                {fund?.forward_pe_source && <V42DR k="F.P/E Source" v={fund.forward_pe_source} />}
+                {fund?.valuation_pe_score != null && <V42DR k="P/E Score" v={`${Number(fund.valuation_pe_score).toFixed(1)}`} />}
+                {fund?.valuation_ps_score != null && <V42DR k="P/S Score" v={`${Number(fund.valuation_ps_score).toFixed(1)}`} />}
+                {fund?.valuation_forward_pe_score != null && <V42DR k="F.P/E Score" v={`${Number(fund.valuation_forward_pe_score).toFixed(1)}`} />}
                 {fund?.valuation_explanation && (
-                  <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{fund.valuation_explanation}</div>
+                  <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(fund.valuation_explanation)}</div>
                 )}
                 {valComp?.status === 'partial' && (
                   <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 4 }}>Partial valuation coverage.</div>
@@ -834,7 +848,7 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
             <div style={{ marginTop: 8 }}>
               {meta?.reason_codes?.length > 0 && (
                 <div>
-                  <span style={{ ...kk, display: 'block', marginBottom: 3 }}>Reason Codes ({meta.reason_codes.length}):</span>
+                  <span style={{ ...V42_KK, display: 'block', marginBottom: 3 }}>Reason Codes ({meta.reason_codes.length}):</span>
                   {meta.reason_codes.slice(0, 20).map((rc: string, i: number) => (
                     <div key={i} style={{ fontSize: 7, color: C.dim, fontFamily: C.font, paddingLeft: 8 }}>· {rc}</div>
                   ))}
@@ -934,7 +948,7 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
         {detail?.company?.name && <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{detail.company.name}</span>}
         {(tech.theme || crRow.theme) && (
           <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 3, background: `${C.purple}15`, color: C.purple, fontFamily: C.font, border: `1px solid ${C.purple}30` }}>
-            {tech.theme ?? crRow.theme}
+            {safeStr(tech.theme ?? crRow.theme)}
           </span>
         )}
         {detail?.coverage?.technical_source && (
