@@ -435,6 +435,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
 }) {
   const tvSymbol = resolveTVSymbol(ticker, stock, csvRow, fmpExchange);
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const company = detail?.company;
   const conf = detail?.confluence_v42;
@@ -467,20 +468,41 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
         <div>
           <SectionLabel>About</SectionLabel>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
-            {company.description ? (
-              <p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{company.description}</p>
-            ) : (
-              <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>Company profile unavailable.</p>
-            )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 6, marginTop: 12 }}>
-              {company.name     && <MetricBox label="Name"     value={company.name}     raw />}
-              {company.sector   && <MetricBox label="Sector"   value={company.sector}   raw />}
-              {company.industry && <MetricBox label="Industry" value={company.industry} raw />}
-              {company.exchange && <MetricBox label="Exchange" value={company.exchange} raw />}
-              {company.country  && <MetricBox label="Country"  value={company.country}  raw />}
-              {company.market_cap != null && <MetricBox label="Mkt Cap" value={fmtLarge(company.market_cap)} raw />}
-              {company.employees != null && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 10 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>{company.name ?? ticker}</span>
+              <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{ticker}</span>
+              {company.exchange && (
+                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: `rgba(255,255,255,0.05)`, color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>{company.exchange}</span>
+              )}
             </div>
+            {/* Info chips */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 6, marginBottom: 12 }}>
+              {company.sector    && <MetricBox label="Sector"    value={company.sector}                 raw />}
+              {company.industry  && <MetricBox label="Industry"  value={company.industry}               raw />}
+              {company.market_cap != null && <MetricBox label="Mkt Cap"   value={fmtLarge(company.market_cap)} raw />}
+              {company.country   && <MetricBox label="Country"   value={company.country}                raw />}
+              {company.employees != null  && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
+            </div>
+            {/* Description */}
+            {company.description ? (() => {
+              const full = String(company.description);
+              const LIMIT = 500;
+              const isLong = full.length > LIMIT;
+              const shown = isLong && !descExpanded ? full.slice(0, LIMIT) + '…' : full;
+              return (
+                <div>
+                  <p style={{ fontSize: 12, color: C.text, lineHeight: 1.75, fontFamily: C.sansFont, margin: 0 }}>{shown}</p>
+                  {isLong && (
+                    <button onClick={() => setDescExpanded(v => !v)} style={{ marginTop: 8, background: 'none', border: 'none', color: C.teal, fontSize: 11, cursor: 'pointer', fontFamily: C.sansFont, padding: 0 }}>
+                      {descExpanded ? '▲ Show less' : '▼ Show more'}
+                    </button>
+                  )}
+                </div>
+              );
+            })() : (
+              <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.</p>
+            )}
           </div>
         </div>
       )}
@@ -865,32 +887,49 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
 /* ═══════════════════════════════════════════════════════════════════
    Technical Tab — specific field mapping
    ═══════════════════════════════════════════════════════════════════ */
-const TECH_FIELDS: Array<{ label: string; keys: string[]; fmt?: 'pct' | 'large' | 'price' | 'raw' | 'mult'; colorFn?: (v: any) => string }> = [
-  { label: 'Stage',            keys: ['stage', 'stage_label', 'technical_stage'],                fmt: 'raw' },
-  { label: 'Technical State',  keys: ['technical_state', 'technical_state_label', 'tech_state'], fmt: 'raw' },
-  { label: 'MA Stack',         keys: ['ma_stack', 'ma_alignment', 'ema_alignment'],              fmt: 'raw' },
-  { label: 'Entry Zone',       keys: ['entry_zone', 'entry_state', 'entry_state_display'],       fmt: 'raw' },
-  { label: 'Breakout Signal',  keys: ['breakout_signal', 'breakout'],                            fmt: 'raw' },
-  { label: 'Momentum Trend',   keys: ['momentum_trend', 'momentum'],                             fmt: 'raw' },
-  { label: 'Accum/Dist',       keys: ['accum_dist', 'accumulation_distribution', 'ad_state'],   fmt: 'raw' },
-  { label: 'Squeeze',          keys: ['squeeze', 'squeeze_state', 'squeeze_signal'],             fmt: 'raw' },
-  { label: 'Extension Risk',   keys: ['extension_risk', 'extension_state', 'chase_extension'],  fmt: 'raw' },
-  { label: '% vs 50D',         keys: ['pct_vs_50d', 'percent_vs_50d', 'price_vs_50d_pct', 'vs_50d'],     fmt: 'pct' },
-  { label: '% vs 200D',        keys: ['pct_vs_200d', 'percent_vs_200d', 'price_vs_200d_pct', 'vs_200d'], fmt: 'pct' },
-  { label: '% From 52W High',  keys: ['pct_from_52w_high', 'dist_52w_high', 'from_52w_high'],    fmt: 'pct' },
-  { label: '52W Position',     keys: ['pos_52w', 'position_52w', 'pos_52wk'],                    fmt: 'pct' },
-  { label: 'ATR %',            keys: ['atr_pct', 'atr_percent', 'atr'],                          fmt: 'pct' },
-  { label: 'Opt Score',        keys: ['options_score', 'opt_score', 'options_alignment_points'], fmt: 'raw' },
-  { label: 'Opt Signal',       keys: ['options_signal', 'opt_signal', 'options_snapshot_signal'], fmt: 'raw' },
-  { label: 'P/C Ratio',        keys: ['put_call_ratio', 'pc_ratio', 'p_c_ratio'],               fmt: 'raw' },
-  { label: 'IV',               keys: ['iv', 'implied_volatility', 'options_iv'],                fmt: 'pct' },
-  { label: 'Exp. Move',        keys: ['em', 'expected_move', 'expected_move_pct'],              fmt: 'pct' },
-  { label: 'Opt Volume',       keys: ['opt_vol', 'options_volume', 'options_vol'],              fmt: 'large' },
-  { label: 'Open Interest',    keys: ['oi', 'open_interest', 'options_oi'],                    fmt: 'large' },
-  { label: 'Volume',           keys: ['volume', 'vol'],                                        fmt: 'large' },
-  { label: 'Rel. Volume',      keys: ['rel_vol', 'relative_volume', 'volume_ratio', 'volx'],   fmt: 'mult' },
-  { label: 'Vol Rank',         keys: ['vol_rank', 'volume_rank', 'vol_rank_pct'],              fmt: 'pct' },
-  { label: 'Vol/MC',           keys: ['vol_mc', 'vol_to_market_cap', 'volume_market_cap_ratio'], fmt: 'raw' },
+/* ─── Technical grouped definitions ─────────────────────────────── */
+type TechFmt = 'pct' | 'large' | 'price' | 'raw' | 'mult';
+interface TechFieldDef { label: string; keys: string[]; fmt?: TechFmt }
+const TECH_GROUPS: { label: string; fields: TechFieldDef[] }[] = [
+  { label: 'Price / Volume', fields: [
+    { label: 'Price',          keys: ['price', 'last_price', 'current_price', 'close'],                    fmt: 'price' },
+    { label: 'Chg %',          keys: ['chg_pct', 'change_pct', 'change_percent', 'changesPercentage'],      fmt: 'pct'   },
+    { label: 'Volume',         keys: ['volume', 'vol'],                                                     fmt: 'large' },
+    { label: 'Rel. Volume',    keys: ['rel_vol', 'relative_volume', 'volume_ratio', 'volx'],                fmt: 'mult'  },
+    { label: 'Vol Rank',       keys: ['vol_rank', 'volume_rank', 'vol_rank_pct'],                           fmt: 'pct'   },
+    { label: 'Vol/MC',         keys: ['vol_mc', 'vol_to_market_cap', 'volume_market_cap_ratio'],            fmt: 'raw'   },
+  ]},
+  { label: 'Stage / Trend', fields: [
+    { label: 'Stage',          keys: ['stage', 'stage_label', 'technical_stage'],                          fmt: 'raw'   },
+    { label: 'Technical State',keys: ['technical_state', 'technical_state_label', 'tech_state'],            fmt: 'raw'   },
+    { label: 'Momentum Trend', keys: ['momentum_trend', 'momentum'],                                        fmt: 'raw'   },
+    { label: 'MA Stack',       keys: ['ma_stack', 'ma_alignment', 'ema_alignment'],                         fmt: 'raw'   },
+  ]},
+  { label: 'Moving Average / Extension', fields: [
+    { label: '% vs 50D',       keys: ['pct_vs_50d', 'percent_vs_50d', 'price_vs_50d_pct', 'vs_50d'],      fmt: 'pct'   },
+    { label: '% vs 200D',      keys: ['pct_vs_200d', 'percent_vs_200d', 'price_vs_200d_pct', 'vs_200d'],  fmt: 'pct'   },
+    { label: 'Extension Risk', keys: ['extension_risk', 'extension_state', 'chase_extension'],              fmt: 'raw'   },
+  ]},
+  { label: '52-Week Position', fields: [
+    { label: '52W Pos',        keys: ['pos_52w', 'position_52w', 'pos_52wk'],                               fmt: 'pct'   },
+    { label: '% From 52W High',keys: ['pct_from_52w_high', 'dist_52w_high', 'from_52w_high'],               fmt: 'pct'   },
+  ]},
+  { label: 'Entry / Breakout', fields: [
+    { label: 'Entry Zone',     keys: ['entry_zone', 'entry_state', 'entry_state_display'],                  fmt: 'raw'   },
+    { label: 'Breakout Signal',keys: ['breakout_signal', 'breakout'],                                       fmt: 'raw'   },
+    { label: 'Accum/Dist',     keys: ['accum_dist', 'accumulation_distribution', 'ad_state'],               fmt: 'raw'   },
+    { label: 'Squeeze',        keys: ['squeeze', 'squeeze_state', 'squeeze_signal'],                        fmt: 'raw'   },
+    { label: 'ATR %',          keys: ['atr_pct', 'atr_percent', 'atr'],                                     fmt: 'pct'   },
+  ]},
+  { label: 'Options Overlay', fields: [
+    { label: 'Opt Score',      keys: ['options_score', 'opt_score', 'options_alignment_points'],            fmt: 'raw'   },
+    { label: 'Opt Signal',     keys: ['options_signal', 'opt_signal', 'options_snapshot_signal'],           fmt: 'raw'   },
+    { label: 'P/C Ratio',      keys: ['put_call_ratio', 'pc_ratio', 'p_c_ratio'],                           fmt: 'raw'   },
+    { label: 'IV',             keys: ['iv', 'implied_volatility', 'options_iv'],                            fmt: 'pct'   },
+    { label: 'Exp. Move',      keys: ['em', 'expected_move', 'expected_move_pct'],                          fmt: 'pct'   },
+    { label: 'Opt Volume',     keys: ['opt_vol', 'options_volume', 'options_vol'],                           fmt: 'large' },
+    { label: 'Open Interest',  keys: ['oi', 'open_interest', 'options_oi'],                                 fmt: 'large' },
+  ]},
 ];
 
 function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallback }: {
@@ -898,10 +937,9 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
 }) {
   if (detailLoading && !detail) return <LoadingRow label="Loading technical data…" />;
 
-  const tech = detail?.technical ?? {};
+  const tech  = detail?.technical ?? {};
   const crRow = confluenceRow ?? {};
 
-  /* Merge sources: backend technical first, quote fallback second for quote fields */
   function resolveField(keys: string[]): any {
     for (const k of keys) {
       const v = tech[k];
@@ -922,82 +960,103 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
       case 'pct':   return fmtPct(val);
       case 'large': return fmtLarge(val);
       case 'mult':  return fmtMult(val);
-      case 'price': { const n = Number(val); return isFinite(n) ? `$${n.toFixed(2)}` : String(val); }
-      default:      return typeof val === 'number' ? (isFinite(val) ? val.toFixed(2) : '—') : String(val);
+      case 'price': { const n = Number(val); return isFinite(n) ? `$${n.toFixed(2)}` : safeStr(val); }
+      default:      return typeof val === 'number' ? (isFinite(val) ? val.toFixed(2) : '—') : safeStr(val);
     }
   }
 
-  const rows = TECH_FIELDS.map(f => {
-    const val = resolveField(f.keys);
-    return { label: f.label, value: formatVal(val, f.fmt), missing: val === undefined };
-  }).filter(r => !r.missing);
+  const themeVal = safeStr(tech.theme ?? crRow.theme ?? null);
+  const hasAny = TECH_GROUPS.some(g => g.fields.some(f => resolveField(f.keys) !== undefined));
 
-  if (rows.length === 0) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>Technical data unavailable for this ticker.</div>
-        {detail?.company && <div style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Company: {detail.company.name}</div>}
-      </div>
-    );
+  if (!hasAny) {
+    return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>Technical data unavailable for this ticker.</div>;
   }
 
+  const fRow = (label: string, value: string) => (
+    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
+      <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+    </div>
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Company / Theme header */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 4 }}>
-        {detail?.company?.name && <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{detail.company.name}</span>}
-        {(tech.theme || crRow.theme) && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' as const }}>
+        {detail?.company?.name && <span style={{ fontSize: 12, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{safeStr(detail.company.name)}</span>}
+        {themeVal && themeVal !== '—' && (
           <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 3, background: `${C.purple}15`, color: C.purple, fontFamily: C.font, border: `1px solid ${C.purple}30` }}>
-            {safeStr(tech.theme ?? crRow.theme)}
+            {themeVal}
           </span>
         )}
         {detail?.coverage?.technical_source && (
-          <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 'auto' }}>Source: {detail.coverage.technical_source}</span>
+          <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 'auto' }}>Source: {safeStr(detail.coverage.technical_source)}</span>
         )}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-        {rows.map(r => (
-          <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{r.label}</span>
-            <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{r.value}</span>
+
+      {TECH_GROUPS.map(group => {
+        const visibleRows = group.fields
+          .map(f => ({ label: f.label, value: formatVal(resolveField(f.keys), f.fmt) }))
+          .filter(r => r.value !== '—');
+        if (visibleRows.length === 0) return null;
+        return (
+          <div key={group.label}>
+            <SectionLabel>{group.label}</SectionLabel>
+            <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+              {visibleRows.map(r => fRow(r.label, r.value))}
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Fundamentals Tab — specific fields + Forward P/E handling
+   Fundamentals Tab — grouped sections
    ═══════════════════════════════════════════════════════════════════ */
-type FundField = { label: string; key: string; fmt: 'dollar' | 'pct' | 'mult' | 'raw' | 'date' | 'large' };
-const FUND_FIELDS: FundField[] = [
-  { label: 'Theme',             key: 'theme',                      fmt: 'raw'   },
-  { label: 'Market Cap',        key: 'market_cap',                 fmt: 'large' },
-  { label: 'Revenue',           key: 'revenue',                    fmt: 'large' },
-  { label: 'Rev Growth Q',      key: 'revenue_growth_q',           fmt: 'pct'   },
-  { label: 'Rev Growth Y',      key: 'revenue_growth_y',           fmt: 'pct'   },
-  { label: 'Gross Margin',      key: 'gross_margin',               fmt: 'pct'   },
-  { label: 'FCF Margin',        key: 'fcf_margin',                 fmt: 'pct'   },
-  { label: 'Free Cash Flow',    key: 'free_cash_flow',             fmt: 'large' },
-  { label: 'Operating Income',  key: 'operating_income',           fmt: 'large' },
-  { label: 'EBIT',              key: 'ebit',                       fmt: 'large' },
-  { label: 'P/E',               key: 'pe_ratio',                   fmt: 'mult'  },
-  { label: 'P/S',               key: 'ps_ratio',                   fmt: 'mult'  },
-  { label: 'EV/EBITDA',         key: 'ev_ebitda',                  fmt: 'mult'  },
-  { label: 'EPS Growth',        key: 'eps_growth',                 fmt: 'pct'   },
-  { label: 'Debt/Equity',       key: 'debt_equity',                fmt: 'raw'   },
-  { label: 'Net Debt/EBITDA',   key: 'net_debt_ebitda',            fmt: 'raw'   },
-  { label: 'Insider %',         key: 'insider_percent',            fmt: 'pct'   },
-  { label: 'Earnings Date',     key: 'earnings_date',              fmt: 'date'  },
-  { label: 'Rev Growth Est',    key: 'revenue_growth_est',         fmt: 'pct'   },
-  { label: 'Rev Growth NQ',     key: 'revenue_growth_next_quarter',fmt: 'pct'   },
-  { label: 'Rev Growth NY',     key: 'revenue_growth_next_year',   fmt: 'pct'   },
-  { label: 'EPS Growth Est',    key: 'eps_growth_est',             fmt: 'pct'   },
-  { label: 'EPS Growth TQ',     key: 'eps_growth_this_quarter',    fmt: 'pct'   },
-  { label: 'EPS Growth NQ',     key: 'eps_growth_next_quarter',    fmt: 'pct'   },
-  { label: 'EPS Growth TY',     key: 'eps_growth_this_year',       fmt: 'pct'   },
-  { label: 'EPS Growth NY',     key: 'eps_growth_next_year',       fmt: 'pct'   },
+type FundField = { label: string; key: string; fmt: 'pct' | 'mult' | 'raw' | 'date' | 'large' };
+const FUND_GROUPS: { label: string; fields: FundField[] }[] = [
+  { label: 'Revenue & Growth', fields: [
+    { label: 'Revenue',         key: 'revenue',                    fmt: 'large' },
+    { label: 'Rev Growth Q',    key: 'revenue_growth_q',           fmt: 'pct'   },
+    { label: 'Rev Growth Y',    key: 'revenue_growth_y',           fmt: 'pct'   },
+    { label: 'Rev Growth Est',  key: 'revenue_growth_est',         fmt: 'pct'   },
+    { label: 'Rev Growth NQ',   key: 'revenue_growth_next_quarter',fmt: 'pct'   },
+    { label: 'Rev Growth NY',   key: 'revenue_growth_next_year',   fmt: 'pct'   },
+  ]},
+  { label: 'EPS & Earnings', fields: [
+    { label: 'EPS Growth',      key: 'eps_growth',                 fmt: 'pct'   },
+    { label: 'EPS Growth Est',  key: 'eps_growth_est',             fmt: 'pct'   },
+    { label: 'EPS Growth TQ',   key: 'eps_growth_this_quarter',    fmt: 'pct'   },
+    { label: 'EPS Growth NQ',   key: 'eps_growth_next_quarter',    fmt: 'pct'   },
+    { label: 'EPS Growth TY',   key: 'eps_growth_this_year',       fmt: 'pct'   },
+    { label: 'EPS Growth NY',   key: 'eps_growth_next_year',       fmt: 'pct'   },
+    { label: 'Earnings Date',   key: 'earnings_date',              fmt: 'date'  },
+  ]},
+  { label: 'Margins', fields: [
+    { label: 'Gross Margin',    key: 'gross_margin',               fmt: 'pct'   },
+    { label: 'FCF Margin',      key: 'fcf_margin',                 fmt: 'pct'   },
+  ]},
+  { label: 'Valuation Multiples', fields: [
+    { label: 'P/E',             key: 'pe_ratio',                   fmt: 'mult'  },
+    { label: 'P/S',             key: 'ps_ratio',                   fmt: 'mult'  },
+    { label: 'EV/EBITDA',       key: 'ev_ebitda',                  fmt: 'mult'  },
+  ]},
+  { label: 'Cash Flow & Profitability', fields: [
+    { label: 'Free Cash Flow',  key: 'free_cash_flow',             fmt: 'large' },
+    { label: 'Operating Income',key: 'operating_income',           fmt: 'large' },
+    { label: 'EBIT',            key: 'ebit',                       fmt: 'large' },
+  ]},
+  { label: 'Balance Sheet & Ownership', fields: [
+    { label: 'Debt / Equity',   key: 'debt_equity',                fmt: 'raw'   },
+    { label: 'Net Debt/EBITDA', key: 'net_debt_ebitda',            fmt: 'raw'   },
+    { label: 'Insider %',       key: 'insider_percent',            fmt: 'pct'   },
+  ]},
+  { label: 'Company Scale', fields: [
+    { label: 'Market Cap',      key: 'market_cap',                 fmt: 'large' },
+    { label: 'Theme',           key: 'theme',                      fmt: 'raw'   },
+  ]},
 ];
 
 function formatFundVal(val: any, fmt: string): string {
@@ -1007,7 +1066,7 @@ function formatFundVal(val: any, fmt: string): string {
     case 'mult':  return fmtMult(val);
     case 'large': return fmtLarge(val);
     case 'date':  return String(val);
-    default:      return typeof val === 'number' ? (isFinite(val) ? val.toFixed(2) : '—') : String(val);
+    default:      return typeof val === 'number' ? (isFinite(val) ? val.toFixed(2) : '—') : safeStr(val);
   }
 }
 
@@ -1016,62 +1075,65 @@ function FundamentalsTab({ detail, detailLoading }: { detail?: any; detailLoadin
 
   const fund = detail?.fundamentals ?? {};
   const src  = detail?.fundamentals_source;
+  const hasForwardPE = fund.forward_pe != null;
+  const hasAnyData = FUND_GROUPS.some(g => g.fields.some(f => fund[f.key] != null && fund[f.key] !== '')) || hasForwardPE;
 
-  const rows = FUND_FIELDS.map(f => ({
-    label: f.label,
-    value: formatFundVal(fund[f.key], f.fmt),
-    missing: fund[f.key] === null || fund[f.key] === undefined || fund[f.key] === '',
-  })).filter(r => !r.missing);
-
-  if (rows.length === 0 && !fund.forward_pe) {
+  if (!hasAnyData) {
     return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>No fundamental data available for this ticker.</div>;
   }
 
+  const fRow = (label: string, value: React.ReactNode, key?: string) => (
+    <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
+      <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+    </div>
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Source metadata */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {src && (
-        <div style={{ display: 'flex', gap: 12, fontSize: 8, color: C.dim, fontFamily: C.font, marginBottom: 2 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, fontSize: 8, color: C.dim, fontFamily: C.font }}>
           {src.freshness_status && <span>Freshness: {src.freshness_status.replace(/_/g, ' ')}</span>}
           {src.last_updated && <span>Updated: {String(src.last_updated).slice(0, 10)}</span>}
-          {src.missing_fields?.length > 0 && <span>Missing: {src.missing_fields.join(', ')}</span>}
+          {src.missing_fields?.length > 0 && <span style={{ color: C.amber }}>Missing: {src.missing_fields.join(', ')}</span>}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-        {rows.map(r => (
-          <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{r.label}</span>
-            <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{r.value}</span>
-          </div>
-        ))}
+      {FUND_GROUPS.map(group => {
+        const isValuation = group.label === 'Valuation Multiples';
+        const visibleFields = group.fields
+          .map(f => ({ ...f, val: fund[f.key] }))
+          .filter(f => f.val != null && f.val !== '');
 
-        {/* Forward P/E — special rendering */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-          <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
-          {fund.forward_pe != null ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{Number(fund.forward_pe).toFixed(1)}x</span>
-              {fund.forward_pe_is_approximate && (
-                <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700, letterSpacing: '0.05em' }}>APPROX.</span>
+        if (!isValuation && visibleFields.length === 0) return null;
+        if (isValuation && visibleFields.length === 0 && !hasForwardPE) return null;
+
+        return (
+          <div key={group.label}>
+            <SectionLabel>{group.label}</SectionLabel>
+            <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+              {visibleFields.map(f => fRow(f.label, formatFundVal(f.val, f.fmt), f.key))}
+              {isValuation && hasForwardPE && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{Number(fund.forward_pe).toFixed(1)}x</span>
+                    {fund.forward_pe_is_approximate && (
+                      <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700, letterSpacing: '0.05em' }}>APPROX.</span>
+                    )}
+                    {(fund.forward_pe_warning_codes ?? []).map((wc: string, i: number) => (
+                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
+                    ))}
+                  </div>
+                </div>
               )}
-              {(fund.forward_pe_warning_codes ?? []).map((wc: string, i: number) => (
-                <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
-              ))}
+              {isValuation && fund.forward_pe_source && (
+                fRow('F.P/E Source', String(fund.forward_pe_source), 'fwd_pe_src')
+              )}
             </div>
-          ) : (
-            <span style={{ fontSize: 11, color: C.dim, fontFamily: C.font }}>—</span>
-          )}
-        </div>
-
-        {/* Forward P/E source */}
-        {fund.forward_pe_source && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>F.P/E Source</span>
-            <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>{String(fund.forward_pe_source)}</span>
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }

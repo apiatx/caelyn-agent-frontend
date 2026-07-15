@@ -1,0 +1,557 @@
+FRONTEND ONLY — FIX VISIBLE CONFLUENCE TABLE + POLISH UNIFIED TICKER POPUP SECTIONS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not invent backend endpoints.
+Do not change backend scoring.
+Do not change actionability logic.
+Do not add provider calls.
+Do not add LLM calls.
+Do not create another modal.
+Use the existing endpoint:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Goal:
+
+The first frontend pass partially worked, but the visible UI is not correct yet.
+
+Problems observed:
+
+1. Main Confluence table still shows old component maxes:
+   - Options still displays /20
+   - Catalyst still displays /15
+   - Investment still displays /15
+   - Valuation column is missing
+
+2. Unified ticker popup exists, but:
+   - Overview tab is not useful enough
+   - About section is messy and does not show full company description when available
+   - Confluence section is incomplete/unreadable
+   - Technical tab is a flat list and missing several Watchlist Technical toggle fields
+   - Fundamentals tab is a flat list and needs grouped sections
+   - Valuation details need to be visible inside Confluence Summary
+   - News tab looks good; avoid breaking it
+
+==================================================
+PART 1 — FIX THE ACTUAL VISIBLE CONFLUENCE TABLE
+==================================================
+
+Do not assume the prior caelyn-confluence.tsx edit updated the visible table. It clearly did not.
+
+Find the actual renderer responsible for the visible Confluence table columns shown on the Watchlist page.
+
+Observed still wrong in UI:
+
+- Options displays /20
+- Catalyst displays /15
+- Investment displays /15
+- No Valuation column
+
+Fix the visible table so it shows:
+
+Columns:
+
+- Ticker
+- CCS
+- Decision
+- Setup /8
+- Theme /15
+- Options /18
+- Entry /12
+- Catalyst /12
+- Invest. /12
+- Valuation /8
+- Bonus
+- Conf.
+
+Requirements:
+
+- Add a visible Valuation column between Invest. and Bonus.
+- Options must show /18.
+- Catalyst must show /12.
+- Investment must show /12.
+- Valuation must show /8.
+- Core score remains /100.
+- Bonus remains /25.
+- Total max remains 125.
+- Sorting should work for the new Valuation column if other score columns sort.
+- Do not remove existing useful sublabels.
+- Valuation sublabel should show valuation label when available:
+  - Deep Value
+  - Attractively Valued
+  - Fair Value
+  - Elevated Valuation
+  - Expensive
+  - Valuation Unavailable
+
+If the table uses a separate component map, column schema, or hardcoded display function, update that exact path.
+
+Acceptance:
+The visible Confluence table must no longer show /20 for Options or /15 for Catalyst/Investment.
+
+==================================================
+PART 2 — OVERVIEW TAB STRUCTURE
+==================================================
+
+Rework the Overview tab into clear sections in this order:
+
+1. Chart
+2. Upcoming Earnings
+3. About
+4. Confluence Analysis
+
+Do not leave the huge blank chart area broken. If TradingView is loading, show a proper loading frame. If chart cannot render, show a calm chart unavailable state.
+
+==================================================
+PART 3 — ABOUT SECTION FIX
+==================================================
+
+The About section is currently messy.
+
+It should display:
+
+Header row:
+- Company name
+- Symbol
+- Sector
+- Industry
+- Market Cap
+- Exchange if available
+
+Description:
+- Use company.description from backend.
+- Show the full FMP company profile description when available.
+- Do not truncate to one line.
+- Use readable paragraph layout.
+- If very long, use a "Show more / Show less" expander.
+- If description is missing, show:
+  "Company profile unavailable."
+
+Layout:
+- Sector / Industry / Market Cap cards must not overlap.
+- Long industry names must wrap cleanly.
+- Use responsive grid.
+- No text collision.
+
+Important:
+Do not invent descriptions.
+Do not use static fake descriptions.
+If backend returns no description, show the calm missing state and include the symbol in validation.
+
+==================================================
+PART 4 — CONFLUENCE ANALYSIS SECTION REDESIGN
+==================================================
+
+The current Confluence section in the popup is unreadable and incomplete.
+
+Rebuild it as a polished detail section, not a debug dump.
+
+Use these subsections:
+
+A. Header Summary
+Show:
+- Total CCS
+- Core /100
+- Bonus /25
+- Decision badge
+- Timing / execution state
+- Bucket
+- Confidence
+- Invalidation
+
+B. Why Now / Why Wait
+Two-column layout:
+- Why Now bullets
+- Why Wait bullets
+If empty, show calm empty state.
+
+C. Component Breakdown
+Show all 8 core components:
+
+- Theme /15
+- Stage /15
+- Options /18
+- Technical Setup /8
+- Entry / Exit /12
+- Catalyst /12
+- Investment /12
+- Valuation /8
+
+For each component:
+- points / max
+- label/context
+- quality percentile if available
+- small progress bar
+
+D. Valuation Detail
+Inside Confluence Analysis, include a dedicated Valuation card.
+
+Show:
+- Valuation points /8
+- Valuation label
+- Coverage status
+- P/E
+- P/S
+- Forward P/E
+- Approx. badge if forward_pe_is_approximate
+- Forward P/E source
+- Warning badges for forward_pe_warning_codes
+- P/E score
+- P/S score
+- Forward P/E score
+- Valuation explanation
+- Missing fields if partial/unavailable
+
+This is critical:
+Valuation subdrivers must be visible here. The popup is where we explain what drives the Valuation score.
+
+E. Catalyst Detail
+Show:
+- Catalyst points /12
+- Event type
+- Event tier
+- Explanation
+- Materiality score
+- Freshness score
+- Relevance score
+- Reason codes
+- Direct catalyst present/none
+
+F. Investment Detail
+Show:
+- Investment points /12
+- Investment label
+- Financial health / quality if available
+- Current growth if available
+- Forward growth if available
+- Explanation/reason codes if available
+
+G. Technical Detail
+Show:
+- Stage
+- Setup
+- Entry State
+- Extension
+- Extension quality
+- Extension reset state
+- Nearest Fib
+- Distance Fib
+- Wave Structure
+- Wave Score
+
+H. Bonuses
+Show:
+- Social /15
+- Whale / Insider /5
+- Bottleneck /5
+- Bottleneck anchors if available
+
+Debug:
+Keep collapsed.
+Do not show debug by default.
+
+==================================================
+PART 5 — FUNDAMENTALS TAB GROUPING
+==================================================
+
+The Fundamentals tab currently shows a flat wall of datapoints. Group it.
+
+Use these sections:
+
+A. Revenue & Growth
+- Revenue
+- Revenue Growth Q
+- Revenue Growth Y
+- Revenue Growth Est
+- Revenue Growth Next Quarter
+- Revenue Growth Next Year
+
+B. EPS & Earnings Growth
+- EPS Growth
+- EPS Growth Est
+- EPS Growth This Quarter
+- EPS Growth Next Quarter
+- EPS Growth This Year
+- EPS Growth Next Year
+- Earnings Date
+
+C. Margins
+- Gross Margin
+- FCF Margin
+
+D. Valuation Multiples
+- P/E
+- Forward P/E
+- P/S
+- EV/EBITDA
+- Approx. badge for Forward P/E when applicable
+- Forward P/E source
+- Warning badges if present
+
+E. Cash Flow & Profitability
+- Free Cash Flow
+- Operating Income
+- EBIT
+
+F. Balance Sheet / Ownership
+- Debt / Equity
+- Net Debt / EBITDA
+- Insider %
+
+G. Company Scale
+- Market Cap
+- Theme
+- Ticker
+
+Rules:
+- Do not show a random flat grid.
+- Missing values show "—".
+- Keep formatting clean:
+  - large numbers compact
+  - percentages one decimal or two max
+  - multiples as x
+  - dates readable
+- Do not display undefined/null/NaN.
+
+==================================================
+PART 6 — TECHNICAL TAB GROUPING + COMPLETE FIELD COVERAGE
+==================================================
+
+The Technical tab is currently missing fields and is too flat.
+
+It must include all Watchlist Technical toggle fields, grouped logically.
+
+Groups:
+
+A. Price / Volume
+- Price
+- Chg %
+- Volume
+- VOLX
+- VOL RANK
+- Vol/MC
+
+B. Stage / Trend
+- Stage
+- Technical State
+- Momentum Trend
+- MA Stack
+
+C. Moving Average / Extension
+- % vs 50D
+- % vs 200D
+- Extension Risk
+
+D. 52-Week Position
+- 52W Pos
+- % From 52W High
+
+E. Entry / Breakout
+- Entry Zone
+- Breakout Signal
+- Accum/Dist
+- Squeeze
+- ATR %
+
+F. Options Technical Overlay
+- Opt Score
+- Opt Signal
+- P/C
+- IV
+- EM
+- Opt Vol
+- OI
+
+Existing fields currently shown:
+- Stage
+- Technical State
+- MA Stack
+- Entry Zone
+- Breakout Signal
+- Momentum Trend
+- Accum/Dist
+- Squeeze
+- Extension Risk
+- % vs 50D
+- % vs 200D
+- % From 52W High
+- ATR %
+- Opt Score
+- Opt Signal
+- Volume
+- Rel. Volume
+
+Missing fields that must be added if backend provides them:
+- Price
+- Chg %
+- VOL RANK
+- Vol/MC
+- P/C
+- IV
+- EM
+- Opt Vol
+- OI
+- 52W Pos
+
+Use pick() fallbacks for possible backend key names, but do not invent fake values.
+
+If backend does not provide a field:
+- show "—" or omit only if the whole group would be empty
+- include missing field list in final report
+
+==================================================
+PART 7 — NEWS TAB — DO NOT BREAK
+==================================================
+
+News tab currently looks good/perfect.
+
+Do not rewrite the News tab unless needed for minor spacing consistency.
+
+Keep:
+- Direct Catalyst articles first
+- Catalyst badges
+- Recent Ticker News
+- Calm empty states
+- No red retry message
+
+==================================================
+PART 8 — RESPONSIVE LAYOUT / MODAL USABILITY
+==================================================
+
+The modal should be readable.
+
+Requirements:
+- no overlapping text
+- no cramped cards
+- section headers
+- grouped cards
+- consistent spacing
+- no giant empty panels
+- no debug-by-default
+- scroll works inside modal
+- mobile/tablet should not explode, but desktop is priority
+
+==================================================
+PART 9 — VALIDATION SYMBOLS
+==================================================
+
+Validate manually with:
+
+TSM
+NBIS
+ENTG
+MU
+ABCL
+ALGM
+VRT
+HIMS
+CRWD
+
+For each confirm:
+
+1. Main Confluence table shows Valuation column.
+2. Main Confluence table uses Options /18.
+3. Main Confluence table uses Catalyst /12.
+4. Main Confluence table uses Investment /12.
+5. Main Confluence table uses Valuation /8.
+6. Ticker click opens one unified modal.
+7. Overview shows chart/earnings/about/confluence.
+8. About section shows full description when backend provides it.
+9. Long description wraps and/or has show more.
+10. Confluence Analysis has all 8 components.
+11. Valuation detail shows P/E, P/S, Forward P/E and sub-scores.
+12. Catalyst detail shows explanation and event tier when available.
+13. Fundamentals tab is grouped by Revenue/Growth, EPS, Margins, Valuation, Cash Flow, Balance Sheet, Scale.
+14. Technical tab is grouped by Price/Volume, Stage/Trend, MA/Extension, 52W, Entry/Breakout, Options Overlay.
+15. News tab still works.
+16. No duplicate right drawer opens.
+17. Missing data renders calmly.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND CONFLUENCE TABLE + POPUP POLISH REPORT
+
+VISIBLE CONFLUENCE TABLE FIX:
+[summary]
+
+FILES CHANGED:
+[list]
+
+OVERVIEW TAB POLISH:
+[summary]
+
+ABOUT SECTION:
+[summary]
+
+CONFLUENCE ANALYSIS SECTION:
+[summary]
+
+FUNDAMENTALS GROUPING:
+[summary]
+
+TECHNICAL GROUPING:
+[summary]
+
+NEWS TAB:
+[summary]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+FRONTEND POLISH VERDICT
+
+VISIBLE_TABLE_SHOWS_VALUATION_COLUMN:
+[YES/NO]
+
+VISIBLE_TABLE_OPTIONS_MAX_18:
+[YES/NO]
+
+VISIBLE_TABLE_CATALYST_MAX_12:
+[YES/NO]
+
+VISIBLE_TABLE_INVESTMENT_MAX_12:
+[YES/NO]
+
+VISIBLE_TABLE_VALUATION_MAX_8:
+[YES/NO]
+
+ABOUT_FULL_DESCRIPTION_RENDERED_WHEN_AVAILABLE:
+[YES/NO]
+
+ABOUT_LAYOUT_CLEAN:
+[YES/NO]
+
+CONFLUENCE_ANALYSIS_READABLE:
+[YES/NO]
+
+CONFLUENCE_HAS_8_COMPONENTS:
+[YES/NO]
+
+VALUATION_SUBDRIVERS_VISIBLE:
+[YES/NO]
+
+FUNDAMENTALS_GROUPED_LOGICALLY:
+[YES/NO]
+
+TECHNICAL_FIELDS_COMPLETE:
+[YES/NO/PARTIAL]
+
+TECHNICAL_GROUPED_LOGICALLY:
+[YES/NO]
+
+NEWS_TAB_UNBROKEN:
+[YES/NO]
+
+ONE_POPUP_ONLY:
+[YES/NO]
+
+NO_NEW_FRONTEND_PROVIDER_PIPELINES:
+[YES/NO]

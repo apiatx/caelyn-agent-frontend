@@ -832,7 +832,7 @@ function ptsColor(pts: number, max: number): string {
 function OptionsStatusCell({ row }: { row: any }) {
   const status  = ((row.options_status ?? row.options_snapshot_status ?? '') as string).toLowerCase();
   const pts     = row.options_alignment_points != null ? Number(row.options_alignment_points) : null;
-  const ptsClr  = pts != null ? ptsColor(pts, 20) : CC.dim;
+  const ptsClr  = pts != null ? ptsColor(pts, 18) : CC.dim;
   const queueSt = row.options_scanner_queue_status ?? null;
   const priority= row.options_backfill_priority ?? null;
   const isHighPri = priority === 'high' || queueSt === 'queued_high_priority';
@@ -849,7 +849,7 @@ function OptionsStatusCell({ row }: { row: any }) {
   if (pts != null) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 1 }}>
-        <span style={{ fontSize: 9, fontWeight: 700, color: ptsClr, fontFamily: CC.font }}>{pts.toFixed(1)} / 20</span>
+        <span style={{ fontSize: 9, fontWeight: 700, color: ptsClr, fontFamily: CC.font }}>{pts.toFixed(1)} / 18</span>
         {status && status !== 'available_cached' && <span style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>{status.replace(/_/g, ' ')}</span>}
       </div>
     );
@@ -879,20 +879,21 @@ function BonusCell({ row }: { row: any }) {
 }
 
 /* V4.2.1 sort key type */
-type SortKey = 'ticker' | 'confluence' | 'decision' | 'setup' | 'theme' | 'options' | 'entry_exit' | 'catalyst' | 'investment' | 'bonuses' | 'confidence';
+type SortKey = 'ticker' | 'confluence' | 'decision' | 'setup' | 'theme' | 'options' | 'entry_exit' | 'catalyst' | 'investment' | 'valuation' | 'bonuses' | 'confidence';
 
 const COL_DEFS: { key: SortKey; label: string; width: string; title?: string }[] = [
-  { key: 'ticker',     label: 'Ticker',   width: '1.6fr',  title: 'Ticker symbol and company name' },
-  { key: 'confluence', label: 'CCS',      width: '1fr',    title: 'Caelyn Confluence Score — Core/100 + Bonus' },
-  { key: 'decision',   label: 'Decision', width: '1.5fr',  title: 'Backend actionability state — not derived in frontend' },
-  { key: 'setup',      label: 'Setup',    width: '0.85fr', title: 'Technical setup points / 8' },
-  { key: 'theme',      label: 'Theme',    width: '0.85fr', title: 'Theme alignment points / 15' },
-  { key: 'options',    label: 'Options',  width: '1fr',    title: 'Options alignment points / 20' },
-  { key: 'entry_exit', label: 'Entry',    width: '0.85fr', title: 'Entry/Exit points / 12' },
-  { key: 'catalyst',   label: 'Catalyst', width: '0.85fr', title: 'Catalyst alignment points / 15' },
-  { key: 'investment', label: 'Invest.',  width: '1fr',    title: 'Investment alignment points / 15' },
-  { key: 'bonuses',    label: 'Bonus',    width: '0.75fr', title: 'Social + Whale/Insider + Bottleneck bonus points / 25' },
-  { key: 'confidence', label: 'Conf.',    width: '0.7fr',  title: 'Data completeness / trustworthiness — not bullishness' },
+  { key: 'ticker',     label: 'Ticker',    width: '1.6fr',  title: 'Ticker symbol and company name' },
+  { key: 'confluence', label: 'CCS',       width: '1fr',    title: 'Caelyn Confluence Score — Core/100 + Bonus' },
+  { key: 'decision',   label: 'Decision',  width: '1.5fr',  title: 'Backend actionability state — not derived in frontend' },
+  { key: 'setup',      label: 'Setup',     width: '0.85fr', title: 'Technical setup points / 8' },
+  { key: 'theme',      label: 'Theme',     width: '0.85fr', title: 'Theme alignment points / 15' },
+  { key: 'options',    label: 'Options',   width: '1fr',    title: 'Options alignment points / 18' },
+  { key: 'entry_exit', label: 'Entry',     width: '0.85fr', title: 'Entry/Exit points / 12' },
+  { key: 'catalyst',   label: 'Catalyst',  width: '0.85fr', title: 'Catalyst alignment points / 12' },
+  { key: 'investment', label: 'Invest.',   width: '0.85fr', title: 'Investment alignment points / 12' },
+  { key: 'valuation',  label: 'Valuation', width: '0.85fr', title: 'Valuation alignment points / 8' },
+  { key: 'bonuses',    label: 'Bonus',     width: '0.75fr', title: 'Social + Whale/Insider + Bottleneck bonus points / 25' },
+  { key: 'confidence', label: 'Conf.',     width: '0.7fr',  title: 'Data completeness / trustworthiness — not bullishness' },
 ];
 
 const GRID_COLS = `18px ${COL_DEFS.map(c => c.width).join(' ')}`;
@@ -933,6 +934,7 @@ function V42ScreenerTable({
           case 'entry_exit': return getV42Pts(r, 'entry_exit_points', 'entry_exit') ?? getV42Pts(r, 'entry_risk_reward_points', 'entry') ?? -1;
           case 'catalyst':   return getV42Pts(r, 'catalyst_alignment_points', 'catalyst_alignment') ?? -1;
           case 'investment': return getV42Pts(r, 'investment_alignment_points', 'investment_alignment') ?? -1;
+          case 'valuation':  return readV42(r)?.components?.valuation?.points ?? -1;
           case 'bonuses': {
             const s  = r.social_bonus_points != null ? Number(r.social_bonus_points) : 0;
             const wSt= r.whale_insider_status ?? r.caelyn_confluence_v42_bonus_breakdown?.whale_insider?.status ?? null;
@@ -1013,6 +1015,8 @@ function V42ScreenerTable({
         const invPts     = comps.investment?.points ?? getV42Pts(r, 'investment_alignment_points', 'investment_alignment');
         const invLabel   = comps.investment?.quality_label ?? r.investment_quality_label ?? null;
         const invPillars = comps.investment?.pillar_count ?? r.investment_pillar_count ?? null;
+        const valPts     = comps.valuation?.points ?? null;
+        const valLabel   = comps.valuation?.label ?? comps.valuation?.quality_label ?? r.valuation_label ?? null;
         const ccsClr     = v42 ? ccsColor(v42.score.core) : (ccs != null ? ccsColor(ccs) : CC.dim);
 
         const ccsTooltip = v42
@@ -1092,7 +1096,7 @@ function V42ScreenerTable({
               {catWarming
                 ? <span style={{ fontSize: 7, fontWeight: 600, color: CC.amber, fontFamily: CC.font }}>Warming</span>
                 : catPts != null
-                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(catPts, 15), fontFamily: CC.font }}>{catPts.toFixed(1)} / 15</div>
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(catPts, 12), fontFamily: CC.font }}>{catPts.toFixed(1)} / 12</div>
                       {catType && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{catType}</div>}</>
                   : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
@@ -1100,10 +1104,18 @@ function V42ScreenerTable({
             {/* Investment */}
             <div>
               {invPts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(invPts, 15), fontFamily: CC.font }}>{invPts.toFixed(1)} / 15</div>
+                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(invPts, 12), fontFamily: CC.font }}>{invPts.toFixed(1)} / 12</div>
                     <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                       {invLabel ? invLabel : (invPillars != null ? `${invPillars}/3 pillars` : '')}
                     </div></>
+                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+            </div>
+
+            {/* Valuation */}
+            <div>
+              {valPts != null
+                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(valPts, 8), fontFamily: CC.font }}>{valPts.toFixed(1)} / 8</div>
+                    {valLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{valLabel}</div>}</>
                 : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
 
