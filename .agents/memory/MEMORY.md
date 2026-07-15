@@ -1,3 +1,4 @@
 - [Flex height chain](flex-height-chain.md) — minHeight:100vh does NOT create definite flex height; use calc(100vh-Npx) on leaf panels instead of flex:1 chain.
 - [Prophetik Investor Tab](prophetik-investor-tab.md) — intelligence-first data fetch, TS pitfalls (Map.entries spread, Lucide title prop, concat type widening).
 - [Alignment endpoint row shape](alignment-endpoint-shape.md) — /api/watchlist/:wid/alignment returns nested objects; must flatten in confluenceRows transform.
+- [Unified ticker popup](unified-ticker-popup.md) — StockDetailModal is the ONE popup; V42DetailDrawer disabled; ticker-detail proxy uses WL_URL/wlHdr(); new Technical tab; NewsTab uses backend data not activity-news endpoint.

@@ -1,0 +1,604 @@
+FRONTEND ONLY — UNIFIED WATCHLIST TICKER POPUP USING BACKEND TICKER DETAIL CONTRACT
+
+Frontend repo only.
+
+Do not touch backend.
+Do not invent backend endpoints.
+Do not create new provider/data pipelines.
+Do not change Confluence scoring.
+Do not change actionability logic.
+Do not change Watchlist screener updater behavior.
+Do not create a second modal.
+Do not hardcode fake values.
+
+Backend endpoint is ready:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Use this endpoint as the primary ticker detail data contract.
+
+Goal:
+
+The Watchlist ticker popup should become the single ticker detail surface.
+
+Currently there are two competing experiences:
+
+1. Ticker click modal with Overview / Fundamentals / News / AI Deep Dive
+2. Right-hand Confluence detail drawer
+
+We want one unified ticker modal.
+
+Clicking a ticker anywhere on the Watchlist page should open the ticker detail modal.
+
+The Confluence drawer content should move inside the ticker modal Overview tab.
+
+==================================================
+PART 1 — AUDIT CURRENT FRONTEND COMPONENTS
+==================================================
+
+Find and report the current files for:
+
+- ticker click modal component
+- Watchlist ticker cell click handler
+- Confluence row/ticker click handler
+- right-hand Confluence drawer component
+- current Overview tab
+- current Fundamentals tab
+- current News tab
+- chart component usage
+- current data fetch hook(s)
+
+Return file paths before editing.
+
+Important:
+
+Do not build a brand-new modal from scratch if the existing ticker popup can be reused.
+Do not delete useful Confluence drawer rendering logic; migrate/reuse it inside the unified modal.
+
+==================================================
+PART 2 — ONE POPUP ONLY
+==================================================
+
+Make the ticker detail modal the only ticker detail popup.
+
+Behavior:
+
+- clicking ticker in Watchlist table opens unified ticker modal
+- clicking ticker in Confluence table opens the same unified ticker modal
+- right-hand Confluence drawer should no longer open
+- do not show both modal and drawer
+- old drawer component can remain in code if removal is risky, but it must not be triggered from Confluence table rows
+
+Acceptance:
+
+ONE_POPUP_ONLY must be YES.
+CONFLUENCE_DRAWER_DISABLED must be YES.
+
+==================================================
+PART 3 — DATA FETCHING
+==================================================
+
+On modal open, call:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Use returned sections:
+
+- company
+- overview
+- confluence_v42
+- technical
+- fundamentals
+- fundamentals_source
+- news
+- direct_catalyst
+- quote
+- coverage
+
+Do not call old modal upload/static payload for fundamentals.
+Do not directly fetch FMP/RSS/Tradier from frontend.
+Do not create new polling loops.
+
+Quote fallback rule:
+
+If backend returns:
+
+quote.quote_status = "available"
+→ use backend quote fields.
+
+If backend returns:
+
+quote.quote_status = "row_fallback_recommended"
+→ use selected table row values for price/change/volume/rel vol when available.
+
+If selected row also lacks quote data:
+→ show "—".
+
+Theme fallback rule:
+
+If fundamentals.theme is null:
+→ use selected row theme or confluence/theme value if available.
+
+Missing values:
+
+Render "—", not undefined/null/NaN.
+
+==================================================
+PART 4 — OVERVIEW TAB
+==================================================
+
+Rework Overview tab layout.
+
+It should include, in this order:
+
+1. TradingView chart
+- preserve existing TradingView chart behavior
+- selected symbol must map correctly
+- do not replace chart library
+
+2. Upcoming Earnings cards
+Use backend overview/fundamentals fields where available.
+
+Cards:
+- Date
+- Est EPS
+- Last EPS
+- Rev Est
+- Price
+
+3. About section
+Use backend company object.
+
+Display:
+- company name
+- ticker
+- sector
+- industry
+- exchange
+- market cap
+- company description
+
+If description is missing:
+"Company profile unavailable."
+
+Do not treat missing description as an error.
+
+4. Confluence Summary section
+Move useful content from current right-hand Confluence drawer into Overview below Earnings/About.
+
+Use backend confluence_v42.
+
+Header:
+- Total CCS
+- Core score /100
+- Bonus score /25
+- Decision badge
+- Timing / execution state
+- Bucket
+- Confidence
+- Invalidation
+
+Action:
+- Decision
+- Timing
+- Bucket
+- Invalidation
+
+Why Now:
+- why_now bullets
+
+Why Wait:
+- why_wait bullets when present
+
+Data Coverage:
+- catalyst status
+- whale/insider status
+- options coverage
+- coverage gaps note
+
+Score Breakdown:
+- Core score
+- Bonus score
+- Confidence
+
+Components:
+- Theme
+- Stage
+- Technical Setup
+- Options
+- Entry / Exit
+- Catalyst
+- Investment
+
+For each component show:
+- points
+- max points
+- quality percentile when available
+- label/context when available
+
+Bonuses:
+- Social
+- Whale / Insider
+- Bottleneck
+- Bottleneck anchors if available
+
+Technical Confluence Details:
+- Stage
+- Stage score
+- Setup
+- Entry state
+- Entry score
+- Extension
+- Nearest Fib
+- Distance Fib
+- Fib/Wave status
+- Wave structure
+- Wave score
+
+Options Coverage:
+- status
+
+Catalyst:
+- status
+- direct catalyst present/none
+- catalyst event type
+- catalyst event tier
+- catalyst explanation
+- materiality / freshness / relevance if available
+
+Debug:
+Keep collapsed behind disclosure.
+Do not show raw debug by default.
+
+==================================================
+PART 5 — TECHNICAL TAB
+==================================================
+
+Add or rework the Technical tab.
+
+This tab must use backend technical object from:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+It should show the same fields and values as the Watchlist Technical toggle.
+
+Fields:
+
+- Ticker
+- Company
+- Theme
+- Price
+- Chg %
+- Volume
+- VOLX
+- VOL RANK
+- Vol/MC
+- Stage
+- Opt Score
+- Opt Signal
+- P/C
+- IV
+- EM
+- Opt Vol
+- OI
+- MA Stack
+- % vs 50D
+- % vs 200D
+- Extension Risk
+- 52W Pos
+- % From 52W High
+- Entry Zone
+- Breakout Signal
+- Accum/Dist
+- Squeeze
+- ATR %
+- Momentum Trend
+- Technical State
+
+Layout:
+Use a clean responsive grid/table.
+No raw JSON.
+Missing fields render as "—".
+Numbers formatted consistently with Watchlist table.
+
+Important:
+Use backend technical fields first.
+For quote-related fields missing due quote_status=row_fallback_recommended, fallback to selected row values.
+
+==================================================
+PART 6 — FUNDAMENTALS TAB
+==================================================
+
+Replace stale/static Fundamentals display with backend fundamentals object.
+
+Do not use old CSV/upload modal data.
+
+Display these normalized backend fields:
+
+- ticker
+- theme
+- market_cap
+- revenue
+- revenue_growth_q
+- revenue_growth_y
+- gross_margin
+- fcf_margin
+- free_cash_flow
+- operating_income
+- ebit
+- pe_ratio
+- ps_ratio
+- ev_ebitda
+- eps_growth
+- debt_equity
+- net_debt_ebitda
+- insider_percent
+- earnings_date
+- revenue_growth_est
+- revenue_growth_next_quarter
+- revenue_growth_next_year
+- eps_growth_est
+- eps_growth_this_quarter
+- eps_growth_next_quarter
+- eps_growth_this_year
+- eps_growth_next_year
+
+Also optionally show small metadata:
+
+- fundamentals_source.freshness_status
+- fundamentals_source.last_updated
+- fundamentals_source.missing_fields
+
+Rules:
+- values must come from backend canonical fundamentals contract
+- values should match Watchlist Fundamental toggle
+- do not read old CSV/upload modal data
+- missing values show "—"
+- insider_percent may be missing; show "—"
+- compact formatting for large numbers
+- percentages formatted cleanly
+- valuation multiples formatted cleanly
+
+==================================================
+PART 7 — NEWS TAB
+==================================================
+
+Fix News tab using backend news/direct catalyst contract.
+
+Remove broken red text:
+
+"News data unavailable for [TICKER]. Retrying automatically."
+
+Replace with calm states:
+
+- Loading news…
+- No recent news cached for [TICKER].
+- News temporarily unavailable.
+
+Use backend:
+
+news.articles
+news.direct_catalyst_articles
+direct_catalyst
+
+Section 1: Direct Catalyst Articles
+
+Show first when available.
+
+Each card:
+- Direct Catalyst badge
+- event type
+- event tier
+- catalyst score
+- headline
+- source
+- published age
+- summary if available
+- link/open action if available
+- materiality/relevance/freshness mini fields if available
+- catalyst explanation if available
+
+Sort direct catalyst cards as backend returns them. Do not invent scoring.
+
+Section 2: Recent Ticker News
+
+Show all other articles.
+
+Each card:
+- headline
+- source
+- published age
+- summary if available
+- link/open action if available
+
+Do not trigger new RSS fetches from frontend.
+
+Important:
+For TIER_E bearish/suppressed catalyst events, display clearly as suppressed/bearish conflict, not as a positive catalyst.
+
+==================================================
+PART 8 — CATALYST DISPLAY IN CONFLUENCE SECTION
+==================================================
+
+Inside Overview → Confluence Summary → Catalyst, display Phase B catalyst fields when available:
+
+- catalyst_event_type
+- catalyst_event_tier
+- catalyst_freshness_score
+- catalyst_relevance_score
+- catalyst_materiality_score
+- catalyst_reason_codes
+- catalyst_explanation
+
+Example display:
+
+Catalyst: 10.6 / 15
+Type: Commercial Contract
+Tier: C
+Explanation: Moderate catalyst (Commercial Contract) via rss_v2. Published within last 3 days. Scored 10.6/15.
+
+For no catalyst:
+Show "No direct catalyst detected."
+
+For bearish/suppressed:
+Show "Bearish catalyst conflict — catalyst points suppressed."
+
+==================================================
+PART 9 — KEEP AI DEEP DIVE TAB FOR LATER
+==================================================
+
+Do not build AI Analysis now.
+
+Keep the AI Deep Dive tab if it already exists, but it can show existing behavior or a calm placeholder.
+
+Do not add LLM calls.
+
+==================================================
+PART 10 — VISUAL / UX REQUIREMENTS
+==================================================
+
+Keep styling consistent with current dark Caelyn UI.
+
+Make the modal cleaner and more useful:
+
+- clean sections
+- readable spacing
+- no giant raw key/value dump
+- no duplicate popup
+- no scary red unavailable messages unless true endpoint error
+- clear badges for Direct Catalyst, Ready/Near/Watch, risk/caution
+- compact grid for Technical/Fundamentals
+- Confluence section should feel like a polished detail card, not debug output
+
+Overview should not feel empty. It should be:
+
+Chart
+Earnings
+About
+Confluence Summary
+
+==================================================
+PART 11 — ACCEPTANCE TESTS
+==================================================
+
+Validate manually with:
+
+ENTG
+MU
+TSM
+ABCL
+ALGM
+VRT
+HIMS
+CRWD
+
+For each:
+
+1. Clicking ticker opens unified ticker modal.
+2. Confluence table ticker click opens same modal.
+3. Right-hand Confluence drawer does not appear.
+4. Overview shows chart.
+5. Overview shows earnings cards.
+6. Overview shows About/company profile when backend has it.
+7. Missing description shows calm "Company profile unavailable."
+8. Overview shows Confluence summary.
+9. Technical tab values match backend technical contract / Watchlist Technical toggle.
+10. Fundamentals tab values match backend fundamentals contract / Watchlist Fundamental toggle.
+11. News tab no longer shows red retry message.
+12. Direct Catalyst articles appear above regular news when available.
+13. Catalyst explanation appears in Confluence section.
+14. Missing values render "—" or calm empty state.
+15. No frontend provider fetches or new data pipelines added.
+16. Watchlist Live News section still works.
+17. Main Confluence table still works.
+
+Specific expected cases:
+- ENTG: description available, quote available.
+- MU: description may be unavailable, quote may need row fallback, news should be large.
+- TSM: TIER_A direct catalyst, description may be unavailable, quote may need row fallback.
+- ABCL: NEAR_ACTIONABLE, no direct catalyst, should not be READY.
+- ALGM: TIER_C direct catalyst.
+- VRT: TIER_B direct catalyst.
+- HIMS: no direct catalyst currently.
+- CRWD: TIER_C direct catalyst.
+
+==================================================
+PART 12 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND UNIFIED TICKER POPUP REPORT
+
+CURRENT COMPONENT AUDIT:
+[summary]
+
+FILES CHANGED:
+[list]
+
+DATA CONTRACT USED:
+[endpoint]
+
+OVERVIEW TAB:
+[summary]
+
+TECHNICAL TAB:
+[summary]
+
+FUNDAMENTALS TAB:
+[summary]
+
+NEWS TAB:
+[summary]
+
+CONFLUENCE DRAWER MIGRATION:
+[summary]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+FRONTEND UNIFIED TICKER POPUP VERDICT
+
+ONE_POPUP_ONLY:
+[YES/NO]
+
+CONFLUENCE_DRAWER_DISABLED:
+[YES/NO]
+
+CONFLUENCE_CONTENT_MERGED_IN_OVERVIEW:
+[YES/NO]
+
+OVERVIEW_HAS_ABOUT_SECTION:
+[YES/NO]
+
+TECHNICAL_TAB_MATCHES_SCREENER:
+[YES/NO]
+
+FUNDAMENTALS_TAB_MATCHES_SCREENER:
+[YES/NO]
+
+NEWS_TAB_FIXED:
+[YES/NO]
+
+DIRECT_CATALYST_ARTICLES_PRIORITIZED:
+[YES/NO]
+
+CATALYST_EXPLANATION_VISIBLE:
+[YES/NO]
+
+QUOTE_ROW_FALLBACK_HANDLED:
+[YES/NO]
+
+MISSING_DESCRIPTION_HANDLED:
+[YES/NO]
+
+NO_NEW_FRONTEND_PROVIDER_PIPELINES:
+[YES/NO]
+
+WATCHLIST_LIVE_NEWS_UNBROKEN:
+[YES/NO]
+
+CONFLUENCE_TABLE_UNBROKEN:
+[YES/NO]

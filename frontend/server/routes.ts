@@ -5735,6 +5735,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified ticker-detail — feeds the popup modal
+  app.get('/api/watchlist/ticker-detail/:symbol', async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(`${WL_URL}/api/watchlist/ticker-detail/${encodeURIComponent(symbol)}`, {
+        headers: wlHdr(),
+        signal: ctrl.signal,
+      });
+      if (!r.ok) return res.status(r.status).json({ error: `ticker-detail fetch failed (${r.status})` });
+      res.json(await r.json());
+    } catch (e: any) {
+      const msg = e?.name === 'AbortError' ? 'ticker-detail timed out' : (e?.message ?? 'error');
+      console.error('[ticker-detail] error:', msg);
+      res.status(502).json({ error: msg });
+    }
+  });
+
   // ── Playbook / Strategy routes ──────────────────────────────────────
   const PB_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const PB_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';

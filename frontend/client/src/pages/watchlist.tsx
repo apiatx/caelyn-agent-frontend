@@ -6989,6 +6989,7 @@ export default function WatchlistPage() {
           csvData={watchlist?.csv_data}
           watchlistId={activeId}
           earningsEntry={earningsMap[selectedTicker.toUpperCase()]}
+          confluenceRows={confluenceRows ?? csvMergedScreenerRows}
           onClose={() => setSelectedTicker(null)}
         />
       )}

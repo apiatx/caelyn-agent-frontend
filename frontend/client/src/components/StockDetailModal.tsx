@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square } from 'lucide-react';
+import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity } from 'lucide-react';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
@@ -58,6 +58,25 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function tierColor(tier?: string): string {
+  if (!tier) return C.amber;
+  const t = (tier || '').toUpperCase();
+  if (t === 'TIER_A') return C.green;
+  if (t === 'TIER_B') return C.teal;
+  if (t === 'TIER_C') return C.amber;
+  return C.amber;
+}
+
+function actionBadgeColor(label?: string): string {
+  if (!label) return C.dim;
+  const l = (label || '').toUpperCase().replace(/[^A-Z_]/g, '');
+  if (l === 'READY' || l === 'ACTIONABLE') return C.green;
+  if (l.includes('NEAR')) return C.teal;
+  if (l === 'WATCH' || l.includes('SUPPORT') || l.includes('RESET')) return C.amber;
+  if (l === 'AVOID' || l.includes('RISK') || l.includes('CONFLICT')) return C.red;
+  return C.dim;
+}
+
 /* ── types ───────────────────────────────────────────────────────── */
 interface StockDetailModalProps {
   ticker: string;
@@ -65,38 +84,17 @@ interface StockDetailModalProps {
   csvData?: any[];
   watchlistId?: string | null;
   earningsEntry?: any;
+  confluenceRows?: any[];
   onClose: () => void;
 }
 
-interface TickerActivityNewsArticle {
-  ticker: string;
-  article_key?: string;
-  title: string;
-  summary?: string;
-  source: string;
-  url: string;
-  published_at: string;
-  rss_providers?: string[];
-}
-
-interface TickerActivityNewsResponse {
-  ticker: string;
-  window_hours: number;
-  articles_48h: number;
-  articles: TickerActivityNewsArticle[];
-  activity_as_of?: string | null;
-  last_full_sweep_at?: string | null;
-  coverage_status?: string | null;
-}
-
-type TabId = 'overview' | 'fundamentals' | 'news' | 'deep-dive';
+type TabId = 'overview' | 'technical' | 'fundamentals' | 'news' | 'deep-dive';
 
 /* ── find stock in either format ─────────────────────────────────── */
 function findStockInAnalysis(analysis: any, ticker: string): any | null {
   if (!analysis) return null;
   const t = ticker.toUpperCase();
 
-  // New format: sections[*].tickers[*].symbol
   if (Array.isArray(analysis.sections)) {
     for (const section of analysis.sections) {
       const arr = Array.isArray(section.tickers) ? section.tickers : [];
@@ -105,7 +103,6 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
     }
   }
 
-  // Old format: top_buys, most_undervalued, best_catalysts, hidden_gems, etc.
   const cats = ['top_buys', 'most_undervalued', 'best_catalysts', 'hidden_gems', 'most_revolutionary', 'right_sector'];
   for (const cat of cats) {
     const arr = analysis[cat];
@@ -120,7 +117,9 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
 /* ═══════════════════════════════════════════════════════════════════
    STOCK DETAIL MODAL
    ═══════════════════════════════════════════════════════════════════ */
-export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earningsEntry, onClose }: StockDetailModalProps) {
+export function StockDetailModal({
+  ticker, analysis, csvData, watchlistId, earningsEntry, confluenceRows, onClose
+}: StockDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [deepDive, setDeepDive] = useState<any>(null);
   const [deepDiveLoading, setDeepDiveLoading] = useState(false);
@@ -128,10 +127,10 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
   const [selectedModels, setSelectedModels] = useState<string[]>(['grok', 'gemini', 'claude']);
   const [reportModel, setReportModel] = useState<'claude' | 'gpt'>('claude');
 
-  /* ── find stock ─────────────────────────────────────────────────── */
+  /* ── find stock in analysis data ────────────────────────────────── */
   const baseStock = findStockInAnalysis(analysis, ticker);
 
-  /* ── realtime hydration ──────────────────────────────────────────── */
+  /* ── realtime quote hydration ────────────────────────────────────── */
   const tickerSymbols = useMemo(() => (ticker ? [ticker] : []), [ticker]);
   const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(tickerSymbols, { enabled: !!ticker });
   const stock = useMemo(() => {
@@ -140,13 +139,13 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
     return rt ? mergeRealtimeQuote(baseStock || { symbol: ticker }, rt) : baseStock;
   }, [baseStock, realtimeQuotes, ticker]);
 
-  /* ── find CSV row ───────────────────────────────────────────────── */
+  /* ── CSV row lookup ─────────────────────────────────────────────── */
   const csvRow = csvData?.find((r: any) => {
     const t = r.ticker || r.Ticker || r.TICKER || r.symbol || r.Symbol;
     return t?.toUpperCase() === ticker.toUpperCase();
   });
 
-  /* ── company identity → exchange for TradingView ─────────────────── */
+  /* ── company identity → TradingView exchange prefix ─────────────── */
   const { data: identityData } = useQuery<Record<string, any>>({
     queryKey: ['company-identity', ticker.toUpperCase()],
     queryFn: async () => {
@@ -159,6 +158,32 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
     enabled: !!ticker,
   });
   const fmpExchange: string | null = identityData?.[ticker.toUpperCase()]?.exchange ?? null;
+
+  /* ── unified ticker-detail endpoint ──────────────────────────────── */
+  const { data: detail, isLoading: detailLoading } = useQuery<any>({
+    queryKey: ['ticker-detail', ticker.toUpperCase()],
+    queryFn: async () => {
+      const r = await fetch(`/api/watchlist/ticker-detail/${encodeURIComponent(ticker)}`, {
+        credentials: 'include',
+      });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: !!ticker,
+  });
+
+  /* ── confluence row for quote fallback ───────────────────────────── */
+  const confluenceRow = useMemo(() =>
+    confluenceRows?.find(row => {
+      const sym = (row.ticker || row.symbol || '').toUpperCase();
+      return sym === ticker.toUpperCase();
+    }),
+    [confluenceRows, ticker]
+  );
+  const backendQuote = detail?.quote;
+  const useRowFallback = backendQuote?.quote_status === 'row_fallback_recommended';
 
   /* ── generate AI deep dive ──────────────────────────────────────── */
   const generateDeepDive = () => {
@@ -195,16 +220,23 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const sigCol = signalColor(stock?.signal);
+  /* ── resolve display values ──────────────────────────────────────── */
+  const companyName = detail?.company?.name ?? stock?.name ?? stock?.company ?? '';
+  const displaySignal = stock?.signal ?? detail?.confluence_v42?.action?.label ?? null;
+  const sigCol = signalColor(displaySignal);
+
+  const headerChangePct: number | null =
+    stock?.change_pct != null ? stock.change_pct
+    : useRowFallback ? (confluenceRow?.change_pct ?? backendQuote?.change_pct ?? null)
+    : (backendQuote?.change_pct ?? null);
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview',    label: 'Overview',    icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
-    { id: 'fundamentals',label: 'Fundamentals',icon: <BookOpen   style={{ width: 13, height: 13 }} /> },
-    { id: 'news',        label: 'News',        icon: <Newspaper  style={{ width: 13, height: 13 }} /> },
-    { id: 'deep-dive',   label: 'AI Deep Dive',icon: <Brain      style={{ width: 13, height: 13 }} /> },
+    { id: 'overview',     label: 'Overview',     icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
+    { id: 'technical',    label: 'Technical',    icon: <Activity   style={{ width: 13, height: 13 }} /> },
+    { id: 'fundamentals', label: 'Fundamentals', icon: <BookOpen   style={{ width: 13, height: 13 }} /> },
+    { id: 'news',         label: 'News',         icon: <Newspaper  style={{ width: 13, height: 13 }} /> },
+    { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
   ];
-
-  const companyName = stock?.name || stock?.company || '';
 
   return (
     <div
@@ -219,7 +251,7 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 920, maxHeight: '92vh',
+          width: '100%', maxWidth: 960, maxHeight: '92vh',
           background: C.bg, border: `1px solid ${C.border}`,
           borderRadius: 10, display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
@@ -229,7 +261,7 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
         <div style={{
           padding: '14px 20px', borderBottom: `1px solid ${C.border}`,
           display: 'flex', alignItems: 'center', gap: 12,
-          background: C.card,
+          background: C.card, flexWrap: 'wrap' as const,
         }}>
           <span style={{ fontSize: 20, fontWeight: 900, fontFamily: C.font, color: C.bright }}>
             {ticker}
@@ -246,14 +278,14 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
               {stock._section}
             </span>
           )}
-          {stock?.signal && (
+          {displaySignal && (
             <span style={{
               padding: '3px 10px', borderRadius: 3,
               fontSize: 9, fontWeight: 800, fontFamily: C.font,
               color: '#000', background: sigCol,
               textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
-              {stock.signal}
+              {displaySignal}
             </span>
           )}
           {stock?.risk_level && (
@@ -266,12 +298,20 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
               {stock.risk_level} RISK
             </span>
           )}
-          {stock?.change_pct != null && (
+          {headerChangePct != null && (
             <span style={{
               fontSize: 12, fontWeight: 700, fontFamily: C.font,
-              color: stock.change_pct >= 0 ? C.green : C.red,
+              color: headerChangePct >= 0 ? C.green : C.red,
             }}>
-              {stock.change_pct >= 0 ? '+' : ''}{typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%
+              {headerChangePct >= 0 ? '+' : ''}{typeof headerChangePct === 'number' ? headerChangePct.toFixed(2) : headerChangePct}%
+            </span>
+          )}
+          {useRowFallback && !stock?.price_source && (
+            <span style={{
+              fontSize: 8, color: C.amber, fontFamily: C.font,
+              border: `1px solid ${C.amber}30`, padding: '2px 6px', borderRadius: 3,
+            }}>
+              SCREENER DATA
             </span>
           )}
           {stock?.price_source && (
@@ -320,9 +360,32 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
 
         {/* ── Tab Content ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} />}
-          {activeTab === 'fundamentals' && <FundamentalsTab csvRow={csvRow} stock={stock} />}
-          {activeTab === 'news' && <NewsTab ticker={ticker} watchlistId={watchlistId} isActive={activeTab === 'news'} />}
+          {activeTab === 'overview' && (
+            <OverviewTab
+              stock={stock} ticker={ticker} csvRow={csvRow}
+              earningsEntry={earningsEntry} fmpExchange={fmpExchange}
+              detail={detail} detailLoading={detailLoading}
+              confluenceRow={confluenceRow}
+            />
+          )}
+          {activeTab === 'technical' && (
+            <TechnicalTab
+              detail={detail} detailLoading={detailLoading}
+              confluenceRow={confluenceRow}
+            />
+          )}
+          {activeTab === 'fundamentals' && (
+            <FundamentalsTab
+              detail={detail} detailLoading={detailLoading}
+              csvRow={csvRow} stock={stock}
+            />
+          )}
+          {activeTab === 'news' && (
+            <NewsTab
+              detail={detail} detailLoading={detailLoading}
+              ticker={ticker} isActive={activeTab === 'news'}
+            />
+          )}
           {activeTab === 'deep-dive' && (
             <DeepDiveTab
               ticker={ticker}
@@ -342,9 +405,9 @@ export function StockDetailModal({ ticker, analysis, csvData, watchlistId, earni
   );
 }
 
-/* ═══ Overview Tab ═══════════════════════════════════════════════════ */
-
-/** Map FMP/broker exchange short-names → TradingView exchange prefix */
+/* ═══════════════════════════════════════════════════════════════════
+   TradingView helpers
+   ═══════════════════════════════════════════════════════════════════ */
 function tvExchangeFromFmp(raw: string): string {
   const r = (raw || '').toUpperCase().trim();
   if (r === 'NASDAQ') return 'NASDAQ';
@@ -362,21 +425,11 @@ function tvExchangeFromFmp(raw: string): string {
   return '';
 }
 
-/**
- * Returns the full TradingView symbol string (e.g. "NASDAQ:NVDA", "ASX:EOS", "NVDA").
- * Handles:
- *   1. Tickers that already contain an exchange prefix  (e.g. "ASX:EOS", "AIM:IQE")
- *   2. Crypto base assets                               (e.g. "BTC" → "BINANCE:BTCUSDT")
- *   3. FMP exchangeShortName (most accurate – from API)
- *   4. Exchange embedded in analysis/CSV data
- *   5. Unknown → bare ticker (TradingView auto-resolves; better than a wrong prefix)
- */
 function resolveTVSymbol(
   ticker: string, stock: any, csvRow: any, fmpExchange?: string | null
 ): string {
   const t = ticker.toUpperCase().trim();
 
-  // Already has exchange prefix (e.g. "ASX:EOS", "AIM:IQE", "AMS:BESI")
   if (t.includes(':')) {
     const colonIdx = t.indexOf(':');
     const prefix = t.slice(0, colonIdx);
@@ -390,18 +443,15 @@ function resolveTVSymbol(
     return `${map[prefix] ?? prefix}:${sym}`;
   }
 
-  // Crypto detection
   const cryptoBases = ['BTC','ETH','SOL','BNB','ADA','XRP','DOT','AVAX','MATIC','LINK',
                        'UNI','DOGE','SHIB','LTC','ATOM','TAO','RENDER','FET','ARB','OP'];
   for (const b of cryptoBases) {
     if (t === b || t === `${b}USD` || t === `${b}USDT`) return `BINANCE:${b}USDT`;
   }
 
-  // FMP exchange (fetched from company-identity API — most accurate)
   const fmpEx = tvExchangeFromFmp(fmpExchange || '');
   if (fmpEx) return `${fmpEx}:${t}`;
 
-  // Exchange embedded in analysis data or CSV row
   const rawEx = (
     stock?.exchangeShortName || stock?.exchange ||
     csvRow?.exchangeShortName || csvRow?.exchange || csvRow?.Exchange || ''
@@ -409,16 +459,22 @@ function resolveTVSymbol(
   const staticEx = tvExchangeFromFmp(rawEx);
   if (staticEx) return `${staticEx}:${t}`;
 
-  // Unknown — bare ticker lets TradingView auto-resolve (far better than a wrong prefix)
   return t;
 }
 
-function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
+/* ═══════════════════════════════════════════════════════════════════
+   Overview Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail, detailLoading, confluenceRow }: {
   stock: any; ticker: string; csvRow?: any; earningsEntry?: any; fmpExchange?: string | null;
+  detail?: any; detailLoading: boolean; confluenceRow?: any;
 }) {
   const tvSymbol = resolveTVSymbol(ticker, stock, csvRow, fmpExchange);
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=520&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
 
+  const company = detail?.company;
+  const conf = detail?.confluence_v42;
+  const directCatalyst = detail?.direct_catalyst;
   const isNewFmt = stock?._format === 'new';
 
   return (
@@ -464,10 +520,140 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
         </div>
       )}
 
-      {/* New format overview */}
-      {isNewFmt && (
+      {/* About / Company Profile */}
+      {detailLoading && !detail && <LoadingRow label="Loading company profile…" />}
+      {company && (
+        <div>
+          <SectionLabel>About</SectionLabel>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
+            {company.description ? (
+              <p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>
+                {company.description}
+              </p>
+            ) : (
+              <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>
+                Company profile unavailable.
+              </p>
+            )}
+            {(company.sector || company.industry || company.country || company.employees != null) && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6, marginTop: 12 }}>
+                {company.sector    && <MetricBox label="Sector"    value={company.sector}    raw />}
+                {company.industry  && <MetricBox label="Industry"  value={company.industry}  raw />}
+                {company.country   && <MetricBox label="Country"   value={company.country}   raw />}
+                {company.employees != null && <MetricBox label="Employees" value={fmtNumber(company.employees)} raw />}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Confluence Summary */}
+      {conf && (
+        <div>
+          <SectionLabel>Confluence Analysis</SectionLabel>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
+            {/* Score + Decision row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: conf.components ? 12 : 0, flexWrap: 'wrap' as const }}>
+              {conf.action?.label && (
+                <span style={{
+                  padding: '3px 10px', borderRadius: 3,
+                  fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                  color: '#000', background: actionBadgeColor(conf.action.label),
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                }}>
+                  {conf.action.label_display ?? conf.action.label}
+                </span>
+              )}
+              {conf.score?.core != null && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.teal, fontFamily: C.font }}>
+                  {conf.score.core.toFixed(1)}
+                  <span style={{ fontSize: 8, color: C.dim }}> / 100</span>
+                  {conf.score.bonus > 0 && (
+                    <span style={{ fontSize: 9, color: C.purple }}>  +{conf.score.bonus.toFixed(1)}</span>
+                  )}
+                </span>
+              )}
+              {conf.action?.execution_label && (
+                <span style={{ fontSize: 9, color: C.amber, fontFamily: C.font }}>
+                  {conf.action.execution_label}
+                </span>
+              )}
+              {conf.metadata?.confidence_score != null && (
+                <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 'auto' }}>
+                  Confidence: {Math.round(conf.metadata.confidence_score)}%
+                </span>
+              )}
+            </div>
+
+            {/* Component breakdown */}
+            {conf.components && (() => {
+              const comps = conf.components as Record<string, any>;
+              const items = [
+                { label: 'Theme',      pts: comps.theme?.points,      detail: comps.theme?.label },
+                { label: 'Setup',      pts: comps.technical_setup?.points ?? comps.stage?.points, detail: comps.technical_setup?.label ?? comps.stage?.label },
+                { label: 'Entry',      pts: comps.entry_exit?.points,  detail: comps.entry_exit?.reason_codes?.[0] },
+                { label: 'Catalyst',   pts: comps.catalyst?.points },
+                { label: 'Investment', pts: comps.investment?.points,  detail: comps.investment?.quality_label },
+              ].filter(item => item.pts != null);
+              if (!items.length) return null;
+              return (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, marginBottom: directCatalyst?.catalyst_explanation ? 12 : 0 }}>
+                  {items.map(item => (
+                    <div key={item.label} style={{
+                      padding: '4px 10px', borderRadius: 4,
+                      background: C.card2, border: `1px solid ${C.border}`,
+                      display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
+                      minWidth: 56,
+                    }}>
+                      <span style={{ fontSize: 7, color: C.dim, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {item.label}
+                      </span>
+                      <span style={{ fontSize: 11, color: C.text, fontFamily: C.font, fontWeight: 700 }}>
+                        {item.pts}
+                      </span>
+                      {item.detail && (
+                        <span style={{
+                          fontSize: 6, color: C.dim, fontFamily: C.font,
+                          maxWidth: 80, textAlign: 'center',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
+                        }}>
+                          {item.detail}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Catalyst explanation */}
+            {directCatalyst?.catalyst_explanation && (
+              <div style={{
+                marginTop: 4, padding: '10px 12px',
+                background: `${tierColor(directCatalyst.tier)}0a`,
+                border: `1px solid ${tierColor(directCatalyst.tier)}30`,
+                borderRadius: 5,
+              }}>
+                <div style={{
+                  fontSize: 8, fontWeight: 800, color: tierColor(directCatalyst.tier),
+                  fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4,
+                }}>
+                  {directCatalyst.tier
+                    ? `Direct Catalyst — ${directCatalyst.tier.replace('_', ' ')}`
+                    : 'Direct Catalyst'}
+                </div>
+                <p style={{ fontSize: 11, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>
+                  {directCatalyst.catalyst_explanation}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Legacy: new-format analysis data (only when no confluence detail available) */}
+      {!detailLoading && !conf && isNewFmt && stock && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Catalyst */}
           {stock.catalyst && (
             <div>
               <SectionLabel>Catalyst</SectionLabel>
@@ -476,31 +662,28 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
               </p>
             </div>
           )}
-
-          {/* Sentiment + Action grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {stock.sentiment && (
-              <InfoCard label="Sentiment" color={C.blue}>{stock.sentiment}</InfoCard>
-            )}
-            {stock.action_note && (
-              <InfoCard label="Action Note" color={C.amber}>{stock.action_note}</InfoCard>
-            )}
+            {stock.sentiment  && <InfoCard label="Sentiment"   color={C.blue}>{stock.sentiment}</InfoCard>}
+            {stock.action_note && <InfoCard label="Action Note" color={C.amber}>{stock.action_note}</InfoCard>}
           </div>
-
-          {/* Price info */}
-          {(stock.price != null) && (
+          {stock.price != null && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
               <MetricBox label="Price" value={`$${typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price}`} raw />
               {stock.change_pct != null && (
-                <MetricBox label="Change" value={`${stock.change_pct >= 0 ? '+' : ''}${typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%`} raw colored={stock.change_pct >= 0 ? 'green' : 'red'} />
+                <MetricBox
+                  label="Change"
+                  value={`${stock.change_pct >= 0 ? '+' : ''}${typeof stock.change_pct === 'number' ? stock.change_pct.toFixed(2) : stock.change_pct}%`}
+                  raw
+                  colored={stock.change_pct >= 0 ? 'green' : 'red'}
+                />
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* Old format overview */}
-      {!isNewFmt && stock && (
+      {/* Legacy: old-format analysis data */}
+      {!detailLoading && !conf && !isNewFmt && stock && (
         <>
           {stock.thesis && (
             <div>
@@ -509,7 +692,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-            {stock.why_now && <InfoCard label="Why Now" color={C.amber}>{stock.why_now}</InfoCard>}
+            {stock.why_now   && <InfoCard label="Why Now"          color={C.amber}>{stock.why_now}</InfoCard>}
             {stock.sentiment && (
               <InfoCard label="Sentiment" color={C.blue}>
                 {stock.sentiment}
@@ -521,7 +704,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
           {stock.catalysts?.length > 0 && (
             <div>
               <SectionLabel>Catalysts</SectionLabel>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
                 {stock.catalysts.map((cat: string, i: number) => (
                   <span key={i} style={{
                     padding: '3px 10px', borderRadius: 4,
@@ -546,11 +729,12 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
         </>
       )}
 
-      {/* No analysis fallback */}
-      {!stock && (
+      {/* No data at all */}
+      {!detailLoading && !conf && !stock && (
         <div style={{ padding: 16, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
           <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>
-            No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>. Generate an AI Deep Dive for a full report.
+            No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>.
+            Generate an AI Deep Dive for a full report.
           </p>
         </div>
       )}
@@ -558,15 +742,142 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange }: {
   );
 }
 
-/* ═══ Fundamentals Tab ══════════════════════════════════════════════ */
-function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
+/* ═══════════════════════════════════════════════════════════════════
+   Technical Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function TechnicalTab({ detail, detailLoading, confluenceRow }: {
+  detail?: any; detailLoading: boolean; confluenceRow?: any;
+}) {
+  if (detailLoading && !detail) {
+    return <LoadingRow label="Loading technical data…" />;
+  }
+
+  const tech = detail?.technical;
+
+  if (!tech || Object.keys(tech).length === 0) {
+    return (
+      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+        Technical data unavailable for this ticker.
+      </div>
+    );
+  }
+
+  const entries = Object.entries(tech).filter(([k, v]) =>
+    v !== null && v !== undefined && v !== '' && !['ticker', 'symbol'].includes(k)
+  );
+
+  if (entries.length === 0) {
+    return (
+      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+        No technical fields returned for this ticker.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {detail?.coverage?.technical_source && (
+        <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font, marginBottom: 4 }}>
+          Source: {detail.coverage.technical_source}
+        </div>
+      )}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: 1, borderRadius: 6, overflow: 'hidden',
+        border: `1px solid ${C.border}`,
+      }}>
+        {entries.map(([key, val]) => (
+          <div key={key} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '7px 12px', background: C.card,
+            borderBottom: `1px solid ${C.border}`,
+          }}>
+            <span style={{
+              fontSize: 9, color: C.dim, fontFamily: C.font,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+            }}>
+              {String(key).replace(/_/g, ' ')}
+            </span>
+            <span style={{
+              fontSize: 11, color: C.text, fontWeight: 600,
+              fontFamily: C.font, textAlign: 'right',
+            }}>
+              {typeof val === 'number' ? fmtNumber(val) : String(val)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Fundamentals Tab
+   ═══════════════════════════════════════════════════════════════════ */
+function FundamentalsTab({ detail, detailLoading, csvRow, stock }: {
+  detail?: any; detailLoading: boolean; csvRow?: any; stock: any;
+}) {
+  if (detailLoading && !detail) {
+    return <LoadingRow label="Loading fundamentals…" />;
+  }
+
+  const fund = detail?.fundamentals;
+
+  if (fund && Object.keys(fund).length > 0) {
+    const entries = Object.entries(fund).filter(([k, v]) =>
+      v !== null && v !== undefined && v !== '' && !['ticker', 'symbol'].includes(k)
+    );
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {detail?.fundamentals_source && (
+          <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font, marginBottom: 4 }}>
+            Source: {detail.fundamentals_source}
+          </div>
+        )}
+        {entries.length === 0 ? (
+          <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+            No fundamental fields returned for this ticker.
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: 1, borderRadius: 6, overflow: 'hidden',
+            border: `1px solid ${C.border}`,
+          }}>
+            {entries.map(([key, val]) => (
+              <div key={key} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '7px 12px', background: C.card,
+                borderBottom: `1px solid ${C.border}`,
+              }}>
+                <span style={{
+                  fontSize: 9, color: C.dim, fontFamily: C.font,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                }}>
+                  {String(key).replace(/_/g, ' ')}
+                </span>
+                <span style={{
+                  fontSize: 11, color: C.text, fontWeight: 600,
+                  fontFamily: C.font, textAlign: 'right',
+                }}>
+                  {typeof val === 'number' ? fmtNumber(val) : String(val)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* Legacy fallback: CSV / analysis data */
   const data = csvRow || stock || {};
-  const entries = Object.entries(data).filter(([k, v]) =>
+  const legacyEntries = Object.entries(data).filter(([k, v]) =>
     !['display_type', 'catalysts', 'thesis', '_format', '_section'].includes(k) &&
     typeof v !== 'object' && v !== null && v !== undefined && v !== ''
   );
 
-  if (entries.length === 0) {
+  if (legacyEntries.length === 0) {
     return (
       <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
         No fundamental data available for this ticker.
@@ -575,17 +886,27 @@ function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-      {entries.map(([key, val]) => (
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr 1fr',
+      gap: 1, borderRadius: 6, overflow: 'hidden',
+      border: `1px solid ${C.border}`,
+    }}>
+      {legacyEntries.map(([key, val]) => (
         <div key={key} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '7px 12px', background: C.card,
           borderBottom: `1px solid ${C.border}`,
         }}>
-          <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{
+            fontSize: 9, color: C.dim, fontFamily: C.font,
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
             {key.replace(/_/g, ' ')}
           </span>
-          <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font, textAlign: 'right' }}>
+          <span style={{
+            fontSize: 11, color: C.text, fontWeight: 600,
+            fontFamily: C.font, textAlign: 'right',
+          }}>
             {typeof val === 'number' ? fmtNumber(val) : String(val)}
           </span>
         </div>
@@ -594,145 +915,133 @@ function FundamentalsTab({ csvRow, stock }: { csvRow: any; stock: any }) {
   );
 }
 
-/* ═══ News Tab — canonical 48H archive endpoint ═════════════════════ */
-function NewsTab({ ticker, watchlistId, isActive }: {
+/* ═══════════════════════════════════════════════════════════════════
+   News Tab  — uses ticker-detail backend data
+   ═══════════════════════════════════════════════════════════════════ */
+function NewsTab({ detail, detailLoading, ticker, isActive }: {
+  detail?: any;
+  detailLoading: boolean;
   ticker: string;
-  watchlistId: string | null | undefined;
   isActive: boolean;
 }) {
-  const { data, isLoading, isError } = useQuery<TickerActivityNewsResponse>({
-    queryKey: ['watchlist-ticker-activity-news', watchlistId, ticker],
-    queryFn: async () => {
-      const url = `/api/watchlist/${encodeURIComponent(watchlistId!)}/news/ticker/${encodeURIComponent(ticker)}`;
-      const r = await fetch(url, { credentials: 'include' });
-      if (!r.ok) throw new Error(`${r.status}`);
-      return r.json();
-    },
-    enabled: isActive && !!watchlistId && !!ticker,
-    staleTime: 30_000,
-    refetchInterval: isActive ? 60_000 : false,
-    retry: 1,
-  });
-
-  if (!watchlistId) {
+  if (detailLoading && !detail) {
     return (
-      <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
-        News requires an active Watchlist context.
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
         <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
-        Loading latest 48H news for {ticker}…
+        Loading news for {ticker}…
         <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  if (isError) {
+  const newsData = detail?.news;
+  const directArticles: any[] = newsData?.direct_catalyst_articles ?? [];
+  const regularArticles: any[]  = newsData?.articles ?? [];
+  const totalCount = directArticles.length + regularArticles.length;
+
+  if (!newsData) {
     return (
-      <div style={{ color: C.red, fontSize: 12, fontFamily: C.sansFont }}>
-        News data unavailable for {ticker}. Retrying automatically.
+      <div style={{ padding: 16, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
+        <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>
+          News data is not available for <strong style={{ color: C.text }}>{ticker}</strong>.
+        </p>
       </div>
     );
   }
 
-  if (!data) return null;
-
-  const articles = data.articles ?? [];
-  const backendCount = data.articles_48h;
-
-  // Count reconciliation — structural dev warning only
-  if (process.env.NODE_ENV !== 'production' && articles.length !== backendCount) {
-    console.warn('[NewsTab] count mismatch', { ticker, backendCount, articleArrayLength: articles.length });
-  }
-
-  if (articles.length === 0) {
+  if (totalCount === 0) {
     return (
       <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
-        No Yahoo or Google RSS articles detected for <strong style={{ color: C.text }}>{ticker}</strong> in the last 48 hours.
+        No recent news articles found for <strong style={{ color: C.text }}>{ticker}</strong>.
       </div>
     );
   }
 
-  const fmtProviders = (providers?: string[]): string | null => {
-    if (!providers?.length) return null;
-    return providers.map(p => p.toUpperCase()).join(' + ');
-  };
+  const renderArticle = (item: any, idx: number, isDirect: boolean) => (
+    <a
+      key={`${isDirect ? 'dc' : 'reg'}-${idx}`}
+      href={item.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex', flexDirection: 'column' as const, gap: 4,
+        padding: '11px 14px', borderRadius: 4,
+        textDecoration: 'none', transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = C.card}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      {isDirect && (
+        <span style={{
+          fontSize: 7, fontWeight: 800, color: C.amber,
+          fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>
+          Direct Catalyst
+        </span>
+      )}
+      <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>
+        {item.title}
+      </span>
+      {item.summary && (
+        <span style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+          {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
+        </span>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>
+          {item.source}
+        </span>
+        {item.published_at && (
+          <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+            {timeAgo(item.published_at)}
+          </span>
+        )}
+        {item.rss_providers?.length > 0 && (
+          <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, letterSpacing: '0.06em', marginLeft: 'auto' }}>
+            {item.rss_providers.map((p: string) => p.toUpperCase()).join(' + ')}
+          </span>
+        )}
+      </div>
+    </a>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-      {/* ── Header: count + window + freshness ── */}
+      {/* Header */}
       <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: C.font }}>
-            {backendCount} ARTICLES
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: C.font }}>
+          {totalCount} ARTICLE{totalCount !== 1 ? 'S' : ''}
+        </span>
+        {directArticles.length > 0 && (
+          <span style={{ fontSize: 9, color: C.amber, fontFamily: C.font, marginLeft: 8 }}>
+            · {directArticles.length} DIRECT CATALYST
           </span>
-          <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, letterSpacing: '0.05em' }}>
-            · LAST {data.window_hours}H
-          </span>
-          {data.coverage_status === 'warming' && (
-            <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 4 }}>
-              Comparison warming
-            </span>
-          )}
-        </div>
-        <div style={{ marginTop: 3, fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>
-          {data.last_full_sweep_at
-            ? `Updated ${timeAgo(data.last_full_sweep_at)}`
-            : 'Collector warming'}
-        </div>
+        )}
       </div>
 
-      {/* ── Article list — all counted articles, no cap ── */}
-      {articles.map((item, i) => {
-        const providerLabel = fmtProviders(item.rss_providers);
-        return (
-          <a
-            key={i}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex', flexDirection: 'column', gap: 4,
-              padding: '11px 14px', borderRadius: 4,
-              textDecoration: 'none', transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = C.card}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>
-              {item.title}
-            </span>
-            {item.summary && (
-              <span style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
-                {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
-              </span>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>
-              {providerLabel && (
-                <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, letterSpacing: '0.06em', marginLeft: 'auto' }}>
-                  {providerLabel}
-                </span>
-              )}
-            </div>
-          </a>
-        );
-      })}
+      {/* Direct catalyst articles first */}
+      {directArticles.length > 0 && (
+        <>
+          {directArticles.map((item, i) => renderArticle(item, i, true))}
+          {regularArticles.length > 0 && (
+            <div style={{ margin: '8px 0', borderBottom: `1px solid ${C.border}` }} />
+          )}
+        </>
+      )}
+
+      {/* Regular articles */}
+      {regularArticles.map((item, i) => renderArticle(item, i, false))}
     </div>
   );
 }
 
-/* ═══ Deep Dive Tab ═════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   Deep Dive Tab  (unchanged from original)
+   ═══════════════════════════════════════════════════════════════════ */
 const MODEL_OPTIONS = [
-  { id: 'grok',   label: 'Grok',   desc: 'X/Twitter sentiment, real-time news', color: C.bright },
-  { id: 'gemini', label: 'Gemini', desc: 'Google search headlines, web intelligence', color: C.blue },
-  { id: 'claude_gpt', label: 'Claude / GPT', desc: 'Deep reasoning & report structuring', color: C.purple },
+  { id: 'grok',      label: 'Grok',         desc: 'X/Twitter sentiment, real-time news', color: C.bright },
+  { id: 'gemini',    label: 'Gemini',        desc: 'Google search headlines, web intelligence', color: C.blue },
+  { id: 'claude_gpt',label: 'Claude / GPT', desc: 'Deep reasoning & report structuring', color: C.purple },
 ];
 
 interface DeepDiveTabProps {
@@ -762,11 +1071,9 @@ function DeepDiveTab({
     );
   };
 
-  /* Show report if we have data */
   if (data) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {/* Re-generate button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={onGenerate}
@@ -783,18 +1090,8 @@ function DeepDiveTab({
             Regenerate
           </button>
         </div>
-
-        {/* Grok section */}
-        {data.grok && (
-          <ReportSection title="Grok — X/Twitter Sentiment" color={C.bright} content={data.grok} />
-        )}
-
-        {/* Gemini section */}
-        {data.gemini && (
-          <ReportSection title="Gemini — Google Headlines" color={C.blue} content={data.gemini} />
-        )}
-
-        {/* Claude/GPT section */}
+        {data.grok   && <ReportSection title="Grok — X/Twitter Sentiment"  color={C.bright}  content={data.grok} />}
+        {data.gemini && <ReportSection title="Gemini — Google Headlines"   color={C.blue}    content={data.gemini} />}
         {(data.claude || data.gpt) && (
           <ReportSection
             title={data.claude ? 'Claude — Deep Analysis' : 'GPT — Deep Analysis'}
@@ -802,8 +1099,6 @@ function DeepDiveTab({
             content={data.claude || data.gpt}
           />
         )}
-
-        {/* Combined summary */}
         {data.summary && (
           <div>
             <SectionLabel>Combined Summary</SectionLabel>
@@ -812,8 +1107,6 @@ function DeepDiveTab({
             </div>
           </div>
         )}
-
-        {/* Bull / Bear */}
         {(data.bull_case || data.bear_case) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {data.bull_case && (
@@ -830,8 +1123,6 @@ function DeepDiveTab({
             )}
           </div>
         )}
-
-        {/* Risk factors */}
         {data.risk_factors?.length > 0 && (
           <div>
             <SectionLabel>Risk Factors</SectionLabel>
@@ -842,8 +1133,6 @@ function DeepDiveTab({
             </ul>
           </div>
         )}
-
-        {/* Technical + Analyst */}
         {data.technical_outlook && (
           <div>
             <SectionLabel>Technical Outlook</SectionLabel>
@@ -860,7 +1149,6 @@ function DeepDiveTab({
     );
   }
 
-  /* Loading skeleton */
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -876,7 +1164,6 @@ function DeepDiveTab({
     );
   }
 
-  /* Error state */
   if (error) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -905,7 +1192,6 @@ function DeepDiveTab({
     );
   }
 
-  /* Initial state — show picker */
   return (
     <ModelPicker
       ticker={ticker}
@@ -931,7 +1217,6 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header */}
       <div>
         <div style={{ fontSize: 14, fontWeight: 800, color: C.bright, fontFamily: C.sansFont, marginBottom: 4 }}>
           AI Deep Dive — {ticker}
@@ -941,7 +1226,6 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
         </p>
       </div>
 
-      {/* Model cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MODEL_OPTIONS.map(opt => {
           const checked = selectedModels.includes(opt.id);
@@ -962,7 +1246,7 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
             >
               {checked
                 ? <CheckSquare style={{ width: 16, height: 16, color: opt.color, flexShrink: 0 }} />
-                : <Square      style={{ width: 16, height: 16, color: C.dim,      flexShrink: 0 }} />
+                : <Square      style={{ width: 16, height: 16, color: C.dim,     flexShrink: 0 }} />
               }
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: checked ? opt.color : C.text, fontFamily: C.font }}>
@@ -973,7 +1257,6 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
                 </div>
               </div>
 
-              {/* Claude/GPT sub-selector */}
               {opt.id === 'claude_gpt' && checked && (
                 <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                   {(['claude', 'gpt'] as const).map(m => (
@@ -999,7 +1282,6 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
         })}
       </div>
 
-      {/* Generate button */}
       <button
         onClick={onGenerate}
         disabled={loading || selectedModels.length === 0}
@@ -1023,11 +1305,10 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
         </p>
       )}
 
-      {/* Info note */}
       <div style={{ padding: 12, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
         <p style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, margin: 0, lineHeight: 1.6 }}>
-          <strong style={{ color: C.text }}>How it works:</strong> Grok queries X/Twitter for real-time sentiment and breaking news. 
-          Gemini searches Google for analyst upgrades, headlines, and web intelligence. 
+          <strong style={{ color: C.text }}>How it works:</strong> Grok queries X/Twitter for real-time sentiment and breaking news.
+          Gemini searches Google for analyst upgrades, headlines, and web intelligence.
           Claude/GPT synthesizes everything into a structured analysis with bull/bear cases and risk factors.
           Generation typically takes 20-40 seconds.
         </p>
@@ -1036,7 +1317,7 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
   );
 }
 
-/* ── Report Section (for deep dive) ──────────────────────────────── */
+/* ── Report Section ───────────────────────────────────────────────── */
 function ReportSection({ title, color, content }: { title: string; color: string; content: any }) {
   const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
   return (
@@ -1056,7 +1337,22 @@ function ReportSection({ title, color, content }: { title: string; color: string
   );
 }
 
-/* ═══ Shared sub-components ═════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   Shared sub-components
+   ═══════════════════════════════════════════════════════════════════ */
+function LoadingRow({ label }: { label: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      color: C.dim, fontSize: 11, fontFamily: C.sansFont, padding: '8px 0',
+    }}>
+      <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+      {label}
+      <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{

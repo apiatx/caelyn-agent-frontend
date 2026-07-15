@@ -909,8 +909,6 @@ function V42ScreenerTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('confluence');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
-  const [selectedRow, setSelectedRow] = useState<any | null>(null);
-
   const handleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
     else { setSortKey(key); setSortDir('desc'); }
@@ -1020,19 +1018,18 @@ function V42ScreenerTable({
           ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}`
           : `max ${maxScr}`;
 
-        const isSelected = selectedRow != null && fmtTicker(selectedRow) === ticker;
         return (
           <div
             key={`v42-${ticker}-${i}`}
-            style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: isSelected ? 'rgba(14,165,233,0.05)' : 'transparent', boxShadow: isSelected ? 'inset 2px 0 0 rgba(14,165,233,0.4)' : 'none', transition: 'background 0.1s' }}
-            onClick={() => setSelectedRow(r)}
-            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-            onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+            style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: 'transparent', transition: 'background 0.1s' }}
+            onClick={() => onTickerClick?.(ticker)}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>{i + 1}</span>
 
             {/* Ticker */}
-            <div onClick={e => { e.stopPropagation(); onTickerClick?.(ticker); }} style={{ cursor: onTickerClick ? 'pointer' : 'default' }}>
+            <div style={{ cursor: 'pointer' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: CC.text, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>{ticker}</div>
               {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 88 }}>{company}</div>}
             </div>
@@ -1122,8 +1119,6 @@ function V42ScreenerTable({
         );
       })}
 
-      {/* Detail Drawer — rendered inside table so it has access to sorted state */}
-      {selectedRow && <V42DetailDrawer row={selectedRow} onClose={() => setSelectedRow(null)} />}
     </div>
   );
 }
