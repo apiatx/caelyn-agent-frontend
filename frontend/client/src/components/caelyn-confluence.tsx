@@ -805,7 +805,7 @@ function DecisionBadge({ state, display }: { state?: string | null; display?: st
   const cfg = DECISION_BADGE[key] ?? { label: ACTION_LABEL_DISPLAY[key] ?? key.replace(/_/g, ' '), clr: CC.dim, bg: 'transparent' };
   const text = display ?? cfg.label;
   return (
-    <span style={{ fontSize: 7, fontWeight: 800, letterSpacing: '0.05em', padding: '2px 5px', borderRadius: 3, background: cfg.bg, color: cfg.clr, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>
+    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.04em', padding: '2px 4px', borderRadius: 3, background: cfg.bg, color: cfg.clr, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>
       {text}
     </span>
   );
@@ -881,20 +881,20 @@ function BonusCell({ row }: { row: any }) {
 type SortKey = 'ticker' | 'confluence' | 'decision' | 'setup' | 'theme' | 'options' | 'entry_exit' | 'catalyst' | 'investment' | 'bonuses' | 'confidence';
 
 const COL_DEFS: { key: SortKey; label: string; width: string; title?: string }[] = [
-  { key: 'ticker',     label: 'Ticker',       width: '2fr'   },
-  { key: 'confluence', label: 'Confluence',   width: '1.3fr', title: 'Caelyn Confluence Score / 125 (core + bonus)' },
-  { key: 'decision',   label: 'Decision',     width: '1.8fr', title: 'Backend actionability state — not derived in frontend' },
-  { key: 'setup',      label: 'Setup',        width: '1fr',   title: 'Technical setup points / 8' },
-  { key: 'theme',      label: 'Theme',        width: '1fr',   title: 'Theme alignment points / 15' },
-  { key: 'options',    label: 'Options',      width: '1.3fr', title: 'Options alignment points / 20' },
-  { key: 'entry_exit', label: 'Entry / Exit', width: '1.3fr', title: 'Entry/Exit points / 12' },
-  { key: 'catalyst',   label: 'Catalyst',     width: '1fr',   title: 'Catalyst alignment points / 15' },
-  { key: 'investment', label: 'Investment',   width: '1.3fr', title: 'Investment alignment points / 15' },
-  { key: 'bonuses',    label: 'Bonuses',      width: '1fr',   title: 'Social + Whale/Insider + Bottleneck bonus points / 25' },
-  { key: 'confidence', label: 'Confidence',   width: '1fr',   title: 'Data completeness / trustworthiness — not bullishness' },
+  { key: 'ticker',     label: 'Ticker',   width: '1.6fr',  title: 'Ticker symbol and company name' },
+  { key: 'confluence', label: 'CCS',      width: '1fr',    title: 'Caelyn Confluence Score — Core/100 + Bonus' },
+  { key: 'decision',   label: 'Decision', width: '1.5fr',  title: 'Backend actionability state — not derived in frontend' },
+  { key: 'setup',      label: 'Setup',    width: '0.85fr', title: 'Technical setup points / 8' },
+  { key: 'theme',      label: 'Theme',    width: '0.85fr', title: 'Theme alignment points / 15' },
+  { key: 'options',    label: 'Options',  width: '1fr',    title: 'Options alignment points / 20' },
+  { key: 'entry_exit', label: 'Entry',    width: '0.85fr', title: 'Entry/Exit points / 12' },
+  { key: 'catalyst',   label: 'Catalyst', width: '0.85fr', title: 'Catalyst alignment points / 15' },
+  { key: 'investment', label: 'Invest.',  width: '1fr',    title: 'Investment alignment points / 15' },
+  { key: 'bonuses',    label: 'Bonus',    width: '0.75fr', title: 'Social + Whale/Insider + Bottleneck bonus points / 25' },
+  { key: 'confidence', label: 'Conf.',    width: '0.7fr',  title: 'Data completeness / trustworthiness — not bullishness' },
 ];
 
-const GRID_COLS = `22px ${COL_DEFS.map(c => c.width).join(' ')}`;
+const GRID_COLS = `18px ${COL_DEFS.map(c => c.width).join(' ')}`;
 
 /* ─── V4.2.1 Screener Table (shared across all tabs) ─────────────── */
 
@@ -981,8 +981,8 @@ function V42ScreenerTable({
   return (
     <div style={{ width: '100%' }}>
       {/* Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 6px', padding: '5px 4px 5px 0', borderBottom: `1px solid ${CC.border}`, marginBottom: 2 }}>
-        <span style={{ fontSize: 6, color: CC.dim, opacity: 0.4 }}>#</span>
+      <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}>
+        <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>#</span>
         {COL_DEFS.map(col => (
           <span key={col.key} style={hdr} onClick={() => handleSort(col.key)} title={col.title ?? col.label}>
             {col.label} {sortArrow(col.key)}
@@ -1020,20 +1020,21 @@ function V42ScreenerTable({
           ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}`
           : `max ${maxScr}`;
 
+        const isSelected = selectedRow != null && fmtTicker(selectedRow) === ticker;
         return (
           <div
             key={`v42-${ticker}-${i}`}
-            style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 6px', padding: '5px 4px', borderBottom: `1px solid ${CC.border}22`, alignItems: 'center', cursor: 'pointer' }}
+            style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: isSelected ? 'rgba(14,165,233,0.05)' : 'transparent', boxShadow: isSelected ? 'inset 2px 0 0 rgba(14,165,233,0.4)' : 'none', transition: 'background 0.1s' }}
             onClick={() => setSelectedRow(r)}
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
-            onMouseOut={e => { e.currentTarget.style.background = ''; }}
+            onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+            onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
           >
-            <span style={{ fontSize: 6, color: CC.dim, opacity: 0.4 }}>{i + 1}</span>
+            <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>{i + 1}</span>
 
             {/* Ticker */}
             <div onClick={e => { e.stopPropagation(); onTickerClick?.(ticker); }} style={{ cursor: onTickerClick ? 'pointer' : 'default' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: onTickerClick ? CC.teal : CC.text, fontFamily: CC.font, textDecoration: onTickerClick ? 'underline' : 'none', whiteSpace: 'nowrap' as const }}>{ticker}</div>
-              {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 100 }}>{company}</div>}
+              <div style={{ fontSize: 10, fontWeight: 800, color: CC.text, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>{ticker}</div>
+              {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 88 }}>{company}</div>}
             </div>
 
             {/* Confluence — Core/100 + Bonus, not Total/125 */}
@@ -1770,9 +1771,9 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
   const tech = (alphaData?.confluence_v42?.technical ?? v42?.technical) as V42Technical | undefined;
   const ccs  = row.caelyn_confluence_score != null ? Number(row.caelyn_confluence_score) : sc?.total ?? null;
 
-  const sec:  React.CSSProperties = { marginBottom: 16 };
-  const lbl_: React.CSSProperties = { fontSize: 7, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font, marginBottom: 6, display: 'block' };
-  const rr:   React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: `1px solid rgba(255,255,255,0.05)` };
+  const sec:  React.CSSProperties = { marginBottom: 12 };
+  const lbl_: React.CSSProperties = { fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font, marginBottom: 4, display: 'block' };
+  const rr:   React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: `1px solid rgba(255,255,255,0.04)` };
   const kk:   React.CSSProperties = { fontSize: 8, color: CC.dim, fontFamily: CC.font };
   const vv:   React.CSSProperties = { fontSize: 8, color: CC.text, fontWeight: 600, fontFamily: CC.font };
 
@@ -1798,13 +1799,13 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9998 }} />
-      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 400, zIndex: 9999, background: '#0d0d12', borderLeft: `1px solid ${CC.border}`, display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const }}>
+      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 380, zIndex: 9999, background: '#0a0a0e', borderLeft: `1px solid rgba(255,255,255,0.08)`, display: 'flex', flexDirection: 'column' as const, overflowY: 'auto' as const }}>
 
         {/* Header */}
-        <div style={{ padding: '14px 16px', borderBottom: `1px solid ${CC.border}`, position: 'sticky', top: 0, background: '#0d0d12', zIndex: 1 }}>
+        <div style={{ padding: '11px 14px', borderBottom: `1px solid rgba(255,255,255,0.07)`, position: 'sticky', top: 0, background: '#0a0a0e', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: CC.teal, fontFamily: CC.font }}>{ticker}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: CC.teal, fontFamily: CC.font }}>{ticker}</div>
               {company && <div style={{ fontSize: 9, color: CC.dim, fontFamily: CC.font, marginTop: 2 }}>{company}</div>}
             </div>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: CC.dim, fontSize: 20, cursor: 'pointer', padding: '0 4px', fontFamily: CC.font, lineHeight: 1 }}>×</button>
@@ -1833,7 +1834,7 @@ function V42DetailDrawer({ row, onClose }: { row: any; onClose: () => void }) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: '14px 16px', flex: 1 }}>
+        <div style={{ padding: '10px 14px', flex: 1 }}>
 
           {/* Action: bucket + why_now / why_wait */}
           {act && (
@@ -2120,25 +2121,25 @@ export function CaelynConfluenceSection({
 
   if (!rows.length) return null;
   return (
-    <div style={{ margin: '0 20px 6px', background: CC.surface, border: `1px solid ${CC.border}`, borderRadius: 10, overflow: 'hidden' }}>
+    <div style={{ margin: '0 20px 8px', background: CC.surface, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 8, overflow: 'hidden' }}>
       <div
-        style={{ padding: '9px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid ${CC.border}` : 'none' }}
+        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid rgba(255,255,255,0.07)` : 'none' }}
         onClick={() => setOpen(v => !v)}
       >
         <div>
-          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
+          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
           <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, marginTop: 1 }}>Actionability · Investment quality · Catalysts · Policy tailwinds · Risk</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {coverageLabel && (
             <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, opacity: 0.7 }}>{coverageLabel}</span>
           )}
-          <span style={{ color: CC.dim, fontSize: 10, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
+          <span style={{ color: CC.dim, fontSize: 9, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
         </div>
       </div>
       {open && (
         <>
-          <div style={{ display: 'flex', borderBottom: `1px solid ${CC.border}`, overflowX: 'auto' as const }}>
+          <div style={{ display: 'flex', borderBottom: `1px solid rgba(255,255,255,0.07)`, overflowX: 'auto' as const }}>
             {CONF_TABS.map(t => {
               const active = tab === t.key;
               return (
@@ -2146,12 +2147,12 @@ export function CaelynConfluenceSection({
                   key={t.key}
                   onClick={() => setTab(t.key)}
                   style={{
-                    fontSize: 8, fontWeight: 700, letterSpacing: '0.05em',
-                    padding: '7px 13px', cursor: 'pointer',
+                    fontSize: 8, fontWeight: active ? 700 : 500, letterSpacing: '0.04em',
+                    padding: '5px 11px', cursor: 'pointer',
                     background: 'transparent', border: 'none',
                     borderBottom: active ? `2px solid ${CC.teal}` : '2px solid transparent',
-                    color: active ? CC.teal : CC.dim,
-                    fontFamily: CC.font, whiteSpace: 'nowrap' as const, transition: 'all 0.12s',
+                    color: active ? CC.teal : 'rgba(169,170,166,0.65)',
+                    fontFamily: CC.font, whiteSpace: 'nowrap' as const, transition: 'color 0.10s',
                   }}
                 >
                   {t.label}
@@ -2159,7 +2160,7 @@ export function CaelynConfluenceSection({
               );
             })}
           </div>
-          <div style={{ padding: '12px 14px', maxHeight: 480, overflowY: 'auto' as const }}>
+          <div style={{ padding: '8px 10px', maxHeight: 560, overflowY: 'auto' as const, overflowX: 'auto' as const }}>
             {tab === 'all'               && <V42ScreenerTable rows={analyzedRows}                                                    onTickerClick={onTickerClick} />}
             {tab === 'actionable'        && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_actionable_setup   ?? r.is_actionable_setup)   === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_actionable_setup = true." />}
             {tab === 'near_actionable'   && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_near_actionable    ?? r.is_near_actionable)    === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_near_actionable = true." />}

@@ -1,0 +1,347 @@
+Watchlist Confluence Cosmetic Polish Only
+
+Perform a frontend-only cosmetic polish and slight redesign of the existing Caelyn Confluence section on the Watchlist page.
+
+This is strictly a visual/UI task.
+
+Hard constraints
+Do not change any backend code.
+Do not change any API calls, endpoints, response shapes, data mapping, scoring logic, ranking logic, filters, tabs, actionability logic, drawer logic, or state behavior.
+Do not rename or move the Confluence section.
+Do not turn it into a new page.
+Do not move it into the Technical/Fundamental screener toggles.
+Do not remove any existing information or functionality.
+Do not invent replacement components or parallel implementations.
+Preserve the existing component paths and architecture.
+Modify the current Watchlist Confluence implementation in place.
+Do not perform unrelated Watchlist cleanup.
+No backend agent is needed.
+
+Before editing, identify the exact existing frontend files and components responsible for:
+
+The Confluence section container
+The Confluence filter tabs
+The table/header/rows
+The score and status badges
+The right-side detail drawer
+
+Report those paths briefly, then edit those exact existing components.
+
+Design goal
+
+Make the section feel:
+
+professional-grade
+cleaner
+tighter
+sleeker
+more deliberate
+less visually noisy
+better integrated with the rest of the Watchlist page
+
+The current section looks like a separate terminal squeezed into the page. It should instead feel like a native Watchlist section using the same visual language, spacing, borders, typography, and density as the surrounding page.
+
+Do not radically redesign the product. This is a polished refinement of the existing UI.
+
+1. Overall section container
+
+Polish the outer Confluence card so it matches the other major Watchlist sections.
+
+Match the surrounding page’s card border color, border opacity, radius, background, and internal padding.
+Reduce excessive vertical dead space.
+Tighten the distance between:
+the ticker strip above
+the Confluence section
+the Upcoming Earnings section below
+Match the standard section spacing already used elsewhere on the Watchlist page.
+Remove any “card inside a card” appearance where unnecessary.
+Avoid thick, bright, or competing borders.
+Keep the section clearly separated without making it look boxed-in.
+Ensure the card width and left/right alignment match the other Watchlist sections exactly.
+
+The section should look intentionally placed, not inserted after the rest of the page was finished.
+
+2. Header
+
+Keep the existing CAELYN CONFLUENCE title and supporting subtitle, but refine the hierarchy.
+
+Slightly reduce the title’s visual weight if it currently dominates.
+Keep the title compact and premium-looking.
+Make the subtitle more muted and readable.
+Align the scored-count/status area cleanly on the right.
+Vertically center the title, subtitle, and right-side metadata.
+Reduce unnecessary header height.
+Use the same typography conventions as the rest of the Watchlist page.
+Do not add large new headings or decorative elements.
+3. Filter tabs
+
+Keep all existing tabs and behavior:
+
+All Confluence
+Actionable
+Near Actionable
+Watch for Reset
+Risk / Conflicts
+Investment Quality
+
+Visually refine them:
+
+Make the tab row shorter and tighter.
+Reduce oversized padding.
+Use a more subtle active state.
+Avoid the current large bright-blue outlined-box appearance.
+Match the page’s existing toggle/tab styling where possible.
+Use a clean underline, restrained fill, or subtle border for the selected tab.
+Keep inactive tabs muted but fully legible.
+Maintain clear hover and keyboard-focus states.
+Prevent long labels from creating awkward spacing.
+Keep the row horizontally scrollable on narrower screens if required, without wrapping into multiple ugly lines.
+
+Do not change filtering logic or tab counts.
+
+4. Table layout and column sizing
+
+The table needs the most attention.
+
+Improve:
+
+column widths
+text widths
+alignment
+row density
+spacing
+typography hierarchy
+horizontal-scroll behavior
+Requirements
+Make ticker labels white, not blue.
+Tickers may still have a subtle hover treatment, but they must not appear like bright blue web links.
+Remove excessive spacing between columns.
+Reduce row height approximately 15–25%, while keeping the content readable.
+Reduce unnecessary left/right cell padding.
+Give each column a deliberate minimum and maximum width.
+Prevent short values from consuming oversized columns.
+Prevent descriptive text from stretching the table excessively.
+Use truncation with ellipsis where appropriate.
+Preserve full values through existing tooltips, title attributes, or hover affordances where useful.
+Keep numeric scores aligned consistently.
+Use tabular numerals where supported.
+Vertically align all row content.
+Ensure headers line up precisely with the corresponding row values.
+Make the table feel dense and premium, not cramped.
+Suggested width hierarchy
+
+Use the actual existing columns, but size them according to importance:
+
+Row number: extremely narrow and muted
+Ticker: compact
+Main score: compact but visually prominent
+Decision/status: compact fixed width
+Setup: medium width
+Theme: medium width
+Options: compact
+Entry/Exit: compact-medium
+Catalyst: compact
+Investment Quality: medium
+Bonus: compact
+Confidence: compact
+
+Do not blindly use equal-width columns.
+
+Text hierarchy inside cells
+
+Each component cell currently shows a score plus descriptive text. Refine this pattern:
+
+score: primary
+descriptor: secondary and smaller
+data-status note: tertiary and muted
+
+Examples such as:
+
+7.1 / 8
+High-Tight Continuation
+LKG market closed
+
+should not all compete visually at the same weight.
+
+Use:
+
+stronger score text
+smaller muted descriptor
+very muted status/source note
+
+Do not hide or remove these values.
+
+5. Color discipline
+
+The current table uses too many bright colors simultaneously.
+
+Preserve the semantic meaning of existing colors, but reduce visual noise.
+
+White or soft-white for primary labels and tickers.
+Cyan/blue only for selective emphasis.
+Green for positive/high-quality states.
+Amber for caution or incomplete states.
+Red only for genuine risk/conflict states.
+Purple only for bonus-related information.
+Muted gray for metadata and source notes.
+
+Not every score needs to glow.
+
+Use color to communicate hierarchy, not decorate every cell.
+
+Do not change the underlying score thresholds or semantic meaning.
+
+6. Status badges
+
+Refine badges such as:
+
+Near Entry
+Wait for Retest
+Ready to Enter
+Actionable
+timing/status labels
+
+Requirements:
+
+smaller height
+tighter horizontal padding
+consistent radius
+consistent font size
+restrained fills and borders
+consistent minimum width where useful
+no oversized neon pills
+
+Keep the badges legible and semantic, but more professional.
+
+Do not change their text or logic.
+
+7. Row interactions
+
+Keep existing row-click and drawer behavior.
+
+Visually improve:
+
+subtle row hover background
+clear selected-row state while the drawer is open
+no aggressive glow
+no layout shift on hover
+preserve cursor and accessibility behavior
+
+Where the existing implementation already permits it, make the row feel like one coherent clickable object. Do not rewrite interaction logic merely to achieve this.
+
+8. Horizontal and vertical scrolling
+
+Clean up scrolling behavior.
+
+Preserve all existing columns.
+Keep horizontal scrolling available when necessary.
+Avoid showing a heavy scrollbar unless the user is actively scrolling or the design system already shows it.
+Prevent the card from overflowing the page.
+Ensure the table does not force the entire Watchlist page wider than the viewport.
+Keep the header aligned with the scrolling body.
+Preserve any existing sticky behavior unless it is visually broken.
+Do not introduce virtualization or data-loading changes.
+9. Detail drawer cosmetic polish
+
+Polish the existing right-side ticker detail drawer without changing its content, calculations, or behavior.
+
+Drawer shell
+Match the page’s dark styling.
+Refine border, shadow, and backdrop.
+Tighten padding.
+Reduce overly large vertical gaps.
+Ensure the close button is aligned and easy to find.
+Keep the ticker and score visually prominent without making the header oversized.
+Information hierarchy
+
+Visually group the existing content into clear sections:
+
+Decision / Action
+Why Now
+Why Wait
+Caution Flags
+Data Coverage
+Score Breakdown
+Components
+Bonuses
+
+Do not remove or reorder data in a way that changes meaning. This is visual grouping only.
+
+Score bars and component rows
+Align labels, quality values, bars, and scores precisely.
+Use consistent bar widths and heights.
+Reduce excessive gaps.
+Make low-information or unavailable states visually muted.
+Keep numbers readable.
+Avoid making every bar brightly colored.
+Coverage states
+
+Badges such as:
+
+FIB PENDING
+WHALE/INSIDER NOT WIRED
+
+should look informative, not alarming.
+
+Use subdued warning styling unless the existing semantic state represents a true failure.
+
+10. Responsive behavior
+
+Maintain usability on common desktop widths.
+
+The Watchlist page is desktop-dense, so prioritize desktop polish.
+At narrower widths, preserve horizontal table scrolling rather than crushing all columns.
+Prevent the drawer from covering unusably large portions of the table.
+Do not alter core responsive behavior outside this section.
+Do not redesign the entire Watchlist page.
+11. Reuse existing styles
+
+Before adding new CSS, inspect and reuse existing:
+
+Watchlist card styles
+table styles
+toggle styles
+badge styles
+typography tokens
+spacing variables
+border colors
+background colors
+
+Avoid creating a separate design system specifically for Confluence.
+
+Use the project’s current styling approach, whether that is CSS modules, Tailwind, styled components, shared classes, or another established pattern.
+
+Do not introduce a new UI library.
+
+Acceptance criteria
+
+The work is complete only when:
+
+The Confluence section remains in its current Watchlist location.
+All existing tabs, rows, values, drawer content, and behavior still work.
+No backend files are changed.
+No API or data logic is changed.
+Ticker labels are white instead of blue.
+The section has tighter, more intentional spacing.
+Columns have deliberate widths.
+Rows are denser and easier to scan.
+Primary scores, descriptions, and metadata have a clear hierarchy.
+Colors are less noisy.
+Tabs and badges look more refined.
+The detail drawer is cleaner and better organized.
+The section visually matches the rest of the Watchlist page.
+No unrelated components are changed.
+Type checking and the existing frontend validation/build commands pass.
+
+At completion, provide:
+
+Exact files changed
+Concise summary of cosmetic changes
+Confirmation that no API, backend, scoring, filtering, or state logic changed
+Validation/build results
+Before/after screenshots of:
+full Confluence section
+Actionable tab
+open detail drawer
+
+Do not stop after describing the redesign. Implement it in the existing frontend.
