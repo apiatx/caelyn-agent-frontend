@@ -254,7 +254,7 @@ export function StockDetailModal({
   const fmpExchange: string | null = identityData?.[ticker.toUpperCase()]?.exchange ?? null;
 
   const { data: detail, isLoading: detailLoading } = useQuery<any>({
-    queryKey: ['ticker-detail', ticker.toUpperCase()],
+    queryKey: ['ticker-detail', ticker.toUpperCase(), 'v3'],
     queryFn: async () => {
       const r = await fetch(`/api/watchlist/ticker-detail/${encodeURIComponent(ticker)}`, {
         credentials: 'include',
@@ -264,7 +264,8 @@ export function StockDetailModal({
       /* Normalize response envelope: { data: { data: {} } } | { data: {} } | { result: {} } | flat */
       return raw?.data?.data ?? raw?.data ?? raw?.result ?? raw;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: true,
     retry: 1,
     enabled: !!ticker,
   });
@@ -442,17 +443,57 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
   const [descExpanded, setDescExpanded] = useState(false);
 
-  const company = detail?.company ?? detail?.company_profile ?? detail?.profile ?? null;
   const conf = detail?.confluence_v42 ?? detail?.confluence ?? null;
   const isNewFmt = stock?._format === 'new';
 
-  /* Priority: company.description → company.profile.description → company_profile.description → overview.description → stock.description */
-  const description =
-    company?.description
-    ?? company?.profile?.description
+  /* Explicit source objects — never merge row fallback into detailCompany */
+  const detailCompany = detail?.company ?? null;
+
+  /* About field priority — each field read independently, detailCompany always wins */
+  const aboutName =
+    detailCompany?.name
+    ?? detailCompany?.company_name
+    ?? detailCompany?.companyName
+    ?? stock?.name
+    ?? stock?.company
+    ?? confluenceRow?.company
+    ?? ticker;
+
+  const aboutTicker = detailCompany?.symbol ?? ticker;
+
+  const aboutExchange =
+    detailCompany?.exchange
+    ?? stock?.exchange
+    ?? confluenceRow?.exchange
+    ?? fmpExchange
+    ?? null;
+
+  const aboutSector =
+    detailCompany?.sector
+    ?? confluenceRow?.sector
+    ?? stock?.sector
+    ?? null;
+
+  const aboutIndustry =
+    detailCompany?.industry
+    ?? confluenceRow?.industry
+    ?? stock?.industry
+    ?? null;
+
+  const aboutMarketCap =
+    detailCompany?.market_cap
+    ?? confluenceRow?.market_cap
+    ?? null;
+
+  /* Description priority chain — never let row fallback overwrite detailCompany */
+  const aboutDescription: string | null =
+    detailCompany?.description
+    ?? detailCompany?.profile?.description
     ?? detail?.company_profile?.description
+    ?? detail?.company_profile?.profile?.description
     ?? detail?.overview?.description
     ?? stock?.description
+    ?? confluenceRow?.description
     ?? null;
 
   const ABOUT_LIMIT = 700;
@@ -489,48 +530,42 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
               {/* Name + ticker + exchange */}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
                 <span style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>
-                  {company?.name ?? company?.company_name ?? stock?.name ?? stock?.company ?? ticker}
+                  {aboutName}
                 </span>
-                <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{ticker}</span>
-                {(company?.exchange ?? fmpExchange) && (
+                <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{aboutTicker}</span>
+                {aboutExchange && (
                   <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>
-                    {company?.exchange ?? fmpExchange}
+                    {aboutExchange}
                   </span>
                 )}
               </div>
 
               {/* Metadata chips */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 6, marginBottom: 14 }}>
-                {(company?.sector ?? confluenceRow?.sector ?? stock?.sector) && (
-                  <MetricBox label="Sector" value={String(company?.sector ?? confluenceRow?.sector ?? stock?.sector)} raw />
-                )}
-                {(company?.industry ?? confluenceRow?.industry ?? stock?.industry) && (
-                  <MetricBox label="Industry" value={String(company?.industry ?? confluenceRow?.industry ?? stock?.industry)} raw />
-                )}
-                {(company?.market_cap ?? confluenceRow?.market_cap) != null && (
-                  <MetricBox label="Mkt Cap" value={fmtLarge(company?.market_cap ?? confluenceRow?.market_cap)} raw />
-                )}
-                {company?.country && <MetricBox label="Country" value={company.country} raw />}
-                {company?.beta != null && <MetricBox label="Beta" value={Number(company.beta).toFixed(2)} raw />}
-                {company?.employees != null && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
-                {(company?.ceo ?? company?.ceo_name) && (
-                  <MetricBox label="CEO" value={String(company?.ceo ?? company?.ceo_name)} raw />
+                {aboutSector   && <MetricBox label="Sector"    value={String(aboutSector)}   raw />}
+                {aboutIndustry && <MetricBox label="Industry"  value={String(aboutIndustry)} raw />}
+                {aboutMarketCap != null && <MetricBox label="Mkt Cap" value={fmtLarge(aboutMarketCap)} raw />}
+                {detailCompany?.country   && <MetricBox label="Country"   value={detailCompany.country}                              raw />}
+                {detailCompany?.beta != null && <MetricBox label="Beta"   value={Number(detailCompany.beta).toFixed(2)}               raw />}
+                {detailCompany?.employees != null && <MetricBox label="Employees" value={fmtLarge(detailCompany.employees)}          raw />}
+                {(detailCompany?.ceo ?? detailCompany?.ceo_name) && (
+                  <MetricBox label="CEO" value={String(detailCompany?.ceo ?? detailCompany?.ceo_name)} raw />
                 )}
               </div>
 
               {/* Website */}
-              {company?.website && (
+              {detailCompany?.website && (
                 <div style={{ marginBottom: 10 }}>
-                  <a href={company.website} target="_blank" rel="noopener noreferrer"
+                  <a href={detailCompany.website} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 11, color: C.teal, fontFamily: C.sansFont, textDecoration: 'none' }}>
-                    {String(company.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                    {String(detailCompany.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
                   </a>
                 </div>
               )}
 
               {/* Description */}
-              {description ? (() => {
-                const full = String(description);
+              {aboutDescription ? (() => {
+                const full = String(aboutDescription);
                 const isLong = full.length > ABOUT_LIMIT;
                 const shown = isLong && !descExpanded ? full.slice(0, ABOUT_LIMIT) + '…' : full;
                 return (

@@ -1,0 +1,280 @@
+FRONTEND ONLY — FIX ABOUT DESCRIPTION DATA BINDING, NO STYLING
+
+Frontend repo only.
+
+Do not touch backend.
+Do not redesign Overview.
+Do not touch Confluence section.
+Do not touch Technical tab.
+Do not touch Fundamentals tab.
+Do not touch News tab.
+Do not change styling except if absolutely required to display the description.
+Do not create a new endpoint.
+Do not create provider calls.
+
+Problem:
+
+The Overview Confluence section is now good.
+
+But About still shows:
+
+TSM
+TSM
+NYSE
+Company profile unavailable for TSM.
+
+Backend previously confirmed ticker-detail descriptions were stored for:
+TSM, OSS, ANET, VRT, ENTG, ABCL, CRWD, CLFD.
+
+So this is now a data binding/cache/proxy issue unless the live frontend endpoint response still lacks description.
+
+Goal:
+
+Find exactly why company.description is not rendering for TSM and fix only that.
+
+==================================================
+PART 1 — HARD INSPECT THE LIVE FRONTEND RESPONSE
+==================================================
+
+In the running frontend app, inspect the actual response used by the modal for:
+
+GET /api/watchlist/ticker-detail/TSM
+
+Do this from the browser/network path that the modal actually uses, not from a guessed curl.
+
+Add a temporary console log inside StockDetailModal queryFn or immediately after the normalized detail object is created.
+
+Log exactly:
+
+{
+  symbol,
+  rawResponseKeys,
+  normalizedDetailKeys,
+  detailCompany: detail?.company,
+  companyDescription: detail?.company?.description,
+  companyProfileDescription: detail?.company?.profile?.description,
+  companyProfile: detail?.company?.profile,
+  overviewDescription: detail?.overview?.description,
+  companyProfileTopLevel: detail?.company_profile,
+  stockDescription: stock?.description,
+  confluenceRowDescription: confluenceRow?.description
+}
+
+Also log:
+
+- query key used by React Query
+- staleTime/cacheTime/gcTime if configured
+- whether query is enabled
+- whether modal is using stale cached response
+- whether response came from browser cache/React Query cache
+
+Then remove or gate debug logs before final.
+
+==================================================
+PART 2 — STOP IF BACKEND RESPONSE LACKS DESCRIPTION
+==================================================
+
+If the actual frontend network response for /api/watchlist/ticker-detail/TSM has:
+
+company.description = null/undefined
+and no description anywhere else in the response
+
+STOP.
+
+Do not patch frontend.
+
+Report:
+
+“Backend endpoint still does not return description in the frontend environment.”
+
+Include the exact response company object.
+
+This would mean backend fix did not deploy/restart into the environment frontend is calling, or the proxy is hitting a different backend instance.
+
+==================================================
+PART 3 — IF RESPONSE HAS DESCRIPTION, FIX FRONTEND MAPPING
+==================================================
+
+If the response does contain the description, fix the About mapping.
+
+Use this exact source priority:
+
+const aboutDescription =
+  detail?.company?.description
+  ?? detail?.company?.profile?.description
+  ?? detail?.company_profile?.description
+  ?? detail?.company_profile?.profile?.description
+  ?? detail?.overview?.description
+  ?? stock?.description
+  ?? confluenceRow?.description
+  ?? null;
+
+Make sure the About component uses aboutDescription directly.
+
+Do not accidentally use company.description where company is row fallback instead of detail.company.
+
+Create explicit variables:
+
+const detailCompany = detail?.company ?? null;
+const rowCompany = stock ?? confluenceRow ?? null;
+
+const aboutName =
+  detailCompany?.name
+  ?? detailCompany?.company_name
+  ?? detailCompany?.companyName
+  ?? stock?.name
+  ?? stock?.company
+  ?? confluenceRow?.company
+  ?? ticker;
+
+const aboutTicker =
+  detailCompany?.symbol
+  ?? ticker;
+
+const aboutExchange =
+  detailCompany?.exchange
+  ?? stock?.exchange
+  ?? confluenceRow?.exchange
+  ?? null;
+
+const aboutDescription = [priority chain above]
+
+Render aboutDescription, not company?.description from a merged object that may have overwritten the backend company with row fallback.
+
+==================================================
+PART 4 — FIX MERGE ORDER IF NEEDED
+==================================================
+
+Check whether frontend currently does something like:
+
+const company = stock ?? detail.company
+
+or merges:
+
+{ ...detail.company, ...stock }
+
+That can overwrite backend description with undefined from the row.
+
+Correct merge order must preserve backend description:
+
+const company = {
+  ...(stockCompanyFallback ?? {}),
+  ...(detail?.company ?? {}),
+}
+
+or better:
+
+do not merge for description — use explicit aboutDescription priority.
+
+Important:
+
+Never let selected row fallback overwrite detail.company.description with undefined/null.
+
+==================================================
+PART 5 — REACT QUERY CACHE INVALIDATION
+==================================================
+
+If the issue is stale React Query cache from before backend fix:
+
+- include a version in the query key, e.g.
+  ['ticker-detail', ticker, 'v2-company-description']
+  or invalidate ticker-detail queries when modal opens
+
+- make sure refetchOnMount is true for ticker detail
+- make sure staleTime is not effectively infinite for ticker-detail endpoint during active dev
+
+Do not add polling.
+
+The modal should refetch when opening a ticker after backend changes.
+
+==================================================
+PART 6 — VALIDATE MULTIPLE SYMBOLS
+==================================================
+
+Validate in the actual running app:
+
+TSM
+OSS
+ANET
+CLFD
+VRT
+ENTG
+ABCL
+CRWD
+
+For each report:
+
+symbol
+endpoint company.description exists?
+description length
+rendered in About?
+about title correct?
+exchange correct?
+description source path used
+
+Expected:
+
+TSM should render full description.
+OSS should render full description.
+ANET should render full description.
+CLFD should still render full description.
+
+==================================================
+PART 7 — FINAL REPORT
+==================================================
+
+Return:
+
+ABOUT DESCRIPTION DATA BINDING FIX REPORT
+
+ROOT CAUSE:
+[one of: backend response missing / frontend mapping wrong / row fallback overwrote description / stale React Query cache / proxy wrong backend / other]
+
+LIVE RESPONSE INSPECTION:
+[TSM company object summary]
+
+FIX APPLIED:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+ABOUT DESCRIPTION VERDICT
+
+TSM_ENDPOINT_RETURNS_DESCRIPTION:
+[YES/NO]
+
+TSM_DESCRIPTION_RENDERED:
+[YES/NO]
+
+OSS_DESCRIPTION_RENDERED:
+[YES/NO]
+
+ANET_DESCRIPTION_RENDERED:
+[YES/NO]
+
+CLFD_STILL_RENDERED:
+[YES/NO]
+
+ROW_FALLBACK_NO_LONGER_OVERWRITES_DESCRIPTION:
+[YES/NO]
+
+REACT_QUERY_CACHE_FIXED_IF_NEEDED:
+[YES/NO/NOT_NEEDED]
+
+CONFLUENCE_SECTION_UNTOUCHED:
+[YES/NO]
+
+TECHNICAL_TAB_UNTOUCHED:
+[YES/NO]
+
+FUNDAMENTALS_TAB_UNTOUCHED:
+[YES/NO]
+
+NEWS_TAB_UNTOUCHED:
+[YES/NO]
