@@ -2148,7 +2148,7 @@ export function CaelynConfluenceSection({
         onClick={() => setOpen(v => !v)}
       >
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#fff', fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#fff', fontFamily: CC.font }}>CONFLUENCE</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {coverageLabel && (

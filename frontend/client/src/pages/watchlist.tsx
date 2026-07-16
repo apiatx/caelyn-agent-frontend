@@ -5522,10 +5522,10 @@ export default function WatchlistPage() {
               </div>
             </div>
 
-            {/* ── Signal Summary Strip (ticker chips) ── */}
-            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+            {/* ── Upcoming Earnings ── */}
+            {renderEarningsSection()}
 
-            {/* ── Caelyn Confluence ── use alignment rows when available, else CSV-merged fallback */}
+            {/* ── Confluence ── use alignment rows when available, else CSV-merged fallback */}
             {(confluenceRows ?? csvMergedScreenerRows).length > 0 && (
               <CaelynConfluenceSection
                 rows={confluenceRows ?? csvMergedScreenerRows}
@@ -5535,8 +5535,8 @@ export default function WatchlistPage() {
               />
             )}
 
-            {/* ── Upcoming Earnings ── */}
-            {renderEarningsSection()}
+            {/* ── Signal Summary Strip (ticker chips) ── */}
+            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
 
             {/* ── Strategy Score Panel ── */}
             {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
