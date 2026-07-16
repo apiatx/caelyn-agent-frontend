@@ -759,7 +759,7 @@ function readV42(row: any) {
       entry_exit:     comp(compsRaw.entry_exit,          row.entry_exit_points ?? row.entry_risk_reward_points, 12),
       catalyst:       comp(compsRaw.catalyst_alignment,  row.catalyst_alignment_points,                       12),
       investment:     comp(compsRaw.investment_alignment,row.investment_alignment_points,                     12),
-      valuation:      comp(compsRaw.valuation,           row.valuation_points,                                8, row.valuation_coverage_status ?? 'coverage_unknown'),
+      valuation:      comp(compsRaw.valuation_alignment ?? compsRaw.valuation, row.valuation_alignment_points ?? row.valuation_points, 8, row.valuation_coverage_status ?? 'coverage_unknown'),
     },
     bonuses: {
       social:        { points: socialPts, max_points: 15, sections_hit: row.social_sections_hit ?? 0, status: row.social_confluence_hit ? 'available' : 'no_social_coverage', confluence_hit: row.social_confluence_hit },
@@ -1322,7 +1322,7 @@ function V42ScreenerTable({
           >
             <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>{i + 1}</span>
             {visibleCols.map(col => (
-              <React.Fragment key={col.key}>{cellFor(col.key)}</React.Fragment>
+              <div key={col.key} style={{ display: 'contents' }}>{cellFor(col.key)}</div>
             ))}
           </div>
         );
@@ -2315,10 +2315,27 @@ export function CaelynConfluenceSection({
       }
       console.groupEnd();
     }
+    /* Valuation field audit */
+    const valAudit = analyzedRows.reduce((acc, r) => {
+      const v42 = readV42(r);
+      const valPts = v42?.components?.valuation?.points;
+      if (valPts != null) acc.via_v42++;
+      else if (r.valuation_alignment_points != null) acc.via_flat++;
+      else acc.missing++;
+      return acc;
+    }, { via_v42: 0, via_flat: 0, missing: 0 });
+    console.log('Valuation audit → via v42 components:', valAudit.via_v42, '| via flat key:', valAudit.via_flat, '| missing:', valAudit.missing);
+    if (analyzedRows.length > 0) {
+      const sr = analyzedRows[0];
+      const v42s = readV42(sr);
+      console.log('Sample valuation (', (sr.ticker ?? 'unknown').toUpperCase(), ') → v42_comps:', JSON.stringify(v42s?.components?.valuation ?? null), '| flat valuation_alignment_points:', sr.valuation_alignment_points, '| valuation_label:', sr.valuation_label, '| v42_raw_keys:', Object.keys(sr.caelyn_confluence_v42_components ?? {}).sort().join(', '));
+    }
     /* Sample row keys for debugging */
     if (analyzedRows.length > 0) {
       const sampleSym = (analyzedRows[0].ticker ?? analyzedRows[0].symbol ?? 'unknown').toUpperCase();
+      const vKeys = Object.keys(analyzedRows[0]).filter(k => k.startsWith('val'));
       console.log('Sample row keys (' + sampleSym + '):', Object.keys(analyzedRows[0]).sort().join(', '));
+      console.log('Valuation keys on row:', vKeys.join(', ') || '(none)');
     }
     console.groupEnd();
   // eslint-disable-next-line react-hooks/exhaustive-deps

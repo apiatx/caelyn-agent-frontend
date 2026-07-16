@@ -2915,6 +2915,7 @@ export default function WatchlistPage() {
       const cat  = r.catalyst        && typeof r.catalyst        === 'object' ? r.catalyst        : {};
       const tp   = r.theme_policy    && typeof r.theme_policy    === 'object' ? r.theme_policy    : {};
       const opts = r.options         && typeof r.options         === 'object' ? r.options         : {};
+      const val  = r.valuation_alignment && typeof r.valuation_alignment === 'object' ? r.valuation_alignment : (r.valuation && typeof r.valuation === 'object' ? r.valuation : {});
 
       /* Derive caelyn_confluence_bucket from actionability.state when backend hasn't computed it.
          Full mapping from backend actionability.state values → spec bucket taxonomy. */
@@ -2967,6 +2968,14 @@ export default function WatchlistPage() {
         theme_policy_theme:     r.theme_policy_theme     ?? tp.theme ?? tp.name ?? null,
         /* Flat options */
         options_alignment_score: r.options_alignment_score ?? opts.alignment_score ?? null,
+        /* Flat valuation — extracted from nested r.valuation_alignment or r.valuation object */
+        valuation_alignment_points: r.valuation_alignment_points ?? val.points ?? val.alignment_points ?? null,
+        valuation_quality_score:    r.valuation_quality_score    ?? val.quality_score ?? null,
+        valuation_label:            r.valuation_label            ?? val.label ?? val.quality_label ?? null,
+        valuation_coverage_status:  r.valuation_coverage_status  ?? val.coverage_status ?? null,
+        valuation_pe_ratio:         r.valuation_pe_ratio         ?? val.pe_ratio ?? null,
+        valuation_ps_ratio:         r.valuation_ps_ratio         ?? val.ps_ratio ?? null,
+        valuation_forward_pe:       r.valuation_forward_pe       ?? val.forward_pe ?? null,
         /* Confluence — null from backend until computed, derived bucket present */
         caelyn_confluence_score:  r.caelyn_confluence_score  ?? null,
         caelyn_confluence_bucket: derivedBucket,

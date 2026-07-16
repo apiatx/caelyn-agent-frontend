@@ -1,0 +1,303 @@
+AUDIT FIRST — FIX VALUATION COLUMN SHOWING DASH IN VISIBLE CONFLUENCE TABLE
+
+Goal:
+
+The visible Confluence table Valuation column still shows “—”.
+
+Do not guess.
+Do not do styling.
+Do not touch Score Lens.
+Do not touch actionability.
+Do not change valuation scoring formula unless the audit proves backend values are missing.
+Do not rewrite the table.
+
+We need to determine whether this is:
+
+A) backend scorer missing valuation
+B) backend table endpoint/adapter not passing valuation
+C) stale cache/snapshot
+D) frontend reading wrong row keys
+
+Based on prior backend audits, caelyn_confluence_v42.py appears to calculate valuation and returns fields:
+- valuation_alignment_points
+- valuation_quality_score
+- valuation_label
+- valuation_coverage_status
+- valuation_pe_ratio
+- valuation_ps_ratio
+- valuation_forward_pe
+- component breakdown key "valuation"
+
+But the visible table still shows “—”, so trace the exact visible table data path.
+
+==================================================
+PART 1 — INSPECT ACTUAL VISIBLE TABLE ROW OBJECT
+==================================================
+
+Frontend repo first.
+
+In the running Confluence table, inspect the actual row object used to render one row.
+
+Use TSM, VRT, CRWD, SMCI, ABCL.
+
+Log or inspect exactly:
+
+row.symbol
+row.valuation_alignment_points
+row.valuation_quality_score
+row.valuation_label
+row.valuation_coverage_status
+row.confluence_v42?.valuation_alignment_points
+row.confluence_v42?.components?.valuation
+row.components?.valuation
+row.caelyn_confluence_valuation_alignment_points
+row.caelyn_confluence_valuation_label
+row.caelyn_confluence_components?.valuation
+
+Also inspect all keys containing:
+- valuation
+- val
+- component
+- confluence
+
+Return the exact key list.
+
+Do not patch yet.
+
+==================================================
+PART 2 — INSPECT VISIBLE TABLE API RESPONSE
+==================================================
+
+Find the exact endpoint/query feeding the visible Confluence table.
+
+It may not be ticker-detail.
+
+For that endpoint, inspect raw response for:
+
+TSM
+VRT
+CRWD
+SMCI
+ABCL
+
+Check whether each raw API row includes:
+
+valuation_alignment_points
+valuation_quality_score
+valuation_label
+valuation_coverage_status
+components.valuation
+confluence_v42.components.valuation
+
+If the API response has valuation fields but frontend row does not:
+- frontend transform/mapping is dropping them.
+
+If API response does not have valuation fields:
+- backend endpoint/adapter/cache is the issue.
+
+==================================================
+PART 3 — BACKEND TRACE ONLY IF API RESPONSE LACKS VALUATION
+==================================================
+
+Backend repo only if Part 2 proves the visible table API lacks valuation.
+
+Trace the visible Confluence table endpoint.
+
+Find the exact backend function that builds rows for the Confluence table.
+
+Check whether it calls the current V4.2 scorer or reads a retained snapshot/cache.
+
+For TSM, VRT, CRWD, SMCI, ABCL, compare:
+
+A. Direct caelyn_confluence_v42 compute result:
+valuation_alignment_points
+valuation_label
+components.valuation
+
+B. Visible table endpoint row:
+valuation_alignment_points
+valuation_label
+components.valuation
+
+C. Any retained snapshot/cache row:
+valuation_alignment_points
+valuation_label
+components.valuation
+
+Find where valuation is lost.
+
+Likely places:
+- row serializer
+- retained snapshot adapter
+- caelyn_confluence_* prefix mapper
+- cache schema written before valuation existed
+- frontend API proxy transform
+- old endpoint still used by visible table
+
+==================================================
+PART 4 — FIX BASED ON ROOT CAUSE
+==================================================
+
+Case A — backend scorer has valuation but visible table endpoint drops it:
+
+Patch the backend visible table row serializer/adapter to include:
+
+valuation_alignment_points
+valuation_quality_score
+valuation_label
+valuation_coverage_status
+valuation_missing_fields
+valuation_pe_ratio
+valuation_ps_ratio
+valuation_forward_pe
+valuation_forward_pe_source
+valuation_forward_pe_is_approximate
+valuation_forward_pe_warning_codes
+valuation_pe_value_score
+valuation_ps_value_score
+valuation_forward_pe_value_score
+valuation_explanation
+components.valuation
+
+Do not change scoring.
+
+Case B — retained snapshot/cache is stale:
+
+Refresh/rebuild the retained Confluence snapshot through the existing safe refresh path.
+
+Do not create request-time FMP calls.
+Do not create a new provider path.
+
+Make sure future refresh writes valuation fields.
+
+Case C — API response has valuation but frontend mapping is wrong:
+
+Patch frontend Valuation column read function to use the actual keys found in Part 1/2.
+
+Fallback chain should include:
+
+row.valuation_alignment_points
+row.caelyn_confluence_valuation_alignment_points
+row.confluence_v42?.valuation_alignment_points
+row.confluence_v42?.components?.valuation?.points
+row.components?.valuation?.points
+readV42(row)?.components?.valuation?.points
+
+Label fallback:
+
+row.valuation_label
+row.caelyn_confluence_valuation_label
+row.valuation_coverage_status
+row.caelyn_confluence_valuation_coverage_status
+row.confluence_v42?.valuation_label
+row.confluence_v42?.components?.valuation?.label
+row.components?.valuation?.label
+
+If value is 0:
+show 0.0 / 8, not “—”.
+
+Only show “—” if all valuation point fields are missing/null/undefined.
+
+==================================================
+PART 5 — VALIDATION
+==================================================
+
+Validate visible table with:
+
+TSM
+VRT
+CRWD
+SMCI
+ABCL
+NVDA
+ENTG
+MU
+
+For each report:
+
+symbol
+direct_v42_valuation_points
+visible_api_valuation_points
+frontend_row_valuation_points
+rendered_valuation_cell
+valuation_label
+
+Expected:
+- TSM should not be “—”
+- VRT should not be “—”
+- CRWD should not be “—”
+- SMCI should not be “—”
+- ABCL should not be “—” if backend has at least P/S
+- 0 values should render as 0.0 / 8, not dash
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+VALUATION COLUMN ROOT-CAUSE REPORT
+
+ROOT CAUSE:
+[backend scorer / backend endpoint adapter / stale snapshot / frontend mapping / other]
+
+VISIBLE TABLE ENDPOINT:
+[name/path]
+
+DIRECT V42 COMPUTE:
+[table]
+
+VISIBLE API RESPONSE:
+[table]
+
+FRONTEND ROW OBJECT:
+[table]
+
+FIX APPLIED:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+VALUATION COLUMN VERDICT
+
+BACKEND_SCORER_HAS_VALUATION:
+[YES/NO]
+
+VISIBLE_TABLE_API_HAS_VALUATION:
+[YES/NO]
+
+FRONTEND_ROW_HAS_VALUATION:
+[YES/NO]
+
+VALUATION_COLUMN_READS_CORRECT_KEYS:
+[YES/NO]
+
+ZERO_VALUES_RENDER_AS_0_NOT_DASH:
+[YES/NO]
+
+TSM_VALUATION_VISIBLE:
+[YES/NO]
+
+VRT_VALUATION_VISIBLE:
+[YES/NO]
+
+CRWD_VALUATION_VISIBLE:
+[YES/NO]
+
+SMCI_VALUATION_VISIBLE:
+[YES/NO]
+
+STALE_CACHE_OR_SNAPSHOT_FIXED:
+[YES/NO/NOT_NEEDED]
+
+SCORING_FORMULA_UNCHANGED:
+[YES/NO]
+
+ACTIONABILITY_UNCHANGED:
+[YES/NO]
