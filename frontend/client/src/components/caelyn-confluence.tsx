@@ -2142,14 +2142,13 @@ export function CaelynConfluenceSection({
 
   if (!rows.length) return null;
   return (
-    <div style={{ margin: '0 20px 8px', background: CC.surface, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 8, overflow: 'hidden' }}>
+    <div style={{ margin: '20px 20px 8px', background: CC.surface, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 8, overflow: 'hidden' }}>
       <div
-        style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid rgba(255,255,255,0.07)` : 'none' }}
+        style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid rgba(255,255,255,0.07)` : 'none' }}
         onClick={() => setOpen(v => !v)}
       >
         <div>
-          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: CC.teal, fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
-          <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, marginTop: 1 }}>Actionability · Investment quality · Catalysts · Policy tailwinds · Risk</div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#fff', fontFamily: CC.font }}>CAELYN CONFLUENCE</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {coverageLabel && (
