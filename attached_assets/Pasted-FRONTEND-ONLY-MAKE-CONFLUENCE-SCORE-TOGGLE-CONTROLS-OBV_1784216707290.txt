@@ -1,0 +1,411 @@
+FRONTEND ONLY — MAKE CONFLUENCE SCORE TOGGLE CONTROLS OBVIOUS + USER-FACING
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend scoring.
+Do not change actionability labels.
+Do not change canonical Confluence data.
+Do not create endpoints.
+Do not add provider calls.
+Do not rewrite the table.
+
+The previous pass added adjusted-score logic, but the user cannot see how to actually exclude/remove a component column from the Confluence score.
+
+Problem:
+
+The toggle behavior is too hidden. It relies on clicking the column label, which is not discoverable, and may conflict visually with sorting.
+
+Goal:
+
+Add a clear, visible user-facing control area above the Confluence table that lets the user include/exclude each core Confluence component from the adjusted CCS calculation.
+
+The user should immediately understand:
+
+- which components are currently included
+- which components are excluded
+- how to exclude Catalyst, Investment, Valuation, etc.
+- how to re-enable them
+- how to reset all weights
+- that the displayed CCS is adjusted when exclusions are active
+
+==================================================
+PART 1 — ADD SCORE LENS CONTROL BAR ABOVE TABLE
+==================================================
+
+Add a visible control bar directly above the Confluence table header.
+
+Title:
+
+"Score Lens"
+
+Subtitle:
+
+"Exclude components to see how CCS changes without them."
+
+Controls:
+
+Create toggle chips/buttons for:
+
+- Theme /15
+- Setup /8
+- Options /18
+- Entry /12
+- Catalyst /12
+- Investment /12
+- Valuation /8
+
+Stage /15 remains always included because there is no visible Stage column yet.
+
+Each chip should show:
+
+Active state:
+- normal/bright style
+- check icon or "Included"
+- example: "✓ Catalyst /12"
+
+Inactive/excluded state:
+- gray/dulled style
+- slash/disabled icon or "Excluded"
+- example: "⊘ Catalyst /12"
+
+Clicking a chip toggles that component in/out of adjusted CCS.
+
+Add a clear reset button:
+
+"Reset Score Lens"
+
+Clicking reset:
+- re-enables all components
+- restores canonical CCS
+- clears localStorage
+
+==================================================
+PART 2 — OPTIONAL HIDE EXCLUDED COLUMNS TOGGLE
+==================================================
+
+Add a small toggle/checkbox:
+
+"Hide excluded columns"
+
+Default: OFF
+
+When OFF:
+- excluded columns remain visible but muted/gray
+- their values are still visible for context
+
+When ON:
+- excluded component columns are hidden from the table entirely
+- adjusted CCS still excludes them
+- reset brings all columns back
+
+This satisfies both modes:
+- gray out excluded column
+- actually remove excluded column from table view
+
+Do not hide non-component columns:
+- Ticker
+- CCS
+- Decision
+- Bonus
+- Confidence
+
+Only hide these if excluded and hide mode is ON:
+- Theme
+- Setup
+- Options
+- Entry
+- Catalyst
+- Investment
+- Valuation
+
+==================================================
+PART 3 — MAKE TABLE HEADERS ALSO SHOW STATE
+==================================================
+
+Keep header click/toggle behavior only if it does not conflict with sorting.
+
+But add visible header affordance:
+
+For each toggleable component header:
+
+Active:
+Theme /15
+small eye/check icon
+
+Excluded:
+Theme /15
+small slash icon
+muted gray text
+tooltip: "Excluded from adjusted CCS. Click Score Lens to include."
+
+Do not rely only on header click.
+
+Sorting arrows must still work.
+
+If header click conflicts with sorting:
+- remove header-click toggle
+- only use Score Lens chips for toggling
+- keep sort arrows untouched
+
+==================================================
+PART 4 — ADJUSTED CCS DISPLAY MUST BE OBVIOUS
+==================================================
+
+When one or more components are excluded, show a banner above table:
+
+"Adjusted CCS active: excluding Catalyst, Investment"
+
+Also show:
+
+"Active max: 76 / 100"
+
+Examples:
+
+If Catalyst excluded:
+active max = 88 / 100
+
+If Catalyst + Investment excluded:
+active max = 76 / 100
+
+If Catalyst + Investment + Valuation excluded:
+active max = 68 / 100
+
+In the CCS cell, show:
+
+Adjusted score large:
+"74.2 adj"
+
+Original canonical score small muted:
+"68.9 orig"
+
+If no components are excluded:
+- show canonical score normally
+- no adjusted banner
+- no "adj/orig" clutter
+
+==================================================
+PART 5 — FIX COLUMN VISIBILITY + DIMMING
+==================================================
+
+When a component is excluded and Hide Excluded Columns is OFF:
+
+- entire column header muted
+- entire column cells muted
+- reduced opacity
+- optional diagonal hatch / subtle gray background
+- value still readable
+
+When Hide Excluded Columns is ON:
+
+- column is not rendered
+- table layout adjusts cleanly
+- no blank column gap
+
+Do not hide Stage because Stage has no visible column.
+
+==================================================
+PART 6 — LOCAL STORAGE
+==================================================
+
+Persist:
+
+disabled components:
+caelyn_confluence_disabled_components_v1
+
+hide excluded columns:
+caelyn_confluence_hide_excluded_columns_v1
+
+On page load:
+- restore both states
+- adjusted CCS should immediately reflect restored exclusions
+
+Reset Score Lens:
+- clear both disabled components and hide mode
+- restore canonical view
+
+==================================================
+PART 7 — SCORE FORMULA MUST REMAIN CORRECT
+==================================================
+
+Do not change the formula from the previous pass.
+
+Adjusted Core Score:
+
+activeCorePoints =
+  stage_points
+  + all active visible component points
+
+activeCoreMax =
+  15
+  + max of all active visible components
+
+adjustedCoreScore =
+  activeCorePoints / activeCoreMax * 100
+
+Component maxes:
+
+Stage: 15 always included
+Theme: 15
+Setup: 8
+Options: 18
+Entry: 12
+Catalyst: 12
+Investment: 12
+Valuation: 8
+
+Examples:
+
+Disable Catalyst:
+active max = 88
+
+Disable Catalyst + Investment:
+active max = 76
+
+Disable Catalyst + Investment + Valuation:
+active max = 68
+
+Disable everything visible:
+active max = 15 because Stage remains on
+
+No NaN.
+No divide by zero.
+
+==================================================
+PART 8 — DO NOT CHANGE ACTIONABILITY
+==================================================
+
+Do not recalculate:
+
+- Decision
+- READY / NEAR / WATCH labels
+- execution state
+- bucket
+- why_now
+- why_wait
+- risk flags
+
+These stay canonical from backend.
+
+The adjusted score is only a local ranking/scoring lens.
+
+==================================================
+PART 9 — VALIDATION IN RUNNING UI
+==================================================
+
+Do not claim success from HMR only.
+
+Validate in the running app.
+
+Test these exact interactions:
+
+1. User can see Score Lens controls above the table without knowing to click headers.
+2. Click Catalyst chip.
+   - Catalyst chip turns gray/excluded.
+   - Catalyst column grays out.
+   - Adjusted banner appears.
+   - Active max says 88 / 100.
+   - CCS shows adjusted score + original score.
+3. Click Investment chip.
+   - Investment excluded too.
+   - Active max says 76 / 100.
+   - CCS recalculates.
+4. Click Valuation chip.
+   - Active max says 68 / 100.
+   - Valuation column grays out.
+5. Toggle "Hide excluded columns."
+   - Catalyst, Investment, Valuation columns disappear.
+   - CCS remains adjusted.
+6. Turn Hide Excluded Columns off.
+   - Columns return muted.
+7. Click Catalyst again.
+   - Catalyst re-enabled.
+   - Active max updates.
+8. Click Reset Score Lens.
+   - all chips active
+   - all columns visible
+   - adjusted banner disappears
+   - canonical CCS restored
+9. Sorting still works.
+10. Decision labels unchanged.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Return:
+
+VISIBLE SCORE LENS CONTROL REPORT
+
+FILES CHANGED:
+[list]
+
+CONTROL BAR:
+[summary]
+
+TOGGLE CHIPS:
+[summary]
+
+HIDE EXCLUDED COLUMNS:
+[summary]
+
+ADJUSTED CCS DISPLAY:
+[summary]
+
+COLUMN DIMMING / HIDING:
+[summary]
+
+LOCAL STORAGE:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+VISIBLE SCORE LENS VERDICT
+
+SCORE_LENS_BAR_VISIBLE:
+[YES/NO]
+
+USER_CAN_EXCLUDE_CATALYST_WITH_VISIBLE_CONTROL:
+[YES/NO]
+
+USER_CAN_EXCLUDE_MULTIPLE_COMPONENTS:
+[YES/NO]
+
+EXCLUDED_COLUMNS_GRAY_OUT:
+[YES/NO]
+
+HIDE_EXCLUDED_COLUMNS_WORKS:
+[YES/NO]
+
+ACTIVE_MAX_DISPLAYED:
+[YES/NO]
+
+CATALYST_EXCLUDED_ACTIVE_MAX_88:
+[YES/NO]
+
+CATALYST_INVESTMENT_EXCLUDED_ACTIVE_MAX_76:
+[YES/NO]
+
+CATALYST_INVESTMENT_VALUATION_EXCLUDED_ACTIVE_MAX_68:
+[YES/NO]
+
+ADJUSTED_AND_ORIGINAL_SCORE_BOTH_VISIBLE:
+[YES/NO]
+
+RESET_SCORE_LENS_WORKS:
+[YES/NO]
+
+SORTING_STILL_WORKS:
+[YES/NO]
+
+ACTIONABILITY_LABELS_UNCHANGED:
+[YES/NO]
+
+FRONTEND_ONLY:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

@@ -905,6 +905,16 @@ const COMP_MAX: Record<string, number> = {
   stage: 15, theme: 15, setup: 8, options: 18,
   entry_exit: 12, catalyst: 12, investment: 12, valuation: 8,
 };
+const LS_KEY_HIDE = 'caelyn_confluence_hide_excluded_columns_v1';
+const LENS_CHIPS: { key: SortKey; label: string; max: number }[] = [
+  { key: 'theme',      label: 'Theme',     max: 15 },
+  { key: 'setup',      label: 'Setup',     max: 8  },
+  { key: 'options',    label: 'Options',   max: 18 },
+  { key: 'entry_exit', label: 'Entry',     max: 12 },
+  { key: 'catalyst',   label: 'Catalyst',  max: 12 },
+  { key: 'investment', label: 'Invest.',   max: 12 },
+  { key: 'valuation',  label: 'Valuation', max: 8  },
+];
 
 /* ─── V4.2.1 Screener Table (shared across all tabs) ─────────────── */
 
@@ -925,6 +935,9 @@ function V42ScreenerTable({
       if (stored) return new Set(JSON.parse(stored) as SortKey[]);
     } catch {}
     return new Set<SortKey>();
+  });
+  const [hideExcluded, setHideExcluded] = useState<boolean>(() => {
+    try { return localStorage.getItem(LS_KEY_HIDE) === 'true'; } catch {} return false;
   });
 
   const isAdjusted = disabledCols.size > 0;
@@ -947,7 +960,8 @@ function V42ScreenerTable({
 
   const resetWeights = () => {
     setDisabledCols(new Set());
-    try { localStorage.removeItem(LS_KEY_DISABLED); } catch {}
+    setHideExcluded(false);
+    try { localStorage.removeItem(LS_KEY_DISABLED); localStorage.removeItem(LS_KEY_HIDE); } catch {}
   };
 
   const computeAdjustedCCS = useCallback((r: any): number | null => {
@@ -975,6 +989,20 @@ function V42ScreenerTable({
     const result = (activePts / activeMax) * 100;
     return Number.isFinite(result) ? result : null;
   }, [disabledCols]);
+
+  const activeMax = useMemo(() => {
+    let m = COMP_MAX.stage;
+    for (const key of Object.keys(COMP_MAX)) {
+      if (key !== 'stage' && !disabledCols.has(key as SortKey)) m += COMP_MAX[key];
+    }
+    return m;
+  }, [disabledCols]);
+
+  const visibleCols = useMemo(() =>
+    COL_DEFS.filter(col => !hideExcluded || !TOGGLEABLE_COLS.has(col.key) || !disabledCols.has(col.key)),
+    [hideExcluded, disabledCols]
+  );
+  const gridCols = `18px ${visibleCols.map(c => c.width).join(' ')}`;
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'desc' ? 1 : -1;
@@ -1037,64 +1065,101 @@ function V42ScreenerTable({
   };
 
   const sortArrow = (key: SortKey) => {
-    if (key !== sortKey) return <span style={{ opacity: 0.25, fontSize: 6, cursor: 'pointer' }}>↕</span>;
-    return <span style={{ color: CC.teal, fontSize: 6, cursor: 'pointer' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>;
+    if (key !== sortKey) return <span style={{ opacity: 0.25, fontSize: 6 }}>↕</span>;
+    return <span style={{ color: CC.teal, fontSize: 6 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>;
   };
 
-  const disabledColNames = [...disabledCols].map(k => COL_DEFS.find(c => c.key === k)?.label ?? k);
+  const disabledColNames = [...disabledCols].map(k => LENS_CHIPS.find(c => c.key === k)?.label ?? k);
 
   return (
     <div style={{ width: '100%' }}>
-      {/* Adjusted mode banner */}
-      {isAdjusted ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 2px 5px', flexWrap: 'wrap' as const }}>
-          <span style={{ fontSize: 7, color: CC.amber, fontFamily: CC.font, letterSpacing: '0.04em' }}>
-            Adjusted CCS · excluding: {disabledColNames.join(', ')}
-          </span>
+
+      {/* ── Score Lens Control Bar ─────────────────────────────────────── */}
+      <div style={{ background: 'rgba(255,255,255,0.025)', border: `1px solid rgba(255,255,255,0.07)`, borderRadius: 6, padding: '8px 10px', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap' as const, gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 8, fontWeight: 700, color: CC.text, fontFamily: CC.font, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Score Lens</span>
+            <span style={{ fontSize: 6.5, color: CC.dim, fontFamily: CC.font }}>Exclude components to see how CCS changes without them.</span>
+          </div>
           <button
-            onClick={e => { e.stopPropagation(); resetWeights(); }}
-            style={{ fontSize: 7, padding: '1px 7px', borderRadius: 3, border: `1px solid ${CC.border}`, background: 'transparent', color: CC.dim, cursor: 'pointer', fontFamily: CC.font }}
+            onClick={resetWeights}
+            style={{ fontSize: 7, padding: '2px 8px', borderRadius: 3, border: `1px solid ${CC.border}`, background: 'transparent', color: CC.dim, cursor: 'pointer', fontFamily: CC.font, whiteSpace: 'nowrap' as const }}
           >
-            Reset weights
+            Reset Score Lens
           </button>
         </div>
-      ) : (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 2px 4px' }}>
-          <span style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, opacity: 0.35 }}>Click component column labels to exclude from CCS</span>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+          {LENS_CHIPS.map(({ key, label, max }) => {
+            const excluded = disabledCols.has(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggleCol(key)}
+                title={excluded ? 'Click to include in adjusted CCS' : 'Click to exclude from adjusted CCS'}
+                style={{
+                  fontSize: 7, padding: '3px 9px', borderRadius: 10, cursor: 'pointer', fontFamily: CC.font,
+                  border: excluded ? `1px solid rgba(100,116,139,0.35)` : `1px solid ${CC.teal}`,
+                  background: excluded ? 'rgba(100,116,139,0.07)' : 'rgba(14,165,233,0.08)',
+                  color: excluded ? 'rgba(100,116,139,0.55)' : CC.teal,
+                  fontWeight: excluded ? 400 : 600,
+                  transition: 'all 0.12s',
+                  lineHeight: 1.5,
+                }}
+              >
+                {excluded ? '⊘' : '✓'} {label} /{max}
+              </button>
+            );
+          })}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 7, color: CC.dim, fontFamily: CC.font, cursor: 'pointer', marginLeft: 6 }}>
+            <input
+              type="checkbox"
+              checked={hideExcluded}
+              onChange={e => {
+                const v = e.target.checked;
+                setHideExcluded(v);
+                try { localStorage.setItem(LS_KEY_HIDE, String(v)); } catch {}
+              }}
+              style={{ cursor: 'pointer', width: 10, height: 10, accentColor: CC.teal }}
+            />
+            Hide excluded columns
+          </label>
+        </div>
+      </div>
+
+      {/* ── Adjusted mode banner ─────────────────────────────────────── */}
+      {isAdjusted && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '3px 2px 6px', flexWrap: 'wrap' as const }}>
+          <span style={{ fontSize: 7, color: CC.amber, fontFamily: CC.font, letterSpacing: '0.03em' }}>
+            Adjusted CCS active: excluding {disabledColNames.join(', ')}
+          </span>
+          <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>
+            Active max: <span style={{ color: CC.text, fontWeight: 700 }}>{activeMax}</span> / 100
+          </span>
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}>
         <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>#</span>
-        {COL_DEFS.map(col => {
-          const isToggleable = TOGGLEABLE_COLS.has(col.key);
-          const isOff        = disabledCols.has(col.key);
-          const labelColor   = isOff ? 'rgba(100,116,139,0.4)' : CC.dim;
-          const activeTitle  = isToggleable
-            ? (isOff ? 'Excluded from adjusted CCS. Click to include.' : 'Included in adjusted CCS. Click to exclude.')
-            : (col.title ?? col.label);
+        {visibleCols.map(col => {
+          const isOff = disabledCols.has(col.key);
+          const labelColor = isOff ? 'rgba(100,116,139,0.45)' : CC.dim;
           return (
-            <span key={col.key} style={{ ...hdr, color: labelColor }} title={activeTitle}>
-              {isToggleable ? (
-                <span
-                  onClick={e => { e.stopPropagation(); toggleCol(col.key); }}
-                  style={{ cursor: 'pointer', opacity: isOff ? 0.45 : 1, textDecoration: isOff ? 'line-through' : 'none' }}
-                >
-                  {col.label}
-                </span>
-              ) : (
-                <span onClick={() => handleSort(col.key)} style={{ cursor: 'pointer' }}>{col.label}</span>
-              )}
-              <span onClick={() => handleSort(col.key)}>
-                {sortArrow(col.key)}
-              </span>
+            <span
+              key={col.key}
+              style={{ ...hdr, color: labelColor, cursor: 'pointer' }}
+              onClick={() => handleSort(col.key)}
+              title={isOff ? 'Excluded from adjusted CCS. Use Score Lens above to include.' : (col.title ?? col.label)}
+            >
+              {isOff && <span style={{ marginRight: 2, fontSize: 5, opacity: 0.6 }}>⊘</span>}
+              {col.label}
+              {' '}{sortArrow(col.key)}
             </span>
           );
         })}
       </div>
 
-      {/* Data rows */}
+      {/* ── Data rows ────────────────────────────────────────────────── */}
       {sorted.map((r, i) => {
         const ticker     = fmtTicker(r);
         const company    = fmtCompany(r);
@@ -1125,135 +1190,140 @@ function V42ScreenerTable({
           : r.confluence_v42?.valuation_alignment_points != null ? Number(r.confluence_v42.valuation_alignment_points)
           : null;
         const valLabel: string | null =
-          comps.valuation?.label
-          ?? comps.valuation?.quality_label
-          ?? r.valuation_label
-          ?? r.valuation_coverage_status
-          ?? r.confluence_v42?.valuation_label
-          ?? r.confluence_v42?.components?.valuation?.label
-          ?? null;
+          comps.valuation?.label ?? comps.valuation?.quality_label ?? r.valuation_label
+          ?? r.valuation_coverage_status ?? r.confluence_v42?.valuation_label
+          ?? r.confluence_v42?.components?.valuation?.label ?? null;
         const adjCCS     = isAdjusted ? computeAdjustedCCS(r) : null;
         const canonCore  = v42 ? v42.score.core : ccs;
         const displayScore = isAdjusted && adjCCS != null ? adjCCS : canonCore;
         const ccsClr     = displayScore != null ? ccsColor(displayScore) : CC.dim;
-        const dimCell    = (key: SortKey): React.CSSProperties => disabledCols.has(key) ? { opacity: 0.28 } : {};
+        const dimStyle   = (key: SortKey): React.CSSProperties => disabledCols.has(key) ? { opacity: 0.28 } : {};
 
         const ccsTooltip = v42
-          ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}${isAdjusted ? `\nAdj: ${adjCCS != null ? adjCCS.toFixed(1) : '—'}` : ''}`
+          ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}${isAdjusted ? `\nAdj: ${adjCCS != null ? adjCCS.toFixed(1) : '—'} (max ${activeMax})` : ''}`
           : `max ${maxScr}`;
+
+        const cellFor = (key: SortKey): React.ReactNode => {
+          switch (key) {
+            case 'ticker': return (
+              <div style={{ cursor: 'pointer' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: CC.text, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>{ticker}</div>
+                {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 88 }}>{company}</div>}
+              </div>
+            );
+            case 'confluence': return (
+              <div title={ccsTooltip} style={{ cursor: 'help' }}>
+                {isAdjusted && adjCCS != null
+                  ? <>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>
+                        {adjCCS.toFixed(1)} <span style={{ fontSize: 6, fontWeight: 400, color: CC.amber }}>adj</span>
+                      </div>
+                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, opacity: 0.65 }}>
+                        {canonCore != null ? canonCore.toFixed(1) : '—'} orig
+                      </div>
+                    </>
+                  : v42
+                    ? <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{v42.score.core.toFixed(1)}</div>
+                        <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/100 · <span style={{ color: v42.score.bonus > 0 ? CC.purple : CC.dim }}>+{v42.score.bonus.toFixed(1)}</span></div>
+                      </>
+                    : ccs != null
+                      ? <>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs.toFixed(1)}</div>
+                          <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
+                        </>
+                      : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'decision': return (
+              <div>
+                <DecisionBadge state={v42?.action.label ?? r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null} display={v42?.action.label_display} />
+                {(v42?.action.execution_label ?? r.entry_execution_label) && (
+                  <div style={{ fontSize: 6, color: CC.amber, fontFamily: CC.font, marginTop: 2, whiteSpace: 'nowrap' as const }}>
+                    {v42?.action.execution_label ?? r.entry_execution_label}
+                  </div>
+                )}
+              </div>
+            );
+            case 'setup': return (
+              <div style={dimStyle('setup')}>
+                {stagePts != null
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(stagePts, stageMax), fontFamily: CC.font }}>{stagePts.toFixed(1)} / {stageMax}</div>
+                      {stageLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{stageLabel}</div>}</>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'theme': return (
+              <div title={themeName ?? ''} style={dimStyle('theme')}>
+                {themePts != null
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(themePts, 15), fontFamily: CC.font }}>{themePts.toFixed(1)} / 15</div>
+                      {themeName && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{themeName.replace(/_/g, ' ')}</div>}</>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'options': return (
+              <div style={dimStyle('options')}><OptionsStatusCell row={r} /></div>
+            );
+            case 'entry_exit': return (
+              <div style={dimStyle('entry_exit')}>
+                {entryPts != null
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(entryPts, 12), fontFamily: CC.font }}>{entryPts.toFixed(1)} / 12</div>
+                      {entryStatus && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{String(entryStatus).replace(/_/g, ' ')}</div>}</>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'catalyst': return (
+              <div title={catLkgSrc ?? ''} style={dimStyle('catalyst')}>
+                {catWarming
+                  ? <span style={{ fontSize: 7, fontWeight: 600, color: CC.amber, fontFamily: CC.font }}>Warming</span>
+                  : catPts != null
+                    ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(catPts, 12), fontFamily: CC.font }}>{catPts.toFixed(1)} / 12</div>
+                        {catType && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{catType}</div>}</>
+                    : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'investment': return (
+              <div style={dimStyle('investment')}>
+                {invPts != null
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(invPts, 12), fontFamily: CC.font }}>{invPts.toFixed(1)} / 12</div>
+                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                        {invLabel ?? (invPillars != null ? `${invPillars}/3 pillars` : '')}
+                      </div></>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'valuation': return (
+              <div style={dimStyle('valuation')}>
+                {valPts != null
+                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(valPts, 8), fontFamily: CC.font }}>{valPts.toFixed(1)} / 8</div>
+                      {valLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{valLabel}</div>}</>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            case 'bonuses': return <BonusCell row={r} />;
+            case 'confidence': return (
+              <div title="Data completeness / trustworthiness — not bullishness">
+                {confNum != null
+                  ? <div style={{ fontSize: 9, fontWeight: 700, color: confNum >= 80 ? CC.green : confNum >= 50 ? CC.amber : CC.red, fontFamily: CC.font }}>{Math.round(confNum)}%</div>
+                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+              </div>
+            );
+            default: return null;
+          }
+        };
 
         return (
           <div
             key={`v42-${ticker}-${i}`}
-            style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: 'transparent', transition: 'background 0.1s' }}
+            style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: 'transparent', transition: 'background 0.1s' }}
             onClick={() => onTickerClick?.(ticker)}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>{i + 1}</span>
-
-            {/* Ticker */}
-            <div style={{ cursor: 'pointer' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: CC.text, fontFamily: CC.font, whiteSpace: 'nowrap' as const }}>{ticker}</div>
-              {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 88 }}>{company}</div>}
-            </div>
-
-            {/* Confluence — adjusted or canonical */}
-            <div title={ccsTooltip} style={{ cursor: 'help' }}>
-              {isAdjusted && adjCCS != null
-                ? <>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{adjCCS.toFixed(1)}</div>
-                    <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>
-                      adj · <span style={{ opacity: 0.5 }}>orig {canonCore != null ? canonCore.toFixed(1) : '—'}</span>
-                    </div>
-                  </>
-                : v42
-                  ? <>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{v42.score.core.toFixed(1)}</div>
-                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/100 · <span style={{ color: v42.score.bonus > 0 ? CC.purple : CC.dim }}>+{v42.score.bonus.toFixed(1)}</span></div>
-                    </>
-                  : ccs != null
-                    ? <>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs.toFixed(1)}</div>
-                        <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
-                      </>
-                    : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Decision — label_display + execution_label timing */}
-            <div>
-              <DecisionBadge state={v42?.action.label ?? r.actionability_state ?? r.caelyn_confluence_v42_actionability ?? null} display={v42?.action.label_display} />
-              {(v42?.action.execution_label ?? r.entry_execution_label) && (
-                <div style={{ fontSize: 6, color: CC.amber, fontFamily: CC.font, marginTop: 2, whiteSpace: 'nowrap' as const }}>
-                  {v42?.action.execution_label ?? r.entry_execution_label}
-                </div>
-              )}
-            </div>
-
-            {/* Setup */}
-            <div style={dimCell('setup')}>
-              {stagePts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(stagePts, stageMax), fontFamily: CC.font }}>{stagePts.toFixed(1)} / {stageMax}</div>
-                    {stageLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{stageLabel}</div>}</>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Theme */}
-            <div title={themeName ?? ''} style={dimCell('theme')}>
-              {themePts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(themePts, 15), fontFamily: CC.font }}>{themePts.toFixed(1)} / 15</div>
-                    {themeName && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{themeName.replace(/_/g, ' ')}</div>}</>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Options — status-aware display, never penalises pending */}
-            <div style={dimCell('options')}><OptionsStatusCell row={r} /></div>
-
-            {/* Entry / Exit */}
-            <div style={dimCell('entry_exit')}>
-              {entryPts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(entryPts, 12), fontFamily: CC.font }}>{entryPts.toFixed(1)} / 12</div>
-                    {entryStatus && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{String(entryStatus).replace(/_/g, ' ')}</div>}</>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Catalyst */}
-            <div title={catLkgSrc ?? ''} style={dimCell('catalyst')}>
-              {catWarming
-                ? <span style={{ fontSize: 7, fontWeight: 600, color: CC.amber, fontFamily: CC.font }}>Warming</span>
-                : catPts != null
-                  ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(catPts, 12), fontFamily: CC.font }}>{catPts.toFixed(1)} / 12</div>
-                      {catType && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{catType}</div>}</>
-                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Investment */}
-            <div style={dimCell('investment')}>
-              {invPts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(invPts, 12), fontFamily: CC.font }}>{invPts.toFixed(1)} / 12</div>
-                    <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                      {invLabel ? invLabel : (invPillars != null ? `${invPillars}/3 pillars` : '')}
-                    </div></>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Valuation */}
-            <div style={dimCell('valuation')}>
-              {valPts != null
-                ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(valPts, 8), fontFamily: CC.font }}>{valPts.toFixed(1)} / 8</div>
-                    {valLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{valLabel}</div>}</>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
-
-            {/* Bonuses — whale not shown as active if not_wired */}
-            <BonusCell row={r} />
-
-            {/* Confidence — data completeness, not bullishness */}
-            <div title="Data completeness / trustworthiness — not bullishness">
-              {confNum != null
-                ? <div style={{ fontSize: 9, fontWeight: 700, color: confNum >= 80 ? CC.green : confNum >= 50 ? CC.amber : CC.red, fontFamily: CC.font }}>{Math.round(confNum)}%</div>
-                : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
-            </div>
+            {visibleCols.map(col => (
+              <React.Fragment key={col.key}>{cellFor(col.key)}</React.Fragment>
+            ))}
           </div>
         );
       })}

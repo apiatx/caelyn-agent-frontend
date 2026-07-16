@@ -1,0 +1,422 @@
+FRONTEND ONLY — FIX SCORE LENS SORTING + REMOVE HEADER CLICK CONFLICT
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend scoring.
+Do not change actionability labels.
+Do not create endpoints.
+Do not add provider calls.
+Do not rewrite the whole Confluence table.
+
+Problem:
+
+The adjusted Confluence score toggle was partially implemented, but it broke table sorting and does not visibly change ranking.
+
+Observed:
+
+1. Clicking a column header now grays out/excludes the column.
+2. Because of that, normal column sorting is gone or no longer obvious.
+3. Even after graying out multiple columns, the listed ticker order appears unchanged.
+4. The table still appears ranked by canonical Decision / Confluence score instead of adjusted CCS.
+
+Goal:
+
+Fix the interaction model.
+
+Column headers must sort.
+Score Lens controls must exclude/include components.
+Adjusted CCS must actually recalculate and drive ranking when active.
+
+==================================================
+PART 1 — RESTORE COLUMN HEADER SORTING
+==================================================
+
+Remove exclusion toggling from column header clicks.
+
+Column headers should go back to their original behavior:
+
+- clicking sortable header / sort arrow sorts by that column
+- sorting arrows work exactly as before
+- component headers can visually show active/excluded state, but clicking the header should not be the primary exclusion control
+
+Do not make sorting and score exclusion share the same click target.
+
+Required:
+
+- Theme header sorts Theme
+- Setup header sorts Setup
+- Options header sorts Options
+- Entry header sorts Entry
+- Catalyst header sorts Catalyst
+- Investment header sorts Investment
+- Valuation header sorts Valuation
+- CCS header sorts CCS
+- Decision header sorts Decision if it previously did
+- Bonus header sorts Bonus if it previously did
+- Confidence header sorts Confidence if it previously did
+
+If a small icon inside the header is currently used for exclusion and does not interfere with sort, it can remain, but preferred fix is to remove header exclusion entirely and use the Score Lens bar only.
+
+==================================================
+PART 2 — ADD / USE VISIBLE SCORE LENS CONTROL BAR
+==================================================
+
+Add a visible control bar above the Confluence table.
+
+Title:
+
+Score Lens
+
+Subtitle:
+
+Exclude components to see how CCS changes without them.
+
+Chips/buttons:
+
+- Theme /15
+- Setup /8
+- Options /18
+- Entry /12
+- Catalyst /12
+- Investment /12
+- Valuation /8
+
+Stage /15 remains always included because it has no visible column.
+
+Each chip:
+
+Included:
+✓ Catalyst /12
+
+Excluded:
+⊘ Catalyst /12
+
+Clicking a chip toggles that component in/out of the adjusted score.
+
+Add:
+
+Reset Score Lens
+
+Clicking reset:
+- re-enables all components
+- clears localStorage
+- restores canonical CCS
+- removes adjusted banner
+- restores normal ranking
+
+Do not rely on users clicking table headers to exclude components.
+
+==================================================
+PART 3 — ADJUSTED CCS MUST ACTUALLY CHANGE
+==================================================
+
+Fix the adjusted score calculation and wiring.
+
+Canonical core components:
+
+Stage: 15 always included
+Theme: 15
+Setup: 8
+Options: 18
+Entry: 12
+Catalyst: 12
+Investment: 12
+Valuation: 8
+
+Formula:
+
+activeCorePoints =
+  stage_points
+  + points for all non-disabled visible components
+
+activeCoreMax =
+  15
+  + max points for all non-disabled visible components
+
+adjustedCoreScore =
+  activeCorePoints / activeCoreMax * 100
+
+Examples:
+
+No exclusions:
+active max = 100
+
+Catalyst excluded:
+active max = 88
+
+Catalyst + Investment excluded:
+active max = 76
+
+Catalyst + Investment + Valuation excluded:
+active max = 68
+
+All visible components excluded:
+active max = 15 because Stage remains included
+
+No NaN.
+No divide by zero.
+
+Important:
+
+If Catalyst is excluded and a ticker’s Catalyst score was high, its adjusted CCS should usually drop or shift relative to other tickers.
+If Catalyst was low, the adjusted CCS may rise.
+The row order should visibly change when adjusted score becomes the active ranking score.
+
+==================================================
+PART 4 — CCS CELL MUST SHOW ADJUSTED VS ORIGINAL
+==================================================
+
+When no components are excluded:
+
+Show canonical CCS normally.
+
+When one or more components are excluded:
+
+CCS cell must show:
+
+Adjusted score large:
+74.2 adj
+
+Original score small/muted:
+68.9 orig
+
+Do not just gray columns while leaving the canonical score displayed.
+
+The user must be able to see the score changed.
+
+==================================================
+PART 5 — SORTING / RANKING MUST USE ADJUSTED CCS WHEN ACTIVE
+==================================================
+
+When Score Lens is active, the Confluence/CCS sort must use adjustedCoreScore.
+
+Required behavior:
+
+Default table ranking:
+- If no Score Lens exclusions are active, use existing default ranking.
+- If Score Lens exclusions are active, default ranking should switch to adjusted CCS descending unless the user explicitly chooses another sort column.
+
+CCS column sorting:
+- If Score Lens inactive: sort by canonical CCS.
+- If Score Lens active: sort by adjusted CCS.
+
+Other column sorting:
+- If user clicks Catalyst, sort by raw Catalyst points even if Catalyst is excluded.
+- If user clicks Valuation, sort by raw Valuation points even if Valuation is excluded.
+- Excluding a column affects adjusted CCS, not that column’s own sort value.
+
+Decision sorting:
+- Do not recalculate decision.
+- If user explicitly sorts by Decision, respect Decision sorting.
+- But Score Lens active should not silently stay locked to canonical Decision + canonical CCS order.
+
+In other words:
+
+When the user excludes Catalyst, the list should visibly rerank by adjusted CCS unless they manually sort by something else.
+
+==================================================
+PART 6 — ADJUSTED BANNER MUST SHOW ACTIVE MAX
+==================================================
+
+When active, show banner above table:
+
+Adjusted CCS active: excluding Catalyst, Investment
+Active max: 76 / 100
+
+Examples:
+
+Catalyst only:
+Active max: 88 / 100
+
+Catalyst + Investment:
+Active max: 76 / 100
+
+Catalyst + Investment + Valuation:
+Active max: 68 / 100
+
+This proves the math is changing.
+
+==================================================
+PART 7 — COLUMN GRAYING / OPTIONAL HIDING
+==================================================
+
+When a component is excluded:
+
+- header becomes muted
+- column cells become muted
+- values remain visible
+- tooltip says:
+  "Excluded from adjusted CCS"
+
+Optional toggle:
+
+Hide excluded columns
+
+Default OFF.
+
+When ON:
+- excluded component columns disappear
+- adjusted CCS still excludes them
+- sorting remains available for visible columns
+
+Do not hide:
+- Ticker
+- CCS
+- Decision
+- Bonus
+- Confidence
+
+==================================================
+PART 8 — DEBUG DISPLAY FOR DEV VALIDATION
+==================================================
+
+Add a temporary dev-only or collapsed debug line while testing adjusted score.
+
+For a row, make it easy to inspect:
+
+symbol
+canonicalCore
+adjustedCore
+activeMax
+disabledComponents
+component point values
+
+This can be behind a collapsed disclosure or console log gated by development mode.
+
+Remove noisy logs before final.
+
+==================================================
+PART 9 — VALIDATION REQUIREMENTS
+==================================================
+
+Do not claim success from HMR only.
+
+Validate in the running app.
+
+Test 1 — Sorting restored:
+- Click CCS header.
+- Rows sort by CCS.
+- Click Catalyst header.
+- Rows sort by Catalyst.
+- Click Valuation header.
+- Rows sort by Valuation.
+
+Test 2 — Catalyst exclusion:
+- Click Catalyst chip in Score Lens.
+- Catalyst chip turns excluded.
+- Catalyst column grays out.
+- Banner says Active max: 88 / 100.
+- CCS cells show adjusted + original.
+- Row order changes based on adjusted CCS.
+
+Test 3 — Multiple exclusions:
+- Exclude Catalyst + Investment.
+- Banner says Active max: 76 / 100.
+- CCS recalculates again.
+- Row order changes again.
+
+Test 4 — Catalyst + Investment + Valuation:
+- Banner says Active max: 68 / 100.
+- CCS recalculates again.
+- No NaN.
+- No blank score.
+
+Test 5 — Sorting while adjusted:
+- With Catalyst excluded, click CCS header.
+- Sort uses adjusted CCS.
+- Click Catalyst header.
+- Sort uses raw Catalyst points.
+- Click CCS header again.
+- Sort returns to adjusted CCS.
+
+Test 6 — Reset:
+- Click Reset Score Lens.
+- All chips active.
+- Banner disappears.
+- Columns normal.
+- Canonical CCS restored.
+- Sorting works.
+
+Test 7 — Actionability unchanged:
+- Decision labels do not change.
+- Ready/Near/Watch labels do not change.
+- Why Now/Why Wait do not change.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Return:
+
+SCORE LENS SORTING HOTFIX REPORT
+
+ROOT CAUSE:
+[explain exactly why sorting broke and why adjusted ranking did not visibly change]
+
+FILES CHANGED:
+[list]
+
+SORTING RESTORED:
+[summary]
+
+SCORE LENS CONTROL BAR:
+[summary]
+
+ADJUSTED SCORE WIRING:
+[summary]
+
+CCS CELL DISPLAY:
+[summary]
+
+RANKING BEHAVIOR:
+[summary]
+
+COLUMN GRAYING / HIDING:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+SCORE LENS HOTFIX VERDICT
+
+HEADER_SORTING_RESTORED:
+[YES/NO]
+
+EXCLUSION_NO_LONGER_CONFLICTS_WITH_SORTING:
+[YES/NO]
+
+VISIBLE_SCORE_LENS_CONTROLS:
+[YES/NO]
+
+CATALYST_EXCLUSION_ACTIVE_MAX_88:
+[YES/NO]
+
+MULTIPLE_EXCLUSIONS_ACTIVE_MAX_CORRECT:
+[YES/NO]
+
+CCS_CELL_SHOWS_ADJUSTED_AND_ORIGINAL:
+[YES/NO]
+
+ROW_ORDER_CHANGES_WHEN_ADJUSTED_ACTIVE:
+[YES/NO]
+
+CCS_SORT_USES_ADJUSTED_SCORE:
+[YES/NO]
+
+OTHER_COLUMNS_STILL_SORT_BY_RAW_POINTS:
+[YES/NO]
+
+RESET_SCORE_LENS_WORKS:
+[YES/NO]
+
+ACTIONABILITY_LABELS_UNCHANGED:
+[YES/NO]
+
+FRONTEND_ONLY:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]
