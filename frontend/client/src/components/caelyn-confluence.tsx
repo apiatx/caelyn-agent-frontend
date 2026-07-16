@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 
 /* ── Color palette matches watchlist.tsx ─────────────────────────── */
 const CC = {
@@ -898,6 +898,14 @@ const COL_DEFS: { key: SortKey; label: string; width: string; title?: string }[]
 
 const GRID_COLS = `18px ${COL_DEFS.map(c => c.width).join(' ')}`;
 
+/* ─── Adjusted CCS constants ─────────────────────────────────────── */
+const LS_KEY_DISABLED = 'caelyn_confluence_disabled_components_v1';
+const TOGGLEABLE_COLS: ReadonlySet<SortKey> = new Set<SortKey>(['setup', 'theme', 'options', 'entry_exit', 'catalyst', 'investment', 'valuation']);
+const COMP_MAX: Record<string, number> = {
+  stage: 15, theme: 15, setup: 8, options: 18,
+  entry_exit: 12, catalyst: 12, investment: 12, valuation: 8,
+};
+
 /* ─── V4.2.1 Screener Table (shared across all tabs) ─────────────── */
 
 function V42ScreenerTable({
@@ -911,10 +919,62 @@ function V42ScreenerTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('confluence');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+  const [disabledCols, setDisabledCols] = useState<Set<SortKey>>(() => {
+    try {
+      const stored = localStorage.getItem(LS_KEY_DISABLED);
+      if (stored) return new Set(JSON.parse(stored) as SortKey[]);
+    } catch {}
+    return new Set<SortKey>();
+  });
+
+  const isAdjusted = disabledCols.size > 0;
+
   const handleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
     else { setSortKey(key); setSortDir('desc'); }
   };
+
+  const toggleCol = (key: SortKey) => {
+    if (!TOGGLEABLE_COLS.has(key)) return;
+    setDisabledCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try { localStorage.setItem(LS_KEY_DISABLED, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  const resetWeights = () => {
+    setDisabledCols(new Set());
+    try { localStorage.removeItem(LS_KEY_DISABLED); } catch {}
+  };
+
+  const computeAdjustedCCS = useCallback((r: any): number | null => {
+    const v42c = readV42(r);
+    const comps = v42c?.components ?? {};
+    const stagePts = Number(comps.stage?.points ?? getV42Pts(r, 'stage_quality_points', 'stage_quality') ?? 0);
+    const componentPts: Record<string, number> = {
+      theme:      Number(comps.theme?.points ?? getV42Pts(r, 'theme_alignment_points', 'theme_alignment') ?? 0),
+      setup:      Number(comps.technical_setup?.points ?? getV42Pts(r, 'technical_setup_points', 'technical_setup') ?? 0),
+      options:    Number(comps.options_alignment?.points ?? getV42Pts(r, 'options_alignment_points', 'options_alignment') ?? 0),
+      entry_exit: Number(comps.entry_exit?.points ?? getV42Pts(r, 'entry_exit_points', 'entry_exit') ?? getV42Pts(r, 'entry_risk_reward_points', 'entry') ?? 0),
+      catalyst:   Number(comps.catalyst?.points ?? getV42Pts(r, 'catalyst_alignment_points', 'catalyst_alignment') ?? 0),
+      investment: Number(comps.investment?.points ?? getV42Pts(r, 'investment_alignment_points', 'investment_alignment') ?? 0),
+      valuation:  comps.valuation?.points != null ? Number(comps.valuation.points) : (r.valuation_alignment_points != null ? Number(r.valuation_alignment_points) : 0),
+    };
+    let activePts = stagePts;
+    let activeMax = COMP_MAX.stage;
+    for (const key of Object.keys(componentPts)) {
+      if (!disabledCols.has(key as SortKey)) {
+        activePts += componentPts[key];
+        activeMax += COMP_MAX[key] ?? 0;
+      }
+    }
+    if (activeMax <= 0) return null;
+    const result = (activePts / activeMax) * 100;
+    return Number.isFinite(result) ? result : null;
+  }, [disabledCols]);
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'desc' ? 1 : -1;
@@ -923,7 +983,9 @@ function V42ScreenerTable({
       const getVal = (r: any): number | string => {
         switch (sortKey) {
           case 'ticker':     return fmtTicker(r);
-          case 'confluence': return Number(r.caelyn_confluence_score ?? 0);
+          case 'confluence':
+            if (isAdjusted) { const adj = computeAdjustedCCS(r); return adj ?? Number(r.caelyn_confluence_score ?? 0); }
+            return Number(r.caelyn_confluence_score ?? 0);
           case 'decision': {
             const order: Record<string, number> = { READY: 0, ACTIONABLE: 0, NEAR_ACTIONABLE: 1, WATCH: 2, CONFLUENCE_AT_SUPPORT: 2, WATCH_FOR_RESET: 3, AVOID: 4, RISK_CONFLICT: 5, NO_CLEAR_CONFLUENCE: 6 };
             return order[(r.actionability_state ?? '').toUpperCase()] ?? 3;
@@ -949,7 +1011,7 @@ function V42ScreenerTable({
       if (typeof va === 'number' && typeof vb === 'number') return (vb - va) * dir || (ta < tb ? -1 : ta > tb ? 1 : 0);
       return (String(va) < String(vb) ? -1 : String(va) > String(vb) ? 1 : 0) * dir;
     });
-  }, [rows, sortKey, sortDir]);
+  }, [rows, sortKey, sortDir, isAdjusted, computeAdjustedCCS]);
 
   if (!sorted.length) return <EmptyState msg={emptyMsg} />;
 
@@ -968,27 +1030,68 @@ function V42ScreenerTable({
 
   const hdr: React.CSSProperties = {
     fontSize: 7, fontFamily: CC.font, letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const, color: CC.dim,
-    cursor: 'pointer', userSelect: 'none' as const,
+    textTransform: 'uppercase' as const,
+    userSelect: 'none' as const,
     whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis',
     display: 'flex', alignItems: 'center', gap: 2,
   };
 
   const sortArrow = (key: SortKey) => {
-    if (key !== sortKey) return <span style={{ opacity: 0.25, fontSize: 6 }}>↕</span>;
-    return <span style={{ color: CC.teal, fontSize: 6 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>;
+    if (key !== sortKey) return <span style={{ opacity: 0.25, fontSize: 6, cursor: 'pointer' }}>↕</span>;
+    return <span style={{ color: CC.teal, fontSize: 6, cursor: 'pointer' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>;
   };
+
+  const disabledColNames = [...disabledCols].map(k => COL_DEFS.find(c => c.key === k)?.label ?? k);
 
   return (
     <div style={{ width: '100%' }}>
+      {/* Adjusted mode banner */}
+      {isAdjusted ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 2px 5px', flexWrap: 'wrap' as const }}>
+          <span style={{ fontSize: 7, color: CC.amber, fontFamily: CC.font, letterSpacing: '0.04em' }}>
+            Adjusted CCS · excluding: {disabledColNames.join(', ')}
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); resetWeights(); }}
+            style={{ fontSize: 7, padding: '1px 7px', borderRadius: 3, border: `1px solid ${CC.border}`, background: 'transparent', color: CC.dim, cursor: 'pointer', fontFamily: CC.font }}
+          >
+            Reset weights
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 2px 4px' }}>
+          <span style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, opacity: 0.35 }}>Click component column labels to exclude from CCS</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'grid', gridTemplateColumns: GRID_COLS, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}>
         <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>#</span>
-        {COL_DEFS.map(col => (
-          <span key={col.key} style={hdr} onClick={() => handleSort(col.key)} title={col.title ?? col.label}>
-            {col.label} {sortArrow(col.key)}
-          </span>
-        ))}
+        {COL_DEFS.map(col => {
+          const isToggleable = TOGGLEABLE_COLS.has(col.key);
+          const isOff        = disabledCols.has(col.key);
+          const labelColor   = isOff ? 'rgba(100,116,139,0.4)' : CC.dim;
+          const activeTitle  = isToggleable
+            ? (isOff ? 'Excluded from adjusted CCS. Click to include.' : 'Included in adjusted CCS. Click to exclude.')
+            : (col.title ?? col.label);
+          return (
+            <span key={col.key} style={{ ...hdr, color: labelColor }} title={activeTitle}>
+              {isToggleable ? (
+                <span
+                  onClick={e => { e.stopPropagation(); toggleCol(col.key); }}
+                  style={{ cursor: 'pointer', opacity: isOff ? 0.45 : 1, textDecoration: isOff ? 'line-through' : 'none' }}
+                >
+                  {col.label}
+                </span>
+              ) : (
+                <span onClick={() => handleSort(col.key)} style={{ cursor: 'pointer' }}>{col.label}</span>
+              )}
+              <span onClick={() => handleSort(col.key)}>
+                {sortArrow(col.key)}
+              </span>
+            </span>
+          );
+        })}
       </div>
 
       {/* Data rows */}
@@ -1029,10 +1132,14 @@ function V42ScreenerTable({
           ?? r.confluence_v42?.valuation_label
           ?? r.confluence_v42?.components?.valuation?.label
           ?? null;
-        const ccsClr     = v42 ? ccsColor(v42.score.core) : (ccs != null ? ccsColor(ccs) : CC.dim);
+        const adjCCS     = isAdjusted ? computeAdjustedCCS(r) : null;
+        const canonCore  = v42 ? v42.score.core : ccs;
+        const displayScore = isAdjusted && adjCCS != null ? adjCCS : canonCore;
+        const ccsClr     = displayScore != null ? ccsColor(displayScore) : CC.dim;
+        const dimCell    = (key: SortKey): React.CSSProperties => disabledCols.has(key) ? { opacity: 0.28 } : {};
 
         const ccsTooltip = v42
-          ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}`
+          ? `Core: ${v42.score.core.toFixed(1)} / 100\nBonus: +${v42.score.bonus.toFixed(1)} / 25\nTotal: ${v42.score.total.toFixed(1)}${isAdjusted ? `\nAdj: ${adjCCS != null ? adjCCS.toFixed(1) : '—'}` : ''}`
           : `max ${maxScr}`;
 
         return (
@@ -1051,19 +1158,26 @@ function V42ScreenerTable({
               {company && <div style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 88 }}>{company}</div>}
             </div>
 
-            {/* Confluence — Core/100 + Bonus, not Total/125 */}
+            {/* Confluence — adjusted or canonical */}
             <div title={ccsTooltip} style={{ cursor: 'help' }}>
-              {v42
+              {isAdjusted && adjCCS != null
                 ? <>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{v42.score.core.toFixed(1)}</div>
-                    <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/100 · <span style={{ color: v42.score.bonus > 0 ? CC.purple : CC.dim }}>+{v42.score.bonus.toFixed(1)}</span></div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{adjCCS.toFixed(1)}</div>
+                    <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>
+                      adj · <span style={{ opacity: 0.5 }}>orig {canonCore != null ? canonCore.toFixed(1) : '—'}</span>
+                    </div>
                   </>
-                : ccs != null
+                : v42
                   ? <>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs.toFixed(1)}</div>
-                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{v42.score.core.toFixed(1)}</div>
+                      <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/100 · <span style={{ color: v42.score.bonus > 0 ? CC.purple : CC.dim }}>+{v42.score.bonus.toFixed(1)}</span></div>
                     </>
-                  : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
+                  : ccs != null
+                    ? <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: ccsClr, fontFamily: CC.font }}>{ccs.toFixed(1)}</div>
+                        <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font }}>/ {maxScr}</div>
+                      </>
+                    : <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font }}>—</span>}
             </div>
 
             {/* Decision — label_display + execution_label timing */}
@@ -1077,7 +1191,7 @@ function V42ScreenerTable({
             </div>
 
             {/* Setup */}
-            <div>
+            <div style={dimCell('setup')}>
               {stagePts != null
                 ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(stagePts, stageMax), fontFamily: CC.font }}>{stagePts.toFixed(1)} / {stageMax}</div>
                     {stageLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{stageLabel}</div>}</>
@@ -1085,7 +1199,7 @@ function V42ScreenerTable({
             </div>
 
             {/* Theme */}
-            <div title={themeName ?? ''}>
+            <div title={themeName ?? ''} style={dimCell('theme')}>
               {themePts != null
                 ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(themePts, 15), fontFamily: CC.font }}>{themePts.toFixed(1)} / 15</div>
                     {themeName && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{themeName.replace(/_/g, ' ')}</div>}</>
@@ -1093,10 +1207,10 @@ function V42ScreenerTable({
             </div>
 
             {/* Options — status-aware display, never penalises pending */}
-            <OptionsStatusCell row={r} />
+            <div style={dimCell('options')}><OptionsStatusCell row={r} /></div>
 
             {/* Entry / Exit */}
-            <div>
+            <div style={dimCell('entry_exit')}>
               {entryPts != null
                 ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(entryPts, 12), fontFamily: CC.font }}>{entryPts.toFixed(1)} / 12</div>
                     {entryStatus && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{String(entryStatus).replace(/_/g, ' ')}</div>}</>
@@ -1104,7 +1218,7 @@ function V42ScreenerTable({
             </div>
 
             {/* Catalyst */}
-            <div title={catLkgSrc ?? ''}>
+            <div title={catLkgSrc ?? ''} style={dimCell('catalyst')}>
               {catWarming
                 ? <span style={{ fontSize: 7, fontWeight: 600, color: CC.amber, fontFamily: CC.font }}>Warming</span>
                 : catPts != null
@@ -1114,7 +1228,7 @@ function V42ScreenerTable({
             </div>
 
             {/* Investment */}
-            <div>
+            <div style={dimCell('investment')}>
               {invPts != null
                 ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(invPts, 12), fontFamily: CC.font }}>{invPts.toFixed(1)} / 12</div>
                     <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
@@ -1124,7 +1238,7 @@ function V42ScreenerTable({
             </div>
 
             {/* Valuation */}
-            <div>
+            <div style={dimCell('valuation')}>
               {valPts != null
                 ? <><div style={{ fontSize: 9, fontWeight: 700, color: ptsColor(valPts, 8), fontFamily: CC.font }}>{valPts.toFixed(1)} / 8</div>
                     {valLabel && <div style={{ fontSize: 6, color: CC.dim, fontFamily: CC.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{valLabel}</div>}</>

@@ -1,0 +1,431 @@
+FRONTEND ONLY — INTERACTIVE CONFLUENCE COLUMN WEIGHT TOGGLE / ADJUSTED CCS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend scoring.
+Do not change actionability logic.
+Do not change canonical Confluence data.
+Do not create endpoints.
+Do not add provider calls.
+Do not change modal tabs.
+Do not rewrite the table.
+
+Goal:
+
+Add an interactive local scoring lens to the Confluence table.
+
+When the user clicks a score-bearing component column header, that column becomes disabled/dulled/gray, and the displayed CCS recalculates as if that component was removed from the core score and the remaining active components were re-normalized back to /100.
+
+The user can disable and re-enable as many component categories as they want.
+
+This is UI-only. It does not mutate backend data.
+
+==================================================
+CORE SCORE COMPONENTS
+==================================================
+
+Canonical core components:
+
+Theme: 15
+Stage: 15
+Options: 18
+Technical Setup: 8
+Entry / Exit: 12
+Catalyst: 12
+Investment: 12
+Valuation: 8
+Core max: 100
+
+Visible table component columns:
+
+Theme      -> theme_alignment_points /15
+Setup      -> technical_setup_points /8
+Options    -> options_alignment_points /18
+Entry      -> entry_exit_points /12
+Catalyst   -> catalyst_alignment_points /12
+Invest.    -> investment_alignment_points /12
+Valuation  -> valuation_alignment_points /8
+
+Important:
+
+Stage /15 is part of the core score but is not currently a visible table column. Until a visible Stage column is added, Stage should remain always included in the adjusted score.
+
+So default active max is:
+
+Stage 15
++ Theme 15
++ Setup 8
++ Options 18
++ Entry 12
++ Catalyst 12
++ Investment 12
++ Valuation 8
+= 100
+
+If Catalyst is disabled:
+active max = 88
+
+If Catalyst + Investment are disabled:
+active max = 76
+
+If Setup + Options + Valuation are disabled:
+active max = 100 - 8 - 18 - 8 = 66
+
+==================================================
+ADJUSTED SCORE FORMULA
+==================================================
+
+Create a frontend helper:
+
+const CORE_COMPONENTS = {
+  stage: { max: 15, alwaysOn: true },
+  theme: { max: 15, columnKey: 'theme' },
+  setup: { max: 8, columnKey: 'setup' },
+  options: { max: 18, columnKey: 'options' },
+  entry: { max: 12, columnKey: 'entry' },
+  catalyst: { max: 12, columnKey: 'catalyst' },
+  investment: { max: 12, columnKey: 'investment' },
+  valuation: { max: 8, columnKey: 'valuation' },
+}
+
+For each row:
+
+activeCorePoints =
+  stage_points
+  + every visible component point where component is not disabled
+
+activeCoreMax =
+  stage_max
+  + every visible component max where component is not disabled
+
+adjustedCoreScore =
+  activeCoreMax > 0
+    ? activeCorePoints / activeCoreMax * 100
+    : null
+
+Display adjustedCoreScore in the CCS column when any component is disabled.
+
+If no components are disabled, display the canonical backend core score as normal.
+
+Rounding:
+- display one decimal
+- preserve existing color logic if possible
+- sorting should use adjustedCoreScore when adjusted mode is active
+
+==================================================
+BONUS HANDLING
+==================================================
+
+Do not reweight bonus into core.
+
+Bonus remains separate:
+
+Core /100
+Bonus /25
+
+If Bonus column is clicked/disabled:
+- gray out Bonus column
+- exclude bonus from displayed total/subline
+- show +0.0 bonus or muted bonus
+- do not alter adjusted core score
+
+If implementing Bonus toggle is risky, leave Bonus non-toggleable for this pass and clearly report that only core components are toggleable.
+
+Preferred:
+Make Bonus toggleable separately as a display/total toggle, not part of core reweighting.
+
+==================================================
+UI BEHAVIOR
+==================================================
+
+For every toggleable score-bearing column header:
+
+- clicking the column header toggles that component active/inactive
+- inactive header becomes dull gray
+- inactive column cells become dull gray / reduced opacity
+- inactive column values remain visible but muted
+- tooltip/title:
+  "Excluded from adjusted CCS. Click to include."
+
+Active tooltip:
+  "Included in adjusted CCS. Click to exclude."
+
+Add a small visual indicator in the header:
+
+- active: normal label
+- inactive: label with muted/disabled icon or "off" state
+
+Add a small reset control near the Confluence table header:
+
+"Reset weights"
+
+Clicking Reset:
+- re-enables all components
+- restores canonical CCS display
+- clears adjusted mode
+
+Optional but preferred:
+Persist disabled components in localStorage so the user’s view survives page refresh.
+
+Key:
+caelyn_confluence_disabled_components_v1
+
+==================================================
+SORTING BEHAVIOR
+==================================================
+
+Do not break existing column sorting.
+
+If the table currently uses header click for sorting, avoid conflict.
+
+Preferred behavior:
+
+- clicking the column label/toggle chip toggles inclusion
+- clicking the sort arrow sorts
+- or add a small eye/weight toggle button inside the header
+
+Do not make it impossible to sort.
+
+CCS sorting:
+- if no disabled components: sort by canonical CCS
+- if any disabled components: sort by adjustedCoreScore
+
+Component column sorting:
+- still sort by that component’s raw points even if disabled
+- disabled just affects adjusted CCS, not the column’s own sort value
+
+==================================================
+DISPLAY ADJUSTED MODE
+==================================================
+
+When any component is disabled, show a small banner/chip near table title:
+
+"Adjusted CCS: excluding Catalyst, Investment"
+
+or:
+
+"Adjusted view active · 6/8 core components included"
+
+In CCS cell:
+- show adjusted score prominently
+- show canonical score in small muted text if space allows:
+
+Adjusted 74.2
+Orig 68.9
+
+or:
+
+74.2 adj
+68.9 orig
+
+Do not overwrite backend canonical data.
+
+==================================================
+ROW DATA FALLBACKS
+==================================================
+
+Use the same robust readV42 / row fallback system already used by the table.
+
+For component points, support both nested and flat fields:
+
+Theme:
+row.components?.theme_alignment?.points
+row.confluence_v42?.components?.theme_alignment?.points
+row.theme_alignment_points
+
+Stage:
+row.components?.stage_quality?.points
+row.confluence_v42?.components?.stage_quality?.points
+row.stage_quality_points
+
+Setup:
+row.components?.technical_setup?.points
+row.confluence_v42?.components?.technical_setup?.points
+row.technical_setup_points
+
+Options:
+row.components?.options_alignment?.points
+row.confluence_v42?.components?.options_alignment?.points
+row.options_alignment_points
+
+Entry:
+row.components?.entry_exit?.points
+row.confluence_v42?.components?.entry_exit?.points
+row.entry_exit_points
+
+Catalyst:
+row.components?.catalyst_alignment?.points
+row.confluence_v42?.components?.catalyst_alignment?.points
+row.catalyst_alignment_points
+
+Investment:
+row.components?.investment_alignment?.points
+row.confluence_v42?.components?.investment_alignment?.points
+row.investment_alignment_points
+
+Valuation:
+row.components?.valuation?.points
+row.confluence_v42?.components?.valuation?.points
+row.valuation_alignment_points
+
+Missing component points:
+- treat missing active component as 0 points but keep its max included if backend marks component available
+- if the row has component availability metadata and component is unavailable, follow existing canonical behavior
+- do not crash
+- do not show NaN
+
+For first pass, safest:
+Use numeric component points when present.
+If missing, use 0.
+Always include max for active components, except disabled.
+
+==================================================
+DO NOT CHANGE ACTIONABILITY
+==================================================
+
+Important:
+
+Do not recalculate:
+
+- Decision
+- Ready / Near / Watch labels
+- execution state
+- bucket
+- why_now
+- why_wait
+
+Those are backend canonical actionability outputs.
+
+Only recalculate displayed CCS/ranking as a local adjusted score.
+
+This avoids pretending the backend would make a different trade decision under the user’s temporary score lens.
+
+==================================================
+ACCEPTANCE TESTS
+==================================================
+
+Validate with visible Confluence table.
+
+Test 1:
+Default state:
+- all columns active
+- CCS equals backend canonical core score
+- no adjusted banner
+
+Test 2:
+Disable Catalyst:
+- Catalyst column grays out
+- CCS recalculates using active max 88
+- adjusted banner says Catalyst excluded
+- Catalyst values still visible but muted
+- decision labels unchanged
+
+Test 3:
+Disable Catalyst + Investment + Valuation:
+- all three columns muted
+- adjusted core uses active max:
+  100 - 12 - 12 - 8 = 68
+- CCS changes correctly
+- no NaN
+- sort by CCS uses adjusted score
+
+Test 4:
+Re-enable Catalyst:
+- Catalyst column returns normal
+- active max increases correctly
+- adjusted score updates immediately
+
+Test 5:
+Reset weights:
+- all columns active
+- canonical CCS restored
+- banner disappears
+
+Test 6:
+Rows with missing valuation:
+- disabling/enabling valuation does not crash
+- 0.0 / 8 rows handle correctly
+
+Test 7:
+Bonus:
+- if implemented, disabling Bonus mutes bonus column and excludes bonus from total display only
+- core adjusted score unaffected
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+CONFLUENCE ADJUSTED SCORE TOGGLE REPORT
+
+FILES CHANGED:
+[list]
+
+STATE MODEL:
+[summary]
+
+ADJUSTED SCORE FORMULA:
+[summary]
+
+COLUMN TO COMPONENT MAP:
+[table]
+
+UI BEHAVIOR:
+[summary]
+
+SORTING BEHAVIOR:
+[summary]
+
+BONUS BEHAVIOR:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+ADJUSTED CONFLUENCE TOGGLE VERDICT
+
+FRONTEND_ONLY:
+[YES/NO]
+
+BACKEND_UNCHANGED:
+[YES/NO]
+
+COMPONENT_COLUMNS_TOGGLEABLE:
+[YES/NO]
+
+MULTI_SELECT_DISABLE_WORKS:
+[YES/NO]
+
+ADJUSTED_CORE_RENORMALIZES_TO_100:
+[YES/NO]
+
+CATALYST_DISABLE_RECALCS_WITH_MAX_88:
+[YES/NO]
+
+MULTIPLE_DISABLED_RECALC_CORRECT:
+[YES/NO]
+
+DISABLED_COLUMNS_GRAYED_OUT:
+[YES/NO]
+
+CAN_REENABLE_COLUMNS:
+[YES/NO]
+
+RESET_WEIGHTS_WORKS:
+[YES/NO]
+
+CCS_SORT_USES_ADJUSTED_SCORE:
+[YES/NO]
+
+ACTIONABILITY_LABELS_UNCHANGED:
+[YES/NO]
+
+NO_NAN_OR_CRASH_ON_MISSING_FIELDS:
+[YES/NO]
+
+BONUS_HANDLED:
+[YES/NO/PARTIAL]
