@@ -1276,10 +1276,42 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
     return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>Technical data unavailable for this ticker.</div>;
   }
 
-  const fRow = (label: string, value: string) => (
+  function getTechColor(label: string, rawVal: any): string {
+    if (rawVal === undefined || rawVal === null || rawVal === '') return C.text;
+    const s = String(rawVal).toLowerCase();
+    const n = Number(rawVal);
+    switch (label) {
+      case 'MA Stack':
+        return s === 'bull' ? C.green : s === 'bear' ? C.red : s ? C.amber : C.dim;
+      case '% vs 50D':
+      case '% vs 200D':
+      case 'Chg %':
+        return Number.isFinite(n) ? (n > 0 ? C.green : n < 0 ? C.red : C.dim) : C.text;
+      case 'Extension Risk':
+        return s === 'overheated' ? C.orange : s === 'extended' ? C.amber : (s === 'normal' || s === 'pullback_buy_zone') ? C.green : C.dim;
+      case '% From 52W High':
+        return Number.isFinite(n) ? (n >= 0 ? C.green : n > -5 ? C.amber : C.dim) : C.dim;
+      case 'Entry Zone':
+        return s === 'optimal' ? C.green : s === 'breakout_watch' ? C.amber : s === 'extended' ? C.orange : C.dim;
+      case 'Breakout Signal':
+        return s === 'triggered' ? C.green : s === 'near_trigger' ? C.amber : s === 'failed' ? C.red : C.dim;
+      case 'Accum/Dist':
+        return s === 'bullish' ? C.green : s === 'bearish' ? C.red : C.dim;
+      case 'Squeeze':
+        return s === 'expansion' ? C.green : s === 'compression' ? C.red : s === 'squeeze' ? C.amber : C.dim;
+      case 'Momentum Trend':
+        return s === 'positive' ? C.green : s === 'negative' ? C.red : C.dim;
+      case 'Technical State':
+        return s === 'overheated' ? C.orange : s === 'extended' ? C.amber : s === 'normal' ? C.green : s === 'weak' ? C.red : C.dim;
+      default:
+        return C.text;
+    }
+  }
+
+  const fRow = (label: string, value: string, color?: string) => (
     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
       <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
-      <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
     </div>
   );
 
@@ -1300,14 +1332,14 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
 
       {TECH_GROUPS.map(group => {
         const visibleRows = group.fields
-          .map(f => ({ label: f.label, value: formatVal(resolveField(f.keys), f.fmt) }))
+          .map(f => { const raw = resolveField(f.keys); return { label: f.label, raw, value: formatVal(raw, f.fmt) }; })
           .filter(r => r.value !== '—');
         if (visibleRows.length === 0) return null;
         return (
           <div key={group.label}>
             <SectionLabel>{group.label}</SectionLabel>
             <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {visibleRows.map(r => fRow(r.label, r.value))}
+              {visibleRows.map(r => fRow(r.label, r.value, getTechColor(r.label, r.raw)))}
             </div>
           </div>
         );
@@ -1409,10 +1441,22 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
     return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>No fundamental data available for this ticker.</div>;
   }
 
-  const fRow = (label: string, value: React.ReactNode, key?: string) => (
+  function getFundColor(key: string, val: any): string {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return C.text;
+    const coloredKeys = [
+      'revenue_growth_q','revenue_growth','revenue_growth_est','rev_growth_next_quarter','rev_growth_next_year',
+      'eps_growth','eps_growth_est','eps_growth_tq','eps_growth_nq','eps_growth_ty','eps_growth_ny',
+      'gross_margin','fcf_margin','free_cash_flow','operating_income','ebit',
+    ];
+    if (coloredKeys.includes(key)) return n > 0 ? C.green : n < 0 ? C.red : C.dim;
+    return C.text;
+  }
+
+  const fRow = (label: string, value: React.ReactNode, key?: string, color?: string) => (
     <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
       <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
-      <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
     </div>
   );
 
@@ -1443,7 +1487,7 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
           <div key={group.label}>
             <SectionLabel>{group.label}</SectionLabel>
             <div style={{ borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {visibleFields.map(f => fRow(f.label, formatFundVal(f.val, f.fmt), f.key))}
+              {visibleFields.map(f => fRow(f.label, formatFundVal(f.val, f.fmt), f.key, getFundColor(f.key, f.val)))}
               {isValuation && hasForwardPE && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
                   <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
