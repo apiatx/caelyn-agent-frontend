@@ -184,6 +184,8 @@ interface StockDetailModalProps {
   watchlistId?: string | null;
   earningsEntry?: any;
   confluenceRows?: any[];
+  screenerRow?: any;    /* full screener row — primary source for Technical/Fundamentals tabs */
+  allNews?: any[];      /* watchlist live news — fallback for News tab */
   onClose: () => void;
 }
 type TabId = 'overview' | 'technical' | 'fundamentals' | 'news' | 'deep-dive';
@@ -214,7 +216,8 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 export function StockDetailModal({
-  ticker, analysis, csvData, watchlistId, earningsEntry, confluenceRows, onClose
+  ticker, analysis, csvData, watchlistId, earningsEntry, confluenceRows,
+  screenerRow, allNews, onClose
 }: StockDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [deepDive, setDeepDive] = useState<any>(null);
@@ -380,9 +383,9 @@ export function StockDetailModal({
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} />}
-          {activeTab === 'technical' && <TechnicalTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} useRowFallback={useRowFallback} />}
-          {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} />}
-          {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} />}
+          {activeTab === 'technical' && <TechnicalTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} useRowFallback={useRowFallback} screenerRow={screenerRow} />}
+          {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} screenerRow={screenerRow} />}
+          {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} allNews={allNews} />}
           {activeTab === 'deep-dive' && <DeepDiveTab ticker={ticker} data={deepDive} loading={deepDiveLoading} error={deepDiveError} selectedModels={selectedModels} setSelectedModels={setSelectedModels} reportModel={reportModel} setReportModel={setReportModel} onGenerate={generateDeepDive} />}
         </div>
       </div>
@@ -906,66 +909,76 @@ type TechFmt = 'pct' | 'large' | 'price' | 'raw' | 'mult';
 interface TechFieldDef { label: string; keys: string[]; fmt?: TechFmt }
 const TECH_GROUPS: { label: string; fields: TechFieldDef[] }[] = [
   { label: 'Price / Volume', fields: [
-    { label: 'Price',          keys: ['price', 'last_price', 'current_price', 'close'],                    fmt: 'price' },
-    { label: 'Chg %',          keys: ['chg_pct', 'change_pct', 'change_percent', 'changesPercentage'],      fmt: 'pct'   },
-    { label: 'Volume',         keys: ['volume', 'vol'],                                                     fmt: 'large' },
-    { label: 'Rel. Volume',    keys: ['rel_vol', 'relative_volume', 'volume_ratio', 'volx'],                fmt: 'mult'  },
-    { label: 'Vol Rank',       keys: ['vol_rank', 'volume_rank', 'vol_rank_pct'],                           fmt: 'pct'   },
-    { label: 'Vol/MC',         keys: ['vol_mc', 'vol_to_market_cap', 'volume_market_cap_ratio'],            fmt: 'raw'   },
+    { label: 'Price',          keys: ['price', 'last_price', 'current_price', 'close'],                                              fmt: 'price' },
+    { label: 'Chg %',          keys: ['change_pct', 'change_pct_1d', 'chg_pct', 'change_percent', 'changesPercentage'],              fmt: 'pct'   },
+    { label: 'Volume',         keys: ['volume', 'vol'],                                                                               fmt: 'large' },
+    { label: 'Rel. Volume',    keys: ['volx', 'rel_vol', 'relative_volume', 'volume_ratio'],                                          fmt: 'mult'  },
+    { label: 'Vol Rank',       keys: ['vol_rank', 'rel_vol_rank', 'volume_rank', 'vol_rank_pct', 'rv_rank'],                          fmt: 'pct'   },
+    { label: 'Vol/MC',         keys: ['vol_mc_pct', 'vol_mc_ratio', 'vol_mc', 'vol_to_market_cap', 'volume_market_cap_ratio'],        fmt: 'raw'   },
   ]},
   { label: 'Stage / Trend', fields: [
-    { label: 'Stage',          keys: ['stage', 'stage_label', 'technical_stage'],                          fmt: 'raw'   },
-    { label: 'Technical State',keys: ['technical_state', 'technical_state_label', 'tech_state'],            fmt: 'raw'   },
-    { label: 'Momentum Trend', keys: ['momentum_trend', 'momentum'],                                        fmt: 'raw'   },
-    { label: 'MA Stack',       keys: ['ma_stack', 'ma_alignment', 'ema_alignment'],                         fmt: 'raw'   },
+    { label: 'Stage',          keys: ['stage', 'stage_label', 'technical_stage'],                                                     fmt: 'raw'   },
+    { label: 'Technical State',keys: ['technical_state', 'technical_state_label', 'tech_state'],                                      fmt: 'raw'   },
+    { label: 'Momentum Trend', keys: ['momentum_trend', 'momentum'],                                                                  fmt: 'raw'   },
+    { label: 'MA Stack',       keys: ['ma_stack', 'ma_alignment', 'ema_alignment'],                                                   fmt: 'raw'   },
   ]},
   { label: 'Moving Average / Extension', fields: [
-    { label: '% vs 50D',       keys: ['pct_vs_50d', 'percent_vs_50d', 'price_vs_50d_pct', 'vs_50d'],      fmt: 'pct'   },
-    { label: '% vs 200D',      keys: ['pct_vs_200d', 'percent_vs_200d', 'price_vs_200d_pct', 'vs_200d'],  fmt: 'pct'   },
-    { label: 'Extension Risk', keys: ['extension_risk', 'extension_state', 'chase_extension'],              fmt: 'raw'   },
+    { label: '% vs 50D',       keys: ['pct_vs_50d', 'percent_vs_50d', 'price_vs_50d_pct', 'vs_50d'],                                fmt: 'pct'   },
+    { label: '% vs 200D',      keys: ['pct_vs_200d', 'percent_vs_200d', 'price_vs_200d_pct', 'vs_200d'],                            fmt: 'pct'   },
+    { label: 'Extension Risk', keys: ['extension_risk', 'extension_state', 'chase_extension'],                                        fmt: 'raw'   },
   ]},
   { label: '52-Week Position', fields: [
-    { label: '52W Pos',        keys: ['pos_52w', 'position_52w', 'pos_52wk'],                               fmt: 'pct'   },
-    { label: '% From 52W High',keys: ['pct_from_52w_high', 'dist_52w_high', 'from_52w_high'],               fmt: 'pct'   },
+    { label: '52W Pos',        keys: ['pos_52w', 'position_52w', 'pos_52wk'],                                                         fmt: 'pct'   },
+    { label: '% From 52W High',keys: ['pct_from_52w_high', 'dist_52w_high', 'from_52w_high'],                                         fmt: 'pct'   },
   ]},
   { label: 'Entry / Breakout', fields: [
-    { label: 'Entry Zone',     keys: ['entry_zone', 'entry_state', 'entry_state_display'],                  fmt: 'raw'   },
-    { label: 'Breakout Signal',keys: ['breakout_signal', 'breakout'],                                       fmt: 'raw'   },
-    { label: 'Accum/Dist',     keys: ['accum_dist', 'accumulation_distribution', 'ad_state'],               fmt: 'raw'   },
-    { label: 'Squeeze',        keys: ['squeeze', 'squeeze_state', 'squeeze_signal'],                        fmt: 'raw'   },
-    { label: 'ATR %',          keys: ['atr_pct', 'atr_percent', 'atr'],                                     fmt: 'pct'   },
+    { label: 'Entry Zone',     keys: ['entry_zone', 'entry_state', 'entry_state_display'],                                            fmt: 'raw'   },
+    { label: 'Breakout Signal',keys: ['breakout_signal', 'breakout'],                                                                 fmt: 'raw'   },
+    { label: 'Accum/Dist',     keys: ['accum_dist', 'accumulation_distribution', 'ad_state'],                                         fmt: 'raw'   },
+    { label: 'Squeeze',        keys: ['squeeze', 'squeeze_state', 'squeeze_signal'],                                                  fmt: 'raw'   },
+    { label: 'ATR %',          keys: ['atr_pct', 'atr_percent', 'atr'],                                                               fmt: 'pct'   },
   ]},
   { label: 'Options Overlay', fields: [
-    { label: 'Opt Score',      keys: ['options_score', 'opt_score', 'options_alignment_points'],            fmt: 'raw'   },
-    { label: 'Opt Signal',     keys: ['options_signal', 'opt_signal', 'options_snapshot_signal'],           fmt: 'raw'   },
-    { label: 'P/C Ratio',      keys: ['put_call_ratio', 'pc_ratio', 'p_c_ratio'],                           fmt: 'raw'   },
-    { label: 'IV',             keys: ['iv', 'implied_volatility', 'options_iv'],                            fmt: 'pct'   },
-    { label: 'Exp. Move',      keys: ['em', 'expected_move', 'expected_move_pct'],                          fmt: 'pct'   },
-    { label: 'Opt Volume',     keys: ['opt_vol', 'options_volume', 'options_vol'],                           fmt: 'large' },
-    { label: 'Open Interest',  keys: ['oi', 'open_interest', 'options_oi'],                                 fmt: 'large' },
+    { label: 'Opt Score',      keys: ['options_score', 'opt_score', 'options_alignment_points'],                                      fmt: 'raw'   },
+    { label: 'Opt Signal',     keys: ['options_signal', 'opt_signal', 'options_snapshot_signal'],                                     fmt: 'raw'   },
+    { label: 'P/C Ratio',      keys: ['options_put_call_ratio', 'put_call_ratio', 'pc_ratio', 'p_c_ratio'],                           fmt: 'raw'   },
+    { label: 'IV',             keys: ['options_iv', 'iv', 'implied_volatility', 'atm_iv'],                                            fmt: 'pct'   },
+    { label: 'Exp. Move',      keys: ['options_expected_move', 'em', 'expected_move', 'expected_move_pct'],                           fmt: 'pct'   },
+    { label: 'Opt Volume',     keys: ['options_volume', 'opt_vol', 'options_vol'],                                                    fmt: 'large' },
+    { label: 'Open Interest',  keys: ['options_open_interest', 'open_interest', 'oi', 'options_oi'],                                  fmt: 'large' },
   ]},
 ];
 
-function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallback }: {
-  detail?: any; detailLoading: boolean; confluenceRow?: any; stock: any; useRowFallback: boolean;
+function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallback, screenerRow }: {
+  detail?: any; detailLoading: boolean; confluenceRow?: any; stock: any; useRowFallback: boolean; screenerRow?: any;
 }) {
   if (detailLoading && !detail) return <LoadingRow label="Loading technical data…" />;
 
   const tech  = detail?.technical ?? {};
   const crRow = confluenceRow ?? {};
+  /* Primary row fallback — screenerRow has all the watchlist screener fields */
+  const sRow: any = screenerRow ?? stock ?? {};
+  /* Derive stage label from nested objects if backend returns them nested */
+  const derivedSRow: Record<string, any> = {
+    ...sRow,
+    stage:              sRow.stage ?? sRow.stage_analysis?.label ?? sRow.stage2_breakout?.label ?? null,
+    vol_mc_pct:         sRow.vol_mc_pct  ?? sRow.vol_mc_ratio   ?? null,
+    options_put_call_ratio: sRow.options_put_call_ratio ?? sRow.put_call_ratio ?? null,
+    options_open_interest:  sRow.options_open_interest  ?? sRow.open_interest  ?? null,
+  };
 
   function resolveField(keys: string[]): any {
     for (const k of keys) {
       const v = tech[k];
       if (v !== null && v !== undefined && v !== '') return v;
     }
-    /* Always fall back to confluenceRow then stock — regardless of quote status */
+    /* Screener row is primary fallback — it has all the watchlist technical fields */
     for (const k of keys) {
-      const v = crRow[k];
+      const v = derivedSRow[k];
       if (v !== null && v !== undefined && v !== '') return v;
     }
     for (const k of keys) {
-      const v = (stock as any)?.[k];
+      const v = crRow[k];
       if (v !== null && v !== undefined && v !== '') return v;
     }
     return undefined;
@@ -982,7 +995,7 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
     }
   }
 
-  const themeVal = safeStr(tech.theme ?? crRow.theme ?? null);
+  const themeVal = safeStr(tech.theme ?? derivedSRow.canonical_theme_name ?? derivedSRow.theme ?? crRow.theme ?? null);
   const hasAny = TECH_GROUPS.some(g => g.fields.some(f => resolveField(f.keys) !== undefined));
 
   if (!hasAny) {
@@ -1034,21 +1047,25 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
    ═══════════════════════════════════════════════════════════════════ */
 type FundField = { label: string; key: string; fmt: 'pct' | 'mult' | 'raw' | 'date' | 'large' };
 const FUND_GROUPS: { label: string; fields: FundField[] }[] = [
+  { label: 'Company / Scale', fields: [
+    { label: 'Market Cap',      key: 'market_cap',                 fmt: 'large' },
+    { label: 'Theme',           key: 'canonical_theme_name',       fmt: 'raw'   },
+  ]},
   { label: 'Revenue & Growth', fields: [
     { label: 'Revenue',         key: 'revenue',                    fmt: 'large' },
     { label: 'Rev Growth Q',    key: 'revenue_growth_q',           fmt: 'pct'   },
-    { label: 'Rev Growth Y',    key: 'revenue_growth_y',           fmt: 'pct'   },
+    { label: 'Rev Growth Y',    key: 'revenue_growth',             fmt: 'pct'   },
     { label: 'Rev Growth Est',  key: 'revenue_growth_est',         fmt: 'pct'   },
-    { label: 'Rev Growth NQ',   key: 'revenue_growth_next_quarter',fmt: 'pct'   },
-    { label: 'Rev Growth NY',   key: 'revenue_growth_next_year',   fmt: 'pct'   },
+    { label: 'Rev Growth NQ',   key: 'rev_growth_next_quarter',    fmt: 'pct'   },
+    { label: 'Rev Growth NY',   key: 'rev_growth_next_year',       fmt: 'pct'   },
   ]},
   { label: 'EPS & Earnings', fields: [
     { label: 'EPS Growth',      key: 'eps_growth',                 fmt: 'pct'   },
     { label: 'EPS Growth Est',  key: 'eps_growth_est',             fmt: 'pct'   },
-    { label: 'EPS Growth TQ',   key: 'eps_growth_this_quarter',    fmt: 'pct'   },
-    { label: 'EPS Growth NQ',   key: 'eps_growth_next_quarter',    fmt: 'pct'   },
-    { label: 'EPS Growth TY',   key: 'eps_growth_this_year',       fmt: 'pct'   },
-    { label: 'EPS Growth NY',   key: 'eps_growth_next_year',       fmt: 'pct'   },
+    { label: 'EPS Growth TQ',   key: 'eps_growth_tq',              fmt: 'pct'   },
+    { label: 'EPS Growth NQ',   key: 'eps_growth_nq',              fmt: 'pct'   },
+    { label: 'EPS Growth TY',   key: 'eps_growth_ty',              fmt: 'pct'   },
+    { label: 'EPS Growth NY',   key: 'eps_growth_ny',              fmt: 'pct'   },
     { label: 'Earnings Date',   key: 'earnings_date',              fmt: 'date'  },
   ]},
   { label: 'Margins', fields: [
@@ -1066,13 +1083,9 @@ const FUND_GROUPS: { label: string; fields: FundField[] }[] = [
     { label: 'EBIT',            key: 'ebit',                       fmt: 'large' },
   ]},
   { label: 'Balance Sheet & Ownership', fields: [
-    { label: 'Debt / Equity',   key: 'debt_equity',                fmt: 'raw'   },
+    { label: 'Debt / Equity',   key: 'debt_to_equity',             fmt: 'raw'   },
     { label: 'Net Debt/EBITDA', key: 'net_debt_ebitda',            fmt: 'raw'   },
-    { label: 'Insider %',       key: 'insider_percent',            fmt: 'pct'   },
-  ]},
-  { label: 'Company Scale', fields: [
-    { label: 'Market Cap',      key: 'market_cap',                 fmt: 'large' },
-    { label: 'Theme',           key: 'theme',                      fmt: 'raw'   },
+    { label: 'Insider %',       key: 'shares_insiders',            fmt: 'pct'   },
   ]},
 ];
 
@@ -1087,21 +1100,30 @@ function formatFundVal(val: any, fmt: string): string {
   }
 }
 
-function FundamentalsTab({ detail, detailLoading, confluenceRow, stock }: {
-  detail?: any; detailLoading: boolean; confluenceRow?: any; stock?: any;
+function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screenerRow }: {
+  detail?: any; detailLoading: boolean; confluenceRow?: any; stock?: any; screenerRow?: any;
 }) {
   if (detailLoading && !detail) return <LoadingRow label="Loading fundamentals…" />;
 
   const fund = detail?.fundamentals ?? {};
   const src  = detail?.fundamentals_source;
-  const rowFb = confluenceRow ?? stock ?? {};
+  /* screenerRow first — it has all the watchlist fundamental fields */
+  const rowFb = screenerRow ?? confluenceRow ?? stock ?? {};
 
-  /* Resolve a field: detail.fundamentals first, then row/stock fallback */
+  /* Resolve a field: detail.fundamentals first, then screener row / stock fallback */
   function getFund(key: string): any {
     const v = fund[key];
     if (v !== null && v !== undefined && v !== '') return v;
     const rv = rowFb[key];
     if (rv !== null && rv !== undefined && rv !== '') return rv;
+    /* Theme aliases */
+    if (key === 'canonical_theme_name') {
+      const aliases = ['canonical_theme', 'theme', 'market_theme', 'canonical_theme_id'];
+      for (const alias of aliases) {
+        const av = fund[alias] ?? rowFb[alias];
+        if (av !== null && av !== undefined && av !== '') return av;
+      }
+    }
     return null;
   }
 
@@ -1176,8 +1198,12 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock }: {
 /* ═══════════════════════════════════════════════════════════════════
    News Tab — uses ticker-detail backend data, rich catalyst cards
    ═══════════════════════════════════════════════════════════════════ */
-function NewsTab({ detail, detailLoading, ticker }: { detail?: any; detailLoading: boolean; ticker: string }) {
-  if (detailLoading && !detail) {
+function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; detailLoading: boolean; ticker: string; allNews?: any[] }) {
+  /* Watchlist live news filtered to this ticker — used as fallback when detail.news is empty */
+  const wlTickerNews: any[] = allNews?.filter(
+    item => (item.ticker || '').toUpperCase() === ticker.toUpperCase()
+  ) ?? [];
+  if (detailLoading && !detail && wlTickerNews.length === 0) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
         <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
@@ -1196,13 +1222,12 @@ function NewsTab({ detail, detailLoading, ticker }: { detail?: any; detailLoadin
     ?? detail?.direct_catalyst_articles
     ?? [];
   const regularArticles: any[] =
-    newsData?.articles
-    ?? detail?.news_articles
-    ?? [];
+    (Array.isArray(newsData?.articles) && newsData.articles.length > 0 ? newsData.articles : undefined)
+    ?? (Array.isArray(detail?.news_articles) && detail.news_articles.length > 0 ? detail.news_articles : undefined)
+    ?? wlTickerNews;  /* fallback: live watchlist news filtered to this ticker */
   const totalCount = directArticles.length + regularArticles.length;
 
-  /* Only show "unavailable" if detail loaded and truly has no news */
-  if (!detail) {
+  if (!detail && wlTickerNews.length === 0) {
     return (
       <div style={{ padding: 14, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
         <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>

@@ -1,0 +1,561 @@
+FRONTEND ONLY — STOP INVENTING POPUP DATA PATHS; USE EXISTING WATCHLIST ROW DATA
+
+Frontend repo only.
+
+Do not touch backend.
+Do not create new endpoints.
+Do not create new provider calls.
+Do not change scoring.
+Do not change confluence math.
+Do not rewrite the whole modal again.
+Do not claim success from TypeScript/HMR only.
+Do not use generic “data unavailable” fallbacks when the Watchlist row already has the data.
+
+Problem:
+
+The ticker popup is still broken.
+
+Observed:
+
+- Main Confluence table mostly works, but popup tabs are missing data.
+- Technical tab only shows a few fields, not the full Technical toggle fields.
+- Fundamentals tab only shows theme, not the full Fundamental toggle fields.
+- News tab was working before and now says unavailable.
+- About section does not show the full FMP company profile description when available.
+- Confluence section disappears / does not render useful score breakdown.
+- Previous frontend passes changed layout but did not bind to the actual existing Watchlist data.
+
+Important correction:
+
+Technical and Fundamentals popup tabs should NOT depend primarily on the new ticker-detail endpoint.
+
+They should render the same data already loaded for the Watchlist screener toggles.
+
+Use the selected ticker row / watchlist row data / screener row data already in frontend state.
+
+The popup is just a formatted detail view of the same row.
+
+==================================================
+PART 1 — TRACE THE REAL WATCHLIST SCREENER ROW DATA
+==================================================
+
+Find the exact frontend data object used to render the Watchlist screener Technical toggle.
+
+Find the exact frontend data object used to render the Watchlist screener Fundamental toggle.
+
+Return:
+
+- component file
+- row object variable name
+- column definitions / field accessors
+- exact key used for each displayed column
+- where the row data is stored in React state/query result
+- how clicking a ticker currently passes row data into StockDetailModal
+
+Do not guess.
+Do not use the ticker-detail endpoint as a substitute for this audit.
+
+The popup Technical tab must use the exact same row fields as the Technical toggle.
+
+The popup Fundamentals tab must use the exact same row fields as the Fundamental toggle.
+
+==================================================
+PART 2 — PASS THE FULL SELECTED WATCHLIST ROW INTO THE MODAL
+==================================================
+
+When user clicks a ticker, pass the full selected row object into StockDetailModal.
+
+Do not pass only:
+
+- symbol
+- name
+- partial stock object
+
+Pass the full row used by the Watchlist table/screener.
+
+If there are separate row versions for:
+
+- technical toggle
+- fundamental toggle
+- confluence table
+
+then create a merged selectedTickerContext object:
+
+{
+  symbol,
+  displayName,
+  baseRow,
+  technicalRow,
+  fundamentalRow,
+  confluenceRow,
+  liveNewsRow
+}
+
+But do not invent values. Use existing loaded state.
+
+The modal should use:
+
+1. selected row data first for technical/fundamental tabs
+2. ticker-detail endpoint second for company profile / confluence detail / direct catalyst enrichment
+3. calm fallback only if neither source has data
+
+==================================================
+PART 3 — TECHNICAL TAB MUST RENDER FULL TECHNICAL TOGGLE FIELDS
+==================================================
+
+The Technical tab must show every field from the Watchlist Technical toggle.
+
+Use the exact same field accessors/keys as the Watchlist Technical table.
+
+Required fields:
+
+Price
+Chg %
+Volume
+VOLX
+VOL RANK
+Vol/MC
+Stage
+Opt Score
+Opt Signal
+P/C
+IV
+EM
+Opt Vol
+OI
+MA Stack
+% vs 50D
+% vs 200D
+Extension Risk
+52W Pos
+% From 52W High
+Entry Zone
+Breakout Signal
+Accum/Dist
+Squeeze
+ATR %
+Momentum Trend
+Technical State
+
+Group them like this:
+
+A. Price / Volume
+- Price
+- Chg %
+- Volume
+- VOLX
+- VOL RANK
+- Vol/MC
+
+B. Stage / Trend
+- Stage
+- Technical State
+- Momentum Trend
+- MA Stack
+
+C. Moving Average / Extension
+- % vs 50D
+- % vs 200D
+- Extension Risk
+
+D. 52-Week Position
+- 52W Pos
+- % From 52W High
+
+E. Entry / Breakout
+- Entry Zone
+- Breakout Signal
+- Accum/Dist
+- Squeeze
+- ATR %
+
+F. Options Overlay
+- Opt Score
+- Opt Signal
+- P/C
+- IV
+- EM
+- Opt Vol
+- OI
+
+Rules:
+
+- Do not hide the whole tab because endpoint.technical is missing.
+- Use the selected Watchlist row fields.
+- If a specific value is missing, show "—" for that field.
+- Do not omit fields silently.
+- Do not show “Technical data unavailable” if the row has any of these fields.
+- Use the same formatting as the Watchlist Technical toggle.
+
+Acceptance:
+For ANET, the Technical tab should show more than just Price, Volume, Rel Volume, Extension Risk, Entry Zone, Opt Score.
+It must show the complete list above, with "—" only for genuinely missing fields.
+
+==================================================
+PART 4 — FUNDAMENTALS TAB MUST RENDER FULL FUNDAMENTAL TOGGLE FIELDS
+==================================================
+
+The Fundamentals tab must show every field from the Watchlist Fundamental toggle.
+
+Use the exact same field accessors/keys as the Watchlist Fundamental table.
+
+Required fields:
+
+Ticker
+Theme
+Mkt Cap
+Revenue
+Rev Grwth (Q)
+Rev Grwth (Y)
+Gross Mgn
+FCF Mgn
+Free CF
+Op. Income
+EBIT
+P/E
+P/S
+EV/EBITDA
+EPS Grwth
+D/E
+ND/EBITDA
+Insider %
+Earn. Date
+Rev Grwth Est
+Rev Grwth NQ
+Rev Grwth NY
+EPS Grwth Est
+EPS Grwth TQ
+EPS Grwth NQ
+EPS Grwth TY
+EPS Grwth NY
+
+Group them like this:
+
+A. Company / Scale
+- Ticker
+- Theme
+- Mkt Cap
+
+B. Revenue & Growth
+- Revenue
+- Rev Grwth (Q)
+- Rev Grwth (Y)
+- Rev Grwth Est
+- Rev Grwth NQ
+- Rev Grwth NY
+
+C. EPS & Earnings
+- EPS Grwth
+- EPS Grwth Est
+- EPS Grwth TQ
+- EPS Grwth NQ
+- EPS Grwth TY
+- EPS Grwth NY
+- Earn. Date
+
+D. Margins
+- Gross Mgn
+- FCF Mgn
+
+E. Valuation Multiples
+- P/E
+- P/S
+- Forward P/E if available
+- EV/EBITDA
+
+F. Cash Flow / Profitability
+- Free CF
+- Op. Income
+- EBIT
+
+G. Balance Sheet / Ownership
+- D/E
+- ND/EBITDA
+- Insider %
+
+Rules:
+
+- Do not hide the whole tab because endpoint.fundamentals is missing.
+- Use the selected Watchlist fundamental row first.
+- Use ticker-detail fundamentals as fallback/enrichment.
+- If a specific value is missing, show "—".
+- Do not show only Theme. That means the wrong object is being used.
+- Use the same formatting as the Watchlist Fundamental toggle.
+
+Acceptance:
+For ANET, Fundamentals tab must show a grouped page with the full set above, not only “Theme”.
+
+==================================================
+PART 5 — NEWS TAB RESTORE FROM EXISTING WATCHLIST LIVE NEWS PATH
+==================================================
+
+The News tab worked before. Restore that behavior.
+
+Find the existing Watchlist Live News section implementation.
+
+Use the same already-loaded news data / same frontend query / same backend response that Live News uses.
+
+Do not create a new news fetch path.
+
+For the selected ticker:
+
+- filter the existing Live News articles by ticker
+- show Direct Catalyst articles first if available from ticker-detail/direct catalyst
+- show regular ticker news after
+- preserve the good Direct Catalyst card layout if already implemented
+
+Empty state:
+
+Only show “No recent news cached for ANET” if the Live News data actually has no ANET articles.
+
+Do not show:
+“News data is not available for ANET”
+when the Watchlist Live News section has articles for ANET.
+
+Acceptance:
+ANET should show news if Live News has ANET articles.
+TSM should show direct catalyst/news if Live News has TSM articles.
+News tab must not regress from the prior working state.
+
+==================================================
+PART 6 — ABOUT SECTION DESCRIPTION
+==================================================
+
+About must show the full FMP company profile description when available.
+
+Source priority:
+
+1. ticker-detail company.description
+2. ticker-detail company.profile.description
+3. ticker-detail overview.description
+4. selected row company/profile description if available
+
+If no description is available, show:
+“Company profile unavailable for [TICKER].”
+
+But do not hide the About card.
+
+Layout:
+
+- company name
+- ticker
+- sector
+- industry
+- market cap
+- exchange/country if available
+- full description paragraph
+
+Use Show more / Show less only after a reasonable character limit, but default should show enough text to be useful.
+
+Fix text overlap:
+- sector/industry cards must wrap
+- long industry names must not collide with market cap
+- use responsive grid/card layout
+
+Important:
+If backend does not return description for ANET, say that in final report. Do not claim About is fixed unless it actually renders description for at least one symbol where backend provides it.
+
+==================================================
+PART 7 — CONFLUENCE ANALYSIS SECTION RESTORE
+==================================================
+
+The Overview tab must show Confluence Analysis below About.
+
+Use source priority:
+
+1. ticker-detail confluence_v42
+2. selected confluence row
+3. readV42(selected row)
+
+Do not hide the entire section if one nested object is missing.
+
+It must show:
+
+Header:
+- Total CCS
+- Core /100
+- Bonus /25
+- Decision
+- Timing
+- Bucket
+- Confidence
+- Invalidation
+
+Why:
+- Why Now bullets
+- Why Wait bullets
+
+Core components:
+- Theme /15
+- Stage /15
+- Options /18
+- Technical Setup /8
+- Entry /12
+- Catalyst /12
+- Investment /12
+- Valuation /8
+
+Valuation detail:
+- P/E
+- P/S
+- Forward P/E
+- Approx badge if approximate
+- source if available
+- warning badges
+- P/E score
+- P/S score
+- Forward P/E score
+- explanation
+
+Catalyst detail:
+- event type
+- event tier
+- explanation
+- materiality / freshness / relevance
+
+Investment detail:
+- label
+- score
+- any available quality/growth/financial subdrivers
+
+Technical detail:
+- stage
+- setup
+- entry state
+- extension
+- nearest fib
+- wave structure
+
+Do not show a blank Confluence Analysis card.
+
+==================================================
+PART 8 — VISIBLE CONFLUENCE TABLE VALUATION COLUMN
+==================================================
+
+Valuation column must show numeric values.
+
+Use the same row data object that renders CCS and other component scores.
+
+Display:
+
+Valuation
+X.X / 8
+[label or coverage status]
+
+If the value is 0, display:
+0.0 / 8
+
+Do not display blank unless the row truly lacks all valuation fields.
+
+Also fix visible component maxes wherever the actual table renders:
+
+Options /18
+Catalyst /12
+Investment /12
+Valuation /8
+
+==================================================
+PART 9 — HARD ACCEPTANCE RULES
+==================================================
+
+Do not return success unless you actually confirm these in the running app or by inspecting the exact rendered row objects:
+
+For ANET:
+
+- Technical tab shows all required Technical fields, not just 5 fields.
+- Fundamentals tab shows all required Fundamental fields, not just Theme.
+- News tab no longer says unavailable if Live News has ANET articles.
+- About section shows description if backend has one; otherwise clearly reports backend missing description.
+- Confluence Analysis appears below About.
+
+For TSM:
+
+- Valuation visible in table and popup.
+- Catalyst uses /12.
+- Investment uses /12.
+- Options uses /18.
+
+For at least one symbol with company.description available:
+
+- About renders full description paragraph.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND WATCHLIST ROW DATA BINDING FIX REPORT
+
+ROOT CAUSE:
+[exact issue — wrong object, endpoint dependency, selected row not passed, field keys wrong, etc.]
+
+WATCHLIST TECHNICAL SOURCE:
+[file, row object, key map]
+
+WATCHLIST FUNDAMENTAL SOURCE:
+[file, row object, key map]
+
+WATCHLIST NEWS SOURCE:
+[file, data source, filter logic]
+
+FILES CHANGED:
+[list]
+
+TECHNICAL TAB:
+[summary + missing fields if any]
+
+FUNDAMENTALS TAB:
+[summary + missing fields if any]
+
+NEWS TAB:
+[summary]
+
+ABOUT SECTION:
+[summary; list symbols with description available/missing]
+
+CONFLUENCE ANALYSIS:
+[summary]
+
+VISIBLE TABLE VALUATION:
+[summary]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+FRONTEND ROW DATA BINDING VERDICT
+
+USES_EXISTING_WATCHLIST_TECHNICAL_ROW:
+[YES/NO]
+
+USES_EXISTING_WATCHLIST_FUNDAMENTAL_ROW:
+[YES/NO]
+
+USES_EXISTING_WATCHLIST_NEWS_DATA:
+[YES/NO]
+
+TECHNICAL_TAB_COMPLETE:
+[YES/NO]
+
+FUNDAMENTALS_TAB_COMPLETE:
+[YES/NO]
+
+NEWS_TAB_RESTORED:
+[YES/NO]
+
+ABOUT_DESCRIPTION_WORKING_WHEN_BACKEND_HAS_IT:
+[YES/NO/PARTIAL]
+
+CONFLUENCE_ANALYSIS_RESTORED:
+[YES/NO]
+
+VALUATION_COLUMN_NUMERIC:
+[YES/NO]
+
+VISIBLE_TABLE_MAXES_CORRECT:
+[YES/NO]
+
+NO_NEW_FRONTEND_PROVIDER_PIPELINES:
+[YES/NO]

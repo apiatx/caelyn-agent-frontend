@@ -6982,17 +6982,27 @@ export default function WatchlistPage() {
       )}
 
       {/* ═══ Stock Detail Modal ═══ */}
-      {selectedTicker && (
-        <StockDetailModal
-          ticker={selectedTicker}
-          analysis={analysis}
-          csvData={watchlist?.csv_data}
-          watchlistId={activeId}
-          earningsEntry={earningsMap[selectedTicker.toUpperCase()]}
-          confluenceRows={confluenceRows ?? csvMergedScreenerRows}
-          onClose={() => setSelectedTicker(null)}
-        />
-      )}
+      {selectedTicker && (() => {
+        const _t = selectedTicker.toUpperCase();
+        const _sRow = csvMergedScreenerRows?.find(
+          (r: any) => (r.ticker || r.symbol || '').toUpperCase() === _t
+        ) ?? confluenceRows?.find(
+          (r: any) => (r.ticker || r.symbol || '').toUpperCase() === _t
+        ) ?? undefined;
+        return (
+          <StockDetailModal
+            ticker={selectedTicker}
+            analysis={analysis}
+            csvData={watchlist?.csv_data}
+            watchlistId={activeId}
+            earningsEntry={earningsMap[_t]}
+            confluenceRows={confluenceRows ?? csvMergedScreenerRows}
+            screenerRow={_sRow}
+            allNews={allNews}
+            onClose={() => setSelectedTicker(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
