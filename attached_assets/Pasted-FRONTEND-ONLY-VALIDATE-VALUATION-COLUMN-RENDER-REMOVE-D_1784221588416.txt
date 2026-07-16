@@ -1,0 +1,100 @@
+FRONTEND ONLY — VALIDATE VALUATION COLUMN RENDER + REMOVE DEBUG LOGS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change valuation formula.
+Do not change Score Lens.
+Do not change sorting.
+Do not change actionability.
+Do not redesign anything.
+
+The likely Valuation column root cause was fixed:
+
+- readV42 now reads compsRaw.valuation_alignment before compsRaw.valuation
+- flat fallback now reads row.valuation_alignment_points before row.valuation_points
+- watchlist.tsx now extracts r.valuation_alignment / r.valuation into explicit flat valuation fields
+
+Now validate in the authenticated running app.
+
+Required validation:
+
+1. Open Watchlist → Confluence.
+2. Confirm Valuation column no longer shows “—” for all rows.
+3. Confirm values render as:
+   X.X / 8
+   with label or coverage status underneath when available.
+4. Confirm 0 values render as:
+   0.0 / 8
+   not “—”.
+5. Confirm Score Lens still works with Valuation:
+   - exclude Valuation
+   - active max decreases by 8
+   - Valuation column grays out
+   - adjusted CCS recalculates
+6. Confirm sorting still works:
+   - sort by Valuation
+   - sort by CCS
+   - sort by Catalyst
+7. Check console audit:
+
+Valuation audit → via v42 components: N | via flat key: N | missing: N
+
+If valuation is now rendering:
+- remove the noisy console logs
+- or gate them behind development-only debug mode
+
+If Valuation still shows “—”:
+- report the console audit counts
+- report one sample row’s valuation-related keys
+- do not guess
+
+Final report:
+
+VALUATION COLUMN FINAL VALIDATION REPORT
+
+VISIBLE VALUATION COLUMN:
+[summary]
+
+CONSOLE AUDIT:
+[via v42 components / via flat key / missing]
+
+SAMPLE ROW:
+[symbol + valuation keys + rendered value]
+
+SCORE LENS VALUATION TEST:
+[summary]
+
+SORTING TEST:
+[summary]
+
+DEBUG LOG CLEANUP:
+[removed/dev-gated/not removed + why]
+
+End exactly:
+
+VALUATION COLUMN FINAL VERDICT
+
+VALUATION_VALUES_VISIBLE:
+[YES/NO]
+
+ZERO_VALUES_RENDER_AS_0_NOT_DASH:
+[YES/NO]
+
+VALUATION_LABEL_VISIBLE:
+[YES/NO]
+
+SCORE_LENS_VALUATION_EXCLUSION_WORKS:
+[YES/NO]
+
+VALUATION_SORTING_WORKS:
+[YES/NO]
+
+CCS_SORTING_STILL_WORKS:
+[YES/NO]
+
+DEBUG_LOGS_REMOVED_OR_DEV_GATED:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

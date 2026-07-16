@@ -708,7 +708,35 @@ const ACTION_LABEL_DISPLAY: Record<string, string> = {
  *  (from /api/alpha/confluence/{symbol}) or flat caelyn_confluence_v42_* fields
  *  (from /api/watchlist/{id}/alignment). Returns null if no CCS data present. */
 function readV42(row: any) {
-  if (row?.confluence_v42) return row.confluence_v42 as V42Shape;
+  if (row?.confluence_v42) {
+    const cv42 = row.confluence_v42 as V42Shape;
+    /* The alignment endpoint pre-builds confluence_v42 but leaves
+       components.valuation = null — valuation data lives only in
+       caelyn_confluence_v42_components.valuation. Merge it in. */
+    if (!cv42.components?.valuation?.points) {
+      const rawVal = row.caelyn_confluence_v42_components?.valuation;
+      if (rawVal && rawVal.points != null) {
+        return {
+          ...cv42,
+          components: {
+            ...(cv42.components ?? {}),
+            valuation: {
+              raw_score:    rawVal.raw_score    ?? null,
+              points:       rawVal.points,
+              max_points:   rawVal.max_points   ?? 8,
+              available:    rawVal.available     ?? true,
+              status:       rawVal.status        ?? rawVal.valuation_coverage_status ?? 'available',
+              reason_codes: rawVal.reason_codes  ?? rawVal.valuation_reason_codes ?? [],
+              label:        rawVal.valuation_label ?? rawVal.label ?? undefined,
+              quality_label:rawVal.quality_label ?? undefined,
+              pillar_count: rawVal.pillar_count  ?? undefined,
+            } satisfies V42Component,
+          },
+        } satisfies V42Shape;
+      }
+    }
+    return cv42;
+  }
   const ccs  = row.caelyn_confluence_score;
   const core = row.caelyn_confluence_core_score ?? row.caelyn_confluence_v42_core_score;
   const bonus= row.caelyn_confluence_bonus_score ?? row.caelyn_confluence_v42_bonus_score;
@@ -2314,28 +2342,6 @@ export function CaelynConfluenceSection({
         console.log(sym, '| CCS:', r.caelyn_confluence_score, '| bucket:', r.caelyn_confluence_bucket, '| errState:', r.entry_risk_reward_state, '| inv:', r.investment_alignment_score, '| cat:', r.catalyst_alignment_score, '| policy_boost:', r.theme_policy_boost);
       }
       console.groupEnd();
-    }
-    /* Valuation field audit */
-    const valAudit = analyzedRows.reduce((acc, r) => {
-      const v42 = readV42(r);
-      const valPts = v42?.components?.valuation?.points;
-      if (valPts != null) acc.via_v42++;
-      else if (r.valuation_alignment_points != null) acc.via_flat++;
-      else acc.missing++;
-      return acc;
-    }, { via_v42: 0, via_flat: 0, missing: 0 });
-    console.log('Valuation audit → via v42 components:', valAudit.via_v42, '| via flat key:', valAudit.via_flat, '| missing:', valAudit.missing);
-    if (analyzedRows.length > 0) {
-      const sr = analyzedRows[0];
-      const v42s = readV42(sr);
-      console.log('Sample valuation (', (sr.ticker ?? 'unknown').toUpperCase(), ') → v42_comps:', JSON.stringify(v42s?.components?.valuation ?? null), '| flat valuation_alignment_points:', sr.valuation_alignment_points, '| valuation_label:', sr.valuation_label, '| v42_raw_keys:', Object.keys(sr.caelyn_confluence_v42_components ?? {}).sort().join(', '));
-    }
-    /* Sample row keys for debugging */
-    if (analyzedRows.length > 0) {
-      const sampleSym = (analyzedRows[0].ticker ?? analyzedRows[0].symbol ?? 'unknown').toUpperCase();
-      const vKeys = Object.keys(analyzedRows[0]).filter(k => k.startsWith('val'));
-      console.log('Sample row keys (' + sampleSym + '):', Object.keys(analyzedRows[0]).sort().join(', '));
-      console.log('Valuation keys on row:', vKeys.join(', ') || '(none)');
     }
     console.groupEnd();
   // eslint-disable-next-line react-hooks/exhaustive-deps
