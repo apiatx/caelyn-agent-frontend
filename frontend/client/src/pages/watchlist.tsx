@@ -5535,9 +5535,6 @@ export default function WatchlistPage() {
               />
             )}
 
-            {/* ── Signal Summary Strip (ticker chips) ── */}
-            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
-
             {/* ── Strategy Score Panel ── */}
             {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
               <div style={{ padding: '0 20px' }}>
@@ -6721,6 +6718,10 @@ export default function WatchlistPage() {
                 );
               })()}
             </div>
+
+            {/* ── Signal Summary Strip (ticker chips) ── */}
+            {newFmt ? renderNewFormatSignalStrip() : renderLegacySignalStrip()}
+
           </div>
         </>
       )}
