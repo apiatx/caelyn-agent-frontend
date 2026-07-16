@@ -1,0 +1,556 @@
+FRONTEND ONLY — FINAL OVERVIEW TAB POLISH: ABOUT + FULL CONFLUENCE ANALYSIS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not create endpoints.
+Do not add provider calls.
+Do not change Confluence scoring.
+Do not change actionability.
+Do not rewrite the modal.
+Do not touch Technical tab unless needed to verify it still works.
+Do not touch Fundamentals tab unless needed to verify it still works.
+Do not touch News tab unless needed to verify it still works.
+
+Technical, Fundamentals, and News tabs are now working well. Leave them alone.
+
+Goal:
+
+Fix the Overview tab only.
+
+Current state:
+- Chart works.
+- Earnings cards work.
+- About section layout is okay, and backend now returns company.description for the tested symbols.
+- Confluence Analysis section is still garbage. It only shows sparse Catalyst/Valuation on the right side and leaves the card mostly empty.
+- We need the Overview tab to look professional and useful.
+
+Backend now returns company descriptions from:
+watchlist_fundamentals_cache.fields.profile.description
+
+Backend validated descriptions for:
+OSS
+ANET
+TSM
+VRT
+ENTG
+ABCL
+CRWD
+CLFD
+
+So frontend should now render descriptions for these when ticker-detail endpoint returns them.
+
+Endpoint:
+GET /api/watchlist/ticker-detail/{symbol}
+
+==================================================
+PART 1 — SCOPE LOCK
+==================================================
+
+Only work in the modal Overview/About/Confluence rendering path.
+
+Allowed:
+- StockDetailModal.tsx
+- local helper components used by Overview
+- ConfluenceSummarySection inside the modal
+- CSS/classes needed for Overview layout
+
+Not allowed:
+- Backend edits
+- News tab rewrite
+- Technical tab rewrite
+- Fundamentals tab rewrite
+- New endpoint
+- New fetch path
+- New provider calls
+- New scoring logic
+
+==================================================
+PART 2 — ABOUT SECTION FINAL FIX
+==================================================
+
+The About section must render backend company.description when present.
+
+Use this source priority:
+
+detail.company.description
+detail.company.profile.description
+detail.company_profile.description
+detail.overview.description
+stock.description
+
+Display:
+
+- Company name
+- Ticker
+- Exchange
+- Sector
+- Industry
+- Market Cap
+- Country
+- Beta if available
+- Website if available
+- CEO if available
+- Full company description paragraph
+
+Description behavior:
+- Show first 700–900 characters by default.
+- Use Show more / Show less for longer descriptions.
+- Description should be readable paragraph text, not cramped.
+- No text overlap.
+- Sector/industry cards must wrap cleanly.
+- Do not hide the About card if description is missing.
+
+If missing:
+Company profile unavailable for [TICKER].
+
+But if backend provides description, frontend must show it.
+
+Validation:
+Check at least:
+CLFD
+OSS
+ANET
+TSM
+VRT
+ENTG
+ABCL
+CRWD
+
+For each, confirm description renders if returned by endpoint.
+
+==================================================
+PART 3 — REBUILD CONFLUENCE ANALYSIS SECTION
+==================================================
+
+The current Confluence Analysis section is unacceptable.
+
+Replace the sparse current layout with a full polished dashboard card.
+
+The old right-hand V42DetailDrawer had the right information density.
+Reuse/copy the useful display logic from V42DetailDrawer, but render it inside the modal Overview tab.
+
+Do not bring back the right-hand drawer.
+Do not open a second popup.
+
+The Confluence Analysis section must show:
+
+A. Header Summary Strip
+
+- Total CCS
+- Core score /100
+- Bonus score /25
+- Decision badge
+- Timing / execution state
+- Bucket
+- Confidence
+- Invalidation
+
+Use a clear top row with cards/badges.
+
+B. Why Now / Why Wait
+
+Two cards:
+
+Why Now:
+- why_now bullets
+
+Why Wait:
+- why_wait bullets
+
+If empty:
+- “No active why-now drivers.”
+- “No wait reasons.”
+
+C. Core Component Grid
+
+Show all 8 components. Not just Catalyst and Valuation.
+
+Components:
+
+- Theme /15
+- Stage /15
+- Options /18
+- Technical Setup /8
+- Entry / Exit /12
+- Catalyst /12
+- Investment /12
+- Valuation /8
+
+Each component card must show:
+
+- name
+- points / max
+- progress bar
+- label/context
+- quality percentile if available
+
+This is mandatory:
+ALL 8 COMPONENTS MUST BE VISIBLE.
+
+D. Valuation Deep Dive
+
+A dedicated Valuation card/section.
+
+Show:
+
+- Valuation points /8
+- Valuation label
+- Coverage status
+- P/E
+- P/S
+- Forward P/E
+- Approx. badge if forward_pe_is_approximate
+- Forward P/E source
+- Warning badges for forward_pe_warning_codes
+- P/E score
+- P/S score
+- Forward P/E score
+- Valuation explanation
+- Missing fields if partial/unavailable
+
+This is critical:
+The popup must explain what drives Valuation. It must show P/E, P/S, Forward P/E, and the sub-scores.
+
+E. Catalyst Deep Dive
+
+Show:
+
+- Catalyst points /12
+- Status
+- Direct catalyst present/none
+- Event type
+- Event tier
+- Materiality score
+- Freshness score
+- Relevance score
+- Reason codes
+- Catalyst explanation
+
+If no catalyst:
+“No direct catalyst detected.”
+
+If bearish/suppressed:
+“Bearish catalyst conflict — catalyst points suppressed.”
+
+F. Investment Deep Dive
+
+Show:
+
+- Investment points /12
+- Investment label
+- Financial health score/label if available
+- Current growth score/label if available
+- Forward growth score/label if available
+- Reason codes or explanation if available
+
+If subdrivers are sparse, still show the score and label cleanly.
+
+G. Technical / Entry Detail
+
+Show:
+
+- Stage
+- Stage score
+- Setup
+- Entry state
+- Entry score
+- Extension state
+- Extension quality
+- Extension reset state
+- Nearest Fib
+- Distance Fib
+- Fib/Wave status
+- Wave structure
+- Wave score
+
+H. Bonuses
+
+Show:
+
+- Social /15
+- Whale / Insider /5
+- Bottleneck /5
+- Bottleneck anchors if available
+
+I. Coverage / Gaps
+
+Show:
+
+- Options coverage
+- Catalyst coverage
+- Valuation coverage
+- Whale/insider status
+- Coverage gaps note:
+  “Coverage gaps are not bearish signals.”
+
+J. Debug
+
+Keep collapsed by default.
+Do not show raw debug by default.
+
+==================================================
+PART 4 — DATA FALLBACKS
+==================================================
+
+Use robust fallback chain:
+
+const v42 =
+  detail?.confluence_v42
+  ?? detail?.confluence
+  ?? confluenceRow?.confluence_v42
+  ?? readV42(confluenceRow)
+  ?? null
+
+Render Confluence Analysis if either:
+- v42 exists, or
+- confluenceRow exists with any score/component fields.
+
+Do not render a mostly empty Confluence card.
+
+If no confluence data exists at all:
+Show:
+“Confluence data unavailable for [TICKER].”
+
+Component fallback mapping:
+
+theme:
+components.theme_alignment OR theme_alignment_points
+
+stage:
+components.stage_quality OR stage_quality_points
+
+options:
+components.options_alignment OR options_alignment_points
+
+technical:
+components.technical_setup OR technical_setup_points
+
+entry:
+components.entry_exit OR entry_exit_points
+
+catalyst:
+components.catalyst_alignment OR catalyst_alignment_points
+
+investment:
+components.investment_alignment OR investment_alignment_points
+
+valuation:
+components.valuation OR valuation_alignment_points
+
+Valuation field fallbacks:
+
+valuation_alignment_points
+valuation_quality_score
+valuation_label
+valuation_coverage_status
+valuation_pe_ratio
+valuation_ps_ratio
+valuation_forward_pe
+valuation_forward_pe_source
+valuation_forward_pe_is_approximate
+valuation_forward_pe_warning_codes
+valuation_pe_value_score
+valuation_ps_value_score
+valuation_forward_pe_value_score
+valuation_explanation
+valuation_missing_fields
+
+Catalyst field fallbacks:
+
+catalyst_alignment_points
+catalyst_event_type
+catalyst_event_tier
+catalyst_materiality_score
+catalyst_freshness_score
+catalyst_relevance_score
+catalyst_reason_codes
+catalyst_explanation
+direct_catalyst_present
+
+==================================================
+PART 5 — VISUAL REQUIREMENTS
+==================================================
+
+The Confluence section should look beautiful, not like a sparse debug panel.
+
+Requirements:
+- Full-width card, no huge blank left side.
+- Use sections/cards/grids.
+- Dark glass-card style matching Caelyn.
+- Clear hierarchy.
+- Progress bars for component scores.
+- Badges for decision/timing/risk/caution.
+- Green/amber/red semantic colors.
+- Compact but readable spacing.
+- Desktop priority.
+- No overlapping text.
+- No raw JSON.
+- Debug collapsed.
+
+The section should visually feel like:
+“Full ticker decision dashboard”
+
+not:
+“two fields dumped in a card.”
+
+==================================================
+PART 6 — DO NOT BREAK WORKING TABS
+==================================================
+
+Before final report, confirm:
+
+- News tab still works.
+- Fundamentals tab still works.
+- Technical tab still works.
+- One popup only.
+- No right-hand drawer opens.
+
+Do not modify those tabs unless a small import/type issue requires it.
+
+==================================================
+PART 7 — VALIDATION
+==================================================
+
+Validate with:
+
+CLFD
+OSS
+ANET
+TSM
+VRT
+ABCL
+CRWD
+HIMS
+
+For each confirm:
+
+1. Overview shows About card.
+2. About renders description when backend returns it.
+3. Long descriptions show Show more / Show less.
+4. About metadata cards do not overlap.
+5. Confluence Analysis appears.
+6. Confluence top summary strip appears.
+7. Why Now / Why Wait cards appear.
+8. All 8 components are visible.
+9. Valuation deep dive shows P/E, P/S, Forward P/E, and sub-scores.
+10. Catalyst deep dive shows event type/tier/explanation when available.
+11. Investment detail visible.
+12. Technical/Entry detail visible.
+13. Bonus detail visible.
+14. Coverage/gaps detail visible.
+15. Debug collapsed by default.
+16. News tab still works.
+17. Fundamentals tab still works.
+18. Technical tab still works.
+
+==================================================
+PART 8 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND OVERVIEW FINAL POLISH REPORT
+
+FILES CHANGED:
+[list]
+
+ABOUT SECTION:
+[summary]
+
+CONFLUENCE ANALYSIS:
+[summary]
+
+TOP SUMMARY STRIP:
+[summary]
+
+WHY NOW / WHY WAIT:
+[summary]
+
+COMPONENT GRID:
+[summary]
+
+VALUATION DEEP DIVE:
+[summary]
+
+CATALYST DEEP DIVE:
+[summary]
+
+INVESTMENT DETAIL:
+[summary]
+
+TECHNICAL / ENTRY DETAIL:
+[summary]
+
+BONUS / COVERAGE DETAIL:
+[summary]
+
+VALIDATION:
+[table by symbol]
+
+End exactly:
+
+OVERVIEW FINAL POLISH VERDICT
+
+ABOUT_CARD_ALWAYS_RENDERED:
+[YES/NO]
+
+ABOUT_DESCRIPTION_RENDERED_WHEN_BACKEND_HAS_IT:
+[YES/NO/PARTIAL]
+
+ABOUT_LAYOUT_CLEAN:
+[YES/NO]
+
+CONFLUENCE_ANALYSIS_VISIBLE:
+[YES/NO]
+
+CONFLUENCE_ANALYSIS_FULL_WIDTH:
+[YES/NO]
+
+CONFLUENCE_ANALYSIS_NO_BLANK_LEFT_SIDE:
+[YES/NO]
+
+TOP_SUMMARY_STRIP_VISIBLE:
+[YES/NO]
+
+WHY_NOW_WAIT_VISIBLE:
+[YES/NO]
+
+ALL_8_COMPONENTS_VISIBLE:
+[YES/NO]
+
+VALUATION_SUBDRIVERS_VISIBLE:
+[YES/NO]
+
+CATALYST_DETAILS_VISIBLE:
+[YES/NO]
+
+INVESTMENT_DETAILS_VISIBLE:
+[YES/NO]
+
+TECHNICAL_ENTRY_DETAILS_VISIBLE:
+[YES/NO]
+
+BONUS_DETAILS_VISIBLE:
+[YES/NO]
+
+COVERAGE_GAPS_VISIBLE:
+[YES/NO]
+
+DEBUG_COLLAPSED_BY_DEFAULT:
+[YES/NO]
+
+NEWS_TAB_UNBROKEN:
+[YES/NO]
+
+FUNDAMENTALS_TAB_UNBROKEN:
+[YES/NO]
+
+TECHNICAL_TAB_UNBROKEN:
+[YES/NO]
+
+ONE_POPUP_ONLY:
+[YES/NO]
+
+NO_NEW_FRONTEND_PROVIDER_PIPELINES:
+[YES/NO]

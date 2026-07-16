@@ -446,6 +446,17 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
   const conf = detail?.confluence_v42 ?? detail?.confluence ?? null;
   const isNewFmt = stock?._format === 'new';
 
+  /* Priority: company.description → company.profile.description → company_profile.description → overview.description → stock.description */
+  const description =
+    company?.description
+    ?? company?.profile?.description
+    ?? detail?.company_profile?.description
+    ?? detail?.overview?.description
+    ?? stock?.description
+    ?? null;
+
+  const ABOUT_LIMIT = 700;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* 1. TradingView Chart */}
@@ -467,68 +478,87 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
         </div>
       )}
 
-      {/* 3. About */}
-      {detailLoading && !detail && <LoadingRow label="Loading company profile…" />}
-      {(!detailLoading || detail) && (
-        <div>
-          <SectionLabel>About</SectionLabel>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 10 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>
-                {company?.name ?? company?.company_name ?? stock?.name ?? stock?.company ?? ticker}
-              </span>
-              <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{ticker}</span>
-              {company?.exchange && (
-                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: `rgba(255,255,255,0.05)`, color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>
-                  {company.exchange}
+      {/* 3. About — always rendered, loading state inside */}
+      <div>
+        <SectionLabel>About</SectionLabel>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
+          {detailLoading && !detail ? (
+            <LoadingRow label="Loading company profile…" />
+          ) : (
+            <>
+              {/* Name + ticker + exchange */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>
+                  {company?.name ?? company?.company_name ?? stock?.name ?? stock?.company ?? ticker}
                 </span>
-              )}
-            </div>
-            {/* Info chips */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 6, marginBottom: 12 }}>
-              {(company?.sector ?? confluenceRow?.sector ?? stock?.sector) && (
-                <MetricBox label="Sector" value={String(company?.sector ?? confluenceRow?.sector ?? stock?.sector)} raw />
-              )}
-              {(company?.industry ?? confluenceRow?.industry ?? stock?.industry) && (
-                <MetricBox label="Industry" value={String(company?.industry ?? confluenceRow?.industry ?? stock?.industry)} raw />
-              )}
-              {(company?.market_cap ?? confluenceRow?.market_cap) != null && (
-                <MetricBox label="Mkt Cap" value={fmtLarge(company?.market_cap ?? confluenceRow?.market_cap)} raw />
-              )}
-              {company?.country && <MetricBox label="Country" value={company.country} raw />}
-              {company?.employees != null && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
-            </div>
-            {/* Description */}
-            {(() => {
-              const desc = company?.description ?? company?.profile?.description ?? detail?.overview?.description ?? null;
-              if (!desc) {
-                return <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.</p>;
-              }
-              const full = String(desc);
-              const LIMIT = 500;
-              const isLong = full.length > LIMIT;
-              const shown = isLong && !descExpanded ? full.slice(0, LIMIT) + '…' : full;
-              return (
-                <div>
-                  <p style={{ fontSize: 12, color: C.text, lineHeight: 1.75, fontFamily: C.sansFont, margin: 0 }}>{shown}</p>
-                  {isLong && (
-                    <button onClick={() => setDescExpanded(v => !v)} style={{ marginTop: 8, background: 'none', border: 'none', color: C.teal, fontSize: 11, cursor: 'pointer', fontFamily: C.sansFont, padding: 0 }}>
-                      {descExpanded ? '▲ Show less' : '▼ Show more'}
-                    </button>
-                  )}
+                <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{ticker}</span>
+                {(company?.exchange ?? fmpExchange) && (
+                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>
+                    {company?.exchange ?? fmpExchange}
+                  </span>
+                )}
+              </div>
+
+              {/* Metadata chips */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 6, marginBottom: 14 }}>
+                {(company?.sector ?? confluenceRow?.sector ?? stock?.sector) && (
+                  <MetricBox label="Sector" value={String(company?.sector ?? confluenceRow?.sector ?? stock?.sector)} raw />
+                )}
+                {(company?.industry ?? confluenceRow?.industry ?? stock?.industry) && (
+                  <MetricBox label="Industry" value={String(company?.industry ?? confluenceRow?.industry ?? stock?.industry)} raw />
+                )}
+                {(company?.market_cap ?? confluenceRow?.market_cap) != null && (
+                  <MetricBox label="Mkt Cap" value={fmtLarge(company?.market_cap ?? confluenceRow?.market_cap)} raw />
+                )}
+                {company?.country && <MetricBox label="Country" value={company.country} raw />}
+                {company?.beta != null && <MetricBox label="Beta" value={Number(company.beta).toFixed(2)} raw />}
+                {company?.employees != null && <MetricBox label="Employees" value={fmtLarge(company.employees)} raw />}
+                {(company?.ceo ?? company?.ceo_name) && (
+                  <MetricBox label="CEO" value={String(company?.ceo ?? company?.ceo_name)} raw />
+                )}
+              </div>
+
+              {/* Website */}
+              {company?.website && (
+                <div style={{ marginBottom: 10 }}>
+                  <a href={company.website} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: C.teal, fontFamily: C.sansFont, textDecoration: 'none' }}>
+                    {String(company.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
                 </div>
-              );
-            })()}
-          </div>
+              )}
+
+              {/* Description */}
+              {description ? (() => {
+                const full = String(description);
+                const isLong = full.length > ABOUT_LIMIT;
+                const shown = isLong && !descExpanded ? full.slice(0, ABOUT_LIMIT) + '…' : full;
+                return (
+                  <div>
+                    <p style={{ fontSize: 12, color: C.text, lineHeight: 1.8, fontFamily: C.sansFont, margin: 0 }}>{shown}</p>
+                    {isLong && (
+                      <button onClick={() => setDescExpanded(v => !v)}
+                        style={{ marginTop: 8, background: 'none', border: 'none', color: C.teal, fontSize: 11, cursor: 'pointer', fontFamily: C.sansFont, padding: 0 }}>
+                        {descExpanded ? '▲ Show less' : '▼ Show more'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })() : (
+                <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>
+                  Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.
+                </p>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* 4. Confluence Summary */}
-      {(conf || confluenceRow) && <ConfluenceSummarySection detail={detail} confluenceRow={confluenceRow} />}
+      {/* 4. Confluence Summary — always rendered; component handles its own empty state */}
+      <ConfluenceSummarySection detail={detail} confluenceRow={confluenceRow} ticker={ticker} />
 
-      {/* Legacy analysis fallback (no backend detail) */}
-      {!detailLoading && !conf && isNewFmt && stock && (
+      {/* 5. Legacy fallback only when no v42 AND no confluenceRow */}
+      {!detailLoading && !conf && !confluenceRow && isNewFmt && stock && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {stock.catalyst && (
             <div><SectionLabel>Catalyst</SectionLabel>
@@ -541,7 +571,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
           </div>
         </div>
       )}
-      {!detailLoading && !conf && !isNewFmt && stock && (
+      {!detailLoading && !conf && !confluenceRow && !isNewFmt && stock && (
         <>
           {stock.thesis && (<div><SectionLabel>Investment Thesis</SectionLabel><p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{stock.thesis}</p></div>)}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
@@ -560,7 +590,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
           )}
         </>
       )}
-      {!detailLoading && !conf && !stock && (
+      {!detailLoading && !conf && !confluenceRow && !stock && (
         <div style={{ padding: 16, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
           <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>. Generate an AI Deep Dive for a full report.</p>
         </div>
@@ -570,13 +600,180 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Confluence Summary Section — rich V42 display (migrated from drawer)
+   Confluence Analysis Section — full dashboard (rebuilt)
    ═══════════════════════════════════════════════════════════════════ */
-function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; confluenceRow?: any }) {
+
+/* Construct a minimal v42 object from flat confluenceRow fields.
+   Field names use `caelyn_confluence_*` prefix (from alignment endpoint)
+   with plain aliases as fallbacks. */
+function readV42FromRow(row: any): any {
+  if (!row) return null;
+  /* Score fields */
+  const core   = row.caelyn_confluence_core_score ?? row.core_score ?? row.ccs_score ?? null;
+  const bonus  = row.caelyn_confluence_bonus_score ?? row.bonus_score ?? 0;
+  const total  = row.caelyn_confluence_total_score ?? row.total_score ?? null;
+  const bucket = row.caelyn_confluence_bucket ?? row.bucket ?? row.action_bucket ?? null;
+  const confScore = row.caelyn_confluence_confidence_score ?? row.confidence_score ?? null;
+  const reasonCodes: string[] = Array.isArray(row.caelyn_confluence_reason_codes)
+    ? row.caelyn_confluence_reason_codes
+    : (Array.isArray(row.reason_codes) ? row.reason_codes : []);
+
+  /* Component point fields (no caelyn_ prefix — direct flat fields from alignment) */
+  const themePts  = row.theme_alignment_points ?? null;
+  const stagePts  = row.stage_quality_points ?? null;
+  const optPts    = row.options_alignment_points ?? null;
+  const techPts   = row.technical_setup_points ?? null;
+  const entryPts  = row.entry_exit_points ?? null;
+  const catPts2   = row.catalyst_alignment_points ?? null;
+  const invPts2   = row.investment_alignment_points ?? null;
+  const valPts2   = row.valuation_alignment_points ?? null;
+
+  const hasData = core != null || themePts != null || catPts2 != null
+    || valPts2 != null || invPts2 != null || stagePts != null;
+  if (!hasData) return null;
+
+  /* Action label from bucket or explicit field */
+  const actionLabel = row.action_label ?? (bucket ? bucket.toLowerCase() : null) ?? row.signal ?? null;
+
+  /* Why now / why wait */
+  const whyNow  = Array.isArray(row.why_now)  ? row.why_now  : (row.why_now  ? [String(row.why_now)]  : []);
+  const whyWait = Array.isArray(row.why_wait) ? row.why_wait : (row.why_wait ? [String(row.why_wait)] : []);
+
+  return {
+    score: {
+      core: core ?? 0,
+      bonus,
+      total: total ?? ((core ?? 0) + bonus),
+      core_max: 100,
+      bonus_max: 25,
+    },
+    action: {
+      label: actionLabel,
+      label_display: row.action_label_display ?? actionLabel,
+      execution_label: row.execution_label ?? row.timing_label ?? row.actionability_state?.replace(/_/g, ' ') ?? null,
+      bucket,
+      invalidation_level: row.invalidation_level ?? null,
+      why_now:  whyNow,
+      why_wait: whyWait,
+      target_zone: row.target_1 != null ? {
+        target_1: row.target_1,
+        target_2: row.target_2 ?? null,
+        risk_reward_ratio: row.risk_reward_ratio ?? null,
+      } : null,
+    },
+    components: {
+      theme:           themePts  != null ? { points: themePts,  max_points: 15, label: row.theme_label     ?? null } : undefined,
+      stage:           stagePts  != null ? { points: stagePts,  max_points: 15, label: row.stage_label     ?? null } : undefined,
+      options:         optPts    != null ? { points: optPts,    max_points: 18, status: row.options_status ?? null } : undefined,
+      technical_setup: techPts   != null ? { points: techPts,   max_points: 8                                     } : undefined,
+      entry_exit:      entryPts  != null ? { points: entryPts,  max_points: 12                                    } : undefined,
+      catalyst:        catPts2   != null ? { points: catPts2,   max_points: 12, status: row.catalyst_status ?? null } : undefined,
+      investment:      invPts2   != null ? { points: invPts2,   max_points: 12, label: row.investment_label ?? null } : undefined,
+      valuation:       valPts2   != null ? { points: valPts2,   max_points: 8,  label: row.valuation_label ?? null, status: row.valuation_coverage_status ?? null } : undefined,
+    },
+    metadata: {
+      confidence_score: confScore,
+      data_status_flags: Array.isArray(row.data_status_flags) ? row.data_status_flags : [],
+      reason_codes: reasonCodes,
+    },
+    technical: (row.stage_label != null || row.entry_state != null || row.actionability_state != null) ? {
+      stage_label:           row.stage_label ?? null,
+      stage_score:           row.stage_score ?? null,
+      technical_setup_label: row.setup_label ?? row.technical_setup_label ?? null,
+      entry_state:           row.entry_state ?? row.actionability_state ?? null,
+      entry_state_display:   row.entry_state_display ?? null,
+      entry_score:           row.entry_score ?? null,
+      extension_state:       row.extension_state ?? null,
+      extension_quality:     row.extension_quality ?? null,
+      extension_reset_state: row.extension_reset_state ?? null,
+      nearest_fib_label:     row.nearest_fib_label ?? null,
+      distance_to_fib_pct:   row.distance_to_fib_pct ?? null,
+      fib_wave_status:       row.fib_wave_status ?? null,
+      wave_structure:        row.wave_structure ?? null,
+      wave_score:            row.wave_score ?? null,
+    } : null,
+    bonuses: (row.bottleneck_bonus_points != null || row.whale_insider_bonus_points != null || row.social_bonus_points != null) ? {
+      bottleneck:    { points: row.bottleneck_bonus_points   ?? null, anchor_count: row.bottleneck_anchor_count ?? 0 },
+      whale_insider: { points: row.whale_insider_bonus_points ?? null },
+      social:        { points: row.social_bonus_points ?? null, sections_hit: row.social_sections_hit ?? 0 },
+    } : null,
+    risk: {
+      risk_flags:    Array.isArray(row.risk_flags)    ? row.risk_flags    : [],
+      caution_flags: Array.isArray(row.caution_flags) ? row.caution_flags : [],
+    },
+  };
+}
+
+/* Component card definition */
+interface CCompDef { key: string; label: string; max: number; crKey: string }
+const CONF_COMP_DEFS: CCompDef[] = [
+  { key: 'theme',          label: 'Theme',          max: 15, crKey: 'theme_alignment_points'     },
+  { key: 'stage',          label: 'Stage',          max: 15, crKey: 'stage_quality_points'       },
+  { key: 'options',        label: 'Options',        max: 18, crKey: 'options_alignment_points'   },
+  { key: 'technical_setup',label: 'Technical Setup',max:  8, crKey: 'technical_setup_points'     },
+  { key: 'entry_exit',     label: 'Entry / Exit',   max: 12, crKey: 'entry_exit_points'          },
+  { key: 'catalyst',       label: 'Catalyst',       max: 12, crKey: 'catalyst_alignment_points'  },
+  { key: 'investment',     label: 'Investment',     max: 12, crKey: 'investment_alignment_points' },
+  { key: 'valuation',      label: 'Valuation',      max:  8, crKey: 'valuation_alignment_points' },
+];
+
+function CCompCard({ def, comps, cr }: { def: CCompDef; comps: any; cr: any }) {
+  const c = comps[def.key];
+  const pts: number | null = c?.points ?? cr[def.crKey] ?? null;
+  const max = c?.max_points ?? def.max;
+  const subLabel: string | null = c?.label ?? c?.quality_label ?? (c?.pillar_count != null ? `${c.pillar_count}/3 pillars` : null);
+  const pct = pts != null && max > 0 ? (pts / max) * 100 : 0;
+  const color = pts != null ? ptsColor(pts, max) : C.dim;
+  return (
+    <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px', minHeight: 68 }}>
+      <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.dim, fontFamily: C.font, marginBottom: 6 }}>{def.label}</div>
+      {pts != null ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, height: '100%', background: color, borderRadius: 2 }} />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>{Number.isInteger(pts) ? pts : pts.toFixed(1)}/{max}</span>
+          </div>
+          {subLabel && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.sansFont }}>{safeStr(subLabel)}</div>}
+        </>
+      ) : (
+        <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>—</div>
+      )}
+    </div>
+  );
+}
+
+function CConfSubHdr({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: C.font, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${C.border}` }}>
+      {children}
+    </div>
+  );
+}
+
+function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: any; confluenceRow?: any; ticker: string }) {
   const [showDebug, setShowDebug] = useState(false);
 
-  const v42 = detail?.confluence_v42 ?? detail?.confluence ?? null;
-  if (!v42) return null;
+  const v42 =
+    detail?.confluence_v42
+    ?? detail?.confluence
+    ?? confluenceRow?.confluence_v42
+    ?? readV42FromRow(confluenceRow)
+    ?? null;
+
+  if (!v42) {
+    return (
+      <div>
+        <SectionLabel>Confluence Analysis</SectionLabel>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
+          <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>
+            Confluence data unavailable for <strong style={{ color: C.text }}>{ticker}</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const sc    = v42.score;
   const act   = v42.action;
@@ -585,300 +782,336 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
   const risk  = v42.risk;
   const meta  = v42.metadata;
   const tech  = v42.technical;
-  const dc    = detail?.direct_catalyst;
-  const fund  = detail?.fundamentals;
-  const valComp = comps.valuation;
+  const cr    = confluenceRow ?? {};
+  const fund  = detail?.fundamentals ?? {};
+  const dc    = detail?.direct_catalyst ?? null;
 
-  const decisionCfg = act ? (DECISION_BADGE_MAP[act.label?.toUpperCase()] ?? { label: act.label_display ?? act.label, clr: C.dim }) : null;
+  const decisionCfg = act?.label
+    ? (DECISION_BADGE_MAP[act.label?.toUpperCase()] ?? { label: act.label_display ?? act.label, clr: actionBadgeColor(act.label) })
+    : null;
+
+  /* ── Catalyst fields ── */
+  const catComp  = comps.catalyst;
+  const catPts: number | null = catComp?.points ?? cr.catalyst_alignment_points ?? null;
+  const catMax   = catComp?.max_points ?? 12;
+  const isBearishCat = catComp?.status === 'bearish_conflict'
+    || (catComp?.reason_codes ?? []).includes('BEARISH_CATALYST_CONFLICT');
+  const eventType     = dc?.catalyst_event_type ?? dc?.event_type ?? cr.catalyst_event_type ?? null;
+  const eventTier     = dc?.catalyst_event_tier ?? dc?.event_tier ?? dc?.tier ?? cr.catalyst_event_tier ?? null;
+  const catalystExpl  = dc?.catalyst_explanation ?? cr.catalyst_explanation ?? null;
+  const directPresent = !!dc || cr.direct_catalyst_present === true;
+  const catReasonCodes: string[] = dc?.catalyst_reason_codes ?? cr.catalyst_reason_codes ?? [];
+
+  /* ── Valuation fields ── */
+  const valComp  = comps.valuation;
+  const valPts: number | null = valComp?.points ?? cr.valuation_alignment_points ?? null;
+  const valMax   = valComp?.max_points ?? 8;
+  const valLabel = valComp?.label ?? valComp?.quality_label ?? cr.valuation_label ?? null;
+  const valCoverage = valComp?.status ?? cr.valuation_coverage_status ?? null;
+  const peRatio  = fund.pe_ratio ?? cr.pe_ratio ?? null;
+  const psRatio  = fund.ps_ratio ?? cr.ps_ratio ?? null;
+  const fwdPe    = fund.forward_pe ?? cr.forward_pe ?? null;
+  const fwdPeSrc = fund.forward_pe_source ?? cr.forward_pe_source ?? null;
+  const fwdPeApprox: boolean = fund.forward_pe_is_approximate ?? false;
+  const fwdPeWarnCodes: string[] = fund.forward_pe_warning_codes ?? [];
+  const valPeScore  = fund.valuation_pe_score ?? cr.valuation_pe_score ?? null;
+  const valPsScore  = fund.valuation_ps_score ?? cr.valuation_ps_score ?? null;
+  const valFwdScore = fund.valuation_forward_pe_score ?? cr.valuation_forward_pe_score ?? null;
+  const valExpl     = fund.valuation_explanation ?? cr.valuation_explanation ?? null;
+  const valMissing: string[] = valComp?.missing_fields ?? cr.valuation_missing_fields ?? [];
+
+  /* ── Investment fields ── */
+  const invComp  = comps.investment;
+  const invPts: number | null = invComp?.points ?? cr.investment_alignment_points ?? null;
+  const invMax   = invComp?.max_points ?? 12;
+  const invLabel = invComp?.label ?? invComp?.quality_label ?? cr.investment_label ?? null;
+  const finHealthScore = invComp?.financial_health_score ?? fund.financial_health_score ?? cr.financial_health_score ?? null;
+  const finHealthLabel = invComp?.financial_health_label ?? fund.financial_health_label ?? cr.financial_health_label ?? null;
+  const curGrowthScore = invComp?.current_growth_score ?? fund.current_growth_score ?? cr.current_growth_score ?? null;
+  const curGrowthLabel = invComp?.current_growth_label ?? fund.current_growth_label ?? cr.current_growth_label ?? null;
+  const fwdGrowthScore = invComp?.forward_growth_score ?? fund.forward_growth_score ?? cr.forward_growth_score ?? null;
+  const fwdGrowthLabel = invComp?.forward_growth_label ?? fund.forward_growth_label ?? cr.forward_growth_label ?? null;
+  const invExpl  = invComp?.explanation ?? cr.investment_explanation ?? null;
+
+  /* ── Options ── */
+  const optStatus = comps.options?.status ?? cr.options_status ?? null;
 
   return (
     <div>
       <SectionLabel>Confluence Analysis</SectionLabel>
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-        {/* Score header */}
+        {/* ═ A: Header Summary Strip ═ */}
         {sc && (
-          <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 28, fontWeight: 900, color: ccsColor(sc.core), fontFamily: C.font, lineHeight: 1 }}>
-                {sc.core.toFixed(1)}
-              </span>
-              <span style={{ fontSize: 11, color: C.dim, fontFamily: C.font }}>/100</span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: C.purple, fontFamily: C.font }}>
-                +{sc.bonus.toFixed(1)}
-              </span>
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>bonus</span>
+          <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '12px 16px' }}>
+            {/* Top row: score + decision + timing */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' as const, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{ fontSize: 30, fontWeight: 900, color: ccsColor(sc.core), fontFamily: C.font, lineHeight: 1 }}>
+                  {Number(sc.core).toFixed(1)}
+                </span>
+                <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>/100</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.purple, fontFamily: C.font }}>+{Number(sc.bonus).toFixed(1)}</span>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>bonus /25</span>
+              </div>
               {decisionCfg && (
-                <span style={{ padding: '3px 8px', borderRadius: 3, fontSize: 9, fontWeight: 800, fontFamily: C.font, color: '#000', background: decisionCfg.clr, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <span style={{ padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 800, fontFamily: C.font, color: '#000', background: decisionCfg.clr, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
                   {decisionCfg.label}
                 </span>
               )}
               {act?.execution_label && (
-                <span style={{ fontSize: 9, color: C.amber, fontFamily: C.font }}>{act.execution_label}</span>
+                <span style={{ padding: '3px 8px', borderRadius: 3, fontSize: 9, fontWeight: 600, fontFamily: C.font, color: C.amber, background: `${C.amber}15`, border: `1px solid ${C.amber}30` }}>
+                  {act.execution_label}
+                </span>
+              )}
+              {meta?.confidence_score > 0 && (
+                <span style={{ fontSize: 9, color: meta.confidence_score >= 80 ? C.green : meta.confidence_score >= 50 ? C.amber : C.red, fontFamily: C.font, fontWeight: 600 }}>
+                  {Number(meta.confidence_score).toFixed(0)}% confidence
+                </span>
               )}
             </div>
-            <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 4 }}>
-              Total {sc.total.toFixed(1)} · Core max 100 · Bonus max 25
-              {meta?.confidence_score > 0 && ` · Confidence ${meta.confidence_score.toFixed(0)}%`}
+            {/* Detail row: bucket, invalidation, targets, total */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const, marginBottom: (risk?.risk_flags?.length > 0 || risk?.caution_flags?.length > 0) ? 8 : 0 }}>
+              {act?.bucket && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  Bucket: <span style={{ color: C.text }}>{act.bucket.replace(/_/g, ' ')}</span>
+                </span>
+              )}
+              {act?.invalidation_level != null && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  Inv: <span style={{ color: C.red }}>${Number(act.invalidation_level).toFixed(2)}</span>
+                </span>
+              )}
+              {act?.target_zone?.target_1 != null && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  T1: <span style={{ color: C.green }}>${Number(act.target_zone.target_1).toFixed(2)}</span>
+                </span>
+              )}
+              {act?.target_zone?.target_2 != null && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  T2: <span style={{ color: C.teal }}>${Number(act.target_zone.target_2).toFixed(2)}</span>
+                </span>
+              )}
+              {act?.target_zone?.risk_reward_ratio != null && (
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                  R/R: <span style={{ color: C.text }}>{Number(act.target_zone.risk_reward_ratio).toFixed(1)}x</span>
+                </span>
+              )}
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                Total: <span style={{ color: C.text }}>{sc.total != null ? Number(sc.total).toFixed(1) : (Number(sc.core) + Number(sc.bonus)).toFixed(1)}</span>
+              </span>
             </div>
+            {/* Risk / Caution flags */}
+            {(risk?.risk_flags?.length > 0 || risk?.caution_flags?.length > 0) && (
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
+                {(risk?.risk_flags ?? []).map((f: string, i: number) => (
+                  <span key={`rf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: C.red, fontFamily: C.font, fontWeight: 700 }}>⚠ {f.replace(/_/g, ' ')}</span>
+                ))}
+                {(risk?.caution_flags ?? []).map((f: string, i: number) => (
+                  <span key={`cf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: C.amber, fontFamily: C.font, fontWeight: 700 }}>⚡ {f.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
-          <div>
-            {/* Action */}
-            {act && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Action</span>
-                <V42DR k="Decision"     v={act.label_display}              clr={decisionCfg?.clr} />
-                {act.execution_label && <V42DR k="Timing"       v={act.execution_label}           clr={C.amber} />}
-                <V42DR k="Bucket"       v={act.bucket?.replace(/_/g, ' ')} />
-                {act.invalidation_level != null && <V42DR k="Invalidation" v={`$${Number(act.invalidation_level).toFixed(2)}`} clr={C.red} />}
-                {act.target_zone?.target_1 && <V42DR k="Target 1" v={`$${Number(act.target_zone.target_1).toFixed(2)}`} clr={C.green} />}
-                {act.target_zone?.target_2 && <V42DR k="Target 2" v={`$${Number(act.target_zone.target_2).toFixed(2)}`} clr={C.teal} />}
-                {act.target_zone?.risk_reward_ratio != null && <V42DR k="Risk/Reward" v={`${Number(act.target_zone.risk_reward_ratio).toFixed(1)}x`} />}
-                {act.why_now?.length > 0 && (
-                  <div style={{ marginTop: 6 }}>
-                    <span style={{ fontSize: 7, color: C.green, fontFamily: C.font, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>Why Now</span>
-                    {act.why_now.map((b: string, i: number) => (
-                      <div key={i} style={{ fontSize: 8, color: C.text, fontFamily: C.font, paddingLeft: 8, paddingTop: 2, lineHeight: 1.4 }}>· {b}</div>
-                    ))}
-                  </div>
-                )}
-                {act.why_wait?.length > 0 && (
-                  <div style={{ marginTop: 6 }}>
-                    <span style={{ fontSize: 7, color: C.amber, fontFamily: C.font, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>Why Wait</span>
-                    {act.why_wait.map((b: string, i: number) => (
-                      <div key={i} style={{ fontSize: 8, color: C.dim, fontFamily: C.font, paddingLeft: 8, paddingTop: 2, lineHeight: 1.4 }}>· {b}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Risk Flags */}
-            {risk?.risk_flags?.length > 0 && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>⚠ Risk</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
-                  {risk.risk_flags.map((f: string, i: number) => (
-                    <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: C.red, fontFamily: C.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Caution Flags */}
-            {(risk?.caution_flags ?? []).length > 0 && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>⚡ Caution</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
-                  {(risk!.caution_flags!).map((f: string, i: number) => (
-                    <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: C.amber, fontFamily: C.font, fontWeight: 700 }}>{f.replace(/_/g, ' ')}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Score Breakdown */}
-            {sc && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Score Breakdown</span>
-                <V42PR k="Core Score"  pts={sc.core}  max={sc.core_max ?? 100} />
-                <V42PR k="Bonus Score" pts={sc.bonus} max={sc.bonus_max ?? 25}  clr={C.purple} />
-                {meta?.confidence_score > 0 && (
-                  <V42DR k="Confidence" v={`${meta.confidence_score.toFixed(0)}%`}
-                     clr={meta.confidence_score >= 80 ? C.green : meta.confidence_score >= 50 ? C.amber : C.red} />
-                )}
-              </div>
-            )}
-
-            {/* Data Coverage */}
-            {meta?.data_status_flags?.length > 0 && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Data Coverage</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4 }}>
-                  {meta.data_status_flags.map((f: string, i: number) => (
-                    <span key={i} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font }}>{f.replace(/_/g, ' ')}</span>
-                  ))}
-                </div>
-                <div style={{ fontSize: 7, color: 'rgba(169,170,166,0.5)', fontFamily: C.font, marginTop: 4 }}>Coverage gaps — not bearish signals</div>
-              </div>
-            )}
+        {/* ═ B: Why Now / Why Wait ═ */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ background: `${C.green}08`, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '10px 12px' }}>
+            <div style={{ fontSize: 7, fontWeight: 800, color: C.green, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>✓ Why Now</div>
+            {(act?.why_now ?? []).length > 0
+              ? (act?.why_now ?? []).map((b: string, i: number) => (
+                  <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
+                ))
+              : <div style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>No active why-now drivers.</div>
+            }
           </div>
-
-          <div>
-            {/* Components */}
-            {Object.keys(comps).length > 0 && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Components</span>
-                {([
-                  ['theme',          'Theme',          15],
-                  ['stage',          'Stage',          15],
-                  ['options',        'Options',        18],
-                  ['technical_setup','Technical Setup',  8],
-                  ['entry_exit',     'Entry / Exit',   12],
-                  ['catalyst',       'Catalyst',       12],
-                  ['investment',     'Investment',     12],
-                  ['valuation',      'Valuation',       8],
-                ] as [string, string, number][]).map(([key, label, defMax]) => {
-                  const c = comps[key];
-                  if (!c) return null;
-                  const pts = c.points;
-                  const max = c.max_points ?? defMax;
-                  if (pts == null) return null;
-                  const subLabel = c.label ?? c.quality_label ?? (c.pillar_count != null ? `${c.pillar_count}/3 pillars` : null);
-                  return (
-                    <div key={key}>
-                      <V42PR k={label} pts={pts} max={max} raw={c.raw_score} />
-                      {subLabel && <div style={{ fontSize: 6, color: C.dim, fontFamily: C.font, paddingLeft: 8, paddingBottom: 2 }}>{safeStr(subLabel)}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Bonuses */}
-            {bon && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Bonuses</span>
-                <V42PR k="Social"     pts={bon.social?.points ?? null}    max={15} clr={C.purple} />
-                {bon.social?.sections_hit > 0 && <V42DR k="Social sections" v={`${bon.social.sections_hit} hit`} />}
-                <V42PR k="Whale / Insider" pts={bon.whale_insider?.points ?? null} max={5} clr={C.teal} />
-                <V42PR k="Bottleneck" pts={bon.bottleneck?.points ?? null} max={5}  clr={C.orange} />
-                {bon.bottleneck?.anchor_count > 0 && <V42DR k="Bottleneck anchors" v={`${bon.bottleneck.anchor_count}`} />}
-              </div>
-            )}
-
-            {/* Technical Confluence Details */}
-            {tech && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Technical Details</span>
-                <V42DR k="Stage"          v={tech.stage_label?.replace(/_/g, ' ')}           clr={C.teal} />
-                <V42DR k="Stage Score"    v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
-                <V42DR k="Setup"          v={tech.technical_setup_label}                      clr={C.teal} />
-                <V42DR k="Entry State"    v={(tech.entry_state_display ?? tech.entry_state)?.replace(/_/g, ' ')} />
-                <V42DR k="Entry Score"    v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
-                <V42DR k="Extension"      v={tech.extension_state?.replace(/_/g, ' ')}
-                   clr={tech.extension_state?.includes('EXTREME') || tech.extension_state?.includes('CHASE') ? C.red : tech.extension_state?.includes('MODERATE') ? C.amber : C.dim} />
-                {tech.extension_quality && <V42DR k="Ext Quality" v={tech.extension_quality.replace(/_/g, ' ')} />}
-                <V42DR k="Nearest Fib"    v={tech.nearest_fib_label} />
-                <V42DR k="Distance Fib"   v={tech.distance_to_fib_pct != null ? `${Number(tech.distance_to_fib_pct).toFixed(1)}%` : null} />
-                {tech.fib_wave_status && (
-                  <V42DR k="Fib/Wave"
-                     v={tech.fib_wave_status === 'pending_10y_backfill' ? 'Pending 10Y backfill' : tech.fib_wave_status.replace(/_/g, ' ')}
-                     clr={tech.fib_wave_status === 'pending_10y_backfill' ? C.amber : C.dim} />
-                )}
-                <V42DR k="Wave Structure" v={tech.wave_structure?.replace(/_/g, ' ')} />
-                <V42DR k="Wave Score"     v={tech.wave_score != null ? `${Math.round(tech.wave_score)}` : null} />
-              </div>
-            )}
-
-            {/* Options Coverage */}
-            {comps.options?.status && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Options Coverage</span>
-                <V42DR k="Status" v={comps.options.status.replace(/_/g, ' ')} />
-              </div>
-            )}
-
-            {/* Catalyst */}
-            <div style={V42_SEC}>
-              <span style={V42_LBL}>Catalyst</span>
-              {(() => {
-                const catComp = comps.catalyst;
-                const catPts = catComp?.points ?? null;
-                if (catPts != null) {
-                  const catMax = catComp?.max_points ?? 12;
-                  return (
-                    <>
-                      <V42PR k="Catalyst Score" pts={catPts} max={catMax} />
-                      {(catComp?.status === 'bearish_conflict' || catComp?.reason_codes?.includes('BEARISH_CATALYST_CONFLICT')) && (
-                        <div style={{ fontSize: 8, color: C.amber, fontFamily: C.font, marginTop: 4 }}>Bearish catalyst conflict — catalyst points suppressed.</div>
-                      )}
-                      {dc ? (
-                        <>
-                          <V42DR k="Type" v={dc.catalyst_event_type ?? dc.event_type} />
-                          <V42DR k="Tier" v={dc.catalyst_event_tier ?? dc.event_tier ?? dc.tier} clr={tierColor(dc.catalyst_event_tier ?? dc.tier)} />
-                          {dc.catalyst_freshness_score != null && <V42DR k="Freshness" v={Number(dc.catalyst_freshness_score).toFixed(1)} />}
-                          {dc.catalyst_relevance_score != null && <V42DR k="Relevance" v={Number(dc.catalyst_relevance_score).toFixed(1)} />}
-                          {dc.catalyst_materiality_score != null && <V42DR k="Materiality" v={Number(dc.catalyst_materiality_score).toFixed(1)} />}
-                          {dc.catalyst_reason_codes?.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
-                              {dc.catalyst_reason_codes.slice(0, 5).map((rc: string, i: number) => (
-                                <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.teal}15`, color: C.teal, fontFamily: C.font }}>{rc.replace(/_/g, ' ')}</span>
-                              ))}
-                            </div>
-                          )}
-                          {dc.catalyst_explanation && (
-                            <div style={{ marginTop: 6, padding: '7px 10px', background: `${tierColor(dc.tier)}0a`, border: `1px solid ${tierColor(dc.tier)}25`, borderRadius: 4 }}>
-                              <div style={{ fontSize: 7, fontWeight: 800, color: tierColor(dc.tier), fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>
-                                {dc.tier ? `Catalyst — ${safeStr(dc.tier).replace('_', ' ')}` : 'Catalyst Explanation'}
-                              </div>
-                              <p style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>{safeStr(dc.catalyst_explanation)}</p>
-                            </div>
-                          )}
-                        </>
-                      ) : catPts === 0 ? (
-                        <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 2 }}>No direct catalyst detected.</div>
-                      ) : null}
-                    </>
-                  );
-                }
-                return <V42DR k="Status" v="No catalyst data available." />;
-              })()}
-            </div>
-
-            {/* Valuation */}
-            {(valComp || fund?.pe_ratio != null || fund?.ps_ratio != null || fund?.forward_pe != null) && (
-              <div style={V42_SEC}>
-                <span style={V42_LBL}>Valuation</span>
-                {valComp?.points != null && <V42PR k="Valuation Score" pts={valComp.points} max={valComp.max_points ?? 8} />}
-                {(valComp?.label || valComp?.quality_label) && (
-                  <V42DR k="Label" v={valComp.label ?? valComp.quality_label} clr={C.teal} />
-                )}
-                {valComp?.status && (
-                  <V42DR k="Coverage" v={valComp.status.replace(/_/g, ' ')}
-                     clr={valComp.status === 'partial' ? C.amber : C.dim} />
-                )}
-                {fund?.pe_ratio != null && <V42DR k="P/E"     v={`${Number(fund.pe_ratio).toFixed(1)}x`} />}
-                {fund?.ps_ratio != null && <V42DR k="P/S"     v={`${Number(fund.ps_ratio).toFixed(1)}x`} />}
-                <div style={V42_RR}>
-                  <span style={V42_KK}>Forward P/E</span>
-                  {fund?.forward_pe != null ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ ...V42_VV }}>{Number(fund.forward_pe).toFixed(1)}x</span>
-                      {fund.forward_pe_is_approximate && (
-                        <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700 }}>APPROX.</span>
-                      )}
-                      {(fund.forward_pe_warning_codes ?? []).map((wc: string, i: number) => (
-                        <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span style={{ ...V42_VV, color: C.dim }}>—</span>
-                  )}
-                </div>
-                {fund?.forward_pe_source && <V42DR k="F.P/E Source" v={fund.forward_pe_source} />}
-                {fund?.valuation_pe_score != null && <V42DR k="P/E Score" v={`${Number(fund.valuation_pe_score).toFixed(1)}`} />}
-                {fund?.valuation_ps_score != null && <V42DR k="P/S Score" v={`${Number(fund.valuation_ps_score).toFixed(1)}`} />}
-                {fund?.valuation_forward_pe_score != null && <V42DR k="F.P/E Score" v={`${Number(fund.valuation_forward_pe_score).toFixed(1)}`} />}
-                {fund?.valuation_explanation && (
-                  <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(fund.valuation_explanation)}</div>
-                )}
-                {valComp?.status === 'partial' && (
-                  <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 4 }}>Partial valuation coverage.</div>
-                )}
-                {valComp?.status === 'unavailable' && (
-                  <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 4 }}>Valuation unavailable.</div>
-                )}
-              </div>
-            )}
+          <div style={{ background: `${C.amber}08`, border: `1px solid ${C.amber}25`, borderRadius: 5, padding: '10px 12px' }}>
+            <div style={{ fontSize: 7, fontWeight: 800, color: C.amber, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>⏳ Why Wait</div>
+            {(act?.why_wait ?? []).length > 0
+              ? (act?.why_wait ?? []).map((b: string, i: number) => (
+                  <div key={i} style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
+                ))
+              : <div style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>No wait reasons.</div>
+            }
           </div>
         </div>
 
-        {/* Debug */}
-        <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+        {/* ═ C: 8-Component Grid ═ */}
+        <div>
+          <CConfSubHdr>Core Components</CConfSubHdr>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {CONF_COMP_DEFS.map(def => <CCompCard key={def.key} def={def} comps={comps} cr={cr} />)}
+          </div>
+        </div>
+
+        {/* ═ Deep Dives — 2-col grid ═ */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+          {/* D: Valuation Deep Dive */}
+          <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+            <CConfSubHdr>Valuation Deep Dive</CConfSubHdr>
+            {valPts != null && <V42PR k="Valuation Score" pts={valPts} max={valMax} />}
+            {valLabel    && <V42DR k="Label"    v={valLabel} clr={C.teal} />}
+            {valCoverage && <V42DR k="Coverage" v={valCoverage.replace(/_/g, ' ')} clr={valCoverage === 'partial' ? C.amber : valCoverage === 'full' ? C.green : C.dim} />}
+            <V42DR k="P/E" v={peRatio != null ? `${Number(peRatio).toFixed(1)}x` : null} />
+            <V42DR k="P/S" v={psRatio != null ? `${Number(psRatio).toFixed(1)}x` : null} />
+            <div style={V42_RR}>
+              <span style={V42_KK}>Forward P/E</span>
+              {fwdPe != null ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={V42_VV}>{Number(fwdPe).toFixed(1)}x</span>
+                  {fwdPeApprox && <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700 }}>APPROX.</span>}
+                  {fwdPeWarnCodes.map((wc: string, i: number) => (
+                    <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
+                  ))}
+                </div>
+              ) : <span style={{ ...V42_VV, color: C.dim }}>—</span>}
+            </div>
+            {fwdPeSrc    && <V42DR k="F.P/E Source" v={fwdPeSrc} />}
+            {valPeScore  != null && <V42DR k="P/E Score"   v={`${Number(valPeScore).toFixed(1)}`} />}
+            {valPsScore  != null && <V42DR k="P/S Score"   v={`${Number(valPsScore).toFixed(1)}`} />}
+            {valFwdScore != null && <V42DR k="F.P/E Score" v={`${Number(valFwdScore).toFixed(1)}`} />}
+            {valExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(valExpl)}</div>}
+            {valMissing.length > 0 && <div style={{ marginTop: 4, fontSize: 8, color: C.dim, fontFamily: C.font }}>Missing: {valMissing.join(', ')}</div>}
+            {valCoverage === 'partial'     && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 3 }}>Partial valuation coverage.</div>}
+            {valCoverage === 'unavailable' && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 3 }}>Valuation unavailable.</div>}
+          </div>
+
+          {/* E: Catalyst Deep Dive */}
+          <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+            <CConfSubHdr>Catalyst Deep Dive</CConfSubHdr>
+            {catPts != null && <V42PR k="Catalyst Score" pts={catPts} max={catMax} />}
+            {isBearishCat && <div style={{ fontSize: 8, color: C.amber, fontFamily: C.font, marginBottom: 4 }}>Bearish conflict — points suppressed.</div>}
+            {directPresent ? (
+              <>
+                <V42DR k="Type" v={eventType} />
+                <V42DR k="Tier" v={eventTier} clr={tierColor(eventTier)} />
+                {(dc?.catalyst_materiality_score ?? cr.catalyst_materiality_score) != null && (
+                  <V42DR k="Materiality" v={`${Number(dc?.catalyst_materiality_score ?? cr.catalyst_materiality_score).toFixed(1)}`} />
+                )}
+                {(dc?.catalyst_freshness_score ?? cr.catalyst_freshness_score) != null && (
+                  <V42DR k="Freshness" v={`${Number(dc?.catalyst_freshness_score ?? cr.catalyst_freshness_score).toFixed(1)}`} />
+                )}
+                {(dc?.catalyst_relevance_score ?? cr.catalyst_relevance_score) != null && (
+                  <V42DR k="Relevance" v={`${Number(dc?.catalyst_relevance_score ?? cr.catalyst_relevance_score).toFixed(1)}`} />
+                )}
+                {catReasonCodes.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
+                    {catReasonCodes.slice(0, 6).map((rc: string, i: number) => (
+                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.teal}15`, color: C.teal, fontFamily: C.font }}>{rc.replace(/_/g, ' ')}</span>
+                    ))}
+                  </div>
+                )}
+                {catalystExpl && (
+                  <div style={{ marginTop: 6, padding: '7px 10px', background: `${tierColor(eventTier)}0a`, border: `1px solid ${tierColor(eventTier)}25`, borderRadius: 4 }}>
+                    <div style={{ fontSize: 7, fontWeight: 800, color: tierColor(eventTier), fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>
+                      {eventTier ? `Catalyst — ${safeStr(eventTier).replace('_', ' ')}` : 'Catalyst Explanation'}
+                    </div>
+                    <p style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>{safeStr(catalystExpl)}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font, marginTop: 4 }}>No direct catalyst detected.</div>
+            )}
+          </div>
+
+          {/* F: Investment Deep Dive */}
+          <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+            <CConfSubHdr>Investment Deep Dive</CConfSubHdr>
+            {invPts != null && <V42PR k="Investment Score" pts={invPts} max={invMax} />}
+            {invLabel && <V42DR k="Label" v={invLabel} clr={C.teal} />}
+            {finHealthScore != null && (
+              <V42DR k="Financial Health" v={finHealthLabel ? `${Number(finHealthScore).toFixed(1)} — ${finHealthLabel}` : `${Number(finHealthScore).toFixed(1)}`} />
+            )}
+            {curGrowthScore != null && (
+              <V42DR k="Current Growth" v={curGrowthLabel ? `${Number(curGrowthScore).toFixed(1)} — ${curGrowthLabel}` : `${Number(curGrowthScore).toFixed(1)}`} />
+            )}
+            {fwdGrowthScore != null && (
+              <V42DR k="Forward Growth" v={fwdGrowthLabel ? `${Number(fwdGrowthScore).toFixed(1)} — ${fwdGrowthLabel}` : `${Number(fwdGrowthScore).toFixed(1)}`} />
+            )}
+            {invExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(invExpl)}</div>}
+            {invPts == null && !invLabel && finHealthScore == null && (
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>Investment data not available.</div>
+            )}
+          </div>
+
+          {/* G: Technical / Entry Detail */}
+          {tech ? (
+            <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+              <CConfSubHdr>Technical / Entry Detail</CConfSubHdr>
+              <V42DR k="Stage"       v={tech.stage_label?.replace(/_/g, ' ')} clr={C.teal} />
+              <V42DR k="Stage Score" v={tech.stage_score != null ? `${Math.round(tech.stage_score)}` : null} />
+              <V42DR k="Setup"       v={tech.technical_setup_label} clr={C.teal} />
+              <V42DR k="Entry State" v={(tech.entry_state_display ?? tech.entry_state)?.replace(/_/g, ' ')} />
+              <V42DR k="Entry Score" v={tech.entry_score != null ? `${Math.round(tech.entry_score)}` : null} />
+              <V42DR k="Extension"   v={tech.extension_state?.replace(/_/g, ' ')}
+                 clr={tech.extension_state?.includes('EXTREME') || tech.extension_state?.includes('CHASE') ? C.red : tech.extension_state?.includes('MODERATE') ? C.amber : C.dim} />
+              {tech.extension_quality    && <V42DR k="Ext Quality" v={tech.extension_quality.replace(/_/g, ' ')} />}
+              {tech.extension_reset_state && <V42DR k="Ext Reset"  v={tech.extension_reset_state.replace(/_/g, ' ')} />}
+              <V42DR k="Nearest Fib"  v={tech.nearest_fib_label} />
+              <V42DR k="Dist Fib"     v={tech.distance_to_fib_pct != null ? `${Number(tech.distance_to_fib_pct).toFixed(1)}%` : null} />
+              {tech.fib_wave_status && (
+                <V42DR k="Fib/Wave"
+                   v={tech.fib_wave_status === 'pending_10y_backfill' ? 'Pending 10Y backfill' : tech.fib_wave_status.replace(/_/g, ' ')}
+                   clr={tech.fib_wave_status === 'pending_10y_backfill' ? C.amber : C.dim} />
+              )}
+              <V42DR k="Wave Structure" v={tech.wave_structure?.replace(/_/g, ' ')} />
+              <V42DR k="Wave Score"     v={tech.wave_score != null ? `${Math.round(tech.wave_score)}` : null} />
+            </div>
+          ) : (
+            /* Placeholder card if no tech data — keeps grid symmetrical */
+            <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+              <CConfSubHdr>Technical / Entry Detail</CConfSubHdr>
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>Technical detail not available.</div>
+            </div>
+          )}
+        </div>
+
+        {/* ═ H: Bonuses + Coverage ═ */}
+        <div style={{ display: 'grid', gridTemplateColumns: bon ? '1fr 1fr' : '1fr', gap: 10 }}>
+          {/* Bonuses */}
+          {bon && (
+            <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+              <CConfSubHdr>Bonuses</CConfSubHdr>
+              <V42PR k="Social"          pts={bon.social?.points ?? null}          max={15} clr={C.purple} />
+              {bon.social?.sections_hit > 0 && <V42DR k="Social sections" v={`${bon.social.sections_hit} hit`} />}
+              <V42PR k="Whale / Insider" pts={bon.whale_insider?.points ?? null}   max={5}  clr={C.teal} />
+              <V42PR k="Bottleneck"      pts={bon.bottleneck?.points ?? null}      max={5}  clr={C.orange} />
+              {bon.bottleneck?.anchor_count > 0 && <V42DR k="Bottleneck anchors" v={`${bon.bottleneck.anchor_count}`} />}
+            </div>
+          )}
+
+          {/* Coverage / Gaps */}
+          <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
+            <CConfSubHdr>Coverage / Gaps</CConfSubHdr>
+            {optStatus   && <V42DR k="Options coverage"   v={optStatus.replace(/_/g, ' ')} />}
+            {catPts != null && <V42DR k="Catalyst coverage" v={catPts > 0 ? 'Present' : 'Not detected'} clr={catPts > 0 ? C.green : C.dim} />}
+            {valCoverage && <V42DR k="Valuation coverage" v={valCoverage.replace(/_/g, ' ')} clr={valCoverage === 'full' ? C.green : valCoverage === 'partial' ? C.amber : C.dim} />}
+            {bon?.whale_insider?.points != null && (
+              <V42DR k="Whale / Insider" v={bon.whale_insider.points > 0 ? 'Present' : 'None detected'} clr={bon.whale_insider.points > 0 ? C.teal : C.dim} />
+            )}
+            {meta?.data_status_flags?.length > 0 && (
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 7, color: C.dim, fontFamily: C.font, marginBottom: 3 }}>Data Flags:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
+                  {meta.data_status_flags.map((f: string, i: number) => (
+                    <span key={i} style={{ fontSize: 7, padding: '1px 4px', borderRadius: 2, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font }}>{f.replace(/_/g, ' ')}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(100,116,139,0.5)', fontFamily: C.font, fontStyle: 'italic' as const }}>
+              Coverage gaps are not bearish signals.
+            </div>
+          </div>
+        </div>
+
+        {/* ═ I: Debug (collapsed by default) ═ */}
+        <div style={{ paddingTop: 6, borderTop: `1px solid ${C.border}` }}>
           <button onClick={() => setShowDebug(v => !v)}
             style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontSize: 7, padding: '3px 8px', cursor: 'pointer', fontFamily: C.font, letterSpacing: '0.05em' }}>
             {showDebug ? '▲ HIDE DEBUG' : '▼ DEBUG'}
@@ -888,14 +1121,20 @@ function ConfluenceSummarySection({ detail, confluenceRow }: { detail: any; conf
               {meta?.reason_codes?.length > 0 && (
                 <div>
                   <span style={{ ...V42_KK, display: 'block', marginBottom: 3 }}>Reason Codes ({meta.reason_codes.length}):</span>
-                  {meta.reason_codes.slice(0, 20).map((rc: string, i: number) => (
+                  {meta.reason_codes.slice(0, 30).map((rc: string, i: number) => (
                     <div key={i} style={{ fontSize: 7, color: C.dim, fontFamily: C.font, paddingLeft: 8 }}>· {rc}</div>
                   ))}
                 </div>
               )}
+              {v42 && (
+                <pre style={{ fontSize: 7, color: C.dim, fontFamily: C.font, marginTop: 8, whiteSpace: 'pre-wrap' as const, wordBreak: 'break-all' as const, maxHeight: 160, overflow: 'auto', background: 'rgba(0,0,0,0.3)', padding: 8, borderRadius: 4 }}>
+                  {JSON.stringify({ score: sc, action_label: act?.label, component_keys: Object.keys(comps) }, null, 2)}
+                </pre>
+              )}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
