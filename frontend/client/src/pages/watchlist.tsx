@@ -3800,11 +3800,32 @@ export default function WatchlistPage() {
    * Never reads old earningsResp/global earnings here.
    * Response shape normalized: backend may return `events` or `earnings`. */
   const renderEarningsSection = () => {
+    // Normalize event fields — handles both old (next_date/est_eps) and new (earnings_date/eps_estimate) shapes
+    function normalizeEarningsEvent(ev: any) {
+      return {
+        ticker: String(ev.ticker ?? ev.symbol ?? '').toUpperCase(),
+        company: ev.company ?? ev.company_name ?? ev.name ?? '',
+        date: ev.next_date ?? ev.earnings_date_fmt ?? ev.earnings_date ?? ev.date_raw ?? null,
+        rawDate: ev.date_raw ?? ev.earnings_date ?? ev.next_date ?? null,
+        time: ev.time ?? ev.when ?? null,
+        epsEstimate: ev.est_eps ?? ev.eps_estimate ?? null,
+        lastEps: ev.last_eps ?? ev.previous_eps ?? null,
+        revenueEstimate: ev.revenue_estimated ?? ev.revenue_estimate ?? null,
+        revenueActual: ev.revenue_actual ?? null,
+        importance: ev.importance ?? null,
+        logo: ev.logo ?? null,
+        marketCap: ev.market_cap ?? null,
+      };
+    }
+
     // Normalize: backend may return { events: [...] } or { earnings: [...] }
-    const events: any[] =
+    const rawEvents: any[] =
       earningsBySymbolsResp?.events
       ?? earningsBySymbolsResp?.earnings
+      ?? (earningsBySymbolsResp as any)?.data?.events
+      ?? (earningsBySymbolsResp as any)?.data?.earnings
       ?? [];
+    const events = rawEvents.map(normalizeEarningsEvent);
 
     // ── State 1: symbols still resolving (watchlist not yet loaded for this tab)
     const symbolsStillLoading = !isFavoritesTab && sortedTickers.length === 0 && (wlLoading || wlFetching);
@@ -3874,8 +3895,8 @@ export default function WatchlistPage() {
               {events.map((ev: any, i: number) => {
                 const importance = ev.importance as string | undefined;
                 const importanceColor = importance === 'high' ? C.amber : importance === 'medium' ? C.teal : C.dim;
-                const epsDir = (ev.est_eps != null && ev.last_eps != null)
-                  ? ev.est_eps > ev.last_eps ? 'up' : ev.est_eps < ev.last_eps ? 'down' : 'flat'
+                const epsDir = (ev.epsEstimate != null && ev.lastEps != null)
+                  ? ev.epsEstimate > ev.lastEps ? 'up' : ev.epsEstimate < ev.lastEps ? 'down' : 'flat'
                   : null;
                 return (
                   <div
@@ -3918,7 +3939,7 @@ export default function WatchlistPage() {
                     {/* date + pre/post market */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: C.font }}>
-                        {ev.next_date || DASH}
+                        {ev.date || 'Date unavailable'}
                       </span>
                       {ev.time && (
                         <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>
@@ -3929,23 +3950,23 @@ export default function WatchlistPage() {
 
                     {/* EPS est + revenue */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
-                      {ev.est_eps != null && (
+                      {ev.epsEstimate != null && (
                         <div style={{ fontSize: 9, fontFamily: C.font }}>
                           <span style={{ color: C.dim }}>EPS </span>
-                          <span style={{ color: C.text, fontWeight: 700 }}>${ev.est_eps.toFixed(2)}</span>
+                          <span style={{ color: C.text, fontWeight: 700 }}>${(ev.epsEstimate as number).toFixed(2)}</span>
                           {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
                           {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
                         </div>
                       )}
-                      {ev.revenue_estimated != null && (
+                      {ev.revenueEstimate != null && (
                         <div style={{ fontSize: 9, fontFamily: C.font }}>
                           <span style={{ color: C.dim }}>Rev </span>
                           <span style={{ color: C.text, fontWeight: 700 }}>
-                            {ev.revenue_estimated >= 1e9
-                              ? '$' + (ev.revenue_estimated / 1e9).toFixed(1) + 'B'
-                              : ev.revenue_estimated >= 1e6
-                                ? '$' + (ev.revenue_estimated / 1e6).toFixed(0) + 'M'
-                                : '$' + ev.revenue_estimated.toLocaleString()}
+                            {(ev.revenueEstimate as number) >= 1e9
+                              ? '$' + ((ev.revenueEstimate as number) / 1e9).toFixed(1) + 'B'
+                              : (ev.revenueEstimate as number) >= 1e6
+                                ? '$' + ((ev.revenueEstimate as number) / 1e6).toFixed(0) + 'M'
+                                : '$' + (ev.revenueEstimate as number).toLocaleString()}
                           </span>
                         </div>
                       )}

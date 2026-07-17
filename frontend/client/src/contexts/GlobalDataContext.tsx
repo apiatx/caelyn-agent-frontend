@@ -76,11 +76,29 @@ export function GlobalPrefetch() {
 
     // ── Watchlist ───────────────────────────────────────────────────────────
     pre(["/api/watchlist/list"], "/api/watchlist/list", { headers: authH() });
-    // After getting the list, prefetch the first (Primary) watchlist so the
+    // After getting the list, prefetch the Primary watchlist so the
     // screener renders immediately on first visit — no 10-second blank wait.
+    // Find Primary by stable field, not by assuming listData[0] === Primary.
     safeFetch("/api/watchlist/list", { headers: authH() }).then((listData) => {
-      if (!Array.isArray(listData) || !listData[0]?.id) return;
-      const primaryId = listData[0].id;
+      if (!Array.isArray(listData) || listData.length === 0) return;
+      const primary =
+        listData.find((w: any) => w.is_primary) ??
+        listData.find((w: any) => w.kind === "primary") ??
+        listData.find((w: any) => w.type === "primary") ??
+        listData.find((w: any) => String(w.name ?? "").toLowerCase() === "primary") ??
+        listData.find((w: any) => String(w.title ?? "").toLowerCase() === "primary") ??
+        listData[0];
+      if (!primary?.id) return;
+      const usingFallback =
+        !primary.is_primary &&
+        primary.kind !== "primary" &&
+        primary.type !== "primary" &&
+        String(primary.name ?? "").toLowerCase() !== "primary" &&
+        String(primary.title ?? "").toLowerCase() !== "primary";
+      if (usingFallback && import.meta.env.DEV) {
+        console.warn("[GlobalPrefetch] Could not identify Primary watchlist by field — falling back to listData[0]:", primary.name, primary.id);
+      }
+      const primaryId = primary.id;
       qc.prefetchQuery({
         queryKey: ["/api/watchlist", primaryId],
         queryFn: () => safeFetch(`/api/watchlist/${primaryId}`, { headers: authH() }),

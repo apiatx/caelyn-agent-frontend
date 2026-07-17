@@ -1,0 +1,312 @@
+FRONTEND ONLY — UPCOMING EARNINGS FIELD NORMALIZATION + PRIMARY PREFETCH FIX
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend endpoints.
+Do not change Watchlist row source.
+Do not change sortedTickers/displayRows/baseMergedTickers.
+Do not change hydration.
+Do not change theme dropdown.
+Do not change Confluence.
+Do not change Score Lens.
+Do not touch Live News or bottom sections.
+
+The audit is complete. Do not re-audit unless needed for exact line numbers.
+
+Confirmed findings:
+
+1. Upcoming Earnings now calls:
+
+POST /api/watchlist/earnings/by-symbols
+
+2. The new endpoint returns events under:
+
+response.events
+
+3. But event objects use the new field names:
+
+symbol / ticker
+company
+earnings_date
+earnings_date_fmt
+time
+eps_estimate
+revenue_estimate
+
+4. The render code still expects old endpoint field names:
+
+next_date
+est_eps
+last_eps
+revenue_estimated
+importance
+logo
+
+So the section receives events but renders blanks/dashes/empty-looking cards.
+
+5. Separate issue:
+GlobalPrefetch assumes listData[0] is Primary, but listData[0] is Strong Bases and listData[1] is Primary. This means Strong Bases is being prefetched before Primary.
+
+Goal:
+
+Fix only these two frontend issues:
+
+A. Normalize Upcoming Earnings event fields so both old and new response shapes render correctly.
+B. Fix GlobalPrefetch so it prefetches the actual Primary watchlist, not listData[0].
+
+==================================================
+PART 1 — NORMALIZE EARNINGS EVENT FIELDS
+==================================================
+
+In renderEarningsSection or the local helper used by Upcoming Earnings, create a normalization helper.
+
+Example:
+
+function normalizeEarningsEvent(ev: any) {
+  return {
+    ticker: String(ev.ticker ?? ev.symbol ?? "").toUpperCase(),
+    company: ev.company ?? ev.company_name ?? ev.name ?? "",
+    date: ev.next_date ?? ev.earnings_date_fmt ?? ev.earnings_date ?? ev.date_raw ?? null,
+    rawDate: ev.date_raw ?? ev.earnings_date ?? ev.next_date ?? null,
+    time: ev.time ?? ev.when ?? null,
+    epsEstimate: ev.est_eps ?? ev.eps_estimate ?? null,
+    lastEps: ev.last_eps ?? ev.previous_eps ?? null,
+    revenueEstimate: ev.revenue_estimated ?? ev.revenue_estimate ?? null,
+    revenueActual: ev.revenue_actual ?? null,
+    importance: ev.importance ?? null,
+    logo: ev.logo ?? null,
+    marketCap: ev.market_cap ?? null,
+    source: ev.source ?? null,
+    lastUpdated: ev.last_updated ?? null,
+  };
+}
+
+Then render from the normalized object.
+
+Do not directly use `ev.next_date`, `ev.est_eps`, or `ev.revenue_estimated` in the UI without fallbacks.
+
+==================================================
+PART 2 — RENDER NEW BY-SYMBOLS RESPONSE CORRECTLY
+==================================================
+
+Current response may be:
+
+{ events: [...] }
+
+or old shape:
+
+{ earnings: [...] }
+
+Use:
+
+const rawEvents =
+  earningsBySymbolsResp?.events
+  ?? earningsBySymbolsResp?.earnings
+  ?? earningsBySymbolsResp?.data?.events
+  ?? earningsBySymbolsResp?.data?.earnings
+  ?? [];
+
+const events = rawEvents.map(normalizeEarningsEvent);
+
+Render `events`.
+
+If `events.length > 0`, do not show “No upcoming earnings for this watchlist.”
+
+Render at minimum:
+
+- ticker
+- company if available
+- date
+- time if available
+- EPS estimate if available
+- revenue estimate if available
+
+If date is missing, show “Date unavailable,” but still render the event.
+
+Do not let missing logo/importance hide the event.
+
+==================================================
+PART 3 — FIX EMPTY STATE LOGIC
+==================================================
+
+Do not show “No upcoming earnings for this watchlist” if the response has raw events but normalized fields are partially missing.
+
+Correct states:
+
+If symbols are still loading:
+Loading upcoming earnings…
+
+If query is loading:
+Loading upcoming earnings…
+
+If request succeeds and rawEvents.length === 0:
+No upcoming earnings for this watchlist.
+
+If rawEvents.length > 0:
+Render normalized earnings events, even if some fields are missing.
+
+==================================================
+PART 4 — FIX PRIMARY PREFETCH BUG
+==================================================
+
+In GlobalPrefetch, stop assuming:
+
+listData[0] = Primary
+
+That is false.
+
+Current actual order:
+
+listData[0] = Strong Bases
+listData[1] = Primary
+
+Find the actual Primary watchlist by stable identifier.
+
+Preferred detection order:
+
+const primary =
+  listData.find(w => w.is_primary)
+  ?? listData.find(w => w.kind === "primary")
+  ?? listData.find(w => w.type === "primary")
+  ?? listData.find(w => String(w.name ?? "").toLowerCase() === "primary")
+  ?? listData.find(w => String(w.title ?? "").toLowerCase() === "primary");
+
+Only if none exists, fall back to listData[0].
+
+Then prefetch:
+
+/api/watchlist/${primary.id}
+
+Do not prefetch Strong Bases as Primary.
+
+Add a dev-only console warning if Primary cannot be identified and fallback is used.
+
+==================================================
+PART 5 — DO NOT CHANGE SYMBOL SOURCE IN THIS PASS
+==================================================
+
+Do not change selectedEarningsSymbols again.
+
+Do not switch to sortedTickers/displayRows/baseMergedTickers again.
+
+Do not change the backend endpoint choice.
+
+This pass is only:
+
+- event field normalization
+- render state correction
+- Primary prefetch detection
+
+==================================================
+PART 6 — VALIDATION
+==================================================
+
+Validate in authenticated app with Network tab.
+
+Primary:
+
+1. Select Primary.
+2. Confirm POST /api/watchlist/earnings/by-symbols fires.
+3. Confirm response has rawEvents length > 0 if backend returns events.
+4. Confirm UI renders those events.
+5. Confirm dates render from earnings_date or earnings_date_fmt.
+6. Confirm EPS renders from eps_estimate.
+7. Confirm revenue renders from revenue_estimate.
+8. Confirm no false “No upcoming earnings” when rawEvents.length > 0.
+
+Strong Bases:
+
+1. Select Strong Bases.
+2. Confirm response events render.
+3. Confirm date no longer shows just dash if earnings_date exists.
+
+Favorites:
+
+1. Select Favorites.
+2. Confirm request body has favorite symbols.
+3. If response rawEvents.length > 0, render them.
+4. If response rawEvents.length === 0, show “No upcoming earnings for this watchlist.”
+5. Do not claim Favorites is broken if backend returns zero events for the requested favorites.
+
+Primary Prefetch:
+
+1. Reload app.
+2. Confirm GlobalPrefetch identifies Primary by name/id/type, not listData[0].
+3. Confirm it prefetches Primary id, not Strong Bases id.
+4. Confirm no regression to Strong Bases being treated as Primary.
+
+Regression:
+
+- Watchlist rows unchanged.
+- add ticker works.
+- theme dropdown works.
+- hydration badges work.
+- Score Lens works.
+- ticker popup works.
+
+==================================================
+PART 7 — FINAL REPORT
+==================================================
+
+Return:
+
+UPCOMING EARNINGS RENDER NORMALIZATION REPORT
+
+ROOT CAUSE:
+[field-name mismatch and Primary prefetch list order assumption]
+
+FILES CHANGED:
+[list]
+
+EVENT NORMALIZATION:
+[summary]
+
+EMPTY STATE FIX:
+[summary]
+
+PRIMARY PREFETCH FIX:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+UPCOMING EARNINGS NORMALIZATION VERDICT
+
+EVENTS_KEY_HANDLED:
+[YES/NO]
+
+EARNINGS_KEY_HANDLED:
+[YES/NO]
+
+NEW_FIELD_NAMES_RENDER:
+[YES/NO]
+
+OLD_FIELD_NAMES_STILL_SUPPORTED:
+[YES/NO]
+
+PRIMARY_EARNINGS_RENDER_WHEN_RESPONSE_HAS_EVENTS:
+[YES/NO]
+
+STRONG_BASES_EARNINGS_RENDER_WHEN_RESPONSE_HAS_EVENTS:
+[YES/NO]
+
+FAVORITES_HANDLES_ZERO_EVENTS_CORRECTLY:
+[YES/NO]
+
+NO_FALSE_EMPTY_STATE_WHEN_EVENTS_EXIST:
+[YES/NO]
+
+PRIMARY_PREFETCH_NO_LONGER_ASSUMES_LISTDATA_ZERO:
+[YES/NO]
+
+PRIMARY_PREFETCHES_PRIMARY_ID:
+[YES/NO]
+
+STRONG_BASES_NOT_TREATED_AS_PRIMARY:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]
