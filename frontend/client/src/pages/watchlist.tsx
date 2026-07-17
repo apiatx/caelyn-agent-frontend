@@ -3232,6 +3232,54 @@ export default function WatchlistPage() {
     ? [...favoritesSet].map(s => s.toUpperCase())
     : displayRows.map(r => (r.ticker || '').toString().toUpperCase()).filter(Boolean);
 
+  /* ── Selected earnings symbols — scoped to active tab ───────────────
+   * IMPORTANT: use watchlist?.tickers (the actual backend membership for
+   * activeId) NOT displayRows — displayRows may contain LKG rows from a
+   * different watchlist during a tab-switch transition.              */
+  const selectedTabKind = isFavoritesTab ? 'favorites' : 'watchlist';
+  const selectedTabId   = isFavoritesTab ? 'favorites' : (activeId ?? '');
+  const selectedEarningsSymbols: string[] = useMemo(() => {
+    if (isFavoritesTab) {
+      return [...favoritesSet].map(s => s.toUpperCase()).filter(Boolean);
+    }
+    const tickers = (watchlist?.tickers ?? []) as string[];
+    return [...new Set(tickers.map(s => s.toUpperCase()).filter(Boolean))];
+  }, [isFavoritesTab, favoritesSet, watchlist]);
+
+  /* ── NEW: earnings scoped to currently-visible symbols ──────────────
+   * Replaces the old global GET /api/watchlist/earnings for the section.
+   * Query key includes tab identity + exact symbols so each tab gets its
+   * own cache slot — no stale Strong Bases data leaks into Primary.    */
+  const {
+    data: earningsBySymbolsResp,
+    isLoading: earningsBySymbolsLoading,
+    isError: earningsBySymbolsError,
+  } = useQuery<{
+    events: any[];
+    symbols_requested?: string[];
+    missing_symbols?: string[];
+    source?: string;
+    stale?: boolean;
+    cache_status?: string;
+  }>({
+    queryKey: ['watchlist-earnings-by-symbols', selectedTabKind, selectedTabId, selectedEarningsSymbols.join(',')],
+    queryFn: async () => {
+      const r = await fetch('/api/watchlist/earnings/by-symbols', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbols: selectedEarningsSymbols }),
+      });
+      if (!r.ok) throw new Error(`earnings/by-symbols: ${r.status}`);
+      const text = await r.text();
+      try { return JSON.parse(text); } catch {
+        throw new Error(`earnings/by-symbols: non-JSON response`);
+      }
+    },
+    enabled: selectedEarningsSymbols.length > 0,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
     <div style={{
@@ -3740,23 +3788,17 @@ export default function WatchlistPage() {
     );
   };
 
-  /* ── upcoming earnings section ──────────────────────────────────── */
+  /* ── upcoming earnings section ──────────────────────────────────────
+   * Uses the scoped POST /api/watchlist/earnings/by-symbols query.
+   * Never reads old earningsResp/global earnings here.               */
   const renderEarningsSection = () => {
-    const allEvents = earningsResp?.earnings ?? [];
-    // Filter to tickers in the currently-viewed watchlist/tab only.
-    // NEVER fall back to allEvents when selectedSet is empty — that would
-    // show another watchlist's earnings during a loading transition.
-    const selectedSet = new Set(selectedTabSymbols);
-    const events = selectedSet.size > 0
-      ? allEvents.filter((ev: any) => ev.ticker && selectedSet.has(String(ev.ticker).toUpperCase()))
-      : [];
+    const events: any[] = earningsBySymbolsResp?.events ?? [];
 
-    // Still loading ticker data — don't render anything yet
-    if (selectedSet.size === 0 && (wlLoading || wlFetching || earningsLoading)) return null;
+    // Symbols not yet resolved (watchlist still loading, no cache)
+    if (selectedEarningsSymbols.length === 0 && (wlLoading || wlFetching)) return null;
 
-    // Ticker data loaded, no matching earnings → show calm empty state
-    if (!events.length && !earningsLoading) {
-      if (selectedSet.size === 0) return null;
+    // Empty state: no symbols for this tab, or query returned no events
+    if (selectedEarningsSymbols.length === 0 || (!earningsBySymbolsLoading && events.length === 0)) {
       return (
         <div style={{ padding: '0 20px 4px' }}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -3770,6 +3812,10 @@ export default function WatchlistPage() {
         </div>
       );
     }
+
+    // Still fetching — render nothing until first result arrives
+    if (earningsBySymbolsLoading && events.length === 0) return null;
+
     return (
       <div style={{ padding: '0 20px 4px' }}>
         <div style={{
@@ -3783,12 +3829,12 @@ export default function WatchlistPage() {
             <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
               UPCOMING EARNINGS
             </span>
-            {earningsLoading ? (
+            {earningsBySymbolsLoading ? (
               <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
             ) : (
               <span style={{ fontSize: 9, color: C.dim }}>({events.length} in watchlist)</span>
             )}
-            {earningsIsError && (
+            {earningsBySymbolsError && (
               <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
             )}
           </div>

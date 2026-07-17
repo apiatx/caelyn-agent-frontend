@@ -1,0 +1,354 @@
+FRONTEND ONLY — FINAL FIX: UPCOMING EARNINGS MUST USE NEW BY-SYMBOLS ENDPOINT, NOT OLD GLOBAL ENDPOINT
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend endpoints.
+Do not change Watchlist screener layout.
+Do not change add ticker hydration.
+Do not change theme dropdown.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not work on Live News, Confluence, or bottom sections yet.
+
+Backend is already fixed and validated.
+
+Backend now supports:
+
+POST /api/watchlist/earnings/by-symbols
+
+Body:
+{
+  "symbols": ["AAPL", "MSFT", "NVDA"]
+}
+
+Response:
+{
+  "symbols_requested": [...],
+  "events": [...],
+  "missing_symbols": [...],
+  "source": "cached_earnings",
+  "last_updated": "...",
+  "stale": false,
+  "cache_status": "hit|miss|refreshed|empty"
+}
+
+Backend also supports:
+
+GET /api/watchlist/{watchlist_id}/earnings
+
+But preferred frontend path is POST /earnings/by-symbols because Favorites is virtual/global.
+
+Current frontend bug:
+
+Upcoming Earnings is still wrong:
+- Primary tab shows earnings from custom watchlist Strong Bases.
+- Favorites tab shows no upcoming earnings.
+- This means frontend is almost certainly still using old unscoped GET /api/watchlist/earnings, or still reading a stale global earnings response.
+
+Goal:
+
+Replace Upcoming Earnings data source completely.
+
+Upcoming Earnings must use selected symbols from the currently viewed tab and call the backend by-symbols endpoint.
+
+No old global earnings fallback.
+
+==================================================
+PART 1 — AUDIT CURRENT FRONTEND EARNINGS CALL
+==================================================
+
+Before editing, inspect the actual browser Network request when the Watchlist Upcoming Earnings section loads.
+
+Report:
+
+- request method
+- request URL
+- request body
+- response status
+- response event symbols
+- React Query key
+- file/function creating the query
+- whether old GET /api/watchlist/earnings is still called
+- whether earningsResp / earningsMap still uses old global endpoint
+- whether frontend server/Express has a proxy route for POST /api/watchlist/earnings/by-symbols
+
+Test while viewing:
+
+1. Primary tab
+2. Strong Bases tab
+3. Favorites tab
+
+Do not patch until this is known.
+
+Expected finding:
+If frontend is still calling GET /api/watchlist/earnings, that is the bug.
+
+==================================================
+PART 2 — ADD / VERIFY FRONTEND EXPRESS PROXY ROUTE
+==================================================
+
+If frontend uses Express proxy routes, add or verify this route:
+
+POST /api/watchlist/earnings/by-symbols
+
+It must proxy to backend:
+
+POST /api/watchlist/earnings/by-symbols
+
+Requirements:
+
+- preserve auth/session headers like other watchlist routes
+- forward JSON body exactly
+- return backend JSON exactly
+- on backend error, return JSON error, not HTML
+- route must be registered before any Vite/static catch-all
+
+Also add safe non-JSON handling:
+If backend/proxy returns non-JSON, return JSON error with status and preview.
+
+Acceptance:
+Calling frontend proxy directly returns JSON, not HTML.
+
+==================================================
+PART 3 — REMOVE OLD GLOBAL EARNINGS DATA SOURCE FROM WATCHLIST PAGE
+==================================================
+
+Find all uses of old/unscoped earnings data on Watchlist page:
+
+- GET /api/watchlist/earnings
+- earningsResp
+- earningsMap
+- allEvents from old global endpoint
+- any client-side filtering of old global earnings response
+
+For Upcoming Earnings section:
+
+Do not use old global earnings response.
+Do not filter old global earnings response.
+Do not fallback to old global earnings response.
+Do not show old global events when selected symbols are empty.
+Do not show Strong Bases earnings on Primary.
+
+Replace with the new selected-symbol query.
+
+The old endpoint can remain elsewhere if other pages still need it, but Watchlist Upcoming Earnings must not use it.
+
+==================================================
+PART 4 — CREATE CURRENTLY SELECTED EARNINGS SYMBOLS
+==================================================
+
+Create a clean derived value:
+
+selectedEarningsSymbols
+
+Rules:
+
+If current tab is Favorites:
+selectedEarningsSymbols = Array.from(favoritesSet)
+
+If current tab is a normal watchlist:
+selectedEarningsSymbols = symbols for that active watchlist id
+
+Important:
+
+For normal watchlists, use the actual active watchlist membership, not stale displayRows from another tab.
+
+Preferred source order:
+
+1. current active watchlist response tickers for activeId
+2. cached active watchlist response tickers for activeId
+3. selected tab rows only if they are verified to belong to activeId
+
+Do not use:
+- old allTickerSymbols if it can point to previous tab
+- global earnings response
+- Strong Bases symbols unless Strong Bases is selected
+
+Normalize:
+- uppercase
+- dedupe
+- remove blanks
+
+Examples:
+
+Primary selected:
+selectedEarningsSymbols must contain Primary symbols only.
+
+Strong Bases selected:
+selectedEarningsSymbols must contain Strong Bases symbols only.
+
+Favorites selected:
+selectedEarningsSymbols must contain favorite symbols only.
+
+==================================================
+PART 5 — NEW REACT QUERY FOR UPCOMING EARNINGS
+==================================================
+
+Create a new React Query query for Upcoming Earnings.
+
+Query key must include:
+
+[
+  "watchlist-earnings-by-symbols",
+  selectedTabKind,
+  selectedTabId,
+  selectedEarningsSymbols.join(",")
+]
+
+Do not share one cache entry across Primary, Strong Bases, and Favorites.
+
+Query function:
+
+POST /api/watchlist/earnings/by-symbols
+
+Body:
+{
+  symbols: selectedEarningsSymbols
+}
+
+Enabled only when:
+selectedEarningsSymbols.length > 0
+
+If selectedEarningsSymbols.length === 0:
+show:
+"No upcoming earnings for this watchlist."
+
+Do not call old endpoint.
+
+==================================================
+PART 6 — RENDER ONLY NEW RESPONSE EVENTS
+==================================================
+
+Upcoming Earnings should render only:
+
+earningsBySymbolsResponse.events
+
+Do not merge with old events.
+
+Do not fallback to all events.
+
+Do not filter an old response.
+
+Render empty state if:
+
+- selectedEarningsSymbols is empty
+or
+- response.events is empty
+
+Text:
+"No upcoming earnings for this watchlist."
+
+==================================================
+PART 7 — HARD VALIDATION IN NETWORK TAB
+==================================================
+
+Validate in authenticated running app with Network tab open.
+
+Primary:
+
+1. Click Primary tab.
+2. Confirm frontend sends:
+   POST /api/watchlist/earnings/by-symbols
+3. Confirm request body contains Primary symbols.
+4. Confirm request body does NOT contain Strong Bases-only symbols.
+5. Confirm displayed earnings symbols are subset of Primary symbols.
+6. Confirm no Strong Bases-only earnings appear.
+
+Strong Bases:
+
+1. Click Strong Bases.
+2. Confirm request body contains Strong Bases symbols.
+3. Confirm displayed earnings are subset of Strong Bases.
+
+Favorites:
+
+1. Click Favorites.
+2. Confirm request body contains Favorites symbols.
+3. Confirm displayed earnings are subset of Favorites.
+4. If backend returns events, display them.
+5. Do not incorrectly show blank if response.events has items.
+
+Rapid switching:
+
+1. Primary → Strong Bases → Favorites → Primary.
+2. Query key changes each time.
+3. Network body changes each time.
+4. No stale Strong Bases events leak into Primary.
+
+==================================================
+PART 8 — REMOVE OR GATE DEBUG LOGS
+==================================================
+
+Remove noisy debug logs after validation.
+
+Dev-only console logs are okay temporarily, but final code should not spam production console.
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+Return:
+
+WATCHLIST UPCOMING EARNINGS FINAL FRONTEND FIX REPORT
+
+ROOT CAUSE:
+[old endpoint still used / wrong query key / stale global response / selected symbols wrong / proxy missing]
+
+OLD EARNINGS CALL AUDIT:
+[method, URL, query key, response symbols]
+
+NEW EARNINGS CALL:
+[method, URL, query key, body source]
+
+FILES CHANGED:
+[list]
+
+SELECTED SYMBOL SOURCE:
+[summary]
+
+PROXY ROUTE:
+[summary if changed]
+
+VALIDATION:
+[table for Primary, Strong Bases, Favorites]
+
+End exactly:
+
+UPCOMING EARNINGS FINAL VERDICT
+
+OLD_GLOBAL_EARNINGS_REMOVED_FROM_WATCHLIST:
+[YES/NO]
+
+USES_POST_EARNINGS_BY_SYMBOLS:
+[YES/NO]
+
+PRIMARY_REQUEST_BODY_PRIMARY_ONLY:
+[YES/NO]
+
+PRIMARY_EARNINGS_PRIMARY_ONLY:
+[YES/NO]
+
+NO_STRONG_BASES_EARNINGS_ON_PRIMARY:
+[YES/NO]
+
+STRONG_BASES_REQUEST_BODY_CUSTOM_ONLY:
+[YES/NO]
+
+STRONG_BASES_EARNINGS_CUSTOM_ONLY:
+[YES/NO]
+
+FAVORITES_REQUEST_BODY_FAVORITES_ONLY:
+[YES/NO]
+
+FAVORITES_EARNINGS_RENDER_WHEN_BACKEND_RETURNS_EVENTS:
+[YES/NO]
+
+QUERY_KEY_SCOPED_BY_SELECTED_TAB_AND_SYMBOLS:
+[YES/NO]
+
+NO_GLOBAL_EARNINGS_FALLBACK:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]
