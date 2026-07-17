@@ -1,0 +1,263 @@
+FRONTEND ONLY — UPCOMING EARNINGS NETWORK CONTRACT AUDIT, NO CODE CHANGES YET
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change code yet unless I explicitly approve after the audit.
+Do not “fix” anything.
+Do not change Watchlist screener rows.
+Do not change sortedTickers/displayRows/baseMergedTickers.
+Do not change hydration.
+Do not change theme dropdown.
+Do not change Score Lens.
+Do not change ticker popup.
+Do not touch Live News, Confluence, or bottom sections.
+
+Problem:
+
+Upcoming Earnings is still broken on the Watchlist page.
+
+Current observed behavior:
+- Primary tab still does not show the correct Primary watchlist upcoming earnings.
+- Favorites tab says “No upcoming earnings for this watchlist.”
+- Strong Bases/custom watchlist behavior has been inconsistent.
+- Prior frontend changes may have used the wrong source for earnings symbols or read the wrong response key.
+
+We need proof before touching code again.
+
+Goal:
+
+Audit the actual browser Network requests and frontend response handling for Upcoming Earnings on each tab.
+
+Tabs to test:
+
+1. Primary
+2. Strong Bases
+3. Favorites
+
+==================================================
+PART 1 — IDENTIFY THE CURRENT EARNINGS QUERY CODE
+==================================================
+
+Find the current Upcoming Earnings query in frontend code.
+
+Report:
+
+- file path
+- query key
+- request method
+- request URL
+- request body source
+- whether it uses GET /api/watchlist/earnings
+- whether it uses GET /api/watchlist/:watchlistId/earnings
+- whether it uses POST /api/watchlist/earnings/by-symbols
+- whether it uses sortedTickers/displayRows/baseMergedTickers/watchlist?.tickers/favoritesSet
+- response key currently read: events, earnings, data.events, data.earnings, etc.
+- render condition for “No upcoming earnings for this watchlist.”
+
+Do not edit yet.
+
+==================================================
+PART 2 — NETWORK AUDIT IN RUNNING APP
+==================================================
+
+Open the authenticated running app and use the browser Network tab.
+
+For each tab — Primary, Strong Bases, Favorites — click the tab and report the exact Upcoming Earnings request.
+
+For each tab capture:
+
+- selected tab name
+- activeId
+- selected watchlist id if normal watchlist
+- request method
+- request URL
+- request body if POST
+- request body symbols count
+- first 30 request symbols
+- response status
+- response content-type
+- full top-level response keys
+- response.events length
+- response.earnings length
+- response.data.events length if present
+- response.data.earnings length if present
+- first 30 response event symbols
+- rendered earnings count in UI
+
+Important:
+
+If the UI shows “No upcoming earnings,” but the response has events/earnings, then the bug is frontend response parsing/rendering.
+
+If the request body has zero or wrong symbols, then the bug is frontend selected-symbol source.
+
+If the request is still GET /api/watchlist/earnings, then the bug is frontend still using the old global endpoint.
+
+If the request uses POST by-symbols and backend returns zero for valid symbols, then backend/proxy may be the issue.
+
+==================================================
+PART 3 — DIRECT PROXY COMPARISON
+==================================================
+
+From the frontend environment/proxy, call both new endpoints directly and compare.
+
+Use the real Primary id and Strong Bases id.
+
+A. Primary by watchlist id:
+
+GET /api/watchlist/{primaryId}/earnings
+
+Report:
+- status
+- response keys
+- events length
+- earnings length
+- first 30 symbols returned
+
+B. Strong Bases by watchlist id:
+
+GET /api/watchlist/{strongBasesId}/earnings
+
+Report:
+- status
+- response keys
+- events length
+- earnings length
+- first 30 symbols returned
+
+C. Primary by symbols:
+
+POST /api/watchlist/earnings/by-symbols
+
+Body:
+{
+  "symbols": [the exact Primary symbols currently available in frontend]
+}
+
+Report:
+- symbol count sent
+- first 30 symbols sent
+- status
+- response keys
+- events length
+- earnings length
+- first 30 symbols returned
+
+D. Favorites by symbols:
+
+POST /api/watchlist/earnings/by-symbols
+
+Body:
+{
+  "symbols": [the exact Favorites symbols from favoritesSet]
+}
+
+Report:
+- symbol count sent
+- first 30 symbols sent
+- status
+- response keys
+- events length
+- earnings length
+- first 30 symbols returned
+
+Do not patch yet.
+
+==================================================
+PART 4 — OLD ENDPOINT CHECK
+==================================================
+
+Check whether this old endpoint is still being called anywhere by Watchlist Upcoming Earnings:
+
+GET /api/watchlist/earnings
+
+Report:
+- yes/no
+- file path if yes
+- query key if yes
+- whether its response is still used to render Upcoming Earnings
+
+This endpoint should not be used for Watchlist Upcoming Earnings anymore because it was confirmed unscoped/global/default-watchlist.
+
+==================================================
+PART 5 — DETERMINE EXACT ROOT CAUSE
+==================================================
+
+Classify the failure into one of these:
+
+A. Frontend still calls old GET /api/watchlist/earnings.
+B. Frontend calls new endpoint but sends empty symbols.
+C. Frontend calls new endpoint but sends wrong symbols.
+D. Frontend receives events but reads the wrong response key.
+E. Frontend receives events but render condition incorrectly shows empty state.
+F. Proxy route returns wrong envelope.
+G. Backend endpoint returns empty despite valid symbols.
+H. Other — explain exactly.
+
+Do not guess. Use the Network/proxy evidence.
+
+==================================================
+PART 6 — REPORT ONLY
+==================================================
+
+Return:
+
+UPCOMING EARNINGS NETWORK CONTRACT AUDIT REPORT
+
+CURRENT FRONTEND QUERY:
+[details]
+
+PRIMARY NETWORK RESULT:
+[details]
+
+STRONG BASES NETWORK RESULT:
+[details]
+
+FAVORITES NETWORK RESULT:
+[details]
+
+DIRECT PROXY COMPARISON:
+[table]
+
+OLD ENDPOINT USAGE:
+[yes/no + details]
+
+ROOT CAUSE CLASSIFICATION:
+[A/B/C/D/E/F/G/H]
+
+RECOMMENDED FIX:
+[specific frontend or backend fix, but do not apply yet]
+
+End exactly:
+
+EARNINGS AUDIT VERDICT
+
+FRONTEND_STILL_CALLS_OLD_GLOBAL_ENDPOINT:
+[YES/NO]
+
+PRIMARY_REQUEST_HAS_PRIMARY_SYMBOLS:
+[YES/NO]
+
+PRIMARY_ENDPOINT_RETURNS_EVENTS:
+[YES/NO]
+
+PRIMARY_RESPONSE_RENDERED_CORRECTLY:
+[YES/NO]
+
+STRONG_BASES_ENDPOINT_RETURNS_EVENTS:
+[YES/NO]
+
+FAVORITES_REQUEST_HAS_FAVORITE_SYMBOLS:
+[YES/NO]
+
+FAVORITES_ENDPOINT_RETURNS_EVENTS:
+[YES/NO]
+
+RESPONSE_SHAPE_MATCHES_FRONTEND_READER:
+[YES/NO]
+
+BACKEND_FIX_NEEDED:
+[YES/NO/UNKNOWN]
+
+FRONTEND_FIX_NEEDED:
+[YES/NO/UNKNOWN]
