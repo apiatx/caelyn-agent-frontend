@@ -1856,7 +1856,7 @@ export default function WatchlistPage() {
   const [expandedTickers, setExpandedTickers] = useState<Set<string>>(new Set());
   /* ── Hydration tracking for newly-added tickers ────────────────── */
   const [pendingOptRows, setPendingOptRows] = useState<Map<string, { ticker: string; company?: string }>>(new Map());
-  const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string }>>(new Map());
+  const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string; options: string }>>(new Map());
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
   const toggleExpandedTicker = (sym: string) => setExpandedTickers(prev => {
@@ -2372,17 +2372,27 @@ export default function WatchlistPage() {
   });
 
   /* ── add tickers to active watchlist ────────────────────────────── */
-  /* ── startHydrationPoll — polls hydration status every 5 s, up to 2 min ── */
+  /* ── startHydrationPoll — polls hydration status every 5 s, up to 5 min ── */
   const startHydrationPoll = useCallback((wid: string, ticker: string) => {
     const sym = ticker.toUpperCase();
     const startedAt = Date.now();
-    const MAX_MS = 2 * 60_000;
+    const MAX_MS = 5 * 60_000;
     const existing = hydrationIntervals.current.get(sym);
     if (existing) clearInterval(existing);
+    // isTerminal: done | error | no_options  (non-terminal: pending | running | queued | unknown)
+    const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
     const id = setInterval(async () => {
       if (Date.now() - startedAt > MAX_MS) {
+        // Max time reached — mark options as "queued" if still non-terminal; stop polling
         clearInterval(id);
         hydrationIntervals.current.delete(sym);
+        setHydrationStatus(prev => {
+          const cur = prev.get(sym);
+          if (!cur) return prev;
+          const timedOut = { ...cur, options: isTerminal(cur.options) ? cur.options : 'queued' };
+          return new Map(prev).set(sym, timedOut);
+        });
+        setTimeout(() => setHydrationStatus(prev => { const m = new Map(prev); m.delete(sym); return m; }), 8000);
         return;
       }
       try {
@@ -2391,19 +2401,32 @@ export default function WatchlistPage() {
         const data = await resp.json();
         const hs = data?.hydration_status;
         if (!hs) return;
-        const next = { quote: String(hs.quote ?? 'unknown'), technical: String(hs.technical ?? 'unknown'), fundamentals: String(hs.fundamentals ?? 'unknown') };
+        const next = {
+          quote: String(hs.quote ?? 'unknown'),
+          technical: String(hs.technical ?? 'unknown'),
+          fundamentals: String(hs.fundamentals ?? 'unknown'),
+          options: String(hs.options ?? 'unknown'),
+        };
         setHydrationStatus(prev => {
           const p = prev.get(sym);
-          if (p && p.quote === next.quote && p.technical === next.technical && p.fundamentals === next.fundamentals) return prev;
+          if (p && p.quote === next.quote && p.technical === next.technical &&
+              p.fundamentals === next.fundamentals && p.options === next.options) return prev;
+          // Invalidate watchlist on any status change
           qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
+          // Invalidate ticker detail when fundamentals or options reach terminal
+          const prevFund = p?.fundamentals ?? '';
+          const prevOpts = p?.options ?? '';
+          if ((!isTerminal(prevFund) && isTerminal(next.fundamentals)) ||
+              (!isTerminal(prevOpts) && isTerminal(next.options))) {
+            qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.some((k: any) => typeof k === 'string' && k.toLowerCase() === sym.toLowerCase()) });
+          }
           return new Map(prev).set(sym, next);
         });
-        const isDone = (s: string) => s === 'done' || s === 'error';
-        if (isDone(next.quote) && isDone(next.technical) && isDone(next.fundamentals)) {
+        if (isTerminal(next.quote) && isTerminal(next.technical) && isTerminal(next.fundamentals) && isTerminal(next.options)) {
           clearInterval(id);
           hydrationIntervals.current.delete(sym);
           qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
-          setTimeout(() => setHydrationStatus(prev => { const m = new Map(prev); m.delete(sym); return m; }), 4000);
+          setTimeout(() => setHydrationStatus(prev => { const m = new Map(prev); m.delete(sym); return m; }), 5000);
         }
       } catch { /* swallow */ }
     }, 5_000);
@@ -3159,10 +3182,15 @@ export default function WatchlistPage() {
     }
   }
 
-  const closeWatchTickers = useMemo(
-    () => sortedTickers.filter(s => s.ticker && favoritesSet.has(s.ticker.toUpperCase())),
-    [sortedTickers, favoritesSet],
-  );
+  const closeWatchTickers = useMemo(() => {
+    if (favoritesSet.size === 0) return [];
+    // Build a lookup from current watchlist rows
+    const rowMap = new Map<string, any>(
+      sortedTickers.filter(s => s.ticker).map(s => [s.ticker!.toUpperCase(), s])
+    );
+    // Return one entry per global favourite — full row if available, stub if not
+    return [...favoritesSet].map(sym => rowMap.get(sym) ?? { ticker: sym, _pending: true });
+  }, [sortedTickers, favoritesSet]);
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -4277,11 +4305,28 @@ export default function WatchlistPage() {
                   </span>
                   {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
                     const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
-                    const isRunning = ['running'].some(s => s === hs.quote || s === hs.technical || s === hs.fundamentals);
-                    const isActive = isRunning || ['pending'].some(s => s === hs.quote || s === hs.technical || s === hs.fundamentals);
+                    const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
+                    const isActive = (s: string) => !isTerminal(s) && s !== 'queued' && s !== 'unknown';
+                    const catLabel = (key: string, val: string) => {
+                      if (val === 'done') return `${key} ✓`;
+                      if (val === 'no_options') return `${key}: none`;
+                      if (val === 'queued') return `${key}: queued`;
+                      if (val === 'error') return `${key}: err`;
+                      if (val === 'running') return `${key}: running`;
+                      if (val === 'pending') return `${key}: pending`;
+                      return null;
+                    };
+                    const allDone = isTerminal(hs.quote) && isTerminal(hs.technical) && isTerminal(hs.fundamentals) && isTerminal(hs.options);
+                    const anyActive = isActive(hs.quote) || isActive(hs.technical) || isActive(hs.fundamentals) || isActive(hs.options);
+                    const parts = [
+                      catLabel('Q', hs.quote),
+                      catLabel('T', hs.technical),
+                      catLabel('F', hs.fundamentals),
+                      catLabel('O', hs.options),
+                    ].filter(Boolean).join('  ');
                     return (
-                      <span style={{ fontSize: 8, color: isActive ? C.amber : C.green, background: isActive ? `${C.amber}20` : `${C.green}20`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: C.font, flexShrink: 0 }}>
-                        {isRunning ? 'Hydrating…' : isActive ? 'Pending…' : 'Hydrated ✓'}
+                      <span style={{ fontSize: 8, color: allDone ? C.green : anyActive ? C.amber : 'rgba(255,255,255,0.35)', background: allDone ? `${C.green}18` : anyActive ? `${C.amber}18` : 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: C.font, flexShrink: 0 }}>
+                        {parts || 'Hydrating…'}
                       </span>
                     );
                   })()}

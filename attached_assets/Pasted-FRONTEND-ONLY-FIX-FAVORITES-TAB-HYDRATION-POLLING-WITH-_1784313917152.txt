@@ -1,0 +1,378 @@
+FRONTEND ONLY — FIX FAVORITES TAB + HYDRATION POLLING WITH OPTIONS STATUS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not invent endpoints.
+Do not add provider calls.
+Do not rewrite Watchlist.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not change ticker popup internals unless cache invalidation is needed.
+Do not break add ticker/theme dropdown, which now works.
+
+Backend now returns/manages four hydration categories:
+
+quote
+technical
+fundamentals
+options
+
+Options can be:
+pending
+running
+done
+no_options
+error
+
+Problems:
+
+1. Favorites tab header shows “Favorites: 29”, but Favorites tab body is blank.
+   This started after adding a third custom watchlist.
+
+2. After manual add, frontend must keep polling/refetching until quote, technical, fundamentals, and options are terminal.
+
+3. Frontend must not stop polling just because the row appears or because quote/technical/fundamentals are done while options is still pending.
+
+Goal:
+
+Fix frontend-only behavior:
+
+- Favorites tab renders its actual favorite rows.
+- Favorites count and rows come from the same source.
+- Adding a third watchlist does not blank Favorites.
+- Manual add rows stay visible.
+- Hydration status shows quote/technical/fundamentals/options separately.
+- Watchlist table refetches as hydration completes.
+- Newly populated fundamentals/options fields appear without page refresh.
+
+==================================================
+PART 1 — AUDIT FAVORITES TAB DATA FLOW
+==================================================
+
+Before editing, trace:
+
+- where “Favorites: 29” count comes from
+- where Favorites tab rows come from
+- active watchlist id state
+- selected watchlist object
+- favorites watchlist id/type/name/is_favorites detection
+- favorite ticker set source
+- row array used to render Favorites tab
+- whether code assumes watchlists[1] is Favorites
+- whether adding a third custom watchlist changed index assumptions
+- whether Favorites body filters from the wrong active watchlist rows
+
+Report:
+
+active watchlist id
+favorites identifier
+favorite count source
+favorite ticker symbols
+available row objects for favorite symbols
+rendered favorite rows
+why count = 29 but rendered rows = 0
+
+Do not patch until this is known.
+
+==================================================
+PART 2 — FIX FAVORITES TAB RENDERING
+==================================================
+
+Favorites header count and Favorites body rows must use the same canonical favorite ticker set.
+
+Rules:
+
+- Do not rely on watchlists[1] being Favorites.
+- Use stable id/type/name/is_favorites flag.
+- If Favorites is global, render all favorited tickers from the canonical all-row source.
+- If Favorites is per-watchlist, count and rows must both use the same watchlist_id.
+- Adding a third custom watchlist must not blank Favorites.
+- If favorite ticker row data is missing, render a partial row with hydration/loading state instead of blank body.
+
+Acceptance:
+
+- Favorites: 29 renders 29 rows.
+- Switching to third custom watchlist and back does not blank Favorites.
+- Favorite/unfavorite updates both count and rows.
+- Page refresh keeps Favorites working.
+
+==================================================
+PART 3 — AUDIT CURRENT HYDRATION POLLING
+==================================================
+
+Trace current frontend polling after manual add.
+
+Find:
+
+- polling interval
+- max polling duration
+- stop condition
+- status endpoint path
+- fields checked
+- whether options status is included
+- whether polling stops when quote/technical/fundamentals are done but options is pending
+- whether polling stops once optimistic row becomes real row
+- which query keys are invalidated
+- whether ticker detail cache is invalidated
+
+Potential bug:
+
+Frontend may stop polling once the row appears in watchlist, even though fundamentals/options are still running or pending.
+
+==================================================
+PART 4 — FIX HYDRATION POLLING STOP CONDITION
+==================================================
+
+After single add or batch add, poll hydration status until all four categories are terminal.
+
+Categories:
+
+quote
+technical
+fundamentals
+options
+
+Terminal statuses:
+
+done
+error
+no_options
+
+Non-terminal statuses:
+
+pending
+running
+queued
+null
+undefined
+
+Rules:
+
+- Do not stop polling just because the ticker appears in the table.
+- Do not stop polling when quote/technical/fundamentals are done if options is still pending.
+- Do not stop polling when options is pending unless max duration is reached.
+- Invalidate/refetch watchlist query on meaningful status change.
+- Invalidate ticker detail cache for the symbol when fundamentals or options become terminal.
+- Avoid duplicate polling intervals per symbol.
+
+Suggested polling:
+
+- every 5 seconds
+- hard stop after 3–5 minutes
+- if max time expires while options is still pending, leave a subtle “Options queued” status and stop aggressive polling
+
+Do not poll forever.
+
+==================================================
+PART 5 — HYDRATION STATUS UI
+==================================================
+
+For newly added/recently hydrating rows, show compact status badges:
+
+Quote: pending/running/done/error
+Technical: pending/running/done/error
+Fundamentals: pending/running/done/error
+Options: pending/running/done/no_options/error
+
+Examples:
+
+Quote ✓
+Technical ✓
+Fundamentals running
+Options pending
+
+For no_options:
+
+Options: no options
+
+For pending after timeout:
+
+Options queued
+
+Keep it subtle. Do not show scary red errors unless backend returns error.
+
+==================================================
+PART 6 — REFETCH WATCHLIST DATA AFTER HYDRATION WRITES
+==================================================
+
+When hydration status changes:
+
+- invalidate/refetch active watchlist query
+- invalidate/refetch all-watchlist/favorites source if Favorites uses it
+- invalidate ticker detail query for that symbol
+- invalidate confluence/watchlist row query only if it depends on updated row payload
+
+When hydration completes:
+
+- final watchlist refetch
+- final ticker detail invalidation
+- clear active polling interval
+
+The Watchlist table should update with:
+
+- fundamentals fields
+- technical fields
+- options overlay fields
+- market_cap_display
+- theme if assigned
+
+No hard page refresh.
+
+==================================================
+PART 7 — BATCH ADD POLLING
+==================================================
+
+For batch add:
+
+- start polling for every successfully added ticker
+- dedupe polling intervals
+- show per-row hydration status
+- do not let one ticker finishing stop polling for the others
+- do not duplicate optimistic rows
+
+==================================================
+PART 8 — VALIDATION
+==================================================
+
+Favorites validation:
+
+1. Favorites header shows 29.
+2. Favorites body renders 29 rows.
+3. Switch to third custom watchlist.
+4. Switch back to Favorites.
+5. Favorites still renders 29 rows.
+6. Favorite/unfavorite one ticker.
+7. Count and rows update together.
+8. Refresh page.
+9. Favorites still works.
+
+Manual add validation:
+
+Use newly added tickers tested by backend if available:
+
+CRWD
+BCBP
+PANW
+ZS
+DDOG
+
+Or use other valid tickers not already in the watchlist.
+
+For each:
+
+1. Row appears immediately.
+2. Hydration UI shows quote/technical/fundamentals/options separately.
+3. Polling continues until all four are terminal or max duration expires.
+4. Fundamentals appear in the table without weekly refresh.
+5. Technical fields appear.
+6. Options fields appear if status becomes done.
+7. no_options displays calmly if status becomes no_options.
+8. If options remains pending after max timeout, row shows “Options queued,” not blank/broken.
+9. Ticker popup reflects fresh data after hydration.
+10. No duplicate row.
+
+Batch add validation:
+
+1. Add 5 valid tickers.
+2. All appear immediately.
+3. Each has its own hydration state.
+4. Polling does not stop early.
+5. Fundamentals/options eventually populate or terminal status appears.
+6. No duplicates.
+
+Regression:
+
+- add ticker still works
+- theme dropdown still works
+- Watchlist sorting still works
+- Score Lens still works
+- ticker popup still works
+- Technical/Fundamental/News tabs still work
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND WATCHLIST FAVORITES + HYDRATION POLLING REPORT
+
+FAVORITES ROOT CAUSE:
+[exact issue]
+
+FAVORITES FIX:
+[summary]
+
+HYDRATION POLLING ROOT CAUSE:
+[exact issue]
+
+OPTIONS STATUS HANDLING:
+[summary]
+
+POLLING / CACHE INVALIDATION:
+[summary]
+
+FILES CHANGED:
+[list]
+
+FAVORITES VALIDATION:
+[table]
+
+ADD HYDRATION VALIDATION:
+[table]
+
+REGRESSION VALIDATION:
+[table]
+
+End exactly:
+
+FRONTEND WATCHLIST BUGFIX VERDICT
+
+FAVORITES_COUNT_ROWS_MATCH:
+[YES/NO]
+
+FAVORITES_WORK_WITH_THIRD_WATCHLIST:
+[YES/NO]
+
+NEW_TICKER_VISIBLE_IMMEDIATELY:
+[YES/NO]
+
+HYDRATION_STATUS_SEPARATES_QUOTE_TECH_FUND_OPTIONS:
+[YES/NO]
+
+FRONTEND_POLLING_DOES_NOT_STOP_TOO_EARLY:
+[YES/NO]
+
+FUNDAMENTALS_REFRESH_IN_UI_AFTER_ADD:
+[YES/NO]
+
+TECHNICALS_REFRESH_IN_UI_AFTER_ADD:
+[YES/NO]
+
+OPTIONS_REFRESH_IN_UI_AFTER_ADD:
+[YES/NO/PARTIAL]
+
+OPTIONS_PENDING_HANDLED_CALMLY:
+[YES/NO]
+
+WATCHLIST_CACHE_INVALIDATES_AFTER_HYDRATION:
+[YES/NO]
+
+TICKER_DETAIL_CACHE_INVALIDATES_AFTER_HYDRATION:
+[YES/NO]
+
+BATCH_ADD_UI_HYDRATION_WORKS:
+[YES/NO]
+
+THEME_DROPDOWN_UNBROKEN:
+[YES/NO]
+
+SCORE_LENS_UNBROKEN:
+[YES/NO]
+
+TICKER_POPUP_UNBROKEN:
+[YES/NO]
+
+NO_FRONTEND_PROVIDER_CALLS:
+[YES/NO]
