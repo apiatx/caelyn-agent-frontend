@@ -1,0 +1,325 @@
+FRONTEND ONLY — FIX THEME DROPDOWN ROUTE + STOP ROW CLICK PROPAGATION
+
+Frontend repo only.
+
+Do not touch backend unless frontend proxy inspection proves the backend route does not exist.
+Do not change Watchlist hydration.
+Do not change add ticker logic.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not rewrite the Watchlist table.
+
+Problem:
+
+Theme dropdown still does not work.
+
+Observed:
+
+1. Selecting a theme throws:
+
+Failed to execute 'json' on 'Response': Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+
+This means the frontend request is receiving HTML, not JSON. Likely causes:
+- wrong frontend URL
+- Express proxy route not registered
+- Express proxy route placed after Vite fallback
+- method/path mismatch
+- proxy route returning HTML fallback instead of backend JSON
+- frontend fetch blindly calls response.json() on non-JSON response
+
+2. Clicking a theme option opens the ticker popup window.
+
+This means dropdown click/select events are bubbling to the row/ticker click handler.
+
+3. Theme should update immediately in the Theme column when selected.
+
+Goal:
+
+Fix only the theme dropdown.
+
+Selecting a theme should:
+- not open ticker popup
+- optimistically update the row immediately
+- call the correct backend proxy endpoint
+- receive JSON, not HTML
+- persist after refresh
+- rollback on failure
+
+==================================================
+PART 1 — INSPECT THE ACTUAL FAILED NETWORK REQUEST
+==================================================
+
+Before editing, reproduce selecting a theme and inspect the Network tab / frontend console.
+
+Report:
+
+- request method
+- request URL
+- status code
+- response content-type
+- first 200 chars of response body
+- whether Express proxy route handled it
+- whether backend route was called
+- exact frontend fetch code path
+
+The response currently starts with:
+
+<!DOCTYPE
+
+Find why.
+
+Do not guess.
+
+==================================================
+PART 2 — FIX EXPRESS PROXY ROUTE
+==================================================
+
+Verify the Express proxy route exists and is registered before any Vite/static catch-all.
+
+Expected frontend route:
+
+PATCH /api/watchlist/:watchlistId/tickers/:symbol/theme
+
+Expected body:
+
+{
+  "theme": "Datacenter Infra"
+}
+
+This route should proxy to the backend route confirmed in the prior backend pass.
+
+Rules:
+
+- preserve auth/session headers exactly like other Watchlist proxy routes
+- return backend JSON exactly
+- on backend error, return JSON error, not HTML
+- do not fall through to Vite index.html
+- do not return Express default HTML error pages
+
+Add defensive response handling:
+
+If backend returns non-JSON:
+- read text
+- return JSON:
+  {
+    "error": "Non-JSON backend response",
+    "status": status,
+    "preview": first_200_chars
+  }
+
+Frontend must never try to parse HTML as JSON without checking.
+
+Acceptance:
+
+Calling the proxy route directly returns JSON for both success and failure.
+
+==================================================
+PART 3 — FIX FRONTEND FETCH / MUTATION ERROR HANDLING
+==================================================
+
+In the theme assignment mutation, do not blindly call response.json().
+
+Use safe parsing:
+
+const contentType = response.headers.get("content-type") || "";
+
+if (!contentType.includes("application/json")) {
+  const text = await response.text();
+  throw new Error(`Theme update returned non-JSON response: ${response.status} ${text.slice(0, 120)}`);
+}
+
+const data = await response.json();
+
+if (!response.ok) {
+  throw new Error(data?.detail || data?.error || "Theme update failed");
+}
+
+Make the error toast user-friendly:
+
+"Could not update theme. Try again."
+
+But log the technical response in dev console for debugging.
+
+==================================================
+PART 4 — STOP DROPDOWN EVENTS FROM OPENING TICKER POPUP
+==================================================
+
+Find the row/ticker click handler that opens StockDetailModal.
+
+Theme dropdown clicks must not bubble to it.
+
+Apply stopPropagation in all relevant places:
+
+- dropdown trigger/button
+- dropdown content/container
+- dropdown item/select handler
+- any wrapper inside Theme cell
+
+For native select:
+- onClick={(e) => e.stopPropagation()}
+- onMouseDown={(e) => e.stopPropagation()}
+- onChange={(e) => { e.stopPropagation(); ... }}
+
+For Radix/shadcn DropdownMenu:
+- DropdownMenuTrigger:
+  onClick={(e) => e.stopPropagation()}
+  onPointerDown={(e) => e.stopPropagation()}
+- DropdownMenuContent:
+  onClick={(e) => e.stopPropagation()}
+  onPointerDown={(e) => e.stopPropagation()}
+- DropdownMenuItem:
+  onClick={(e) => e.stopPropagation()}
+  onSelect={(e) => {
+    e.preventDefault();
+    e.stopPropagation if available;
+    handleThemeSelect(...)
+  }}
+
+Also make sure selecting the theme does not call the row's onTickerClick.
+
+Acceptance:
+
+Clicking dropdown trigger does not open ticker popup.
+Clicking dropdown item does not open ticker popup.
+Only clicking the ticker/name cell opens ticker popup.
+
+==================================================
+PART 5 — OPTIMISTIC THEME UPDATE MUST BE IMMEDIATE
+==================================================
+
+When a user selects a theme:
+
+1. Store previous theme.
+2. Immediately update local row display to selected theme.
+3. Fire PATCH request.
+4. On success:
+   - keep selected theme visible
+   - invalidate/refetch watchlist query
+   - invalidate ticker detail query for symbol
+5. On failure:
+   - rollback to previous theme
+   - show calm error toast
+
+The selected theme must appear in the Theme column immediately, before refetch completes.
+
+Important:
+
+Do not wait for backend response to show selected theme.
+
+==================================================
+PART 6 — ROUTE ORDER CHECK
+==================================================
+
+In frontend/server/routes.ts, make sure the theme PATCH proxy route is declared before any catch-all route like:
+
+app.get("*", ...)
+app.use("*", ...)
+vite fallback
+static fallback
+
+If the theme route is declared after catch-all, move it above.
+
+This is likely why the response is HTML.
+
+==================================================
+PART 7 — VALIDATION
+==================================================
+
+Validate in authenticated running app.
+
+Theme test:
+
+1. Pick a ticker row.
+2. Open Theme dropdown.
+3. Confirm ticker popup does NOT open.
+4. Select a theme.
+5. Confirm selected theme appears immediately in Theme column.
+6. Confirm Network request is:
+
+PATCH /api/watchlist/:watchlistId/tickers/:symbol/theme
+
+7. Confirm response content-type is application/json.
+8. Confirm no "<!DOCTYPE" response.
+9. Confirm no JSON parse error.
+10. Refresh page.
+11. Confirm theme persists.
+12. Open ticker popup.
+13. Confirm theme matches there too.
+
+Regression:
+
+- clicking ticker/name still opens ticker popup
+- add ticker still works
+- hydration still works
+- Watchlist sorting still works
+- Score Lens still works
+- Technical/Fundamental/News tabs still work
+
+==================================================
+PART 8 — FINAL REPORT
+==================================================
+
+Return:
+
+THEME DROPDOWN HOTFIX REPORT
+
+ROOT CAUSE:
+[wrong route / route order / HTML fallback / event bubbling / fetch parse issue]
+
+FAILED REQUEST INSPECTION:
+[method, URL, status, content-type, response preview]
+
+FILES CHANGED:
+[list]
+
+PROXY ROUTE FIX:
+[summary]
+
+FETCH ERROR HANDLING:
+[summary]
+
+EVENT PROPAGATION FIX:
+[summary]
+
+OPTIMISTIC THEME UPDATE:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+THEME DROPDOWN HOTFIX VERDICT
+
+THEME_PATCH_ROUTE_RETURNS_JSON:
+[YES/NO]
+
+NO_HTML_DOCTYPE_RESPONSE:
+[YES/NO]
+
+JSON_PARSE_ERROR_FIXED:
+[YES/NO]
+
+DROPDOWN_CLICK_DOES_NOT_OPEN_POPUP:
+[YES/NO]
+
+THEME_SELECTION_DOES_NOT_OPEN_POPUP:
+[YES/NO]
+
+THEME_UPDATES_IMMEDIATELY_IN_ROW:
+[YES/NO]
+
+THEME_PERSISTS_AFTER_REFRESH:
+[YES/NO]
+
+ROLLBACK_ON_FAILURE_WORKS:
+[YES/NO]
+
+TICKER_POPUP_STILL_OPENS_FROM_TICKER_CELL:
+[YES/NO]
+
+WATCHLIST_ADD_HYDRATION_UNBROKEN:
+[YES/NO]
+
+FRONTEND_ONLY:
+[YES/NO]

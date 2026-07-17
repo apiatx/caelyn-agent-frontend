@@ -2131,12 +2131,18 @@ export default function WatchlistPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: displayName }),
       });
-      if (!r.ok) {
-        const e = await r.json().catch(() => ({} as any));
-        const detail = e.detail ?? e.error ?? '';
-        throw new Error(detail || `Theme update failed (${r.status})`);
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        const text = await r.text();
+        console.error('[theme-patch] non-JSON response:', r.status, text.slice(0, 200));
+        throw new Error(`Could not update theme. Try again.`);
       }
-      return r.json();
+      const data = await r.json();
+      if (!r.ok) {
+        const detail = data?.detail ?? data?.error ?? '';
+        throw new Error(detail || `Could not update theme. Try again.`);
+      }
+      return data;
     },
     onMutate: ({ ticker, displayName }) => {
       setThemeAssignPendingTicker(ticker);
@@ -4289,6 +4295,7 @@ export default function WatchlistPage() {
                           <DropdownMenuTrigger asChild>
                             <button
                               onClick={e => e.stopPropagation()}
+                              onPointerDown={e => e.stopPropagation()}
                               disabled={rowThemePending}
                               title={currentThemeName ? `Reassign primary Theme for ${stock.ticker}` : `Assign a primary Theme to ${stock.ticker}`}
                               style={{
@@ -4305,17 +4312,24 @@ export default function WatchlistPage() {
                               {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                          <DropdownMenuContent
+                            align="start"
+                            style={{ maxHeight: 320, overflowY: 'auto' }}
+                            onClick={e => e.stopPropagation()}
+                            onPointerDown={e => e.stopPropagation()}
+                          >
                             {themeUniverse.length === 0 && (
                               <DropdownMenuItem disabled>Loading Theme universe…</DropdownMenuItem>
                             )}
                             {themeUniverse.map(t => (
                               <DropdownMenuItem
                                 key={t.theme_id}
-                                onClick={() => {
+                                onSelect={e => {
+                                  e.preventDefault();
                                   if (!stock.ticker || t.theme_id === undefined) return;
                                   assignPrimaryThemeMutation.mutate({ ticker: stock.ticker, themeId: t.theme_id, displayName: t.display_name });
                                 }}
+                                onClick={e => e.stopPropagation()}
                                 style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
                               >
                                 {t.display_name}
