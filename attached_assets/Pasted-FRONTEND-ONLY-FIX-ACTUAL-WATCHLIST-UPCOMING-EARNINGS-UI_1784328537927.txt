@@ -1,0 +1,378 @@
+FRONTEND ONLY — FIX ACTUAL WATCHLIST UPCOMING EARNINGS UI, NOT JUST NETWORK LOGS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not touch Watchlist row source.
+Do not touch sortedTickers/displayRows/baseMergedTickers.
+Do not touch hydration.
+Do not touch theme dropdown.
+Do not touch Confluence.
+Do not touch Score Lens.
+Do not touch Live News or bottom sections.
+
+This is the last pass for Upcoming Earnings.
+
+Important:
+
+Do not return another report that says:
+- HMR compiled
+- POST returned 200
+- backend response has events
+- query fires
+
+That is not enough.
+
+The user-visible UI still shows:
+“No upcoming earnings for this watchlist.”
+
+The only acceptable validation is that the actual Upcoming Earnings section visibly renders earnings cards/chips for a watchlist whose response has earnings.
+
+==================================================
+CURRENT FACTS
+==================================================
+
+Backend is already fixed enough for this pass.
+
+Frontend currently calls:
+
+POST /api/watchlist/earnings/by-symbols
+
+and reports 200 responses.
+
+Frontend also added field normalization:
+
+events / earnings
+earnings_date / next_date
+eps_estimate / est_eps
+revenue_estimate / revenue_estimated
+
+But the UI still shows:
+“No upcoming earnings for this watchlist.”
+
+Therefore the bug is now likely one of these:
+
+A. The normalized events are not actually the events used by the rendered JSX.
+B. renderEarningsSection being edited is not the section currently visible in the UI.
+C. Another guard returns the empty state before events render.
+D. selectedEarningsSymbols changes to empty after the request.
+E. Query key/cache stores an empty response and render uses that stale empty response.
+F. The actual response envelope from the frontend proxy is still different from what the render code reads.
+G. CSS/layout makes the chips invisible or outside the visible area.
+H. A different Upcoming Earnings component/section is rendered elsewhere.
+
+Do not guess. Prove which one.
+
+==================================================
+PART 1 — FIND THE ACTUAL RENDERED UPCOMING EARNINGS SECTION
+==================================================
+
+Search the frontend repo for every rendered instance of:
+
+- "Upcoming Earnings"
+- "No upcoming earnings for this watchlist"
+- "earningsResp"
+- "earningsBySymbolsResp"
+- "renderEarningsSection"
+- "next_date"
+- "earnings_date"
+- "est_eps"
+- "eps_estimate"
+
+Report every file/line that can render the Watchlist page Upcoming Earnings section.
+
+If there are two sections, old and new, identify which one is actually visible in the browser.
+
+Do not patch until this is known.
+
+==================================================
+PART 2 — ADD TEMPORARY VISIBLE DEBUG INSIDE THE ACTUAL SECTION
+==================================================
+
+Inside the actual visible Upcoming Earnings section, temporarily render a small dev/debug line only while fixing:
+
+Earnings debug:
+tab=[selected tab name]
+activeId=[activeId]
+symbols=[selectedEarningsSymbols.length]
+loading=[true/false]
+rawEvents=[rawEvents.length]
+normalizedEvents=[events.length]
+first=[first ticker/date]
+
+This must appear in the actual UI above the earnings cards.
+
+Purpose:
+If the UI says “No upcoming earnings,” we need to see whether the section has:
+
+- symbols = 0
+- rawEvents = 0
+- normalizedEvents = 0
+- or events > 0 but still rendering empty
+
+Do not leave this in final production UI. Remove or gate it after fixing.
+
+==================================================
+PART 3 — PROVE RESPONSE BODY IN THE COMPONENT, NOT JUST NETWORK LOGS
+==================================================
+
+In the actual component render path, log once per tab change:
+
+{
+  selectedTabKind,
+  selectedTabId,
+  selectedEarningsSymbolsCount,
+  selectedEarningsSymbolsFirst20,
+  queryKey,
+  isLoading,
+  isFetching,
+  responseTopLevelKeys,
+  rawEventsLength,
+  normalizedEventsLength,
+  firstRawEvent,
+  firstNormalizedEvent
+}
+
+Do not rely on Express logs saying POST 200.
+
+Need the actual React query data object used by the render.
+
+==================================================
+PART 4 — FIX BASED ON THE ACTUAL FAILURE
+==================================================
+
+Case A — symbols = 0:
+Fix selectedEarningsSymbols source.
+
+For normal watchlists, do NOT use sortedTickers if it is empty at render time.
+Use the active watchlist membership source that is actually loaded for the selected activeId.
+
+Acceptable sources:
+- watchlist?.tickers if populated
+- watchlist?.csv_data mapped to ticker if that is actual membership
+- cached same-watchlist response
+- active watchlist metadata only if it includes tickers
+
+For Favorites:
+use Array.from(favoritesSet).
+
+Do not run the query with [] and then render “No upcoming earnings” while the selected watchlist is still loading.
+
+Case B — rawEvents > 0 but normalizedEvents = 0:
+Fix normalization.
+
+Support all observed event shapes:
+
+ticker:
+ev.ticker ?? ev.symbol
+
+date:
+ev.next_date ?? ev.earnings_date_fmt ?? ev.earnings_date ?? ev.date_raw ?? ev.date
+
+company:
+ev.company ?? ev.company_name ?? ev.name
+
+eps estimate:
+ev.est_eps ?? ev.eps_estimate ?? ev.epsEstimated ?? ev.eps
+
+revenue estimate:
+ev.revenue_estimated ?? ev.revenue_estimate ?? ev.revenueEstimated ?? ev.revenue
+
+Case C — normalizedEvents > 0 but UI still shows “No upcoming earnings”:
+Fix render guard ordering.
+
+Correct order:
+
+1. If selected symbols are still loading:
+   show "Loading upcoming earnings…"
+
+2. Else if selected symbols are truly empty:
+   show "No tickers in this watchlist."
+
+3. Else if query is loading:
+   show "Loading upcoming earnings…"
+
+4. Else if normalizedEvents.length > 0:
+   render events
+
+5. Else:
+   show "No upcoming earnings for this watchlist."
+
+The event rendering branch must come before final empty state.
+
+Case D — two different Upcoming Earnings sections exist:
+Remove or disable the stale old section.
+Make the visible section use the new query data.
+
+Case E — query cache has stale empty result:
+Make query key include:
+- selectedTabKind
+- selectedTabId
+- selectedEarningsSymbols.join(",")
+
+Also ensure empty-symbol query never runs.
+
+Case F — CSS/layout invisibility:
+Render a plain visible list first to prove data:
+- ticker
+- date
+- eps
+Then restyle after visible.
+
+==================================================
+PART 5 — RENDER EVENTS EVEN WITH PARTIAL DATA
+==================================================
+
+If an event has a ticker but missing date, still render it.
+
+Example card/chip minimum:
+
+Ticker: CRWD
+Date: Date unavailable
+
+Do not hide an event because logo, importance, EPS, revenue, or date is missing.
+
+Only do not render if ticker/symbol is missing.
+
+==================================================
+PART 6 — DO NOT BREAK FAVORITES
+==================================================
+
+For Favorites:
+
+- request body must contain favorite symbols
+- if backend returns zero events, then “No upcoming earnings for this watchlist” is acceptable
+- if backend returns events, they must render
+
+Do not claim Favorites is broken if backend response is truly zero.
+
+But report the actual response length and first symbols.
+
+==================================================
+PART 7 — HARD UI VALIDATION REQUIRED
+==================================================
+
+Validate in the actual authenticated running app.
+
+Primary:
+
+1. Select Primary.
+2. Confirm the visible debug line shows:
+   symbols > 0
+   rawEvents > 0
+   normalizedEvents > 0
+3. Confirm actual earnings chips/cards are visible.
+4. Confirm the section does NOT show “No upcoming earnings” when normalizedEvents > 0.
+
+Strong Bases:
+
+1. Select Strong Bases.
+2. Confirm visible debug line shows actual counts.
+3. If response has events, confirm visible cards.
+
+Favorites:
+
+1. Select Favorites.
+2. Confirm visible debug line shows symbols = Favorites count.
+3. Confirm rawEvents count.
+4. If rawEvents > 0, cards render.
+5. If rawEvents = 0, empty state is acceptable.
+
+Then remove or dev-gate the visible debug line.
+
+==================================================
+PART 8 — SCREENSHOT / DOM PROOF
+==================================================
+
+Final report must include proof from the actual UI, not just logs.
+
+Report:
+
+Primary:
+- selected symbols count
+- rawEvents count
+- normalizedEvents count
+- rendered card count
+- first 5 rendered tickers/dates
+
+Strong Bases:
+- selected symbols count
+- rawEvents count
+- normalizedEvents count
+- rendered card count
+- first 5 rendered tickers/dates
+
+Favorites:
+- selected symbols count
+- rawEvents count
+- normalizedEvents count
+- rendered card count
+- first 5 rendered tickers/dates, or confirm backend returned zero
+
+Do not say “YES” unless rendered card count is actually >0 when events exist.
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+Return:
+
+WATCHLIST UPCOMING EARNINGS ACTUAL UI FIX REPORT
+
+ACTUAL RENDERED SECTION:
+[file/line/component]
+
+ROOT CAUSE:
+[the exact branch/guard/source/shape issue]
+
+FILES CHANGED:
+[list]
+
+DEBUG COUNTS BEFORE FIX:
+[table]
+
+FIX APPLIED:
+[summary]
+
+UI VALIDATION AFTER FIX:
+[table]
+
+DEBUG CLEANUP:
+[removed/dev-gated]
+
+End exactly:
+
+UPCOMING EARNINGS ACTUAL UI VERDICT
+
+PRIMARY_SYMBOLS_COUNT_GT_ZERO:
+[YES/NO]
+
+PRIMARY_RAW_EVENTS_GT_ZERO:
+[YES/NO]
+
+PRIMARY_NORMALIZED_EVENTS_GT_ZERO:
+[YES/NO]
+
+PRIMARY_RENDERED_CARDS_GT_ZERO:
+[YES/NO]
+
+PRIMARY_NO_FALSE_EMPTY_STATE:
+[YES/NO]
+
+STRONG_BASES_RENDERED_IF_EVENTS_EXIST:
+[YES/NO]
+
+FAVORITES_SYMBOLS_COUNT_MATCHES_FAVORITES:
+[YES/NO]
+
+FAVORITES_RENDERED_IF_EVENTS_EXIST:
+[YES/NO/NO_EVENTS_RETURNED]
+
+VISIBLE_UI_PROOF_USED:
+[YES/NO]
+
+OLD_STALE_EARNINGS_SECTION_DISABLED:
+[YES/NO/NOT_APPLICABLE]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

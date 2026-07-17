@@ -3252,40 +3252,6 @@ export default function WatchlistPage() {
     )];
   }, [isFavoritesTab, favoritesSet, sortedTickers]);
 
-  /* ── NEW: earnings scoped to currently-visible symbols ──────────────
-   * Replaces the old global GET /api/watchlist/earnings for the section.
-   * Query key includes tab identity + exact symbols so each tab gets its
-   * own cache slot — no stale Strong Bases data leaks into Primary.    */
-  const {
-    data: earningsBySymbolsResp,
-    isLoading: earningsBySymbolsLoading,
-    isError: earningsBySymbolsError,
-  } = useQuery<{
-    events?: any[];
-    earnings?: any[];   // backend may return either key — normalized at render
-    symbols_requested?: string[];
-    missing_symbols?: string[];
-    source?: string;
-    stale?: boolean;
-    cache_status?: string;
-  }>({
-    queryKey: ['watchlist-earnings-by-symbols', selectedTabKind, selectedTabId, selectedEarningsSymbols.join(',')],
-    queryFn: async () => {
-      const r = await fetch('/api/watchlist/earnings/by-symbols', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: selectedEarningsSymbols }),
-      });
-      if (!r.ok) throw new Error(`earnings/by-symbols: ${r.status}`);
-      const text = await r.text();
-      try { return JSON.parse(text); } catch {
-        throw new Error(`earnings/by-symbols: non-JSON response`);
-      }
-    },
-    enabled: selectedEarningsSymbols.length > 0,
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -3796,11 +3762,10 @@ export default function WatchlistPage() {
   };
 
   /* ── upcoming earnings section ──────────────────────────────────────
-   * Uses the scoped POST /api/watchlist/earnings/by-symbols query.
-   * Never reads old earningsResp/global earnings here.
-   * Response shape normalized: backend may return `events` or `earnings`. */
+   * Uses the global GET /api/watchlist/earnings (earningsResp) and filters
+   * client-side by selectedEarningsSymbols for the current tab/favorites. */
   const renderEarningsSection = () => {
-    // Normalize event fields — handles both old (next_date/est_eps) and new (earnings_date/eps_estimate) shapes
+    // Normalize event fields — handles both shape variants from the backend
     function normalizeEarningsEvent(ev: any) {
       return {
         ticker: String(ev.ticker ?? ev.symbol ?? '').toUpperCase(),
@@ -3818,13 +3783,12 @@ export default function WatchlistPage() {
       };
     }
 
-    // Normalize: backend may return { events: [...] } or { earnings: [...] }
-    const rawEvents: any[] =
-      earningsBySymbolsResp?.events
-      ?? earningsBySymbolsResp?.earnings
-      ?? (earningsBySymbolsResp as any)?.data?.events
-      ?? (earningsBySymbolsResp as any)?.data?.earnings
-      ?? [];
+    // Filter global earnings by the symbols visible in the current tab
+    const symSet = new Set(selectedEarningsSymbols.map(s => s.toUpperCase()));
+    const allEarnings: any[] = earningsResp?.earnings ?? [];
+    const rawEvents = selectedEarningsSymbols.length > 0
+      ? allEarnings.filter(e => symSet.has((e.ticker ?? e.symbol ?? '').toUpperCase()))
+      : allEarnings;
     const events = rawEvents.map(normalizeEarningsEvent);
 
     // ── State 1: symbols still resolving (watchlist not yet loaded for this tab)
@@ -3847,11 +3811,22 @@ export default function WatchlistPage() {
       );
     }
 
-    // ── State 3: query in flight — show nothing (avoids flash of "no earnings")
-    if (earningsBySymbolsLoading && events.length === 0) return null;
+    // ── State 3: query in flight — show spinner
+    if (earningsLoading && events.length === 0) {
+      return (
+        <div style={{ padding: '0 20px 4px' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
+              <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // ── State 4: query complete but no upcoming earnings for these symbols
-    if (!earningsBySymbolsLoading && events.length === 0) {
+    if (!earningsLoading && events.length === 0) {
       return (
         <div style={{ padding: '0 20px 4px' }}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -3880,12 +3855,12 @@ export default function WatchlistPage() {
             <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
               UPCOMING EARNINGS
             </span>
-            {earningsBySymbolsLoading ? (
+            {earningsLoading ? (
               <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
             ) : (
               <span style={{ fontSize: 9, color: C.dim }}>({events.length} in watchlist)</span>
             )}
-            {earningsBySymbolsError && (
+            {earningsIsError && (
               <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
             )}
           </div>
