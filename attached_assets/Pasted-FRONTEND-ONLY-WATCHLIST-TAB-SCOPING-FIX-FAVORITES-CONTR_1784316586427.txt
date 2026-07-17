@@ -1,0 +1,331 @@
+FRONTEND ONLY — WATCHLIST TAB SCOPING FIX: FAVORITES CONTROLS + EARNINGS SELECTED WATCHLIST ALIGNMENT
+
+Frontend repo only.
+
+Do not touch backend unless the audit proves backend membership was actually mutated.
+Do not change add ticker hydration.
+Do not change theme dropdown.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not rewrite Watchlist.
+Do not work on Live News, Confluence, or bottom sections yet.
+
+Current issues:
+
+1. Random tickers appear to have been added to custom watchlist “Strong Bases.”
+   Need to determine whether this is:
+   - real backend membership pollution, or
+   - frontend rendering/filtering leakage from Favorites/fallback rows.
+
+2. Favorites tab now shows rows, but Favorites does not have the same Watchlist screener controls:
+   - Technical / Fundamental toggle is missing
+   - Filters button is missing
+
+Favorites should have the exact same screener controls as Primary and custom watchlists.
+
+3. Upcoming Earnings section below the Watchlist screener is showing earnings for the custom watchlist “Strong Bases” no matter which watchlist is currently selected.
+
+Upcoming Earnings must use the tickers from the currently viewed watchlist/tab.
+
+Do not fix Live News, Confluence, or bottom sections yet. Those are next.
+
+==================================================
+PART 1 — AUDIT WHETHER STRONG BASES WAS ACTUALLY MUTATED
+==================================================
+
+Before editing, inspect the current frontend state and backend response.
+
+For watchlist “Strong Bases,” report:
+
+- watchlist id
+- backend ticker symbols returned for Strong Bases
+- frontend row symbols rendered for Strong Bases
+- any symbols rendered in frontend but not returned by backend
+- any symbols returned by backend but not expected
+- whether recently tested symbols like CRWD, BCBP, PANW, ZS, DDOG were actually added to Strong Bases
+- whether Favorites fallback/stub rows are leaking into Strong Bases render data
+
+Important:
+
+Do not remove any tickers yet.
+
+First determine:
+
+A. Real backend membership pollution
+or
+B. Frontend display-only leakage
+
+If A:
+Report exact symbols that were actually inserted into Strong Bases and how they got there.
+
+If B:
+Fix frontend filtering so Strong Bases renders only Strong Bases members.
+
+Likely bug to inspect:
+The Favorites fix changed closeWatchTickers to iterate favoritesSet and create stub rows. Make sure those stub rows are only used when the selected tab is Favorites, never merged into baseMergedTickers or the active custom watchlist rows.
+
+==================================================
+PART 2 — FIX WATCHLIST ROW SOURCE SCOPING
+==================================================
+
+Create a clear separation between:
+
+- activeWatchlistRows
+- favoriteRows
+- pendingOptimisticRows
+- displayedRows
+
+Rules:
+
+If selected tab is Primary/custom watchlist:
+displayedRows = rows that belong to that selected watchlist + pending optimistic rows for that same watchlist only
+
+If selected tab is Favorites:
+displayedRows = favoriteRows
+
+Do not let favoriteRows leak into custom watchlists.
+
+Do not let pending optimistic rows from one watchlist leak into another watchlist.
+
+Pending optimistic rows must be scoped by watchlist_id.
+
+If an optimistic row was added to Strong Bases, it should not appear in Primary or Favorites unless also favorited.
+
+If an optimistic row was added to Primary, it should not appear in Strong Bases.
+
+==================================================
+PART 3 — FAVORITES MUST HAVE SAME SCREENER CONTROLS
+==================================================
+
+Favorites tab should expose the same controls as Primary/custom watchlists:
+
+- Technical / Fundamental toggle
+- Filters button
+- existing sorting controls
+- existing table layout
+- existing column behavior
+- Score Lens if Confluence view uses it
+
+Do not treat Favorites as a separate stripped-down table.
+
+Favorites should render through the same Watchlist screener/table component path as other watchlists, with only the row source changed.
+
+Acceptance:
+
+When user clicks Favorites:
+- Technical/Fundamental toggle is visible
+- Filters button is visible
+- Technical view works
+- Fundamental view works
+- rows match Favorites count
+
+==================================================
+PART 4 — UPCOMING EARNINGS MUST USE CURRENTLY VIEWED WATCHLIST
+==================================================
+
+Audit current Upcoming Earnings source.
+
+Find:
+
+- which ticker list it uses
+- whether it is hardcoded to active custom watchlist
+- whether it uses Strong Bases rows accidentally
+- whether it uses stale activeId from prior tab
+- whether it ignores Favorites tab
+
+Fix:
+
+Upcoming Earnings should use selectedDisplayedTickerSymbols from the currently viewed tab.
+
+Rules:
+
+If viewing Primary:
+earnings tickers = Primary watchlist tickers
+
+If viewing Strong Bases:
+earnings tickers = Strong Bases tickers
+
+If viewing Favorites:
+earnings tickers = Favorites tickers
+
+If viewing any other custom watchlist:
+earnings tickers = that watchlist’s tickers
+
+It should not always use Strong Bases.
+
+If selected watchlist has zero tickers:
+show calm empty state:
+“No upcoming earnings for this watchlist.”
+
+Do not change the Earnings card design unless necessary.
+
+==================================================
+PART 5 — CREATE ONE SELECTED WATCHLIST SYMBOL SOURCE
+==================================================
+
+Create or standardize a helper/derived value:
+
+selectedWatchlistSymbols
+
+It should be the canonical list of symbols for the tab currently being viewed.
+
+Use it for:
+
+- Watchlist screener rows
+- Upcoming Earnings section
+
+Do not yet use it for Live News, Confluence, or bottom sections in this pass, but leave a comment/TODO that those sections should migrate next.
+
+Potential shape:
+
+const selectedWatchlistSymbols =
+  isFavoritesTab
+    ? favoriteSymbols
+    : activeWatchlistTickerSymbols;
+
+const selectedDisplayRows =
+  isFavoritesTab
+    ? favoriteRows
+    : activeWatchlistRowsWithPendingForActiveWatchlistOnly;
+
+Then Upcoming Earnings uses selectedWatchlistSymbols.
+
+==================================================
+PART 6 — CLEAN UP ACCIDENTAL TEST TICKERS ONLY IF CONFIRMED
+==================================================
+
+If audit proves Replit/test code actually added random validation tickers to Strong Bases backend membership:
+
+- list exact symbols
+- ask for approval before deleting user data
+
+Do not auto-delete user watchlist members without confirmation.
+
+But if the issue is only frontend display leakage:
+- fix rendering
+- no deletion needed
+
+Final report should clearly say which one it was.
+
+==================================================
+PART 7 — VALIDATION
+==================================================
+
+Validate in running authenticated app.
+
+Strong Bases validation:
+
+1. Select Strong Bases.
+2. Confirm only true Strong Bases backend members render.
+3. Confirm Favorites-only symbols do not appear.
+4. Confirm pending rows from other watchlists do not appear.
+
+Favorites validation:
+
+1. Select Favorites.
+2. Confirm Favorites count equals rendered row count.
+3. Confirm Technical/Fundamental toggle appears.
+4. Confirm Filters button appears.
+5. Confirm Technical toggle works.
+6. Confirm Fundamental toggle works.
+
+Upcoming Earnings validation:
+
+1. Select Primary.
+2. Upcoming Earnings shows Primary tickers only.
+3. Select Strong Bases.
+4. Upcoming Earnings shows Strong Bases tickers only.
+5. Select Favorites.
+6. Upcoming Earnings shows Favorites tickers only.
+7. Switch between tabs repeatedly.
+8. Earnings section follows selected tab every time.
+
+Regression:
+
+- add ticker still works
+- theme dropdown still works
+- hydration badges still work
+- Watchlist sorting still works
+- Score Lens still works
+- ticker popup still works
+
+==================================================
+PART 8 — FINAL REPORT
+==================================================
+
+Return:
+
+WATCHLIST TAB SCOPING + EARNINGS ALIGNMENT REPORT
+
+STRONG BASES RANDOM TICKERS ROOT CAUSE:
+[backend membership pollution OR frontend display leakage]
+
+STRONG BASES AUDIT:
+[backend symbols vs frontend rendered symbols]
+
+ROW SOURCE SCOPING FIX:
+[summary]
+
+FAVORITES CONTROLS FIX:
+[summary]
+
+UPCOMING EARNINGS SOURCE FIX:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+WATCHLIST TAB SCOPING VERDICT
+
+STRONG_BASES_BACKEND_MUTATED:
+[YES/NO]
+
+STRONG_BASES_RENDERING_ONLY_TRUE_MEMBERS:
+[YES/NO]
+
+FAVORITES_COUNT_ROWS_MATCH:
+[YES/NO]
+
+FAVORITES_HAS_TECHNICAL_FUNDAMENTAL_TOGGLE:
+[YES/NO]
+
+FAVORITES_HAS_FILTERS_BUTTON:
+[YES/NO]
+
+FAVORITES_TECHNICAL_VIEW_WORKS:
+[YES/NO]
+
+FAVORITES_FUNDAMENTAL_VIEW_WORKS:
+[YES/NO]
+
+UPCOMING_EARNINGS_USES_SELECTED_WATCHLIST:
+[YES/NO]
+
+PRIMARY_EARNINGS_CORRECT:
+[YES/NO]
+
+CUSTOM_WATCHLIST_EARNINGS_CORRECT:
+[YES/NO]
+
+FAVORITES_EARNINGS_CORRECT:
+[YES/NO]
+
+ADD_TICKER_UNBROKEN:
+[YES/NO]
+
+THEME_DROPDOWN_UNBROKEN:
+[YES/NO]
+
+HYDRATION_STATUS_UNBROKEN:
+[YES/NO]
+
+SCORE_LENS_UNBROKEN:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

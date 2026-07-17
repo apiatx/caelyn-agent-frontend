@@ -1855,7 +1855,7 @@ export default function WatchlistPage() {
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
   const [expandedTickers, setExpandedTickers] = useState<Set<string>>(new Set());
   /* ── Hydration tracking for newly-added tickers ────────────────── */
-  const [pendingOptRows, setPendingOptRows] = useState<Map<string, { ticker: string; company?: string }>>(new Map());
+  const [pendingOptRows, setPendingOptRows] = useState<Map<string, { ticker: string; company?: string; wid: string }>>(new Map());
   const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string; options: string }>>(new Map());
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
@@ -2450,7 +2450,7 @@ export default function WatchlistPage() {
       const realSet = new Set(((qc.getQueryData<any>(['/api/watchlist', activeId])?.tickers) ?? []).map((t: string) => t.toUpperCase()));
       setPendingOptRows(prev => {
         const next = new Map(prev);
-        for (const t of tickers) { const sym = t.toUpperCase(); if (!realSet.has(sym)) next.set(sym, { ticker: sym }); }
+        for (const t of tickers) { const sym = t.toUpperCase(); if (!realSet.has(sym)) next.set(sym, { ticker: sym, wid: activeId }); }
         return next;
       });
     },
@@ -2510,9 +2510,9 @@ export default function WatchlistPage() {
       if (!r.ok) throw new Error(data.error || data.detail || `Error ${r.status}`);
       return data;
     },
-    onMutate: ({ security }) => {
+    onMutate: ({ wid, security }) => {
       const sym = security.canonical_ticker.toUpperCase();
-      setPendingOptRows(prev => new Map(prev).set(sym, { ticker: sym, company: security.company_name ?? undefined }));
+      setPendingOptRows(prev => new Map(prev).set(sym, { ticker: sym, company: security.company_name ?? undefined, wid }));
     },
     onSuccess: (data, { wid, security }) => {
       const isDup = data.duplicate === true;
@@ -2750,7 +2750,7 @@ export default function WatchlistPage() {
         })
       : allStocks.map(s => ({ ...s, _pending: false }))),
     ...[...pendingOptRows.values()]
-      .filter(r => !allTickerSymbols.some((t: string) => t.toUpperCase() === r.ticker.toUpperCase()))
+      .filter(r => r.wid === activeId && !allTickerSymbols.some((t: string) => t.toUpperCase() === r.ticker.toUpperCase()))
       .map(r => ({ ticker: r.ticker, company: r.company, _pending: true, _optimistic: true })),
   ];
 
@@ -3191,6 +3191,14 @@ export default function WatchlistPage() {
     // Return one entry per global favourite — full row if available, stub if not
     return [...favoritesSet].map(sym => rowMap.get(sym) ?? { ticker: sym, _pending: true });
   }, [sortedTickers, favoritesSet]);
+
+  /* ── Canonical ticker symbol list for the currently-viewed tab ─────
+   * Used by Upcoming Earnings and other sections that must scope to
+   * whichever watchlist/tab the user is currently viewing.             */
+  const isFavoritesTab = innerView === 'close-watch';
+  const selectedWatchlistSymbols: string[] = isFavoritesTab
+    ? [...favoritesSet]
+    : (allTickerSymbols as string[]);
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -3702,7 +3710,12 @@ export default function WatchlistPage() {
 
   /* ── upcoming earnings section ──────────────────────────────────── */
   const renderEarningsSection = () => {
-    const events = earningsResp?.earnings ?? [];
+    const allEvents = earningsResp?.earnings ?? [];
+    // Filter to tickers in the currently-viewed watchlist/tab only
+    const selectedSet = new Set(selectedWatchlistSymbols.map(s => s.toUpperCase()));
+    const events = selectedSet.size > 0
+      ? allEvents.filter((ev: any) => ev.ticker && selectedSet.has(String(ev.ticker).toUpperCase()))
+      : allEvents;
     if (!events.length && !earningsLoading) return null;
     return (
       <div style={{ padding: '0 20px 4px' }}>
@@ -3822,7 +3835,7 @@ export default function WatchlistPage() {
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? sortedTickers;
     const tableTitle = opts?.title ?? 'SCREENER';
-    const isMainScreener = tableTitle === 'SCREENER';
+    const isMainScreener = tableTitle === 'SCREENER' || tableTitle === 'FAVORITES';
     // Apply hide-foreign filter
     const visibleRows = hideForeignTickers
       ? rows.filter(r => !String((r as any).ticker || (r as any).symbol || '').includes(':'))
@@ -4003,7 +4016,7 @@ export default function WatchlistPage() {
           <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'FAVORITES' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
             {tableTitle}
           </span>
-          {tableTitle !== 'FAVORITES' && (
+          {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
               {(['technical', 'fundamental'] as const).map(mode => (
                 <button
