@@ -1854,6 +1854,11 @@ export default function WatchlistPage() {
   const [innerView, setInnerView] = useState<'tickers' | 'close-watch'>('tickers');
   const [favoritesSet, setFavoritesSet] = useState<Set<string>>(new Set());
   const [expandedTickers, setExpandedTickers] = useState<Set<string>>(new Set());
+  /* ── Hydration tracking for newly-added tickers ────────────────── */
+  const [pendingOptRows, setPendingOptRows] = useState<Map<string, { ticker: string; company?: string }>>(new Map());
+  const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string }>>(new Map());
+  const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
   const toggleExpandedTicker = (sym: string) => setExpandedTickers(prev => {
     const next = new Set(prev);
     if (next.has(sym)) next.delete(sym); else next.add(sym);
@@ -2119,33 +2124,43 @@ export default function WatchlistPage() {
   const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
 
   const assignPrimaryThemeMutation = useMutation({
-    mutationFn: async ({ ticker, themeId }: { ticker: string; themeId: string }) => {
-      const r = await fetch('/api/themes/admin/assign-primary-theme', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${getThemeJwt()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker, theme_id: themeId }),
+    mutationFn: async ({ ticker, themeId: _themeId, displayName }: { ticker: string; themeId: string; displayName: string }) => {
+      if (!activeId) throw new Error('No active watchlist');
+      const r = await fetch(`/api/watchlist/${activeId}/tickers/${encodeURIComponent(ticker)}/theme`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: displayName }),
       });
       if (!r.ok) {
         const e = await r.json().catch(() => ({} as any));
         const detail = e.detail ?? e.error ?? '';
-        if (r.status === 401) throw new Error('Your admin session is missing or expired. Sign in again.');
-        if (r.status === 403) throw new Error('Your account is not authorized to assign Themes.');
-        if (r.status === 404) throw new Error(detail || 'Theme not found.');
-        if (r.status === 400) throw new Error(detail || 'Invalid Theme assignment request.');
-        throw new Error(detail || `Theme assignment failed (${r.status})`);
+        throw new Error(detail || `Theme update failed (${r.status})`);
       }
       return r.json();
     },
-    onMutate: ({ ticker }) => { setThemeAssignPendingTicker(ticker); setThemeAssignFeedback(null); },
+    onMutate: ({ ticker, displayName }) => {
+      setThemeAssignPendingTicker(ticker);
+      setThemeAssignFeedback(null);
+      const sym = ticker.toUpperCase();
+      const prev = localThemeOverrides.get(sym);
+      setLocalThemeOverrides(m => new Map(m).set(sym, displayName));
+      return { prevTheme: prev };
+    },
     onSuccess: (_, { ticker }) => {
       setThemeAssignFeedback({ ticker, type: 'ok', msg: 'Theme updated' });
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId, 'performance/theme'] });
-      qc.invalidateQueries({ queryKey: ['themes-unified'] });
       setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 4000);
+      setTimeout(() => setLocalThemeOverrides(m => { const n = new Map(m); n.delete(ticker.toUpperCase()); return n; }), 8000);
     },
-    onError: (e: any, { ticker }) => {
-      setThemeAssignFeedback({ ticker, type: 'err', msg: e?.message || 'Theme assignment failed' });
+    onError: (e: any, { ticker }, context: any) => {
+      setThemeAssignFeedback({ ticker, type: 'err', msg: e?.message || 'Could not update theme. Try again.' });
+      const sym = ticker.toUpperCase();
+      setLocalThemeOverrides(m => {
+        const n = new Map(m);
+        if (context?.prevTheme != null) n.set(sym, context.prevTheme); else n.delete(sym);
+        return n;
+      });
       setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 6000);
     },
     onSettled: () => setThemeAssignPendingTicker(null),
@@ -2351,35 +2366,90 @@ export default function WatchlistPage() {
   });
 
   /* ── add tickers to active watchlist ────────────────────────────── */
+  /* ── startHydrationPoll — polls hydration status every 5 s, up to 2 min ── */
+  const startHydrationPoll = useCallback((wid: string, ticker: string) => {
+    const sym = ticker.toUpperCase();
+    const startedAt = Date.now();
+    const MAX_MS = 2 * 60_000;
+    const existing = hydrationIntervals.current.get(sym);
+    if (existing) clearInterval(existing);
+    const id = setInterval(async () => {
+      if (Date.now() - startedAt > MAX_MS) {
+        clearInterval(id);
+        hydrationIntervals.current.delete(sym);
+        return;
+      }
+      try {
+        const resp = await fetch(`/api/watchlist/${wid}/tickers/${encodeURIComponent(sym)}/hydration-status`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const hs = data?.hydration_status;
+        if (!hs) return;
+        const next = { quote: String(hs.quote ?? 'unknown'), technical: String(hs.technical ?? 'unknown'), fundamentals: String(hs.fundamentals ?? 'unknown') };
+        setHydrationStatus(prev => {
+          const p = prev.get(sym);
+          if (p && p.quote === next.quote && p.technical === next.technical && p.fundamentals === next.fundamentals) return prev;
+          qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
+          return new Map(prev).set(sym, next);
+        });
+        const isDone = (s: string) => s === 'done' || s === 'error';
+        if (isDone(next.quote) && isDone(next.technical) && isDone(next.fundamentals)) {
+          clearInterval(id);
+          hydrationIntervals.current.delete(sym);
+          qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
+          setTimeout(() => setHydrationStatus(prev => { const m = new Map(prev); m.delete(sym); return m; }), 4000);
+        }
+      } catch { /* swallow */ }
+    }, 5_000);
+    hydrationIntervals.current.set(sym, id);
+  }, [qc]);
+
   const addTickersMut = useMutation({
     mutationFn: async (tickers: string[]) => {
       if (!activeId) throw new Error('No active watchlist');
       const r = await fetch(`/api/watchlist/${activeId}/tickers`, {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tickers }),
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error || `Error ${r.status}`);
+      if (!r.ok) throw new Error(data.error || data.detail || `Error ${r.status}`);
       return data;
+    },
+    onMutate: (tickers) => {
+      if (!activeId) return;
+      const realSet = new Set(((qc.getQueryData<any>(['/api/watchlist', activeId])?.tickers) ?? []).map((t: string) => t.toUpperCase()));
+      setPendingOptRows(prev => {
+        const next = new Map(prev);
+        for (const t of tickers) { const sym = t.toUpperCase(); if (!realSet.has(sym)) next.set(sym, { ticker: sym }); }
+        return next;
+      });
     },
     onSuccess: (data, variables) => {
       setAddTickerInput('');
-      setAddTickerStatus(data.added === 0 ? 'duplicate' : 'success');
-      setTimeout(() => setAddTickerStatus(null), 2000);
+      const results: any[] = Array.isArray(data.results) ? data.results : [];
+      const addedSyms = results.length > 0
+        ? results.filter((r: any) => !r.duplicate).map((r: any) => String(r.ticker || r.symbol || '').toUpperCase()).filter(Boolean)
+        : variables.map(t => t.toUpperCase());
+      const isDup = addedSyms.length === 0;
+      setAddTickerStatus(isDup ? 'duplicate' : 'success');
+      setAddStatusMsg(isDup ? 'Already in Watchlist' : `Added ${addedSyms.length} ticker${addedSyms.length !== 1 ? 's' : ''} — priority hydration started`);
+      setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
       qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
-      // If adding from Close Watch tab, also star each newly added ticker so it appears there
-      if (innerView === 'close-watch' && data.added > 0) {
+      if (innerView === 'close-watch' && addedSyms.length > 0) {
         for (const t of variables) toggleFavorite(t);
       }
-      // Invalidate Calendar Earnings for watchlist scope so next visit refetches
       qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
       if (process.env.NODE_ENV !== 'production') console.log('[earnings-dynamic-sync]', { mutationType: 'watchlist-add-tickers', invalidatedKeys: ['earnings+watchlist'] });
+      if (activeId && addedSyms.length > 0) {
+        for (const sym of addedSyms) startHydrationPoll(activeId, sym);
+      }
     },
-    onError: () => {
+    onError: (_, tickers) => {
       setAddTickerStatus('error');
-      setTimeout(() => setAddTickerStatus(null), 3000);
+      setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
+      setPendingOptRows(prev => { const next = new Map(prev); for (const t of tickers) next.delete(t.toUpperCase()); return next; });
     },
   });
 
@@ -2411,8 +2481,13 @@ export default function WatchlistPage() {
       if (!r.ok) throw new Error(data.error || data.detail || `Error ${r.status}`);
       return data;
     },
+    onMutate: ({ security }) => {
+      const sym = security.canonical_ticker.toUpperCase();
+      setPendingOptRows(prev => new Map(prev).set(sym, { ticker: sym, company: security.company_name ?? undefined }));
+    },
     onSuccess: (data, { wid, security }) => {
       const isDup = data.duplicate === true;
+      const sym = security.canonical_ticker.toUpperCase();
       if (isDup) {
         const existing = data.existing_ticker || security.canonical_ticker;
         const msg = data.conflict_type === 'exchange_family_alias'
@@ -2421,14 +2496,16 @@ export default function WatchlistPage() {
         setAddTickerStatus('duplicate');
         setAddStatusMsg(msg);
         setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
+        setPendingOptRows(prev => { const m = new Map(prev); m.delete(sym); return m; });
       } else {
         setAddTickerStatus('success');
-        setAddStatusMsg(`Added ${security.canonical_ticker}`);
-        setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 2500);
+        setAddStatusMsg(`Added ${security.canonical_ticker} — hydrating…`);
+        setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
         setAddTickerInput('');
         setSelectedSecurity(null);
         setSuggestionsOpen(false);
         setDebouncedSearch('');
+        startHydrationPoll(wid, security.canonical_ticker);
       }
       qc.invalidateQueries({ queryKey: ['/api/watchlist', wid] });
       qc.invalidateQueries({ queryKey: ['/api/watchlist/list'] });
@@ -2436,7 +2513,9 @@ export default function WatchlistPage() {
       qc.invalidateQueries({ queryKey: ['watchlist-options-signals', wid] });
       qc.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey.includes('earnings') && q.queryKey.includes('watchlist') });
     },
-    onError: () => {
+    onError: (_, { security }) => {
+      const sym = security.canonical_ticker.toUpperCase();
+      setPendingOptRows(prev => { const m = new Map(prev); m.delete(sym); return m; });
       setAddTickerStatus('error');
       setAddStatusMsg('Add failed. Try again.');
       setTimeout(() => { setAddTickerStatus(null); setAddStatusMsg(''); }, 3000);
@@ -2591,6 +2670,33 @@ export default function WatchlistPage() {
       refreshMut.mutate();
     }
   }, [activeId, analysis]);
+
+  /* ── Clear hydration/pending state when active watchlist changes ─── */
+  useEffect(() => {
+    setPendingOptRows(new Map());
+    setHydrationStatus(new Map());
+    setLocalThemeOverrides(new Map());
+    for (const id of hydrationIntervals.current.values()) clearInterval(id);
+    hydrationIntervals.current.clear();
+  }, [activeId]);
+
+  /* ── Remove pending rows that appear in the real refetched list ──── */
+  useEffect(() => {
+    if (pendingOptRows.size === 0) return;
+    const tickers: string[] = (watchlist?.tickers ?? []) as string[];
+    const realSet = new Set(tickers.map((t: string) => t.toUpperCase()));
+    setPendingOptRows(prev => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const k of [...next.keys()]) { if (realSet.has(k)) { next.delete(k); changed = true; } }
+      return changed ? next : prev;
+    });
+  }, [watchlist]);
+
+  /* ── Cleanup all polling intervals on unmount ────────────────────── */
+  useEffect(() => {
+    return () => { for (const id of hydrationIntervals.current.values()) clearInterval(id); };
+  }, []);
   const hasAnalysis = newFmt
     ? (analysis?.sections?.length > 0)
     : (analysis && (analysis.top_buys?.length || analysis.most_undervalued?.length || analysis.best_catalysts?.length || analysis.hidden_gems?.length || analysis.most_revolutionary?.length || analysis.right_sector?.length));
@@ -2606,13 +2712,18 @@ export default function WatchlistPage() {
   /* ── merged ticker list: all CSV tickers + analysis data where available ── */
   const allTickerSymbols: string[] = watchlist?.tickers || [];
   const analyzedMap = new Map<string, any>(allStocks.map(s => [s.ticker?.toUpperCase(), s]));
-  const baseMergedTickers = allTickerSymbols.length > 0
-    ? allTickerSymbols.map(sym => {
-        const key = sym.toUpperCase();
-        const analyzed = analyzedMap.get(key);
-        return analyzed ? { ...analyzed, _pending: false } : { ticker: sym, _pending: true };
-      })
-    : allStocks.map(s => ({ ...s, _pending: false }));
+  const baseMergedTickers = [
+    ...(allTickerSymbols.length > 0
+      ? allTickerSymbols.map(sym => {
+          const key = sym.toUpperCase();
+          const analyzed = analyzedMap.get(key);
+          return analyzed ? { ...analyzed, _pending: false } : { ticker: sym, _pending: true };
+        })
+      : allStocks.map(s => ({ ...s, _pending: false }))),
+    ...[...pendingOptRows.values()]
+      .filter(r => !allTickerSymbols.some((t: string) => t.toUpperCase() === r.ticker.toUpperCase()))
+      .map(r => ({ ticker: r.ticker, company: r.company, _pending: true, _optimistic: true })),
+  ];
 
   /* ── realtime hydration: overlay live quote prices over analysis data ── */
   const realtimeSymbols = useMemo(() => {
@@ -4158,8 +4269,18 @@ export default function WatchlistPage() {
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
                     {stock.company || stock.name || DASH}
                   </span>
+                  {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
+                    const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
+                    const isRunning = ['running'].some(s => s === hs.quote || s === hs.technical || s === hs.fundamentals);
+                    const isActive = isRunning || ['pending'].some(s => s === hs.quote || s === hs.technical || s === hs.fundamentals);
+                    return (
+                      <span style={{ fontSize: 8, color: isActive ? C.amber : C.green, background: isActive ? `${C.amber}20` : `${C.green}20`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: C.font, flexShrink: 0 }}>
+                        {isRunning ? 'Hydrating…' : isActive ? 'Pending…' : 'Hydrated ✓'}
+                      </span>
+                    );
+                  })()}
                   {isAdmin && stock.ticker ? (() => {
-                    const currentThemeName = stock.canonical_theme_name || stock.section_title || stock.theme || null;
+                    const currentThemeName = localThemeOverrides.get((stock.ticker || '').toUpperCase()) || stock.canonical_theme_name || stock.section_title || stock.theme || null;
                     const rowThemePending = themeAssignPendingTicker === stock.ticker;
                     const rowThemeFeedback = themeAssignFeedback?.ticker === stock.ticker ? themeAssignFeedback : null;
                     return (
@@ -4193,7 +4314,7 @@ export default function WatchlistPage() {
                                 key={t.theme_id}
                                 onClick={() => {
                                   if (!stock.ticker || t.theme_id === undefined) return;
-                                  assignPrimaryThemeMutation.mutate({ ticker: stock.ticker, themeId: t.theme_id });
+                                  assignPrimaryThemeMutation.mutate({ ticker: stock.ticker, themeId: t.theme_id, displayName: t.display_name });
                                 }}
                                 style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
                               >

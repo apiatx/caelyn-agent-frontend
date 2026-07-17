@@ -5570,6 +5570,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hydration status for a recently-added ticker
+  app.get('/api/watchlist/:wid/tickers/:symbol/hydration-status', async (req, res) => {
+    const { wid, symbol } = req.params;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${encodeURIComponent(wid)}/tickers/${encodeURIComponent(symbol)}/hydration-status`, { headers: wlHdr(), signal: ctrl.signal });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: (data as any).detail || `hydration-status ${r.status}` });
+      res.json(data);
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'hydration-status error') });
+    }
+  });
+
+  // Bulk add tickers (POST — fires priority hydration for all new symbols)
+  app.post('/api/watchlist/:wid/tickers', async (req, res) => {
+    const { wid } = req.params;
+    if (['news','list','debug','upload'].includes(wid)) return res.status(400).json({ error: 'Invalid watchlist ID' });
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 20_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${encodeURIComponent(wid)}/tickers`, {
+        method: 'POST',
+        headers: { ...wlHdr() },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: (data as any).detail || `bulk-add ${r.status}` });
+      res.json(data);
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'bulk-add error') });
+    }
+  });
+
+  // PATCH theme for a specific ticker in a watchlist
+  app.patch('/api/watchlist/:wid/tickers/:symbol/theme', async (req, res) => {
+    const { wid, symbol } = req.params;
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 10_000);
+      const r = await fetch(`${WL_URL}/api/watchlist/${encodeURIComponent(wid)}/tickers/${encodeURIComponent(symbol)}/theme`, {
+        method: 'PATCH',
+        headers: { ...wlHdr() },
+        body: JSON.stringify(req.body),
+        signal: ctrl.signal,
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status).json({ error: (data as any).detail || `theme-patch ${r.status}` });
+      res.json(data);
+    } catch (e: any) {
+      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'theme-patch error') });
+    }
+  });
+
   // Get specific watchlist
   app.get('/api/watchlist/:wid', async (req, res, next) => {
     const { wid } = req.params;

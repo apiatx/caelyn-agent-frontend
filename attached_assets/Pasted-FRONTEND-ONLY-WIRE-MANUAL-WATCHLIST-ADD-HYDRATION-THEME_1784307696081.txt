@@ -1,0 +1,384 @@
+FRONTEND ONLY — WIRE MANUAL WATCHLIST ADD HYDRATION + THEME DROPDOWN
+
+Frontend repo only.
+
+Do not touch backend.
+Do not invent endpoints.
+Do not add provider calls.
+Do not rewrite Watchlist.
+Do not change Confluence scoring.
+Do not change table column logic except add/hydration/theme UX.
+Do not break Score Lens.
+Do not break ticker popup.
+
+Backend now supports:
+
+1. Single ticker add returns immediately with hydration_status.
+2. Background priority hydration starts after add.
+3. Hydration status endpoint works.
+4. Bulk add endpoint works.
+5. Theme PATCH endpoint works and persists theme override.
+6. Single-add request body uses canonical_ticker, not ticker.
+
+Goal:
+
+Make manual Watchlist add feel instant and reliable.
+
+When a user adds one ticker or multiple tickers:
+
+- row appears immediately
+- quote/technical/fundamental hydration status is visible
+- frontend refetches while hydration is pending
+- technical/fundamental fields populate as backend finishes
+- theme dropdown works and persists
+
+==================================================
+PART 1 — AUDIT CURRENT FRONTEND ADD FLOW
+==================================================
+
+Before editing, find:
+
+- single ticker add function
+- batch/multi ticker add function if present
+- add modal/form component
+- Watchlist query key(s)
+- Technical/Fundamental toggle data source
+- Theme dropdown component under Theme column
+- current request body sent to backend
+- current cache invalidation/refetch behavior after add
+
+Return file paths before edits.
+
+Important:
+
+Backend single-add body uses:
+
+{
+  "canonical_ticker": "OSS"
+}
+
+not:
+
+{
+  "ticker": "OSS"
+}
+
+Fix this if frontend currently sends the wrong field.
+
+==================================================
+PART 2 — SINGLE TICKER ADD UX
+==================================================
+
+When user adds a ticker manually:
+
+1. Normalize symbol uppercase.
+2. Immediately insert an optimistic row into the Watchlist table.
+3. Mark hydration status:
+
+hydration_status:
+{
+  quote: "pending",
+  technical: "pending",
+  fundamentals: "pending"
+}
+
+4. Call backend add endpoint using the correct body field:
+
+canonical_ticker
+
+5. Reconcile optimistic row with backend response.
+6. Invalidate/refetch Watchlist query.
+7. Start short hydration polling for that symbol.
+
+Do not wait for fundamentals/technical hydration before showing the row.
+
+No duplicate rows.
+
+If backend rejects ticker:
+- remove optimistic row or mark failed
+- show calm error toast
+
+==================================================
+PART 3 — HYDRATION STATUS DISPLAY
+==================================================
+
+For newly added / recently hydrating rows, show subtle status badges.
+
+Examples:
+
+Quote pending
+Technical running
+Fundamentals running
+
+When complete:
+- hide badge or show done briefly
+- real fields replace pending values
+
+Use backend hydration_status when present.
+
+If backend returns cache_presence, use it only for status/debug, not as table value.
+
+States:
+
+pending
+running
+done
+error
+
+Errors:
+- show subtle warning
+- do not break the row
+- allow retry if backend supports it, otherwise user can re-add/refetch
+
+==================================================
+PART 4 — SHORT POLLING AFTER ADD
+==================================================
+
+After successful add:
+
+- poll hydration status endpoint for the added symbol every 5 seconds
+- stop when quote, technical, and fundamentals are done/error
+- also stop after 2 minutes max
+- invalidate/refetch Watchlist table after each meaningful status change
+- invalidate ticker detail cache for that symbol
+
+Do not poll forever.
+
+If multiple tickers are hydrating, poll efficiently:
+- either batch status if backend supports it
+- or lightweight per-symbol polling with sensible limits
+
+==================================================
+PART 5 — BATCH / MULTI-TICKER ADD
+==================================================
+
+Wire the backend bulk add endpoint.
+
+Behavior:
+
+- user enters multiple tickers
+- normalize and dedupe client-side
+- optimistically insert all new rows immediately
+- call backend bulk add endpoint
+- reconcile success/failure per symbol
+- show hydration status for each
+- start short hydration polling for all successfully added tickers
+- no duplicate rows if ticker already exists
+
+Toast:
+
+“Added 5 tickers — priority hydration started.”
+
+==================================================
+PART 6 — THEME DROPDOWN FIX
+==================================================
+
+Fix the Theme column dropdown.
+
+Behavior:
+
+- dropdown shows allowed themes
+- selecting a theme updates row immediately optimistically
+- call backend PATCH theme endpoint confirmed by backend/OpenAPI
+- persist selected theme
+- after success:
+  - update row.theme
+  - invalidate/refetch Watchlist query
+  - invalidate ticker detail cache for symbol
+- on failure:
+  - rollback previous theme
+  - show calm error toast
+
+Important:
+
+Use the exact backend PATCH endpoint that now exists.
+
+Expected body shape is likely:
+
+{
+  "theme": "Datacenter Infra"
+}
+
+but verify against the backend route/OpenAPI/report before coding.
+
+Theme must persist after page refresh.
+
+Theme should be consistent in:
+
+- Watchlist row
+- Fundamental toggle
+- ticker popup Fundamentals tab
+- ticker popup About/metadata if displayed
+- Confluence row if theme displayed
+
+==================================================
+PART 7 — DATA REFRESH AFTER HYDRATION
+==================================================
+
+When hydration finishes:
+
+- Watchlist table should update with quote/technical/fundamental fields
+- Technical toggle should show populated fields
+- Fundamental toggle should show populated fields
+- ticker popup should use fresh data if opened
+- Confluence section should not break if confluence data is still pending
+
+Invalidate/refetch:
+
+- Watchlist query
+- ticker detail query for symbol
+- any technical/fundamental row query if separate
+- confluence table query only if it depends on the updated row payload
+
+Do not hard refresh the page.
+
+==================================================
+PART 8 — UX REQUIREMENTS
+==================================================
+
+Keep it subtle and clean.
+
+On add:
+“Added OSS — hydrating quote, technicals, and fundamentals…”
+
+On batch:
+“Added 5 tickers — priority hydration started.”
+
+On theme update:
+“Theme updated.”
+
+On theme failure:
+“Could not update theme. Try again.”
+
+For pending data cells:
+- show “pending” badge or “—” with status
+- do not show scary red errors unless backend reports error
+
+==================================================
+PART 9 — VALIDATION
+==================================================
+
+Validate in running authenticated app.
+
+Single add test:
+
+1. Add a valid ticker not already in watchlist.
+2. Confirm row appears immediately.
+3. Confirm request body uses canonical_ticker.
+4. Confirm backend response includes hydration_status.
+5. Confirm row shows hydration pending/running.
+6. Confirm quote data appears after hydration.
+7. Confirm technical data appears after hydration.
+8. Confirm fundamental data appears after hydration.
+9. Confirm no duplicate row.
+10. Open ticker popup and confirm tabs work.
+
+Batch add test:
+
+1. Add 5 valid tickers.
+2. Confirm all appear immediately.
+3. Confirm all show pending/running hydration.
+4. Confirm no duplicates.
+5. Confirm technical/fundamental fields populate.
+
+Theme test:
+
+1. Add ticker with no theme or existing theme.
+2. Change theme from Theme dropdown.
+3. Confirm row updates immediately.
+4. Refresh page.
+5. Confirm theme persists.
+6. Open ticker popup.
+7. Confirm theme is consistent.
+
+Regression:
+
+- Watchlist sorting still works.
+- Score Lens still works.
+- Confluence table still works.
+- ticker popup still works.
+- News/Fundamentals/Technical tabs still work.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Return:
+
+WATCHLIST ADD HYDRATION FRONTEND REPORT
+
+CURRENT FRONTEND ADD FLOW:
+[summary]
+
+FILES CHANGED:
+[list]
+
+SINGLE ADD:
+[summary]
+
+BATCH ADD:
+[summary]
+
+HYDRATION STATUS:
+[summary]
+
+POLLING / REFETCH:
+[summary]
+
+THEME DROPDOWN:
+[summary]
+
+CACHE INVALIDATION:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+WATCHLIST ADD FRONTEND VERDICT
+
+SINGLE_ADD_USES_CANONICAL_TICKER_BODY:
+[YES/NO]
+
+NEW_TICKER_APPEARS_IMMEDIATELY:
+[YES/NO]
+
+HYDRATION_STATUS_VISIBLE:
+[YES/NO]
+
+QUOTE_DATA_REFRESHES_AFTER_ADD:
+[YES/NO]
+
+TECHNICAL_DATA_REFRESHES_AFTER_ADD:
+[YES/NO]
+
+FUNDAMENTAL_DATA_REFRESHES_AFTER_ADD:
+[YES/NO]
+
+BATCH_ADD_IMMEDIATE_ROWS:
+[YES/NO]
+
+BATCH_ADD_HYDRATION_WORKS:
+[YES/NO]
+
+THEME_DROPDOWN_PERSISTS:
+[YES/NO]
+
+THEME_ROLLBACK_ON_FAILURE:
+[YES/NO]
+
+NO_DUPLICATE_ROWS:
+[YES/NO]
+
+WATCHLIST_SORTING_UNBROKEN:
+[YES/NO]
+
+SCORE_LENS_UNBROKEN:
+[YES/NO]
+
+TICKER_POPUP_UNBROKEN:
+[YES/NO]
+
+NO_FRONTEND_PROVIDER_CALLS:
+[YES/NO]
