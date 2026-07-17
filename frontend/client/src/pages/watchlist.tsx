@@ -5631,7 +5631,7 @@ export default function WatchlistPage() {
                     };
 
                     const thStyle = (k: ActivitySortKey, align: 'left' | 'right'): React.CSSProperties => ({
-                      padding: '5px 8px', fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                      padding: '4px 5px', fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
                       color: activitySort.key === k ? C.teal : C.dim,
                       textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none',
                       background: '#ffffff04', whiteSpace: 'nowrap',
@@ -5661,7 +5661,7 @@ export default function WatchlistPage() {
                               NEWS/MC{activitySort.key === 'news_mc' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                             </th>
                             <th style={thStyle('delta_count', 'right')} onClick={() => toggleSort('delta_count')}>
-                              Δ VS PREV 48H{activitySort.key === 'delta_count' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                              48H Δ{activitySort.key === 'delta_count' ? (activitySort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
                             </th>
                           </tr>
                         </thead>
@@ -5680,23 +5680,23 @@ export default function WatchlistPage() {
                                 onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
                                 onClick={() => handleTickerClick(row.ticker)}
                               >
-                                <td style={{ padding: '5px 8px' }}>
+                                <td style={{ padding: '5px 5px' }}>
                                   <span style={{
                                     fontSize: 9, fontWeight: 800, fontFamily: C.font,
-                                    padding: '2px 6px', borderRadius: 3,
+                                    padding: '2px 5px', borderRadius: 3,
                                     color: col, background: col + '15', border: `1px solid ${col}25`,
                                     textTransform: 'uppercase',
                                   }}>
                                     {row.ticker}
                                   </span>
                                 </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row.articles_48h != null ? C.text : C.dim, fontFamily: C.font }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row.articles_48h != null ? C.text : C.dim, fontFamily: C.font }}>
                                   {row.articles_48h != null ? row.articles_48h : '—'}
                                 </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: row._newsMc != null ? C.text : C.dim, fontFamily: C.font }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row._newsMc != null ? C.text : C.dim, fontFamily: C.font }}>
                                   {fmtNewsMc(row._newsMc)}
                                 </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: C.font, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: C.font, whiteSpace: 'nowrap' }}>
                                   {delta.text}
                                 </td>
                               </tr>
