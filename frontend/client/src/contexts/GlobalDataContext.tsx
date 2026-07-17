@@ -76,6 +76,17 @@ export function GlobalPrefetch() {
 
     // ── Watchlist ───────────────────────────────────────────────────────────
     pre(["/api/watchlist/list"], "/api/watchlist/list", { headers: authH() });
+    // After getting the list, prefetch the first (Primary) watchlist so the
+    // screener renders immediately on first visit — no 10-second blank wait.
+    safeFetch("/api/watchlist/list", { headers: authH() }).then((listData) => {
+      if (!Array.isArray(listData) || !listData[0]?.id) return;
+      const primaryId = listData[0].id;
+      qc.prefetchQuery({
+        queryKey: ["/api/watchlist", primaryId],
+        queryFn: () => safeFetch(`/api/watchlist/${primaryId}`, { headers: authH() }),
+        staleTime: 2 * 60_000,
+      });
+    });
 
     // ── Hyperliquid ─────────────────────────────────────────────────────────
     pre(["hl-screener", "perp"],  "/api/hyperliquid/screener?market_type=perp&limit=200", undefined, 14_000);

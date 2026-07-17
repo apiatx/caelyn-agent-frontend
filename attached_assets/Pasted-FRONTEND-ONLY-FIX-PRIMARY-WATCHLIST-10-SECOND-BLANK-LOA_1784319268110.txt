@@ -1,0 +1,201 @@
+FRONTEND ONLY — FIX PRIMARY WATCHLIST 10-SECOND BLANK LOAD STATE
+
+Frontend repo only.
+
+Do not touch backend.
+Do not touch earnings in this pass.
+Do not change add ticker hydration.
+Do not change theme dropdown.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not rewrite Watchlist.
+
+Problem:
+
+The Primary watchlist screener still shows no tickers / blank data for ~10 seconds when the user clicks Primary or returns to the Watchlist page.
+
+The previous last-good-row patch did not fix Primary.
+
+Strong Bases works. Primary is the problem.
+
+Goal:
+
+Primary Watchlist should not sit blank for 10 seconds if rows exist in cache, prior query data, watchlist list payload, or last-good memory.
+
+==================================================
+PART 1 — AUDIT PRIMARY LOAD PATH ONLY
+==================================================
+
+Trace exactly what happens when user clicks Primary.
+
+Log/inspect:
+
+- activeId before click
+- activeId after click
+- active watchlist name
+- active watchlist id
+- watchlist query key
+- watchlist query enabled condition
+- isLoading
+- isFetching
+- isPending
+- watchlist?.tickers?.length
+- baseMergedTickers.length
+- sortedTickers.length
+- displayRows.length
+- lastGoodRowsByWid.get(primaryId)?.length
+- allTickerSymbols.length
+- whether Primary rows exist anywhere else in memory
+- whether the component is returning null because allTickerSymbols.length === 0
+- whether renderNewFormatTickerTable is not mounted during loading
+
+Report the exact line/gate causing Primary to render blank.
+
+Do not patch until this is identified.
+
+==================================================
+PART 2 — FIX THE REAL PRIMARY BLANK GATE
+==================================================
+
+Find any guard like:
+
+allTickerSymbols.length > 0
+sortedTickers.length > 0
+baseMergedTickers.length > 0
+
+that prevents the Primary screener/table component from rendering while loading.
+
+Fix behavior:
+
+If selected watchlist is loading and no last-good rows exist:
+- render the screener shell
+- render skeleton rows or loading state
+- do not render nothing
+
+If selected watchlist is fetching and last-good rows exist:
+- render last-good rows for the same watchlist id
+- show “Refreshing…”
+
+If selected watchlist loaded and truly has zero tickers:
+- show “No tickers in this watchlist.”
+
+Important:
+
+Empty state should only appear after load completes.
+
+Blank/null render should never happen for Primary.
+
+==================================================
+PART 3 — USE REACT QUERY PREVIOUS DATA CORRECTLY
+==================================================
+
+If React Query is dropping data on activeId changes or route return:
+
+- use placeholderData / keepPreviousData only if scoped safely
+- never show another watchlist’s rows as Primary
+- but do use cached Primary data if query cache has Primary rows
+
+For Primary specifically:
+
+If query cache already has data for Primary:
+- show it immediately while refetching
+
+Do not wait for network if cached rows exist.
+
+==================================================
+PART 4 — LAST GOOD ROWS MUST BE SEEDED FROM QUERY CACHE
+==================================================
+
+The previous patch only stores last-good rows after sortedTickers.length > 0 while component is live.
+
+That does not help if Primary has not loaded in this component session.
+
+Fix:
+
+When activeId changes to Primary:
+- check React Query cache for that watchlist query key
+- if cached rows exist, seed lastGoodRowsByWid[primaryId]
+- render cached rows immediately
+
+Do the same for custom watchlists and Favorites if easy, but Primary is the acceptance target.
+
+==================================================
+PART 5 — VALIDATION
+==================================================
+
+Validate in authenticated app.
+
+1. Load Watchlist fresh.
+2. Click Primary.
+3. Primary screener does not show a blank 0-row area for 10 seconds.
+4. If cached Primary data exists, rows appear immediately.
+5. If no cached data exists, skeleton/loading rows appear.
+6. Leave Watchlist page and return.
+7. Primary rows do not blank out.
+8. Switch Strong Bases → Primary.
+9. Primary does not sit blank.
+10. No Strong Bases rows render as Primary.
+
+Regression:
+
+- Strong Bases still works
+- Favorites still works
+- add ticker works
+- theme dropdown works
+- hydration badges work
+- Score Lens works
+- ticker popup works
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+PRIMARY WATCHLIST LOAD STATE REPORT
+
+ROOT CAUSE:
+[exact gate/query/cache issue]
+
+FILES CHANGED:
+[list]
+
+PRIMARY LOAD FIX:
+[summary]
+
+QUERY CACHE / LAST GOOD FIX:
+[summary]
+
+EMPTY VS LOADING STATE:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+PRIMARY LOAD STATE VERDICT
+
+PRIMARY_NO_LONGER_BLANKS_FOR_10_SECONDS:
+[YES/NO]
+
+PRIMARY_USES_CACHED_ROWS_WHEN_AVAILABLE:
+[YES/NO]
+
+PRIMARY_SHOWS_SKELETON_IF_NO_CACHE:
+[YES/NO]
+
+EMPTY_STATE_ONLY_AFTER_TRUE_EMPTY:
+[YES/NO]
+
+NO_CROSS_WATCHLIST_ROWS_SHOWN:
+[YES/NO]
+
+STRONG_BASES_UNBROKEN:
+[YES/NO]
+
+FAVORITES_UNBROKEN:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

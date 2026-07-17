@@ -1921,6 +1921,9 @@ export default function WatchlistPage() {
     enabled: !!activeId,
     retry: 2,
     staleTime: 60_000,
+    // Keep cache alive for 8h so returning to the page never shows a blank —
+    // stale data renders immediately while a background refetch runs.
+    gcTime: 8 * 60 * 60_000,
     // Poll while agent analysis is running in background on the server
     refetchInterval: refreshStatus === 'running' ? 20_000 : false,
   });
@@ -3035,6 +3038,20 @@ export default function WatchlistPage() {
       lastGoodRowsByWid.current.set(activeId, sortedTickers);
     }
   }, [activeId, sortedTickers]);
+
+  /* ── Seed LKG from React Query cache when activeId changes ─────────────
+   * useRef resets on component unmount, so LKG is lost on navigation.
+   * React Query cache persists across unmount (up to gcTime=8h).
+   * On activeId change, if cache has watchlist data, seed LKG with stub rows
+   * so displayRows is never empty during the first refetch after remount.   */
+  useEffect(() => {
+    if (!activeId) return;
+    if ((lastGoodRowsByWid.current.get(activeId) ?? []).length > 0) return;
+    const cached = qc.getQueryData<WatchlistResponse | null>(['/api/watchlist', activeId]);
+    if (!cached?.tickers?.length) return;
+    const stubs = (cached.tickers as string[]).map((sym: string) => ({ ticker: sym, _pending: true }));
+    lastGoodRowsByWid.current.set(activeId, stubs);
+  }, [activeId, qc]);
 
   /* ── Display rows: use same-watchlist LKG rows during refetch instead of blank ── */
   const _wlidLkgRows = activeId ? (lastGoodRowsByWid.current.get(activeId) ?? []) : [];
