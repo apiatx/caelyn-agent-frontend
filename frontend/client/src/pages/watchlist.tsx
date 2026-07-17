@@ -1856,6 +1856,8 @@ export default function WatchlistPage() {
   const [expandedTickers, setExpandedTickers] = useState<Set<string>>(new Set());
   /* ── Hydration tracking for newly-added tickers ────────────────── */
   const [pendingOptRows, setPendingOptRows] = useState<Map<string, { ticker: string; company?: string; wid: string }>>(new Map());
+  /* Per-watchlist last-good rows: keyed by watchlist id, preserves rows during refetch */
+  const lastGoodRowsByWid = useRef<Map<string, any[]>>(new Map());
   const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string; options: string }>>(new Map());
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
@@ -1908,7 +1910,7 @@ export default function WatchlistPage() {
   }, [wlMetas, activeId]);
 
   /* ── active watchlist data ───────────────────────────────────────── */
-  const { data: watchlist, isLoading: wlLoading } = useQuery<WatchlistResponse>({
+  const { data: watchlist, isLoading: wlLoading, isFetching: wlFetching } = useQuery<WatchlistResponse>({
     queryKey: ['/api/watchlist', activeId],
     queryFn: async () => {
       if (!activeId) return null;
@@ -3027,6 +3029,18 @@ export default function WatchlistPage() {
       .map(r => r.s);
   }, [mergedTickers, sortKey, sortDir]);
 
+  /* ── Last-good row retention: store non-empty sorted rows per watchlist ── */
+  useEffect(() => {
+    if (activeId && sortedTickers.length > 0) {
+      lastGoodRowsByWid.current.set(activeId, sortedTickers);
+    }
+  }, [activeId, sortedTickers]);
+
+  /* ── Display rows: use same-watchlist LKG rows during refetch instead of blank ── */
+  const _wlidLkgRows = activeId ? (lastGoodRowsByWid.current.get(activeId) ?? []) : [];
+  const isRefreshing = sortedTickers.length === 0 && _wlidLkgRows.length > 0 && (wlLoading || wlFetching);
+  const displayRows = isRefreshing ? _wlidLkgRows : sortedTickers;
+
   /* ── Caelyn Confluence true rows — from backend alignment endpoint ── */
   const confluenceRows = useMemo(() => {
     if (!alignmentResp) return null;
@@ -3193,12 +3207,13 @@ export default function WatchlistPage() {
   }, [sortedTickers, favoritesSet]);
 
   /* ── Canonical ticker symbol list for the currently-viewed tab ─────
-   * Used by Upcoming Earnings and other sections that must scope to
-   * whichever watchlist/tab the user is currently viewing.             */
+   * Used by Upcoming Earnings (and eventually Live News, Confluence).
+   * Uses displayRows (which includes LKG rows during refetch) so the
+   * symbol set is never accidentally empty during a loading transition. */
   const isFavoritesTab = innerView === 'close-watch';
-  const selectedWatchlistSymbols: string[] = isFavoritesTab
-    ? [...favoritesSet]
-    : (allTickerSymbols as string[]);
+  const selectedTabSymbols: string[] = isFavoritesTab
+    ? [...favoritesSet].map(s => s.toUpperCase())
+    : displayRows.map(r => (r.ticker || '').toString().toUpperCase()).filter(Boolean);
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const renderTabBar = () => (
@@ -3711,12 +3726,33 @@ export default function WatchlistPage() {
   /* ── upcoming earnings section ──────────────────────────────────── */
   const renderEarningsSection = () => {
     const allEvents = earningsResp?.earnings ?? [];
-    // Filter to tickers in the currently-viewed watchlist/tab only
-    const selectedSet = new Set(selectedWatchlistSymbols.map(s => s.toUpperCase()));
+    // Filter to tickers in the currently-viewed watchlist/tab only.
+    // NEVER fall back to allEvents when selectedSet is empty — that would
+    // show another watchlist's earnings during a loading transition.
+    const selectedSet = new Set(selectedTabSymbols);
     const events = selectedSet.size > 0
       ? allEvents.filter((ev: any) => ev.ticker && selectedSet.has(String(ev.ticker).toUpperCase()))
-      : allEvents;
-    if (!events.length && !earningsLoading) return null;
+      : [];
+
+    // Still loading ticker data — don't render anything yet
+    if (selectedSet.size === 0 && (wlLoading || wlFetching || earningsLoading)) return null;
+
+    // Ticker data loaded, no matching earnings → show calm empty state
+    if (!events.length && !earningsLoading) {
+      if (selectedSet.size === 0) return null;
+      return (
+        <div style={{ padding: '0 20px 4px' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
+            </div>
+            <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: C.font }}>
+              No upcoming earnings for this watchlist.
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{ padding: '0 20px 4px' }}>
         <div style={{
@@ -3833,7 +3869,7 @@ export default function WatchlistPage() {
 
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
-    const rows = opts?.rows ?? sortedTickers;
+    const rows = opts?.rows ?? displayRows;
     const tableTitle = opts?.title ?? 'SCREENER';
     const isMainScreener = tableTitle === 'SCREENER' || tableTitle === 'FAVORITES';
     // Apply hide-foreign filter
@@ -4046,15 +4082,28 @@ export default function WatchlistPage() {
               ? (hideForeignTickers && foreignHidden > 0
                   ? `${rows.length} tickers · ${visibleRows.length} shown`
                   : `${rows.length} ticker${rows.length !== 1 ? 's' : ''}`)
-              : (filteredSymbolSet && isMainScreener)
-                ? `${mergedTickers.length} total · ${filteredRows.length} shown · ${filterHidden + foreignHidden} filtered`
-                : pendingCount > 0
-                  ? `${analyzedCount} analyzed · ${pendingCount} pending`
-                  : (hideForeignTickers && foreignHidden > 0
-                      ? `${mergedTickers.length} total · ${visibleRows.length} shown`
-                      : `${mergedTickers.length} total`)}
+              : isRefreshing
+                ? `${rows.length} tickers`
+                : (filteredSymbolSet && isMainScreener)
+                  ? `${mergedTickers.length} total · ${filteredRows.length} shown · ${filterHidden + foreignHidden} filtered`
+                  : pendingCount > 0
+                    ? `${analyzedCount} analyzed · ${pendingCount} pending`
+                    : (hideForeignTickers && foreignHidden > 0
+                        ? `${mergedTickers.length} total · ${visibleRows.length} shown`
+                        : `${mergedTickers.length} total`)}
           </span>
-          {screenerMode === 'technical' && !opts?.rows && pendingCount > 0 && (
+          {isRefreshing && !opts?.rows && (
+            <span style={{
+              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+              padding: '2px 6px', borderRadius: 3,
+              color: C.amber, background: C.amber + '18',
+              border: `1px solid ${C.amber}30`,
+              textTransform: 'uppercase' as const, letterSpacing: '0.04em',
+            }}>
+              REFRESHING…
+            </span>
+          )}
+          {screenerMode === 'technical' && !opts?.rows && !isRefreshing && pendingCount > 0 && (
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: C.font,
               padding: '2px 6px', borderRadius: 3,
@@ -4206,6 +4255,18 @@ export default function WatchlistPage() {
               })}
               </TooltipProvider>
             </div>
+
+            {/* loading / empty states for screener */}
+            {filteredRows.length === 0 && (wlLoading || wlFetching) && !isRefreshing && (
+              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                Loading watchlist…
+              </div>
+            )}
+            {filteredRows.length === 0 && !wlLoading && !wlFetching && !isRefreshing && (
+              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                No tickers in this watchlist.
+              </div>
+            )}
 
             {/* table rows */}
             {filteredRows.map((stock, i) => {
@@ -5286,7 +5347,7 @@ export default function WatchlistPage() {
               {/* Show new-format table whenever we have saved symbols — covers pending state (no sections yet) */}
               {innerView === 'close-watch'
                 ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'FAVORITES' })
-                : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
+                : (newFmt || displayRows.length > 0 || wlLoading || wlFetching) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
               }
 
               {/* ── Live News (narrower) — three-toggle card ── */}

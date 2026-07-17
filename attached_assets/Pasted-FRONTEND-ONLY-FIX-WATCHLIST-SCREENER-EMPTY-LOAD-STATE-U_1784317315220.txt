@@ -1,0 +1,362 @@
+FRONTEND ONLY — FIX WATCHLIST SCREENER EMPTY LOAD STATE + UPCOMING EARNINGS SELECTED WATCHLIST ALIGNMENT
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change backend endpoints.
+Do not change add ticker hydration.
+Do not change theme dropdown.
+Do not change Confluence scoring.
+Do not change Score Lens.
+Do not rewrite Watchlist.
+Do not work on Live News, Confluence, or bottom sections yet.
+
+Correction:
+
+The issue is NOT that the previous watchlist’s rows show for 10 seconds.
+
+The issue is:
+
+1. On startup, page return, tab return, or route return, the Watchlist screener section shows 0 tickers / blank data for too long.
+2. This happens in the main Watchlist screener section itself.
+3. The UI should not drop to empty rows while refetching if last-known watchlist data exists.
+4. Upcoming Earnings is still incorrectly scoped:
+   - Primary shows Strong Bases earnings.
+   - Favorites shows no earnings.
+   - Earnings must follow the currently viewed watchlist/tab.
+
+Goal:
+
+Fix two things:
+
+A. Watchlist screener should use last-good cached rows / keep previous valid rows visible while refetching.
+B. Upcoming Earnings should filter to the currently viewed watchlist symbols.
+
+==================================================
+PART 1 — AUDIT WATCHLIST SCREENER LOAD / EMPTY STATE
+==================================================
+
+Before editing, audit the Watchlist screener data lifecycle.
+
+Find:
+
+- main Watchlist query key
+- whether query key includes active watchlist id
+- whether React Query uses keepPreviousData / placeholderData / staleTime / gcTime
+- whether rows are cleared on route/tab unmount
+- whether baseMergedTickers becomes [] during refetch
+- whether sortedTickers becomes [] during refetch
+- whether activeId temporarily becomes null/undefined
+- whether watchlist.tickers is undefined while fetching
+- whether the empty state is rendered before loading state
+- whether switching browser tab/route triggers refetch that clears data
+- whether optimistic/pending row merge accidentally produces [] during refetch
+
+Add temporary dev logs if needed:
+
+activeId
+active watchlist name
+isLoading
+isFetching
+isPending
+watchlist?.tickers?.length
+baseMergedTickers.length
+sortedTickers.length
+lastGoodRows.length if added
+selected tab label
+rendered row count
+
+Report exactly why the screener shows 0 rows too long.
+
+Do not patch until this is known.
+
+==================================================
+PART 2 — ADD LAST-GOOD ROW RETENTION FOR SCREENER
+==================================================
+
+The Watchlist screener should not blank out during normal refetches if it has valid previous data.
+
+Implement a last-good row strategy.
+
+Rules:
+
+- Maintain lastGoodRowsByWatchlistId.
+- Key it by active watchlist id.
+- When a watchlist successfully loads non-empty rows, store them.
+- During refetch/loading where current rows are temporarily undefined/empty, render lastGoodRows for that same watchlist id.
+- Show a subtle “Refreshing…” indicator instead of a blank table.
+- Do not show stale rows from a different watchlist id.
+- Do not use Strong Bases rows for Primary.
+- Do not use Primary rows for Strong Bases.
+- Do not use normal watchlist rows for Favorites unless they are favorite rows.
+
+Important:
+
+This is not the same as showing previous tab data.
+Only reuse last-good data for the SAME watchlist id/tab.
+
+Example:
+
+Primary has 302 rows.
+User leaves page and comes back.
+Query refetches.
+Do not show 0 rows.
+Show last good Primary rows with “Refreshing…” until new Primary rows arrive.
+
+Strong Bases has 20 rows.
+User switches to Strong Bases.
+Only show last good Strong Bases rows if available.
+Do not show Primary rows.
+
+Favorites has 29 rows.
+Use last good Favorites rows for Favorites.
+
+==================================================
+PART 3 — FIX EMPTY STATE VS LOADING STATE
+==================================================
+
+Do not render “0 tickers” / blank table while data is loading/refetching and last-good rows exist.
+
+Correct behavior:
+
+If loading and no last-good rows:
+- show skeleton/loading state
+
+If refetching and last-good rows exist:
+- show last-good rows
+- show subtle “Refreshing…” badge
+
+If loaded and true row count is 0:
+- show real empty state:
+  “No tickers in this watchlist.”
+
+The empty state should only appear after the selected watchlist has finished loading and truly has zero tickers.
+
+==================================================
+PART 4 — CREATE SELECTED TAB SYMBOL SOURCE
+==================================================
+
+Create one reliable selected tab symbol source for earnings.
+
+selectedTabKind:
+- watchlist
+- favorites
+
+selectedTabId:
+- active watchlist id for normal watchlist tabs
+- favorites for Favorites
+
+selectedTabRows:
+- for normal watchlist:
+  visible rows for activeId, using current rows or same-id last-good rows while refetching
+- for Favorites:
+  favorite rows, using favorite symbols and canonical row lookup, or last-good favorite rows
+
+selectedTabSymbols:
+- for Favorites:
+  Array.from(favoritesSet).map(uppercase)
+- for normal watchlist:
+  selectedTabRows.map(row.ticker).map(uppercase)
+
+Do not derive earnings from stale allTickerSymbols if that value can point to the wrong tab.
+
+==================================================
+PART 5 — FIX UPCOMING EARNINGS FILTER
+==================================================
+
+Upcoming Earnings must use selectedTabSymbols.
+
+Filter:
+
+const selectedSet = new Set(selectedTabSymbols.map(s => s.toUpperCase()));
+
+const filteredEarnings = allEarnings.filter(e =>
+  selectedSet.has((e.ticker ?? e.symbol ?? "").toUpperCase())
+);
+
+Rules:
+
+Primary selected:
+- earnings tickers must be subset of Primary tickers only
+
+Strong Bases selected:
+- earnings tickers must be subset of Strong Bases tickers only
+
+Favorites selected:
+- earnings tickers must be subset of Favorites tickers only
+
+If selectedSet is empty:
+show:
+“No upcoming earnings for this watchlist.”
+
+If selectedSet has tickers but no matching events:
+show:
+“No upcoming earnings for this watchlist.”
+
+Do not show unfiltered global earnings.
+Do not show Strong Bases earnings when Primary is selected.
+
+==================================================
+PART 6 — FAVORITES EARNINGS AND CONTROLS
+==================================================
+
+Favorites should have:
+
+- Technical / Fundamental toggle
+- Filters button
+- same screener table controls as Primary/custom watchlists
+- Upcoming Earnings scoped to Favorites symbols
+
+Favorites selectedTabSymbols should come from favoritesSet directly if favorite rows are partial.
+
+Acceptance:
+If any favorited ticker has upcoming earnings in the global earnings response, it appears in Favorites Upcoming Earnings.
+
+==================================================
+PART 7 — DO NOT HIDE DATA DURING HYDRATION
+==================================================
+
+Manual add hydration should not cause the entire table to drop to 0.
+
+If newly added ticker is pending hydration:
+- keep existing rows visible
+- add optimistic/pending row scoped to that watchlist id
+- show hydration badges
+- do not clear all rows during refetch
+
+Pending rows must be scoped by watchlist id.
+
+==================================================
+PART 8 — VALIDATION
+==================================================
+
+Validate in authenticated running app.
+
+Startup / return validation:
+
+1. Load Watchlist page fresh.
+2. Primary screener should not sit blank/0 rows if last-good data exists.
+3. Leave Watchlist page and return.
+4. Screener should not sit blank/0 rows.
+5. Switch browser tab away and back.
+6. Screener should not sit blank/0 rows.
+7. During refetch, show rows + “Refreshing…” or skeleton only if no last-good rows exist.
+
+Watchlist tab validation:
+
+1. Select Primary.
+2. Rows are Primary rows.
+3. Select Strong Bases.
+4. Rows are Strong Bases rows.
+5. Select Favorites.
+6. Rows are Favorites rows.
+7. No tab uses another tab’s last-good rows.
+
+Upcoming Earnings validation:
+
+1. Select Primary.
+2. Upcoming Earnings tickers are subset of Primary tickers.
+3. Select Strong Bases.
+4. Upcoming Earnings tickers are subset of Strong Bases tickers.
+5. Select Favorites.
+6. Upcoming Earnings tickers are subset of Favorites symbols.
+7. Favorites no longer shows no earnings if matching favorite earnings exist.
+
+Favorites controls validation:
+
+1. Favorites has Technical / Fundamental toggle.
+2. Favorites has Filters button.
+3. Favorites table filtering works.
+
+Regression:
+
+- add ticker still works
+- theme dropdown still works
+- hydration badges still work
+- Watchlist sorting still works
+- Score Lens still works
+- ticker popup still works
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+Return:
+
+WATCHLIST SCREENER LOAD STATE + EARNINGS ALIGNMENT REPORT
+
+SCREENER EMPTY LOAD ROOT CAUSE:
+[exact issue]
+
+LAST-GOOD ROW RETENTION:
+[summary]
+
+EMPTY VS LOADING STATE:
+[summary]
+
+SELECTED TAB SYMBOL SOURCE:
+[summary]
+
+EARNINGS FILTER FIX:
+[summary]
+
+FAVORITES CONTROLS:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+WATCHLIST LOAD + EARNINGS VERDICT
+
+SCREENER_NO_LONGER_BLANKS_ON_STARTUP:
+[YES/NO]
+
+SCREENER_NO_LONGER_BLANKS_ON_PAGE_RETURN:
+[YES/NO]
+
+SCREENER_KEEPS_SAME_WATCHLIST_LAST_GOOD_ROWS:
+[YES/NO]
+
+NO_CROSS_WATCHLIST_STALE_ROWS:
+[YES/NO]
+
+EMPTY_STATE_ONLY_WHEN_TRUE_EMPTY:
+[YES/NO]
+
+PRIMARY_NO_LONGER_SHOWS_STRONG_BASES_EARNINGS:
+[YES/NO]
+
+STRONG_BASES_EARNINGS_CORRECT:
+[YES/NO]
+
+FAVORITES_EARNINGS_CORRECT:
+[YES/NO]
+
+EARNINGS_USE_SELECTED_TAB_SYMBOLS:
+[YES/NO]
+
+FAVORITES_HAS_TECHNICAL_FUNDAMENTAL_TOGGLE:
+[YES/NO]
+
+FAVORITES_HAS_FILTERS_BUTTON:
+[YES/NO]
+
+ADD_TICKER_UNBROKEN:
+[YES/NO]
+
+THEME_DROPDOWN_UNBROKEN:
+[YES/NO]
+
+HYDRATION_STATUS_UNBROKEN:
+[YES/NO]
+
+SCORE_LENS_UNBROKEN:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]
