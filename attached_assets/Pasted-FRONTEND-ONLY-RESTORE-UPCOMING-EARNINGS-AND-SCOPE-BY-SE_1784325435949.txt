@@ -1,0 +1,321 @@
+FRONTEND ONLY — RESTORE UPCOMING EARNINGS AND SCOPE BY SELECTED WATCHLIST, AUDIT FIRST
+
+Frontend repo only.
+
+Do not touch backend unless the audit proves the backend response is empty for a valid request.
+Do not rewrite the Watchlist page.
+Do not change screener rows.
+Do not change add ticker hydration.
+Do not change theme dropdown.
+Do not change Confluence.
+Do not change Score Lens.
+Do not touch Live News or bottom sections.
+
+Current state:
+
+Upcoming Earnings is now broken across all Watchlist tabs.
+
+Important history:
+
+- Primary Watchlist Upcoming Earnings previously worked and showed earnings correctly.
+- The original issue was that Upcoming Earnings was not scoped to the currently selected watchlist.
+- Favorites showed Primary earnings.
+- Custom watchlists should show their own symbols’ earnings.
+- After the latest frontend change to POST /api/watchlist/earnings/by-symbols, no tabs show earnings.
+
+So do not assume the old behavior was totally broken. Primary worked. The fix needs to preserve that working behavior while making earnings scoped per selected watchlist.
+
+Goal:
+
+Upcoming Earnings should show earnings for the symbols in the currently selected watchlist tab:
+
+Primary → Primary symbols
+Strong Bases → Strong Bases symbols
+Favorites → favorite symbols
+Any custom watchlist → that custom watchlist’s symbols
+
+==================================================
+PART 1 — HARD AUDIT THE CURRENT NETWORK CALL
+==================================================
+
+Before editing, use browser Network tab and/or dev logs.
+
+For each selected tab:
+
+1. Primary
+2. Strong Bases
+3. Favorites
+
+Log/report:
+
+- selected tab name
+- activeId
+- selected symbols count
+- first 20 selected symbols
+- request method
+- request URL
+- request body
+- response status
+- response JSON keys
+- response.events length
+- response.earnings length if present
+- first 10 response event symbols
+- rendered earnings count
+
+Do not patch until this is known.
+
+Critical checks:
+
+A. Is POST /api/watchlist/earnings/by-symbols actually called?
+B. Is the body symbols array non-empty?
+C. Does Primary body contain Primary symbols?
+D. Does Favorites body contain favorite symbols?
+E. Does the response use "events" or "earnings"?
+F. Are events returned but not rendered?
+G. Is the query disabled because selected symbols is temporarily empty?
+
+==================================================
+PART 2 — CHECK RESPONSE SHAPE BEFORE TOUCHING RENDERING
+==================================================
+
+Backend report said response shape should be:
+
+{
+  "symbols_requested": [...],
+  "events": [...]
+}
+
+But confirm actual frontend proxy response.
+
+If actual response is:
+
+{ "earnings": [...] }
+
+or:
+
+{ "data": { "events": [...] } }
+
+or another envelope, normalize it.
+
+Create:
+
+const earningsEvents =
+  response?.events
+  ?? response?.earnings
+  ?? response?.data?.events
+  ?? response?.data?.earnings
+  ?? [];
+
+Do not render blank just because the frontend is reading the wrong key.
+
+==================================================
+PART 3 — VERIFY SELECTED SYMBOL SOURCE
+==================================================
+
+For normal watchlists:
+
+selectedEarningsSymbols must come from the actual selected watchlist membership.
+
+Use:
+
+watchlist?.tickers
+
+for the currently selected activeId, but only if that response belongs to activeId.
+
+If watchlist is temporarily undefined/loading:
+- do not send empty symbols and then cache empty result
+- use cached same-watchlist tickers if available
+- or keep previous successful earnings for that same selected tab while loading
+- or show loading state
+
+Do not call by-symbols with [] and then render "No upcoming earnings" as if that is truth.
+
+For Favorites:
+
+selectedEarningsSymbols must come from favoritesSet directly.
+
+selectedEarningsSymbols = Array.from(favoritesSet)
+
+Normalize uppercase and dedupe.
+
+Acceptance:
+Favorites request body must contain the 29 favorite symbols.
+
+==================================================
+PART 4 — FIX QUERY ENABLED CONDITION
+==================================================
+
+The by-symbols earnings query should only run when selectedEarningsSymbols.length > 0.
+
+If symbols are still loading:
+- show "Loading upcoming earnings…"
+- do not show "No upcoming earnings"
+- do not cache an empty result under the selected tab key
+
+Query key:
+
+[
+  "watchlist-earnings-by-symbols",
+  selectedTabKind,
+  selectedTabId,
+  selectedEarningsSymbols.join(",")
+]
+
+Do not use a query key that lets an empty request overwrite Primary/Favorites results.
+
+==================================================
+PART 5 — DO NOT USE OLD GLOBAL ENDPOINT AS PRIMARY SOURCE
+==================================================
+
+Do not return to using old GET /api/watchlist/earnings as the main source.
+
+But for audit only, compare:
+
+Old GET /api/watchlist/earnings result for Primary
+vs
+New POST /api/watchlist/earnings/by-symbols with Primary symbols
+
+If old has events and new has zero events for the same Primary symbols, report that clearly. That would indicate backend by-symbols cache/contract issue.
+
+Do not silently fall back to old global response because that reintroduces Strong Bases/Primary leakage.
+
+==================================================
+PART 6 — RENDER STATES CORRECTLY
+==================================================
+
+Render logic:
+
+If selectedEarningsSymbols is loading/unknown:
+"Loading upcoming earnings…"
+
+If selectedEarningsSymbols is known and length === 0:
+"No tickers in this watchlist."
+
+If request is loading:
+"Loading upcoming earnings…"
+
+If request succeeded and earningsEvents.length === 0:
+"No upcoming earnings for this watchlist."
+
+If earningsEvents.length > 0:
+render events.
+
+Do not show "No upcoming earnings" before the symbols and response are known.
+
+==================================================
+PART 7 — VALIDATION REQUIRED IN NETWORK TAB
+==================================================
+
+Primary validation:
+
+1. Select Primary.
+2. Confirm request:
+   POST /api/watchlist/earnings/by-symbols
+3. Confirm body contains Primary symbols.
+4. Confirm body does not only contain Strong Bases symbols.
+5. Confirm response has events or earnings.
+6. Confirm rendered events match response.
+7. Confirm no Strong Bases-only tickers appear unless they are also in Primary.
+
+Strong Bases validation:
+
+1. Select Strong Bases.
+2. Confirm body contains the 10 Strong Bases symbols.
+3. Confirm rendered events are subset of Strong Bases.
+
+Favorites validation:
+
+1. Select Favorites.
+2. Confirm body contains all 29 favorite symbols.
+3. Confirm response events/earnings length.
+4. If response has events, render them.
+5. If response has zero events, report whether backend returned zero despite favorite symbols.
+
+==================================================
+PART 8 — IF BACKEND RESPONSE IS EMPTY FOR VALID REQUEST
+==================================================
+
+Only if this happens:
+
+- Primary request body has hundreds of real Primary symbols
+- Backend response events/earnings is empty
+- Old endpoint or row data proves those symbols have earnings
+
+Then stop frontend work and report:
+
+"Backend by-symbols endpoint returned empty for a valid symbol list."
+
+Include:
+
+- request body symbol count
+- sample symbols
+- response JSON
+- old endpoint comparison if available
+
+Do not keep patching frontend blindly.
+
+==================================================
+PART 9 — FINAL REPORT
+==================================================
+
+Return:
+
+UPCOMING EARNINGS CONTRACT AUDIT + RESTORE REPORT
+
+ROOT CAUSE:
+[wrong response key / empty selected symbols / query disabled / empty request cached / backend returned empty / proxy issue / other]
+
+NETWORK AUDIT:
+[table for Primary, Strong Bases, Favorites]
+
+SELECTED SYMBOL SOURCE:
+[summary]
+
+RESPONSE NORMALIZATION:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+UPCOMING EARNINGS RESTORE VERDICT
+
+PRIMARY_REQUEST_HAS_PRIMARY_SYMBOLS:
+[YES/NO]
+
+PRIMARY_RESPONSE_HAS_EVENTS:
+[YES/NO]
+
+PRIMARY_EARNINGS_RENDER:
+[YES/NO]
+
+NO_STRONG_BASES_ONLY_EARNINGS_ON_PRIMARY:
+[YES/NO]
+
+STRONG_BASES_REQUEST_HAS_STRONG_BASES_SYMBOLS:
+[YES/NO]
+
+STRONG_BASES_EARNINGS_RENDER:
+[YES/NO]
+
+FAVORITES_REQUEST_HAS_FAVORITE_SYMBOLS:
+[YES/NO]
+
+FAVORITES_RESPONSE_HANDLED_CORRECTLY:
+[YES/NO]
+
+RESPONSE_SHAPE_NORMALIZED:
+[YES/NO]
+
+NO_EMPTY_SYMBOL_REQUEST_CACHED_AS_NO_EARNINGS:
+[YES/NO]
+
+OLD_GLOBAL_ENDPOINT_NOT_USED_AS_PRIMARY_SOURCE:
+[YES/NO]
+
+BACKEND_FIX_NEEDED:
+[YES/NO]
