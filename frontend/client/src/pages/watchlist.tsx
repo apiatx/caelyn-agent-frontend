@@ -5475,7 +5475,7 @@ export default function WatchlistPage() {
             {/* ── Top Split: Ticker Table + Live News (fixed viewport-aware height) ── */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 300px)',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(200px, 220px)',
               gap: 12,
               padding: '14px 20px 16px',
               height: 'clamp(360px, 50vh, 620px)',
