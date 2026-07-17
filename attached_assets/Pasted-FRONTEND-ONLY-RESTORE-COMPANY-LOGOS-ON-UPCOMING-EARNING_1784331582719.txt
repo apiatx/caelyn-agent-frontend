@@ -1,0 +1,216 @@
+FRONTEND ONLY — RESTORE COMPANY LOGOS ON UPCOMING EARNINGS GLASSCARDS
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change the working Upcoming Earnings data source.
+Do not change watchlist.upcoming_earnings behavior.
+Do not change earnings scoping.
+Do not change Watchlist row source.
+Do not change sortedTickers/displayRows/baseMergedTickers.
+Do not change hydration.
+Do not change theme dropdown.
+Do not change Confluence.
+Do not change Score Lens.
+
+Current state:
+
+The backend-scoped Upcoming Earnings fix is now working.
+
+Do NOT undo it.
+
+Remaining issue:
+
+Company logos no longer appear on the Upcoming Earnings glasscards.
+
+Previously, the old/global earnings response included logo fields. The new scoped earnings payload may use different logo/image fields or may not include logo at all.
+
+Goal:
+
+Restore company logos on Upcoming Earnings glasscards without changing the working earnings data source.
+
+==================================================
+PART 1 — AUDIT LOGO FIELD AVAILABILITY
+==================================================
+
+Inspect the actual event object used by Upcoming Earnings.
+
+For the first few events, check whether any of these fields exist:
+
+- logo
+- image
+- company_logo
+- profile_image
+- icon
+- companyLogo
+
+Also inspect the active watchlist row data for the same ticker and check whether logo/image exists there.
+
+Potential row fields:
+
+- row.logo
+- row.image
+- row.company_logo
+- row.profile?.image
+- row.profile?.logo
+- row.company?.image
+
+Report where the logo is actually available.
+
+Do not change earnings source.
+
+==================================================
+PART 2 — ADD SAFE LOGO NORMALIZATION
+==================================================
+
+In the earnings event normalization helper, add:
+
+logo:
+ev.logo
+?? ev.image
+?? ev.company_logo
+?? ev.companyLogo
+?? ev.profile_image
+?? ev.icon
+?? null
+
+Then, if event.logo is missing, enrich display-only logo from the active watchlist row lookup by ticker.
+
+Create a lightweight lookup:
+
+const logoByTicker = new Map();
+
+Populate it from the already-loaded selected watchlist rows/csv_data/display data only for logo display.
+
+This lookup must not determine which earnings events exist.
+It is only for visual enrichment.
+
+Suggested fallback:
+
+const rowLogo =
+  row.logo
+  ?? row.image
+  ?? row.company_logo
+  ?? row.companyLogo
+  ?? row.profile?.image
+  ?? row.profile?.logo
+  ?? null;
+
+Final logo for card:
+
+const logo = normalizedEvent.logo ?? logoByTicker.get(normalizedEvent.ticker) ?? null;
+
+==================================================
+PART 3 — RENDER LOGO WITHOUT HIDING EVENT
+==================================================
+
+Render logo if present.
+
+If logo is missing:
+- show existing fallback initials/avatar
+- do not hide the earnings event
+- do not collapse the card
+- do not show broken image icon
+
+Add image error handling:
+
+onError={(e) => {
+  e.currentTarget.style.display = "none";
+}}
+
+or equivalent existing pattern.
+
+==================================================
+PART 4 — DO NOT CHANGE EARNINGS LOGIC
+==================================================
+
+Do not change:
+
+- which endpoint is used
+- how events are selected
+- watchlist_id scoping
+- Favorites handling
+- empty state logic
+- event filtering
+- backend payload assumptions beyond logo normalization
+
+This is visual restoration only.
+
+==================================================
+PART 5 — VALIDATION
+==================================================
+
+Validate in authenticated app.
+
+Primary:
+
+- Upcoming Earnings still render correctly.
+- Logos appear for events where logo/image is available.
+- Events without logo still show fallback initials/avatar.
+- No broken image icons.
+
+Strong Bases/custom watchlist:
+
+- Upcoming Earnings still scoped correctly.
+- Logos appear where available.
+
+Favorites:
+
+- No behavior change except logos if events exist.
+
+Regression:
+
+- Watchlist rows unchanged.
+- Upcoming Earnings scoping unchanged.
+- ticker-row earnings badges unchanged.
+- add ticker unchanged.
+- theme dropdown unchanged.
+- Score Lens unchanged.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+UPCOMING EARNINGS LOGO RESTORE REPORT
+
+LOGO FIELD AUDIT:
+[where logo was found: event payload / row payload / both / neither]
+
+FILES CHANGED:
+[list]
+
+LOGO NORMALIZATION:
+[summary]
+
+ROW LOGO FALLBACK:
+[summary]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+UPCOMING EARNINGS LOGO VERDICT
+
+EARNINGS_DATA_SOURCE_UNCHANGED:
+[YES/NO]
+
+LOGOS_RENDER_WHEN_AVAILABLE:
+[YES/NO]
+
+FALLBACK_AVATAR_WORKS_WHEN_LOGO_MISSING:
+[YES/NO]
+
+NO_BROKEN_IMAGE_ICONS:
+[YES/NO]
+
+PRIMARY_EARNINGS_STILL_WORK:
+[YES/NO]
+
+CUSTOM_EARNINGS_STILL_WORK:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]

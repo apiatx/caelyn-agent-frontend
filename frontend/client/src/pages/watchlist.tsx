@@ -3813,10 +3813,14 @@ export default function WatchlistPage() {
         revenueEstimate: ev.revenue_estimated ?? ev.revenue_estimate ?? null,
         revenueActual: ev.revenue_actual ?? null,
         importance: ev.importance ?? null,
-        logo: ev.logo ?? null,
+        logo: ev.logo ?? ev.image ?? ev.company_logo ?? ev.companyLogo ?? ev.profile_image ?? ev.icon ?? null,
         marketCap: ev.market_cap ?? null,
       };
     }
+
+    // FMP logo URL is deterministic from ticker — same source the old endpoint served
+    const fmpLogo = (ticker: string) =>
+      ticker ? `https://financialmodelingprep.com/image-stock/${ticker}.png` : null;
 
     // Normalize: backend may return { events: [...] } or { earnings: [...] }
     const rawEvents: any[] =
@@ -3913,16 +3917,37 @@ export default function WatchlistPage() {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    {/* ticker + importance badge */}
+                    {/* ticker + logo + importance badge */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      {ev.logo && (
-                        <img
-                          src={ev.logo}
-                          alt={ev.ticker}
-                          style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      )}
+                      {(() => {
+                        const logoSrc = ev.logo ?? fmpLogo(ev.ticker);
+                        if (logoSrc) {
+                          return (
+                            <img
+                              src={logoSrc}
+                              alt={ev.ticker}
+                              style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
+                              onError={e => {
+                                const img = e.currentTarget;
+                                img.style.display = 'none';
+                                const fallback = img.nextSibling as HTMLElement | null;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
+                      <span
+                        style={{
+                          display: 'none', width: 18, height: 18, borderRadius: 3, flexShrink: 0,
+                          alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(255,255,255,0.08)',
+                          fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: C.font,
+                        }}
+                      >
+                        {ev.ticker.slice(0, 2)}
+                      </span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font }}>{ev.ticker}</span>
                       {importance && (
                         <span style={{
