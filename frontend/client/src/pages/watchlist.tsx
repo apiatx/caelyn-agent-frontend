@@ -3159,7 +3159,7 @@ export default function WatchlistPage() {
           color={innerView === 'close-watch' ? C.amber : '#475569'}
           style={{ flexShrink: 0 }}
         />
-        <span>Close Watch</span>
+        <span>Favorites</span>
         <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>({favoritesSet.size})</span>
       </div>
 
@@ -3855,10 +3855,10 @@ export default function WatchlistPage() {
           padding: '10px 14px', borderBottom: screenerFilters.length > 0 && isMainScreener ? 'none' : `1px solid ${C.border}`,
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
         }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'CLOSE WATCH' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: tableTitle === 'FAVORITES' ? C.amber : '#fff', letterSpacing: '0.1em' }}>
             {tableTitle}
           </span>
-          {tableTitle !== 'CLOSE WATCH' && (
+          {tableTitle !== 'FAVORITES' && (
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
               {(['technical', 'fundamental'] as const).map(mode => (
                 <button
@@ -4121,8 +4121,8 @@ export default function WatchlistPage() {
                       <button
                         onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(stock.ticker!); }}
                         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1 }}
-                        aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
-                        title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                        aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Favorites` : `Add ${stock.ticker} to Favorites`}
+                        title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Favorites` : `Add ${stock.ticker} to Favorites`}
                       >
                         <Star
                           size={10}
@@ -4371,8 +4371,8 @@ export default function WatchlistPage() {
             })}
             {visibleRows.length === 0 && (
               <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
-                {tableTitle === 'CLOSE WATCH'
-                  ? 'No Close Watch tickers yet. Star tickers from the Tickers tab to add them here.'
+                {tableTitle === 'FAVORITES'
+                  ? 'No Favorites yet. Star tickers from the Tickers tab to add them here.'
                   : 'No tickers'}
               </div>
             )}
@@ -4629,8 +4629,8 @@ export default function WatchlistPage() {
                 <button
                   onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(stock.ticker!); }}
                   style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1 }}
-                  aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
-                  title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Close Watch` : `Add ${stock.ticker} to Close Watch`}
+                  aria-label={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Favorites` : `Add ${stock.ticker} to Favorites`}
+                  title={favoritesSet.has((stock.ticker || '').toUpperCase()) ? `Remove ${stock.ticker} from Favorites` : `Add ${stock.ticker} to Favorites`}
                 >
                   <Star
                     size={10}
@@ -5092,7 +5092,7 @@ export default function WatchlistPage() {
               {/* ── Ticker Table (wider) ── */}
               {/* Show new-format table whenever we have saved symbols — covers pending state (no sections yet) */}
               {innerView === 'close-watch'
-                ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'CLOSE WATCH' })
+                ? renderNewFormatTickerTable({ rows: closeWatchTickers, title: 'FAVORITES' })
                 : (newFmt || allTickerSymbols.length > 0) ? renderNewFormatTickerTable() : renderLegacyTickerTable()
               }
 
