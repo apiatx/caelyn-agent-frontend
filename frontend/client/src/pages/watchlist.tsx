@@ -4582,8 +4582,7 @@ export default function WatchlistPage() {
                             {themeUniverse.map(t => (
                               <DropdownMenuItem
                                 key={t.theme_id}
-                                onSelect={e => {
-                                  e.preventDefault();
+                                onSelect={() => {
                                   if (!stock.ticker || t.theme_id === undefined) return;
                                   assignPrimaryThemeMutation.mutate({ ticker: stock.ticker, themeId: t.theme_id, displayName: t.display_name });
                                 }}
