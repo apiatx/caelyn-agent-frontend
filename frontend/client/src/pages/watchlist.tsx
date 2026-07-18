@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2 } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -1838,6 +1838,7 @@ export default function WatchlistPage() {
     try { localStorage.setItem('wl_hide_foreign', next ? '1' : '0'); } catch {}
     return next;
   });
+  const [screenerFullscreen, setScreenerFullscreen] = useState(false);
   /* ── Screener filters ────────────────────────────────────────────── */
   const [screenerFilters, setScreenerFilters] = useState<ScreenerFilter[]>(loadStoredFilters);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
@@ -4323,9 +4324,13 @@ export default function WatchlistPage() {
     })() : null;
 
     return (
-      <div style={{
+      <div style={screenerFullscreen ? {
+        position: 'fixed' as const, inset: 0, zIndex: 9998,
+        background: C.bg, border: 'none', borderRadius: 0,
+        display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
+      } : {
         background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column' as const, overflow: 'hidden',
         height: '100%', minHeight: 0,
       }}>
         {filterModal}
@@ -4446,6 +4451,18 @@ export default function WatchlistPage() {
               title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":")'}
             >
               {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
+            </button>
+            <button
+              onClick={() => setScreenerFullscreen(v => !v)}
+              title={screenerFullscreen ? 'Exit full view' : 'Expand to full view'}
+              style={{
+                background: 'none', border: 'none', padding: '2px 4px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                color: screenerFullscreen ? C.teal : C.dim,
+                flexShrink: 0, transition: 'color 0.12s',
+              }}
+            >
+              {screenerFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
             </button>
           </div>
         </div>
