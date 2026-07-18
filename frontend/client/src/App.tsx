@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/main-layout";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
 import { PageContextProvider } from "@/contexts/PageContextContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { AlertBubbles } from "@/components/alert-bubbles";
 import { AlertHistoryButton } from "@/components/alert-history-drawer";
@@ -255,9 +256,11 @@ function AppInner() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppInner />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppInner />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

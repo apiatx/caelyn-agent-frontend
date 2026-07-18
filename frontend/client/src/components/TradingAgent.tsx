@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import caelynLogo from "@assets/image_1771528728963.png";
 import { useAuth } from '@/contexts/AuthContext';
 import { usePageContext } from '@/contexts/PageContextContext';
@@ -1104,11 +1105,7 @@ export default function TradingAgent() {
   }
 
 
-  const C = {
-    bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
-    dim: '#6b7280', green: '#22c55e', red: '#ef4444', blue: '#3b82f6', gold: '#f59e0b',
-    purple: '#a78bfa',
-  };
+  const { C } = useTheme();
   const font = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace";
   const sansFont = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 

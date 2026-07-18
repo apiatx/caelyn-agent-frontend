@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
@@ -57,22 +58,7 @@ function authHeaders(): Record<string, string> {
   return h;
 }
 
-const C = {
-  bg: "#020202",
-  card: "#0a0a0a",
-  cardAlt: "#060606",
-  border: "#1c1c1c",
-  bright: "#f5f5f0",
-  text: "#a9aaa6",
-  dim: "#6b6b68",
-  blue: "#38bdf8",
-  green: "#4ade80",
-  red: "#ef4444",
-  yellow: "#fbbf24",
-  orange: "#f97316",
-  purple: "#a855f7",
-  gold: "#f59e0b",
-};
+let C = DARK_C;
 const font = "'JetBrains Mono', 'Fira Code', monospace";
 const sans = "'Outfit', 'Inter', sans-serif";
 
@@ -5749,6 +5735,7 @@ function SectorsFlowTab({ view }: { view: "sectors" | "themes" | "etfs" | "allst
 
 // ─── Main Options Flow page (master screener — single /api/options/screener fetch) ──
 export default function OptionsPage() {
+  const { C: _C } = useTheme(); C = _C;
   // ── Thematic context (global macro strip) ─────────────────────────────────
   const [thematicContext, setThematicContext] = useState<RegimeContextData | null>(null);
   useEffect(() => {

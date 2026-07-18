@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,14 +21,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CaelynConfluenceSection, CaelynRowBreakdown } from '@/components/caelyn-confluence';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
-const C = {
-  bg: '#020202', card: '#0a0a0a', card2: '#060606',
-  border: 'rgba(255,255,255,0.10)', text: '#f5f5f0', dim: '#a9aaa6',
-  teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
-  amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
-  font: "'JetBrains Mono','Fira Code',monospace",
-  sansFont: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-};
+let C = DARK_C;
+const font = "'JetBrains Mono','Fira Code',monospace";
+const sansFont = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 /* ── signal color helper (for legacy data) ─────────────────────────── */
 function signalColor(signal?: string): string {
@@ -505,7 +501,7 @@ function AnalysisLoadingOverlay() {
       <div style={{ textAlign: 'center' }}>
         <div style={{
           fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.55)',
-          fontFamily: C.font, letterSpacing: '0.04em',
+          fontFamily: font, letterSpacing: '0.04em',
           marginBottom: 8,
         }}>
           MULTI-SOURCE ANALYSIS
@@ -514,7 +510,7 @@ function AnalysisLoadingOverlay() {
           key={stageIdx}
           className="wl-stage-in"
           style={{
-            fontSize: 11, color: C.text, fontFamily: C.sansFont,
+            fontSize: 11, color: C.text, fontFamily: sansFont,
             minHeight: 18,
           }}
         >
@@ -608,20 +604,20 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
       >
         {/* Row 1: symbol | name | price | 1D chg% | risk badge | sentiment badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: insightLine || stock.action_note || stock.technical_setup ? 5 : 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>
             {sym || '—'}
           </span>
           <span style={{ fontSize: 9, color: C.dim, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
             {stock.name || stock.company || sym}
           </span>
           {stock.price != null && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: font, flexShrink: 0 }}>
               ${Number(stock.price).toFixed(2)}
             </span>
           )}
           {chg != null && (
             <span style={{
-              fontSize: 8, fontWeight: 800, fontFamily: C.font,
+              fontSize: 8, fontWeight: 800, fontFamily: font,
               padding: '1px 5px', borderRadius: 3, flexShrink: 0,
               color: chgCol, background: chgCol + '18',
             }}>
@@ -630,7 +626,7 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
           )}
           {stock.risk_level && (
             <span style={{
-              fontSize: 7, fontWeight: 800, fontFamily: C.font,
+              fontSize: 7, fontWeight: 800, fontFamily: font,
               padding: '1px 5px', borderRadius: 3, flexShrink: 0,
               color: riskColor(stock.risk_level),
               background: riskColor(stock.risk_level) + '18',
@@ -641,7 +637,7 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
           )}
           {stock.sentiment && (
             <span style={{
-              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+              fontSize: 7, fontWeight: 700, fontFamily: font,
               padding: '1px 5px', borderRadius: 3, flexShrink: 0,
               color: stock.sentiment.toLowerCase().includes('bull') || stock.sentiment.toLowerCase().includes('positive') ? C.green
                 : stock.sentiment.toLowerCase().includes('bear') || stock.sentiment.toLowerCase().includes('negative') ? C.red
@@ -670,14 +666,14 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
         )}
         {/* Row 3: action note / recommendation */}
         {stock.action_note && (
-          <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: C.sansFont, lineHeight: 1.3, marginBottom: stock.technical_setup ? 3 : 0 }}>
+          <div style={{ fontSize: 9, color: accent, fontWeight: 600, fontFamily: sansFont, lineHeight: 1.3, marginBottom: stock.technical_setup ? 3 : 0 }}>
             → {stock.action_note}
           </div>
         )}
         {/* Row 4: technical setup (dim, smaller) */}
         {stock.technical_setup && (
           <div style={{
-            fontSize: 8, color: C.dim, fontFamily: C.font,
+            fontSize: 8, color: C.dim, fontFamily: font,
             lineHeight: 1.4, letterSpacing: '0.01em',
             overflow: 'hidden', display: '-webkit-box' as any,
             WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as any,
@@ -709,12 +705,12 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
       }}>
         <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, background: `${accent}10` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
               {displayTitle}
             </div>
             {hasAvg && (
               <span style={{
-                fontSize: 11, fontWeight: 800, fontFamily: C.font,
+                fontSize: 11, fontWeight: 800, fontFamily: font,
                 color: avg1dColor,
                 background: avg1dColor + '18',
                 padding: '2px 7px', borderRadius: 4,
@@ -727,12 +723,12 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
           </div>
           {/* Show legacy title dimmed if canonical name overrides it */}
           {section.canonical_theme_name && section.title && section.canonical_theme_name !== section.title && (
-            <div style={{ fontSize: 8, color: C.dim, marginTop: 2, fontFamily: C.font, letterSpacing: '0.02em' }}>
+            <div style={{ fontSize: 8, color: C.dim, marginTop: 2, fontFamily: font, letterSpacing: '0.02em' }}>
               id: {section.canonical_theme_id || section.id}
             </div>
           )}
           {section.subtitle && (
-            <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 9, color: C.dim, marginTop: 3, fontFamily: sansFont, lineHeight: 1.4 }}>
               {section.subtitle}
             </div>
           )}
@@ -764,17 +760,17 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
           borderRadius: 6, padding: '12px 16px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, fontFamily: C.sansFont }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.amber, fontFamily: sansFont }}>
               ⏳ {pendingSymbols.length} Tickers Pending Analysis
             </span>
-            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>
+            <span style={{ fontSize: 9, color: C.dim, fontFamily: sansFont }}>
               Hit Refresh to analyze all tickers in batches
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {pendingSymbols.slice(0, 60).map(sym => (
               <span key={sym} style={{
-                fontSize: 9, fontWeight: 700, fontFamily: C.font,
+                fontSize: 9, fontWeight: 700, fontFamily: font,
                 padding: '2px 7px', borderRadius: 3,
                 color: C.dim, background: C.border,
               }}>
@@ -782,7 +778,7 @@ function NewFormatSections({ analysis, onTickerClick, allTickerSymbols, realtime
               </span>
             ))}
             {pendingSymbols.length > 60 && (
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, padding: '2px 7px' }}>
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: font, padding: '2px 7px' }}>
                 +{pendingSymbols.length - 60} more
               </span>
             )}
@@ -875,12 +871,12 @@ function ThemePerformanceGroupings({ resp, isLoading, isError, onTickerClick }: 
           }}>
             <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, background: `${accent}10` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: C.sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: accent, fontFamily: sansFont, letterSpacing: '0.02em', flex: 1, minWidth: 0 }}>
                   {name}
                 </div>
                 {hasPct && (
                   <span style={{
-                    fontSize: 11, fontWeight: 800, fontFamily: C.font,
+                    fontSize: 11, fontWeight: 800, fontFamily: font,
                     color: pctColor,
                     background: pctColor + '18',
                     padding: '2px 7px', borderRadius: 4,
@@ -891,7 +887,7 @@ function ThemePerformanceGroupings({ resp, isLoading, isError, onTickerClick }: 
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 8, color: C.dim, marginTop: 3, fontFamily: C.font }}>
+              <div style={{ fontSize: 8, color: C.dim, marginTop: 3, fontFamily: font }}>
                 {tickers.length} ticker{tickers.length === 1 ? '' : 's'}
               </div>
             </div>
@@ -915,16 +911,16 @@ function ThemePerformanceGroupings({ resp, isLoading, isError, onTickerClick }: 
                     onMouseEnter={e => (e.currentTarget.style.background = `${accent}0c`)}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>
                       {sym || DASH}
                     </span>
                     {t.price != null && (
-                      <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, flex: 1, textAlign: 'left' as const }}>
+                      <span style={{ fontSize: 10, color: C.text, fontFamily: font, flex: 1, textAlign: 'left' as const }}>
                         {formatPrice(t.price)}
                       </span>
                     )}
                     <span style={{
-                      fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                      fontSize: 9, fontWeight: 800, fontFamily: font,
                       padding: '1px 6px', borderRadius: 3, flexShrink: 0, marginLeft: 'auto',
                       color: chgColor, background: chgColor + '18',
                     }}>
@@ -1783,6 +1779,7 @@ function wlApiHeaders(): Record<string, string> {
 }
 
 export default function WatchlistPage() {
+  const { C: _C } = useTheme(); C = _C;
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -3375,7 +3372,7 @@ export default function WatchlistPage() {
               border: `1px solid ${isActive ? C.border : 'transparent'}`,
               borderBottom: isActive ? `1px solid ${C.card}` : '1px solid transparent',
               cursor: 'pointer', marginBottom: -1,
-              fontFamily: C.font, fontSize: 11,
+              fontFamily: font, fontSize: 11,
               color: isActive ? C.text : '#475569',
               transition: 'color 0.15s',
             }}
@@ -3401,7 +3398,7 @@ export default function WatchlistPage() {
                 style={{
                   width: 120, padding: '1px 4px', borderRadius: 2,
                   background: C.bg, border: '1px solid rgba(255,255,255,0.35)',
-                  color: C.text, fontFamily: C.font, fontSize: 11,
+                  color: C.text, fontFamily: font, fontSize: 11,
                   outline: 'none',
                 }}
                 onClick={e => e.stopPropagation()}
@@ -3462,7 +3459,7 @@ export default function WatchlistPage() {
           border: `1px solid ${innerView === 'close-watch' ? C.border : 'transparent'}`,
           borderBottom: innerView === 'close-watch' ? `1px solid ${C.card}` : '1px solid transparent',
           cursor: 'pointer', marginBottom: -1,
-          fontFamily: C.font, fontSize: 11,
+          fontFamily: font, fontSize: 11,
           color: innerView === 'close-watch' ? C.amber : '#475569',
           transition: 'color 0.15s',
           userSelect: 'none',
@@ -3494,7 +3491,7 @@ export default function WatchlistPage() {
               border: `1px solid ${isActive ? C.border : 'transparent'}`,
               borderBottom: isActive ? `1px solid ${C.card}` : '1px solid transparent',
               cursor: 'pointer', marginBottom: -1,
-              fontFamily: C.font, fontSize: 11,
+              fontFamily: font, fontSize: 11,
               color: isActive ? C.text : '#475569',
               transition: 'color 0.15s',
             }}
@@ -3520,7 +3517,7 @@ export default function WatchlistPage() {
                 style={{
                   width: 120, padding: '1px 4px', borderRadius: 2,
                   background: C.bg, border: '1px solid rgba(255,255,255,0.35)',
-                  color: C.text, fontFamily: C.font, fontSize: 11,
+                  color: C.text, fontFamily: font, fontSize: 11,
                   outline: 'none',
                 }}
                 onClick={e => e.stopPropagation()}
@@ -3577,7 +3574,7 @@ export default function WatchlistPage() {
           color: showAddPanel ? 'rgba(255,255,255,0.70)' : '#475569',
           fontSize: 16, fontWeight: 700,
           transition: 'color 0.15s',
-          fontFamily: C.font,
+          fontFamily: font,
         }}
         title="Add new watchlist"
       >
@@ -3616,7 +3613,7 @@ export default function WatchlistPage() {
           style={{
             flex: 1, padding: '6px 10px', borderRadius: 4,
             background: C.bg, border: `1px solid ${C.border}`,
-            color: C.text, fontFamily: C.font, fontSize: 11,
+            color: C.text, fontFamily: font, fontSize: 11,
             outline: 'none',
           }}
           onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'}
@@ -3663,7 +3660,7 @@ export default function WatchlistPage() {
             style={{
               width: '100%', minHeight: 60, padding: 10, borderRadius: 4,
               background: C.bg, border: `1px solid ${C.border}`,
-              color: C.text, fontFamily: C.font, fontSize: 11,
+              color: C.text, fontFamily: font, fontSize: 11,
               resize: 'vertical', outline: 'none',
             }}
             onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'}
@@ -3678,7 +3675,7 @@ export default function WatchlistPage() {
               background: plainTextInput.trim() ? C.purple : 'transparent',
               border: `1px solid ${plainTextInput.trim() ? C.purple : C.border}`,
               color: plainTextInput.trim() ? '#fff' : C.dim,
-              fontSize: 10, fontWeight: 700, fontFamily: C.font,
+              fontSize: 10, fontWeight: 700, fontFamily: font,
               cursor: plainTextInput.trim() ? 'pointer' : 'not-allowed',
               letterSpacing: '0.04em',
             }}
@@ -3719,7 +3716,7 @@ export default function WatchlistPage() {
       >
         <span style={{
           fontSize: 8, fontWeight: 800, color: C.dim,
-          fontFamily: C.font, letterSpacing: '0.08em',
+          fontFamily: font, letterSpacing: '0.08em',
           textTransform: 'uppercase', flexShrink: 0,
         }}>
           THEMES
@@ -3732,7 +3729,7 @@ export default function WatchlistPage() {
               flexShrink: 0, cursor: 'pointer',
               padding: '3px 10px', borderRadius: 4,
               fontSize: 10, fontWeight: 700,
-              fontFamily: C.sansFont,
+              fontFamily: sansFont,
               color: C.teal,
               background: 'rgba(20,184,166,0.12)',
               border: `1px solid ${C.teal}`,
@@ -3752,7 +3749,7 @@ export default function WatchlistPage() {
                 flexShrink: 0, cursor: 'pointer',
                 padding: '3px 10px', borderRadius: 4,
                 fontSize: 10, fontWeight: active ? 700 : 600,
-                fontFamily: C.sansFont,
+                fontFamily: sansFont,
                 color: active ? '#fff' : 'rgba(255,255,255,0.60)',
                 background: active ? 'rgba(20,184,166,0.18)' : 'rgba(255,255,255,0.06)',
                 border: active ? `1px solid ${C.teal}` : '1px solid rgba(255,255,255,0.12)',
@@ -3790,12 +3787,12 @@ export default function WatchlistPage() {
           <div>
             <div style={{
               fontSize: 11, fontWeight: 700, color: C.text,
-              fontFamily: C.sansFont,
+              fontFamily: sansFont,
             }}>
               {isUpgrading ? 'Auto-upgrading to multi-source analysis...' : 'Multi-source deep analysis available'}
             </div>
             <div style={{
-              fontSize: 10, color: C.dim, fontFamily: C.sansFont, marginTop: 1,
+              fontSize: 10, color: C.dim, fontFamily: sansFont, marginTop: 1,
             }}>
               {isUpgrading
                 ? 'Fetching technical, sentiment, and catalyst data from multiple AI sources.'
@@ -3813,7 +3810,7 @@ export default function WatchlistPage() {
               background: 'rgba(255,255,255,0.10)',
               border: '1px solid rgba(255,255,255,0.18)',
               color: '#f5f5f0', fontSize: 10, fontWeight: 800,
-              fontFamily: C.font, cursor: 'pointer',
+              fontFamily: font, cursor: 'pointer',
               letterSpacing: '0.05em',
               boxShadow: '0 0 12px rgba(255,255,255,0.06)',
             }}
@@ -3857,17 +3854,17 @@ export default function WatchlistPage() {
               onMouseEnter={e => e.currentTarget.style.background = col + '22'}
               onMouseLeave={e => e.currentTarget.style.background = col + '10'}
             >
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: font }}>
                 {stock.ticker || '\u2014'}
               </span>
               {stock.price != null && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>
                   ${stock.price.toFixed(2)}
                 </span>
               )}
               {chg1d != null && (
                 <span style={{
-                  fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                  fontSize: 8, fontWeight: 800, fontFamily: font,
                   padding: '1px 5px', borderRadius: 3,
                   color: cCol,
                   background: cCol + '15',
@@ -3892,7 +3889,7 @@ export default function WatchlistPage() {
             padding: '5px 12px', borderRadius: 4,
             background: C.amber + '10', border: `1px solid ${C.amber}25`,
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: C.font }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: font }}>
               +{pendingCount} pending analysis
             </span>
           </div>
@@ -3930,11 +3927,11 @@ export default function WatchlistPage() {
               onMouseEnter={e => e.currentTarget.style.background = col + '25'}
               onMouseLeave={e => e.currentTarget.style.background = col + '12'}
             >
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: C.font }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: font }}>
                 {stock.ticker || '\u2014'}
               </span>
               <span style={{
-                fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                fontSize: 8, fontWeight: 800, fontFamily: font,
                 padding: '1px 6px', borderRadius: 3,
                 color: '#000', background: col,
                 textTransform: 'uppercase' as const, letterSpacing: '0.04em',
@@ -4000,7 +3997,7 @@ export default function WatchlistPage() {
             <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
             </div>
-            <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: C.font }}>
+            <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: font }}>
               No tickers in this watchlist.
             </div>
           </div>
@@ -4019,7 +4016,7 @@ export default function WatchlistPage() {
             <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
             </div>
-            <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: C.font }}>
+            <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: font }}>
               No upcoming earnings for this watchlist.
             </div>
           </div>
@@ -4100,15 +4097,15 @@ export default function WatchlistPage() {
                           display: 'none', width: 18, height: 18, borderRadius: 3, flexShrink: 0,
                           alignItems: 'center', justifyContent: 'center',
                           background: 'rgba(255,255,255,0.08)',
-                          fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: C.font,
+                          fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: font,
                         }}
                       >
                         {ev.ticker.slice(0, 2)}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: C.font }}>{ev.ticker}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font }}>{ev.ticker}</span>
                       {importance && (
                         <span style={{
-                          fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                          fontSize: 7, fontWeight: 800, fontFamily: font,
                           padding: '1px 5px', borderRadius: 3,
                           color: importanceColor, background: importanceColor + '20',
                           textTransform: 'uppercase' as const, letterSpacing: '0.05em',
@@ -4120,11 +4117,11 @@ export default function WatchlistPage() {
 
                     {/* date + pre/post market */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: C.font }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: font }}>
                         {ev.date || 'Date unavailable'}
                       </span>
                       {ev.time && (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>
                           {ev.time === 'bmo' ? 'pre-mkt' : ev.time === 'amc' ? 'post-mkt' : ev.time}
                         </span>
                       )}
@@ -4133,7 +4130,7 @@ export default function WatchlistPage() {
                     {/* EPS est + revenue */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
                       {ev.epsEstimate != null && (
-                        <div style={{ fontSize: 9, fontFamily: C.font }}>
+                        <div style={{ fontSize: 9, fontFamily: font }}>
                           <span style={{ color: C.dim }}>EPS </span>
                           <span style={{ color: C.text, fontWeight: 700 }}>${(ev.epsEstimate as number).toFixed(2)}</span>
                           {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
@@ -4141,7 +4138,7 @@ export default function WatchlistPage() {
                         </div>
                       )}
                       {ev.revenueEstimate != null && (
-                        <div style={{ fontSize: 9, fontFamily: C.font }}>
+                        <div style={{ fontSize: 9, fontFamily: font }}>
                           <span style={{ color: C.dim }}>Rev </span>
                           <span style={{ color: C.text, fontWeight: 700 }}>
                             {(ev.revenueEstimate as number) >= 1e9
@@ -4230,7 +4227,7 @@ export default function WatchlistPage() {
       const isBetween  = draftOp === 'between';
       const techFields = SCREENER_FILTER_FIELDS.filter(f => f.group === 'Technical');
       const fundFields = SCREENER_FILTER_FIELDS.filter(f => f.group === 'Fundamental');
-      const INPUT_S: React.CSSProperties = { fontSize: 11, padding: '5px 8px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: C.font, outline: 'none' };
+      const INPUT_S: React.CSSProperties = { fontSize: 11, padding: '5px 8px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontFamily: font, outline: 'none' };
       const handleAdd = () => {
         if (needsValue && !draftVal.trim()) return;
         const next: ScreenerFilter[] = [...screenerFilters, {
@@ -4260,21 +4257,21 @@ export default function WatchlistPage() {
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, width: 380, maxHeight: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column', boxShadow: '0 16px 48px rgba(0,0,0,0.65)', overflow: 'hidden' }}>
             {/* Modal header */}
             <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: '0.08em', fontFamily: C.font }}>SCREENER FILTERS</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: '0.08em', fontFamily: font }}>SCREENER FILTERS</span>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 {screenerFilters.length > 0 && (
-                  <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: `${C.red}15`, border: `1px solid ${C.red}35`, color: C.red, cursor: 'pointer', fontFamily: C.font, fontWeight: 700 }}>
+                  <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: `${C.red}15`, border: `1px solid ${C.red}35`, color: C.red, cursor: 'pointer', fontFamily: font, fontWeight: 700 }}>
                     Clear All
                   </button>
                 )}
-                <button onClick={() => setShowFilterModal(false)} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, cursor: 'pointer', fontFamily: C.font }}>✕</button>
+                <button onClick={() => setShowFilterModal(false)} style={{ fontSize: 9, padding: '3px 8px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, cursor: 'pointer', fontFamily: font }}>✕</button>
               </div>
             </div>
 
             <div style={{ flex: 1, overflow: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Add filter form */}
               <div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: C.font, marginBottom: 8 }}>Add Filter</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: font, marginBottom: 8 }}>Add Filter</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {/* Field selector */}
                   <select value={draftField} onChange={e => handleFieldChange(e.target.value)} style={{ ...INPUT_S, width: '100%', cursor: 'pointer' }}>
@@ -4300,7 +4297,7 @@ export default function WatchlistPage() {
                   <button
                     onClick={handleAdd}
                     disabled={needsValue && !draftVal.trim()}
-                    style={{ fontSize: 10, padding: '6px 12px', borderRadius: 4, background: `${C.teal}1a`, border: `1px solid ${C.teal}55`, color: C.teal, cursor: (needsValue && !draftVal.trim()) ? 'not-allowed' : 'pointer', fontFamily: C.font, fontWeight: 700, opacity: (needsValue && !draftVal.trim()) ? 0.45 : 1, transition: 'opacity 0.1s' }}
+                    style={{ fontSize: 10, padding: '6px 12px', borderRadius: 4, background: `${C.teal}1a`, border: `1px solid ${C.teal}55`, color: C.teal, cursor: (needsValue && !draftVal.trim()) ? 'not-allowed' : 'pointer', fontFamily: font, fontWeight: 700, opacity: (needsValue && !draftVal.trim()) ? 0.45 : 1, transition: 'opacity 0.1s' }}
                   >
                     + Add Filter
                   </button>
@@ -4310,20 +4307,20 @@ export default function WatchlistPage() {
               {/* Active filters list */}
               {screenerFilters.length > 0 ? (
                 <div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: C.font, marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: font, marginBottom: 8 }}>
                     Active ({screenerFilters.length}) — AND logic
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {screenerFilters.map(f => (
                       <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: `${C.teal}0d`, border: `1px solid ${C.teal}30`, borderRadius: 6 }}>
-                        <span style={{ flex: 1, fontSize: 11, color: C.text, fontFamily: C.font }}>{formatFilterChipLabel(f)}</span>
+                        <span style={{ flex: 1, fontSize: 11, color: C.text, fontFamily: font }}>{formatFilterChipLabel(f)}</span>
                         <button onClick={() => removeFilter(f.id)} style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0, opacity: 0.7 }}>×</button>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center' as const, padding: '16px 0', color: C.dim, fontSize: 11, fontFamily: C.font }}>
+                <div style={{ textAlign: 'center' as const, padding: '16px 0', color: C.dim, fontSize: 11, fontFamily: font }}>
                   No active filters. Add one above to narrow the screener.
                 </div>
               )}
@@ -4364,7 +4361,7 @@ export default function WatchlistPage() {
                   style={{
                     fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
                     padding: '3px 9px', cursor: 'pointer',
-                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    textTransform: 'uppercase' as const, fontFamily: font,
                     background: screenerMode === mode ? `${C.teal}22` : 'transparent',
                     color: screenerMode === mode ? C.teal : C.dim,
                     border: 'none',
@@ -4394,7 +4391,7 @@ export default function WatchlistPage() {
           </span>
           {isRefreshing && !opts?.rows && (
             <span style={{
-              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+              fontSize: 7, fontWeight: 700, fontFamily: font,
               padding: '2px 6px', borderRadius: 3,
               color: C.amber, background: C.amber + '18',
               border: `1px solid ${C.amber}30`,
@@ -4405,7 +4402,7 @@ export default function WatchlistPage() {
           )}
           {screenerMode === 'technical' && !opts?.rows && !isRefreshing && pendingCount > 0 && (
             <span style={{
-              fontSize: 7, fontWeight: 800, fontFamily: C.font,
+              fontSize: 7, fontWeight: 800, fontFamily: font,
               padding: '2px 6px', borderRadius: 3,
               color: C.amber, background: C.amber + '18',
               border: `1px solid ${C.amber}30`,
@@ -4435,7 +4432,7 @@ export default function WatchlistPage() {
                 style={{
                   fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
                   padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
-                  textTransform: 'uppercase' as const, fontFamily: C.font,
+                  textTransform: 'uppercase' as const, fontFamily: font,
                   background: screenerFilters.length > 0 ? `${C.teal}22` : 'transparent',
                   color: screenerFilters.length > 0 ? C.teal : C.dim,
                   border: `1px solid ${screenerFilters.length > 0 ? `${C.teal}60` : C.border}`,
@@ -4451,7 +4448,7 @@ export default function WatchlistPage() {
               style={{
                 fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
                 padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
-                textTransform: 'uppercase' as const, fontFamily: C.font,
+                textTransform: 'uppercase' as const, fontFamily: font,
                 background: hideForeignTickers ? `${C.teal}22` : 'transparent',
                 color: hideForeignTickers ? C.teal : C.dim,
                 border: `1px solid ${hideForeignTickers ? `${C.teal}60` : C.border}`,
@@ -4482,13 +4479,13 @@ export default function WatchlistPage() {
             {screenerFilters.map(f => {
               const next = screenerFilters.filter(x => x.id !== f.id);
               return (
-                <span key={f.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, padding: '2px 6px 2px 7px', borderRadius: 10, background: `${C.teal}18`, border: `1px solid ${C.teal}40`, color: C.teal, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                <span key={f.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, padding: '2px 6px 2px 7px', borderRadius: 10, background: `${C.teal}18`, border: `1px solid ${C.teal}40`, color: C.teal, fontFamily: font, whiteSpace: 'nowrap' as const }}>
                   {formatFilterChipLabel(f)}
                   <button onClick={() => { setScreenerFilters(next); saveFiltersToStorage(next); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 12, lineHeight: 1, padding: '0 1px', opacity: 0.65 }}>×</button>
                 </span>
               );
             })}
-            <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: 'transparent', border: `1px solid ${C.dim}40`, color: C.dim, cursor: 'pointer', fontFamily: C.font }}>
+            <button onClick={() => { setScreenerFilters([]); saveFiltersToStorage([]); }} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: 'transparent', border: `1px solid ${C.dim}40`, color: C.dim, cursor: 'pointer', fontFamily: font }}>
               Clear All
             </button>
           </div>
@@ -4570,12 +4567,12 @@ export default function WatchlistPage() {
 
             {/* loading / empty states for screener */}
             {filteredRows.length === 0 && (wlLoading || wlFetching) && !isRefreshing && (
-              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                 Loading watchlist…
               </div>
             )}
             {filteredRows.length === 0 && !wlLoading && !wlFetching && !isRefreshing && (
-              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+              <div style={{ padding: '40px 14px', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                 No tickers in this watchlist.
               </div>
             )}
@@ -4673,7 +4670,7 @@ export default function WatchlistPage() {
                         <Trash2 size={9} />
                       </button>
                     )}
-                    <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: isPending ? C.dim : '#fff', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                       {stock.ticker || DASH}
                     </span>
                     {!isPending && _sym && (
@@ -4711,7 +4708,7 @@ export default function WatchlistPage() {
                       catLabel('O', hs.options),
                     ].filter(Boolean).join('  ');
                     return (
-                      <span style={{ fontSize: 8, color: allDone ? C.green : anyActive ? C.amber : 'rgba(255,255,255,0.35)', background: allDone ? `${C.green}18` : anyActive ? `${C.amber}18` : 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: C.font, flexShrink: 0 }}>
+                      <span style={{ fontSize: 8, color: allDone ? C.green : anyActive ? C.amber : 'rgba(255,255,255,0.35)', background: allDone ? `${C.green}18` : anyActive ? `${C.amber}18` : 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: font, flexShrink: 0 }}>
                         {parts || 'Hydrating…'}
                       </span>
                     );
@@ -4732,7 +4729,7 @@ export default function WatchlistPage() {
                               style={{
                                 background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
                                 display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
-                                fontSize: 10, fontFamily: C.font,
+                                fontSize: 10, fontFamily: font,
                                 color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
                                 opacity: rowThemePending ? 0.6 : 1,
                               }}
@@ -4779,7 +4776,7 @@ export default function WatchlistPage() {
                       {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
                     </span>
                   )}
-                  <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
                     {formatPrice(stock.price)}
                     {!isPending && stock.price_source && (
                       <PriceFreshnessBadge
@@ -4796,18 +4793,18 @@ export default function WatchlistPage() {
                       />
                     )}
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: font, whiteSpace: 'nowrap' as const }}>
                     {formatChgPct(chg1d)}
                   </span>
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, whiteSpace: 'nowrap' as const }}>
                     {formatVolume(stock.volume)}
                   </span>
                   {/* Rel Vol — raw value only */}
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, whiteSpace: 'nowrap' as const }}>
                     {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
                   </span>
                   {/* REL VOL RANK MOVE — rank position change since last snapshot */}
-                  <span style={{ fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const }}>
                     {stock.rel_vol_trend === 'up' && stock.rel_vol_rank_delta != null ? (
                       <span
                         style={{ color: '#22c55e', fontWeight: 600 }}
@@ -4833,7 +4830,7 @@ export default function WatchlistPage() {
                   {/* Vol/MC — raw value only */}
                   <span
                     style={{
-                      fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const,
+                      fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const,
                       color: volMcLabelColor(stock.vol_mc_label, C),
                     }}
                     title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}
@@ -4846,7 +4843,7 @@ export default function WatchlistPage() {
                       title={_stageReason ?? undefined}
                       style={{
                         display: 'inline-block',
-                        fontSize: 7, fontWeight: 800, fontFamily: C.font,
+                        fontSize: 7, fontWeight: 800, fontFamily: font,
                         padding: '2px 5px', borderRadius: 3,
                         color: _sClr, background: _sBg,
                         border: `1px solid ${_sBdr}`,
@@ -4858,25 +4855,25 @@ export default function WatchlistPage() {
                       {_stageLabel}
                     </span>
                   ) : (
-                    <span style={{ fontSize: 10, fontFamily: C.font, color: C.dim }}>—</span>
+                    <span style={{ fontSize: 10, fontFamily: font, color: C.dim }}>—</span>
                   )}
                   {/* Opt Score — col 11 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
                   {/* Opt Signal — col 12 */}
-                  <span style={{ fontSize:9, fontFamily:C.font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
+                  <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
                   {/* P/C — col 13 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
                   {/* IV — col 14 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
                   {/* EM — col 15 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
                   {/* Opt Vol — col 16 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
                   {/* OI — col 17 */}
-                  <span style={{ fontSize:10, fontFamily:C.font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
+                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
                   {/* ── Technical Metrics Columns 18-30 ────────────────────── */}
                   {((_tm, _ts, _tts) => {
-                    const _sp: React.CSSProperties = { fontSize: 10, fontFamily: C.font, whiteSpace: 'nowrap' as const };
+                    const _sp: React.CSSProperties = { fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const };
                     const _tl = (s: string | null | undefined) =>
                       s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : DASH;
                     const _signedPct = (v: number | null | undefined) =>
@@ -5010,11 +5007,11 @@ export default function WatchlistPage() {
       textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
       cursor: 'pointer',
       background: C.card, borderBottom: `1px solid ${C.border}`,
-      fontFamily: C.font,
+      fontFamily: font,
     };
     const TD: React.CSSProperties = {
       padding: '7px 14px', fontSize: 10, whiteSpace: 'nowrap' as const,
-      borderBottom: `1px solid ${C.border}`, fontFamily: C.font,
+      borderBottom: `1px solid ${C.border}`, fontFamily: font,
     };
 
     return (
@@ -5158,7 +5155,7 @@ export default function WatchlistPage() {
                               style={{
                                 background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
                                 display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
-                                fontSize: 10, fontFamily: C.font,
+                                fontSize: 10, fontFamily: font,
                                 color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
                                 opacity: rowThemePending ? 0.6 : 1,
                               }}
@@ -5386,11 +5383,11 @@ export default function WatchlistPage() {
   /* ── empty state — terminal prompt ───────────────────────────────── */
   if (!activeId || (!wlLoading && (!watchlist || watchlist.empty))) {
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: font, display: 'flex', flexDirection: 'column' }}>
         {renderTabBar()}
         {renderAddPanel()}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-          <div style={{ fontFamily: C.font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
+          <div style={{ fontFamily: font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
             <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> No watchlist loaded.</div>
             <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> Click <span style={{ color: 'rgba(255,255,255,0.70)' }}>+</span> above to add one, or upload a CSV in AI Terminal.</div>
             <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
@@ -5401,7 +5398,7 @@ export default function WatchlistPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.font, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: font, display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Watchlist Tabs ── */}
       {renderTabBar()}
@@ -5522,7 +5519,7 @@ export default function WatchlistPage() {
                         background: inputBg,
                         border: `1px solid ${inputBorderColor}`,
                         color: inputColor,
-                        fontFamily: C.font,
+                        fontFamily: font,
                         fontSize: 10,
                         outline: 'none',
                         transition: 'border-color 0.15s, background 0.15s',
@@ -5538,17 +5535,17 @@ export default function WatchlistPage() {
                         borderRadius: 5, boxShadow: '0 8px 28px rgba(0,0,0,0.7)',
                       }}>
                         {secSearchLoading && (
-                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: C.font }}>
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: font }}>
                             Searching securities…
                           </div>
                         )}
                         {secSearchError && !secSearchLoading && (
-                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.red, fontFamily: C.font }}>
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.red, fontFamily: font }}>
                             Security search unavailable. Try again.
                           </div>
                         )}
                         {!secSearchLoading && !secSearchError && searchResults.length === 0 && debouncedSearch.length > 0 && (
-                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: C.font }}>
+                          <div style={{ padding: '10px 12px', fontSize: 10, color: C.dim, fontFamily: font }}>
                             No matching securities found.
                           </div>
                         )}
@@ -5572,7 +5569,7 @@ export default function WatchlistPage() {
                             >
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ fontFamily: C.font, fontWeight: 800, fontSize: 11, color: '#fff', letterSpacing: '0.04em' }}>
+                                  <span style={{ fontFamily: font, fontWeight: 800, fontSize: 11, color: '#fff', letterSpacing: '0.04em' }}>
                                     {r.canonical_ticker}
                                   </span>
                                   {inWl && (
@@ -5612,7 +5609,7 @@ export default function WatchlistPage() {
                         : addTickerStatus === 'error' ? C.red
                         : addTickerStatus === 'duplicate' ? C.amber
                         : addDisabled ? '#333' : C.teal,
-                      fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                      fontFamily: font, fontSize: 10, fontWeight: 700,
                       cursor: addDisabled ? 'default' : 'pointer',
                       transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }}
@@ -5671,7 +5668,7 @@ export default function WatchlistPage() {
                   background: `${C.teal}10`, border: `1px solid ${C.teal}30`,
                 }}>
                   <div className="wl-spin" style={{ width: 10, height: 10, border: `2px solid ${C.teal}30`, borderTopColor: C.teal, borderRadius: '50%', flexShrink: 0 }} />
-                  <span style={{ fontSize: 9, color: C.teal, fontFamily: C.sansFont }}>
+                  <span style={{ fontSize: 9, color: C.teal, fontFamily: sansFont }}>
                     Agent analysis running…
                   </span>
                 </div>
@@ -5683,8 +5680,8 @@ export default function WatchlistPage() {
                   background: `${C.red}12`, border: `1px solid ${C.red}30`,
                   maxWidth: 280,
                 }}>
-                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.font, fontWeight: 700 }}>✕</span>
-                  <span style={{ fontSize: 9, color: C.red, fontFamily: C.sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                  <span style={{ fontSize: 9, color: C.red, fontFamily: font, fontWeight: 700 }}>✕</span>
+                  <span style={{ fontSize: 9, color: C.red, fontFamily: sansFont, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                     {refreshError}
                   </span>
                   <button onClick={() => setRefreshError(null)} style={{ background: 'none', border: 'none', color: C.red, cursor: 'pointer', padding: 0, fontSize: 11, lineHeight: 1, flexShrink: 0 }}>×</button>
@@ -5725,7 +5722,7 @@ export default function WatchlistPage() {
                     background: 'transparent',
                     border: `1px solid ${C.border}`,
                     color: C.dim, fontSize: 10, fontWeight: 700,
-                    fontFamily: C.font, cursor: 'not-allowed',
+                    fontFamily: font, cursor: 'not-allowed',
                     letterSpacing: '0.04em', opacity: 0.5,
                   }}
                 >
@@ -5743,7 +5740,7 @@ export default function WatchlistPage() {
                     background: strategyReportModal.loading ? `rgba(99,102,241,0.15)` : 'transparent',
                     border: `1px solid rgba(99,102,241,0.5)`,
                     color: '#a5b4fc', fontSize: 10, fontWeight: 700,
-                    fontFamily: C.font,
+                    fontFamily: font,
                     cursor: strategyReportModal.loading ? 'not-allowed' : 'pointer',
                     opacity: strategyReportModal.loading ? 0.7 : 1,
                     letterSpacing: '0.04em',
@@ -5836,7 +5833,7 @@ export default function WatchlistPage() {
                           onClick={() => setNewsView(v)}
                           style={{
                             fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
-                            padding: '3px 7px', borderRadius: 3, fontFamily: C.font,
+                            padding: '3px 7px', borderRadius: 3, fontFamily: font,
                             color: active ? C.teal : C.dim,
                             background: active ? `${C.teal}14` : 'transparent',
                             border: `1px solid ${active ? `${C.teal}40` : C.border}`,
@@ -5859,7 +5856,7 @@ export default function WatchlistPage() {
                     <div style={{
                       margin: 12, padding: '10px 14px', borderRadius: 4,
                       background: '#ef444412', border: '1px solid #ef444430',
-                      fontSize: 10, color: '#ef4444', fontFamily: C.font,
+                      fontSize: 10, color: '#ef4444', fontFamily: font,
                     }}>
                       News data unavailable — server error. Will retry automatically.
                     </div>
@@ -5932,7 +5929,7 @@ export default function WatchlistPage() {
                       textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none',
                       background: '#ffffff04', whiteSpace: 'nowrap',
                       borderBottom: `1px solid ${C.border}`,
-                      textAlign: align, fontFamily: C.font,
+                      textAlign: align, fontFamily: font,
                     });
 
                     return activityRows.length === 0 ? (
@@ -5978,7 +5975,7 @@ export default function WatchlistPage() {
                               >
                                 <td style={{ padding: '5px 5px' }}>
                                   <span style={{
-                                    fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                                    fontSize: 9, fontWeight: 800, fontFamily: font,
                                     padding: '2px 5px', borderRadius: 3,
                                     color: col, background: col + '15', border: `1px solid ${col}25`,
                                     textTransform: 'uppercase',
@@ -5986,13 +5983,13 @@ export default function WatchlistPage() {
                                     {row.ticker}
                                   </span>
                                 </td>
-                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row.articles_48h != null ? C.text : C.dim, fontFamily: C.font }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row.articles_48h != null ? C.text : C.dim, fontFamily: font }}>
                                   {row.articles_48h != null ? row.articles_48h : '—'}
                                 </td>
-                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row._newsMc != null ? C.text : C.dim, fontFamily: C.font }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: row._newsMc != null ? C.text : C.dim, fontFamily: font }}>
                                   {fmtNewsMc(row._newsMc)}
                                 </td>
-                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: C.font, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '5px 5px', textAlign: 'right', fontSize: 10, color: delta.color, fontFamily: font, whiteSpace: 'nowrap' }}>
                                   {delta.text}
                                 </td>
                               </tr>
@@ -6037,7 +6034,7 @@ export default function WatchlistPage() {
                             >
                               {item.ticker && (
                                 <span style={{
-                                  flexShrink: 0, fontSize: 8, fontWeight: 800, fontFamily: C.font,
+                                  flexShrink: 0, fontSize: 8, fontWeight: 800, fontFamily: font,
                                   padding: '2px 7px', borderRadius: 3,
                                   color: col, background: col + '15', border: `1px solid ${col}25`,
                                   textTransform: 'uppercase' as const,
@@ -6049,17 +6046,17 @@ export default function WatchlistPage() {
                                 {(item.catalyst_type || item.signal_strength || (item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown')) && (
                                   <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginBottom: 4 }}>
                                     {item.catalyst_type && (
-                                      <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: C.amber, background: C.amber + '15', border: `1px solid ${C.amber}25`, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+                                      <span style={{ fontSize: 8, fontWeight: 700, fontFamily: font, padding: '1px 5px', borderRadius: 3, color: C.amber, background: C.amber + '15', border: `1px solid ${C.amber}25`, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
                                         {item.catalyst_type}
                                       </span>
                                     )}
                                     {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && impactCol && (
-                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: impactCol, background: impactCol + '12', border: `1px solid ${impactCol}22`, textTransform: 'capitalize' as const }}>
+                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: font, padding: '1px 5px', borderRadius: 3, color: impactCol, background: impactCol + '12', border: `1px solid ${impactCol}22`, textTransform: 'capitalize' as const }}>
                                         {item.bull_bear_impact}
                                       </span>
                                     )}
                                     {item.signal_strength && (
-                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '1px 5px', borderRadius: 3, color: C.dim, background: '#ffffff08', border: `1px solid ${C.border}`, textTransform: 'capitalize' as const }}>
+                                      <span style={{ fontSize: 8, fontWeight: 600, fontFamily: font, padding: '1px 5px', borderRadius: 3, color: C.dim, background: '#ffffff08', border: `1px solid ${C.border}`, textTransform: 'capitalize' as const }}>
                                         {item.signal_strength}
                                       </span>
                                     )}
@@ -6069,7 +6066,7 @@ export default function WatchlistPage() {
                                   {item.title}
                                 </div>
                                 {item.why_it_matters && (
-                                  <div style={{ fontSize: 10, color: C.dim, fontFamily: C.font, lineHeight: 1.35, marginBottom: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
+                                  <div style={{ fontSize: 10, color: C.dim, fontFamily: font, lineHeight: 1.35, marginBottom: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
                                     {item.why_it_matters}
                                   </div>
                                 )}
@@ -6141,11 +6138,11 @@ export default function WatchlistPage() {
                             >
                               {/* ── Catalyst + impact badges row ── */}
                               <div style={{ display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 4, marginBottom: 5 }}>
-                                <span style={{ fontSize: 8, fontWeight: 700, fontFamily: C.font, padding: '2px 6px', borderRadius: 3, color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}30`, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+                                <span style={{ fontSize: 8, fontWeight: 700, fontFamily: font, padding: '2px 6px', borderRadius: 3, color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}30`, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
                                   Hyperscaler Deal
                                 </span>
                                 {item.bull_bear_impact && item.bull_bear_impact !== 'neutral' && item.bull_bear_impact !== 'unknown' && (
-                                  <span style={{ fontSize: 8, fontWeight: 600, fontFamily: C.font, padding: '2px 5px', borderRadius: 3, color: col, background: col + '10', border: `1px solid ${col}20`, textTransform: 'capitalize' as const }}>
+                                  <span style={{ fontSize: 8, fontWeight: 600, fontFamily: font, padding: '2px 5px', borderRadius: 3, color: col, background: col + '10', border: `1px solid ${col}20`, textTransform: 'capitalize' as const }}>
                                     {item.bull_bear_impact}
                                   </span>
                                 )}
@@ -6162,7 +6159,7 @@ export default function WatchlistPage() {
                                         key={`wl-${ht.ticker}`}
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); if (inWl) handleTickerClick(ht.ticker); }}
                                         style={{
-                                          fontSize: 9, fontWeight: 800, fontFamily: C.font,
+                                          fontSize: 9, fontWeight: 800, fontFamily: font,
                                           padding: '2px 7px', borderRadius: 3,
                                           color: C.teal, background: C.teal + '18', border: `1px solid ${C.teal}35`,
                                           textTransform: 'uppercase' as const,
@@ -6180,7 +6177,7 @@ export default function WatchlistPage() {
                                         key={`anc-${ht.ticker}`}
                                         onClick={e => { e.preventDefault(); e.stopPropagation(); if (inWl) handleTickerClick(ht.ticker); }}
                                         style={{
-                                          fontSize: 8, fontWeight: 700, fontFamily: C.font,
+                                          fontSize: 8, fontWeight: 700, fontFamily: font,
                                           padding: '2px 6px', borderRadius: 3,
                                           color: C.amber, background: C.amber + '14', border: `1px solid ${C.amber}30`,
                                           textTransform: 'uppercase' as const,
@@ -6197,11 +6194,11 @@ export default function WatchlistPage() {
                               )}
 
                               {/* ── Title ── */}
-                              <div style={{ fontSize: 11, color: C.text, fontFamily: C.font, lineHeight: 1.4, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                              <div style={{ fontSize: 11, color: C.text, fontFamily: font, lineHeight: 1.4, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
                                 {item.title}
                               </div>
                               {item.why_it_matters && (
-                                <div style={{ fontSize: 10, color: C.dim, fontFamily: C.font, lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
+                                <div style={{ fontSize: 10, color: C.dim, fontFamily: font, lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', fontStyle: 'italic' }}>
                                   {item.why_it_matters}
                                 </div>
                               )}
@@ -6237,7 +6234,7 @@ export default function WatchlistPage() {
             {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
               <div style={{ padding: '0 20px' }}>
                 {strategyScoreLoading && !strategyScoreData ? (
-                  <div style={{ padding: 16, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                  <div style={{ padding: 16, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: font }}>
                     Scoring {allTickerSymbols.length} tickers against {strategyPlaybooks.find(p => p.id === selectedStrategy)?.short_label || selectedStrategy}…
                   </div>
                 ) : strategyScoreData ? (
@@ -6263,7 +6260,7 @@ export default function WatchlistPage() {
                   <button key={v} onClick={() => setBottomView(v)} style={{
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                     padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
-                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    textTransform: 'uppercase' as const, fontFamily: font,
                     background: isActive ? `${ac}18` : 'transparent',
                     color: isActive ? ac : C.dim,
                     border: `1px solid ${isActive ? `${ac}60` : C.border}`,
@@ -6284,7 +6281,7 @@ export default function WatchlistPage() {
                   <button key={v} onClick={() => setBottomView(v)} style={{
                     fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                     padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
-                    textTransform: 'uppercase' as const, fontFamily: C.font,
+                    textTransform: 'uppercase' as const, fontFamily: font,
                     background: isActive ? `${ac}18` : 'transparent',
                     color: isActive ? ac : C.dim,
                     border: `1px solid ${isActive ? `${ac}60` : C.border}`,
@@ -6370,7 +6367,7 @@ export default function WatchlistPage() {
                           <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bucket.color}10` }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
                               <span style={{ fontSize: 10, fontWeight: 800, color: bucket.color, letterSpacing: '0.06em' }}>{bucket.label}</span>
-                              <span style={{ fontSize: 10, fontWeight: 800, color: mcAvg.color, fontFamily: C.font, flexShrink: 0 }}>{mcAvg.text}</span>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: mcAvg.color, fontFamily: font, flexShrink: 0 }}>{mcAvg.text}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ fontSize: 8, color: C.dim }}>{bucket.sub}</span>
@@ -6422,10 +6419,10 @@ export default function WatchlistPage() {
                                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                                   onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
                                 >
-                                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.ticker || DASH}</span>
-                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(s.price)}</span>
-                                  <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
-                                  <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{vx}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.ticker || DASH}</span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(s.price)}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
+                                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{vx}</span>
                                 </div>
                               );
                             })}
@@ -6493,11 +6490,11 @@ export default function WatchlistPage() {
                     padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
                     textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
                     background: C.card, borderBottom: `1px solid ${C.border}`,
-                    fontFamily: C.font, color: C.dim,
+                    fontFamily: font, color: C.dim,
                   };
                   const TZ_TD: React.CSSProperties = {
                     padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: font,
                     verticalAlign: 'middle' as const,
                   };
 
@@ -6508,7 +6505,7 @@ export default function WatchlistPage() {
                         <span style={{ fontSize: 8, color: C.dim }}>— signal confluence · early stage · {tzRows.length} qualifying</span>
                       </div>
                       {tzRows.length === 0 ? (
-                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                           No High Conviction Trade Zone setups right now.<br />
                           <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires an early stage (S1/S1-2/S2) plus at least one loud signal — VolX, Vol/MC, or Options. Rules are not loosened automatically.</span>
                         </div>
@@ -6586,7 +6583,7 @@ export default function WatchlistPage() {
                                       <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
                                         {row._tags.map((tag, ti) => (
                                           <span key={ti} style={{
-                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            fontSize: 7, fontWeight: 700, fontFamily: font,
                                             padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
                                             color: tag.pos ? '#22c55e' : '#ef4444',
                                             background: tag.pos ? '#22c55e18' : '#ef444418',
@@ -6729,11 +6726,11 @@ export default function WatchlistPage() {
                     padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
                     textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
                     background: C.card, borderBottom: `1px solid ${C.border}`,
-                    fontFamily: C.font, color: C.dim,
+                    fontFamily: font, color: C.dim,
                   };
                   const GZ_TD: React.CSSProperties = {
                     padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: font,
                     verticalAlign: 'middle' as const,
                   };
 
@@ -6744,7 +6741,7 @@ export default function WatchlistPage() {
                         <span style={{ fontSize: 8, color: C.dim }}>— A+ setups · investment + trade confluence · early stage · {gzRows.length} qualifying</span>
                       </div>
                       {gzRows.length === 0 ? (
-                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                           No Golden Zone setups right now.<br />
                           <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires both high-conviction investment strength and high-conviction trade confluence in an early stage.</span>
                         </div>
@@ -6819,7 +6816,7 @@ export default function WatchlistPage() {
                                       <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
                                         {row._tags.map((tag, ti) => (
                                           <span key={ti} style={{
-                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            fontSize: 7, fontWeight: 700, fontFamily: font,
                                             padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
                                             color: tag.pos ? '#f59e0b' : '#ef4444',
                                             background: tag.pos ? '#f59e0b18' : '#ef444418',
@@ -6902,11 +6899,11 @@ export default function WatchlistPage() {
                     padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
                     textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
                     background: C.card, borderBottom: `1px solid ${C.border}`,
-                    fontFamily: C.font, color: C.dim,
+                    fontFamily: font, color: C.dim,
                   };
                   const GM_TD: React.CSSProperties = {
                     padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: font,
                     verticalAlign: 'middle' as const,
                   };
 
@@ -6917,7 +6914,7 @@ export default function WatchlistPage() {
                         <span style={{ fontSize: 8, color: C.dim }}>— strong fundamentals · S2/S2-S3/S3 stage · options ≥ 25 · elevated VolX · {gmRows.length} qualifying</span>
                       </div>
                       {gmRows.length === 0 ? (
-                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                           No Growth Momentum setups right now.<br />
                           <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Requires strong growth fundamentals, S2/S2-S3/S3 stage momentum, options score ≥ 25, and elevated VolX.</span>
                         </div>
@@ -6997,7 +6994,7 @@ export default function WatchlistPage() {
                                       <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
                                         {row._tags.map((tag, ti) => (
                                           <span key={ti} style={{
-                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            fontSize: 7, fontWeight: 700, fontFamily: font,
                                             padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
                                             color: tag.pos ? '#3b82f6' : '#ef4444',
                                             background: tag.pos ? '#3b82f618' : '#ef444418',
@@ -7044,7 +7041,7 @@ export default function WatchlistPage() {
                   return (
                     <div>
                       {/* summary bar */}
-                      <div style={{ padding: '6px 2px 10px', fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                      <div style={{ padding: '6px 2px 10px', fontSize: 9, color: C.dim, fontFamily: font }}>
                         {totalQualified} of {fundRows.length} tickers qualify — the rest have mediocre or incomplete fundamentals and are omitted.
                       </div>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
@@ -7059,7 +7056,7 @@ export default function WatchlistPage() {
                               <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, background: `${bDef.color}10` }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
                                   <span style={{ fontSize: 10, fontWeight: 800, color: bDef.color, letterSpacing: '0.05em' }}>{bDef.label}</span>
-                                  <span style={{ fontSize: 10, fontWeight: 800, color: fgAvg.color, fontFamily: C.font, flexShrink: 0 }}>{fgAvg.text}</span>
+                                  <span style={{ fontSize: 10, fontWeight: 800, color: fgAvg.color, fontFamily: font, flexShrink: 0 }}>{fgAvg.text}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <span style={{ fontSize: 7.5, color: C.dim, letterSpacing: '0.04em' }}>{bDef.sub}</span>
@@ -7091,16 +7088,16 @@ export default function WatchlistPage() {
                                       onMouseLeave={e => { e.currentTarget.style.background = ri % 2 === 0 ? 'transparent' : `${C.border}06`; }}
                                     >
                                       <div style={{ display: 'grid', gridTemplateColumns: '54px 48px 44px 54px', padding: '5px 10px 2px', gap: 4, alignItems: 'center' }}>
-                                        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: C.font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.ticker || DASH}</span>
-                                        <span style={{ fontSize: 10, color: C.text, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(r.price)}</span>
-                                        <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
-                                        <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{mcStr}</span>
+                                        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.ticker || DASH}</span>
+                                        <span style={{ fontSize: 10, color: C.text, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatPrice(r.price)}</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: cClr, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{formatChgPct(chg)}</span>
+                                        <span style={{ fontSize: 9, color: C.dim, fontFamily: font, textAlign: 'right' as const, whiteSpace: 'nowrap' as const }}>{mcStr}</span>
                                       </div>
                                       {tags.length > 0 && (
                                         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, padding: '2px 10px 5px' }}>
                                           {tags.map((tag, ti) => (
                                             <span key={ti} style={{
-                                              fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                              fontSize: 7, fontWeight: 700, fontFamily: font,
                                               padding: '1px 5px', borderRadius: 3,
                                               color: tag.pos ? '#22c55e' : '#ef4444',
                                               background: tag.pos ? '#22c55e18' : '#ef444418',
@@ -7156,11 +7153,11 @@ export default function WatchlistPage() {
                     padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
                     textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
                     background: C.card, borderBottom: `1px solid ${C.border}`,
-                    fontFamily: C.font, color: C.dim,
+                    fontFamily: font, color: C.dim,
                   };
                   const HCIZ_TD: React.CSSProperties = {
                     padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-                    borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
+                    borderBottom: `1px solid ${C.border}18`, fontFamily: font,
                     verticalAlign: 'middle' as const,
                   };
 
@@ -7172,7 +7169,7 @@ export default function WatchlistPage() {
                         <span style={{ fontSize: 8, color: C.dim }}>— fundamentally elite · technically early · {hcizRows.length} qualifying</span>
                       </div>
                       {hcizRows.length === 0 ? (
-                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: C.font }}>
+                        <div style={{ padding: '32px 0', textAlign: 'center' as const, color: C.dim, fontSize: 10, fontFamily: font }}>
                           No High Conviction Investment Zone setups right now.<br />
                           <span style={{ fontSize: 8, opacity: 0.6, marginTop: 4, display: 'block' }}>Rules are not loosened to fill this tab — only genuine setups appear.</span>
                         </div>
@@ -7240,7 +7237,7 @@ export default function WatchlistPage() {
                                       <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
                                         {row._tags.map((tag, ti) => (
                                           <span key={ti} style={{
-                                            fontSize: 7, fontWeight: 700, fontFamily: C.font,
+                                            fontSize: 7, fontWeight: 700, fontFamily: font,
                                             padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap' as const,
                                             color: tag.pos ? '#22c55e' : '#ef4444',
                                             background: tag.pos ? '#22c55e18' : '#ef444418',
@@ -7294,7 +7291,7 @@ export default function WatchlistPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '14px 20px', borderBottom: `1px solid ${C.border}`,
             }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: font }}>
                 {strategyReportModal.report
                   ? `${strategyReportModal.report.strategy_name ?? strategyReportModal.report.strategy_id ?? STRATEGY_DISPLAY[selectedStrategy]?.label ?? 'Strategy'} Report`
                   : 'Strategy Report'}
@@ -7310,15 +7307,15 @@ export default function WatchlistPage() {
               {strategyReportModal.loading && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
                   <div className="wl-spin" style={{ width: 28, height: 28, border: `3px solid rgba(99,102,241,0.2)`, borderTopColor: '#6366f1', borderRadius: '50%' }} />
-                  <span style={{ fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                  <span style={{ fontSize: 11, color: C.dim, fontFamily: font }}>
                     Generating report — this may take 10–30 seconds…
                   </span>
                 </div>
               )}
               {strategyReportModal.error && !strategyReportModal.loading && (
                 <div style={{ padding: 20, textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, color: C.red, fontFamily: C.font, marginBottom: 6 }}>Report generation failed</div>
-                  <div style={{ fontSize: 11, color: C.dim, fontFamily: C.sansFont }}>{strategyReportModal.error}</div>
+                  <div style={{ fontSize: 12, color: C.red, fontFamily: font, marginBottom: 6 }}>Report generation failed</div>
+                  <div style={{ fontSize: 11, color: C.dim, fontFamily: sansFont }}>{strategyReportModal.error}</div>
                 </div>
               )}
               {strategyReportModal.report && !strategyReportModal.loading && (() => {
@@ -7329,16 +7326,16 @@ export default function WatchlistPage() {
                   <>
                     {/* Meta row */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', marginBottom: 16 }}>
-                      {wlName && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Watchlist: <span style={{ color: C.text }}>{wlName}</span></span>}
-                      {rpt.generated_at && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Generated: <span style={{ color: C.text }}>{new Date(rpt.generated_at).toLocaleString()}</span></span>}
-                      {rpt.ticker_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Tickers: <span style={{ color: C.text }}>{rpt.ticker_count}</span></span>}
-                      {rpt.matched_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Matched: <span style={{ color: '#22c55e' }}>{rpt.matched_count}</span></span>}
-                      {rpt.cache_freshness && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>Cache: <span style={{ color: C.amber }}>{typeof rpt.cache_freshness === 'string' ? rpt.cache_freshness : JSON.stringify(rpt.cache_freshness)}</span></span>}
+                      {wlName && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Watchlist: <span style={{ color: C.text }}>{wlName}</span></span>}
+                      {rpt.generated_at && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Generated: <span style={{ color: C.text }}>{new Date(rpt.generated_at).toLocaleString()}</span></span>}
+                      {rpt.ticker_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Tickers: <span style={{ color: C.text }}>{rpt.ticker_count}</span></span>}
+                      {rpt.matched_count != null && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Matched: <span style={{ color: '#22c55e' }}>{rpt.matched_count}</span></span>}
+                      {rpt.cache_freshness && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Cache: <span style={{ color: C.amber }}>{typeof rpt.cache_freshness === 'string' ? rpt.cache_freshness : JSON.stringify(rpt.cache_freshness)}</span></span>}
                     </div>
 
                     {/* Results table */}
                     {results.length === 0 && (
-                      <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                      <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: font }}>
                         No matched tickers in this report.
                       </div>
                     )}
@@ -7356,11 +7353,11 @@ export default function WatchlistPage() {
                           borderRadius: 6,
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: reasons.length ? 6 : 0 }}>
-                            <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, minWidth: 20 }}>#{rank}</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>{ticker}</span>
+                            <span style={{ fontSize: 9, color: C.dim, fontFamily: font, minWidth: 20 }}>#{rank}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', fontFamily: font }}>{ticker}</span>
                             {score != null && (
                               <span style={{
-                                fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                                fontSize: 10, fontWeight: 700, fontFamily: font,
                                 color: Number(score) >= 70 ? '#22c55e' : Number(score) >= 40 ? C.amber : C.dim,
                                 marginLeft: 'auto',
                               }}>
@@ -7369,21 +7366,21 @@ export default function WatchlistPage() {
                             )}
                           </div>
                           {reasons.map((r: string, i: number) => (
-                            <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, paddingLeft: 30, lineHeight: 1.5 }}>
+                            <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: sansFont, paddingLeft: 30, lineHeight: 1.5 }}>
                               · {r}
                             </div>
                           ))}
                           {typeof supporting === 'object' && Object.keys(supporting).length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', paddingLeft: 30, marginTop: 4 }}>
                               {Object.entries(supporting).map(([k, v]) => (
-                                <span key={k} style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                                <span key={k} style={{ fontSize: 9, color: C.dim, fontFamily: font }}>
                                   {k}: <span style={{ color: C.text }}>{String(v)}</span>
                                 </span>
                               ))}
                             </div>
                           )}
                           {missing && (
-                            <div style={{ fontSize: 9, color: C.amber, fontFamily: C.font, paddingLeft: 30, marginTop: 4, opacity: 0.8 }}>
+                            <div style={{ fontSize: 9, color: C.amber, fontFamily: font, paddingLeft: 30, marginTop: 4, opacity: 0.8 }}>
                               ⚠ {missing}
                             </div>
                           )}
@@ -7420,7 +7417,7 @@ export default function WatchlistPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
             }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#e0e0e0', fontFamily: C.font }}>📜 Saved Reports</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#e0e0e0', fontFamily: font }}>📜 Saved Reports</span>
               <button
                 onClick={() => setReportHistoryModal(s => ({ ...s, open: false }))}
                 style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
@@ -7428,12 +7425,12 @@ export default function WatchlistPage() {
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 18px' }} className="wl-scrollbar">
               {reportHistoryModal.loading && (
-                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: font }}>
                   Loading…
                 </div>
               )}
               {!reportHistoryModal.loading && reportHistoryModal.history.length === 0 && (
-                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: C.font }}>
+                <div style={{ padding: 24, textAlign: 'center', fontSize: 11, color: C.dim, fontFamily: font }}>
                   No saved reports for this watchlist yet.
                   {selectedStrategy !== 'default' && (
                     <div style={{ marginTop: 8 }}>
@@ -7462,15 +7459,15 @@ export default function WatchlistPage() {
                     onMouseLeave={e => { if (rid) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'; }}
                   >
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: C.font, marginBottom: 2 }}>{stratLabel}</div>
-                      <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{generatedAt}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#c4b5fd', fontFamily: font, marginBottom: 2 }}>{stratLabel}</div>
+                      <div style={{ fontSize: 9, color: C.dim, fontFamily: font }}>{generatedAt}</div>
                     </div>
                     {matchedCount != null && (
-                      <span style={{ fontSize: 10, color: '#22c55e', fontFamily: C.font, fontWeight: 700 }}>
+                      <span style={{ fontSize: 10, color: '#22c55e', fontFamily: font, fontWeight: 700 }}>
                         {matchedCount} matched
                       </span>
                     )}
-                    {reportHistoryModal.selectedLoading && <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>…</span>}
+                    {reportHistoryModal.selectedLoading && <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>…</span>}
                   </div>
                 );
               })}
@@ -7487,27 +7484,27 @@ export default function WatchlistPage() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#0d0d14', border: `1px solid ${C.border}`, borderRadius: 8, padding: '24px 28px', minWidth: 320, maxWidth: 400, boxShadow: '0 12px 40px rgba(0,0,0,0.7)', fontFamily: C.font }}
+            style={{ background: '#0d0d14', border: `1px solid ${C.border}`, borderRadius: 8, padding: '24px 28px', minWidth: 320, maxWidth: 400, boxShadow: '0 12px 40px rgba(0,0,0,0.7)', fontFamily: font }}
           >
             <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 10 }}>
               Remove from {wlMetas?.find(m => m.id === deleteConfirm.wid)?.name || 'Watchlist'}?
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: C.font, letterSpacing: '0.04em' }}>{deleteConfirm.ticker}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: font, letterSpacing: '0.04em' }}>{deleteConfirm.ticker}</span>
               {deleteConfirm.company && <span style={{ fontSize: 11, color: C.dim }}>{deleteConfirm.company}</span>}
             </div>
             <div style={{ fontSize: 10, color: '#484848', marginBottom: 20, lineHeight: 1.6 }}>
               This permanently removes the stock from this Watchlist.<br />You can add it again later through security search.
             </div>
             {deleteErrMsg && (
-              <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: '#3a0a0a', border: '1px solid #ef444430', fontSize: 10, color: '#ef4444', fontFamily: C.font, lineHeight: 1.5 }}>
+              <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: '#3a0a0a', border: '1px solid #ef444430', fontSize: 10, color: '#ef4444', fontFamily: font, lineHeight: 1.5 }}>
                 {deleteErrMsg}
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => { setDeleteConfirm(null); setDeleteErrMsg(null); }}
-                style={{ padding: '6px 16px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, fontFamily: C.font, fontSize: 11, cursor: 'pointer' }}
+                style={{ padding: '6px 16px', borderRadius: 4, background: 'transparent', border: `1px solid ${C.border}`, color: C.dim, fontFamily: font, fontSize: 11, cursor: 'pointer' }}
               >
                 Cancel
               </button>
@@ -7518,7 +7515,7 @@ export default function WatchlistPage() {
                   setDeleteErrMsg(null);
                   deleteTickerMut.mutate({ wid: deleteConfirm.wid, ticker: deleteConfirm.ticker });
                 }}
-                style={{ padding: '6px 16px', borderRadius: 4, background: deleteTickerMut.isPending ? '#2a0a0a' : '#3a0a0a', border: '1px solid #ef444440', color: deleteTickerMut.isPending ? '#666' : '#ef4444', fontFamily: C.font, fontSize: 11, fontWeight: 700, cursor: deleteTickerMut.isPending ? 'default' : 'pointer', transition: 'all 0.15s' }}
+                style={{ padding: '6px 16px', borderRadius: 4, background: deleteTickerMut.isPending ? '#2a0a0a' : '#3a0a0a', border: '1px solid #ef444440', color: deleteTickerMut.isPending ? '#666' : '#ef4444', fontFamily: font, fontSize: 11, fontWeight: 700, cursor: deleteTickerMut.isPending ? 'default' : 'pointer', transition: 'all 0.15s' }}
               >
                 {deleteTickerMut.isPending ? 'Removing…' : 'Remove'}
               </button>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Settings, Save, Plus, RotateCcw, ChevronDown, ChevronUp, Check, Loader2, X } from "lucide-react";
+import { Settings, Save, Plus, RotateCcw, ChevronDown, ChevronUp, Check, Loader2, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const AGENT_BACKEND_URL = "https://fast-api-server-aidanpilon.replit.app";
 const AGENT_API_KEY = "hippo_ak_7f3x9k2m4p8q1w5t";
@@ -258,6 +259,7 @@ function SaveTemplateModal({ onSave, onClose }: { onSave: (name: string) => void
 // ─── Settings Modal ─────────────────────────────────────────────
 
 export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { isDark, toggleTheme } = useTheme();
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -418,12 +420,22 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               <p className="text-[10px] text-white/35">Customize Caelyn with structured presets and/or free-form instructions</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Toast */}

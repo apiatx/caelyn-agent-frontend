@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { normalizeHistoryBuckets, normalizeNewHistoryApiResponse } from '@/lib/history';
 const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 const AGENT_API_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
@@ -135,11 +136,7 @@ type View =
   | { level: 'detail'; categoryId: string; intent: string; label: string; entry: HistoryEntry; entryLabel: string };
 const font = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace";
 const sansFont = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-const C = {
-  bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
-  dim: '#6b7280', green: '#22c55e', red: '#ef4444', blue: '#3b82f6', gold: '#f59e0b',
-  purple: '#a78bfa',
-};
+let C = DARK_C;
 function formatDate(ts: number): string {
   const d = new Date(ts * 1000);
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -261,6 +258,7 @@ function extractTickers(parsed: any): string[] {
   return [];
 }
 export function HistoryPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { C: _C } = useTheme(); C = _C;
   const [history, setHistory] = useState<HistoryData>({});
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<View>({ level: 'categories' });

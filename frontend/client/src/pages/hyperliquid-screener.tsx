@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, Component } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import type { ReactNode } from 'react';
@@ -30,26 +31,8 @@ class SectionErrorBoundary extends Component<
 }
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
-const C = {
-  bg:      '#080c13',
-  card:    '#0d1623',
-  card2:   '#0a1020',
-  hero:    '#080e1a',
-  border:  '#1a2540',
-  text:    '#e2e8f0',
-  dim:     '#64748b',
-  dimLow:  '#1e2d40',
-  teal:    '#0ea5e9',
-  green:   '#22c55e',
-  red:     '#ef4444',
-  amber:   '#f59e0b',
-  purple:  '#a855f7',
-  blue:    '#3b82f6',
-  cyan:    '#06b6d4',
-  gold:    '#fbbf24',
-  silver:  '#94a3b8',
-  font:    "'JetBrains Mono','Fira Code','Cascadia Code',monospace",
-};
+let C = DARK_C;
+const _hlFont = "'JetBrains Mono','Fira Code','Cascadia Code',monospace";
 
 // ─── Base Types ───────────────────────────────────────────────────────────────
 export interface ScreenerRow {
@@ -264,9 +247,9 @@ function SectionInfoTooltip({ title }: { title: string }) {
         }}>
           <div style={{ fontSize: 9.5, fontWeight: 800, color: C.teal, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4 }}>{title}</div>
           <div style={{ fontSize: 8.5, color: C.text, lineHeight: 1.5, marginBottom: 6 }}>{tip.short}</div>
-          <div style={{ fontSize: 8, color: C.cyan, fontWeight: 700, marginBottom: 2 }}>Why it matters:</div>
+          <div style={{ fontSize: 8, color: '#06b6d4', fontWeight: 700, marginBottom: 2 }}>Why it matters:</div>
           <div style={{ fontSize: 8, color: '#b0bec5', lineHeight: 1.5, marginBottom: 6 }}>{tip.why}</div>
-          <div style={{ fontSize: 8, color: C.cyan, fontWeight: 700, marginBottom: 2 }}>How to read it:</div>
+          <div style={{ fontSize: 8, color: '#06b6d4', fontWeight: 700, marginBottom: 2 }}>How to read it:</div>
           <div style={{ fontSize: 8, color: '#b0bec5', lineHeight: 1.5 }}>{tip.how}</div>
         </div>
       )}
@@ -358,7 +341,7 @@ const DIR_MAP: Record<string, { label: string; color: string }> = {
   avoid:   { label: 'AVOID', color: C.red   },
   neutral: { label: 'WATCH', color: C.dim   },
 };
-const rankColor = (r: number) => r === 1 ? C.gold : r === 2 ? C.silver : r === 3 ? C.amber : C.dim;
+const rankColor = (r: number) => r === 1 ? C.gold : r === 2 ? '#94a3b8' : r === 3 ? C.amber : C.dim;
 
 // ─── Signal section derivation ────────────────────────────────────────────────
 interface DerivedSection {
@@ -437,7 +420,7 @@ function SummaryChip({ label, coin, value, color, selected, onClick }: {
   return (
     <div onClick={onClick} style={{ background:selected?`${col}1a`:C.card, border:`1px solid ${selected?col:C.border}`, borderRadius:5, padding:'5px 11px', flexShrink:0, cursor:onClick?'pointer':'default', transition:'all 0.15s', minWidth:96 }}>
       <div style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{label}</div>
-      <div style={{ fontSize:11, fontWeight:800, color:col, fontFamily:C.font, lineHeight:1 }}>
+      <div style={{ fontSize:11, fontWeight:800, color:col, fontFamily:_hlFont, lineHeight:1 }}>
         {coin && <span style={{ marginRight:4 }}>{coin}</span>}{value}
       </div>
     </div>
@@ -454,7 +437,7 @@ function QuickLookTile({ label, coin, sub, color, preview }: {
         <span style={{ fontSize:7.5, color:C.dim, letterSpacing:1.5, textTransform:'uppercase' }}>{label}</span>
         {preview && <span style={{ fontSize:6.5, color:C.dimLow, background:C.dimLow, borderRadius:2, padding:'0 3px' }}>EST</span>}
       </div>
-      <div style={{ fontSize:13, fontWeight:800, color:coin ? color : C.dimLow, fontFamily:C.font, lineHeight:1 }}>
+      <div style={{ fontSize:13, fontWeight:800, color:coin ? color : C.dimLow, fontFamily:_hlFont, lineHeight:1 }}>
         {coin ?? '—'}
       </div>
       <div style={{ fontSize:8.5, color:C.dim, lineHeight:1.3 }}>{sub}</div>
@@ -476,10 +459,10 @@ function IdeaRow({ coin, side, setupType, score, confidence, thesisSummary, rank
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:thesisSummary?3:0 }}>
         {/* Rank */}
         <div style={{ width:22, height:22, borderRadius:4, background:`${rankColor(rank)}1a`, border:`1px solid ${rankColor(rank)}44`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-          <span style={{ fontSize:9, fontWeight:800, color:rankColor(rank), fontFamily:C.font }}>#{rank}</span>
+          <span style={{ fontSize:9, fontWeight:800, color:rankColor(rank), fontFamily:_hlFont }}>#{rank}</span>
         </div>
         {/* Coin */}
-        <span style={{ fontSize:12, fontWeight:800, color:selected?C.purple:C.text, fontFamily:C.font, flexShrink:0, minWidth:52 }}>{coin}</span>
+        <span style={{ fontSize:12, fontWeight:800, color:selected?C.purple:C.text, fontFamily:_hlFont, flexShrink:0, minWidth:52 }}>{coin}</span>
         {/* Side badge */}
         <span style={{ fontSize:8, fontWeight:700, color:dir.color, background:`${dir.color}18`, border:`1px solid ${dir.color}44`, borderRadius:3, padding:'1px 5px', flexShrink:0 }}>{dir.label}</span>
         {/* Setup badge */}
@@ -489,7 +472,7 @@ function IdeaRow({ coin, side, setupType, score, confidence, thesisSummary, rank
           <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2, overflow:'hidden' }}>
             <div style={{ height:'100%', width:`${Math.min(100,score*100).toFixed(0)}%`, background:`linear-gradient(90deg,${C.purple},${C.teal})`, borderRadius:2, transition:'width 0.4s ease' }} />
           </div>
-          <span style={{ fontSize:8.5, fontWeight:700, color:C.purple, fontFamily:C.font, flexShrink:0 }}>{score.toFixed(2)}</span>
+          <span style={{ fontSize:8.5, fontWeight:700, color:C.purple, fontFamily:_hlFont, flexShrink:0 }}>{score.toFixed(2)}</span>
         </div>
         {/* Confidence */}
         <span style={{ fontSize:8, color:scC(confidence), flexShrink:0 }}>{(confidence*100).toFixed(0)}%</span>
@@ -540,7 +523,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
   const Metric = ({ label, value, vc }: { label: string; value: string; vc?: string }) => (
     <div style={{ display:'flex', flexDirection:'column', gap:1, padding:'4px 0', borderBottom:`1px solid ${C.dimLow}` }}>
       <span style={{ fontSize:7, color:C.dim, textTransform:'uppercase', letterSpacing:1 }}>{label}</span>
-      <span style={{ fontSize:10, fontFamily:C.font, fontWeight:600, color:vc??C.text }}>{value}</span>
+      <span style={{ fontSize:10, fontFamily:_hlFont, fontWeight:600, color:vc??C.text }}>{value}</span>
     </div>
   );
 
@@ -568,7 +551,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
       {/* ── Thesis header (fixed) ── */}
       <div style={{ padding:'8px 12px 6px', borderBottom:`1px solid ${C.border}`, background:C.card2, flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
-          <span style={{ fontFamily:C.font, fontWeight:800, fontSize:15, color:C.text }}>{coin}</span>
+          <span style={{ fontFamily:_hlFont, fontWeight:800, fontSize:15, color:C.text }}>{coin}</span>
           <span style={{ fontSize:8.5, fontWeight:700, color:dir.color, background:`${dir.color}18`, border:`1px solid ${dir.color}44`, borderRadius:3, padding:'2px 6px' }}>{dir.label}</span>
           {setupType && (
             <span style={{ fontSize:8, color:setup.color, background:`${setup.color}12`, border:`1px solid ${setup.color}33`, borderRadius:3, padding:'1px 5px' }}>{setup.label}</span>
@@ -579,7 +562,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
                 {rankMov>0?`▲${rankMov}`:`▼${Math.abs(rankMov)}`} rank
               </span>
             )}
-            <span style={{ fontSize:10, fontWeight:800, color:C.purple, fontFamily:C.font }}>Score {score.toFixed(2)}</span>
+            <span style={{ fontSize:10, fontWeight:800, color:C.purple, fontFamily:_hlFont }}>Score {score.toFixed(2)}</span>
             <span style={{ fontSize:9, color:scC(confidence) }}>Conf {(confidence*100).toFixed(0)}%</span>
           </div>
         </div>
@@ -593,7 +576,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
           <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', padding:'3px 8px', gap:3 }}>
             {(['15m','1h','4h','1d'] as ChartInterval[]).map(t => (
               <button key={t} onClick={() => setChartIv(t)}
-                style={{ fontSize:7.5, padding:'1px 5px', borderRadius:2, cursor:'pointer', fontFamily:C.font,
+                style={{ fontSize:7.5, padding:'1px 5px', borderRadius:2, cursor:'pointer', fontFamily:_hlFont,
                   background: chartIv===t ? `${C.teal}22` : 'none',
                   border: `1px solid ${chartIv===t ? C.teal : C.border}`,
                   color: chartIv===t ? C.teal : C.dim }}>
@@ -677,7 +660,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
                   <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
                     <div style={{ height:'100%', width:`${Math.min(100,v*100).toFixed(0)}%`, background:C.teal, borderRadius:2 }} />
                   </div>
-                  <span style={{ fontSize:8, fontFamily:C.font, color:C.teal, flexShrink:0 }}>{(v*100).toFixed(0)}%</span>
+                  <span style={{ fontSize:8, fontFamily:_hlFont, color:C.teal, flexShrink:0 }}>{(v*100).toFixed(0)}%</span>
                 </div>
               ))}
             </Section>
@@ -722,9 +705,9 @@ function GuidanceBlock({ label, icon: Icon, color, coins, onSelect, selectedCoin
               style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity='0.75'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity='1'}>
-              <span style={{ fontSize:9.5, fontWeight:800, color:selectedCoin===c.coin?color:C.text, fontFamily:C.font, minWidth:40, flexShrink:0 }}>{c.coin}</span>
+              <span style={{ fontSize:9.5, fontWeight:800, color:selectedCoin===c.coin?color:C.text, fontFamily:_hlFont, minWidth:40, flexShrink:0 }}>{c.coin}</span>
               {c.reason && <span style={{ fontSize:8, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.reason}</span>}
-              {c.score!=null && <span style={{ fontSize:8, color:color, fontFamily:C.font, flexShrink:0, marginLeft:'auto' }}>{c.score.toFixed(2)}</span>}
+              {c.score!=null && <span style={{ fontSize:8, color:color, fontFamily:_hlFont, flexShrink:0, marginLeft:'auto' }}>{c.score.toFixed(2)}</span>}
             </div>
           ))}
         </div>
@@ -927,9 +910,9 @@ function SignalBoard({ section, selectedCoin, onSelect, onChartOpen }: {
             style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', cursor:'pointer', transition:'background 0.1s', background:sel?`${section.color}15`:'transparent', borderBottom:i<section.items.length-1?`1px solid ${C.dimLow}`:'none' }}
             onMouseEnter={e => { if (!sel) (e.currentTarget as HTMLElement).style.background=`${section.color}09`; }}
             onMouseLeave={e => { if (!sel) (e.currentTarget as HTMLElement).style.background='transparent'; }}>
-            <span style={{ fontSize:7.5, color:C.dimLow, fontFamily:C.font, minWidth:12, textAlign:'right', flexShrink:0 }}>{i+1}</span>
-            <span style={{ fontSize:9.5, fontWeight:700, color:sel?section.color:C.text, fontFamily:C.font, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.coin}</span>
-            <span style={{ fontSize:9.5, fontWeight:600, color:dirC, fontFamily:C.font, flexShrink:0 }}>{item.primary}</span>
+            <span style={{ fontSize:7.5, color:C.dimLow, fontFamily:_hlFont, minWidth:12, textAlign:'right', flexShrink:0 }}>{i+1}</span>
+            <span style={{ fontSize:9.5, fontWeight:700, color:sel?section.color:C.text, fontFamily:_hlFont, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.coin}</span>
+            <span style={{ fontSize:9.5, fontWeight:600, color:dirC, fontFamily:_hlFont, flexShrink:0 }}>{item.primary}</span>
             {item.secondary && <span style={{ fontSize:7.5, color:C.dim, flexShrink:0 }}>{item.secondary}</span>}
             <span style={{ fontSize:7.5, color:dirC, flexShrink:0 }}>{item.direction==='up'?'▲':item.direction==='down'?'▼':''}</span>
           </div>
@@ -1122,9 +1105,9 @@ function SvgSparkline({ candles, gradId }: { candles: HLCandle[]; gradId: string
         <polyline points={pts}  fill="none" stroke={col} strokeWidth={1.5} strokeLinejoin="round" />
       </svg>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0 0' }}>
-        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>{fmtTick(candles[0].t)}</span>
-        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>{fmtTick(candles[mid].t)}</span>
-        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>Now</span>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: _hlFont }}>{fmtTick(candles[0].t)}</span>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: _hlFont }}>{fmtTick(candles[mid].t)}</span>
+        <span style={{ fontSize: 7, color: C.dimLow, fontFamily: _hlFont }}>Now</span>
       </div>
     </div>
   );
@@ -1175,13 +1158,13 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
   return (
     <div style={{ borderBottom: `1px solid ${C.dimLow}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px 2px' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: C.font }}>{coin}</span>
-        {last != null && <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{fmtPx(last)}</span>}
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: _hlFont }}>{coin}</span>
+        {last != null && <span style={{ fontSize: 9, color: C.dim, fontFamily: _hlFont }}>{fmtPx(last)}</span>}
         {displayInterval !== interval && (
-          <span style={{ fontSize: 7, color: C.dimLow, fontFamily: C.font }}>({displayInterval})</span>
+          <span style={{ fontSize: 7, color: C.dimLow, fontFamily: _hlFont }}>({displayInterval})</span>
         )}
         {chg  != null && (
-          <span style={{ fontSize: 9, fontWeight: 700, color: isUp ? C.green : C.red, marginLeft: 'auto', fontFamily: C.font }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: isUp ? C.green : C.red, marginLeft: 'auto', fontFamily: _hlFont }}>
             {isUp ? '+' : ''}{chg.toFixed(2)}%
           </span>
         )}
@@ -1220,7 +1203,7 @@ function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; co
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             {(['15m', '1h', '4h', '1d'] as ChartInterval[]).map(t => (
               <button key={t} onClick={() => setIv(t)}
-                style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 3, cursor: 'pointer', fontFamily: C.font,
+                style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 3, cursor: 'pointer', fontFamily: _hlFont,
                   background: iv === t ? `${C.teal}22` : 'none',
                   border: `1px solid ${iv === t ? C.teal : C.border}`,
                   color: iv === t ? C.teal : C.dim }}>
@@ -1384,18 +1367,18 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
                 borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.teal}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.rs_score ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.teal : C.text, fontFamily: _hlFont }}>{cleanSym(r.symbol)}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.rs_score ?? 0) >= 0 ? C.green : C.red, fontFamily: _hlFont, textAlign: 'right' }}>
                 {r.rs_score == null ? '—' : `${r.rs_score >= 0 ? '+' : ''}${r.rs_score.toFixed(2)}`}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_24h), fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: pctC(r.return_24h), fontFamily: _hlFont, textAlign: 'right' }}>
                 {pct(r.return_24h, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_4h), fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: pctC(r.return_4h), fontFamily: _hlFont, textAlign: 'right' }}>
                 {pct(r.return_4h, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.return_1h), fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: pctC(r.return_1h), fontFamily: _hlFont, textAlign: 'right' }}>
                 {pct(r.return_1h, 1)}
               </span>
             </div>
@@ -1440,15 +1423,15 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
                 borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.pressure_score ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: _hlFont }}>{cleanSym(r.symbol)}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: (r.pressure_score ?? 0) >= 0 ? C.green : C.red, fontFamily: _hlFont, textAlign: 'right' }}>
                 {r.pressure_score == null ? '—' : `${r.pressure_score >= 0 ? '+' : ''}${r.pressure_score.toFixed(2)}`}
               </span>
-              <span style={{ fontSize: 8.5, color: (r.imbalance ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: (r.imbalance ?? 0) >= 0 ? C.green : C.red, fontFamily: _hlFont, textAlign: 'right' }}>
                 {r.imbalance == null ? '—' : `${r.imbalance >= 0 ? '+' : ''}${r.imbalance.toFixed(2)}`}
               </span>
-              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: _hlFont, textAlign: 'right' }}>
                 {nf(r.spread != null ? r.spread * 100 : null, 2, '%')}
               </span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: dirColor, background: `${dirColor}18`,
@@ -1498,19 +1481,19 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
                 borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.amber}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
+              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.amber : C.text, fontFamily: _hlFont }}>{cleanSym(r.symbol)}</span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: regColor, background: `${regColor}18`,
                 border: `1px solid ${regColor}44`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>
                 {r.regime}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.price_change_1h_pct), fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: pctC(r.price_change_1h_pct), fontFamily: _hlFont, textAlign: 'right' }}>
                 {pct(r.price_change_1h_pct, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: pctC(r.oi_change_1h_pct), fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: pctC(r.oi_change_1h_pct), fontFamily: _hlFont, textAlign: 'right' }}>
                 {pct(r.oi_change_1h_pct, 1)}
               </span>
-              <span style={{ fontSize: 8.5, color: (r.volume_impulse ?? 0) >= 1.5 ? C.teal : C.dim, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: (r.volume_impulse ?? 0) >= 1.5 ? C.teal : C.dim, fontFamily: _hlFont, textAlign: 'right' }}>
                 {nf(r.volume_impulse, 1, '×')}
               </span>
             </div>
@@ -1561,9 +1544,9 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
                 borderBottom: `1px solid ${C.dimLow}`, alignItems: 'center', gap: 0, transition: 'background 0.1s' }}
               onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.red}0c`; }}
               onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
-              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: C.font }}>{cleanSym(r.symbol)}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 600, color: utilColor, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.red : C.text, fontFamily: _hlFont }}>{cleanSym(r.symbol)}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 600, color: utilColor, fontFamily: _hlFont, textAlign: 'right' }}>
                 {nf(r.utilization_pct, 1, '%')}
               </span>
               <span style={{ fontSize: 7.5, fontWeight: 700, color: statColor, background: `${statColor}18`,
@@ -1571,7 +1554,7 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
                 justifySelf: 'start', whiteSpace: 'nowrap' }}>
                 {r.status}
               </span>
-              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: C.font, textAlign: 'right' }}>
+              <span style={{ fontSize: 8.5, color: C.dim, fontFamily: _hlFont, textAlign: 'right' }}>
                 {fmtCap(r.cap_remaining)}
               </span>
             </div>
@@ -1736,7 +1719,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                     fontSize: 7.5, fontWeight: 700, letterSpacing: 1,
                     color: isActive ? C.teal : C.dim,
                     textAlign: col.align, paddingRight: col.align === 'right' ? 8 : 0,
-                    fontFamily: C.font, userSelect: 'none' }}>
+                    fontFamily: _hlFont, userSelect: 'none' }}>
                   {col.label}{arrow}
                 </button>
               );
@@ -1767,9 +1750,9 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                 onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = `${C.purple}0c`; }}
                 onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? C.bg : C.card2; }}>
                 {/* Rank */}
-                <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: C.font }}>{i + 1}</span>
+                <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
                 {/* Coin */}
-                <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: C.font }}>{sig.coin}</span>
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: _hlFont }}>{sig.coin}</span>
                 {/* Signal bar — fills 1fr */}
                 <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden', marginRight: 8 }}>
                   <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: C.border, zIndex: 1 }} />
@@ -1782,37 +1765,37 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                   }} />
                   <span style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 7.5, fontWeight: 700, color: '#fff', fontFamily: C.font, zIndex: 2,
+                    fontSize: 7.5, fontWeight: 700, color: '#fff', fontFamily: _hlFont, zIndex: 2,
                     textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
                     {sig.s_adj >= 0 ? '+' : ''}{sig.s_adj.toFixed(2)}
                   </span>
                 </div>
                 {/* Side */}
-                <span style={{ fontSize: 8, fontWeight: 700, color: sColor, fontFamily: C.font, textAlign: 'center', letterSpacing: 0.5 }}>
+                <span style={{ fontSize: 8, fontWeight: 700, color: sColor, fontFamily: _hlFont, textAlign: 'center', letterSpacing: 0.5 }}>
                   {sig.side === 'long' ? '▲ LONG' : sig.side === 'short' ? '▼ SHORT' : '· FLAT'}
                 </span>
                 {/* VOL% */}
-                <span style={{ fontSize: 8.5, color: C.amber, fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                <span style={{ fontSize: 8.5, color: C.amber, fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.sigma.toFixed(0)}%
                 </span>
                 {/* 10D% */}
                 <span style={{ fontSize: 8.5, color: sig.momentum_10d == null ? C.dim : sig.momentum_10d >= 0 ? C.green : C.red,
-                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.momentum_10d == null ? '—' : `${sig.momentum_10d >= 0 ? '+' : ''}${sig.momentum_10d.toFixed(1)}%`}
                 </span>
                 {/* 30D% */}
                 <span style={{ fontSize: 8.5, color: sig.momentum_30d == null ? C.dim : sig.momentum_30d >= 0 ? C.green : C.red,
-                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.momentum_30d == null ? '—' : `${sig.momentum_30d >= 0 ? '+' : ''}${sig.momentum_30d.toFixed(1)}%`}
                 </span>
                 {/* FUND */}
                 <span style={{ fontSize: 8.5, color: sig.funding_bps > 1 ? C.red : sig.funding_bps < -1 ? C.blue : C.dim,
-                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.funding_bps >= 0 ? '+' : ''}{sig.funding_bps.toFixed(2)}
                 </span>
                 {/* W% */}
                 <span style={{ fontSize: 8.5, fontWeight: 700, color: sColor,
-                  fontFamily: C.font, textAlign: 'right', paddingRight: 8 }}>
+                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.w_scaled >= 0 ? '+' : ''}{sig.w_scaled.toFixed(1)}%
                 </span>
               </div>
@@ -1916,7 +1899,7 @@ const MATRIX_COLS: MatCol2[] = [
   {
     key:'coin', label:'COIN', w:88, align:'left',
     sortVal: r => (r.coin ?? r.display_name ?? r.displayName ?? '').toLowerCase(),
-    render:  r => <span style={{ fontWeight:700, color:C.text, fontFamily:C.font }}>{r.coin ?? r.display_name ?? r.displayName ?? '—'}</span>,
+    render:  r => <span style={{ fontWeight:700, color:C.text, fontFamily:_hlFont }}>{r.coin ?? r.display_name ?? r.displayName ?? '—'}</span>,
   },
   {
     key:'mark', label:'MARK', w:82,
@@ -1971,7 +1954,7 @@ const MATRIX_COLS: MatCol2[] = [
       const rateCol = fC(fund);
       return (
         <span title={reason||undefined} style={{ whiteSpace:'nowrap' }}>
-          <span style={{ color:rateCol, fontFamily:C.font }}>{fmtF(fund)}</span>
+          <span style={{ color:rateCol, fontFamily:_hlFont }}>{fmtF(fund)}</span>
           {label !== '—' && <span style={{ fontSize:7, color:C.dimLow, marginLeft:4 }}>{label}</span>}
         </span>
       );
@@ -2061,7 +2044,7 @@ const MATRIX_COLS: MatCol2[] = [
     sortVal: r => getOpportunityScore(r),
     render:  r => {
       const v = getOpportunityScore(r);
-      return <span style={{ fontSize:9, fontFamily:C.font, color:C.purple }}>{v > 0 ? v.toFixed(2) : '—'}</span>;
+      return <span style={{ fontSize:9, fontFamily:_hlFont, color:C.purple }}>{v > 0 ? v.toFixed(2) : '—'}</span>;
     },
   },
   {
@@ -2233,7 +2216,7 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
             <div style={{ marginLeft:8, display:'flex', gap:4 }}>
               {(['15m','1h','4h','1d'] as ChartInterval[]).map(t => (
                 <button key={t} onClick={() => setIv(t)}
-                  style={{ fontSize:8, fontWeight:700, padding:'2px 7px', borderRadius:3, cursor:'pointer', fontFamily:C.font,
+                  style={{ fontSize:8, fontWeight:700, padding:'2px 7px', borderRadius:3, cursor:'pointer', fontFamily:_hlFont,
                     background: iv===t ? `${C.teal}22` : 'none',
                     border: `1px solid ${iv===t ? C.teal : C.border}`,
                     color: iv===t ? C.teal : C.dim }}>
@@ -2243,7 +2226,7 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
             </div>
           )}
           {resolved.type === 'tradingview' && (
-            <span style={{ fontSize:8, color:C.dim, fontFamily:C.font, marginLeft:4 }}>{resolved.symbol}</span>
+            <span style={{ fontSize:8, color:C.dim, fontFamily:_hlFont, marginLeft:4 }}>{resolved.symbol}</span>
           )}
           <button onClick={onClose}
             style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:C.dim, padding:2, display:'flex' }}>
@@ -2283,7 +2266,7 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
                   ] as [string, string, string|undefined][]).map(([label, val, vc]) => (
                     <div key={label} style={{ display:'flex', flexDirection:'column', gap:2 }}>
                       <span style={{ fontSize:7.5, fontWeight:700, letterSpacing:1, color:C.dim, textTransform:'uppercase' }}>{label}</span>
-                      <span style={{ fontSize:10, fontWeight:600, color:vc??C.text, fontFamily:C.font }}>{val}</span>
+                      <span style={{ fontSize:10, fontWeight:600, color:vc??C.text, fontFamily:_hlFont }}>{val}</span>
                     </div>
                   ))}
                 </div>
@@ -2471,7 +2454,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                 style={{
                   display:'inline-flex', alignItems:'center', gap:5,
                   padding:'3px 8px', borderRadius:4, cursor:'pointer',
-                  fontFamily:C.font, fontSize:9, fontWeight:700, letterSpacing:0.6,
+                  fontFamily:_hlFont, fontSize:9, fontWeight:700, letterSpacing:0.6,
                   textTransform:'uppercase',
                   background: isActive ? `${C.teal}22` : 'transparent',
                   color: isActive ? C.teal : C.dim,
@@ -2499,7 +2482,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
               return (
                 <button key={sig} onClick={() => setSigFilter(sig)}
                   style={{ fontSize:8, fontWeight:700, padding:'2px 9px', borderRadius:3, cursor:'pointer',
-                    fontFamily:C.font, letterSpacing:0.5, textTransform:'uppercase',
+                    fontFamily:_hlFont, letterSpacing:0.5, textTransform:'uppercase',
                     background: isActive ? `${chipCol}22` : 'transparent',
                     color: isActive ? chipCol : C.dim,
                     border: `1px solid ${isActive ? chipCol : C.dimLow}`,
@@ -2541,7 +2524,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                         return (
                           <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: currentKey })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => (
-                              <td key={col.key} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:C.font, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
+                              <td key={col.key} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:_hlFont, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
                                 {col.render(row)}
                               </td>
                             ))}
@@ -2587,7 +2570,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                         return (
                           <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h, premium_pct: row.premium != null ? row.premium * 100 : null, mark_oracle_pct: row.distMarkOracle != null ? row.distMarkOracle * 100 : null, book_imbalance: row.bidAskImbalance, trade_imbalance: row.tradeImbalance } as MatrixAsset, tab: activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => (
-                              <td key={String(col.key)} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:C.font, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
+                              <td key={String(col.key)} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:_hlFont, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
                                 {col.render(row)}
                               </td>
                             ))}
@@ -2628,7 +2611,7 @@ function SetupExplanationPanel({ card, label, color, onClose }: {
       </button>
       {/* ── Header row ── */}
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-        <span style={{ fontSize:15, fontWeight:800, color, fontFamily:C.font }}>{card.name ?? '—'}</span>
+        <span style={{ fontSize:15, fontWeight:800, color, fontFamily:_hlFont }}>{card.name ?? '—'}</span>
         <span style={{ fontSize:8, fontWeight:800, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>{side || '—'}</span>
         {card.setup_type && (
           <span style={{ fontSize:8, fontWeight:700, color:C.dim, background:`${C.border}`, borderRadius:3, padding:'1px 6px', letterSpacing:0.3 }}>{card.setup_type}</span>
@@ -2641,10 +2624,10 @@ function SetupExplanationPanel({ card, label, color, onClose }: {
         )}
         <span style={{ marginLeft:'auto', display:'flex', gap:10 }}>
           {card.confidence != null && (
-            <span style={{ fontSize:8, color:C.dim }}>Conf <span style={{ color:C.text, fontFamily:C.font }}>{(card.confidence*100).toFixed(0)}%</span></span>
+            <span style={{ fontSize:8, color:C.dim }}>Conf <span style={{ color:C.text, fontFamily:_hlFont }}>{(card.confidence*100).toFixed(0)}%</span></span>
           )}
           {card.score != null && (
-            <span style={{ fontSize:8, color:C.dim }}>Score <span style={{ color:C.purple, fontFamily:C.font }}>{card.score.toFixed(1)}</span></span>
+            <span style={{ fontSize:8, color:C.dim }}>Score <span style={{ color:C.purple, fontFamily:_hlFont }}>{card.score.toFixed(1)}</span></span>
           )}
         </span>
       </div>
@@ -2695,7 +2678,7 @@ function renderPriorityBucket(label: string, color: string, icon: string, list: 
         const sCol = SIDE_COLOR[(item.side ?? '').toUpperCase()] ?? C.dim;
         return (
           <div key={i} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:4 }}>
-            <span style={{ fontSize:9.5, fontWeight:800, color, fontFamily:C.font, minWidth:34 }}>{item.ticker}</span>
+            <span style={{ fontSize:9.5, fontWeight:800, color, fontFamily:_hlFont, minWidth:34 }}>{item.ticker}</span>
             <span style={{ fontSize:7, fontWeight:700, color:sCol, background:`${sCol}15`, borderRadius:3, padding:'1px 4px' }}>{(item.side||'').toUpperCase()}</span>
             {item.source === 'both' && (
               <span style={{ fontSize:7, color:'#a3e635', background:'#84cc1615', borderRadius:3, padding:'1px 5px', fontWeight:700 }}>✓ Both</span>
@@ -2847,7 +2830,7 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
               {card ? (
                 <>
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3, flexWrap:'wrap' }}>
-                    <span style={{ fontSize:13, fontWeight:800, color, fontFamily:C.font }}>{card.name ?? '—'}</span>
+                    <span style={{ fontSize:13, fontWeight:800, color, fontFamily:_hlFont }}>{card.name ?? '—'}</span>
                     <span style={{ fontSize:7.5, fontWeight:700, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 5px' }}>{side || '—'}</span>
                     {card.timing_state && (
                       <span style={{ fontSize:7, fontWeight:700, color:C.amber, background:`${C.amber}15`, borderRadius:3, padding:'1px 4px' }}>{card.timing_state}</span>
@@ -2867,8 +2850,8 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                       <div style={{ flex:1, height:3, background:C.dimLow, borderRadius:2 }}>
                         <div style={{ width:`${(card.confidence*100).toFixed(0)}%`, height:'100%', background:color, borderRadius:2 }} />
                       </div>
-                      <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{(card.confidence*100).toFixed(0)}%</span>
-                      {card.score != null && <span style={{ fontSize:7.5, color:C.purple, fontFamily:C.font }}>{card.score.toFixed(0)}</span>}
+                      <span style={{ fontSize:7.5, color:C.dim, fontFamily:_hlFont }}>{(card.confidence*100).toFixed(0)}%</span>
+                      {card.score != null && <span style={{ fontSize:7.5, color:C.purple, fontFamily:_hlFont }}>{card.score.toFixed(0)}</span>}
                     </div>
                   )}
                   {card.risk_label && (
@@ -2922,7 +2905,7 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                 onMouseEnter={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=`${C.border}`; }}
                 onMouseLeave={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=i%2===0?C.bg:C.card2; }}>
                 <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
-                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:C.font }}>
+                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:_hlFont }}>
                   {s.name ?? s.ticker}
                   {s.name && overlapSet.has(s.name.toUpperCase()) && (
                     <span style={{ fontSize:6.5, color:'#a3e635', background:'#84cc1610', border:'1px solid #84cc1625', borderRadius:3, padding:'1px 4px', marginLeft:4, fontWeight:800 }}>✓</span>
@@ -2930,7 +2913,7 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                 </span>
                 <span style={{ fontSize:7.5, fontWeight:700, color:sCol }}>{side || '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim }}>{s.setup_type ?? '—'}</span>
-                <span style={{ fontSize:7.5, color:C.dim, fontFamily:C.font }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
+                <span style={{ fontSize:7.5, color:C.dim, fontFamily:_hlFont }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
                 <span style={{ fontSize:7.5, fontWeight:600, color: s.risk_label==='LOW'?C.green:s.risk_label==='HIGH'||s.risk_label==='CROWDED'?C.red:C.amber }}>{s.risk_label ?? '—'}</span>
                 <span style={{ fontSize:7.5, color:C.teal, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.action_label ?? '—'}</span>
                 <span style={{ fontSize:8, color:C.dim, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.why_now ?? '—'}</span>
@@ -2945,6 +2928,7 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HyperliquidScreenerPage() {
+  const { C: _C } = useTheme(); C = _C;
   const [search,        setSearch]        = useState('');
   const [marketType,    setMarketType]    = useState<'all'|'perp'|'spot'>('all');
   const [minVolume,     setMinVolume]     = useState('');
@@ -3231,7 +3215,7 @@ export default function HyperliquidScreenerPage() {
   );
 
   return (
-    <div style={{ background:C.bg, color:C.text, fontFamily:C.font, fontSize:11, height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+    <div style={{ background:C.bg, color:C.text, fontFamily:_hlFont, fontSize:11, height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
       {/* ── TOP BAR ─────────────────────────────────────────────────── */}
       <div style={{ background:'#060b14', borderBottom:`1px solid ${C.border}`, padding:'0 12px', display:'flex', alignItems:'center', gap:8, flexShrink:0, flexWrap:'nowrap', overflowX:'auto', scrollbarWidth:'none', minHeight:44 }}>

@@ -1,15 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useLocation } from 'wouter';
 import { useChatbot } from '@/contexts/ChatbotContext';
 import cryptoHippoLogo from '@assets/image_1771549651056.png';
 import caelynLogo from '@assets/image_1771541162366.png';
 import WatchlistAnalysis, { tryParseWatchlistAnalysis } from './WatchlistAnalysis';
 
-const C = {
-  bg: '#0b0c10', card: '#111318', border: '#1a1d25', text: '#c9cdd6', bright: '#e8eaef',
-  dim: '#6b7280', green: '#22c55e', red: '#ef4444', blue: '#3b82f6', gold: '#f59e0b',
-  purple: '#a78bfa',
-};
+let C = DARK_C;
 const font = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace";
 const sansFont = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
@@ -165,6 +162,7 @@ function getPagePrompts(pathname: string): Array<{ l: string; p: string }> {
 }
 
 export default function ChatbotWidget() {
+  const { C: _C } = useTheme(); C = _C;
   const [location] = useLocation();
   const [mode, setMode] = useState<'collapsed' | 'small' | 'expanded'>('collapsed');
   const [input, setInput] = useState('');

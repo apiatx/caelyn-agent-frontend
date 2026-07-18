@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useQuery } from "@tanstack/react-query";
 import MultiChartsPage from "./multicharts";
 import {
@@ -8,13 +9,8 @@ import {
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 
 /* ── Color constants ────────────────────────────────────────────────────── */
-const C = {
-  bg: '#020202', card: '#0a0a0a', card2: '#060606',
-  border: '#1c1c1c', text: '#f5f5f0', dim: '#a9aaa6',
-  teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
-  amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
-  font: "'JetBrains Mono','Fira Code',monospace",
-};
+let C = DARK_C;
+const _crFont = "'JetBrains Mono','Fira Code',monospace";
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
 interface RadarSymbol {
@@ -656,6 +652,7 @@ function ComparePanel() {
 
 /* ── Main Page ──────────────────────────────────────────────────────────── */
 export default function ChartRadarPage() {
+  const { C: _C } = useTheme(); C = _C;
   /* ── Tab: custom | watchlist | portfolio | compare ──────────────────── */
   const [tab, setTab] = useState<'custom' | 'watchlist' | 'portfolio' | 'compare'>('custom');
   /* Custom is the default tab — mount it immediately */

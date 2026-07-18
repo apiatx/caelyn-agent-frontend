@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 type Decision = 'YES' | 'CAUTION' | 'NO';
@@ -18,11 +19,7 @@ interface TradingDashboardData {
   sector_performance?: SectorItem[];
 }
 
-const C = {
-  bg: '#0d1117', card: '#161b22', border: '#21262d', borderBright: '#30363d',
-  text: '#e6edf3', dim: '#8b949e', dimLow: '#484f58',
-  green: '#3fb950', yellow: '#e3b341', orange: '#f0883e', red: '#f85149', blue: '#58a6ff',
-};
+let C = DARK_C;
 
 function scoreColor(s: number) {
   if (s >= 70) return C.green;
@@ -144,6 +141,7 @@ function TickerTape({ pillars }: { pillars: Pillar[] }) {
 /* ─── Main Component ──────────────────────────────────────── */
 export default function ShouldIBeTrading() {
   const [mode, setMode] = useState<Mode>('swing');
+  const { C: _C } = useTheme(); C = _C;
   const [timeLeft, setTimeLeft] = useState(45);
   const qc = useQueryClient();
 

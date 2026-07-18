@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { RefreshCw, X, ArrowLeft, AlertCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchLatestSnapshot, fetchReport, refreshSnapshot, fetchAnchorRows, fetchAnchorOverlap, createManualNode, fetchMultiAnchorScreener, fetchAnchorList, fetchAnchorTickerDetail } from '@/lib/screener';
@@ -13,26 +14,9 @@ import {
 } from 'recharts';
 
 /* ── Design tokens ──────────────────────────────────────────────── */
-const C = {
-  bg:          '#050505',
-  surface:     '#080808',
-  card:        '#0a0a0a',
-  border:      '#1c1c1c',
-  borderFaint: '#111111',
-  text:        '#e2e8f0',
-  dim:         '#64748b',
-  muted:       '#2a2a2a',
-  bright:      '#f5f5f0',
-  indigo:      '#d8d8d2',
-  indigoFg:    '#a9aaa6',
-  indigoSub:   'rgba(255,255,255,0.04)',
-  green:       '#22c55e',
-  amber:       '#f59e0b',
-  blue:        '#38bdf8',
-  red:         '#ef4444',
-  font:        "'JetBrains Mono','Fira Code',monospace",
-  sans:        "'SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-};
+let C = DARK_C;
+const _ssFont = "'JetBrains Mono','Fira Code',monospace";
+const _ssSans = "'SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 
 /* ── Grade sort ranking ─────────────────────────────────────────── */
 const GRADE_RANK: Record<string, number> = {
@@ -186,8 +170,8 @@ function sortEntries(
 function LoadingState() {
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:'80px 0', color:C.dim }}>
-      <Loader2 size={28} style={{ animation:'spin 1s linear infinite', color:C.indigo }} />
-      <span style={{ fontFamily:C.font, fontSize:11 }}>Loading…</span>
+      <Loader2 size={28} style={{ animation:'spin 1s linear infinite', color:'#d8d8d2' }} />
+      <span style={{ fontFamily:_ssFont, fontSize:11 }}>Loading…</span>
     </div>
   );
 }
@@ -196,10 +180,10 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, padding:'60px 24px', textAlign:'center' }}>
       <AlertCircle size={28} style={{ color:C.amber }} />
-      <p style={{ fontFamily:C.sans, fontSize:14, color:C.dim, maxWidth:380 }}>{message}</p>
+      <p style={{ fontFamily:_ssSans, fontSize:14, color:C.dim, maxWidth:380 }}>{message}</p>
       <button
         onClick={onRetry}
-        style={{ padding:'7px 20px', background:C.indigoSub, border:`1px solid rgba(255,255,255,0.12)`, borderRadius:6, color:C.indigoFg, fontFamily:C.font, fontSize:11, cursor:'pointer' }}
+        style={{ padding:'7px 20px', background:'rgba(255,255,255,0.04)', border:`1px solid rgba(255,255,255,0.12)`, borderRadius:6, color:'#a9aaa6', fontFamily:_ssFont, fontSize:11, cursor:'pointer' }}
       >
         Retry
       </button>
@@ -208,10 +192,10 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 }
 
 function GradeBadge({ grade }: { grade?: string }) {
-  if (!grade) return <span style={{ color:C.muted, fontSize:11, fontFamily:C.font }}>—</span>;
+  if (!grade) return <span style={{ color:'#2a2a2a', fontSize:11, fontFamily:_ssFont }}>—</span>;
   const clr = gradeColor(grade);
   return (
-    <span style={{ display:'inline-block', minWidth:28, padding:'2px 7px', background:`${clr}14`, border:`1px solid ${clr}30`, borderRadius:4, color:clr, fontFamily:C.font, fontSize:10, fontWeight:700, textAlign:'center' }}>
+    <span style={{ display:'inline-block', minWidth:28, padding:'2px 7px', background:`${clr}14`, border:`1px solid ${clr}30`, borderRadius:4, color:clr, fontFamily:_ssFont, fontSize:10, fontWeight:700, textAlign:'center' }}>
       {grade}
     </span>
   );
@@ -222,14 +206,14 @@ function AccessBadge({ entry }: { entry: ScreenerEntry }) {
   if (entry.direct_tradable !== false && !proxy) return null;
   if (proxy) {
     return (
-      <span style={{ display:'inline-block', padding:'1px 6px', background:`${C.amber}12`, border:`1px solid ${C.amber}30`, borderRadius:3, color:C.amber, fontFamily:C.font, fontSize:8, fontWeight:700, whiteSpace:'nowrap' }}>
+      <span style={{ display:'inline-block', padding:'1px 6px', background:`${C.amber}12`, border:`1px solid ${C.amber}30`, borderRadius:3, color:C.amber, fontFamily:_ssFont, fontSize:8, fontWeight:700, whiteSpace:'nowrap' }}>
         {proxy}
       </span>
     );
   }
   if (entry.direct_tradable === false) {
     return (
-      <span style={{ display:'inline-block', padding:'1px 6px', background:`rgba(239,68,68,0.08)`, border:`1px solid rgba(239,68,68,0.2)`, borderRadius:3, color:'#f87171', fontFamily:C.font, fontSize:8, fontWeight:700 }}>
+      <span style={{ display:'inline-block', padding:'1px 6px', background:`rgba(239,68,68,0.08)`, border:`1px solid rgba(239,68,68,0.2)`, borderRadius:3, color:'#f87171', fontFamily:_ssFont, fontSize:8, fontWeight:700 }}>
         Foreign
       </span>
     );
@@ -243,10 +227,10 @@ function ReportSection({ title, content }: { title: string; content?: string }) 
   return (
     <div style={{ marginBottom:24 }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-        <span style={{ display:'inline-block', width:3, height:14, background:C.indigo, borderRadius:2, flexShrink:0 }} />
-        <h3 style={{ fontFamily:C.sans, fontSize:12, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.08em', margin:0 }}>{title}</h3>
+        <span style={{ display:'inline-block', width:3, height:14, background:'#d8d8d2', borderRadius:2, flexShrink:0 }} />
+        <h3 style={{ fontFamily:_ssSans, fontSize:12, fontWeight:700, color:'#a9aaa6', textTransform:'uppercase', letterSpacing:'0.08em', margin:0 }}>{title}</h3>
       </div>
-      <p style={{ fontFamily:C.sans, fontSize:14, color:C.text, lineHeight:1.8, margin:0, paddingLeft:11, borderLeft:`1px solid ${C.borderFaint}` }}>
+      <p style={{ fontFamily:_ssSans, fontSize:14, color:C.text, lineHeight:1.8, margin:0, paddingLeft:11, borderLeft:`1px solid ${C.borderFaint}` }}>
         {content}
       </p>
     </div>
@@ -333,10 +317,10 @@ function TradingViewChart({ symbol }: { symbol: string }) {
   return (
     <div style={{ borderBottom:`1px solid ${C.border}`, background:C.bg, marginBottom:24 }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 22px 0' }}>
-        <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+        <span style={{ fontFamily:_ssFont, fontSize:9, fontWeight:700, color:'#2a2a2a', textTransform:'uppercase', letterSpacing:'0.08em' }}>
           Chart · {symbol}
         </span>
-        <span style={{ fontFamily:C.font, fontSize:9, color:C.muted }}>RSI · MACD · BB</span>
+        <span style={{ fontFamily:_ssFont, fontSize:9, color:'#2a2a2a' }}>RSI · MACD · BB</span>
       </div>
       <iframe key={symbol} src={src} style={{ width:'100%', height:380, border:'none', display:'block' }} allow="fullscreen" title={`${symbol} chart`} />
     </div>
@@ -385,22 +369,22 @@ function ReportPanel({
     <div style={{ position:'fixed', top:0, right:0, bottom:0, width:'min(680px, 100vw)', background:C.surface, borderLeft:`1px solid ${C.border}`, zIndex:80, display:'flex', flexDirection:'column', boxShadow:'-8px 0 40px rgba(0,0,0,0.5)' }}>
       {/* Panel header */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'16px 22px', borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-        <button onClick={onClose} style={{ display:'flex', alignItems:'center', gap:6, background:'transparent', border:'none', color:C.dim, cursor:'pointer', padding:'4px 8px', borderRadius:4, fontFamily:C.font, fontSize:10 }}>
+        <button onClick={onClose} style={{ display:'flex', alignItems:'center', gap:6, background:'transparent', border:'none', color:C.dim, cursor:'pointer', padding:'4px 8px', borderRadius:4, fontFamily:_ssFont, fontSize:10 }}>
           <ArrowLeft size={14} />
           Back
         </button>
         <div style={{ flex:1 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            <span style={{ fontFamily:C.font, fontSize:16, fontWeight:700, color:C.bright }}>{tk}</span>
+            <span style={{ fontFamily:_ssFont, fontSize:16, fontWeight:700, color:C.bright }}>{tk}</span>
             <GradeBadge grade={gradeOf(entry)} />
             <AccessBadge entry={entry} />
             {anchor && (
-              <span style={{ fontFamily:C.font, fontSize:9, fontWeight:700, color:C.indigoFg, textTransform:'uppercase', letterSpacing:'0.08em', opacity:0.8 }}>
+              <span style={{ fontFamily:_ssFont, fontSize:9, fontWeight:700, color:'#a9aaa6', textTransform:'uppercase', letterSpacing:'0.08em', opacity:0.8 }}>
                 Anchor
               </span>
             )}
           </div>
-          <div style={{ fontFamily:C.sans, fontSize:12, color:C.dim, marginTop:2 }}>{nameOf(entry)}</div>
+          <div style={{ fontFamily:_ssSans, fontSize:12, color:C.dim, marginTop:2 }}>{nameOf(entry)}</div>
         </div>
         <button onClick={onClose} style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:4, color:C.dim, cursor:'pointer', padding:4 }}>
           <X size={14} />
@@ -408,21 +392,21 @@ function ReportPanel({
       </div>
 
       {/* Meta strip */}
-      <div style={{ display:'flex', alignItems:'center', gap:16, padding:'10px 22px', borderBottom:`1px solid ${C.borderFaint}`, background:C.indigoSub, flexShrink:0, flexWrap:'wrap' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:16, padding:'10px 22px', borderBottom:`1px solid ${C.borderFaint}`, background:'rgba(255,255,255,0.04)', flexShrink:0, flexWrap:'wrap' }}>
         {(entry.theme || entry.themes?.[0]) && (
-          <span style={{ fontFamily:C.font, fontSize:10, color:C.indigoFg }}>{themeOf(entry)}</span>
+          <span style={{ fontFamily:_ssFont, fontSize:10, color:'#a9aaa6' }}>{themeOf(entry)}</span>
         )}
         {entry.layer_depth != null && (
-          <span style={{ fontFamily:C.font, fontSize:10, color:C.dim }}>Layer {entry.layer_depth}</span>
+          <span style={{ fontFamily:_ssFont, fontSize:10, color:C.dim }}>Layer {entry.layer_depth}</span>
         )}
         {entry.country && (
-          <span style={{ fontFamily:C.font, fontSize:10, color:C.dim }}>{entry.country}</span>
+          <span style={{ fontFamily:_ssFont, fontSize:10, color:C.dim }}>{entry.country}</span>
         )}
         {entry.market_cap_usd && (
-          <span style={{ fontFamily:C.font, fontSize:10, color:C.dim }}>{fmtCap(entry.market_cap_usd)}</span>
+          <span style={{ fontFamily:_ssFont, fontSize:10, color:C.dim }}>{fmtCap(entry.market_cap_usd)}</span>
         )}
         {entry.why_now && (
-          <span style={{ fontFamily:C.sans, fontSize:11, color:C.dim, fontStyle:'italic', flex:1, minWidth:120 }}>{entry.why_now}</span>
+          <span style={{ fontFamily:_ssSans, fontSize:11, color:C.dim, fontStyle:'italic', flex:1, minWidth:120 }}>{entry.why_now}</span>
         )}
       </div>
 
@@ -432,8 +416,8 @@ function ReportPanel({
         <div style={{ padding:'24px 22px' }}>
           {isLoading && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'40px 0', color:C.dim }}>
-              <Loader2 size={18} style={{ animation:'spin 1s linear infinite', color:C.indigo }} />
-              <span style={{ fontFamily:C.font, fontSize:11 }}>Loading report…</span>
+              <Loader2 size={18} style={{ animation:'spin 1s linear infinite', color:'#d8d8d2' }} />
+              <span style={{ fontFamily:_ssFont, fontSize:11 }}>Loading report…</span>
             </div>
           )}
           {error && !report && (
@@ -446,7 +430,7 @@ function ReportPanel({
           {report && !report.error && (
             <>
               {report.headline && (
-                <p style={{ fontFamily:C.sans, fontSize:15, color:C.indigoFg, fontStyle:'italic', marginBottom:24, lineHeight:1.7, borderLeft:`3px solid ${C.indigo}`, paddingLeft:14 }}>
+                <p style={{ fontFamily:_ssSans, fontSize:15, color:'#a9aaa6', fontStyle:'italic', marginBottom:24, lineHeight:1.7, borderLeft:`3px solid ${'#d8d8d2'}`, paddingLeft:14 }}>
                   {report.headline}
                 </p>
               )}
@@ -492,10 +476,10 @@ function SortableHeader({
       onClick={() => onClick(col)}
       style={{
         padding: '9px 12px',
-        fontFamily: C.font,
+        fontFamily: _ssFont,
         fontSize: 8,
         fontWeight: 700,
-        color: active ? C.indigoFg : C.muted,
+        color: active ? '#a9aaa6' : '#2a2a2a',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
         textAlign: (align as any) || 'left',
@@ -603,18 +587,18 @@ function SmartOptionsTab() {
             boxShadow: `0 0 6px ${marketStatusColor(market.status)}`,
           }} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: C.text, fontSize: 13, fontFamily: C.sans, lineHeight: 1.5 }}>
+            <div style={{ color: C.text, fontSize: 13, fontFamily: _ssSans, lineHeight: 1.5 }}>
               {market.context}
             </div>
             <div style={{ marginTop: 6, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <span style={{ color: C.dim, fontSize: 11, fontFamily: C.font }}>
+              <span style={{ color: C.dim, fontSize: 11, fontFamily: _ssFont }}>
                 {market.et_time}
               </span>
-              <span style={{ fontSize: 11, fontFamily: C.font, color: market.gap_meaningful ? C.green : C.amber }}>
+              <span style={{ fontSize: 11, fontFamily: _ssFont, color: market.gap_meaningful ? C.green : C.amber }}>
                 {market.gap_meaningful ? '● Gaps actionable' : '○ Gaps may be stale'}
               </span>
               {data?.with_gap != null && (
-                <span style={{ color: C.dim, fontSize: 11, fontFamily: C.font }}>
+                <span style={{ color: C.dim, fontSize: 11, fontFamily: _ssFont }}>
                   {data.with_gap} gaps · {data.total_hl_equities} HL equities tracked
                 </span>
               )}
@@ -625,7 +609,7 @@ function SmartOptionsTab() {
 
       {/* Loading */}
       {isLoading && (
-        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: _ssSans, fontSize: 13 }}>
           <div style={{ marginBottom: 12, fontSize: 20 }}>⏳</div>
           Fetching Hyperliquid equity perp prices + market quotes…
         </div>
@@ -633,7 +617,7 @@ function SmartOptionsTab() {
 
       {/* Error */}
       {error && !isLoading && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: _ssSans, fontSize: 13 }}>
           Failed to load Smart Options data. <button onClick={() => refetch()} style={{ color: C.blue, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Retry</button>
         </div>
       )}
@@ -643,13 +627,13 @@ function SmartOptionsTab() {
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
           {(['all', 'calls', 'puts'] as const).map(v => {
             const active = soView === v;
-            const col = v === 'calls' ? C.green : v === 'puts' ? C.red : C.indigo;
+            const col = v === 'calls' ? C.green : v === 'puts' ? C.red : '#d8d8d2';
             const count = v === 'all' ? baseRows.length : baseRows.filter(r => r.signal === v.slice(0, -1)).length;
             const label = v === 'all' ? 'All' : v === 'calls' ? '▲ Top Calls' : '▼ Top Puts';
             return (
               <button key={v} onClick={() => setSoView(v)} style={{
                 padding: '5px 14px', borderRadius: 6, cursor: 'pointer',
-                fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                fontFamily: _ssFont, fontSize: 10, fontWeight: 700,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 background: active ? `${col}18` : 'transparent',
                 color: active ? col : C.dim,
@@ -692,8 +676,8 @@ function SmartOptionsTab() {
                   <span
                     onClick={() => setTvTicker(row.ticker)}
                     style={{
-                      color: C.bright, fontFamily: C.font, fontSize: 15, fontWeight: 700,
-                      cursor: 'pointer', borderBottom: `1px dashed ${C.muted}`,
+                      color: C.bright, fontFamily: _ssFont, fontSize: 15, fontWeight: 700,
+                      cursor: 'pointer', borderBottom: `1px dashed ${'#2a2a2a'}`,
                       transition: 'color 0.12s',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.color = C.blue)}
@@ -705,7 +689,7 @@ function SmartOptionsTab() {
 
                   {/* Gap badge */}
                   <span style={{
-                    color: col, fontFamily: C.font, fontSize: 14, fontWeight: 800,
+                    color: col, fontFamily: _ssFont, fontSize: 14, fontWeight: 800,
                     background: `${col}15`, border: `1px solid ${col}40`,
                     borderRadius: 6, padding: '2px 10px',
                   }}>
@@ -714,7 +698,7 @@ function SmartOptionsTab() {
 
                   {/* Signal label */}
                   <span style={{
-                    color: col, fontFamily: C.font, fontSize: 10, fontWeight: 700,
+                    color: col, fontFamily: _ssFont, fontSize: 10, fontWeight: 700,
                     letterSpacing: '0.07em', textTransform: 'uppercase',
                   }}>
                     {signalLabel(sig, sigStr)}
@@ -722,7 +706,7 @@ function SmartOptionsTab() {
 
                   {/* Strategy badge */}
                   <span style={{
-                    marginLeft: 'auto', color: col, fontFamily: C.sans, fontSize: 10,
+                    marginLeft: 'auto', color: col, fontFamily: _ssSans, fontSize: 10,
                     fontWeight: 700, background: `${col}12`, border: `1px solid ${col}30`,
                     borderRadius: 4, padding: '3px 9px', textTransform: 'uppercase',
                     letterSpacing: '0.06em', whiteSpace: 'nowrap',
@@ -738,41 +722,41 @@ function SmartOptionsTab() {
                   <div style={{
                     background: C.bg, border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
                   }}>
-                    <div style={{ color: '#38bdf8', fontFamily: C.font, fontSize: 9, fontWeight: 700,
+                    <div style={{ color: '#38bdf8', fontFamily: _ssFont, fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                       Hyperliquid Perp
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Price</span>
-                        <span style={{ color: C.bright, fontFamily: C.font, fontSize: 12, fontWeight: 700 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Price</span>
+                        <span style={{ color: C.bright, fontFamily: _ssFont, fontSize: 12, fontWeight: 700 }}>
                           {soFmt$(row.hl?.price)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>24h Chg</span>
-                        <span style={{ color: row.hl?.chg_24h_pct >= 0 ? C.green : C.red, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>24h Chg</span>
+                        <span style={{ color: row.hl?.chg_24h_pct >= 0 ? C.green : C.red, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmtPct(row.hl?.chg_24h_pct)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>OI</span>
-                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>OI</span>
+                        <span style={{ color: C.text, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmtM(row.hl?.oi_usd)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Funding (ann)</span>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Funding (ann)</span>
                         <span style={{
-                          fontFamily: C.font, fontSize: 10,
+                          fontFamily: _ssFont, fontSize: 10,
                           color: fundAnn == null ? C.dim : fundAnn > 50 ? C.green : fundAnn < -50 ? C.red : C.text,
                         }}>
                           {fundAnn != null ? `${fundAnn > 0 ? '+' : ''}${fundAnn.toFixed(0)}%` : '—'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Vol 24h</span>
-                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Vol 24h</span>
+                        <span style={{ color: C.text, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmtM(row.hl?.volume_24h_usd)}
                         </span>
                       </div>
@@ -783,38 +767,38 @@ function SmartOptionsTab() {
                   <div style={{
                     background: C.bg, border: `1px solid ${C.borderFaint}`, borderRadius: 8, padding: '12px 14px',
                   }}>
-                    <div style={{ color: C.indigoFg, fontFamily: C.font, fontSize: 9, fontWeight: 700,
+                    <div style={{ color: '#a9aaa6', fontFamily: _ssFont, fontSize: 9, fontWeight: 700,
                       textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                       Equity Market
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Last Price</span>
-                        <span style={{ color: C.bright, fontFamily: C.font, fontSize: 12, fontWeight: 700 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Last Price</span>
+                        <span style={{ color: C.bright, fontFamily: _ssFont, fontSize: 12, fontWeight: 700 }}>
                           {soFmt$(row.actual?.price)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>24h Chg</span>
-                        <span style={{ color: (row.actual?.change_pct ?? 0) >= 0 ? C.green : C.red, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>24h Chg</span>
+                        <span style={{ color: (row.actual?.change_pct ?? 0) >= 0 ? C.green : C.red, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmtPct(row.actual?.change_pct)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Bid / Ask</span>
-                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Bid / Ask</span>
+                        <span style={{ color: C.text, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmt$(row.actual?.bid)} / {soFmt$(row.actual?.ask)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Prev Close</span>
-                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Prev Close</span>
+                        <span style={{ color: C.text, fontFamily: _ssFont, fontSize: 10 }}>
                           {soFmt$(row.actual?.prevclose)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: C.dim, fontFamily: C.font, fontSize: 10 }}>Eq. Volume</span>
-                        <span style={{ color: C.text, fontFamily: C.font, fontSize: 10 }}>
+                        <span style={{ color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>Eq. Volume</span>
+                        <span style={{ color: C.text, fontFamily: _ssFont, fontSize: 10 }}>
                           {row.actual?.volume != null ? row.actual.volume.toLocaleString() : '—'}
                         </span>
                       </div>
@@ -823,7 +807,7 @@ function SmartOptionsTab() {
                 </div>
 
                 {/* Gap explanation */}
-                <div style={{ marginTop: 10, color: C.dim, fontFamily: C.sans, fontSize: 11, lineHeight: 1.5 }}>
+                <div style={{ marginTop: 10, color: C.dim, fontFamily: _ssSans, fontSize: 11, lineHeight: 1.5 }}>
                   {dir === 'hl_discount'
                     ? `HL prices ${row.ticker} at ${soFmt$(row.hl?.price)} — ${Math.abs(gapPct ?? 0).toFixed(2)}% below the equity close of ${soFmt$(row.actual?.price)}. Crypto market pricing in a move lower.`
                     : dir === 'hl_premium'
@@ -837,7 +821,7 @@ function SmartOptionsTab() {
       )}
 
       {!isLoading && !error && rows.length === 0 && data && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: _ssSans, fontSize: 13 }}>
           No actionable gaps found right now.
         </div>
       )}
@@ -869,10 +853,10 @@ function SmartOptionsTab() {
               padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
               background: C.surface, flexShrink: 0,
             }}>
-              <span style={{ color: C.bright, fontFamily: C.font, fontSize: 13, fontWeight: 700 }}>
+              <span style={{ color: C.bright, fontFamily: _ssFont, fontSize: 13, fontWeight: 700 }}>
                 {tvTicker}
               </span>
-              <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>
+              <span style={{ color: C.dim, fontFamily: _ssSans, fontSize: 11 }}>
                 TradingView Chart
               </span>
               <a
@@ -880,7 +864,7 @@ function SmartOptionsTab() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  marginLeft: 'auto', color: C.blue, fontFamily: C.font, fontSize: 10,
+                  marginLeft: 'auto', color: C.blue, fontFamily: _ssFont, fontSize: 10,
                   textDecoration: 'none', border: `1px solid ${C.blue}40`,
                   borderRadius: 4, padding: '3px 9px',
                 }}
@@ -1000,11 +984,11 @@ function ManualAddModal({
   const INP: CSSProperties = {
     width: '100%', boxSizing: 'border-box',
     background: C.bg, border: `1px solid ${C.border}`, borderRadius: 5,
-    color: C.text, fontFamily: C.font, fontSize: 11,
+    color: C.text, fontFamily: _ssFont, fontSize: 11,
     padding: '6px 10px', outline: 'none',
   };
   const LBL: CSSProperties = {
-    fontFamily: C.font, fontSize: 9, color: C.dim,
+    fontFamily: _ssFont, fontSize: 9, color: C.dim,
     textTransform: 'uppercase', letterSpacing: '0.07em',
     display: 'block', marginBottom: 4,
   };
@@ -1020,7 +1004,7 @@ function ManualAddModal({
         zIndex: 301, padding: '24px 28px', boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: C.bright, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, color: C.bright, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Add Bottleneck
           </span>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, padding: 4 }}>
@@ -1113,19 +1097,19 @@ function ManualAddModal({
         </div>
 
         {err && (
-          <div style={{ fontFamily: C.font, fontSize: 10, color: C.amber, marginBottom: 12, padding: '6px 10px', background: `${C.amber}10`, border: `1px solid ${C.amber}30`, borderRadius: 5 }}>
+          <div style={{ fontFamily: _ssFont, fontSize: 10, color: C.amber, marginBottom: 12, padding: '6px 10px', background: `${C.amber}10`, border: `1px solid ${C.amber}30`, borderRadius: 5 }}>
             {err}
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '7px 18px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: C.font, fontSize: 11, cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ padding: '7px 18px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: _ssFont, fontSize: 11, cursor: 'pointer' }}>
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            style={{ padding: '7px 18px', background: C.indigoSub, border: `1px solid ${C.indigo}55`, borderRadius: 6, color: C.indigoFg, fontFamily: C.font, fontSize: 11, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}
+            style={{ padding: '7px 18px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${'#d8d8d2'}55`, borderRadius: 6, color: '#a9aaa6', fontFamily: _ssFont, fontSize: 11, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}
           >
             {submitting ? 'Saving…' : 'Add Bottleneck'}
           </button>
@@ -1140,7 +1124,7 @@ function ManualAddModal({
    ═══════════════════════════════════════════════════════════════════ */
 const TH_STYLE: CSSProperties = {
   padding: '7px 10px', background: C.surface, borderBottom: `1px solid ${C.border}`,
-  fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.dim,
+  fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: C.dim,
   textTransform: 'uppercase', letterSpacing: '0.06em',
   position: 'sticky', top: 0, zIndex: 2, userSelect: 'none', whiteSpace: 'nowrap',
 };
@@ -1204,23 +1188,23 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, padding: '3px 6px', borderRadius: 4, fontFamily: C.font, fontSize: 10 }}>
+          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: 'none', cursor: 'pointer', color: C.dim, padding: '3px 6px', borderRadius: 4, fontFamily: _ssFont, fontSize: 10 }}>
             <ArrowLeft size={13} /> Back
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: C.font, fontSize: 15, fontWeight: 700, color: C.bright }}>{ticker}</span>
+              <span style={{ fontFamily: _ssFont, fontSize: 15, fontWeight: 700, color: C.bright }}>{ticker}</span>
               {row.bottleneck_score != null && (
-                <span style={{ fontFamily: C.font, fontSize: 10, color: C.amber }}>score {row.bottleneck_score}</span>
+                <span style={{ fontFamily: _ssFont, fontSize: 10, color: C.amber }}>score {row.bottleneck_score}</span>
               )}
               {row.confidence && (
-                <span style={{ padding: '1px 6px', background: `${confClr(row.confidence)}15`, border: `1px solid ${confClr(row.confidence)}35`, borderRadius: 3, fontFamily: C.font, fontSize: 9, color: confClr(row.confidence) }}>
+                <span style={{ padding: '1px 6px', background: `${confClr(row.confidence)}15`, border: `1px solid ${confClr(row.confidence)}35`, borderRadius: 3, fontFamily: _ssFont, fontSize: 9, color: confClr(row.confidence) }}>
                   {row.confidence}
                 </span>
               )}
               {row.evidence_grade && <GradeBadge grade={row.evidence_grade} />}
             </div>
-            <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, cursor: 'pointer', padding: 4 }}>
             <X size={13} />
@@ -1228,12 +1212,12 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
         </div>
 
         {/* Meta strip */}
-        <div style={{ display: 'flex', gap: 14, padding: '7px 20px', borderBottom: `1px solid ${C.borderFaint}`, background: C.indigoSub, flexShrink: 0, flexWrap: 'wrap' }}>
-          {primaryAnchor && <span style={{ fontFamily: C.font, fontSize: 9, color: C.indigoFg }}>via {primaryAnchor}</span>}
-          {row.layer_name   && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{row.layer_name}</span>}
-          {row.category_name && <span style={{ fontFamily: C.font, fontSize: 9, color: C.blue }}>{row.category_name}</span>}
-          {(row.market_cap || row.marketCap) && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{fmtCap(row.market_cap || row.marketCap)}</span>}
-          {cross.length > 0 && <span style={{ fontFamily: C.font, fontSize: 9, color: C.amber }}>in {cross.length + 1} anchors</span>}
+        <div style={{ display: 'flex', gap: 14, padding: '7px 20px', borderBottom: `1px solid ${C.borderFaint}`, background: 'rgba(255,255,255,0.04)', flexShrink: 0, flexWrap: 'wrap' }}>
+          {primaryAnchor && <span style={{ fontFamily: _ssFont, fontSize: 9, color: '#a9aaa6' }}>via {primaryAnchor}</span>}
+          {row.layer_name   && <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim }}>{row.layer_name}</span>}
+          {row.category_name && <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.blue }}>{row.category_name}</span>}
+          {(row.market_cap || row.marketCap) && <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim }}>{fmtCap(row.market_cap || row.marketCap)}</span>}
+          {cross.length > 0 && <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.amber }}>in {cross.length + 1} anchors</span>}
         </div>
 
         {/* Body */}
@@ -1243,7 +1227,7 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
             {isLoading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '30px 0', color: C.dim }}>
                 <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: C.font, fontSize: 11 }}>Loading research…</span>
+                <span style={{ fontFamily: _ssFont, fontSize: 11 }}>Loading research…</span>
               </div>
             )}
             {sections.map(([title, content]) => (
@@ -1251,10 +1235,10 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
             ))}
             {Array.isArray(row.source_urls) && (row.source_urls as string[]).length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Sources</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Sources</div>
                 {(row.source_urls as string[]).map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'block', fontFamily: C.font, fontSize: 10, color: C.blue, marginBottom: 4, wordBreak: 'break-all' }}>
+                    style={{ display: 'block', fontFamily: _ssFont, fontSize: 10, color: C.blue, marginBottom: 4, wordBreak: 'break-all' }}>
                     {url}
                   </a>
                 ))}
@@ -1262,17 +1246,17 @@ function BottleneckDrawer({ ticker, primaryAnchor, tvSymbol, onClose }: {
             )}
             {cross.length > 0 && (
               <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-                <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
                   Also in {cross.length} other anchor{cross.length !== 1 ? 's' : ''}
                 </div>
                 {cross.map((c: any, i: number) => (
                   <div key={c.anchor_key || i} style={{ marginBottom: 10, paddingLeft: 12, borderLeft: `2px solid ${C.border}` }}>
-                    <div style={{ fontFamily: C.font, fontSize: 10, fontWeight: 700, color: C.bright, marginBottom: 2 }}>
+                    <div style={{ fontFamily: _ssFont, fontSize: 10, fontWeight: 700, color: C.bright, marginBottom: 2 }}>
                       {c.anchor_name || c.anchor_key}
-                      {c.bottleneck_score != null && <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginLeft: 8 }}>score {c.bottleneck_score}</span>}
+                      {c.bottleneck_score != null && <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim, marginLeft: 8 }}>score {c.bottleneck_score}</span>}
                     </div>
                     {c.supply_chain_role && (
-                      <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, lineHeight: 1.6 }}>{c.supply_chain_role}</div>
+                      <div style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, lineHeight: 1.6 }}>{c.supply_chain_role}</div>
                     )}
                   </div>
                 ))}
@@ -1316,6 +1300,7 @@ const LABEL_OVERRIDES: Record<string, string> = {
 };
 
 function StrategyScreenerInner() {
+  const { C: _C } = useTheme(); C = _C;
   const [activeTab,    setActiveTab]    = useState<string>('multi-anchor');
   const [sortCol,      setSortCol]      = useState<string>('anchor_count');
   const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
@@ -1469,20 +1454,20 @@ function StrategyScreenerInner() {
   }, [activeTab, backendCount, rawRows]);
 
   const fmtChange = (v?: number | null) => {
-    if (v == null) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 10 }}>—</span>;
+    if (v == null) return <span style={{ color: '#2a2a2a', fontFamily: _ssFont, fontSize: 10 }}>—</span>;
     const clr = v > 0 ? C.green : v < 0 ? C.red : C.dim;
-    return <span style={{ color: clr, fontFamily: C.font, fontSize: 10 }}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>;
+    return <span style={{ color: clr, fontFamily: _ssFont, fontSize: 10 }}>{v > 0 ? '+' : ''}{v.toFixed(2)}%</span>;
   };
   const fmtScore = (v?: number | null) => {
-    if (v == null) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 10 }}>—</span>;
+    if (v == null) return <span style={{ color: '#2a2a2a', fontFamily: _ssFont, fontSize: 10 }}>—</span>;
     const clr = v >= 85 ? C.red : v >= 65 ? C.amber : v >= 45 ? C.blue : C.dim;
-    return <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: clr }}>{Math.round(v)}</span>;
+    return <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, color: clr }}>{Math.round(v)}</span>;
   };
   const confBadge = (conf?: string) => {
-    if (!conf) return <span style={{ color: C.muted, fontFamily: C.font, fontSize: 9 }}>—</span>;
+    if (!conf) return <span style={{ color: '#2a2a2a', fontFamily: _ssFont, fontSize: 9 }}>—</span>;
     const clr = conf === 'high' ? C.green : conf === 'medium' ? C.amber : C.dim;
     return (
-      <span style={{ padding: '1px 6px', background: `${clr}15`, border: `1px solid ${clr}30`, borderRadius: 3, fontFamily: C.font, fontSize: 9, color: clr }}>
+      <span style={{ padding: '1px 6px', background: `${clr}15`, border: `1px solid ${clr}30`, borderRadius: 3, fontFamily: _ssFont, fontSize: 9, color: clr }}>
         {conf}
       </span>
     );
@@ -1503,21 +1488,21 @@ function StrategyScreenerInner() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.indigo, display: 'inline-block', flexShrink: 0 }} />
-                <span style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#d8d8d2', display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   Bottlenecks
                 </span>
               </div>
-              <h1 style={{ fontFamily: C.sans, fontSize: 22, fontWeight: 700, color: C.bright, margin: '0 0 4px', letterSpacing: '-0.01em' }}>
+              <h1 style={{ fontFamily: _ssSans, fontSize: 22, fontWeight: 700, color: C.bright, margin: '0 0 4px', letterSpacing: '-0.01em' }}>
                 Chain Reaction
               </h1>
-              <p style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, margin: 0, maxWidth: 520, lineHeight: 1.55 }}>
+              <p style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, margin: 0, maxWidth: 520, lineHeight: 1.55 }}>
                 Anchor companies driving today's major themes — and the suppliers, scarce enablers, and bottleneck plays around them.
               </p>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              style={{ padding: '6px 14px', background: C.indigoSub, border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: C.font, fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 6, color: C.dim, fontFamily: _ssFont, fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
               + Add Entry
             </button>
@@ -1531,14 +1516,14 @@ function StrategyScreenerInner() {
             return (
               <button key="multi-anchor" onClick={() => switchTab('multi-anchor')} style={{
                 padding: '10px 16px', background: 'transparent', border: 'none',
-                borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+                borderBottom: active ? `2px solid ${'#d8d8d2'}` : '2px solid transparent',
                 color: active ? C.bright : C.dim,
-                fontFamily: C.font, fontSize: 10, fontWeight: active ? 700 : 400,
+                fontFamily: _ssFont, fontSize: 10, fontWeight: active ? 700 : 400,
                 cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               }}>
                 Multi-anchor bottlenecks
                 {active && backendCount > 0 && (
-                  <span style={{ marginLeft: 5, color: C.indigoFg, fontSize: 9 }}>({backendCount})</span>
+                  <span style={{ marginLeft: 5, color: '#a9aaa6', fontSize: 9 }}>({backendCount})</span>
                 )}
               </button>
             );
@@ -1549,14 +1534,14 @@ function StrategyScreenerInner() {
             return (
               <button key={a.anchor_key} onClick={() => switchTab(a.anchor_key)} style={{
                 padding: '10px 14px', background: 'transparent', border: 'none',
-                borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+                borderBottom: active ? `2px solid ${'#d8d8d2'}` : '2px solid transparent',
                 color: active ? C.bright : C.dim,
-                fontFamily: C.font, fontSize: 10, fontWeight: active ? 700 : 400,
+                fontFamily: _ssFont, fontSize: 10, fontWeight: active ? 700 : 400,
                 cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               }}>
                 {a.visible_name || a.anchor_name || a.anchor_key}
                 {active && backendCount > 0 && (
-                  <span style={{ marginLeft: 5, color: C.indigoFg, fontSize: 9 }}>({backendCount})</span>
+                  <span style={{ marginLeft: 5, color: '#a9aaa6', fontSize: 9 }}>({backendCount})</span>
                 )}
               </button>
             );
@@ -1565,7 +1550,7 @@ function StrategyScreenerInner() {
 
         {/* ── Anchor subtitle ──────────────────────────────────── */}
         {activeAnchorMeta?.subtitle && (
-          <div style={{ padding: '5px 2px 0', fontFamily: C.font, fontSize: 9, color: C.dim }}>
+          <div style={{ padding: '5px 2px 0', fontFamily: _ssFont, fontSize: 9, color: C.dim }}>
             {activeAnchorMeta.subtitle}
           </div>
         )}
@@ -1575,21 +1560,21 @@ function StrategyScreenerInner() {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search ticker / company…"
-            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none', minWidth: 180 }}
+            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: _ssFont, fontSize: 10, outline: 'none', minWidth: 180 }}
           />
           {categories.length > 2 && (
             <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-              style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }}>
+              style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: _ssFont, fontSize: 10, outline: 'none' }}>
               {categories.map(c => <option key={c} value={c}>{c === 'all' ? 'All categories' : c}</option>)}
             </select>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>Score ≥</span>
+            <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim }}>Score ≥</span>
             <input type="number" min={0} max={100} value={scoreMin || ''} onChange={e => setScoreMin(e.target.value ? Number(e.target.value) : 0)} placeholder="0"
-              style={{ width: 46, padding: '5px 8px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }} />
+              style={{ width: 46, padding: '5px 8px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: _ssFont, fontSize: 10, outline: 'none' }} />
           </div>
           <select value={directFilter} onChange={e => setDirectFilter(e.target.value)}
-            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: C.font, fontSize: 10, outline: 'none' }}>
+            style={{ padding: '5px 10px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5, color: C.text, fontFamily: _ssFont, fontSize: 10, outline: 'none' }}>
             <option value="all">All confidence</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
@@ -1597,11 +1582,11 @@ function StrategyScreenerInner() {
           </select>
           {(search || catFilter !== 'all' || scoreMin > 0 || directFilter !== 'all') && (
             <button onClick={() => { setSearch(''); setCatFilter('all'); setScoreMin(0); setDirectFilter('all'); }}
-              style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontFamily: C.font, fontSize: 9, cursor: 'pointer' }}>
+              style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontFamily: _ssFont, fontSize: 9, cursor: 'pointer' }}>
               Clear
             </button>
           )}
-          <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted, marginLeft: 'auto' }}>
+          <span style={{ fontFamily: _ssFont, fontSize: 9, color: '#2a2a2a', marginLeft: 'auto' }}>
             {displayRows.length !== backendCount
               ? `${displayRows.length} of ${backendCount} rows`
               : headerLine}
@@ -1620,7 +1605,7 @@ function StrategyScreenerInner() {
         {/* ── Table ────────────────────────────────────────────── */}
         {tabData && (
           displayRows.length === 0 ? (
-            <div style={{ padding: '60px 0', textAlign: 'center', color: C.dim, fontFamily: C.sans, fontSize: 14 }}>
+            <div style={{ padding: '60px 0', textAlign: 'center', color: C.dim, fontFamily: _ssSans, fontSize: 14 }}>
               {rawRows.length === 0 ? 'No data available for this anchor.' : 'No rows match your filters — clear to see all rows.'}
             </div>
           ) : (
@@ -1664,49 +1649,49 @@ function StrategyScreenerInner() {
                       >
                         {activeTab === 'multi-anchor' ? (<>
                           <td style={TD}>
-                            <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
-                            {r.manual_added && <span style={{ display: 'block', fontFamily: C.font, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
+                            <span style={{ fontFamily: _ssFont, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
+                            {r.manual_added && <span style={{ display: 'block', fontFamily: _ssFont, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
                           </td>
                           <td style={{ ...TD, maxWidth: 180 }}>
-                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
+                            <span style={{ fontFamily: _ssSans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
                           </td>
                           <td style={{ ...TD, maxWidth: 260 }}>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                               {(r.anchor_names || r.anchors || []).slice(0, 7).map((an: string, i: number) => (
-                                <span key={i} style={{ padding: '1px 5px', background: C.indigoSub, border: `1px solid ${C.border}`, borderRadius: 3, fontFamily: C.font, fontSize: 8, color: C.indigoFg, whiteSpace: 'nowrap' }}>{an}</span>
+                                <span key={i} style={{ padding: '1px 5px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 3, fontFamily: _ssFont, fontSize: 8, color: '#a9aaa6', whiteSpace: 'nowrap' }}>{an}</span>
                               ))}
                               {(r.anchor_names || r.anchors || []).length > 7 && (
-                                <span style={{ fontFamily: C.font, fontSize: 8, color: C.dim }}>+{(r.anchor_names || r.anchors || []).length - 7}</span>
+                                <span style={{ fontFamily: _ssFont, fontSize: 8, color: C.dim }}>+{(r.anchor_names || r.anchors || []).length - 7}</span>
                               )}
                             </div>
                           </td>
                           <td style={{ ...TD, textAlign: 'right' }}>
-                            <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: C.amber }}>{r.anchor_count ?? '—'}</span>
+                            <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, color: C.amber }}>{r.anchor_count ?? '—'}</span>
                           </td>
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.max_bottleneck_score)}</td>
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.avg_bottleneck_score)}</td>
                           <td style={TD}><GradeBadge grade={r.best_evidence_grade} /></td>
                           <td style={{ ...TD, maxWidth: 280 }}>
-                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {(r.roles_by_anchor && (Object.values(r.roles_by_anchor)[0] as string)) || '—'}
                             </span>
                           </td>
                         </>) : (<>
                           <td style={TD}>
-                            <span style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
-                            {r.manual_added && <span style={{ display: 'block', fontFamily: C.font, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
+                            <span style={{ fontFamily: _ssFont, fontSize: 12, fontWeight: 700, color: C.bright }}>{tk || '—'}</span>
+                            {r.manual_added && <span style={{ display: 'block', fontFamily: _ssFont, fontSize: 8, color: C.blue, marginTop: 1 }}>Manual</span>}
                           </td>
                           <td style={{ ...TD, maxWidth: 180 }}>
-                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
+                            <span style={{ fontFamily: _ssSans, fontSize: 11, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nameOf(r)}</span>
                           </td>
-                          <td style={TD}><span style={{ fontFamily: C.font, fontSize: 10, color: C.blue }}>{r.category_name || r.themes?.[0] || '—'}</span></td>
+                          <td style={TD}><span style={{ fontFamily: _ssFont, fontSize: 10, color: C.blue }}>{r.category_name || r.themes?.[0] || '—'}</span></td>
                           <td style={{ ...TD, maxWidth: 200 }}>
-                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.supply_chain_role || '—'}</span>
+                            <span style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.supply_chain_role || '—'}</span>
                           </td>
                           <td style={{ ...TD, textAlign: 'right' }}>{fmtScore(r.bottleneck_score ?? r.final_score)}</td>
                           <td style={TD}>{confBadge(r.confidence)}</td>
                           <td style={{ ...TD, maxWidth: 280 }}>
-                            <span style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.why_it_matters || '—'}</span>
+                            <span style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.why_it_matters || '—'}</span>
                           </td>
                         </>)}
                         <td style={{ ...TD, color: C.dim, fontSize: 14, textAlign: 'center', width: 18 }}>›</td>
@@ -1836,7 +1821,7 @@ function regimeColor(key?: string): string {
   if (key === 'yields_rising_spx_falling')  return C.red;
   if (key === 'yields_falling_spx_rising')  return C.blue;
   if (key === 'yields_falling_spx_falling') return C.amber;
-  return C.muted;
+  return '#2a2a2a';
 }
 function confColor(label?: string): string {
   const l = (label ?? '').toLowerCase();
@@ -1869,24 +1854,24 @@ function fmtChartDate(d: string, numRows: number): string {
 function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: `1px solid ${C.borderFaint}` }}>
-      <span style={{ fontFamily: C.font, fontSize: 10, color: C.dim }}>{label}</span>
-      <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: color ?? C.bright }}>{value}</span>
+      <span style={{ fontFamily: _ssFont, fontSize: 10, color: C.dim }}>{label}</span>
+      <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, color: color ?? C.bright }}>{value}</span>
     </div>
   );
 }
 function MetricPair({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ padding: '4px 0' }}>
-      <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontFamily: C.font, fontSize: 12, fontWeight: 700, color: color ?? C.bright }}>{value}</div>
+      <div style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontFamily: _ssFont, fontSize: 12, fontWeight: 700, color: color ?? C.bright }}>{value}</div>
     </div>
   );
 }
 function SCard({ title, accent, children }: { title: string; accent?: string; children: ReactNode }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', position: 'relative', overflow: 'hidden', marginBottom: 16 }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: accent ?? C.indigo, borderRadius: '10px 0 0 10px' }} />
-      <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: accent ?? C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: accent ?? '#d8d8d2', borderRadius: '10px 0 0 10px' }} />
+      <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: accent ?? '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
         {title}
       </div>
       {children}
@@ -1898,7 +1883,7 @@ function FreshWarn({ warning }: { warning?: string | null }) {
   return (
     <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
       <AlertCircle size={13} style={{ color: C.amber, flexShrink: 0 }} />
-      <span style={{ fontFamily: C.sans, fontSize: 12, color: C.amber }}>{warning}</span>
+      <span style={{ fontFamily: _ssSans, fontSize: 12, color: C.amber }}>{warning}</span>
     </div>
   );
 }
@@ -1907,12 +1892,12 @@ function SrcFooter({ generatedAt, cacheTtl, sources }: { generatedAt?: string; c
   return (
     <div style={{ marginTop: 20, paddingTop: 12, borderTop: `1px solid ${C.borderFaint}`, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
       {generatedAt && (
-        <span style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>
+        <span style={{ fontFamily: _ssFont, fontSize: 9, color: '#2a2a2a' }}>
           Generated {fmtTs2(generatedAt)}{cacheTtl ? ` · TTL ${Math.round(cacheTtl / 60)}m` : ''}
         </span>
       )}
       {sources && Object.entries(sources).filter(([k]) => k !== 'freshness_warning').map(([k, v]) => (
-        <span key={k} style={{ fontFamily: C.font, fontSize: 9, color: C.muted }}>
+        <span key={k} style={{ fontFamily: _ssFont, fontSize: 9, color: '#2a2a2a' }}>
           {k}: <span style={{ color: C.dim }}>{String(v)}</span>
         </span>
       ))}
@@ -1923,9 +1908,9 @@ function SrcFooter({ generatedAt, cacheTtl, sources }: { generatedAt?: string; c
 function HeroStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div style={{ flex: '1 1 auto', minWidth: 100 }}>
-      <div style={{ fontFamily: C.font, fontSize: 8, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontFamily: C.font, fontSize: 18, fontWeight: 700, color: color ?? C.bright, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontFamily: C.font, fontSize: 10, color: C.dim, marginTop: 3 }}>{sub}</div>}
+      <div style={{ fontFamily: _ssFont, fontSize: 8, color: '#2a2a2a', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: _ssFont, fontSize: 18, fontWeight: 700, color: color ?? C.bright, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontFamily: _ssFont, fontSize: 10, color: C.dim, marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -1939,10 +1924,10 @@ function HeroStrip({ children }: { children: ReactNode }) {
 function ChartBox({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px', marginBottom: 14 }}>
-      <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: subtitle ? 2 : 10 }}>
+      <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: subtitle ? 2 : 10 }}>
         {title}
       </div>
-      {subtitle && <div style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, marginBottom: 10 }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, marginBottom: 10 }}>{subtitle}</div>}
       {children}
     </div>
   );
@@ -1956,10 +1941,10 @@ function TfBtn({ value, onChange }: { value: string; onChange: (v: string) => vo
         return (
           <button key={t} onClick={() => onChange(t)} style={{
             padding: '4px 13px', borderRadius: 5, cursor: 'pointer',
-            fontFamily: C.font, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
-            background: active ? `${C.indigo}1a` : 'transparent',
-            color: active ? C.indigoFg : C.dim,
-            border: `1px solid ${active ? `${C.indigo}55` : C.border}`,
+            fontFamily: _ssFont, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+            background: active ? `${'#d8d8d2'}1a` : 'transparent',
+            color: active ? '#a9aaa6' : C.dim,
+            border: `1px solid ${active ? `${'#d8d8d2'}55` : C.border}`,
             transition: 'all 0.12s',
           }}>
             {t}
@@ -1971,7 +1956,7 @@ function TfBtn({ value, onChange }: { value: string; onChange: (v: string) => vo
 }
 function CorrelationEmptyMsg() {
   return (
-    <div style={{ textAlign: 'center', padding: '32px 0', color: C.dim, fontFamily: C.sans, fontSize: 12 }}>
+    <div style={{ textAlign: 'center', padding: '32px 0', color: C.dim, fontFamily: _ssSans, fontSize: 12 }}>
       Not enough data for rolling correlation in this window.
     </div>
   );
@@ -2045,7 +2030,7 @@ function VixRiskRegimeTab() {
           color={(corr.rolling_corr_30d ?? 0) < 0 ? C.amber : C.green}
         />
         {sig.signal_title && (
-          <div style={{ padding: '3px 10px', background: `${warnClr}14`, border: `1px solid ${warnClr}40`, borderRadius: 5, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase', alignSelf: 'center', letterSpacing: '0.07em' }}>
+          <div style={{ padding: '3px 10px', background: `${warnClr}14`, border: `1px solid ${warnClr}40`, borderRadius: 5, fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase', alignSelf: 'center', letterSpacing: '0.07em' }}>
             {sig.signal_title}
           </div>
         )}
@@ -2061,7 +2046,7 @@ function VixRiskRegimeTab() {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               tickFormatter={d => fmtChartDate(d, ts.length)}
               interval="preserveStartEnd"
@@ -2069,7 +2054,7 @@ function VixRiskRegimeTab() {
             <YAxis
               yAxisId="spx"
               orientation="left"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               width={52}
               domain={['auto', 'auto']}
@@ -2078,7 +2063,7 @@ function VixRiskRegimeTab() {
             <YAxis
               yAxisId="vix"
               orientation="right"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               width={30}
               domain={[0, 55]}
@@ -2115,14 +2100,14 @@ function VixRiskRegimeTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 tickFormatter={d => fmtChartDate(d, corrTs.length)}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={[-1, 1]}
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={30}
                 tickFormatter={v => Number(v).toFixed(1)}
@@ -2151,13 +2136,13 @@ function VixRiskRegimeTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 8, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 tickFormatter={d => fmtChartDate(d, 30)}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={36}
                 tickFormatter={v => `${Number(v).toFixed(1)}%`}
@@ -2180,20 +2165,20 @@ function VixRiskRegimeTab() {
       {sig.signal_title && (
         <div style={{ background: `${warnClr}0a`, border: `1px solid ${warnClr}40`, borderRadius: 10, padding: '16px 20px', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: warnClr }}>
+            <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: warnClr }}>
               {sig.signal_title}
             </span>
             {sig.warning_level && (
-              <span style={{ padding: '2px 8px', background: `${warnClr}18`, border: `1px solid ${warnClr}40`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase' }}>
+              <span style={{ padding: '2px 8px', background: `${warnClr}18`, border: `1px solid ${warnClr}40`, borderRadius: 4, fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: warnClr, textTransform: 'uppercase' }}>
                 {sig.warning_level}
               </span>
             )}
           </div>
-          {sig.signal_summary && <p style={{ fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.7, margin: '0 0 10px' }}>{sig.signal_summary}</p>}
+          {sig.signal_summary && <p style={{ fontFamily: _ssSans, fontSize: 13, color: C.text, lineHeight: 1.7, margin: '0 0 10px' }}>{sig.signal_summary}</p>}
           {Array.isArray(sig.rules_used) && sig.rules_used.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               {(sig.rules_used as string[]).map((r, i) => (
-                <span key={i} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: C.font, fontSize: 9, color: C.dim }}>
+                <span key={i} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: _ssFont, fontSize: 9, color: C.dim }}>
                   {r}
                 </span>
               ))}
@@ -2205,18 +2190,18 @@ function VixRiskRegimeTab() {
       {/* Correlation summary strip */}
       {Object.keys(corr).length > 0 && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 18px', marginBottom: 14 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>VIX / SPX Correlation</div>
+          <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>VIX / SPX Correlation</div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 8 }}>
             {([['7D', corr.rolling_corr_7d], ['30D', corr.rolling_corr_30d], ['63D', corr.rolling_corr_63d]] as [string, number][]).map(([lbl, v]) => (
               <div key={lbl} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
               </div>
             ))}
           </div>
           {corr.interpretation && (
-            <p style={{ fontFamily: C.sans, fontSize: 11, color: C.dim, lineHeight: 1.65, margin: '6px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 6 }}>
+            <p style={{ fontFamily: _ssSans, fontSize: 11, color: C.dim, lineHeight: 1.65, margin: '6px 0 0', borderTop: `1px solid ${C.borderFaint}`, paddingTop: 6 }}>
               {corr.interpretation}
             </p>
           )}
@@ -2226,7 +2211,7 @@ function VixRiskRegimeTab() {
       {/* Historical windows */}
       {Object.keys(windows).length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
+          <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#2a2a2a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
             {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
               const w = windows[key];
@@ -2234,8 +2219,8 @@ function VixRiskRegimeTab() {
               const ret = w.spx_return_pct as number;
               return (
                 <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
-                    {key === 'quarter' ? '90D' : key.toUpperCase()} <span style={{ fontWeight: 400, color: C.muted }}>· {w.window}</span>
+                  <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', marginBottom: 8 }}>
+                    {key === 'quarter' ? '90D' : key.toUpperCase()} <span style={{ fontWeight: 400, color: '#2a2a2a' }}>· {w.window}</span>
                   </div>
                   <StatRow label="VIX Min" value={fmtNum2(w.vix_min)} />
                   <StatRow label="VIX Max" value={fmtNum2(w.vix_max)} />
@@ -2368,10 +2353,10 @@ function WeeklyPriceMovementsTab() {
           return (
             <button key={k} onClick={() => setWKey(k)} style={{
               padding: '4px 14px', borderRadius: 5, cursor: 'pointer',
-              fontFamily: C.font, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
-              background: active ? `${C.indigo}1a` : 'transparent',
-              color: active ? C.indigoFg : C.dim,
-              border: `1px solid ${active ? `${C.indigo}55` : C.border}`,
+              fontFamily: _ssFont, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+              background: active ? `${'#d8d8d2'}1a` : 'transparent',
+              color: active ? '#a9aaa6' : C.dim,
+              border: `1px solid ${active ? `${'#d8d8d2'}55` : C.border}`,
               transition: 'all 0.12s',
             }}>
               {lbl}
@@ -2391,13 +2376,13 @@ function WeeklyPriceMovementsTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 8, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 interval={0} angle={-20} textAnchor="end"
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={30}
                 tickFormatter={v => `${v}%`}
@@ -2427,12 +2412,12 @@ function WeeklyPriceMovementsTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 8, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 interval={0} angle={-20} textAnchor="end"
               />
               <YAxis
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={40}
                 tickFormatter={v => `${Number(v).toFixed(2)}%`}
@@ -2465,20 +2450,20 @@ function WeeklyPriceMovementsTab() {
             <div key={key} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 16px', opacity: insuf ? 0.72 : 1, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: col, borderRadius: '10px 0 0 10px' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: C.font, fontSize: 11, fontWeight: 700, color: col }}>
+                <span style={{ fontFamily: _ssFont, fontSize: 11, fontWeight: 700, color: col }}>
                   {meta.icon} {meta.label}
                 </span>
                 {insuf && (
-                  <span style={{ padding: '2px 7px', background: `${C.amber}12`, border: `1px solid ${C.amber}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase' }}>
+                  <span style={{ padding: '2px 7px', background: `${C.amber}12`, border: `1px solid ${C.amber}35`, borderRadius: 4, fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: C.amber, textTransform: 'uppercase' }}>
                     Insufficient Sample
                   </span>
                 )}
                 {!insuf && sc.confidence_label && (
-                  <span style={{ padding: '2px 7px', background: `${confColor(sc.confidence_label)}12`, border: `1px solid ${confColor(sc.confidence_label)}35`, borderRadius: 4, fontFamily: C.font, fontSize: 9, fontWeight: 700, color: confColor(sc.confidence_label), textTransform: 'uppercase' }}>
+                  <span style={{ padding: '2px 7px', background: `${confColor(sc.confidence_label)}12`, border: `1px solid ${confColor(sc.confidence_label)}35`, borderRadius: 4, fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: confColor(sc.confidence_label), textTransform: 'uppercase' }}>
                     {sc.confidence_label} confidence
                   </span>
                 )}
-                <span style={{ marginLeft: 'auto', fontFamily: C.font, fontSize: 10, color: C.muted }}>n = {sc.sample_count ?? '—'}</span>
+                <span style={{ marginLeft: 'auto', fontFamily: _ssFont, fontSize: 10, color: '#2a2a2a' }}>n = {sc.sample_count ?? '—'}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 6 }}>
                 <MetricPair label="Up Prob"    value={fmtProb(sc.green_probability)} color={insuf ? C.dim : C.green} />
@@ -2496,29 +2481,29 @@ function WeeklyPriceMovementsTab() {
 
       {/* Ask Caelyn */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', marginBottom: 8 }}>
-        <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ask Caelyn</div>
-        <p style={{ fontFamily: C.sans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '0 0 12px', fontStyle: 'italic' }}>"{WEEKLY_PROMPT}"</p>
+        <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Ask Caelyn</div>
+        <p style={{ fontFamily: _ssSans, fontSize: 12, color: C.dim, lineHeight: 1.65, margin: '0 0 12px', fontStyle: 'italic' }}>"{WEEKLY_PROMPT}"</p>
         <button
           onClick={askCaelyn}
           disabled={aiState === 'loading'}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '8px 18px', borderRadius: 6, cursor: aiState === 'loading' ? 'not-allowed' : 'pointer',
-            fontFamily: C.font, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-            background: `${C.indigo}20`, color: C.indigoFg,
-            border: `1px solid ${C.indigo}50`, opacity: aiState === 'loading' ? 0.7 : 1,
+            fontFamily: _ssFont, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            background: `${'#d8d8d2'}20`, color: '#a9aaa6',
+            border: `1px solid ${'#d8d8d2'}50`, opacity: aiState === 'loading' ? 0.7 : 1,
           }}
         >
           {aiState === 'loading' && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
           {aiState === 'loading' ? 'Thinking…' : '⚡ Ask Caelyn'}
         </button>
         {aiState === 'error' && (
-          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontFamily: C.sans, fontSize: 12, color: C.red }}>
+          <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontFamily: _ssSans, fontSize: 12, color: C.red }}>
             {aiText}
           </div>
         )}
         {aiState === 'done' && aiText && (
-          <div style={{ marginTop: 12, padding: '14px 16px', background: `${C.indigo}0a`, border: `1px solid ${C.indigo}30`, borderRadius: 8, fontFamily: C.sans, fontSize: 13, color: C.text, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+          <div style={{ marginTop: 12, padding: '14px 16px', background: `${'#d8d8d2'}0a`, border: `1px solid ${'#d8d8d2'}30`, borderRadius: 8, fontFamily: _ssSans, fontSize: 13, color: C.text, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
             {aiText}
           </div>
         )}
@@ -2617,7 +2602,7 @@ function TenYearSpxTab() {
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               tickFormatter={d => fmtChartDate(d, ts.length)}
               interval="preserveStartEnd"
@@ -2625,7 +2610,7 @@ function TenYearSpxTab() {
             <YAxis
               yAxisId="spx"
               orientation="left"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               width={52}
               domain={['auto', 'auto']}
@@ -2634,7 +2619,7 @@ function TenYearSpxTab() {
             <YAxis
               yAxisId="yield"
               orientation="right"
-              tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+              tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
               tickLine={false} axisLine={false}
               width={38}
               domain={[0.5, 6]}
@@ -2665,14 +2650,14 @@ function TenYearSpxTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 tickFormatter={d => fmtChartDate(d, corrTs.length)}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={[-1, 1]}
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={30}
                 tickFormatter={v => Number(v).toFixed(1)}
@@ -2701,13 +2686,13 @@ function TenYearSpxTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fill: C.muted, fontSize: 8, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 8, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 tickFormatter={d => fmtChartDate(d, 30)}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: C.muted, fontSize: 9, fontFamily: 'monospace' }}
+                tick={{ fill: '#2a2a2a', fontSize: 9, fontFamily: 'monospace' }}
                 tickLine={false} axisLine={false}
                 width={36}
               />
@@ -2744,7 +2729,7 @@ function TenYearSpxTab() {
             {(['yields_rising_spx_rising', 'yields_rising_spx_falling', 'yields_falling_spx_rising', 'yields_falling_spx_falling', 'mixed_flat'] as string[]).map(k => (
               <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: regimeColor(k) }} />
-                <span style={{ fontFamily: C.font, fontSize: 9, color: C.dim }}>{regimeLabelText(k)}</span>
+                <span style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim }}>{regimeLabelText(k)}</span>
               </div>
             ))}
           </div>
@@ -2754,13 +2739,13 @@ function TenYearSpxTab() {
       {/* Correlation summary numbers */}
       {Object.keys(corr).length > 0 && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 18px', marginBottom: 14 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Correlation Summary</div>
+          <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Correlation Summary</div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 8 }}>
             {([['7D', corr.rolling_corr_7d], ['30D', corr.rolling_corr_30d], ['63D', corr.rolling_corr_63d]] as [string, number][]).map(([lbl, v]) => (
               <div key={lbl} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: C.font, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
-                <div style={{ fontFamily: C.font, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 20, fontWeight: 700, color: C.bright }}>{fmtCorr(v)}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, color: C.dim, marginTop: 2 }}>{lbl}</div>
+                <div style={{ fontFamily: _ssFont, fontSize: 9, color: v < 0 ? C.amber : C.green, marginTop: 1 }}>{v < 0 ? 'Inverse' : 'Same-dir'}</div>
               </div>
             ))}
           </div>
@@ -2770,7 +2755,7 @@ function TenYearSpxTab() {
       {/* Historical windows */}
       {Object.keys(windows).length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
+          <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#2a2a2a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Historical Windows</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
             {(['7d', 'quarter', '1y', '5y'] as string[]).map(key => {
               const w = windows[key];
@@ -2778,7 +2763,7 @@ function TenYearSpxTab() {
               const ret = w.spx_return_pct as number;
               return (
                 <div key={key} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ fontFamily: C.font, fontSize: 9, fontWeight: 700, color: C.indigoFg, textTransform: 'uppercase', marginBottom: 8 }}>
+                  <div style={{ fontFamily: _ssFont, fontSize: 9, fontWeight: 700, color: '#a9aaa6', textTransform: 'uppercase', marginBottom: 8 }}>
                     {key === 'quarter' ? '90D' : key.toUpperCase()}
                   </div>
                   <StatRow label="10Y Start" value={w.ten_y_first != null ? fmtYield(w.ten_y_first) : '—'} />
@@ -2890,7 +2875,7 @@ function DefianceTab() {
     borderBottom: `1px solid ${C.border}`, background: C.surface,
     position: 'sticky', top: 0, zIndex: 2,
   });
-  const TD: CSSProperties = { padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap', borderBottom: `1px solid ${C.border}`, fontFamily: C.font };
+  const TD: CSSProperties = { padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap', borderBottom: `1px solid ${C.border}`, fontFamily: _ssFont };
 
   return (
     <div style={{ padding: '24px 0', minHeight: 400 }}>
@@ -2900,12 +2885,12 @@ function DefianceTab() {
         background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
         padding: '10px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 800, letterSpacing: '0.06em', fontFamily: C.font }}>DEFIANCE 2×</span>
-        <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>
+        <span style={{ fontSize: 11, color: '#a78bfa', fontWeight: 800, letterSpacing: '0.06em', fontFamily: _ssFont }}>DEFIANCE 2×</span>
+        <span style={{ color: C.dim, fontFamily: _ssSans, fontSize: 11 }}>
           Leveraged ETFs reset daily and are intended for active trading.
         </span>
         {rawRows.length > 0 && (
-          <span style={{ marginLeft: 'auto', color: C.dim, fontFamily: C.font, fontSize: 10 }}>
+          <span style={{ marginLeft: 'auto', color: C.dim, fontFamily: _ssFont, fontSize: 10 }}>
             {rawRows.length} mapped
           </span>
         )}
@@ -2913,7 +2898,7 @@ function DefianceTab() {
 
       {/* Loading */}
       {isLoading && !rawRows.length && (
-        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: C.dim, fontFamily: _ssSans, fontSize: 13 }}>
           <div style={{ marginBottom: 12, fontSize: 20 }}>⏳</div>
           Loading Defiance 2X universe…
         </div>
@@ -2921,7 +2906,7 @@ function DefianceTab() {
 
       {/* Error */}
       {error && !isLoading && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.red, fontFamily: _ssSans, fontSize: 13 }}>
           Couldn't load Defiance 2X map.{' '}
           <button onClick={() => refetch()} style={{ color: C.blue, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Retry</button>
         </div>
@@ -2929,7 +2914,7 @@ function DefianceTab() {
 
       {/* Empty */}
       {!isLoading && !error && rawRows.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: C.sans, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontFamily: _ssSans, fontSize: 13 }}>
           No mapped Defiance 2X long single-stock ETFs found.
         </div>
       )}
@@ -2981,7 +2966,7 @@ function DefianceTab() {
                       >
                         <span style={{ borderBottom: `1px dashed ${C.bright}50` }}>{row.symbol}</span>
                         {!etf && (
-                          <span style={{ marginLeft: 6, fontSize: 8, color: C.red, fontFamily: C.sans }}>mapping error</span>
+                          <span style={{ marginLeft: 6, fontSize: 8, color: C.red, fontFamily: _ssSans }}>mapping error</span>
                         )}
                       </td>
                       {/* Defiance ETF chip — click opens ETF chart */}
@@ -2991,7 +2976,7 @@ function DefianceTab() {
                             onClick={() => setTvTicker(etf.symbol)}
                             style={{
                               display: 'inline-flex', alignItems: 'center', gap: 4,
-                              fontSize: 10, fontWeight: 700, fontFamily: C.font,
+                              fontSize: 10, fontWeight: 700, fontFamily: _ssFont,
                               color: '#a78bfa', background: '#a78bfa15',
                               border: '1px solid #a78bfa35', borderRadius: 4,
                               padding: '2px 8px', whiteSpace: 'nowrap',
@@ -3013,7 +2998,7 @@ function DefianceTab() {
                       <td style={{ ...TD, textAlign: 'left' }}>
                         {row.stage_analysis?.label ? (
                           <span style={{
-                            fontSize: 9, fontWeight: 700, fontFamily: C.font,
+                            fontSize: 9, fontWeight: 700, fontFamily: _ssFont,
                             color: sc.color, background: sc.bg, border: `1px solid ${sc.border}`,
                             borderRadius: 3, padding: '1px 6px', whiteSpace: 'nowrap',
                           }}>{row.stage_analysis.label}</span>
@@ -3053,10 +3038,10 @@ function DefianceTab() {
               padding: '12px 18px', borderBottom: `1px solid ${C.border}`,
               background: C.surface, flexShrink: 0,
             }}>
-              <span style={{ color: C.bright, fontFamily: C.font, fontSize: 13, fontWeight: 700 }}>{tvTicker}</span>
-              <span style={{ color: C.dim, fontFamily: C.sans, fontSize: 11 }}>TradingView Chart</span>
+              <span style={{ color: C.bright, fontFamily: _ssFont, fontSize: 13, fontWeight: 700 }}>{tvTicker}</span>
+              <span style={{ color: C.dim, fontFamily: _ssSans, fontSize: 11 }}>TradingView Chart</span>
               <a href={`https://www.tradingview.com/chart/?symbol=${tvTicker}`} target="_blank" rel="noopener noreferrer"
-                style={{ marginLeft: 'auto', color: C.blue, fontFamily: C.font, fontSize: 10, textDecoration: 'none', border: `1px solid ${C.blue}40`, borderRadius: 4, padding: '3px 9px' }}>
+                style={{ marginLeft: 'auto', color: C.blue, fontFamily: _ssFont, fontSize: 10, textDecoration: 'none', border: `1px solid ${C.blue}40`, borderRadius: 4, padding: '3px 9px' }}>
                 Open full chart ↗
               </a>
               <button onClick={() => setTvTicker(null)}
@@ -3090,7 +3075,7 @@ export default function StrategyScreenerPage() {
 
   const tabStyle = (active: boolean): CSSProperties => ({
     padding: '8px 20px',
-    fontFamily: C.font,
+    fontFamily: _ssFont,
     fontSize: 11,
     fontWeight: 700,
     letterSpacing: '0.06em',
@@ -3099,7 +3084,7 @@ export default function StrategyScreenerPage() {
     border: 'none',
     background: 'transparent',
     color: active ? C.bright : C.dim,
-    borderBottom: active ? `2px solid ${C.indigo}` : '2px solid transparent',
+    borderBottom: active ? `2px solid ${'#d8d8d2'}` : '2px solid transparent',
     transition: 'color 0.15s, border-color 0.15s',
   });
 

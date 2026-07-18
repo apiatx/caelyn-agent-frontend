@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity } from 'lucide-react';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
@@ -6,15 +7,9 @@ import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 
 /* ── color tokens ─────────────────────────────────────────────────── */
-const C = {
-  bg: '#080c13', card: '#0d1623', card2: '#0a1020',
-  border: '#1a2540', text: '#e2e8f0', dim: '#64748b',
-  teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
-  amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
-  orange: '#fb923c', bright: '#fff',
-  font: "'JetBrains Mono','Fira Code',monospace",
-  sansFont: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-};
+let C = DARK_C;
+const _sdmFont = "'JetBrains Mono','Fira Code',monospace";
+const _sdmSans = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 /* ── helpers ─────────────────────────────────────────────────────── */
 function signalColor(signal?: string): string {
@@ -144,10 +139,10 @@ function safeStr(val: any): string {
 
 /* ── Module-level V42 display primitives (must be OUTSIDE all components) ── */
 const V42_RR: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' };
-const V42_KK: React.CSSProperties = { fontSize: 8, color: C.dim, fontFamily: C.font };
-const V42_VV: React.CSSProperties = { fontSize: 8, color: C.text, fontWeight: 600, fontFamily: C.font };
+const V42_KK: React.CSSProperties = { fontSize: 8, color: C.dim, fontFamily: _sdmFont };
+const V42_VV: React.CSSProperties = { fontSize: 8, color: C.text, fontWeight: 600, fontFamily: _sdmFont };
 const V42_SEC: React.CSSProperties = { marginBottom: 14 };
-const V42_LBL: React.CSSProperties = { fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: C.font, marginBottom: 5, display: 'block' };
+const V42_LBL: React.CSSProperties = { fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: _sdmFont, marginBottom: 5, display: 'block' };
 
 function V42DR({ k, v, clr }: { k: string; v?: string | number | null; clr?: string }) {
   if (v == null || v === '') return null;
@@ -166,7 +161,7 @@ function V42PR({ k, pts, max, raw, clr }: { k: string; pts: number | null; max: 
     <div style={V42_RR}>
       <span style={V42_KK}>{k}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {raw != null && <span style={{ fontSize: 7, color: C.dim, fontFamily: C.font }}>q{Math.round(raw)}</span>}
+        {raw != null && <span style={{ fontSize: 7, color: C.dim, fontFamily: _sdmFont }}>q{Math.round(raw)}</span>}
         <div style={{ width: 40, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
           <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, height: '100%', background: c, borderRadius: 2 }} />
         </div>
@@ -325,6 +320,7 @@ export function StockDetailModal({
     { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
   ];
 
+  const { C: _C } = useTheme(); C = _C;
   return (
     <div
       onClick={onClose}
@@ -336,30 +332,30 @@ export function StockDetailModal({
       >
         {/* Header */}
         <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12, background: C.card, flexWrap: 'wrap' as const }}>
-          <span style={{ fontSize: 20, fontWeight: 900, fontFamily: C.font, color: C.bright }}>{ticker}</span>
-          {companyName && <span style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont }}>{companyName}</span>}
+          <span style={{ fontSize: 20, fontWeight: 900, fontFamily: _sdmFont, color: C.bright }}>{ticker}</span>
+          {companyName && <span style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans }}>{companyName}</span>}
           {stock?._section && (
-            <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: C.font, color: C.purple, background: `${C.purple}15`, border: `1px solid ${C.purple}30` }}>
+            <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _sdmFont, color: C.purple, background: `${C.purple}15`, border: `1px solid ${C.purple}30` }}>
               {stock._section}
             </span>
           )}
           {displaySignal && (
-            <span style={{ padding: '3px 10px', borderRadius: 3, fontSize: 9, fontWeight: 800, fontFamily: C.font, color: '#000', background: sigCol, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span style={{ padding: '3px 10px', borderRadius: 3, fontSize: 9, fontWeight: 800, fontFamily: _sdmFont, color: '#000', background: sigCol, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {displaySignal}
             </span>
           )}
           {stock?.risk_level && (
-            <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: C.font, color: riskColor(stock.risk_level), background: `${riskColor(stock.risk_level)}15`, border: `1px solid ${riskColor(stock.risk_level)}30` }}>
+            <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _sdmFont, color: riskColor(stock.risk_level), background: `${riskColor(stock.risk_level)}15`, border: `1px solid ${riskColor(stock.risk_level)}30` }}>
               {stock.risk_level} RISK
             </span>
           )}
           {headerChangePct != null && (
-            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: C.font, color: headerChangePct >= 0 ? C.green : C.red }}>
+            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: _sdmFont, color: headerChangePct >= 0 ? C.green : C.red }}>
               {headerChangePct >= 0 ? '+' : ''}{typeof headerChangePct === 'number' ? headerChangePct.toFixed(2) : headerChangePct}%
             </span>
           )}
           {useRowFallback && !stock?.price_source && (
-            <span style={{ fontSize: 8, color: C.amber, fontFamily: C.font, border: `1px solid ${C.amber}30`, padding: '2px 6px', borderRadius: 3 }}>SCREENER DATA</span>
+            <span style={{ fontSize: 8, color: C.amber, fontFamily: _sdmFont, border: `1px solid ${C.amber}30`, padding: '2px 6px', borderRadius: 3 }}>SCREENER DATA</span>
           )}
           {stock?.price_source && (
             <PriceFreshnessBadge meta={{ source: stock.price_source, is_realtime: stock.price_is_realtime, is_live_backup: stock.price_is_live_backup, is_stale: stock.price_is_stale, staleness_seconds: stock.staleness_seconds, quote_timestamp: stock.quote_timestamp, updated_at: stock.price_updated_at }} />
@@ -374,7 +370,7 @@ export function StockDetailModal({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', fontSize: 10, fontWeight: 700, fontFamily: C.font, cursor: 'pointer', color: activeTab === tab.id ? C.teal : C.dim, background: 'transparent', border: 'none', borderBottom: `2px solid ${activeTab === tab.id ? C.teal : 'transparent'}`, transition: 'all 0.15s' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', fontSize: 10, fontWeight: 700, fontFamily: _sdmFont, cursor: 'pointer', color: activeTab === tab.id ? C.teal : C.dim, background: 'transparent', border: 'none', borderBottom: `2px solid ${activeTab === tab.id ? C.teal : 'transparent'}`, transition: 'all 0.15s' }}
             >
               {tab.icon}{tab.label}
             </button>
@@ -529,12 +525,12 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
             <>
               {/* Name + ticker + exchange */}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: C.sansFont }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: _sdmSans }}>
                   {aboutName}
                 </span>
-                <span style={{ fontSize: 11, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{aboutTicker}</span>
+                <span style={{ fontSize: 11, color: C.teal, fontFamily: _sdmFont, fontWeight: 700 }}>{aboutTicker}</span>
                 {aboutExchange && (
-                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font, border: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: _sdmFont, border: `1px solid ${C.border}` }}>
                     {aboutExchange}
                   </span>
                 )}
@@ -557,7 +553,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
               {detailCompany?.website && (
                 <div style={{ marginBottom: 10 }}>
                   <a href={detailCompany.website} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 11, color: C.teal, fontFamily: C.sansFont, textDecoration: 'none' }}>
+                    style={{ fontSize: 11, color: C.teal, fontFamily: _sdmSans, textDecoration: 'none' }}>
                     {String(detailCompany.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
                   </a>
                 </div>
@@ -570,17 +566,17 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
                 const shown = isLong && !descExpanded ? full.slice(0, ABOUT_LIMIT) + '…' : full;
                 return (
                   <div>
-                    <p style={{ fontSize: 12, color: C.text, lineHeight: 1.8, fontFamily: C.sansFont, margin: 0 }}>{shown}</p>
+                    <p style={{ fontSize: 12, color: C.text, lineHeight: 1.8, fontFamily: _sdmSans, margin: 0 }}>{shown}</p>
                     {isLong && (
                       <button onClick={() => setDescExpanded(v => !v)}
-                        style={{ marginTop: 8, background: 'none', border: 'none', color: C.teal, fontSize: 11, cursor: 'pointer', fontFamily: C.sansFont, padding: 0 }}>
+                        style={{ marginTop: 8, background: 'none', border: 'none', color: C.teal, fontSize: 11, cursor: 'pointer', fontFamily: _sdmSans, padding: 0 }}>
                         {descExpanded ? '▲ Show less' : '▼ Show more'}
                       </button>
                     )}
                   </div>
                 );
               })() : (
-                <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>
+                <p style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans, margin: 0 }}>
                   Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.
                 </p>
               )}
@@ -597,7 +593,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {stock.catalyst && (
             <div><SectionLabel>Catalyst</SectionLabel>
-              <p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{stock.catalyst}</p>
+              <p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: _sdmSans, margin: 0 }}>{stock.catalyst}</p>
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -608,7 +604,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
       )}
       {!detailLoading && !conf && !confluenceRow && !isNewFmt && stock && (
         <>
-          {stock.thesis && (<div><SectionLabel>Investment Thesis</SectionLabel><p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{stock.thesis}</p></div>)}
+          {stock.thesis && (<div><SectionLabel>Investment Thesis</SectionLabel><p style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontFamily: _sdmSans, margin: 0 }}>{stock.thesis}</p></div>)}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
             {stock.why_now   && <InfoCard label="Why Now"         color={C.amber}>{stock.why_now}</InfoCard>}
             {stock.sentiment && <InfoCard label="Sentiment"       color={C.blue}>{stock.sentiment}</InfoCard>}
@@ -618,7 +614,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
             <div><SectionLabel>Catalysts</SectionLabel>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
                 {stock.catalysts.map((cat: string, i: number) => (
-                  <span key={i} style={{ padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: C.font, color: C.teal, background: `${C.teal}12`, border: `1px solid ${C.teal}25` }}>{cat}</span>
+                  <span key={i} style={{ padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: _sdmFont, color: C.teal, background: `${C.teal}12`, border: `1px solid ${C.teal}25` }}>{cat}</span>
                 ))}
               </div>
             </div>
@@ -627,7 +623,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
       )}
       {!detailLoading && !conf && !confluenceRow && !stock && (
         <div style={{ padding: 16, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
-          <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>. Generate an AI Deep Dive for a full report.</p>
+          <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: _sdmSans }}>No analysis data available for <strong style={{ color: C.text }}>{ticker}</strong>. Generate an AI Deep Dive for a full report.</p>
         </div>
       )}
     </div>
@@ -761,19 +757,19 @@ function CCompCard({ def, comps, cr }: { def: CCompDef; comps: any; cr: any }) {
   const color = pts != null ? ptsColor(pts, max) : C.dim;
   return (
     <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px', minHeight: 68 }}>
-      <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.dim, fontFamily: C.font, marginBottom: 6 }}>{def.label}</div>
+      <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.dim, fontFamily: _sdmFont, marginBottom: 6 }}>{def.label}</div>
       {pts != null ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
               <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, height: '100%', background: color, borderRadius: 2 }} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: C.font, whiteSpace: 'nowrap' as const }}>{Number.isInteger(pts) ? pts : pts.toFixed(1)}/{max}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: _sdmFont, whiteSpace: 'nowrap' as const }}>{Number.isInteger(pts) ? pts : pts.toFixed(1)}/{max}</span>
           </div>
-          {subLabel && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.sansFont }}>{safeStr(subLabel)}</div>}
+          {subLabel && <div style={{ fontSize: 8, color: C.dim, fontFamily: _sdmSans }}>{safeStr(subLabel)}</div>}
         </>
       ) : (
-        <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>—</div>
+        <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>—</div>
       )}
     </div>
   );
@@ -781,7 +777,7 @@ function CCompCard({ def, comps, cr }: { def: CCompDef; comps: any; cr: any }) {
 
 function CConfSubHdr({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: C.font, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${C.border}` }}>
+    <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: C.teal, fontFamily: _sdmFont, marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${C.border}` }}>
       {children}
     </div>
   );
@@ -802,7 +798,7 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
       <div>
         <SectionLabel>Confluence Analysis</SectionLabel>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
-          <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0 }}>
+          <p style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans, margin: 0 }}>
             Confluence data unavailable for <strong style={{ color: C.text }}>{ticker}</strong>.
           </p>
         </div>
@@ -882,27 +878,27 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             {/* Top row: score + decision + timing */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' as const, marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: 30, fontWeight: 900, color: ccsColor(sc.core), fontFamily: C.font, lineHeight: 1 }}>
+                <span style={{ fontSize: 30, fontWeight: 900, color: ccsColor(sc.core), fontFamily: _sdmFont, lineHeight: 1 }}>
                   {Number(sc.core).toFixed(1)}
                 </span>
-                <span style={{ fontSize: 10, color: C.dim, fontFamily: C.font }}>/100</span>
+                <span style={{ fontSize: 10, color: C.dim, fontFamily: _sdmFont }}>/100</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.purple, fontFamily: C.font }}>+{Number(sc.bonus).toFixed(1)}</span>
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>bonus /25</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.purple, fontFamily: _sdmFont }}>+{Number(sc.bonus).toFixed(1)}</span>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>bonus /25</span>
               </div>
               {decisionCfg && (
-                <span style={{ padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 800, fontFamily: C.font, color: '#000', background: decisionCfg.clr, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+                <span style={{ padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 800, fontFamily: _sdmFont, color: '#000', background: decisionCfg.clr, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
                   {decisionCfg.label}
                 </span>
               )}
               {act?.execution_label && (
-                <span style={{ padding: '3px 8px', borderRadius: 3, fontSize: 9, fontWeight: 600, fontFamily: C.font, color: C.amber, background: `${C.amber}15`, border: `1px solid ${C.amber}30` }}>
+                <span style={{ padding: '3px 8px', borderRadius: 3, fontSize: 9, fontWeight: 600, fontFamily: _sdmFont, color: C.amber, background: `${C.amber}15`, border: `1px solid ${C.amber}30` }}>
                   {act.execution_label}
                 </span>
               )}
               {meta?.confidence_score > 0 && (
-                <span style={{ fontSize: 9, color: meta.confidence_score >= 80 ? C.green : meta.confidence_score >= 50 ? C.amber : C.red, fontFamily: C.font, fontWeight: 600 }}>
+                <span style={{ fontSize: 9, color: meta.confidence_score >= 80 ? C.green : meta.confidence_score >= 50 ? C.amber : C.red, fontFamily: _sdmFont, fontWeight: 600 }}>
                   {Number(meta.confidence_score).toFixed(0)}% confidence
                 </span>
               )}
@@ -910,31 +906,31 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             {/* Detail row: bucket, invalidation, targets, total */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' as const, marginBottom: (risk?.risk_flags?.length > 0 || risk?.caution_flags?.length > 0) ? 8 : 0 }}>
               {act?.bucket && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                   Bucket: <span style={{ color: C.text }}>{act.bucket.replace(/_/g, ' ')}</span>
                 </span>
               )}
               {act?.invalidation_level != null && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                   Inv: <span style={{ color: C.red }}>${Number(act.invalidation_level).toFixed(2)}</span>
                 </span>
               )}
               {act?.target_zone?.target_1 != null && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                   T1: <span style={{ color: C.green }}>${Number(act.target_zone.target_1).toFixed(2)}</span>
                 </span>
               )}
               {act?.target_zone?.target_2 != null && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                   T2: <span style={{ color: C.teal }}>${Number(act.target_zone.target_2).toFixed(2)}</span>
                 </span>
               )}
               {act?.target_zone?.risk_reward_ratio != null && (
-                <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+                <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                   R/R: <span style={{ color: C.text }}>{Number(act.target_zone.risk_reward_ratio).toFixed(1)}x</span>
                 </span>
               )}
-              <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>
+              <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>
                 Total: <span style={{ color: C.text }}>{sc.total != null ? Number(sc.total).toFixed(1) : (Number(sc.core) + Number(sc.bonus)).toFixed(1)}</span>
               </span>
             </div>
@@ -942,10 +938,10 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             {(risk?.risk_flags?.length > 0 || risk?.caution_flags?.length > 0) && (
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const }}>
                 {(risk?.risk_flags ?? []).map((f: string, i: number) => (
-                  <span key={`rf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: C.red, fontFamily: C.font, fontWeight: 700 }}>⚠ {f.replace(/_/g, ' ')}</span>
+                  <span key={`rf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(239,68,68,0.15)', color: C.red, fontFamily: _sdmFont, fontWeight: 700 }}>⚠ {f.replace(/_/g, ' ')}</span>
                 ))}
                 {(risk?.caution_flags ?? []).map((f: string, i: number) => (
-                  <span key={`cf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: C.amber, fontFamily: C.font, fontWeight: 700 }}>⚡ {f.replace(/_/g, ' ')}</span>
+                  <span key={`cf${i}`} style={{ fontSize: 7, padding: '2px 6px', borderRadius: 3, background: 'rgba(245,158,11,0.14)', color: C.amber, fontFamily: _sdmFont, fontWeight: 700 }}>⚡ {f.replace(/_/g, ' ')}</span>
                 ))}
               </div>
             )}
@@ -955,21 +951,21 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
         {/* ═ B: Why Now / Why Wait ═ */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div style={{ background: `${C.green}08`, border: `1px solid ${C.green}25`, borderRadius: 5, padding: '10px 12px' }}>
-            <div style={{ fontSize: 7, fontWeight: 800, color: C.green, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>✓ Why Now</div>
+            <div style={{ fontSize: 7, fontWeight: 800, color: C.green, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>✓ Why Now</div>
             {(act?.why_now ?? []).length > 0
               ? (act?.why_now ?? []).map((b: string, i: number) => (
-                  <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
+                  <div key={i} style={{ fontSize: 10, color: C.text, fontFamily: _sdmSans, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
                 ))
-              : <div style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>No active why-now drivers.</div>
+              : <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmSans }}>No active why-now drivers.</div>
             }
           </div>
           <div style={{ background: `${C.amber}08`, border: `1px solid ${C.amber}25`, borderRadius: 5, padding: '10px 12px' }}>
-            <div style={{ fontSize: 7, fontWeight: 800, color: C.amber, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>⏳ Why Wait</div>
+            <div style={{ fontSize: 7, fontWeight: 800, color: C.amber, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.10em', marginBottom: 6 }}>⏳ Why Wait</div>
             {(act?.why_wait ?? []).length > 0
               ? (act?.why_wait ?? []).map((b: string, i: number) => (
-                  <div key={i} style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
+                  <div key={i} style={{ fontSize: 10, color: C.dim, fontFamily: _sdmSans, paddingLeft: 4, paddingBottom: 3, lineHeight: 1.5 }}>· {b}</div>
                 ))
-              : <div style={{ fontSize: 9, color: C.dim, fontFamily: C.sansFont }}>No wait reasons.</div>
+              : <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmSans }}>No wait reasons.</div>
             }
           </div>
         </div>
@@ -998,9 +994,9 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
               {fwdPe != null ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={V42_VV}>{Number(fwdPe).toFixed(1)}x</span>
-                  {fwdPeApprox && <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700 }}>APPROX.</span>}
+                  {fwdPeApprox && <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: _sdmFont, fontWeight: 700 }}>APPROX.</span>}
                   {fwdPeWarnCodes.map((wc: string, i: number) => (
-                    <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
+                    <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: _sdmFont }}>{wc.replace(/_/g, ' ')}</span>
                   ))}
                 </div>
               ) : <span style={{ ...V42_VV, color: C.dim }}>—</span>}
@@ -1009,17 +1005,17 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             {valPeScore  != null && <V42DR k="P/E Score"   v={`${Number(valPeScore).toFixed(1)}`} />}
             {valPsScore  != null && <V42DR k="P/S Score"   v={`${Number(valPsScore).toFixed(1)}`} />}
             {valFwdScore != null && <V42DR k="F.P/E Score" v={`${Number(valFwdScore).toFixed(1)}`} />}
-            {valExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(valExpl)}</div>}
-            {valMissing.length > 0 && <div style={{ marginTop: 4, fontSize: 8, color: C.dim, fontFamily: C.font }}>Missing: {valMissing.join(', ')}</div>}
-            {valCoverage === 'partial'     && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 3 }}>Partial valuation coverage.</div>}
-            {valCoverage === 'unavailable' && <div style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginTop: 3 }}>Valuation unavailable.</div>}
+            {valExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: _sdmSans, lineHeight: 1.5 }}>{safeStr(valExpl)}</div>}
+            {valMissing.length > 0 && <div style={{ marginTop: 4, fontSize: 8, color: C.dim, fontFamily: _sdmFont }}>Missing: {valMissing.join(', ')}</div>}
+            {valCoverage === 'partial'     && <div style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont, marginTop: 3 }}>Partial valuation coverage.</div>}
+            {valCoverage === 'unavailable' && <div style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont, marginTop: 3 }}>Valuation unavailable.</div>}
           </div>
 
           {/* E: Catalyst Deep Dive */}
           <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
             <CConfSubHdr>Catalyst Deep Dive</CConfSubHdr>
             {catPts != null && <V42PR k="Catalyst Score" pts={catPts} max={catMax} />}
-            {isBearishCat && <div style={{ fontSize: 8, color: C.amber, fontFamily: C.font, marginBottom: 4 }}>Bearish conflict — points suppressed.</div>}
+            {isBearishCat && <div style={{ fontSize: 8, color: C.amber, fontFamily: _sdmFont, marginBottom: 4 }}>Bearish conflict — points suppressed.</div>}
             {directPresent ? (
               <>
                 <V42DR k="Type" v={eventType} />
@@ -1036,21 +1032,21 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
                 {catReasonCodes.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3, marginTop: 4 }}>
                     {catReasonCodes.slice(0, 6).map((rc: string, i: number) => (
-                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.teal}15`, color: C.teal, fontFamily: C.font }}>{rc.replace(/_/g, ' ')}</span>
+                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.teal}15`, color: C.teal, fontFamily: _sdmFont }}>{rc.replace(/_/g, ' ')}</span>
                     ))}
                   </div>
                 )}
                 {catalystExpl && (
                   <div style={{ marginTop: 6, padding: '7px 10px', background: `${tierColor(eventTier)}0a`, border: `1px solid ${tierColor(eventTier)}25`, borderRadius: 4 }}>
-                    <div style={{ fontSize: 7, fontWeight: 800, color: tierColor(eventTier), fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>
+                    <div style={{ fontSize: 7, fontWeight: 800, color: tierColor(eventTier), fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>
                       {eventTier ? `Catalyst — ${safeStr(eventTier).replace('_', ' ')}` : 'Catalyst Explanation'}
                     </div>
-                    <p style={{ fontSize: 10, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, margin: 0 }}>{safeStr(catalystExpl)}</p>
+                    <p style={{ fontSize: 10, color: C.text, fontFamily: _sdmSans, lineHeight: 1.6, margin: 0 }}>{safeStr(catalystExpl)}</p>
                   </div>
                 )}
               </>
             ) : (
-              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font, marginTop: 4 }}>No direct catalyst detected.</div>
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont, marginTop: 4 }}>No direct catalyst detected.</div>
             )}
           </div>
 
@@ -1068,9 +1064,9 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             {fwdGrowthScore != null && (
               <V42DR k="Forward Growth" v={fwdGrowthLabel ? `${Number(fwdGrowthScore).toFixed(1)} — ${fwdGrowthLabel}` : `${Number(fwdGrowthScore).toFixed(1)}`} />
             )}
-            {invExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.5 }}>{safeStr(invExpl)}</div>}
+            {invExpl && <div style={{ marginTop: 6, fontSize: 9, color: C.dim, fontFamily: _sdmSans, lineHeight: 1.5 }}>{safeStr(invExpl)}</div>}
             {invPts == null && !invLabel && finHealthScore == null && (
-              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>Investment data not available.</div>
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>Investment data not available.</div>
             )}
           </div>
 
@@ -1101,7 +1097,7 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             /* Placeholder card if no tech data — keeps grid symmetrical */
             <div style={{ background: C.card2, border: `1px solid ${C.border}`, borderRadius: 5, padding: '10px 12px' }}>
               <CConfSubHdr>Technical / Entry Detail</CConfSubHdr>
-              <div style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>Technical detail not available.</div>
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>Technical detail not available.</div>
             </div>
           )}
         </div>
@@ -1131,15 +1127,15 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
             )}
             {meta?.data_status_flags?.length > 0 && (
               <div style={{ marginTop: 6 }}>
-                <div style={{ fontSize: 7, color: C.dim, fontFamily: C.font, marginBottom: 3 }}>Data Flags:</div>
+                <div style={{ fontSize: 7, color: C.dim, fontFamily: _sdmFont, marginBottom: 3 }}>Data Flags:</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 3 }}>
                   {meta.data_status_flags.map((f: string, i: number) => (
-                    <span key={i} style={{ fontSize: 7, padding: '1px 4px', borderRadius: 2, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: C.font }}>{f.replace(/_/g, ' ')}</span>
+                    <span key={i} style={{ fontSize: 7, padding: '1px 4px', borderRadius: 2, background: 'rgba(255,255,255,0.05)', color: C.dim, fontFamily: _sdmFont }}>{f.replace(/_/g, ' ')}</span>
                   ))}
                 </div>
               </div>
             )}
-            <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(100,116,139,0.5)', fontFamily: C.font, fontStyle: 'italic' as const }}>
+            <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(100,116,139,0.5)', fontFamily: _sdmFont, fontStyle: 'italic' as const }}>
               Coverage gaps are not bearish signals.
             </div>
           </div>
@@ -1148,7 +1144,7 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
         {/* ═ I: Debug (collapsed by default) ═ */}
         <div style={{ paddingTop: 6, borderTop: `1px solid ${C.border}` }}>
           <button onClick={() => setShowDebug(v => !v)}
-            style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontSize: 7, padding: '3px 8px', cursor: 'pointer', fontFamily: C.font, letterSpacing: '0.05em' }}>
+            style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 4, color: C.dim, fontSize: 7, padding: '3px 8px', cursor: 'pointer', fontFamily: _sdmFont, letterSpacing: '0.05em' }}>
             {showDebug ? '▲ HIDE DEBUG' : '▼ DEBUG'}
           </button>
           {showDebug && (
@@ -1157,12 +1153,12 @@ function ConfluenceSummarySection({ detail, confluenceRow, ticker }: { detail: a
                 <div>
                   <span style={{ ...V42_KK, display: 'block', marginBottom: 3 }}>Reason Codes ({meta.reason_codes.length}):</span>
                   {meta.reason_codes.slice(0, 30).map((rc: string, i: number) => (
-                    <div key={i} style={{ fontSize: 7, color: C.dim, fontFamily: C.font, paddingLeft: 8 }}>· {rc}</div>
+                    <div key={i} style={{ fontSize: 7, color: C.dim, fontFamily: _sdmFont, paddingLeft: 8 }}>· {rc}</div>
                   ))}
                 </div>
               )}
               {v42 && (
-                <pre style={{ fontSize: 7, color: C.dim, fontFamily: C.font, marginTop: 8, whiteSpace: 'pre-wrap' as const, wordBreak: 'break-all' as const, maxHeight: 160, overflow: 'auto', background: 'rgba(0,0,0,0.3)', padding: 8, borderRadius: 4 }}>
+                <pre style={{ fontSize: 7, color: C.dim, fontFamily: _sdmFont, marginTop: 8, whiteSpace: 'pre-wrap' as const, wordBreak: 'break-all' as const, maxHeight: 160, overflow: 'auto', background: 'rgba(0,0,0,0.3)', padding: 8, borderRadius: 4 }}>
                   {JSON.stringify({ score: sc, action_label: act?.label, component_keys: Object.keys(comps) }, null, 2)}
                 </pre>
               )}
@@ -1273,7 +1269,7 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
   const hasAny = TECH_GROUPS.some(g => g.fields.some(f => resolveField(f.keys) !== undefined));
 
   if (!hasAny) {
-    return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>Technical data unavailable for this ticker.</div>;
+    return <div style={{ color: C.dim, fontSize: 12, fontFamily: _sdmSans }}>Technical data unavailable for this ticker.</div>;
   }
 
   function getTechColor(label: string, rawVal: any): string {
@@ -1310,8 +1306,8 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
 
   const fRow = (label: string, value: string, color?: string) => (
     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-      <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
-      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+      <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: _sdmFont }}>{value}</span>
     </div>
   );
 
@@ -1319,14 +1315,14 @@ function TechnicalTab({ detail, detailLoading, confluenceRow, stock, useRowFallb
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Header */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' as const }}>
-        {detail?.company?.name && <span style={{ fontSize: 12, color: C.teal, fontFamily: C.font, fontWeight: 700 }}>{safeStr(detail.company.name)}</span>}
+        {detail?.company?.name && <span style={{ fontSize: 12, color: C.teal, fontFamily: _sdmFont, fontWeight: 700 }}>{safeStr(detail.company.name)}</span>}
         {themeVal && themeVal !== '—' && (
-          <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 3, background: `${C.purple}15`, color: C.purple, fontFamily: C.font, border: `1px solid ${C.purple}30` }}>
+          <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 3, background: `${C.purple}15`, color: C.purple, fontFamily: _sdmFont, border: `1px solid ${C.purple}30` }}>
             {themeVal}
           </span>
         )}
         {detail?.coverage?.technical_source && (
-          <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 'auto' }}>Source: {safeStr(detail.coverage.technical_source)}</span>
+          <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont, marginLeft: 'auto' }}>Source: {safeStr(detail.coverage.technical_source)}</span>
         )}
       </div>
 
@@ -1438,7 +1434,7 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
   const hasAnyData = FUND_GROUPS.some(g => g.fields.some(f => getFund(f.key) != null)) || hasForwardPE;
 
   if (!hasAnyData) {
-    return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>No fundamental data available for this ticker.</div>;
+    return <div style={{ color: C.dim, fontSize: 12, fontFamily: _sdmSans }}>No fundamental data available for this ticker.</div>;
   }
 
   function getFundColor(key: string, val: any): string {
@@ -1455,8 +1451,8 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
 
   const fRow = (label: string, value: React.ReactNode, key?: string, color?: string) => (
     <div key={key ?? label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-      <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
-      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: C.font }}>{value}</span>
+      <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 11, color: color ?? C.text, fontWeight: 600, fontFamily: _sdmFont }}>{value}</span>
     </div>
   );
 
@@ -1467,7 +1463,7 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {src && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, fontSize: 8, color: C.dim, fontFamily: C.font }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, fontSize: 8, color: C.dim, fontFamily: _sdmFont }}>
           {src.freshness_status && <span>Freshness: {src.freshness_status.replace(/_/g, ' ')}</span>}
           {src.last_updated && <span>Updated: {String(src.last_updated).slice(0, 10)}</span>}
           {src.missing_fields?.length > 0 && <span style={{ color: C.amber }}>Missing: {src.missing_fields.join(', ')}</span>}
@@ -1490,14 +1486,14 @@ function FundamentalsTab({ detail, detailLoading, confluenceRow, stock, screener
               {visibleFields.map(f => fRow(f.label, formatFundVal(f.val, f.fmt), f.key, getFundColor(f.key, f.val)))}
               {isValuation && hasForwardPE && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: C.card, borderBottom: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
+                  <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>Forward P/E</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: C.font }}>{Number(fwdPE).toFixed(1)}x</span>
+                    <span style={{ fontSize: 11, color: C.text, fontWeight: 600, fontFamily: _sdmFont }}>{Number(fwdPE).toFixed(1)}x</span>
                     {fwdPEApprox && (
-                      <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: C.font, fontWeight: 700, letterSpacing: '0.05em' }}>APPROX.</span>
+                      <span style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}20`, color: C.amber, fontFamily: _sdmFont, fontWeight: 700, letterSpacing: '0.05em' }}>APPROX.</span>
                     )}
                     {fwdPEWarnings.map((wc: string, i: number) => (
-                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: C.font }}>{wc.replace(/_/g, ' ')}</span>
+                      <span key={i} style={{ fontSize: 6, padding: '1px 4px', borderRadius: 2, background: `${C.amber}15`, color: C.amber, fontFamily: _sdmFont }}>{wc.replace(/_/g, ' ')}</span>
                     ))}
                   </div>
                 </div>
@@ -1523,7 +1519,7 @@ function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; det
   ) ?? [];
   if (detailLoading && !detail && wlTickerNews.length === 0) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 12, fontFamily: _sdmSans }}>
         <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
         Loading news for {ticker}…
         <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
@@ -1548,14 +1544,14 @@ function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; det
   if (!detail && wlTickerNews.length === 0) {
     return (
       <div style={{ padding: 14, borderRadius: 6, background: C.card, border: `1px solid ${C.border}` }}>
-        <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: C.sansFont }}>
+        <p style={{ color: C.dim, fontSize: 12, margin: 0, fontFamily: _sdmSans }}>
           News data is not available for <strong style={{ color: C.text }}>{ticker}</strong>.
         </p>
       </div>
     );
   }
   if (totalCount === 0) {
-    return <div style={{ color: C.dim, fontSize: 12, fontFamily: C.sansFont }}>No recent news cached for <strong style={{ color: C.text }}>{ticker}</strong>.</div>;
+    return <div style={{ color: C.dim, fontSize: 12, fontFamily: _sdmSans }}>No recent news cached for <strong style={{ color: C.text }}>{ticker}</strong>.</div>;
   }
 
   const renderDirectCard = (item: any, idx: number) => {
@@ -1566,49 +1562,49 @@ function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; det
     return (
       <div key={`dc-${idx}`} style={{ background: `${tc}06`, border: `1px solid ${tc}25`, borderRadius: 5, padding: '10px 12px', marginBottom: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' as const }}>
-          <span style={{ fontSize: 7, fontWeight: 800, color: isBearish ? C.red : C.amber, fontFamily: C.font, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          <span style={{ fontSize: 7, fontWeight: 800, color: isBearish ? C.red : C.amber, fontFamily: _sdmFont, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
             {isBearish ? 'Bearish Catalyst' : 'Direct Catalyst'}
           </span>
           {tier && (
-            <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: `${tc}15`, color: tc, fontFamily: C.font, fontWeight: 700 }}>
+            <span style={{ fontSize: 7, padding: '1px 5px', borderRadius: 2, background: `${tc}15`, color: tc, fontFamily: _sdmFont, fontWeight: 700 }}>
               {tier.replace('_', ' ')}
             </span>
           )}
           {(item.catalyst_event_type || item.event_type) && (
-            <span style={{ fontSize: 7, color: C.dim, fontFamily: C.font }}>{item.catalyst_event_type ?? item.event_type}</span>
+            <span style={{ fontSize: 7, color: C.dim, fontFamily: _sdmFont }}>{item.catalyst_event_type ?? item.event_type}</span>
           )}
           {item.catalyst_score != null && (
-            <span style={{ fontSize: 7, color: tc, fontFamily: C.font, marginLeft: 'auto' }}>score {Number(item.catalyst_score).toFixed(1)}</span>
+            <span style={{ fontSize: 7, color: tc, fontFamily: _sdmFont, marginLeft: 'auto' }}>score {Number(item.catalyst_score).toFixed(1)}</span>
           )}
         </div>
 
         <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5, display: 'block' }}>{item.title}</span>
+          <span style={{ fontSize: 12, color: C.text, fontFamily: _sdmSans, lineHeight: 1.5, display: 'block' }}>{item.title}</span>
         </a>
 
         {item.summary && (
-          <p style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4, margin: '4px 0 0' }}>
+          <p style={{ fontSize: 10, color: C.dim, fontFamily: _sdmSans, lineHeight: 1.4, margin: '4px 0 0' }}>
             {item.summary.slice(0, 200)}{item.summary.length > 200 ? '…' : ''}
           </p>
         )}
 
         {/* Catalyst explanation */}
         {item.catalyst_explanation && (
-          <p style={{ fontSize: 10, color: C.teal, fontFamily: C.sansFont, lineHeight: 1.5, margin: '6px 0 0', fontStyle: 'italic' }}>{item.catalyst_explanation}</p>
+          <p style={{ fontSize: 10, color: C.teal, fontFamily: _sdmSans, lineHeight: 1.5, margin: '6px 0 0', fontStyle: 'italic' }}>{item.catalyst_explanation}</p>
         )}
 
         {/* Materiality / Freshness / Relevance mini fields */}
         {(item.materiality_score != null || item.freshness_score != null || item.relevance_score != null) && (
           <div style={{ display: 'flex', gap: 8, marginTop: 5 }}>
-            {item.materiality_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>mat {Number(item.materiality_score).toFixed(1)}</span>}
-            {item.freshness_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>fresh {Number(item.freshness_score).toFixed(1)}</span>}
-            {item.relevance_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font }}>rel {Number(item.relevance_score).toFixed(1)}</span>}
+            {item.materiality_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont }}>mat {Number(item.materiality_score).toFixed(1)}</span>}
+            {item.freshness_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont }}>fresh {Number(item.freshness_score).toFixed(1)}</span>}
+            {item.relevance_score != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont }}>rel {Number(item.relevance_score).toFixed(1)}</span>}
           </div>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 5 }}>
-          <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
-          {item.published_at && <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>}
+          <span style={{ fontSize: 9, color: C.teal, fontFamily: _sdmFont }}>{item.source}</span>
+          {item.published_at && <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>{timeAgo(item.published_at)}</span>}
         </div>
       </div>
     );
@@ -1624,17 +1620,17 @@ function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; det
       onMouseEnter={e => e.currentTarget.style.background = C.card}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      <span style={{ fontSize: 12, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>{item.title}</span>
+      <span style={{ fontSize: 12, color: C.text, fontFamily: _sdmSans, lineHeight: 1.5 }}>{item.title}</span>
       {item.summary && (
-        <span style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, lineHeight: 1.4 }}>
+        <span style={{ fontSize: 10, color: C.dim, fontFamily: _sdmSans, lineHeight: 1.4 }}>
           {item.summary.slice(0, 150)}{item.summary.length > 150 ? '…' : ''}
         </span>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 9, color: C.teal, fontFamily: C.font }}>{item.source}</span>
-        {item.published_at && <span style={{ fontSize: 9, color: C.dim, fontFamily: C.font }}>{timeAgo(item.published_at)}</span>}
+        <span style={{ fontSize: 9, color: C.teal, fontFamily: _sdmFont }}>{item.source}</span>
+        {item.published_at && <span style={{ fontSize: 9, color: C.dim, fontFamily: _sdmFont }}>{timeAgo(item.published_at)}</span>}
         {item.rss_providers?.length > 0 && (
-          <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont, marginLeft: 'auto' }}>
             {item.rss_providers.map((p: string) => p.toUpperCase()).join(' + ')}
           </span>
         )}
@@ -1646,11 +1642,11 @@ function NewsTab({ detail, detailLoading, ticker, allNews }: { detail?: any; det
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Header */}
       <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
-        <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: C.font }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: _sdmFont }}>
           {totalCount} ARTICLE{totalCount !== 1 ? 'S' : ''}
         </span>
         {directArticles.length > 0 && (
-          <span style={{ fontSize: 9, color: C.amber, fontFamily: C.font, marginLeft: 8 }}>
+          <span style={{ fontSize: 9, color: C.amber, fontFamily: _sdmFont, marginLeft: 8 }}>
             · {directArticles.length} DIRECT CATALYST
           </span>
         )}
@@ -1692,28 +1688,28 @@ function DeepDiveTab({ ticker, data, loading, error, selectedModels, setSelected
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={onGenerate} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 4, fontSize: 10, fontWeight: 700, fontFamily: C.font, cursor: 'pointer', border: `1px solid ${C.border}`, background: C.card, color: C.dim }}>
+          <button onClick={onGenerate} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 4, fontSize: 10, fontWeight: 700, fontFamily: _sdmFont, cursor: 'pointer', border: `1px solid ${C.border}`, background: C.card, color: C.dim }}>
             <RefreshCw style={{ width: 12, height: 12 }} />Regenerate
           </button>
         </div>
         {data.grok   && <ReportSection title="Grok — X/Twitter Sentiment" color={C.bright}  content={data.grok} />}
         {data.gemini && <ReportSection title="Gemini — Google Headlines"   color={C.blue}    content={data.gemini} />}
         {(data.claude || data.gpt) && <ReportSection title={data.claude ? 'Claude — Deep Analysis' : 'GPT — Deep Analysis'} color={C.purple} content={data.claude || data.gpt} />}
-        {data.summary && (<div><SectionLabel>Combined Summary</SectionLabel><div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}><p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0 }}>{data.summary}</p></div></div>)}
+        {data.summary && (<div><SectionLabel>Combined Summary</SectionLabel><div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}><p style={{ fontSize: 12, color: C.text, lineHeight: 1.7, fontFamily: _sdmSans, margin: 0 }}>{data.summary}</p></div></div>)}
         {(data.bull_case || data.bear_case) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {data.bull_case && (<div style={{ background: `${C.green}08`, border: `1px solid ${C.green}20`, borderRadius: 6, padding: 14 }}><span style={{ fontSize: 9, fontWeight: 800, color: C.green, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bull Case</span><p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bull_case}</p></div>)}
-            {data.bear_case && (<div style={{ background: `${C.red}08`, border: `1px solid ${C.red}20`, borderRadius: 6, padding: 14 }}><span style={{ fontSize: 9, fontWeight: 800, color: C.red, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bear Case</span><p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: C.sansFont, marginTop: 8, marginBottom: 0 }}>{data.bear_case}</p></div>)}
+            {data.bull_case && (<div style={{ background: `${C.green}08`, border: `1px solid ${C.green}20`, borderRadius: 6, padding: 14 }}><span style={{ fontSize: 9, fontWeight: 800, color: C.green, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bull Case</span><p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: _sdmSans, marginTop: 8, marginBottom: 0 }}>{data.bull_case}</p></div>)}
+            {data.bear_case && (<div style={{ background: `${C.red}08`, border: `1px solid ${C.red}20`, borderRadius: 6, padding: 14 }}><span style={{ fontSize: 9, fontWeight: 800, color: C.red, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bear Case</span><p style={{ fontSize: 11, color: C.text, lineHeight: 1.6, fontFamily: _sdmSans, marginTop: 8, marginBottom: 0 }}>{data.bear_case}</p></div>)}
           </div>
         )}
-        {data.risk_factors?.length > 0 && (<div><SectionLabel>Risk Factors</SectionLabel><ul style={{ margin: 0, paddingLeft: 18 }}>{data.risk_factors.map((r: string, i: number) => (<li key={i} style={{ fontSize: 11, color: C.text, fontFamily: C.sansFont, lineHeight: 1.5 }}>{r}</li>))}</ul></div>)}
+        {data.risk_factors?.length > 0 && (<div><SectionLabel>Risk Factors</SectionLabel><ul style={{ margin: 0, paddingLeft: 18 }}>{data.risk_factors.map((r: string, i: number) => (<li key={i} style={{ fontSize: 11, color: C.text, fontFamily: _sdmSans, lineHeight: 1.5 }}>{r}</li>))}</ul></div>)}
       </div>
     );
   }
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: C.teal, fontSize: 12, fontFamily: C.font }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: C.teal, fontSize: 12, fontFamily: _sdmFont }}>
           <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
           Querying {selectedModels.join(', ')} for {ticker}...
         </div>
@@ -1726,8 +1722,8 @@ function DeepDiveTab({ ticker, data, loading, error, selectedModels, setSelected
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ padding: '10px 14px', borderRadius: 6, background: `${C.red}10`, border: `1px solid ${C.red}30` }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: C.red, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Generation Failed</span>
-          <span style={{ fontSize: 11, color: C.red, fontFamily: C.sansFont, lineHeight: 1.5 }}>{error}</span>
+          <span style={{ fontSize: 10, fontWeight: 800, color: C.red, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Generation Failed</span>
+          <span style={{ fontSize: 11, color: C.red, fontFamily: _sdmSans, lineHeight: 1.5 }}>{error}</span>
         </div>
         <ModelPicker ticker={ticker} selectedModels={selectedModels} toggleModel={toggleModel} reportModel={reportModel} setReportModel={setReportModel} onGenerate={onGenerate} loading={loading} />
       </div>
@@ -1744,8 +1740,8 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: C.bright, fontFamily: C.sansFont, marginBottom: 4 }}>AI Deep Dive — {ticker}</div>
-        <p style={{ fontSize: 12, color: C.dim, fontFamily: C.sansFont, margin: 0, lineHeight: 1.5 }}>Select which AI models to query.</p>
+        <div style={{ fontSize: 14, fontWeight: 800, color: C.bright, fontFamily: _sdmSans, marginBottom: 4 }}>AI Deep Dive — {ticker}</div>
+        <p style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans, margin: 0, lineHeight: 1.5 }}>Select which AI models to query.</p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MODEL_OPTIONS.map(opt => {
@@ -1755,13 +1751,13 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
               style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 6, cursor: 'pointer', background: checked ? `${opt.color}08` : C.card, border: `1px solid ${checked ? opt.color + '40' : C.border}`, textAlign: 'left', transition: 'all 0.15s', userSelect: 'none' }}>
               {checked ? <CheckSquare style={{ width: 16, height: 16, color: opt.color, flexShrink: 0 }} /> : <Square style={{ width: 16, height: 16, color: C.dim, flexShrink: 0 }} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: checked ? opt.color : C.text, fontFamily: C.font }}>{opt.label}</div>
-                <div style={{ fontSize: 10, color: C.dim, fontFamily: C.sansFont, marginTop: 2 }}>{opt.desc}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: checked ? opt.color : C.text, fontFamily: _sdmFont }}>{opt.label}</div>
+                <div style={{ fontSize: 10, color: C.dim, fontFamily: _sdmSans, marginTop: 2 }}>{opt.desc}</div>
               </div>
               {opt.id === 'claude_gpt' && checked && (
                 <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                   {(['claude', 'gpt'] as const).map(m => (
-                    <button key={m} onClick={() => setReportModel(m)} style={{ padding: '3px 10px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: C.font, cursor: 'pointer', background: reportModel === m ? `${C.purple}30` : 'transparent', border: `1px solid ${reportModel === m ? C.purple : C.border}`, color: reportModel === m ? C.purple : C.dim }}>{m.toUpperCase()}</button>
+                    <button key={m} onClick={() => setReportModel(m)} style={{ padding: '3px 10px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _sdmFont, cursor: 'pointer', background: reportModel === m ? `${C.purple}30` : 'transparent', border: `1px solid ${reportModel === m ? C.purple : C.border}`, color: reportModel === m ? C.purple : C.dim }}>{m.toUpperCase()}</button>
                   ))}
                 </div>
               )}
@@ -1770,7 +1766,7 @@ function ModelPicker({ ticker, selectedModels, toggleModel, reportModel, setRepo
         })}
       </div>
       <button onClick={onGenerate} disabled={loading || selectedModels.length === 0}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 24px', borderRadius: 6, fontSize: 12, fontWeight: 800, fontFamily: C.font, cursor: selectedModels.length === 0 ? 'not-allowed' : 'pointer', background: selectedModels.length === 0 ? C.card : `linear-gradient(135deg, ${C.teal}, ${C.purple})`, border: 'none', color: selectedModels.length === 0 ? C.dim : '#000', opacity: loading ? 0.7 : 1, transition: 'all 0.2s' }}>
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 24px', borderRadius: 6, fontSize: 12, fontWeight: 800, fontFamily: _sdmFont, cursor: selectedModels.length === 0 ? 'not-allowed' : 'pointer', background: selectedModels.length === 0 ? C.card : `linear-gradient(135deg, ${C.teal}, ${C.purple})`, border: 'none', color: selectedModels.length === 0 ? C.dim : '#000', opacity: loading ? 0.7 : 1, transition: 'all 0.2s' }}>
         <Zap style={{ width: 14, height: 14 }} />Generate Deep Dive Report
       </button>
     </div>
@@ -1784,10 +1780,10 @@ function ReportSection({ title, color, content }: { title: string; color: string
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <div style={{ width: 3, height: 14, background: color, borderRadius: 2 }} />
-        <span style={{ fontSize: 9, fontWeight: 800, color, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</span>
+        <span style={{ fontSize: 9, fontWeight: 800, color, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</span>
       </div>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 14 }}>
-        <p style={{ fontSize: 11, color: C.text, lineHeight: 1.7, fontFamily: C.sansFont, margin: 0, whiteSpace: 'pre-wrap' }}>{text}</p>
+        <p style={{ fontSize: 11, color: C.text, lineHeight: 1.7, fontFamily: _sdmSans, margin: 0, whiteSpace: 'pre-wrap' }}>{text}</p>
       </div>
     </div>
   );
@@ -1796,7 +1792,7 @@ function ReportSection({ title, color, content }: { title: string; color: string
 /* ── Shared sub-components ───────────────────────────────────────── */
 function LoadingRow({ label }: { label: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 11, fontFamily: C.sansFont, padding: '8px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.dim, fontSize: 11, fontFamily: _sdmSans, padding: '8px 0' }}>
       <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite', flexShrink: 0 }} />
       {label}
       <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
@@ -1805,7 +1801,7 @@ function LoadingRow({ label }: { label: string }) {
 }
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+    <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
       {children}
     </div>
   );
@@ -1813,8 +1809,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function InfoCard({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, borderLeft: `3px solid ${color}` }}>
-      <span style={{ fontSize: 8, fontWeight: 800, color, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-      <div style={{ fontSize: 11, color: C.text, fontFamily: C.sansFont, lineHeight: 1.6, marginTop: 6 }}>{children}</div>
+      <span style={{ fontSize: 8, fontWeight: 800, color, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <div style={{ fontSize: 11, color: C.text, fontFamily: _sdmSans, lineHeight: 1.6, marginTop: 6 }}>{children}</div>
     </div>
   );
 }
@@ -1824,8 +1820,8 @@ function MetricBox({ label, value, raw, colored }: { label: string; value?: any;
   const col = colored === 'green' ? C.green : colored === 'red' ? C.red : C.text;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 10px', background: C.card, borderRadius: 4, border: `1px solid ${C.border}` }}>
-      <span style={{ fontSize: 8, color: C.dim, fontFamily: C.font, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-      <span style={{ fontSize: 13, color: col, fontWeight: 700, fontFamily: C.font, marginTop: 2 }}>{display}</span>
+      <span style={{ fontSize: 8, color: C.dim, fontFamily: _sdmFont, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 13, color: col, fontWeight: 700, fontFamily: _sdmFont, marginTop: 2 }}>{display}</span>
     </div>
   );
 }

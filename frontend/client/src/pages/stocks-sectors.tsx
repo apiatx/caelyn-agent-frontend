@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, memo, useCallback } from "react";
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,14 +17,9 @@ import {
 } from "recharts";
 
 /* ── Color tokens — premium black/silver/white palette ─────────────────── */
-const C = {
-  bg: '#020202', card: '#0a0a0a', card2: '#060606',
-  border: 'rgba(255,255,255,0.10)', text: '#f5f5f0', dim: '#a9aaa6',
-  teal: '#0ea5e9', green: '#22c55e', red: '#ef4444',
-  amber: '#f59e0b', blue: '#3b82f6', purple: '#a855f7',
-  font: "'JetBrains Mono','Fira Code',monospace",
-  sansFont: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-};
+let C = DARK_C;
+const _ssectFont = "'JetBrains Mono','Fira Code',monospace";
+const _ssectSans = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 // ─── Types — exact backend shapes ────────────────────────────────────────────
 interface SectorSeries {
@@ -2536,6 +2532,7 @@ const ETFHeatmapWidget = memo(function ETFHeatmapWidget() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StocksSectorsPage() {
+  const { C: _C } = useTheme(); C = _C;
   const openInNewTab = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
   const qc = useQueryClient();
   const { authFetch } = useAuth();

@@ -1,25 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import {
   X, GitCompare, RefreshCw, AlertTriangle, ChevronDown,
   Loader2, CheckCircle2, Clock, Zap, ArrowUpDown,
 } from "lucide-react";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
-const C = {
-  bg:     "#08090c",
-  surface:"#0d1117",
-  card:   "#111827",
-  border: "#1e2535",
-  text:   "#c9d1d9",
-  dim:    "#4a5568",
-  bright: "#e2e8f0",
-  blue:   "#38bdf8",
-  green:  "#22c55e",
-  red:    "#ef4444",
-  orange: "#f97316",
-  gold:   "#f59e0b",
-  purple: "#a78bfa",
-};
+let C = DARK_C;
 const font = "'JetBrains Mono','Fira Code',monospace";
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
@@ -325,6 +312,7 @@ interface Props {
 }
 
 export function PortfolioCompareWatchlistModal({ open, onClose }: Props) {
+  const { C: _C } = useTheme(); C = _C;
   const [watchlists,   setWatchlists]   = useState<WatchlistOption[]>([]);
   const [loadingWL,    setLoadingWL]    = useState(false);
   const [wlError,      setWlError]      = useState<string | null>(null);
