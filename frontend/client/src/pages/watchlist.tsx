@@ -2850,6 +2850,33 @@ export default function WatchlistPage() {
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
 
+  /* ── CSV-enriched tickers for sorting: merges uploaded CSV data into each
+   * ticker row so that fundamental column sorts (market_cap, pe_ratio, etc.)
+   * work correctly when switching between Technical and Fundamental views.   */
+  const csvMergedTickers = useMemo(() => {
+    const csvRows: any[] = (watchlist as any)?.csv_data ?? [];
+    if (!csvRows.length) return mergedTickers;
+    const csvMap: Record<string, any> = {};
+    for (const row of csvRows) {
+      const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
+      if (t) csvMap[t] = row;
+    }
+    return mergedTickers.map(s => {
+      const tkKey = ((s as any).ticker || '').toString().toUpperCase();
+      const csv = csvMap[tkKey];
+      if (!csv) return s;
+      const merged: any = { ...csv };
+      for (const [k, v] of Object.entries(s as any)) {
+        if (v !== undefined && v !== null && v !== '') {
+          merged[k] = v;
+        } else if (!(k in merged)) {
+          merged[k] = v;
+        }
+      }
+      return merged;
+    });
+  }, [mergedTickers, (watchlist as any)?.csv_data]);
+
   /* ── market-cap lookup for NEWS/MC ──────────────────────────────────── */
   const mcByTicker = useMemo(() => {
     const map = new Map<string, number>();
@@ -3032,9 +3059,9 @@ export default function WatchlistPage() {
   }
 
   const sortedTickers = useMemo(() => {
-    if (!sortKey) return mergedTickers;
+    if (!sortKey) return csvMergedTickers;
     const dir = sortDir === 'asc' ? 1 : -1;
-    return [...mergedTickers]
+    return [...csvMergedTickers]
       .map((s, i) => ({ s, i, sv: getSortValue(s, sortKey) }))
       .sort((a, b) => {
         if (a.sv.missing && b.sv.missing) return a.i - b.i;
@@ -3046,7 +3073,7 @@ export default function WatchlistPage() {
         return String(a.sv.v).localeCompare(String(b.sv.v)) * dir;
       })
       .map(r => r.s);
-  }, [mergedTickers, sortKey, sortDir]);
+  }, [csvMergedTickers, sortKey, sortDir]);
 
   /* ── Last-good row retention: store non-empty sorted rows per watchlist ── */
   useEffect(() => {
