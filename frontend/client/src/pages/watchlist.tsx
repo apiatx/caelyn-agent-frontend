@@ -5044,6 +5044,17 @@ export default function WatchlistPage() {
                             <Star size={10} fill={isFav ? C.amber : 'none'} color={isFav ? C.amber : C.dim} />
                           </button>
                         )}
+                        {tk && activeId && (
+                          <button
+                            onClick={e => { e.stopPropagation(); e.preventDefault(); setDeleteConfirm({ ticker: tk, company: row.company || row.name || null, wid: activeId }); }}
+                            title={`Remove ${sym} from Watchlist`}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1, color: '#333', transition: 'color 0.15s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#333'; }}
+                          >
+                            <Trash2 size={9} />
+                          </button>
+                        )}
                         <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>
                       </span>
                     );
