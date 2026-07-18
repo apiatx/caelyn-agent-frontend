@@ -4922,7 +4922,21 @@ export default function WatchlistPage() {
       return merged;
     });
 
-    const sortedFundRows = fundRows;
+    const sortedFundRows = (() => {
+      if (!sortKey) return fundRows;
+      const dir = sortDir === 'asc' ? 1 : -1;
+      return [...fundRows].sort((a, b) => {
+        const sva = getSortValue(a, sortKey);
+        const svb = getSortValue(b, sortKey);
+        if (sva.missing && svb.missing) return 0;
+        if (sva.missing) return 1;
+        if (svb.missing) return -1;
+        if (typeof sva.v === 'number' && typeof svb.v === 'number') {
+          return (sva.v - svb.v) * dir;
+        }
+        return String(sva.v).localeCompare(String(svb.v)) * dir;
+      });
+    })();
 
     const handleFundSortLocal = (key: string) => {
       if (sortKey === key) {
@@ -7163,137 +7177,6 @@ export default function WatchlistPage() {
                 } /* end hciz */
 
                 return null;
-                const handleFundSort = (key: string) => { handleSortClick(key); };
-                const fThClr = (key: string) => sortKey === key ? C.teal : C.dim;
-                const fArr   = (key: string) => sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '';
-
-                const TH: React.CSSProperties = {
-                  padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
-                  textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
-                  cursor: 'pointer',
-                  background: C.card, borderBottom: `1px solid ${C.border}`,
-                  fontFamily: C.font,
-                };
-                const TD: React.CSSProperties = {
-                  padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' as const,
-                  borderBottom: `1px solid ${C.border}18`, fontFamily: C.font,
-                };
-
-                return (
-                  <div style={{ overflowX: 'auto', border: `1px solid ${C.border}`, borderRadius: 6 }} className="wl-scrollbar">
-                    <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
-                      <thead>
-                        <tr>
-                          {FUND_COLS.map((col, ci) => (
-                            <th
-                              key={col.key}
-                              onClick={() => handleFundSort(col.key)}
-                              style={{
-                                ...TH,
-                                color: fThClr(col.key),
-                                textAlign: ci === 0 ? 'left' as const : 'right' as const,
-                                ...(ci === 0 ? {
-                                  position: 'sticky' as const, left: 0, zIndex: 2,
-                                  boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
-                                } : { position: 'sticky' as const, top: 0, zIndex: 1 }),
-                              }}
-                            >
-                              {col.label}{fundSort.key === col.key ? <span style={{ fontSize: 6, marginLeft: 2 }}>{fArr(col.key)}</span> : null}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedFundRows.length === 0 ? (
-                          <tr>
-                            <td colSpan={FUND_COLS.length} style={{ ...TD, textAlign: 'center' as const, color: C.dim, padding: 16 }}>
-                              No tickers
-                            </td>
-                          </tr>
-                        ) : sortedFundRows.map((row, ri) => {
-                          const rowBg    = ri % 2 === 0 ? '#08080c' : '#0d1420';
-                          const rowHover = 'rgba(14,165,233,0.07)';
-                          const setAllTdBg = (el: HTMLTableRowElement, bg: string) => {
-                            (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
-                              .forEach(td => { td.style.background = bg; });
-                          };
-                          return (
-                          <tr
-                            key={`${row.ticker}-${ri}`}
-                            onClick={() => row.ticker && handleTickerClick(row.ticker)}
-                            style={{ cursor: row.ticker ? 'pointer' : 'default' }}
-                            onMouseEnter={e => setAllTdBg(e.currentTarget, rowHover)}
-                            onMouseLeave={e => setAllTdBg(e.currentTarget, rowBg)}
-                          >
-                            {FUND_COLS.map((col, ci) => {
-                              const isFirst = ci === 0;
-                              const stickyStyle: React.CSSProperties = isFirst ? {
-                                position: 'sticky' as const, left: 0, zIndex: 1,
-                                background: rowBg,
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.5)',
-                              } : { background: rowBg };
-
-                              // RelVol uses existing formatRelVol helper
-                              if (col.fmt === 'relvol') {
-                                const vx = formatRelVol(row.volume, row.average_volume, row.relative_volume);
-                                return (
-                                  <td key={col.key} style={{ ...TD, ...stickyStyle, color: C.text, textAlign: 'right' as const }}>
-                                    {vx}
-                                  </td>
-                                );
-                              }
-
-                              const v = fundGetField(row, col.key, col.aliases);
-                              let content: React.ReactNode = '—';
-                              let color = C.dim;
-
-                              if (col.fmt === 'symbol') {
-                                const sym = String(v || row.ticker || '—');
-                                content = <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>;
-                                color = 'inherit';
-                              } else if (col.fmt === 'str') {
-                                content = v ? String(v) : '—';
-                                color = v ? C.text : C.dim;
-                              } else if (col.fmt === 'compact') {
-                                const r = fundFmtCompact(v);
-                                content = r; color = r === '—' ? C.dim : C.text;
-                              } else if (col.fmt === 'price') {
-                                const r = fundFmtPrice(v);
-                                content = r; color = r === '—' ? C.dim : C.text;
-                              } else if (col.fmt === 'vol') {
-                                const r = fundFmtVol(v);
-                                content = r; color = r === '—' ? C.dim : C.text;
-                              } else if (col.fmt === 'pct') {
-                                const r = fundFmtPct(v);
-                                content = r.text; color = r.clr;
-                              } else if (col.fmt === 'ratio') {
-                                const r = fundFmtRatio(v);
-                                content = r; color = r === '—' ? C.dim : C.text;
-                              } else if (col.fmt === 'date') {
-                                const r = fundFmtDate(v);
-                                content = r; color = r === '—' ? C.dim : C.text;
-                              }
-
-                              return (
-                                <td
-                                  key={col.key}
-                                  style={{
-                                    ...TD, ...stickyStyle, color,
-                                    textAlign: isFirst ? 'left' as const : 'right' as const,
-                                    fontWeight: isFirst ? 700 : 400,
-                                  }}
-                                >
-                                  {content}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
               })()}
             </div>
 
