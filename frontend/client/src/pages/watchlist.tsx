@@ -4963,7 +4963,7 @@ export default function WatchlistPage() {
                   style={{
                     ...TH,
                     color: isActive ? '#f5f5f0' : C.dim,
-                    textAlign: ci === 0 ? 'left' as const : 'right' as const,
+                    textAlign: (ci === 0 || col.fmt === 'str') ? 'left' as const : 'right' as const,
                     position: 'sticky' as const,
                     top: 0,
                     zIndex: ci === 0 ? 3 : 2,
@@ -5152,7 +5152,7 @@ export default function WatchlistPage() {
                       key={col.key}
                       style={{
                         ...TD, ...stickyStyle, color,
-                        textAlign: isFirst ? 'left' as const : 'right' as const,
+                        textAlign: (isFirst || col.fmt === 'str') ? 'left' as const : 'right' as const,
                         fontWeight: isFirst ? 700 : 400,
                       }}
                     >
