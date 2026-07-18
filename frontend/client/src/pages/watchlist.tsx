@@ -952,6 +952,7 @@ interface FundColDef { key: string; label: string; aliases?: string[]; fmt: Fund
 
 const FUND_COLS: FundColDef[] = [
   { key: 'ticker',           label: 'Ticker',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
+  { key: 'company',          label: 'Company',       aliases: ['name', 'company_name', 'companyName'],                             fmt: 'str'     },
   { key: 'canonical_theme_name', label: 'Theme',     aliases: ['section_title', 'watchlist_theme', 'ai_theme', 'enhanced_theme', 'theme_label', 'mapped_theme'], fmt: 'str' },
   { key: 'market_cap',       label: 'Mkt Cap',       aliases: ['marketCap', 'market_capitalization'],                              fmt: 'compact' },
   { key: 'revenue',          label: 'Revenue',       aliases: ['revenue_ttm', 'total_revenue', 'totalRevenue', 'annualRevenue'],   fmt: 'compact' },
