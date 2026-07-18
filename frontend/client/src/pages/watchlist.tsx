@@ -5030,7 +5030,23 @@ export default function WatchlistPage() {
 
                   if (col.fmt === 'symbol') {
                     const sym = String(v || row.ticker || '—');
-                    content = <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>;
+                    const tk = (row.ticker || '').toString().toUpperCase();
+                    const isFav = favoritesSet.has(tk);
+                    content = (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        {tk && (
+                          <button
+                            onClick={e => { e.stopPropagation(); e.preventDefault(); void toggleFavorite(tk); }}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, lineHeight: 1 }}
+                            aria-label={isFav ? `Remove ${sym} from Favorites` : `Add ${sym} to Favorites`}
+                            title={isFav ? `Remove ${sym} from Favorites` : `Add ${sym} to Favorites`}
+                          >
+                            <Star size={10} fill={isFav ? C.amber : 'none'} color={isFav ? C.amber : C.dim} />
+                          </button>
+                        )}
+                        <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>
+                      </span>
+                    );
                     color = 'inherit';
                   } else if (col.fmt === 'str') {
                     content = v ? String(v) : '—';
