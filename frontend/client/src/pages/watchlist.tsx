@@ -5059,6 +5059,70 @@ export default function WatchlistPage() {
                       </span>
                     );
                     color = 'inherit';
+                  } else if (col.fmt === 'str' && col.key === 'canonical_theme_name') {
+                    const tk = (row.ticker || '').toString().toUpperCase();
+                    const currentThemeName = localThemeOverrides.get(tk) || String(v || row.canonical_theme_name || row.section_title || row.theme || '');
+                    const rowThemePending = themeAssignPendingTicker === row.ticker;
+                    const rowThemeFeedback = themeAssignFeedback?.ticker === row.ticker ? themeAssignFeedback : null;
+                    content = isAdmin && row.ticker ? (
+                      <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={e => e.stopPropagation()}
+                              onPointerDown={e => e.stopPropagation()}
+                              disabled={rowThemePending}
+                              title={currentThemeName ? `Reassign primary Theme for ${row.ticker}` : `Assign a primary Theme to ${row.ticker}`}
+                              style={{
+                                background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
+                                display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
+                                fontSize: 10, fontFamily: C.font,
+                                color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
+                                opacity: rowThemePending ? 0.6 : 1,
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                                {rowThemePending ? 'Updating…' : (currentThemeName || '+ Assign Theme')}
+                              </span>
+                              {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="start"
+                            style={{ maxHeight: 320, overflowY: 'auto' }}
+                            onClick={e => e.stopPropagation()}
+                            onPointerDown={e => e.stopPropagation()}
+                          >
+                            {themeUniverse.length === 0 && (
+                              <DropdownMenuItem disabled>Loading Theme universe…</DropdownMenuItem>
+                            )}
+                            {themeUniverse.map(t => (
+                              <DropdownMenuItem
+                                key={t.theme_id}
+                                onSelect={() => {
+                                  if (!row.ticker || t.theme_id === undefined) return;
+                                  assignPrimaryThemeMutation.mutate({ ticker: row.ticker, themeId: t.theme_id, displayName: t.display_name });
+                                }}
+                                onClick={e => e.stopPropagation()}
+                                style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
+                              >
+                                {t.display_name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {rowThemeFeedback && (
+                          <span style={{ fontSize: 8.5, color: rowThemeFeedback.type === 'ok' ? C.green : C.red, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {rowThemeFeedback.msg}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={currentThemeName}>
+                        {currentThemeName || 'Unassigned / Needs Theme'}
+                      </span>
+                    );
+                    color = 'inherit';
                   } else if (col.fmt === 'str') {
                     content = v ? String(v) : '—';
                     color = v ? C.text : C.dim;
