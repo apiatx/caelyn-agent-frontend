@@ -1821,11 +1821,10 @@ export default function WatchlistPage() {
   const [reportHistoryModal, setReportHistoryModal] = useState<{
     open: boolean; history: any[]; loading: boolean; selectedReport: any | null; selectedLoading: boolean;
   }>({ open: false, history: [], loading: false, selectedReport: null, selectedLoading: false });
-  const [sortKey, setSortKey] = useState<null | 'ticker' | 'company' | 'theme' | 'price' | 'chg' | 'volume' | 'relVol' | 'volMc' | 'rvRankMove' | 'optionsScore' | 'optionsPutCall' | 'optionsIv' | 'optionsExpectedMove' | 'optionsVolume' | 'optionsOi' | 'stage2' | 'pctVs50d' | 'pctVs200d' | 'pos52w' | 'pctFrom52wHigh' | 'atrPct' | 'techTimingScore' | 'maStack' | 'extRisk' | 'entryZone' | 'bkSignal' | 'accumDist' | 'squeezeSig' | 'momentumTrend' | 'techState'>(null);
+  const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [fundSort, setFundSort] = useState<{ key: string | null; dir: 'asc' | 'desc' }>({ key: null, dir: 'desc' });
   const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental'>(() => {
     try { return (localStorage.getItem('wl_screener_mode') as 'technical' | 'fundamental') || 'technical'; }
     catch { return 'technical'; }
@@ -2867,7 +2866,7 @@ export default function WatchlistPage() {
   const hyperscalerViewCount = (newsData?.hyperscaler_articles ?? []).length;
 
   /* ── ticker table sorting ────────────────────────────────────────── */
-  function getSortValue(stock: any, key: NonNullable<typeof sortKey>): { v: any; missing: boolean } {
+  function getSortValue(stock: any, key: string): { v: any; missing: boolean } {
     switch (key) {
       case 'ticker': {
         const v = (stock.ticker || '').toString().toUpperCase();
@@ -3017,6 +3016,16 @@ export default function WatchlistPage() {
         const v = stock.stage2_breakout?.technical_state ?? null;
         const r = v != null ? (RANK[v] ?? 0) : 0;
         return { v: r, missing: r === 0 };
+      }
+      default: {
+        const col = FUND_COLS.find(c => c.key === key);
+        const v = fundGetField(stock, key, col?.aliases ?? []);
+        if (v === undefined || v === null) return { v: null, missing: true };
+        if (col?.fmt === 'symbol' || col?.fmt === 'str' || col?.fmt === 'date') {
+          return { v: String(v), missing: false };
+        }
+        const n = typeof v === 'number' ? v : parseFloat(v);
+        return { v: Number.isFinite(n) ? n : null, missing: !Number.isFinite(n) };
       }
     }
   }
@@ -3210,7 +3219,7 @@ export default function WatchlistPage() {
     return passing;
   }, [csvMergedScreenerRows, screenerFilters]);
 
-  function handleSortClick(key: NonNullable<typeof sortKey>) {
+  function handleSortClick(key: string) {
     if (sortKey === key) {
       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -4307,7 +4316,6 @@ export default function WatchlistPage() {
                   key={mode}
                   onClick={() => {
                     setScreenerMode(mode);
-                    setFundSort({ key: null, dir: 'desc' });
                     try { localStorage.setItem('wl_screener_mode', mode); } catch {}
                   }}
                   style={{
@@ -4913,30 +4921,20 @@ export default function WatchlistPage() {
       return merged;
     });
 
-    const fDir = fundSort.dir === 'asc' ? 1 : -1;
-    const fColDef = fundSort.key ? FUND_COLS.find(c => c.key === fundSort.key) : null;
-    const sortedFundRows = fColDef ? [...fundRows].sort((a, b) => {
-      const av = fundGetField(a, fColDef.key, fColDef.aliases);
-      const bv = fundGetField(b, fColDef.key, fColDef.aliases);
-      if (fColDef.fmt === 'symbol' || fColDef.fmt === 'str' || fColDef.fmt === 'date') {
-        return fDir * String(av ?? '').localeCompare(String(bv ?? ''));
-      }
-      const an = typeof av === 'number' ? av : parseFloat(av);
-      const bn = typeof bv === 'number' ? bv : parseFloat(bv);
-      const af = Number.isFinite(an) ? an : (fundSort.dir === 'asc' ? Infinity : -Infinity);
-      const bf = Number.isFinite(bn) ? bn : (fundSort.dir === 'asc' ? Infinity : -Infinity);
-      return fDir * (af - bf);
-    }) : fundRows;
+    const sortedFundRows = fundRows;
 
     const handleFundSortLocal = (key: string) => {
-      const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
-      setFundSort(prev => prev.key === key
-        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-        : { key, dir: (colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc' });
+      if (sortKey === key) {
+        setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortKey(key);
+        const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
+        setSortDir((colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc');
+      }
     };
 
-    const fThClr = (key: string) => fundSort.key === key ? C.teal : C.dim;
-    const fArr   = (key: string) => fundSort.key === key ? (fundSort.dir === 'asc' ? '▲' : '▼') : '';
+    const fThClr = (key: string) => sortKey === key ? C.teal : C.dim;
+    const fArr   = (key: string) => sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '';
 
     const TH: React.CSSProperties = {
       padding: '6px 14px', fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
@@ -4956,7 +4954,7 @@ export default function WatchlistPage() {
           <thead>
             <tr>
               {FUND_COLS.map((col, ci) => {
-                const isActive = fundSort.key === col.key;
+                const isActive = sortKey === col.key;
                 return (
                 <th
                   key={col.key}
@@ -4978,7 +4976,7 @@ export default function WatchlistPage() {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                     {col.label}
                     <span style={{ fontSize: 8, opacity: isActive ? 1 : 0.3 }}>
-                      {isActive ? (fundSort.dir === 'asc' ? '▲' : '▼') : '↕'}
+                      {isActive ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
                     </span>
                   </span>
                 </th>
@@ -7072,32 +7070,10 @@ export default function WatchlistPage() {
                   );
                 } /* end hciz */
 
-                const fDir = fundSort.dir === 'asc' ? 1 : -1;
-                const fColDef = FUND_COLS.find(c => c.key === fundSort.key);
                 return null;
-                const sortedFundRows = [...fundRows].sort((a, b) => {
-                  if (!fColDef) return 0;
-                  const av = fundGetField(a, fColDef.key, fColDef.aliases);
-                  const bv = fundGetField(b, fColDef.key, fColDef.aliases);
-                  if (fColDef.fmt === 'symbol' || fColDef.fmt === 'str' || fColDef.fmt === 'date') {
-                    return fDir * String(av ?? '').localeCompare(String(bv ?? ''));
-                  }
-                  const an = typeof av === 'number' ? av : parseFloat(av);
-                  const bn = typeof bv === 'number' ? bv : parseFloat(bv);
-                  const af = Number.isFinite(an) ? an : (fundSort.dir === 'asc' ? Infinity : -Infinity);
-                  const bf = Number.isFinite(bn) ? bn : (fundSort.dir === 'asc' ? Infinity : -Infinity);
-                  return fDir * (af - bf);
-                });
-
-                const handleFundSort = (key: string) => {
-                  const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
-                  setFundSort(prev => prev.key === key
-                    ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-                    : { key, dir: (colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc' });
-                };
-
-                const fThClr = (key: string) => fundSort.key === key ? C.teal : C.dim;
-                const fArr   = (key: string) => fundSort.key === key ? (fundSort.dir === 'asc' ? '▲' : '▼') : '';
+                const handleFundSort = (key: string) => { handleSortClick(key); };
+                const fThClr = (key: string) => sortKey === key ? C.teal : C.dim;
+                const fArr   = (key: string) => sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '';
 
                 const TH: React.CSSProperties = {
                   padding: '5px 10px', fontSize: 7, fontWeight: 700, letterSpacing: '0.07em',
