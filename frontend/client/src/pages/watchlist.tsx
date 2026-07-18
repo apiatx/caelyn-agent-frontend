@@ -1902,10 +1902,16 @@ export default function WatchlistPage() {
     retry: 2,
   });
 
-  /* ── auto-select first on load ───────────────────────────────────── */
+  /* ── auto-select Primary on load (fallback to first) ─────────────── */
   useEffect(() => {
     if (wlMetas?.length && !activeId) {
-      setActiveId(wlMetas[0].id);
+      const primary = wlMetas.find(m =>
+        (m as any).is_primary === true ||
+        (m as any).kind === 'primary' ||
+        (m as any).type === 'primary' ||
+        m.name.toLowerCase() === 'primary'
+      );
+      setActiveId((primary ?? wlMetas[0]).id);
     }
   }, [wlMetas, activeId]);
 
@@ -3288,13 +3294,26 @@ export default function WatchlistPage() {
   });
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
+  const isPrimaryMeta = (m: WatchlistMeta) =>
+    (m as any).is_primary === true ||
+    (m as any).kind === 'primary' ||
+    (m as any).type === 'primary' ||
+    m.name.toLowerCase() === 'primary';
+
+  const orderedWlMetas = (() => {
+    const all = wlMetas || [];
+    const primary = all.filter(isPrimaryMeta);
+    const others  = all.filter(m => !isPrimaryMeta(m));
+    return [...primary, ...others];
+  })();
+
   const renderTabBar = () => (
     <div style={{
       display: 'flex', alignItems: 'flex-end', gap: 2,
       padding: '8px 16px 0', background: C.bg,
       borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap',
     }}>
-      {(wlMetas || []).map((meta) => {
+      {orderedWlMetas.slice(0, 1).map((meta) => {
         const isActive = activeId === meta.id && innerView === 'tickers';
         return (
           <div
@@ -3374,7 +3393,7 @@ export default function WatchlistPage() {
         );
       })}
 
-      {/* Close Watch tab */}
+      {/* Favorites tab — second position */}
       <div
         key="close-watch"
         onClick={() => { setShowAddPanel(false); setInnerView(innerView === 'close-watch' ? 'tickers' : 'close-watch'); }}
@@ -3402,6 +3421,87 @@ export default function WatchlistPage() {
         <span>Favorites</span>
         <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>({favoritesSet.size})</span>
       </div>
+
+      {/* Remaining custom watchlists — after Favorites */}
+      {orderedWlMetas.slice(1).map((meta) => {
+        const isActive = activeId === meta.id && innerView === 'tickers';
+        return (
+          <div
+            key={meta.id}
+            onClick={() => { setActiveId(meta.id); setShowAddPanel(false); setInnerView('tickers'); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 10px 5px 12px',
+              borderRadius: '4px 4px 0 0',
+              background: isActive ? C.card : 'transparent',
+              border: `1px solid ${isActive ? C.border : 'transparent'}`,
+              borderBottom: isActive ? `1px solid ${C.card}` : '1px solid transparent',
+              cursor: 'pointer', marginBottom: -1,
+              fontFamily: C.font, fontSize: 11,
+              color: isActive ? C.text : '#475569',
+              transition: 'color 0.15s',
+            }}
+          >
+            {renamingId === meta.id ? (
+              <input
+                autoFocus
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && renameValue.trim()) {
+                    renameMut.mutate({ id: meta.id, name: renameValue.trim() });
+                  }
+                  if (e.key === 'Escape') setRenamingId(null);
+                }}
+                onBlur={() => {
+                  if (renameValue.trim() && renameValue.trim() !== meta.name) {
+                    renameMut.mutate({ id: meta.id, name: renameValue.trim() });
+                  } else {
+                    setRenamingId(null);
+                  }
+                }}
+                style={{
+                  width: 120, padding: '1px 4px', borderRadius: 2,
+                  background: C.bg, border: '1px solid rgba(255,255,255,0.35)',
+                  color: C.text, fontFamily: C.font, fontSize: 11,
+                  outline: 'none',
+                }}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setRenamingId(meta.id);
+                  setRenameValue(meta.name);
+                }}
+                style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                title="Double-click to rename"
+              >
+                {meta.name}
+              </span>
+            )}
+            <span style={{ fontSize: 9, color: '#475569', flexShrink: 0 }}>
+              ({meta.ticker_count})
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Delete "${meta.name}"?`)) deleteMut.mutate(meta.id);
+              }}
+              disabled={deleteMut.isPending}
+              style={{
+                background: 'transparent', border: 'none',
+                color: '#475569', cursor: 'pointer',
+                fontSize: 14, lineHeight: 1, padding: '0 1px',
+                display: 'flex', alignItems: 'center',
+                borderRadius: 2,
+              }}
+              title="Delete watchlist"
+            >{'\u00D7'}</button>
+          </div>
+        );
+      })}
 
       {/* + ADD TAB */}
       <button
