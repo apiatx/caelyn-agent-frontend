@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -5008,6 +5008,8 @@ export default function WatchlistPage() {
                     position: 'sticky' as const,
                     top: 0,
                     zIndex: ci === 0 ? 3 : 2,
+                    ...(col.key === 'company' ? { minWidth: 140 } : {}),
+                    ...(col.key === 'canonical_theme_name' ? { minWidth: 120 } : {}),
                     ...(ci === 0 ? {
                       left: 0,
                       background: C.card,
@@ -5041,9 +5043,11 @@ export default function WatchlistPage() {
                 (Array.from(el.querySelectorAll('td')) as HTMLTableCellElement[])
                   .forEach((td, i) => { td.style.background = i === 0 ? stickyBase : bg; });
               };
+              const fundSym = (row.ticker || '').toString().toUpperCase();
+              const fundExpanded = expandedTickers.has(fundSym);
               return (
+              <Fragment key={`${row.ticker}-${ri}`}>
               <tr
-                key={`${row.ticker}-${ri}`}
                 onClick={() => row.ticker && handleTickerClick(row.ticker)}
                 style={{ cursor: row.ticker ? 'pointer' : 'default', transition: 'background 0.1s' }}
                 onMouseEnter={e => setTdBgs(e.currentTarget, rowHover)}
@@ -5098,6 +5102,15 @@ export default function WatchlistPage() {
                           </button>
                         )}
                         <span style={{ fontWeight: 800, color: '#fff' }}>{sym}</span>
+                        {tk && (
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleExpandedTicker(tk); }}
+                            title={expandedTickers.has(tk) ? 'Collapse Caelyn Breakdown' : 'Expand Caelyn Breakdown'}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, color: expandedTickers.has(tk) ? C.teal : C.dim, opacity: expandedTickers.has(tk) ? 1 : 0.5, transition: 'all 0.12s' }}
+                          >
+                            {expandedTickers.has(tk) ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+                          </button>
+                        )}
                       </span>
                     );
                     color = 'inherit';
@@ -5165,6 +5178,9 @@ export default function WatchlistPage() {
                       </span>
                     );
                     color = 'inherit';
+                  } else if (col.fmt === 'str' && col.key === 'company') {
+                    content = v ? String(v) : '—';
+                    color = C.dim;
                   } else if (col.fmt === 'str') {
                     content = v ? String(v) : '—';
                     color = v ? C.text : C.dim;
@@ -5202,6 +5218,14 @@ export default function WatchlistPage() {
                   );
                 })}
               </tr>
+              {fundExpanded && fundSym && (
+                <tr>
+                  <td colSpan={FUND_COLS.length} style={{ padding: 0, background: C.bg }}>
+                    <CaelynRowBreakdown stock={row} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
               );
             })}
           </tbody>
