@@ -3396,7 +3396,16 @@ export default function WatchlistPage() {
       {/* Favorites tab — second position */}
       <div
         key="close-watch"
-        onClick={() => { setShowAddPanel(false); setInnerView(innerView === 'close-watch' ? 'tickers' : 'close-watch'); }}
+        onClick={() => {
+          setShowAddPanel(false);
+          if (innerView === 'close-watch') {
+            setInnerView('tickers');
+          } else {
+            const primaryId = orderedWlMetas[0]?.id;
+            if (primaryId) setActiveId(primaryId);
+            setInnerView('close-watch');
+          }
+        }}
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           padding: '5px 10px',
