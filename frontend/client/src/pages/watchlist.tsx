@@ -1825,7 +1825,7 @@ export default function WatchlistPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [fundSort, setFundSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'market_cap', dir: 'desc' });
+  const [fundSort, setFundSort] = useState<{ key: string | null; dir: 'asc' | 'desc' }>({ key: null, dir: 'desc' });
   const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental'>(() => {
     try { return (localStorage.getItem('wl_screener_mode') as 'technical' | 'fundamental') || 'technical'; }
     catch { return 'technical'; }
@@ -4307,6 +4307,7 @@ export default function WatchlistPage() {
                   key={mode}
                   onClick={() => {
                     setScreenerMode(mode);
+                    setFundSort({ key: null, dir: 'desc' });
                     try { localStorage.setItem('wl_screener_mode', mode); } catch {}
                   }}
                   style={{
@@ -4913,9 +4914,8 @@ export default function WatchlistPage() {
     });
 
     const fDir = fundSort.dir === 'asc' ? 1 : -1;
-    const fColDef = FUND_COLS.find(c => c.key === fundSort.key);
-    const sortedFundRows = [...fundRows].sort((a, b) => {
-      if (!fColDef) return 0;
+    const fColDef = fundSort.key ? FUND_COLS.find(c => c.key === fundSort.key) : null;
+    const sortedFundRows = fColDef ? [...fundRows].sort((a, b) => {
       const av = fundGetField(a, fColDef.key, fColDef.aliases);
       const bv = fundGetField(b, fColDef.key, fColDef.aliases);
       if (fColDef.fmt === 'symbol' || fColDef.fmt === 'str' || fColDef.fmt === 'date') {
@@ -4926,7 +4926,7 @@ export default function WatchlistPage() {
       const af = Number.isFinite(an) ? an : (fundSort.dir === 'asc' ? Infinity : -Infinity);
       const bf = Number.isFinite(bn) ? bn : (fundSort.dir === 'asc' ? Infinity : -Infinity);
       return fDir * (af - bf);
-    });
+    }) : fundRows;
 
     const handleFundSortLocal = (key: string) => {
       const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
