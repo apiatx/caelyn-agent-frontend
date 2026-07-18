@@ -5008,8 +5008,8 @@ export default function WatchlistPage() {
                     position: 'sticky' as const,
                     top: 0,
                     zIndex: ci === 0 ? 3 : 2,
-                    ...(col.key === 'company' ? { minWidth: 140, maxWidth: 160, overflow: 'hidden' as const } : {}),
-                    ...(col.key === 'canonical_theme_name' ? { minWidth: 120, maxWidth: 130, overflow: 'hidden' as const } : {}),
+                    ...(col.key === 'company' ? { width: 140, minWidth: 140, maxWidth: 140 } : {}),
+                    ...(col.key === 'canonical_theme_name' ? { width: 120, minWidth: 120, maxWidth: 130 } : {}),
                     ...(ci === 0 ? {
                       left: 0,
                       background: C.card,
@@ -5179,8 +5179,12 @@ export default function WatchlistPage() {
                     );
                     color = 'inherit';
                   } else if (col.fmt === 'str' && col.key === 'company') {
-                    content = v ? String(v) : '—';
-                    color = C.dim;
+                    content = (
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 140, fontSize: 10, color: C.dim }}>
+                        {v ? String(v) : '—'}
+                      </span>
+                    );
+                    color = 'inherit';
                   } else if (col.fmt === 'str') {
                     content = v ? String(v) : '—';
                     color = v ? C.text : C.dim;
