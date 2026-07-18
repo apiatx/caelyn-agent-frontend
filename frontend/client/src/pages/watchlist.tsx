@@ -2126,14 +2126,9 @@ export default function WatchlistPage() {
     staleTime: 5 * 60_000,
     retry: 1,
   });
-  const SUPPLEMENTAL_THEMES: Array<{ theme_id: string; display_name: string }> = [
-    { theme_id: 'semi_materials', display_name: 'Semi Materials' },
-  ];
   const themeUniverse: Array<{ theme_id: string; display_name: string }> = useMemo(() => {
     const list = (themeUniverseResp?.themes ?? []) as Array<{ theme_id: string; display_name: string }>;
-    const existingIds = new Set(list.map(t => t.theme_id));
-    const merged = [...list, ...SUPPLEMENTAL_THEMES.filter(t => !existingIds.has(t.theme_id))];
-    return merged.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
+    return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
   }, [themeUniverseResp]);
 
   const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);

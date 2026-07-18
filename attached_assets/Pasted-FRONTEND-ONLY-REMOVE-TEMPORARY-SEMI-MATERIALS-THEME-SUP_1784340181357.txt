@@ -1,0 +1,135 @@
+FRONTEND ONLY — REMOVE TEMPORARY SEMI MATERIALS THEME SUPPLEMENT
+
+Frontend repo only.
+
+Do not touch backend.
+Do not change theme API endpoints.
+Do not hardcode any new themes.
+Do not change watchlist theme assignment logic except removing the temporary supplement.
+
+Backend is confirmed fixed:
+
+GET /api/themes/list returns:
+theme_id: semicap_equipment
+display_name: Semi Equipment & Materials
+
+GET /api/themes/relative-strength returns:
+theme_id: semicap_equipment
+display_name: Semi Equipment & Materials
+
+No duplicate assignable entries exist for:
+- Semi Materials
+- Semiconductor Equipment
+- Semicap Equipment
+
+Goal:
+
+Remove the temporary frontend-only supplement that injected “Semi Materials” / semi_materials into the Watchlist theme dropdown.
+
+The Watchlist theme dropdown must use the backend theme universe only.
+
+==================================================
+PART 1 — FIND TEMPORARY SUPPLEMENT
+==================================================
+
+Find the frontend code that locally injects or supplements:
+
+- Semi Materials
+- semi_materials
+
+into the Watchlist theme dropdown/theme universe.
+
+Report the file/function before editing.
+
+==================================================
+PART 2 — REMOVE FRONTEND-ONLY THEME
+==================================================
+
+Remove the local hardcoded supplement.
+
+Do not replace it with another hardcoded theme.
+
+Do not add “Semi Equipment & Materials” manually.
+
+The dropdown should receive “Semi Equipment & Materials” from backend endpoints only.
+
+==================================================
+PART 3 — VALIDATION
+==================================================
+
+Validate in authenticated app:
+
+1. Open Watchlist page.
+2. Edit a ticker’s theme.
+3. Dropdown includes:
+   Semi Equipment & Materials
+
+4. Dropdown does NOT include separate:
+   Semi Materials
+   Semiconductor Equipment
+   Semicap Equipment
+
+5. No duplicate semicap/semi-materials options.
+
+6. Selecting Semi Equipment & Materials saves correctly.
+
+7. Reload page.
+
+8. Saved ticker still displays:
+   Semi Equipment & Materials
+
+Regression:
+
+- theme dropdown still opens
+- theme update still saves
+- no JSON/HTML proxy errors
+- watchlist rows unchanged
+- confluence/scoring unchanged
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+FRONTEND THEME DROPDOWN CLEANUP REPORT
+
+TEMPORARY SUPPLEMENT FOUND:
+[file/function]
+
+TEMPORARY SUPPLEMENT REMOVED:
+[summary]
+
+FILES CHANGED:
+[list]
+
+VALIDATION:
+[table]
+
+End exactly:
+
+FRONTEND THEME VERDICT
+
+FRONTEND_SUPPLEMENT_REMOVED:
+[YES/NO]
+
+DROPDOWN_USES_BACKEND_THEME_UNIVERSE:
+[YES/NO]
+
+SEMI_EQUIPMENT_AND_MATERIALS_VISIBLE:
+[YES/NO]
+
+NO_SEMI_MATERIALS_DUPLICATE:
+[YES/NO]
+
+NO_SEMICONDUCTOR_EQUIPMENT_DUPLICATE:
+[YES/NO]
+
+NO_SEMICAP_EQUIPMENT_DUPLICATE:
+[YES/NO]
+
+THEME_SAVE_WORKS:
+[YES/NO]
+
+NO_BACKEND_CHANGES:
+[YES/NO]
