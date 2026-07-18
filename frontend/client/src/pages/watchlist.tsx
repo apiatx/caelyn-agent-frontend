@@ -5008,8 +5008,8 @@ export default function WatchlistPage() {
                     position: 'sticky' as const,
                     top: 0,
                     zIndex: ci === 0 ? 3 : 2,
-                    ...(col.key === 'company' ? { minWidth: 140 } : {}),
-                    ...(col.key === 'canonical_theme_name' ? { minWidth: 120 } : {}),
+                    ...(col.key === 'company' ? { minWidth: 140, maxWidth: 160, overflow: 'hidden' as const } : {}),
+                    ...(col.key === 'canonical_theme_name' ? { minWidth: 120, maxWidth: 130, overflow: 'hidden' as const } : {}),
                     ...(ci === 0 ? {
                       left: 0,
                       background: C.card,
@@ -5211,6 +5211,8 @@ export default function WatchlistPage() {
                         ...TD, ...stickyStyle, color,
                         textAlign: (isFirst || col.fmt === 'str') ? 'left' as const : 'right' as const,
                         fontWeight: isFirst ? 700 : 400,
+                        ...(col.key === 'company' ? { maxWidth: 160, overflow: 'hidden' as const } : {}),
+                        ...(col.key === 'canonical_theme_name' ? { maxWidth: 130, overflow: 'hidden' as const } : {}),
                       }}
                     >
                       {content}
