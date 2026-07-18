@@ -3259,12 +3259,22 @@ export default function WatchlistPage() {
 
   const closeWatchTickers = useMemo(() => {
     if (favoritesSet.size === 0) return [];
-    // Build a lookup from current watchlist rows
-    const rowMap = new Map<string, any>(
-      sortedTickers.filter(s => s.ticker).map(s => [s.ticker!.toUpperCase(), s])
-    );
-    // Return one entry per global favourite — full row if available, stub if not
-    return [...favoritesSet].map(sym => rowMap.get(sym) ?? { ticker: sym, _pending: true });
+    // Walk sortedTickers (already sorted by current sortKey/sortDir) and keep only favourites.
+    // This preserves column-sort order instead of locking to insertion order.
+    const seen = new Set<string>();
+    const sorted: any[] = [];
+    for (const row of sortedTickers) {
+      const sym = row.ticker?.toUpperCase() ?? '';
+      if (sym && favoritesSet.has(sym)) {
+        sorted.push(row);
+        seen.add(sym);
+      }
+    }
+    // Append stubs for any favourites not present in the current watchlist data
+    for (const sym of favoritesSet) {
+      if (!seen.has(sym)) sorted.push({ ticker: sym, _pending: true });
+    }
+    return sorted;
   }, [sortedTickers, favoritesSet]);
 
   /* ── Canonical ticker symbol list for the currently-viewed tab ─────
