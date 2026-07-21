@@ -1,0 +1,399 @@
+You are working only inside the CaelynAI FRONTEND Replit.
+
+Complete this entire task in one pass.
+
+Do not inspect or modify the backend repository.
+Do not change API routes or data formulas.
+Do not redesign the Watchlist.
+Do not change the Fundamental or Technical modes.
+Do not create a new scoring engine.
+Do not publish automatically.
+
+Modify only the existing Quality screener implementation in:
+
+frontend/client/src/pages/watchlist.tsx
+
+Preserve all existing Quality tabs, columns, sorting, formatting, N/M handling and styling unless this prompt explicitly changes them.
+
+==================================================
+1. RENAME THE TWO UNCLEAR COLUMNS
+==================================================
+
+In both the Overview and Growth tabs, change:
+
+Rev Rev 90D
+→
+Rev Est Δ90D
+
+EPS Rev 90D
+→
+EPS Est Δ90D
+
+Do not rename the underlying data keys or aliases.
+
+Keep:
+
+revenue_estimate_revision_90d
+eps_estimate_revision_90d
+
+==================================================
+2. SHOW “BUILDING” INSTEAD OF BLANK
+==================================================
+
+These metrics require stored estimate history before a 90-day comparison can be calculated.
+
+For Revenue Estimate Revision:
+
+- If the value is missing and `_rev_revision_reason === "history_building"`,
+  display `Building` in muted gray.
+
+For EPS Estimate Revision:
+
+- If the value is missing and `_eps_revision_reason === "history_building"`,
+  display `Building` in muted gray.
+
+Do not treat Building as zero.
+Do not color Building green, amber or red.
+Building and N/M must sort after valid numeric values.
+
+==================================================
+3. EXPAND ALL QUALITY COLUMN TOOLTIPS
+==================================================
+
+Keep the current hover behavior, but replace short definitions with concise explanations covering:
+
+- what the metric calculates;
+- what generally looks strong, mixed or weak;
+- important interpretation caveats.
+
+Use the following tooltip guidance.
+
+OVERVIEW / FINANCIAL STRENGTH
+
+Net Cash/Debt:
+“Cash and short-term investments minus total debt. Positive means the company has net cash; negative means net debt. Positive is generally stronger, but compare debt with EBITDA and cash generation because absolute dollars depend on company size.”
+
+Runway / Runway Months:
+“For cash-burning companies, estimated months of cash remaining at the current TTM burn rate. Self-funding or 24+ months is generally strong; 12–24 months deserves monitoring; under 12 months can indicate financing or dilution risk.”
+
+Runway Status:
+“Summarizes cash-runway health. Self-Funding means free cash flow is nonnegative. Adequate generally means 24+ months, Caution means 12–24 months, and Critical means under 12 months.”
+
+Current Ratio:
+“Current assets divided by current liabilities. Around 1.5 or higher is generally strong, 1.0–1.5 is adequate but worth monitoring, and below 1.0 may indicate short-term liquidity pressure. Less meaningful for banks and insurers.”
+
+Interest Coverage:
+“TTM EBIT divided by absolute TTM interest expense. Above 5x is generally strong, 2–5x is moderate, and below 2x indicates limited debt-service capacity. Negative means operating losses do not cover interest.”
+
+Debt/Equity:
+“Total debt divided by shareholder equity. Below 0.5x is generally conservative, 0.5–1.5x is moderate, and above 1.5x indicates higher leverage. Negative equity makes this ratio especially concerning. Industry norms vary.”
+
+Net Debt/EBITDA:
+“Net debt divided by TTM EBITDA. Negative means net cash and is generally favorable. Below 1x is strong, 1–3x is moderate, and above 3x indicates elevated leverage. Not meaningful when EBITDA is nonpositive.”
+
+Altman Z:
+“Provider-supplied balance-sheet distress indicator. Above 2.99 is generally considered Safe, 1.81–2.99 is the Grey Zone, and below 1.81 indicates elevated distress risk. Not appropriate for many banks, insurers or REITs.”
+
+Altman Risk:
+“Classification derived from Altman Z: Safe, Grey Zone or Distress. Use as a financial-stress warning rather than a standalone investment decision.”
+
+Piotroski:
+“Nine-point financial-strength score based on profitability, leverage, liquidity and operating improvement. 7–9 is generally strong, 4–6 is mixed, and 0–3 is weak.”
+
+Cash:
+“Cash and short-term liquidity reported on the latest balance sheet. A larger number is not automatically better; compare it with debt, market capitalization and the company’s cash-burn rate.”
+
+BUSINESS QUALITY
+
+Gross Margin:
+“Gross profit as a percentage of revenue. Higher margins generally indicate pricing power or favorable unit economics. Above 50% is broadly strong, 25–50% is moderate, and below 25% is lower-margin, but sector comparisons matter significantly.”
+
+Operating Margin:
+“Operating income as a percentage of revenue after normal operating expenses. Above 20% is generally strong, 10–20% is healthy, and below 10% is weaker. Negative margins indicate operating losses.”
+
+FCF Margin:
+“Free cash flow as a percentage of revenue. Above 15% is generally strong, 5–15% is moderate, and below 5% is weak. Negative values indicate cash burn.”
+
+ROIC:
+“Return generated on invested capital. Above 15% is generally excellent, 8–15% is solid, and below 8% is weaker. Persistent ROIC above the cost of capital can indicate a durable business advantage.”
+
+FCF Yield:
+“TTM free cash flow divided by current market capitalization. Above 5% is generally attractive, 2–5% is moderate, and below 2% is expensive or weak. Negative means the company is burning cash.”
+
+FCF Conversion:
+“TTM free cash flow divided by materially positive TTM net income. Around 0.8x or higher is generally strong, 0.5–0.8x is mixed, and below 0.5x may indicate weak earnings-to-cash conversion. Values above 1x mean cash flow exceeds accounting income.”
+
+Shares Growth:
+“Change in average diluted shares versus the prior year. Negative means buybacks and is generally favorable. 0–3% dilution is moderate; above 3% indicates meaningful shareholder dilution.”
+
+SBC/Revenue:
+“Stock-based compensation as a percentage of revenue. Below 5% is generally low, 5–15% is material but common in growth companies, and above 15% indicates heavy dilution risk.”
+
+GROWTH QUALITY
+
+Revenue Growth:
+“Year-over-year revenue growth. Above 20% is generally strong, 5–20% is moderate, and below 5% is slow. Negative values indicate contraction.”
+
+Revenue Acceleration:
+“Latest quarterly YoY revenue growth minus the prior quarter’s YoY growth. Positive means growth is accelerating; near zero means stable; materially negative means growth is decelerating.”
+
+Gross Margin Change YoY:
+“Current TTM gross margin minus prior-year TTM gross margin, measured in percentage points. Above +1 point indicates meaningful expansion, between -1 and +1 is broadly stable, and below -1 indicates deterioration.”
+
+Incremental Operating Margin:
+“Change in TTM operating income divided by the positive change in TTM revenue. Above 20% generally shows strong operating leverage, 0–20% is modest, and below 0% means added revenue is not improving operating profit.”
+
+Forward Revenue Growth:
+“FY1 consensus revenue compared with the latest completed actual fiscal year. Above 20% is generally strong, 5–20% is moderate, and below 5% is slow or declining.”
+
+Rev Est Δ90D:
+“Percentage change in FY1 revenue consensus versus the stored observation nearest 90 days ago. Positive means analysts raised revenue expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.”
+
+EPS Growth:
+“Diluted EPS growth versus the exact same fiscal quarter one year earlier. Above 20% is generally strong, 0–20% is positive but moderate, and below 0% indicates declining earnings. Turnarounds through zero are shown as not meaningful rather than misleading percentages.”
+
+EPS Est Δ90D:
+“Percentage change in FY1 EPS consensus versus the stored observation nearest 90 days ago. Positive means analysts raised earnings expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.”
+
+VALUATION
+
+P/E:
+“Current market value divided by TTM net income. Lower can indicate a cheaper valuation, but growth and business quality matter. Below 20x is broadly inexpensive, 20–35x is moderate, and above 35x is expensive. N/M means earnings are nonpositive or unavailable.”
+
+Forward P/E:
+“Current price divided by FY1 consensus EPS. Below 20x is broadly inexpensive, 20–35x is moderate, and above 35x is expensive. High-growth companies may justify higher multiples. N/M means forward EPS is nonpositive or unavailable.”
+
+P/S:
+“Current market capitalization divided by TTM revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Margin quality and growth determine whether a high multiple is justified.”
+
+Forward P/S:
+“Current market capitalization divided by FY1 consensus revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Compare with forward growth and expected margins.”
+
+EV/EBITDA:
+“Enterprise value divided by positive TTM EBITDA. Below 15x is broadly lower-priced, 15–25x is premium, and above 25x is expensive. N/M means EBITDA or enterprise value is nonpositive.”
+
+Forward EV/Sales:
+“Enterprise value divided by FY1 consensus revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Best interpreted alongside growth and margins.”
+
+Forward EV/EBITDA:
+“Enterprise value divided by positive FY1 consensus EBITDA. Below 15x is broadly lower-priced, 15–25x is premium, and above 25x is expensive. N/M means expected EBITDA or enterprise value is nonpositive.”
+
+P/FCF:
+“Current market capitalization divided by positive TTM free cash flow. Below 20x is broadly attractive, 20–35x is moderate, and above 35x is expensive. N/M means free cash flow is nonpositive.”
+
+==================================================
+4. ADD QUALITY-ONLY CELL COLOR BANDS
+==================================================
+
+Add one centralized Quality-only helper that returns:
+
+- green for broadly strong/favorable;
+- existing amber/yellow/orange for mixed or watch;
+- red for weak/unfavorable;
+- muted gray for missing, N/M or Building;
+- normal text color for metrics with no meaningful universal threshold.
+
+Reuse the existing app color palette. Do not introduce a new visual style.
+
+Apply the color to the actual displayed number/text only.
+Do not add large backgrounds, heatmaps or new badges.
+Preserve existing status, Altman Risk and N/M badge styling.
+
+Use explicit metric keys. Do not color every percentage positive=green or every negative=red.
+
+Thresholds:
+
+net_cash_debt:
+- > 0 green
+- = 0 amber
+- < 0 red
+
+cash:
+- neutral; no universal absolute threshold
+
+cash_runway_months:
+- >= 24 green
+- >= 12 and < 24 amber
+- < 12 red
+
+current_ratio:
+- >= 1.5 green
+- >= 1.0 and < 1.5 amber
+- < 1.0 red
+
+interest_coverage:
+- >= 5 green
+- >= 2 and < 5 amber
+- < 2 red
+
+debt_to_equity:
+- negative red
+- >= 0 and <= 0.5 green
+- > 0.5 and <= 1.5 amber
+- > 1.5 red
+
+net_debt_ebitda:
+- <= 1 green, including negative net-cash values
+- > 1 and <= 3 amber
+- > 3 red
+
+altman_z_score:
+- >= 2.99 green
+- >= 1.81 and < 2.99 amber
+- < 1.81 red
+
+piotroski_score:
+- >= 7 green
+- 4–6 amber
+- <= 3 red
+
+gross_margin:
+- >= 50 green
+- >= 25 and < 50 amber
+- < 25 red
+
+operating_margin:
+- >= 20 green
+- >= 10 and < 20 amber
+- < 10 red
+
+fcf_margin:
+- >= 15 green
+- >= 5 and < 15 amber
+- < 5 red
+
+roic:
+- >= 15 green
+- >= 8 and < 15 amber
+- < 8 red
+
+fcf_yield:
+- >= 5 green
+- >= 2 and < 5 amber
+- < 2 red
+
+fcf_conversion:
+- >= 0.8 green
+- >= 0.5 and < 0.8 amber
+- < 0.5 red
+
+diluted_shares_growth_yoy:
+- <= 0 green
+- > 0 and <= 3 amber
+- > 3 red
+
+sbc_revenue:
+- <= 5 green
+- > 5 and <= 15 amber
+- > 15 red
+
+revenue_growth:
+- >= 20 green
+- >= 5 and < 20 amber
+- < 5 red
+
+revenue_acceleration:
+- >= 2 green
+- > -2 and < 2 amber
+- <= -2 red
+
+gross_margin_change_yoy:
+- >= 1 green
+- > -1 and < 1 amber
+- <= -1 red
+
+incremental_operating_margin:
+- >= 20 green
+- >= 0 and < 20 amber
+- < 0 red
+
+forward_revenue_growth:
+- >= 20 green
+- >= 5 and < 20 amber
+- < 5 red
+
+revenue_estimate_revision_90d:
+- > 1 green
+- >= -1 and <= 1 amber
+- < -1 red
+
+eps_growth:
+- >= 20 green
+- >= 0 and < 20 amber
+- < 0 red
+
+eps_estimate_revision_90d:
+- > 2 green
+- >= -2 and <= 2 amber
+- < -2 red
+
+pe_ratio and forward_pe:
+- > 0 and <= 20 green
+- > 20 and <= 35 amber
+- > 35 red
+
+ps_ratio, forward_ps and forward_ev_sales:
+- > 0 and <= 4 green
+- > 4 and <= 10 amber
+- > 10 red
+
+ev_ebitda and forward_ev_ebitda:
+- > 0 and <= 15 green
+- > 15 and <= 25 amber
+- > 25 red
+
+p_fcf:
+- > 0 and <= 20 green
+- > 20 and <= 35 amber
+- > 35 red
+
+==================================================
+5. IMPORTANT BEHAVIOR RULES
+==================================================
+
+- Apply these colors only inside Quality mode.
+- Fundamental mode formatting and colors must remain unchanged.
+- Technical mode must remain unchanged.
+- N/M remains gray.
+- Building remains gray.
+- Runway Status keeps its existing status colors.
+- Altman Risk keeps its existing Safe/Grey/Distress colors.
+- Negative Net Debt/EBITDA remains valid and green when it represents net cash.
+- Negative Interest Coverage remains visible and red.
+- Negative FCF Yield remains visible and red.
+- Do not convert valid negative ratios to missing.
+- Do not alter sorting values.
+- Do not alter backend data.
+- Tooltips must explain that valuation and margin thresholds are broad heuristics and that industry/growth context matters.
+
+==================================================
+6. VERIFY AND REPORT
+==================================================
+
+Run the existing frontend checks and inspect every Quality sub-tab.
+
+Verify:
+
+- Rev Est Δ90D appears in Overview and Growth.
+- EPS Est Δ90D appears in Overview and Growth.
+- History-building revision fields display Building rather than blank.
+- Strong values render green.
+- Mixed values render amber/yellow/orange.
+- Weak values render red.
+- N/M values remain gray.
+- Negative Net Debt/EBITDA stays visible and favorable.
+- Negative Interest Coverage stays visible and unfavorable.
+- Fundamental mode is unchanged.
+- Technical mode is unchanged.
+- No console or TypeScript errors were introduced.
+
+Return a concise report with:
+
+- exact file changed;
+- renamed labels;
+- tooltip changes;
+- centralized color helper added;
+- representative green/amber/red examples;
+- confirmation that Fundamental and Technical modes were untouched.
+
+Do not publish automatically.

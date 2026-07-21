@@ -991,70 +991,70 @@ const Q_BASE: FundColDef[] = [
 
 const QUALITY_OVERVIEW_COLS: FundColDef[] = [
   ...Q_BASE,
-  { key: 'net_cash_debt',                 label: 'Net Cash/Debt',  aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                                      fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt' },
-  { key: 'cash_runway_status',            label: 'Runway',         aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                                  fmt: 'status',  tooltip: 'Cash divided by annualized cash burn when FCF is negative' },
-  { key: 'current_ratio',                 label: 'Curr Ratio',     aliases: ['Current Ratio','currentRatio'],                                                                          fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities' },
-  { key: 'roic',                          label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                                 fmt: 'pct',     tooltip: 'Return generated on invested capital' },
-  { key: 'fcf_conversion',                label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],                     fmt: 'ratio',   tooltip: 'TTM free cash flow divided by materially positive TTM net income' },
-  { key: 'diluted_shares_growth_yoy',     label: 'Shrs Grwth',     aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                           fmt: 'pct_rev', tooltip: 'Current four-quarter avg diluted shares vs prior four-quarter avg (negative=buybacks=green)' },
-  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                           fmt: 'pct',     tooltip: 'Latest quarterly YoY growth minus prior quarterly YoY growth' },
-  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                   fmt: 'pct',     tooltip: 'FY1 consensus revenue versus latest completed actual fiscal-year revenue' },
-  { key: 'revenue_estimate_revision_90d', label: 'Rev Rev 90D',    aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'], fmt: 'pct',     tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
-  { key: 'eps_estimate_revision_90d',     label: 'EPS Rev 90D',    aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],          fmt: 'pct',     tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
-  { key: 'forward_pe',                    label: 'Fwd P/E',        aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],                         fmt: 'ratio',   tooltip: 'Current price divided by FY1 annual consensus EPS when available' },
-  { key: 'forward_ps',                    label: 'Fwd P/S',        aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                            fmt: 'ratio',   tooltip: 'Current market cap divided by FY1 consensus revenue' },
+  { key: 'net_cash_debt',                 label: 'Net Cash/Debt',  aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                                      fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt. Positive means the company has net cash; negative means net debt. Positive is generally stronger, but compare debt with EBITDA and cash generation because absolute dollars depend on company size.' },
+  { key: 'cash_runway_status',            label: 'Runway',         aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                                  fmt: 'status',  tooltip: 'Summarizes cash-runway health. Self-Funding means free cash flow is nonnegative. Adequate generally means 24+ months, Caution means 12–24 months, and Critical means under 12 months.' },
+  { key: 'current_ratio',                 label: 'Curr Ratio',     aliases: ['Current Ratio','currentRatio'],                                                                          fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities. Around 1.5 or higher is generally strong, 1.0–1.5 is adequate but worth monitoring, and below 1.0 may indicate short-term liquidity pressure. Less meaningful for banks and insurers.' },
+  { key: 'roic',                          label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                                 fmt: 'pct',     tooltip: 'Return generated on invested capital. Above 15% is generally excellent, 8–15% is solid, and below 8% is weaker. Persistent ROIC above the cost of capital can indicate a durable business advantage.' },
+  { key: 'fcf_conversion',                label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],                     fmt: 'ratio',   tooltip: 'TTM free cash flow divided by materially positive TTM net income. Around 0.8x or higher is generally strong, 0.5–0.8x is mixed, and below 0.5x may indicate weak earnings-to-cash conversion. Values above 1x mean cash flow exceeds accounting income.' },
+  { key: 'diluted_shares_growth_yoy',     label: 'Shrs Grwth',     aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                           fmt: 'pct_rev', tooltip: 'Change in average diluted shares versus the prior year. Negative means buybacks and is generally favorable. 0–3% dilution is moderate; above 3% indicates meaningful shareholder dilution.' },
+  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                           fmt: 'pct',     tooltip: "Latest quarterly YoY revenue growth minus the prior quarter's YoY growth. Positive means growth is accelerating; near zero means stable; materially negative means growth is decelerating." },
+  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                   fmt: 'pct',     tooltip: 'FY1 consensus revenue compared with the latest completed actual fiscal year. Above 20% is generally strong, 5–20% is moderate, and below 5% is slow or declining.' },
+  { key: 'revenue_estimate_revision_90d', label: 'Rev Est Δ90D',   aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'], fmt: 'pct',     tooltip: 'Percentage change in FY1 revenue consensus versus the stored observation nearest 90 days ago. Positive means analysts raised revenue expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.' },
+  { key: 'eps_estimate_revision_90d',     label: 'EPS Est Δ90D',   aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],          fmt: 'pct',     tooltip: 'Percentage change in FY1 EPS consensus versus the stored observation nearest 90 days ago. Positive means analysts raised earnings expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.' },
+  { key: 'forward_pe',                    label: 'Fwd P/E',        aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],                         fmt: 'ratio',   tooltip: 'Current price divided by FY1 consensus EPS. Below 20x is broadly inexpensive, 20–35x is moderate, and above 35x is expensive. High-growth companies may justify higher multiples. N/M means forward EPS is nonpositive or unavailable.' },
+  { key: 'forward_ps',                    label: 'Fwd P/S',        aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                            fmt: 'ratio',   tooltip: 'Current market capitalization divided by FY1 consensus revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Compare with forward growth and expected margins.' },
 ];
 
 const QUALITY_FINANCIAL_STRENGTH_COLS: FundColDef[] = [
   ...Q_BASE,
-  { key: 'cash',               label: 'Cash',          aliases: ['Cash','cashAndEquivalents','cash_and_equivalents','cash_and_cash_equivalents'],                  fmt: 'compact' },
-  { key: 'net_cash_debt',      label: 'Net Cash/Debt', aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                              fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt' },
-  { key: 'cash_runway_months', label: 'Runway Months', aliases: ['Cash Runway Months','cashRunwayMonths','runway_months'],                                         fmt: 'months',  tooltip: 'Cash divided by annualized cash burn when FCF is negative' },
-  { key: 'cash_runway_status', label: 'Runway Status', aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                         fmt: 'status',  tooltip: 'Cash runway adequacy category' },
-  { key: 'current_ratio',      label: 'Curr Ratio',    aliases: ['Current Ratio','currentRatio'],                                                                  fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities' },
-  { key: 'interest_coverage',  label: 'Int Coverage',  aliases: ['Interest Coverage','interestCoverage','interest_coverage_ratio'],                               fmt: 'ratio',   tooltip: 'EBIT divided by interest expense' },
-  { key: 'debt_to_equity',     label: 'D/E',           aliases: ['debtToEquity','debt_equity','debtEquityRatio','de_ratio'],                                       fmt: 'ratio'   },
-  { key: 'net_debt_ebitda',    label: 'ND/EBITDA',     aliases: ['netDebtToEbitda','net_debt_to_ebitda','netDebtEbitda'],                                          fmt: 'ratio'   },
-  { key: 'altman_z_score',     label: 'Altman Z',      aliases: ['Altman Z-Score','altmanZScore','altman_z','altman_z_score_value'],                               fmt: 'ratio',   tooltip: 'Balance-sheet distress indicator; not meaningful for certain financial structures' },
-  { key: 'altman_z_risk',      label: 'Altman Risk',   aliases: ['Altman Z-Risk','altmanZRisk','altman_risk','altman_z_classification'],                          fmt: 'risk',    tooltip: 'Altman Z-Score risk category: Safe / Grey / Distress' },
-  { key: 'piotroski_score',    label: 'Piotroski',     aliases: ['Piotroski Score','piotroskiScore','piotroski_f_score','piotroski'],                              fmt: 'score',   tooltip: 'Nine-point financial-strength score (0–9)' },
+  { key: 'cash',               label: 'Cash',          aliases: ['Cash','cashAndEquivalents','cash_and_equivalents','cash_and_cash_equivalents'],                  fmt: 'compact', tooltip: "Cash and short-term liquidity reported on the latest balance sheet. A larger number is not automatically better; compare it with debt, market capitalization and the company's cash-burn rate." },
+  { key: 'net_cash_debt',      label: 'Net Cash/Debt', aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                              fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt. Positive means the company has net cash; negative means net debt. Positive is generally stronger, but compare debt with EBITDA and cash generation because absolute dollars depend on company size.' },
+  { key: 'cash_runway_months', label: 'Runway Months', aliases: ['Cash Runway Months','cashRunwayMonths','runway_months'],                                         fmt: 'months',  tooltip: 'For cash-burning companies, estimated months of cash remaining at the current TTM burn rate. Self-funding or 24+ months is generally strong; 12–24 months deserves monitoring; under 12 months can indicate financing or dilution risk.' },
+  { key: 'cash_runway_status', label: 'Runway Status', aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                         fmt: 'status',  tooltip: 'Summarizes cash-runway health. Self-Funding means free cash flow is nonnegative. Adequate generally means 24+ months, Caution means 12–24 months, and Critical means under 12 months.' },
+  { key: 'current_ratio',      label: 'Curr Ratio',    aliases: ['Current Ratio','currentRatio'],                                                                  fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities. Around 1.5 or higher is generally strong, 1.0–1.5 is adequate but worth monitoring, and below 1.0 may indicate short-term liquidity pressure. Less meaningful for banks and insurers.' },
+  { key: 'interest_coverage',  label: 'Int Coverage',  aliases: ['Interest Coverage','interestCoverage','interest_coverage_ratio'],                               fmt: 'ratio',   tooltip: 'TTM EBIT divided by absolute TTM interest expense. Above 5x is generally strong, 2–5x is moderate, and below 2x indicates limited debt-service capacity. Negative means operating losses do not cover interest.' },
+  { key: 'debt_to_equity',     label: 'D/E',           aliases: ['debtToEquity','debt_equity','debtEquityRatio','de_ratio'],                                       fmt: 'ratio',   tooltip: 'Total debt divided by shareholder equity. Below 0.5x is generally conservative, 0.5–1.5x is moderate, and above 1.5x indicates higher leverage. Negative equity makes this ratio especially concerning. Industry norms vary.' },
+  { key: 'net_debt_ebitda',    label: 'ND/EBITDA',     aliases: ['netDebtToEbitda','net_debt_to_ebitda','netDebtEbitda'],                                          fmt: 'ratio',   tooltip: 'Net debt divided by TTM EBITDA. Negative means net cash and is generally favorable. Below 1x is strong, 1–3x is moderate, and above 3x indicates elevated leverage. Not meaningful when EBITDA is nonpositive.' },
+  { key: 'altman_z_score',     label: 'Altman Z',      aliases: ['Altman Z-Score','altmanZScore','altman_z','altman_z_score_value'],                               fmt: 'ratio',   tooltip: 'Provider-supplied balance-sheet distress indicator. Above 2.99 is generally considered Safe, 1.81–2.99 is the Grey Zone, and below 1.81 indicates elevated distress risk. Not appropriate for many banks, insurers or REITs.' },
+  { key: 'altman_z_risk',      label: 'Altman Risk',   aliases: ['Altman Z-Risk','altmanZRisk','altman_risk','altman_z_classification'],                          fmt: 'risk',    tooltip: 'Classification derived from Altman Z: Safe, Grey Zone or Distress. Use as a financial-stress warning rather than a standalone investment decision.' },
+  { key: 'piotroski_score',    label: 'Piotroski',     aliases: ['Piotroski Score','piotroskiScore','piotroski_f_score','piotroski'],                              fmt: 'score',   tooltip: 'Nine-point financial-strength score based on profitability, leverage, liquidity and operating improvement. 7–9 is generally strong, 4–6 is mixed, and 0–3 is weak.' },
 ];
 
 const QUALITY_BUSINESS_QUALITY_COLS: FundColDef[] = [
   ...Q_BASE,
-  { key: 'gross_margin',             label: 'Gross Mgn',      aliases: ['grossMargin','gross_profit_margin'],                                                          fmt: 'pct'     },
-  { key: 'operating_margin',         label: 'Op Margin',      aliases: ['Operating Margin','operatingMargin','operating_profit_margin','op_margin'],                   fmt: 'pct'     },
-  { key: 'fcf_margin',               label: 'FCF Mgn',        aliases: ['freeCashFlowMargin','fcfMargin','fcf_margin_pct'],                                            fmt: 'pct'     },
-  { key: 'roic',                     label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                      fmt: 'pct',    tooltip: 'Return generated on invested capital' },
-  { key: 'fcf_yield',                label: 'FCF Yield',      aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct'     },
-  { key: 'fcf_conversion',           label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],          fmt: 'ratio',  tooltip: 'TTM free cash flow divided by materially positive TTM net income' },
-  { key: 'diluted_shares_growth_yoy',label: 'Shrs Grwth YoY',aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                  fmt: 'pct_rev',tooltip: 'Current four-quarter avg diluted shares vs prior four-quarter avg (negative=buybacks=green)' },
-  { key: 'sbc_revenue',              label: 'SBC/Rev',        aliases: ['SBC / Revenue','sbcRevenue','sbc_to_revenue','sbc_pct_revenue','sbc_as_pct_revenue'],         fmt: 'pct',    tooltip: 'Stock-based compensation as a percentage of revenue' },
+  { key: 'gross_margin',             label: 'Gross Mgn',      aliases: ['grossMargin','gross_profit_margin'],                                                          fmt: 'pct',    tooltip: 'Gross profit as a percentage of revenue. Higher margins generally indicate pricing power or favorable unit economics. Above 50% is broadly strong, 25–50% is moderate, and below 25% is lower-margin, but sector comparisons matter significantly.' },
+  { key: 'operating_margin',         label: 'Op Margin',      aliases: ['Operating Margin','operatingMargin','operating_profit_margin','op_margin'],                   fmt: 'pct',    tooltip: 'Operating income as a percentage of revenue after normal operating expenses. Above 20% is generally strong, 10–20% is healthy, and below 10% is weaker. Negative margins indicate operating losses.' },
+  { key: 'fcf_margin',               label: 'FCF Mgn',        aliases: ['freeCashFlowMargin','fcfMargin','fcf_margin_pct'],                                            fmt: 'pct',    tooltip: 'Free cash flow as a percentage of revenue. Above 15% is generally strong, 5–15% is moderate, and below 5% is weak. Negative values indicate cash burn.' },
+  { key: 'roic',                     label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                      fmt: 'pct',    tooltip: 'Return generated on invested capital. Above 15% is generally excellent, 8–15% is solid, and below 8% is weaker. Persistent ROIC above the cost of capital can indicate a durable business advantage.' },
+  { key: 'fcf_yield',                label: 'FCF Yield',      aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct',    tooltip: 'TTM free cash flow divided by current market capitalization. Above 5% is generally attractive, 2–5% is moderate, and below 2% is expensive or weak. Negative means the company is burning cash.' },
+  { key: 'fcf_conversion',           label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],          fmt: 'ratio',  tooltip: 'TTM free cash flow divided by materially positive TTM net income. Around 0.8x or higher is generally strong, 0.5–0.8x is mixed, and below 0.5x may indicate weak earnings-to-cash conversion. Values above 1x mean cash flow exceeds accounting income.' },
+  { key: 'diluted_shares_growth_yoy',label: 'Shrs Grwth YoY',aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                  fmt: 'pct_rev',tooltip: 'Change in average diluted shares versus the prior year. Negative means buybacks and is generally favorable. 0–3% dilution is moderate; above 3% indicates meaningful shareholder dilution.' },
+  { key: 'sbc_revenue',              label: 'SBC/Rev',        aliases: ['SBC / Revenue','sbcRevenue','sbc_to_revenue','sbc_pct_revenue','sbc_as_pct_revenue'],         fmt: 'pct',    tooltip: 'Stock-based compensation as a percentage of revenue. Below 5% is generally low, 5–15% is material but common in growth companies, and above 15% indicates heavy dilution risk.' },
 ];
 
 const QUALITY_GROWTH_QUALITY_COLS: FundColDef[] = [
   ...Q_BASE,
-  { key: 'revenue_growth',                label: 'Rev Grwth (Y)',  aliases: ['revenue_growth_yoy','revenueGrowth','revenueGrowthYoy'],                                                            fmt: 'pct'   },
-  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                                      fmt: 'pct',  tooltip: 'Latest quarterly YoY growth minus prior quarterly YoY growth' },
-  { key: 'gross_margin_change_yoy',       label: 'GM Δ YoY',       aliases: ['Gross Margin Change YoY','grossMarginChangeYoy','gross_margin_change','gross_margin_change_yoy'],                  fmt: 'pct',  tooltip: 'Current TTM gross margin minus prior-year TTM gross margin' },
-  { key: 'incremental_operating_margin',  label: 'Incr Op Mgn',    aliases: ['Incremental Operating Margin','incrementalOperatingMargin','incremental_op_margin'],                               fmt: 'pct',  tooltip: 'Change in TTM operating income divided by positive change in TTM revenue' },
-  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                              fmt: 'pct',  tooltip: 'FY1 consensus revenue versus latest completed actual fiscal-year revenue' },
-  { key: 'revenue_estimate_revision_90d', label: 'Rev Rev 90D',    aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'],            fmt: 'pct',  tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
-  { key: 'eps_growth',                    label: 'EPS Grwth',      aliases: ['epsGrowth','eps_growth_yoy','epsGrowthYoy'],                                                                       fmt: 'pct'   },
-  { key: 'eps_estimate_revision_90d',     label: 'EPS Rev 90D',    aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],                    fmt: 'pct',  tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
+  { key: 'revenue_growth',                label: 'Rev Grwth (Y)',  aliases: ['revenue_growth_yoy','revenueGrowth','revenueGrowthYoy'],                                                            fmt: 'pct',  tooltip: 'Year-over-year revenue growth. Above 20% is generally strong, 5–20% is moderate, and below 5% is slow. Negative values indicate contraction.' },
+  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                                      fmt: 'pct',  tooltip: "Latest quarterly YoY revenue growth minus the prior quarter's YoY growth. Positive means growth is accelerating; near zero means stable; materially negative means growth is decelerating." },
+  { key: 'gross_margin_change_yoy',       label: 'GM Δ YoY',       aliases: ['Gross Margin Change YoY','grossMarginChangeYoy','gross_margin_change','gross_margin_change_yoy'],                  fmt: 'pct',  tooltip: 'Current TTM gross margin minus prior-year TTM gross margin, measured in percentage points. Above +1 point indicates meaningful expansion, between -1 and +1 is broadly stable, and below -1 indicates deterioration.' },
+  { key: 'incremental_operating_margin',  label: 'Incr Op Mgn',    aliases: ['Incremental Operating Margin','incrementalOperatingMargin','incremental_op_margin'],                               fmt: 'pct',  tooltip: 'Change in TTM operating income divided by the positive change in TTM revenue. Above 20% generally shows strong operating leverage, 0–20% is modest, and below 0% means added revenue is not improving operating profit.' },
+  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                              fmt: 'pct',  tooltip: 'FY1 consensus revenue compared with the latest completed actual fiscal year. Above 20% is generally strong, 5–20% is moderate, and below 5% is slow or declining.' },
+  { key: 'revenue_estimate_revision_90d', label: 'Rev Est Δ90D',   aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'],            fmt: 'pct',  tooltip: 'Percentage change in FY1 revenue consensus versus the stored observation nearest 90 days ago. Positive means analysts raised revenue expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.' },
+  { key: 'eps_growth',                    label: 'EPS Grwth',      aliases: ['epsGrowth','eps_growth_yoy','epsGrowthYoy'],                                                                       fmt: 'pct',  tooltip: 'Diluted EPS growth versus the exact same fiscal quarter one year earlier. Above 20% is generally strong, 0–20% is positive but moderate, and below 0% indicates declining earnings. Turnarounds through zero are shown as not meaningful rather than misleading percentages.' },
+  { key: 'eps_estimate_revision_90d',     label: 'EPS Est Δ90D',   aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],                    fmt: 'pct',  tooltip: 'Percentage change in FY1 EPS consensus versus the stored observation nearest 90 days ago. Positive means analysts raised earnings expectations; negative means expectations were cut. Building means 90-day history has not accumulated yet.' },
 ];
 
 const QUALITY_VALUATION_COLS: FundColDef[] = [
   ...Q_BASE,
-  { key: 'pe_ratio',          label: 'P/E',           aliases: ['pe','priceEarnings','priceToEarningsRatio','pe_ttm'],                                          fmt: 'ratio'  },
-  { key: 'forward_pe',        label: 'Fwd P/E',       aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],               fmt: 'ratio',  tooltip: 'Current price divided by FY1 annual consensus EPS when available' },
-  { key: 'ps_ratio',          label: 'P/S',           aliases: ['priceToSales','ps','price_to_sales','ps_ttm'],                                                fmt: 'ratio'  },
-  { key: 'forward_ps',        label: 'Fwd P/S',       aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                  fmt: 'ratio',  tooltip: 'Current market cap divided by FY1 consensus revenue' },
-  { key: 'ev_ebitda',         label: 'EV/EBITDA',     aliases: ['evToEbitda','ev_to_ebitda','enterpriseValueEbitda'],                                          fmt: 'ratio'  },
-  { key: 'forward_ev_sales',  label: 'Fwd EV/S',      aliases: ['Forward EV/Sales','forwardEvSales','forward_ev_to_sales','fwd_ev_sales'],                     fmt: 'ratio',  tooltip: 'Enterprise value divided by FY1 consensus revenue' },
-  { key: 'forward_ev_ebitda', label: 'Fwd EV/EBITDA', aliases: ['Forward EV/EBITDA','forwardEvEbitda','forward_ev_to_ebitda','fwd_ev_ebitda'],                fmt: 'ratio',  tooltip: 'Enterprise value divided by positive FY1 consensus EBITDA' },
-  { key: 'p_fcf',             label: 'P/FCF',         aliases: ['P/FCF','pFcf','price_to_fcf','price_to_free_cash_flow'],                                     fmt: 'ratio',  tooltip: 'Market capitalization divided by positive TTM free cash flow' },
-  { key: 'fcf_yield',         label: 'FCF Yield',     aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct'    },
+  { key: 'pe_ratio',          label: 'P/E',           aliases: ['pe','priceEarnings','priceToEarningsRatio','pe_ttm'],                                          fmt: 'ratio',  tooltip: 'Current market value divided by TTM net income. Lower can indicate a cheaper valuation, but growth and business quality matter. Below 20x is broadly inexpensive, 20–35x is moderate, and above 35x is expensive. N/M means earnings are nonpositive or unavailable.' },
+  { key: 'forward_pe',        label: 'Fwd P/E',       aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],               fmt: 'ratio',  tooltip: 'Current price divided by FY1 consensus EPS. Below 20x is broadly inexpensive, 20–35x is moderate, and above 35x is expensive. High-growth companies may justify higher multiples. N/M means forward EPS is nonpositive or unavailable.' },
+  { key: 'ps_ratio',          label: 'P/S',           aliases: ['priceToSales','ps','price_to_sales','ps_ttm'],                                                fmt: 'ratio',  tooltip: 'Current market capitalization divided by TTM revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Margin quality and growth determine whether a high multiple is justified.' },
+  { key: 'forward_ps',        label: 'Fwd P/S',       aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                  fmt: 'ratio',  tooltip: 'Current market capitalization divided by FY1 consensus revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Compare with forward growth and expected margins.' },
+  { key: 'ev_ebitda',         label: 'EV/EBITDA',     aliases: ['evToEbitda','ev_to_ebitda','enterpriseValueEbitda'],                                          fmt: 'ratio',  tooltip: 'Enterprise value divided by positive TTM EBITDA. Below 15x is broadly lower-priced, 15–25x is premium, and above 25x is expensive. N/M means EBITDA or enterprise value is nonpositive.' },
+  { key: 'forward_ev_sales',  label: 'Fwd EV/S',      aliases: ['Forward EV/Sales','forwardEvSales','forward_ev_to_sales','fwd_ev_sales'],                     fmt: 'ratio',  tooltip: 'Enterprise value divided by FY1 consensus revenue. Below 4x is broadly lower-priced, 4–10x is premium, and above 10x is expensive. Best interpreted alongside growth and margins.' },
+  { key: 'forward_ev_ebitda', label: 'Fwd EV/EBITDA', aliases: ['Forward EV/EBITDA','forwardEvEbitda','forward_ev_to_ebitda','fwd_ev_ebitda'],                fmt: 'ratio',  tooltip: 'Enterprise value divided by positive FY1 consensus EBITDA. Below 15x is broadly lower-priced, 15–25x is premium, and above 25x is expensive. N/M means expected EBITDA or enterprise value is nonpositive.' },
+  { key: 'p_fcf',             label: 'P/FCF',         aliases: ['P/FCF','pFcf','price_to_fcf','price_to_free_cash_flow'],                                     fmt: 'ratio',  tooltip: 'Current market capitalization divided by positive TTM free cash flow. Below 20x is broadly attractive, 20–35x is moderate, and above 35x is expensive. N/M means free cash flow is nonpositive.' },
+  { key: 'fcf_yield',         label: 'FCF Yield',     aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct',    tooltip: 'TTM free cash flow divided by current market capitalization. Above 5% is generally attractive, 2–5% is moderate, and below 2% is expensive or weak. Negative means the company is burning cash.' },
 ];
 
 /* Helper: look up a column def across all Quality + Fundamental column sets */
@@ -1238,6 +1238,49 @@ function qualFmtMonths(v: any): { text: string; clr: string } {
   const n = typeof v === 'number' ? v : parseFloat(v);
   if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
   return { text: `${n.toFixed(1)} mo`, clr: n >= 24 ? '#22c55e' : n >= 12 ? '#f59e0b' : '#ef4444' };
+}
+
+/** Centralized Quality-only threshold band colors.
+ *  Returns a color string for metrics with defined thresholds, or '' for neutral/no-threshold metrics.
+ *  Apply only in Quality mode over plain-text cell content (not badge/status cells). */
+function qualBandColor(key: string, n: number): string {
+  if (!Number.isFinite(n)) return '';
+  const G = '#22c55e', A = '#f59e0b', R = '#ef4444';
+  switch (key) {
+    case 'net_cash_debt':             return n > 0 ? G : n < 0 ? R : A;
+    case 'cash_runway_months':        return n >= 24 ? G : n >= 12 ? A : R;
+    case 'current_ratio':             return n >= 1.5 ? G : n >= 1.0 ? A : R;
+    case 'interest_coverage':         return n >= 5 ? G : n >= 2 ? A : R;
+    case 'debt_to_equity':            return n < 0 ? R : n <= 0.5 ? G : n <= 1.5 ? A : R;
+    case 'net_debt_ebitda':           return n <= 1 ? G : n <= 3 ? A : R;
+    case 'altman_z_score':            return n >= 2.99 ? G : n >= 1.81 ? A : R;
+    case 'piotroski_score':           return n >= 7 ? G : n >= 4 ? A : R;
+    case 'gross_margin':              return n >= 50 ? G : n >= 25 ? A : R;
+    case 'operating_margin':          return n >= 20 ? G : n >= 10 ? A : R;
+    case 'fcf_margin':                return n >= 15 ? G : n >= 5 ? A : R;
+    case 'roic':                      return n >= 15 ? G : n >= 8 ? A : R;
+    case 'fcf_yield':                 return n >= 5 ? G : n >= 2 ? A : R;
+    case 'fcf_conversion':            return n >= 0.8 ? G : n >= 0.5 ? A : R;
+    case 'diluted_shares_growth_yoy': return n <= 0 ? G : n <= 3 ? A : R;
+    case 'sbc_revenue':               return n <= 5 ? G : n <= 15 ? A : R;
+    case 'revenue_growth':            return n >= 20 ? G : n >= 5 ? A : R;
+    case 'revenue_acceleration':      return n >= 2 ? G : n > -2 ? A : R;
+    case 'gross_margin_change_yoy':   return n >= 1 ? G : n > -1 ? A : R;
+    case 'incremental_operating_margin': return n >= 20 ? G : n >= 0 ? A : R;
+    case 'forward_revenue_growth':    return n >= 20 ? G : n >= 5 ? A : R;
+    case 'revenue_estimate_revision_90d': return n > 1 ? G : n >= -1 ? A : R;
+    case 'eps_growth':                return n >= 20 ? G : n >= 0 ? A : R;
+    case 'eps_estimate_revision_90d': return n > 2 ? G : n >= -2 ? A : R;
+    case 'pe_ratio': case 'forward_pe':
+      return n <= 20 ? G : n <= 35 ? A : R;
+    case 'ps_ratio': case 'forward_ps': case 'forward_ev_sales':
+      return n <= 4 ? G : n <= 10 ? A : R;
+    case 'ev_ebitda': case 'forward_ev_ebitda':
+      return n <= 15 ? G : n <= 25 ? A : R;
+    case 'p_fcf':
+      return n <= 20 ? G : n <= 35 ? A : R;
+    default: return ''; // cash: neutral, no universal absolute threshold
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -4767,7 +4810,8 @@ export default function WatchlistPage() {
                   : qualityCategory === 'growth-quality'    ? QUALITY_GROWTH_QUALITY_COLS
                   : qualityCategory === 'valuation'         ? QUALITY_VALUATION_COLS
                   : QUALITY_OVERVIEW_COLS)
-                : FUND_COLS
+                : FUND_COLS,
+              screenerMode === 'quality'
             )}
           </div>
         ) : (
@@ -5221,7 +5265,7 @@ export default function WatchlistPage() {
   };
 
   /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
-  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS) => {
+  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS, isQualityMode = false) => {
     const csvMap: Record<string, any> = {};
     for (const row of (watchlist?.csv_data || [])) {
       const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
@@ -5501,8 +5545,21 @@ export default function WatchlistPage() {
                     // Quality pct columns deliver percentage-point values — use qualFmtPct (no ×100).
                     // Identified by explicit column-key membership, not a broad cols comparison.
                     if (QUALITY_PCT_KEYS.has(col.key)) {
-                      const r = qualFmtPct(v, false);
-                      content = r.text; color = r.clr;
+                      // Revision estimate columns: show Building badge when value is absent
+                      // but the backend reason indicates history is still accumulating.
+                      const isMissing = (v === null || v === undefined || String(v).trim() === '');
+                      if (isMissing && col.key === 'revenue_estimate_revision_90d'
+                          && String(row['_rev_revision_reason'] ?? '').toLowerCase() === 'history_building') {
+                        content = (<span title="90-day revenue estimate history is still accumulating" style={{ fontSize: 9, color: '#64748b', cursor: 'help', background: 'rgba(100,116,139,0.1)', padding: '1px 5px', borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)' }}>Building</span>);
+                        color = 'inherit';
+                      } else if (isMissing && col.key === 'eps_estimate_revision_90d'
+                          && String(row['_eps_revision_reason'] ?? '').toLowerCase() === 'history_building') {
+                        content = (<span title="90-day EPS estimate history is still accumulating" style={{ fontSize: 9, color: '#64748b', cursor: 'help', background: 'rgba(100,116,139,0.1)', padding: '1px 5px', borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)' }}>Building</span>);
+                        color = 'inherit';
+                      } else {
+                        const r = qualFmtPct(v, false);
+                        content = r.text; color = r.clr;
+                      }
                     } else {
                       const r = fundFmtPct(v);
                       content = r.text; color = r.clr;
@@ -5574,6 +5631,14 @@ export default function WatchlistPage() {
                   } else if (col.fmt === 'compact' && col.key === 'net_cash_debt') {
                     const r = qualFmtCompactSigned(v);
                     content = r.text; color = r.clr;
+                  }
+
+                  // Quality threshold band colors — override formatter defaults with explicit
+                  // threshold-based colors. Only in Quality mode, only for plain-text cells.
+                  if (isQualityMode && color !== 'inherit') {
+                    const rawN = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/%$/, ''));
+                    const bc = qualBandColor(col.key, rawN);
+                    if (bc) color = bc;
                   }
 
                   // Generic N/M / history_building catch for non-string non-symbol Quality fields
