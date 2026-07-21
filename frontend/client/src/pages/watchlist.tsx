@@ -943,8 +943,8 @@ function ThemePerformanceGroupings({ resp, isLoading, isError, onTickerClick }: 
 /* ═══════════════════════════════════════════════════════════════════
    FUNDAMENTALS SCAN TABLE — helpers & column definitions
    ═══════════════════════════════════════════════════════════════════ */
-type FundColFmt = 'symbol' | 'str' | 'price' | 'compact' | 'pct' | 'ratio' | 'vol' | 'relvol' | 'date';
-interface FundColDef { key: string; label: string; aliases?: string[]; fmt: FundColFmt }
+type FundColFmt = 'symbol' | 'str' | 'price' | 'compact' | 'pct' | 'pct_rev' | 'ratio' | 'vol' | 'relvol' | 'date' | 'status' | 'risk' | 'score' | 'months';
+interface FundColDef { key: string; label: string; aliases?: string[]; fmt: FundColFmt; tooltip?: string }
 
 const FUND_COLS: FundColDef[] = [
   { key: 'ticker',           label: 'Ticker',        aliases: ['symbol'],                                                          fmt: 'symbol'  },
@@ -976,6 +976,96 @@ const FUND_COLS: FundColDef[] = [
   { key: 'eps_growth_ty',             label: 'EPS Grwth TY',    aliases: ['EPS Growth This Year', 'EPS Growth TY', 'eps_growth_this_year', 'epsGrowthThisYear'],                                                                                                 fmt: 'pct' },
   { key: 'eps_growth_ny',             label: 'EPS Grwth NY',    aliases: ['EPS Growth Next Year', 'EPS Growth NY', 'eps_growth_next_year', 'epsGrowthNextYear'],                                                                                                 fmt: 'pct' },
 ];
+
+/* ═══════════════════════════════════════════════════════════════════
+   QUALITY SCREENER — types, category column definitions
+   ═══════════════════════════════════════════════════════════════════ */
+type QualityCategory = 'overview' | 'financial-strength' | 'business-quality' | 'growth-quality' | 'valuation';
+const WL_QUALITY_CATEGORY_KEY = 'wl_quality_category';
+
+const Q_BASE: FundColDef[] = [
+  { key: 'ticker',               label: 'Ticker',  aliases: ['symbol'],                                                                                          fmt: 'symbol' },
+  { key: 'company',              label: 'Company', aliases: ['name', 'company_name', 'companyName'],                                                            fmt: 'str'    },
+  { key: 'canonical_theme_name', label: 'Theme',   aliases: ['section_title','watchlist_theme','ai_theme','enhanced_theme','theme_label','mapped_theme'],       fmt: 'str'    },
+];
+
+const QUALITY_OVERVIEW_COLS: FundColDef[] = [
+  ...Q_BASE,
+  { key: 'net_cash_debt',                 label: 'Net Cash/Debt',  aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                                      fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt' },
+  { key: 'cash_runway_status',            label: 'Runway',         aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                                  fmt: 'status',  tooltip: 'Cash divided by annualized cash burn when FCF is negative' },
+  { key: 'current_ratio',                 label: 'Curr Ratio',     aliases: ['Current Ratio','currentRatio'],                                                                          fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities' },
+  { key: 'roic',                          label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                                 fmt: 'pct',     tooltip: 'Return generated on invested capital' },
+  { key: 'fcf_conversion',                label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],                     fmt: 'ratio',   tooltip: 'TTM free cash flow divided by materially positive TTM net income' },
+  { key: 'diluted_shares_growth_yoy',     label: 'Shrs Grwth',     aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                           fmt: 'pct_rev', tooltip: 'Current four-quarter avg diluted shares vs prior four-quarter avg (negative=buybacks=green)' },
+  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                           fmt: 'pct',     tooltip: 'Latest quarterly YoY growth minus prior quarterly YoY growth' },
+  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                   fmt: 'pct',     tooltip: 'FY1 consensus revenue versus latest completed actual fiscal-year revenue' },
+  { key: 'revenue_estimate_revision_90d', label: 'Rev Rev 90D',    aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'], fmt: 'pct',     tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
+  { key: 'eps_estimate_revision_90d',     label: 'EPS Rev 90D',    aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],          fmt: 'pct',     tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
+  { key: 'forward_pe',                    label: 'Fwd P/E',        aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],                         fmt: 'ratio',   tooltip: 'Current price divided by FY1 annual consensus EPS when available' },
+  { key: 'forward_ps',                    label: 'Fwd P/S',        aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                            fmt: 'ratio',   tooltip: 'Current market cap divided by FY1 consensus revenue' },
+];
+
+const QUALITY_FINANCIAL_STRENGTH_COLS: FundColDef[] = [
+  ...Q_BASE,
+  { key: 'cash',               label: 'Cash',          aliases: ['Cash','cashAndEquivalents','cash_and_equivalents','cash_and_cash_equivalents'],                  fmt: 'compact' },
+  { key: 'net_cash_debt',      label: 'Net Cash/Debt', aliases: ['Net Cash / Debt','netCashDebt','net_cash_or_debt'],                                              fmt: 'compact', tooltip: 'Cash and short-term investments minus total debt' },
+  { key: 'cash_runway_months', label: 'Runway Months', aliases: ['Cash Runway Months','cashRunwayMonths','runway_months'],                                         fmt: 'months',  tooltip: 'Cash divided by annualized cash burn when FCF is negative' },
+  { key: 'cash_runway_status', label: 'Runway Status', aliases: ['Cash Runway Status','cashRunwayStatus','runway_status'],                                         fmt: 'status',  tooltip: 'Cash runway adequacy category' },
+  { key: 'current_ratio',      label: 'Curr Ratio',    aliases: ['Current Ratio','currentRatio'],                                                                  fmt: 'ratio',   tooltip: 'Current assets divided by current liabilities' },
+  { key: 'interest_coverage',  label: 'Int Coverage',  aliases: ['Interest Coverage','interestCoverage','interest_coverage_ratio'],                               fmt: 'ratio',   tooltip: 'EBIT divided by interest expense' },
+  { key: 'debt_to_equity',     label: 'D/E',           aliases: ['debtToEquity','debt_equity','debtEquityRatio','de_ratio'],                                       fmt: 'ratio'   },
+  { key: 'net_debt_ebitda',    label: 'ND/EBITDA',     aliases: ['netDebtToEbitda','net_debt_to_ebitda','netDebtEbitda'],                                          fmt: 'ratio'   },
+  { key: 'altman_z_score',     label: 'Altman Z',      aliases: ['Altman Z-Score','altmanZScore','altman_z','altman_z_score_value'],                               fmt: 'ratio',   tooltip: 'Balance-sheet distress indicator; not meaningful for certain financial structures' },
+  { key: 'altman_z_risk',      label: 'Altman Risk',   aliases: ['Altman Z-Risk','altmanZRisk','altman_risk','altman_z_classification'],                          fmt: 'risk',    tooltip: 'Altman Z-Score risk category: Safe / Grey / Distress' },
+  { key: 'piotroski_score',    label: 'Piotroski',     aliases: ['Piotroski Score','piotroskiScore','piotroski_f_score','piotroski'],                              fmt: 'score',   tooltip: 'Nine-point financial-strength score (0–9)' },
+];
+
+const QUALITY_BUSINESS_QUALITY_COLS: FundColDef[] = [
+  ...Q_BASE,
+  { key: 'gross_margin',             label: 'Gross Mgn',      aliases: ['grossMargin','gross_profit_margin'],                                                          fmt: 'pct'     },
+  { key: 'operating_margin',         label: 'Op Margin',      aliases: ['Operating Margin','operatingMargin','operating_profit_margin','op_margin'],                   fmt: 'pct'     },
+  { key: 'fcf_margin',               label: 'FCF Mgn',        aliases: ['freeCashFlowMargin','fcfMargin','fcf_margin_pct'],                                            fmt: 'pct'     },
+  { key: 'roic',                     label: 'ROIC',           aliases: ['ROIC','return_on_invested_capital','returnOnInvestedCapital','roic_pct'],                      fmt: 'pct',    tooltip: 'Return generated on invested capital' },
+  { key: 'fcf_yield',                label: 'FCF Yield',      aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct'     },
+  { key: 'fcf_conversion',           label: 'FCF Conv',       aliases: ['FCF Conversion','fcfConversion','free_cash_flow_conversion','fcf_conversion_ratio'],          fmt: 'ratio',  tooltip: 'TTM free cash flow divided by materially positive TTM net income' },
+  { key: 'diluted_shares_growth_yoy',label: 'Shrs Grwth YoY',aliases: ['Diluted Shares Growth YoY','dilutedSharesGrowthYoy','diluted_shares_growth'],                  fmt: 'pct_rev',tooltip: 'Current four-quarter avg diluted shares vs prior four-quarter avg (negative=buybacks=green)' },
+  { key: 'sbc_revenue',              label: 'SBC/Rev',        aliases: ['SBC / Revenue','sbcRevenue','sbc_to_revenue','sbc_pct_revenue','sbc_as_pct_revenue'],         fmt: 'pct',    tooltip: 'Stock-based compensation as a percentage of revenue' },
+];
+
+const QUALITY_GROWTH_QUALITY_COLS: FundColDef[] = [
+  ...Q_BASE,
+  { key: 'revenue_growth',                label: 'Rev Grwth (Y)',  aliases: ['revenue_growth_yoy','revenueGrowth','revenueGrowthYoy'],                                                            fmt: 'pct'   },
+  { key: 'revenue_acceleration',          label: 'Rev Accel',      aliases: ['Revenue Acceleration','revenueAcceleration','revenue_accel'],                                                      fmt: 'pct',  tooltip: 'Latest quarterly YoY growth minus prior quarterly YoY growth' },
+  { key: 'gross_margin_change_yoy',       label: 'GM Δ YoY',       aliases: ['Gross Margin Change YoY','grossMarginChangeYoy','gross_margin_change','gross_margin_change_yoy'],                  fmt: 'pct',  tooltip: 'Current TTM gross margin minus prior-year TTM gross margin' },
+  { key: 'incremental_operating_margin',  label: 'Incr Op Mgn',    aliases: ['Incremental Operating Margin','incrementalOperatingMargin','incremental_op_margin'],                               fmt: 'pct',  tooltip: 'Change in TTM operating income divided by positive change in TTM revenue' },
+  { key: 'forward_revenue_growth',        label: 'Fwd Rev Grwth',  aliases: ['Forward Revenue Growth','forwardRevenueGrowth','fwd_revenue_growth'],                                              fmt: 'pct',  tooltip: 'FY1 consensus revenue versus latest completed actual fiscal-year revenue' },
+  { key: 'revenue_estimate_revision_90d', label: 'Rev Rev 90D',    aliases: ['Revenue Estimate Revision 90D','revenueEstimateRevision90d','rev_revision_90d','rev_est_revision_90d'],            fmt: 'pct',  tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
+  { key: 'eps_growth',                    label: 'EPS Grwth',      aliases: ['epsGrowth','eps_growth_yoy','epsGrowthYoy'],                                                                       fmt: 'pct'   },
+  { key: 'eps_estimate_revision_90d',     label: 'EPS Rev 90D',    aliases: ['EPS Estimate Revision 90D','epsEstimateRevision90d','eps_revision_90d','eps_est_revision_90d'],                    fmt: 'pct',  tooltip: 'Current FY1 consensus versus the stored observation nearest 90 days ago' },
+];
+
+const QUALITY_VALUATION_COLS: FundColDef[] = [
+  ...Q_BASE,
+  { key: 'pe_ratio',          label: 'P/E',           aliases: ['pe','priceEarnings','priceToEarningsRatio','pe_ttm'],                                          fmt: 'ratio'  },
+  { key: 'forward_pe',        label: 'Fwd P/E',       aliases: ['Forward P/E','forwardPE','forward_price_earnings','fwd_pe','forward_pe_ratio'],               fmt: 'ratio',  tooltip: 'Current price divided by FY1 annual consensus EPS when available' },
+  { key: 'ps_ratio',          label: 'P/S',           aliases: ['priceToSales','ps','price_to_sales','ps_ttm'],                                                fmt: 'ratio'  },
+  { key: 'forward_ps',        label: 'Fwd P/S',       aliases: ['Forward P/S','forwardPS','forward_price_sales','fwd_ps','forward_ps_ratio'],                  fmt: 'ratio',  tooltip: 'Current market cap divided by FY1 consensus revenue' },
+  { key: 'ev_ebitda',         label: 'EV/EBITDA',     aliases: ['evToEbitda','ev_to_ebitda','enterpriseValueEbitda'],                                          fmt: 'ratio'  },
+  { key: 'forward_ev_sales',  label: 'Fwd EV/S',      aliases: ['Forward EV/Sales','forwardEvSales','forward_ev_to_sales','fwd_ev_sales'],                     fmt: 'ratio',  tooltip: 'Enterprise value divided by FY1 consensus revenue' },
+  { key: 'forward_ev_ebitda', label: 'Fwd EV/EBITDA', aliases: ['Forward EV/EBITDA','forwardEvEbitda','forward_ev_to_ebitda','fwd_ev_ebitda'],                fmt: 'ratio',  tooltip: 'Enterprise value divided by positive FY1 consensus EBITDA' },
+  { key: 'p_fcf',             label: 'P/FCF',         aliases: ['P/FCF','pFcf','price_to_fcf','price_to_free_cash_flow'],                                     fmt: 'ratio',  tooltip: 'Market capitalization divided by positive TTM free cash flow' },
+  { key: 'fcf_yield',         label: 'FCF Yield',     aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct'    },
+];
+
+/* Helper: look up a column def across all Quality + Fundamental column sets */
+function findAnyColDef(key: string): FundColDef | undefined {
+  return FUND_COLS.find(c => c.key === key)
+    || QUALITY_OVERVIEW_COLS.find(c => c.key === key)
+    || QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === key)
+    || QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === key)
+    || QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === key)
+    || QUALITY_VALUATION_COLS.find(c => c.key === key);
+}
 
 function fundGetField(row: any, key: string, aliases: string[] = []): any {
   if (!row) return undefined;
@@ -1049,6 +1139,77 @@ function fundFmtDate(v: any): string {
   const d = new Date(String(v));
   if (!isNaN(d.getTime())) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
   return String(v).slice(0, 10) || '—';
+}
+
+/* ── Quality-specific formatters ──────────────────────────────────────── */
+function qualFmtPct(v: any, reversed = false): { text: string; clr: string } {
+  if (typeof v === 'string') {
+    const lower = v.toLowerCase().replace(/%$/, '').trim();
+    if (lower === 'not_meaningful' || lower === 'n/m') return { text: 'N/M', clr: '#64748b' };
+    if (lower === 'history_building') return { text: 'Building', clr: '#64748b' };
+  }
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/%$/, ''));
+  if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
+  const pct = Math.abs(n) <= 1.5 ? n * 100 : n;
+  const sign = pct > 0 ? '+' : '';
+  const clr = reversed
+    ? (pct < 0 ? '#22c55e' : pct > 0 ? '#ef4444' : '#64748b')
+    : (pct > 0 ? '#22c55e' : pct < 0 ? '#ef4444' : '#64748b');
+  return { text: `${sign}${pct.toFixed(2)}%`, clr };
+}
+
+function qualFmtCompactSigned(v: any): { text: string; clr: string } {
+  if (typeof v === 'string' && v.toLowerCase() === 'not_meaningful') return { text: 'N/M', clr: '#64748b' };
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
+  const abs = Math.abs(n), sign = n < 0 ? '-' : '';
+  let text: string;
+  if (abs >= 1e12)      text = `${sign}$${(abs / 1e12).toFixed(2)}T`;
+  else if (abs >= 1e9)  text = `${sign}$${(abs / 1e9).toFixed(abs >= 100e9 ? 1 : 2)}B`;
+  else if (abs >= 1e6)  text = `${sign}$${(abs / 1e6).toFixed(abs >= 100e6 ? 1 : 2)}M`;
+  else if (abs >= 1e3)  text = `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  else                  text = `${sign}$${abs.toFixed(2)}`;
+  return { text, clr: n > 0 ? '#22c55e' : n < 0 ? '#ef4444' : '#64748b' };
+}
+
+const RUNWAY_STATUS_RANK: Record<string, number> = { self_funding: 5, adequate: 4, caution: 3, critical: 2, not_meaningful: 1 };
+const ALTMAN_RISK_RANK:   Record<string, number> = { safe: 4, grey: 3, distress: 2, not_meaningful: 1 };
+
+function qualFmtRunwayStatus(v: any): { text: string; clr: string; tooltip?: string } {
+  if (!v) return { text: '—', clr: '#64748b' };
+  const s = String(v).toLowerCase().replace(/-/g, '_').trim();
+  if (s === 'self_funding')   return { text: 'Self-Funding', clr: '#22c55e' };
+  if (s === 'adequate')       return { text: 'Adequate',     clr: '#0ea5e9' };
+  if (s === 'caution')        return { text: 'Caution',      clr: '#f59e0b' };
+  if (s === 'critical')       return { text: 'Critical',     clr: '#ef4444' };
+  if (s === 'not_meaningful') return { text: 'N/M',          clr: '#64748b', tooltip: 'Not meaningful for this company structure' };
+  return { text: String(v), clr: '#64748b' };
+}
+
+function qualFmtAltmanRisk(v: any): { text: string; clr: string; tooltip?: string } {
+  if (!v) return { text: '—', clr: '#64748b' };
+  const s = String(v).toLowerCase().trim();
+  if (s === 'safe')            return { text: 'Safe',    clr: '#22c55e' };
+  if (s === 'grey')            return { text: 'Grey',    clr: '#f59e0b' };
+  if (s === 'distress')        return { text: 'Distress',clr: '#ef4444' };
+  if (s === 'not_meaningful')  return { text: 'N/M',     clr: '#64748b', tooltip: 'Not applicable for this company type' };
+  return { text: String(v), clr: '#64748b' };
+}
+
+function qualFmtPiotroski(v: any): { text: string; clr: string } {
+  if (typeof v === 'string' && v.toLowerCase() === 'not_meaningful') return { text: 'N/M', clr: '#64748b' };
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
+  const score = Math.round(n);
+  return { text: String(score), clr: score >= 7 ? '#22c55e' : score >= 4 ? '#f59e0b' : '#ef4444' };
+}
+
+function qualFmtMonths(v: any): { text: string; clr: string } {
+  if (v === null || v === undefined || v === '') return { text: '—', clr: '#64748b' };
+  if (typeof v === 'string' && v.toLowerCase() === 'not_meaningful') return { text: 'N/M', clr: '#64748b' };
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
+  return { text: `${n.toFixed(1)} mo`, clr: n >= 24 ? '#22c55e' : n >= 12 ? '#f59e0b' : '#ef4444' };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1599,7 +1760,7 @@ interface FilterFieldDef {
   key: string;
   label: string;
   type: FilterFieldType;
-  group: 'Technical' | 'Fundamental';
+  group: 'Technical' | 'Fundamental' | 'Quality';
   unit?: string;
 }
 
@@ -1645,6 +1806,30 @@ const SCREENER_FILTER_FIELDS: FilterFieldDef[] = [
   { key: 'eps_growth_nq',           label: 'EPS Growth NQ',       type: 'numeric', group: 'Fundamental', unit: '%' },
   { key: 'eps_growth_ty',           label: 'EPS Growth TY',       type: 'numeric', group: 'Fundamental', unit: '%' },
   { key: 'eps_growth_ny',           label: 'EPS Growth NY',       type: 'numeric', group: 'Fundamental', unit: '%' },
+  { key: 'cash_runway_months',       label: 'Runway Months',         type: 'numeric', group: 'Quality'      },
+  { key: 'cash_runway_status',       label: 'Runway Status',         type: 'text',    group: 'Quality'      },
+  { key: 'current_ratio',            label: 'Current Ratio',         type: 'numeric', group: 'Quality'      },
+  { key: 'interest_coverage',        label: 'Interest Coverage',     type: 'numeric', group: 'Quality'      },
+  { key: 'altman_z_score',           label: 'Altman Z-Score',        type: 'numeric', group: 'Quality'      },
+  { key: 'altman_z_risk',            label: 'Altman Z-Risk',         type: 'text',    group: 'Quality'      },
+  { key: 'piotroski_score',          label: 'Piotroski Score',       type: 'numeric', group: 'Quality'      },
+  { key: 'roic',                     label: 'ROIC',                  type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'fcf_yield',                label: 'FCF Yield',             type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'fcf_conversion',           label: 'FCF Conversion',        type: 'numeric', group: 'Quality'      },
+  { key: 'operating_margin',         label: 'Operating Margin',      type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'diluted_shares_growth_yoy',label: 'Diluted Shares Growth', type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'sbc_revenue',              label: 'SBC / Revenue',         type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'revenue_acceleration',     label: 'Revenue Acceleration',  type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'gross_margin_change_yoy',  label: 'Gross Margin Δ YoY',    type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'incremental_operating_margin', label: 'Incr. Op. Margin',  type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'forward_revenue_growth',   label: 'Fwd Revenue Growth',    type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'revenue_estimate_revision_90d', label: 'Rev Est Revision 90D', type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'eps_estimate_revision_90d',label: 'EPS Est Revision 90D',  type: 'numeric', group: 'Quality', unit: '%' },
+  { key: 'forward_pe',               label: 'Forward P/E',           type: 'numeric', group: 'Quality'      },
+  { key: 'forward_ps',               label: 'Forward P/S',           type: 'numeric', group: 'Quality'      },
+  { key: 'forward_ev_sales',         label: 'Fwd EV/Sales',          type: 'numeric', group: 'Quality'      },
+  { key: 'forward_ev_ebitda',        label: 'Fwd EV/EBITDA',         type: 'numeric', group: 'Quality'      },
+  { key: 'p_fcf',                    label: 'P/FCF',                  type: 'numeric', group: 'Quality'      },
 ];
 
 const NUMERIC_OPS: { op: FilterOperator; label: string }[] = [
@@ -1696,7 +1881,16 @@ function getFilterFieldRawValue(row: any, fieldKey: string): number | string | n
     case 'exp_move':        { const n = Number(row.options_expected_move); return Number.isFinite(n) ? n : null; }
     case 'opt_volume':      { const n = Number(row.options_volume); return Number.isFinite(n) ? n : null; }
     case 'open_interest':   { const n = Number(row.options_open_interest); return Number.isFinite(n) ? n : null; }
-    default:                return fgParseMetric(row, fieldKey);
+    default: {
+      const col = findAnyColDef(fieldKey);
+      const v = fundGetField(row, fieldKey, col?.aliases ?? []);
+      if (v === undefined || v === null) return null;
+      if (col?.fmt === 'str' || col?.fmt === 'symbol' || col?.fmt === 'date' || col?.fmt === 'status' || col?.fmt === 'risk') return String(v);
+      const s = String(v).replace(/%$/, '').trim();
+      if (s.toLowerCase() === 'not_meaningful' || s.toLowerCase() === 'history_building') return null;
+      const n = typeof v === 'number' ? v : parseFloat(s);
+      return Number.isFinite(n) ? n : null;
+    }
   }
 }
 
@@ -1823,9 +2017,16 @@ export default function WatchlistPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental'>(() => {
-    try { return (localStorage.getItem('wl_screener_mode') as 'technical' | 'fundamental') || 'technical'; }
-    catch { return 'technical'; }
+  const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental' | 'quality'>(() => {
+    try {
+      const v = localStorage.getItem('wl_screener_mode') as string;
+      if (v === 'fundamental' || v === 'technical' || v === 'quality') return v;
+      return 'technical';
+    } catch { return 'technical'; }
+  });
+  const [qualityCategory, setQualityCategory] = useState<QualityCategory>(() => {
+    try { return (localStorage.getItem(WL_QUALITY_CATEGORY_KEY) as QualityCategory) || 'overview'; }
+    catch { return 'overview'; }
   });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
     try { return localStorage.getItem('wl_hide_foreign') === '1'; } catch { return false; }
@@ -3043,14 +3244,26 @@ export default function WatchlistPage() {
         const r = v != null ? (RANK[v] ?? 0) : 0;
         return { v: r, missing: r === 0 };
       }
+      case 'cash_runway_status': {
+        const s = String(fundGetField(stock, key, ['Cash Runway Status','cashRunwayStatus','runway_status']) ?? '').toLowerCase().replace(/-/g,'_').trim();
+        const r = RUNWAY_STATUS_RANK[s] ?? 0;
+        return { v: r, missing: r === 0 };
+      }
+      case 'altman_z_risk': {
+        const s = String(fundGetField(stock, key, ['Altman Z-Risk','altmanZRisk','altman_risk','altman_z_classification']) ?? '').toLowerCase().trim();
+        const r = ALTMAN_RISK_RANK[s] ?? 0;
+        return { v: r, missing: r === 0 };
+      }
       default: {
-        const col = FUND_COLS.find(c => c.key === key);
+        const col = findAnyColDef(key);
         const v = fundGetField(stock, key, col?.aliases ?? []);
         if (v === undefined || v === null) return { v: null, missing: true };
         if (col?.fmt === 'symbol' || col?.fmt === 'str' || col?.fmt === 'date') {
           return { v: String(v), missing: false };
         }
-        const n = typeof v === 'number' ? v : parseFloat(v);
+        const sv = String(v).replace(/%$/, '').trim().toLowerCase();
+        if (sv === 'not_meaningful' || sv === 'history_building') return { v: null, missing: true };
+        const n = typeof v === 'number' ? v : parseFloat(sv);
         return { v: Number.isFinite(n) ? n : null, missing: !Number.isFinite(n) };
       }
     }
@@ -4281,6 +4494,9 @@ export default function WatchlistPage() {
                     <optgroup label="── Fundamental ──">
                       {fundFields.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                     </optgroup>
+                    <optgroup label="── Quality ──">
+                      {SCREENER_FILTER_FIELDS.filter(f => f.group === 'Quality').map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                    </optgroup>
                   </select>
                   {/* Operator + value */}
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' as const }}>
@@ -4351,7 +4567,7 @@ export default function WatchlistPage() {
           </span>
           {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {(['technical', 'fundamental'] as const).map(mode => (
+              {(['technical', 'fundamental', 'quality'] as const).map((mode, mi, arr) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -4365,11 +4581,11 @@ export default function WatchlistPage() {
                     background: screenerMode === mode ? `${C.teal}22` : 'transparent',
                     color: screenerMode === mode ? C.teal : C.dim,
                     border: 'none',
-                    borderRight: mode === 'technical' ? `1px solid ${C.border}` : 'none',
+                    borderRight: mi < arr.length - 1 ? `1px solid ${C.border}` : 'none',
                     transition: 'all 0.12s',
                   }}
                 >
-                  {mode === 'technical' ? 'Technical' : 'Fundamental'}
+                  {mode === 'technical' ? 'Technical' : mode === 'fundamental' ? 'Fundamental' : 'Quality'}
                 </button>
               ))}
             </div>
@@ -4491,9 +4707,36 @@ export default function WatchlistPage() {
           </div>
         )}
 
-        {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamental' ? (
+        {screenerMode === 'quality' && (
+          <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
+            {([ ['overview','Overview'], ['financial-strength','Fin. Strength'], ['business-quality','Biz Quality'], ['growth-quality','Growth'], ['valuation','Valuation'] ] as [QualityCategory, string][]).map(([cat, label]) => (
+              <button
+                key={cat}
+                onClick={() => { setQualityCategory(cat); try { localStorage.setItem(WL_QUALITY_CATEGORY_KEY, cat); } catch {} setSortKey(null); }}
+                style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+                  padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
+                  textTransform: 'uppercase' as const, fontFamily: font,
+                  background: qualityCategory === cat ? `${C.teal}22` : 'transparent',
+                  color: qualityCategory === cat ? C.teal : C.dim,
+                  border: `1px solid ${qualityCategory === cat ? `${C.teal}55` : C.border}`,
+                  transition: 'all 0.12s',
+                }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
+        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamental' || screenerMode === 'quality') ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
-            {renderFundamentalScreenerContent(filteredRows)}
+            {renderFundamentalScreenerContent(filteredRows,
+              screenerMode === 'quality'
+                ? (qualityCategory === 'financial-strength' ? QUALITY_FINANCIAL_STRENGTH_COLS
+                  : qualityCategory === 'business-quality'  ? QUALITY_BUSINESS_QUALITY_COLS
+                  : qualityCategory === 'growth-quality'    ? QUALITY_GROWTH_QUALITY_COLS
+                  : qualityCategory === 'valuation'         ? QUALITY_VALUATION_COLS
+                  : QUALITY_OVERVIEW_COLS)
+                : FUND_COLS
+            )}
           </div>
         ) : (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
@@ -4946,7 +5189,7 @@ export default function WatchlistPage() {
   };
 
   /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
-  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers) => {
+  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS) => {
     const csvMap: Record<string, any> = {};
     for (const row of (watchlist?.csv_data || [])) {
       const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
@@ -4994,7 +5237,7 @@ export default function WatchlistPage() {
         setSortDir(d => d === 'asc' ? 'desc' : 'asc');
       } else {
         setSortKey(key);
-        const colFmt = FUND_COLS.find(c => c.key === key)?.fmt;
+        const colFmt = cols.find(c => c.key === key)?.fmt;
         setSortDir((colFmt === 'symbol' || colFmt === 'str') ? 'asc' : 'desc');
       }
     };
@@ -5019,12 +5262,13 @@ export default function WatchlistPage() {
         <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
           <thead>
             <tr>
-              {FUND_COLS.map((col, ci) => {
+              {cols.map((col, ci) => {
                 const isActive = sortKey === col.key;
                 return (
                 <th
                   key={col.key}
                   onClick={() => handleFundSortLocal(col.key)}
+                  title={col.tooltip}
                   style={{
                     ...TH,
                     color: isActive ? '#f5f5f0' : C.dim,
@@ -5055,7 +5299,7 @@ export default function WatchlistPage() {
           <tbody>
             {sortedFundRows.length === 0 ? (
               <tr>
-                <td colSpan={FUND_COLS.length} style={{ ...TD, textAlign: 'center' as const, color: C.dim, padding: 16 }}>
+                <td colSpan={cols.length} style={{ ...TD, textAlign: 'center' as const, color: C.dim, padding: 16 }}>
                   No tickers
                 </td>
               </tr>
@@ -5077,7 +5321,7 @@ export default function WatchlistPage() {
                 onMouseEnter={e => setTdBgs(e.currentTarget, rowHover)}
                 onMouseLeave={e => setTdBgs(e.currentTarget, rowBg)}
               >
-                {FUND_COLS.map((col, ci) => {
+                {cols.map((col, ci) => {
                   const isFirst = ci === 0;
                   const stickyStyle: React.CSSProperties = isFirst ? {
                     position: 'sticky' as const, left: 0, zIndex: 1,
@@ -5230,11 +5474,73 @@ export default function WatchlistPage() {
                   } else if (col.fmt === 'date') {
                     const r = fundFmtDate(v);
                     content = r; color = r === '—' ? C.dim : C.text;
+                  } else if (col.fmt === 'pct_rev') {
+                    const r = qualFmtPct(v, true);
+                    content = r.text; color = r.clr;
+                  } else if (col.fmt === 'status') {
+                    const r = qualFmtRunwayStatus(v);
+                    const reason = row[`_${col.key}_not_meaningful_reason`] || row['_cash_runway_not_meaningful_reason'];
+                    content = (
+                      <span title={reason || r.tooltip} style={{
+                        display: 'inline-block', padding: '1px 6px', borderRadius: 3,
+                        fontSize: 9, fontWeight: 700, background: `${r.clr}1a`,
+                        border: `1px solid ${r.clr}45`, color: r.clr,
+                        cursor: (reason || r.tooltip) ? 'help' : 'default', whiteSpace: 'nowrap' as const,
+                      }}>{r.text}</span>
+                    );
+                    color = 'inherit';
+                  } else if (col.fmt === 'risk') {
+                    const r = qualFmtAltmanRisk(v);
+                    const reason = row[`_${col.key}_not_meaningful_reason`] || row['_altman_z_not_meaningful_reason'];
+                    content = (
+                      <span title={reason || r.tooltip} style={{
+                        display: 'inline-block', padding: '1px 6px', borderRadius: 3,
+                        fontSize: 9, fontWeight: 700, background: `${r.clr}1a`,
+                        border: `1px solid ${r.clr}45`, color: r.clr,
+                        cursor: (reason || r.tooltip) ? 'help' : 'default', whiteSpace: 'nowrap' as const,
+                      }}>{r.text}</span>
+                    );
+                    color = 'inherit';
+                  } else if (col.fmt === 'score') {
+                    const r = qualFmtPiotroski(v);
+                    content = r.text; color = r.clr;
+                  } else if (col.fmt === 'months') {
+                    const r = qualFmtMonths(v);
+                    content = r.text; color = r.clr;
+                  } else if (col.fmt === 'compact' && col.key === 'net_cash_debt') {
+                    const r = qualFmtCompactSigned(v);
+                    content = r.text; color = r.clr;
+                  }
+
+                  // Generic N/M / history_building catch for non-string non-symbol Quality fields
+                  if (cols !== FUND_COLS && col.fmt !== 'symbol' && col.fmt !== 'str' && col.fmt !== 'status' && col.fmt !== 'risk') {
+                    const sv = String(v ?? '').toLowerCase().trim();
+                    if (sv === 'not_meaningful' || sv === 'nm') {
+                      const reason = row[`_${col.key}_not_meaningful_reason`] || undefined;
+                      content = (
+                        <span title={reason || 'Not applicable for this company type'} style={{
+                          fontSize: 9, color: '#64748b', cursor: reason ? 'help' : 'default',
+                          background: 'rgba(100,116,139,0.1)', padding: '1px 5px',
+                          borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)',
+                        }}>N/M</span>
+                      );
+                      color = 'inherit';
+                    } else if (sv === 'history_building') {
+                      content = (
+                        <span title="≈90 days of stored consensus history required" style={{
+                          fontSize: 9, color: '#64748b', cursor: 'help',
+                          background: 'rgba(100,116,139,0.1)', padding: '1px 5px',
+                          borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)',
+                        }}>Building</span>
+                      );
+                      color = 'inherit';
+                    }
                   }
 
                   return (
                     <td
                       key={col.key}
+                      title={col.tooltip}
                       style={{
                         ...TD, ...stickyStyle, color,
                         textAlign: (isFirst || col.fmt === 'str') ? 'left' as const : 'right' as const,
@@ -5250,7 +5556,7 @@ export default function WatchlistPage() {
               </tr>
               {fundExpanded && fundSym && (
                 <tr>
-                  <td colSpan={FUND_COLS.length} style={{ padding: 0, background: C.bg }}>
+                  <td colSpan={cols.length} style={{ padding: 0, background: C.bg }}>
                     <CaelynRowBreakdown stock={row} />
                   </td>
                 </tr>

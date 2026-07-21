@@ -1,0 +1,864 @@
+You are working inside the CaelynAI frontend Replit.
+
+The Quality fundamentals backend is complete, deployed, and committed to backend `main`.
+
+This is a frontend-only implementation.
+
+Do not touch the backend.
+
+Do not create a new endpoint.
+
+Do not add FMP calls.
+
+Do not add page-render provider calls.
+
+Do not create a new page or duplicate Watchlist table.
+
+## Objective
+
+Cleanly add the new Quality fundamentals fields to the existing Watchlist Screener as a third top-level screener mode:
+
+* Technical
+* Fundamental
+* Quality
+
+Within Quality mode, add a compact secondary category selector:
+
+* Overview
+* Financial Strength
+* Business Quality
+* Growth Quality
+* Valuation
+
+Use the existing Watchlist GET payload, existing ticker rows, existing sorting, existing filters, existing fullscreen behavior, existing Favorites behavior, existing canonical Theme column, and existing ticker modal.
+
+## Source of truth
+
+Audit the current live frontend first.
+
+Primary file:
+
+* `frontend/client/src/pages/watchlist.tsx`
+
+The existing implementation already contains:
+
+* `screenerMode`
+* `FUND_COLS`
+* `fundGetField()`
+* Existing fundamentals formatters
+* Existing Watchlist GET query
+* Existing ticker-row merge path
+* Existing canonical Theme renderer
+* Existing sorting
+* Existing filter modal
+* Existing fullscreen mode
+* Existing Favorites support
+* Existing admin Theme reassignment
+* Existing `CaelynRowBreakdown`
+
+Preserve these paths.
+
+Do not invent replacements.
+
+## Part 1 — Extend the existing screener mode
+
+The current state supports:
+
+```ts
+'technical' | 'fundamental'
+```
+
+Extend it to:
+
+```ts
+'technical' | 'fundamental' | 'quality'
+```
+
+Preserve the existing local-storage key:
+
+```ts
+wl_screener_mode
+```
+
+Existing saved `technical` and `fundamental` values must continue working.
+
+An invalid stored value must safely fall back to `technical`.
+
+Add `Quality` beside the existing Technical and Fundamental controls using the exact same visual style, height, spacing, active state, hover behavior, and fullscreen behavior.
+
+Do not create a separate Quality card below the table.
+
+## Part 2 — Add Quality category state
+
+Add frontend-only state:
+
+```ts
+type QualityCategory =
+  | 'overview'
+  | 'financial-strength'
+  | 'business-quality'
+  | 'growth-quality'
+  | 'valuation';
+```
+
+Default:
+
+```ts
+'overview'
+```
+
+Persist it under a separate local-storage key such as:
+
+```ts
+wl_quality_category
+```
+
+Render the category selector only when:
+
+```ts
+screenerMode === 'quality'
+```
+
+Place it inside the existing Screener header/control row—not in the global Watchlist page header.
+
+Design requirements:
+
+* Compact segmented buttons
+* Same professional terminal styling as the current screener
+* No oversized cards
+* No excessive vertical height
+* Horizontally scrollable on narrow screens
+* Active category clearly visible
+* Preserve the existing fullscreen control, filter control and row count
+
+## Part 3 — Do not create a second row/data pipeline
+
+Quality mode must consume the same rows already used by the Watchlist Screener.
+
+Continue using the existing Watchlist request:
+
+```ts
+GET /api/watchlist/{activeId}
+```
+
+Continue using the existing merged ticker objects.
+
+The Watchlist ticker extraction already spreads the full backend ticker object. Do not manually fetch fundamentals again.
+
+Do not query:
+
+* FMP
+* A new `/quality` endpoint
+* A per-ticker fundamentals endpoint
+* The alignment endpoint as the Quality source
+* CSV directly as a separate request
+
+CSV fallback already occurs through the existing backend/Watchlist payload path.
+
+## Part 4 — Preserve canonical Theme behavior
+
+This is critical.
+
+The Quality table’s Theme column must continue using the existing canonical Theme Universe fields:
+
+* `canonical_theme_name`
+* `section_title`
+* Existing persisted Watchlist Theme fields
+* Existing `getWatchlistTheme()` behavior
+
+Do not use these FMP profile fields as the Theme column:
+
+* `profile.sector`
+* `profile.industry`
+* Raw `sector`
+* Raw `industry`
+
+FMP may label IREN as `Financial Services / Financial - Capital Markets`. That is provider classification metadata only and must never replace IREN’s canonical CaelynAI Theme.
+
+Preserve:
+
+* Existing Theme column
+* Existing admin Theme dropdown
+* Existing Theme reassignment mutation
+* Existing local optimistic Theme override
+* Existing Theme filter chips
+
+## Part 5 — Reuse and generalize the existing fundamentals table
+
+Do not copy the entire `renderFundamentalScreenerContent()` implementation into a second function.
+
+Refactor only as much as necessary so the same metric-table renderer can accept:
+
+```ts
+columns: FundColDef[]
+```
+
+Suggested shape:
+
+```ts
+renderMetricScreenerContent(rows, columns, mode)
+```
+
+Or preserve the existing function and add a clean column argument.
+
+Keep:
+
+* Sticky Ticker column
+* Company column
+* Canonical Theme column
+* Star/Favorite control
+* Remove ticker control
+* Row click opening the ticker modal
+* Admin Theme edit dropdown
+* Expanded `CaelynRowBreakdown`
+* Horizontal scroll
+* Sticky header
+* Alternating row treatment
+* Sort arrows
+* Existing colors and typography
+
+Do not duplicate hundreds of lines of table markup.
+
+## Part 6 — Quality column definitions
+
+Create centralized definitions such as:
+
+```ts
+const QUALITY_BASE_COLS
+const QUALITY_OVERVIEW_COLS
+const QUALITY_FINANCIAL_STRENGTH_COLS
+const QUALITY_BUSINESS_QUALITY_COLS
+const QUALITY_GROWTH_QUALITY_COLS
+const QUALITY_VALUATION_COLS
+```
+
+Every Quality category begins with:
+
+1. Ticker
+2. Company
+3. Theme
+
+### Overview
+
+Show a concise cross-category overview:
+
+1. Ticker
+2. Company
+3. Theme
+4. Net Cash / Debt
+5. Cash Runway
+6. Current Ratio
+7. ROIC
+8. FCF Conversion
+9. Diluted Shares Growth
+10. Revenue Acceleration
+11. Forward Revenue Growth
+12. Revenue Revision 90D
+13. EPS Revision 90D
+14. Forward P/E
+15. Forward P/S
+
+Do not add a made-up Quality Score.
+
+No weighting model has been approved.
+
+### Financial Strength
+
+Use:
+
+* `Cash`
+* `Net Cash / Debt`
+* `Cash Runway Months`
+* `Cash Runway Status`
+* `Current Ratio`
+* `Interest Coverage`
+* Existing `Debt / Equity`
+* Existing `Net Debt / EBITDA`
+* `Altman Z-Score`
+* `Altman Z-Risk`
+* `Piotroski Score`
+
+### Business Quality
+
+Use:
+
+* `Operating Margin`
+* `ROIC`
+* `FCF Yield`
+* `FCF Conversion`
+* `Diluted Shares Growth YoY`
+* `SBC / Revenue`
+
+Existing Gross Margin and FCF Margin may also be included here for context, but do not remove them from Fundamental mode.
+
+### Growth Quality
+
+Use:
+
+* `Revenue Acceleration`
+* `Gross Margin Change YoY`
+* `Incremental Operating Margin`
+* `Forward Revenue Growth`
+* `Revenue Estimate Revision 90D`
+* `EPS Estimate Revision 90D`
+
+Include existing current Revenue Growth and EPS Growth columns only when helpful for comparison. Do not duplicate every Fundamental column.
+
+### Valuation
+
+Use:
+
+* Existing `PE Ratio`
+* `Forward P/E`
+* Existing `PS Ratio`
+* `Forward P/S`
+* Existing `EV/EBITDA`
+* `Forward EV/Sales`
+* `Forward EV/EBITDA`
+* `P/FCF`
+* `FCF Yield`
+
+There must remain only one displayed canonical Forward P/E metric.
+
+Do not create:
+
+* Forward PE 2
+* Annual Forward PE
+* Approximate Forward PE as another column
+* Separate FY1 Forward PE column
+
+## Part 7 — Field aliases
+
+Use `fundGetField()` and alias definitions rather than direct one-shape assumptions.
+
+Support the exact backend display keys and normal snake/camel aliases.
+
+Examples:
+
+```ts
+{
+  key: 'cash',
+  label: 'Cash',
+  aliases: ['Cash'],
+  fmt: 'compact'
+}
+```
+
+```ts
+{
+  key: 'net_cash_debt',
+  label: 'Net Cash/Debt',
+  aliases: ['Net Cash / Debt', 'netCashDebt'],
+  fmt: 'compact'
+}
+```
+
+Required backend display-key aliases:
+
+```text
+Cash
+Net Cash / Debt
+Cash Runway Months
+Cash Runway Status
+Current Ratio
+Interest Coverage
+Altman Z-Score
+Altman Z-Risk
+Piotroski Score
+
+Operating Margin
+ROIC
+FCF Yield
+FCF Conversion
+Diluted Shares Growth YoY
+SBC / Revenue
+
+Revenue Acceleration
+Gross Margin Change YoY
+Incremental Operating Margin
+Forward Revenue Growth
+Revenue Estimate Revision 90D
+EPS Estimate Revision 90D
+
+Forward P/E
+Forward P/S
+Forward EV/Sales
+Forward EV/EBITDA
+P/FCF
+```
+
+Before finalizing aliases, inspect the live Watchlist payload for:
+
+* AAPL
+* IREN
+* SOFI
+* JPM
+* ASTS
+* MU
+
+Use the actual committed payload keys as authoritative.
+
+Do not rename backend keys.
+
+## Part 8 — Formatting
+
+Extend `FundColFmt` only when necessary.
+
+Suggested additional formats:
+
+```ts
+'status'
+'risk'
+'score'
+'months'
+```
+
+### Currency/compact values
+
+Use the existing compact formatter for:
+
+* Cash
+* Net Cash / Debt
+
+### Percentages
+
+Use percentage formatting for:
+
+* Operating Margin
+* ROIC
+* FCF Yield
+* Diluted Shares Growth YoY
+* SBC / Revenue
+* Revenue Acceleration
+* Gross Margin Change YoY
+* Incremental Operating Margin
+* Forward Revenue Growth
+* Revenue Estimate Revision 90D
+* EPS Estimate Revision 90D
+
+Do not multiply percentages twice.
+
+The existing backend may provide percentage strings such as:
+
+```text
+14.90%
+```
+
+or numeric values. Audit the real payload and ensure both render correctly.
+
+### Ratios and multiples
+
+Use ratio formatting for:
+
+* Current Ratio
+* Interest Coverage
+* Altman Z-Score
+* FCF Conversion
+* P/E
+* Forward P/E
+* P/S
+* Forward P/S
+* EV/EBITDA
+* Forward EV/Sales
+* Forward EV/EBITDA
+* P/FCF
+
+### Integer scores
+
+Display Piotroski as:
+
+```text
+0–9
+```
+
+Do not add `x` or `%`.
+
+### Cash Runway
+
+Render:
+
+* `self_funding` → `Self-Funding`
+* `adequate` → `Adequate`
+* `caution` → `Caution`
+* `critical` → `Critical`
+* `not_meaningful` → `N/M`
+
+When months are available, display:
+
+```text
+18.4 mo
+```
+
+The Overview column may combine status and months in one compact cell:
+
+```text
+Adequate · 30.2 mo
+```
+
+Do not display meaningless text such as:
+
+```text
+Self-Funding · — mo
+```
+
+### Altman risk
+
+Render:
+
+* `safe` → `Safe`
+* `grey` → `Grey`
+* `distress` → `Distress`
+* `not_meaningful` → `N/M`
+
+## Part 9 — Direction-aware colors
+
+Do not use one universal “positive number = green” formatter for every metric.
+
+Use these semantics:
+
+### Positive generally constructive
+
+Green positive / red negative:
+
+* Net Cash / Debt
+* ROIC
+* FCF Yield
+* FCF Conversion
+* Revenue Acceleration
+* Gross Margin Change YoY
+* Incremental Operating Margin
+* Forward Revenue Growth
+* Revenue Estimate Revision 90D
+* EPS Estimate Revision 90D
+
+### Diluted Shares Growth
+
+This is reversed:
+
+* Negative growth/buybacks → green
+* Positive growth/dilution → red
+* Near zero → neutral
+
+### Cash Runway
+
+* Self-Funding → green
+* Adequate or 24+ months → green/teal
+* Caution or 12–24 months → amber
+* Critical or under 12 months → red
+* N/M → muted gray
+
+### Altman risk
+
+* Safe → green
+* Grey → amber
+* Distress → red
+* N/M → muted gray
+
+### Valuation multiples
+
+Keep valuation multiples neutral.
+
+Do not automatically color a low P/E green or high P/E red. Valuation context varies by company and growth rate.
+
+## Part 10 — Missing, not meaningful and history-building states
+
+These states must remain distinct.
+
+### Missing
+
+Display:
+
+```text
+—
+```
+
+Use muted styling.
+
+### Not meaningful
+
+Display:
+
+```text
+N/M
+```
+
+Use a muted badge and tooltip explaining the backend reason.
+
+Known reason fields include:
+
+```text
+_cash_runway_not_meaningful_reason
+_current_ratio_not_meaningful_reason
+_altman_z_not_meaningful_reason
+_fcf_conversion_not_meaningful_reason
+_incr_op_margin_not_meaningful_reason
+_p_fcf_not_meaningful_reason
+```
+
+Audit the actual payload for any additional forward-valuation reason fields.
+
+Do not infer N/M merely because a value is absent.
+
+### Estimate history building
+
+For revision metrics, when the backend reports:
+
+```text
+history_building
+```
+
+display:
+
+```text
+Building
+```
+
+or:
+
+```text
+Building History
+```
+
+with a tooltip explaining that approximately 90 days of stored consensus history is required.
+
+Do not display it as 0%.
+
+### Provider no data or not entitled
+
+Display a muted unavailable state with the backend reason in the tooltip.
+
+Do not display stale numeric values unless the backend explicitly returned carried/stale data.
+
+## Part 11 — Tooltips
+
+Add concise header tooltips using the existing tooltip components.
+
+Required explanations:
+
+* Net Cash/Debt: Cash and short-term investments minus total debt
+* Cash Runway: Cash divided by annualized cash burn when FCF is negative
+* Current Ratio: Current assets divided by current liabilities
+* Interest Coverage: EBIT divided by interest expense
+* Altman Z: Balance-sheet distress indicator; not meaningful for certain financial structures
+* Piotroski: Nine-point financial-strength score
+* ROIC: Return generated on invested capital
+* FCF Conversion: TTM free cash flow divided by materially positive TTM net income
+* Diluted Shares Growth: Current four-quarter average diluted shares versus prior four-quarter average
+* SBC/Revenue: Stock-based compensation as a percentage of revenue
+* Revenue Acceleration: Latest quarterly YoY growth minus prior quarterly YoY growth
+* Gross Margin Change: Current TTM gross margin minus prior-year TTM gross margin
+* Incremental Operating Margin: Change in TTM operating income divided by positive change in TTM revenue
+* Forward Revenue Growth: FY1 consensus revenue versus latest completed actual fiscal-year revenue
+* Revision 90D: Current FY1 consensus versus the stored observation nearest 90 days ago
+* Forward P/E: Current price divided by FY1 annual consensus EPS when available
+* Forward P/S: Current market cap divided by FY1 consensus revenue
+* Forward EV/Sales: Enterprise value divided by FY1 consensus revenue
+* Forward EV/EBITDA: Enterprise value divided by positive FY1 consensus EBITDA
+* P/FCF: Market capitalization divided by positive TTM free cash flow
+
+Keep tooltips short enough to scan.
+
+## Part 12 — Sorting
+
+Every Quality metric column must use the existing sort behavior.
+
+Requirements:
+
+* Numeric values sort numerically, not lexicographically
+* Percentage strings parse correctly
+* Currency values parse correctly
+* Missing values sort last in either direction
+* N/M sorts after valid numbers
+* Status fields use a sensible deterministic order
+
+Suggested Cash Runway order:
+
+```text
+self_funding
+adequate
+caution
+critical
+not_meaningful
+missing
+```
+
+Suggested Altman order:
+
+```text
+safe
+grey
+distress
+not_meaningful
+missing
+```
+
+Changing Quality categories must not reset the underlying ticker set or selected Theme filter.
+
+## Part 13 — Filters
+
+Extend the existing Screener Filters modal with a third optgroup:
+
+```text
+── Quality ──
+```
+
+Do not remove or rename existing Technical or Fundamental filters.
+
+Add useful Quality filters:
+
+* Net Cash / Debt
+* Cash Runway Months
+* Current Ratio
+* Interest Coverage
+* Altman Z-Score
+* Piotroski Score
+* Operating Margin
+* ROIC
+* FCF Yield
+* FCF Conversion
+* Diluted Shares Growth YoY
+* SBC / Revenue
+* Revenue Acceleration
+* Gross Margin Change YoY
+* Incremental Operating Margin
+* Forward Revenue Growth
+* Revenue Estimate Revision 90D
+* EPS Estimate Revision 90D
+* Forward P/E
+* Forward P/S
+* Forward EV/Sales
+* Forward EV/EBITDA
+* P/FCF
+
+Existing saved filters in local storage must remain valid.
+
+Do not change the existing storage version unless necessary.
+
+## Part 14 — Width and layout
+
+Do not assign one enormous fixed minimum width for every Quality category.
+
+Calculate or define an appropriate width per selected category.
+
+Requirements:
+
+* Sticky Ticker/Company/Theme columns
+* Horizontal scrolling only inside the table
+* No whole-page horizontal overflow
+* Overview remains reasonably compact
+* Category switching does not cause the entire page layout to jump
+* Fullscreen continues working
+* The Live News column remains unchanged
+* The top split remains unchanged
+* Mobile/narrow screens retain horizontal table scrolling
+
+## Part 15 — Preserve Fundamental mode exactly
+
+Do not remove, rename, reorder or cosmetically redesign the existing Fundamental columns during this task.
+
+Fundamental mode remains the broad raw financial dataset.
+
+Quality mode is the curated decision-useful view.
+
+Do not move the new Quality metrics into Fundamental mode merely because they are financial metrics.
+
+## Part 16 — Preserve Technical mode exactly
+
+Do not touch:
+
+* Technical metrics
+* Technical state calculations
+* Stage labels
+* Entry Zone
+* Breakout Signal
+* Fullscreen technical table
+* Existing technical tooltips
+
+## Part 17 — Validation
+
+Validate the actual Watchlist UI with:
+
+* AAPL
+* IREN
+* SOFI
+* JPM
+* COIN
+* HOOD
+* ASTS
+* MU
+
+Prove:
+
+### AAPL
+
+* Quality values render
+* FY1 Forward P/E renders once
+* Quality category switching works
+* No existing Fundamental values disappear
+
+### IREN
+
+* Canonical website Theme remains unchanged
+* FMP `Financial Services` does not appear in the Theme column
+* Cash Runway is calculated or Self-Funding when inputs exist
+* Current Ratio remains meaningful when supplied
+* Negative forward EPS correctly prevents an invalid Forward P/E
+
+### SOFI/JPM
+
+* Financially inapplicable metrics display N/M with reason
+* No stale Altman or runway value appears
+* Direct valid fields remain available where the backend supplies them
+
+### COIN/HOOD
+
+* They are not automatically presented as bank-like N/M solely because FMP uses Financial Services
+* Their canonical CaelynAI Themes remain unchanged
+
+### ASTS
+
+* Speculative-company missing/N/M states render without broken cells
+* Negative FCF does not produce a positive P/FCF
+
+### MU
+
+* Non-calendar fiscal estimates render in the correct FY1 fields
+* Forward Revenue Growth and Forward P/E display from the existing backend values
+
+Also prove:
+
+* Technical mode unchanged
+* Fundamental mode unchanged
+* Favorites unchanged
+* Theme filter unchanged
+* Admin Theme reassignment unchanged
+* Sorting works
+* Filters work
+* Fullscreen works
+* Ticker modal opens
+* No duplicate requests
+* No new backend routes
+* No provider calls
+* No frontend console errors
+* No TypeScript errors
+
+## Required final report
+
+Return:
+
+1. Exact files changed
+2. Existing components/functions reused
+3. Exact Quality field-key map
+4. Category column lists
+5. Missing/N/M/history-building behavior
+6. Sorting and filter validation
+7. Screenshots of:
+
+   * Quality Overview
+   * Financial Strength
+   * Business Quality
+   * Growth Quality
+   * Valuation
+8. Regression confirmation for Technical and Fundamental
+9. Confirmation that IREN’s canonical Theme was not changed
+10. Confirmation that no backend files or endpoints were modified
