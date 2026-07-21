@@ -1148,14 +1148,15 @@ function qualFmtPct(v: any, reversed = false): { text: string; clr: string } {
     if (lower === 'not_meaningful' || lower === 'n/m') return { text: 'N/M', clr: '#64748b' };
     if (lower === 'history_building') return { text: 'Building', clr: '#64748b' };
   }
+  // Backend sends percentage-point values (e.g. 0.42 means 0.42%, 14.90 means 14.90%).
+  // Strip trailing % from strings, then use the number directly — no ×100 scaling.
   const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/%$/, ''));
   if (!Number.isFinite(n)) return { text: '—', clr: '#64748b' };
-  const pct = Math.abs(n) <= 1.5 ? n * 100 : n;
-  const sign = pct > 0 ? '+' : '';
+  const sign = n > 0 ? '+' : '';
   const clr = reversed
-    ? (pct < 0 ? '#22c55e' : pct > 0 ? '#ef4444' : '#64748b')
-    : (pct > 0 ? '#22c55e' : pct < 0 ? '#ef4444' : '#64748b');
-  return { text: `${sign}${pct.toFixed(2)}%`, clr };
+    ? (n < 0 ? '#22c55e' : n > 0 ? '#ef4444' : '#64748b')
+    : (n > 0 ? '#22c55e' : n < 0 ? '#ef4444' : '#64748b');
+  return { text: `${sign}${n.toFixed(2)}%`, clr };
 }
 
 function qualFmtCompactSigned(v: any): { text: string; clr: string } {
@@ -3264,7 +3265,11 @@ export default function WatchlistPage() {
         const sv = String(v).replace(/%$/, '').trim().toLowerCase();
         if (sv === 'not_meaningful' || sv === 'history_building') return { v: null, missing: true };
         const n = typeof v === 'number' ? v : parseFloat(sv);
-        return { v: Number.isFinite(n) ? n : null, missing: !Number.isFinite(n) };
+        if (!Number.isFinite(n)) return { v: null, missing: true };
+        // Negative/zero valuation multiples (P/E, P/FCF, EV/EBITDA, etc.) must sort after
+        // valid positive values — treat them as missing so they fall to the end.
+        if (col?.fmt === 'ratio' && n <= 0) return { v: null, missing: true };
+        return { v: n, missing: false };
       }
     }
   }
@@ -5466,11 +5471,37 @@ export default function WatchlistPage() {
                     const r = fundFmtVol(v);
                     content = r; color = r === '—' ? C.dim : C.text;
                   } else if (col.fmt === 'pct') {
-                    const r = fundFmtPct(v);
-                    content = r.text; color = r.clr;
+                    // Quality columns send percentage-point values — use qualFmtPct (no ×100).
+                    // Fundamental columns still use the original fundFmtPct.
+                    if (cols !== FUND_COLS) {
+                      const r = qualFmtPct(v, false);
+                      content = r.text; color = r.clr;
+                    } else {
+                      const r = fundFmtPct(v);
+                      content = r.text; color = r.clr;
+                    }
                   } else if (col.fmt === 'ratio') {
-                    const r = fundFmtRatio(v);
-                    content = r; color = r === '—' ? C.dim : C.text;
+                    // Quality mode: show N/M badge when backend supplies a not_meaningful reason,
+                    // even if the raw value is numeric (e.g. negative P/E).
+                    if (cols !== FUND_COLS) {
+                      const nmReason = row[`_${col.key}_not_meaningful_reason`] as string | undefined;
+                      if (nmReason) {
+                        content = (
+                          <span title={nmReason} style={{
+                            fontSize: 9, color: '#64748b', cursor: 'help',
+                            background: 'rgba(100,116,139,0.1)', padding: '1px 5px',
+                            borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)',
+                          }}>N/M</span>
+                        );
+                        color = 'inherit';
+                      } else {
+                        const r = fundFmtRatio(v);
+                        content = r; color = r === '—' ? C.dim : C.text;
+                      }
+                    } else {
+                      const r = fundFmtRatio(v);
+                      content = r; color = r === '—' ? C.dim : C.text;
+                    }
                   } else if (col.fmt === 'date') {
                     const r = fundFmtDate(v);
                     content = r; color = r === '—' ? C.dim : C.text;
