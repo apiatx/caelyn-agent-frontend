@@ -1067,6 +1067,33 @@ function findAnyColDef(key: string): FundColDef | undefined {
     || QUALITY_VALUATION_COLS.find(c => c.key === key);
 }
 
+/** Keys of Quality columns whose fmt === 'pct' — use qualFmtPct (no ×100 scaling). */
+const QUALITY_PCT_KEYS = new Set<string>(
+  [...QUALITY_OVERVIEW_COLS, ...QUALITY_FINANCIAL_STRENGTH_COLS,
+   ...QUALITY_BUSINESS_QUALITY_COLS, ...QUALITY_GROWTH_QUALITY_COLS,
+   ...QUALITY_VALUATION_COLS]
+    .filter(c => c.fmt === 'pct')
+    .map(c => c.key)
+);
+
+/** Valuation-multiple columns that must display N/M for non-positive or missing values. */
+const VALUATION_MULTIPLE_KEYS = new Set<string>([
+  'pe_ratio', 'forward_pe', 'ps_ratio', 'forward_ps',
+  'ev_ebitda', 'forward_ev_sales', 'forward_ev_ebitda', 'p_fcf',
+]);
+
+/** Explicit map from valuation column key → backend not-meaningful reason field name. */
+const VALUATION_NM_REASON_KEYS: Record<string, string> = {
+  pe_ratio:          '_pe_not_meaningful_reason',
+  forward_pe:        '_forward_pe_not_meaningful_reason',
+  ps_ratio:          '_ps_not_meaningful_reason',
+  forward_ps:        '_forward_ps_not_meaningful_reason',
+  ev_ebitda:         '_ev_ebitda_not_meaningful_reason',
+  forward_ev_sales:  '_forward_ev_sales_not_meaningful_reason',
+  forward_ev_ebitda: '_forward_ev_ebitda_not_meaningful_reason',
+  p_fcf:             '_p_fcf_not_meaningful_reason',
+};
+
 function fundGetField(row: any, key: string, aliases: string[] = []): any {
   if (!row) return undefined;
   if (row[key] !== undefined && row[key] !== null) return row[key];
@@ -3266,9 +3293,9 @@ export default function WatchlistPage() {
         if (sv === 'not_meaningful' || sv === 'history_building') return { v: null, missing: true };
         const n = typeof v === 'number' ? v : parseFloat(sv);
         if (!Number.isFinite(n)) return { v: null, missing: true };
-        // Negative/zero valuation multiples (P/E, P/FCF, EV/EBITDA, etc.) must sort after
-        // valid positive values — treat them as missing so they fall to the end.
-        if (col?.fmt === 'ratio' && n <= 0) return { v: null, missing: true };
+        // Only the 8 valuation-multiple columns reject non-positive values (sort after valid rows).
+        // Net Debt/EBITDA, Interest Coverage, FCF Yield etc. remain numerically sortable when negative.
+        if (VALUATION_MULTIPLE_KEYS.has(key) && n <= 0) return { v: null, missing: true };
         return { v: n, missing: false };
       }
     }
@@ -5471,9 +5498,9 @@ export default function WatchlistPage() {
                     const r = fundFmtVol(v);
                     content = r; color = r === '—' ? C.dim : C.text;
                   } else if (col.fmt === 'pct') {
-                    // Quality columns send percentage-point values — use qualFmtPct (no ×100).
-                    // Fundamental columns still use the original fundFmtPct.
-                    if (cols !== FUND_COLS) {
+                    // Quality pct columns deliver percentage-point values — use qualFmtPct (no ×100).
+                    // Identified by explicit column-key membership, not a broad cols comparison.
+                    if (QUALITY_PCT_KEYS.has(col.key)) {
                       const r = qualFmtPct(v, false);
                       content = r.text; color = r.clr;
                     } else {
@@ -5481,14 +5508,20 @@ export default function WatchlistPage() {
                       content = r.text; color = r.clr;
                     }
                   } else if (col.fmt === 'ratio') {
-                    // Quality mode: show N/M badge when backend supplies a not_meaningful reason,
-                    // even if the raw value is numeric (e.g. negative P/E).
-                    if (cols !== FUND_COLS) {
-                      const nmReason = row[`_${col.key}_not_meaningful_reason`] as string | undefined;
-                      if (nmReason) {
+                    // Valuation-multiple columns (P/E, P/FCF, EV/EBITDA, etc.) → N/M for
+                    // null/missing, non-positive values, or when backend supplies a reason.
+                    // Non-valuation ratios (Net Debt/EBITDA, Interest Coverage, etc.) render normally.
+                    if (VALUATION_MULTIPLE_KEYS.has(col.key)) {
+                      const nmReason = (VALUATION_NM_REASON_KEYS[col.key]
+                        ? row[VALUATION_NM_REASON_KEYS[col.key]] as string | undefined
+                        : undefined);
+                      const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+                      const isNonPositive = !Number.isFinite(n) || n <= 0;
+                      if (nmReason || isNonPositive) {
                         content = (
-                          <span title={nmReason} style={{
-                            fontSize: 9, color: '#64748b', cursor: 'help',
+                          <span title={nmReason || undefined} style={{
+                            fontSize: 9, color: '#64748b',
+                            cursor: nmReason ? 'help' : 'default',
                             background: 'rgba(100,116,139,0.1)', padding: '1px 5px',
                             borderRadius: 3, border: '1px solid rgba(100,116,139,0.25)',
                           }}>N/M</span>

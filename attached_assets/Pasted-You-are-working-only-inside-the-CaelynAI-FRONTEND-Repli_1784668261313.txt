@@ -1,0 +1,177 @@
+You are working only inside the CaelynAI FRONTEND Replit.
+
+Complete this task in one pass.
+
+Do not inspect or modify the backend repository.
+Do not change API routes.
+Do not redesign the Watchlist.
+Do not refactor unrelated Watchlist code.
+Do not create new components or duplicate formatter systems.
+Preserve the existing WatchlistPage, Quality mode, columns, filtering, sorting and styling.
+
+The backend contract is final:
+
+- Quality percentage values are already expressed in percentage-point units.
+- Numeric 0.9658 means 0.9658%, not 96.58%.
+- String "0.97%" means 0.97%.
+- Invalid valuation multiples are null/omitted and may include an explicit not-meaningful reason.
+- Negative Net Debt / EBITDA is valid and means net cash.
+- Negative Interest Coverage is valid when EBIT is negative.
+- Negative FCF Yield is valid and means cash burn.
+
+First read the current Watchlist code containing:
+
+- qualFmtPct
+- fundFmtPct
+- Quality column definitions
+- Quality cell rendering
+- Quality sorting
+
+Some of the requested work may already exist. Keep correct existing work and only fix what remains.
+
+==================================================
+1. QUALITY PERCENTAGE FORMATTING
+==================================================
+
+For Quality mode only:
+
+- Strip a trailing "%" from string values.
+- Parse the resulting number.
+- Display the number directly as a percentage.
+- Never multiply by 100 based on magnitude.
+
+Required examples:
+
+- 0.9658 → 0.97%
+- "0.97%" → 0.97%
+- 14.90 → 14.90%
+- -0.42 → -0.42%
+- 0 → 0.00%
+
+These values must never display as:
+
+- 96.58%
+- 97.00%
+- 1490.00%
+
+Preserve the existing positive/negative color behavior and any existing per-column reversed-color behavior.
+
+Do not change fundFmtPct or the formatting behavior of the Fundamental toggle.
+
+Do not use a broad condition such as:
+
+cols !== FUND_COLS
+
+to identify Quality mode, because that can affect Technical or other modes.
+
+Use the existing explicit Quality-mode state or an explicit Quality-column identity check so this behavior applies only to Quality.
+
+==================================================
+2. QUALITY VALUATION N/M DISPLAY
+==================================================
+
+For these Quality valuation columns:
+
+- PE Ratio
+- Forward P/E
+- PS Ratio
+- Forward P/S
+- EV/EBITDA
+- Forward EV/Sales
+- Forward EV/EBITDA
+- P/FCF
+
+Display N/M when:
+
+- the value is null, undefined, blank or non-numeric;
+- an explicit backend not-meaningful reason exists;
+- a legacy numeric value is zero or negative.
+
+When a reason exists, retain the current small N/M badge and expose the reason in the tooltip.
+
+Do not dynamically guess a reason key by concatenating the visible column name.
+
+Use an explicit field-to-reason-key map based on the actual keys already present in the returned row. Support the current backend reason fields for each valuation metric.
+
+Do not display zero, a negative valuation multiple, a dash or an enormous sentinel value as though it were valid.
+
+==================================================
+3. DO NOT INVALIDATE LEGITIMATE NEGATIVE RATIOS
+==================================================
+
+Do not apply a generic rule that treats every ratio <= 0 as missing.
+
+These negative values are legitimate and must remain visible and numerically sortable:
+
+- Net Debt / EBITDA
+- Interest Coverage
+
+Required examples:
+
+- Net Debt / EBITDA = -1.05 → display -1.05x
+- Interest Coverage = -6.82 → display -6.82x
+
+FCF Yield may also remain negative and must display as the correct negative percentage.
+
+Only the valuation-multiple columns listed in Part 2 should reject nonpositive values.
+
+==================================================
+4. SORTING
+==================================================
+
+For the Quality valuation-multiple columns listed in Part 2:
+
+- valid positive values sort numerically;
+- N/M values always sort after valid values;
+- this must hold in both ascending and descending order.
+
+For Net Debt / EBITDA and Interest Coverage:
+
+- preserve normal numeric sorting;
+- negative values must not be converted to missing.
+
+For percentage columns:
+
+- sort using the parsed percentage-point number directly;
+- "0.97%" and 0.9658 must sort near each other correctly;
+- do not multiply either by 100.
+
+Do not alter sorting in the Fundamental or Technical modes.
+
+==================================================
+5. VERIFY THE ACTUAL QUALITY TABLE
+==================================================
+
+Run the existing frontend checks and open the Watchlist Quality mode.
+
+Verify at minimum:
+
+- FCF Yield around 0.9658 displays as 0.97%, not 96.58%.
+- A positive percentage around 14.90 displays as 14.90%, not 1490%.
+- A negative percentage around -0.42 displays as -0.42%.
+- A null PE Ratio displays as N/M.
+- A negative Net Debt / EBITDA remains visible as a valid negative ratio.
+- A negative Interest Coverage remains visible as a valid negative ratio.
+- N/M valuation rows sort after valid positive multiples.
+- Fundamental-toggle percentage formatting is unchanged.
+- Technical mode is unchanged.
+- No console errors occur.
+
+==================================================
+6. FINISH
+==================================================
+
+After all checks pass:
+
+- publish the frontend once;
+- perform one published-page smoke check of the Watchlist Quality mode;
+- do not continue investigating unrelated issues.
+
+Return a concise report containing:
+
+- exact file changed;
+- exact formatter change;
+- exact sorting change;
+- the five representative before/after display checks;
+- confirmation Fundamental and Technical modes were untouched;
+- confirmation the frontend was published successfully.
