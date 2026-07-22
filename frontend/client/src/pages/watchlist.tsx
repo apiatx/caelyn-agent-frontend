@@ -3505,17 +3505,18 @@ export default function WatchlistPage() {
   }, [mergedTickers, watchlist]);
 
   /* ── unique themes from actual screener rows (used by THEMES bar) ── */
+  const SCREENER_THEME_HIDDEN = new Set(['Semiconductor Equipment', 'Semi Materials']);
   const screenerThemes = useMemo<string[]>(() => {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const s of sortedTickers) {
       const t = ((s as any).canonical_theme_name || (s as any).section_title || (s as any).theme || '').toString().trim();
-      if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+      if (t && !seen.has(t) && !SCREENER_THEME_HIDDEN.has(t)) { seen.add(t); out.push(t); }
     }
     // Also fold in any backend market_themes not already covered
     for (const entry of marketThemes) {
       const label = resolveThemeLabel(entry as any).trim();
-      if (label && !seen.has(label)) { seen.add(label); out.push(label); }
+      if (label && !seen.has(label) && !SCREENER_THEME_HIDDEN.has(label)) { seen.add(label); out.push(label); }
     }
     return out.sort((a, b) => a.localeCompare(b));
   }, [sortedTickers, marketThemes]);
