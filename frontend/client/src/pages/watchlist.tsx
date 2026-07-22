@@ -2337,6 +2337,7 @@ export default function WatchlistPage() {
       return r.json();
     },
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: optionsResp, isLoading: optionsLoading } = useQuery({
@@ -2488,6 +2489,7 @@ export default function WatchlistPage() {
   const toggleFavorite = useCallback(async (ticker: string) => {
     const t = ticker.toUpperCase();
     const wasFav = favoritesSet.has(t);
+    // Optimistic update
     setFavoritesSet(prev => {
       const next = new Set(prev);
       if (wasFav) next.delete(t); else next.add(t);
@@ -2505,14 +2507,23 @@ export default function WatchlistPage() {
         });
         if (!r.ok) throw new Error('add failed');
       }
+      // Keep React Query cache in sync so any future refetch returns correct data
+      qc.setQueryData<{ favorites: string[]; count: number }>(['watchlist-favorites'], old => {
+        if (!old) return old;
+        const updated = wasFav
+          ? old.favorites.filter(f => f.toUpperCase() !== t)
+          : [...old.favorites.filter(f => f.toUpperCase() !== t), t];
+        return { favorites: updated, count: updated.length };
+      });
     } catch {
+      // Revert optimistic update on failure
       setFavoritesSet(prev => {
         const next = new Set(prev);
         if (wasFav) next.add(t); else next.delete(t);
         return next;
       });
     }
-  }, [favoritesSet]);
+  }, [favoritesSet, qc]);
 
   /* ── delete specific watchlist ───────────────────────────────────── */
   const deleteMut = useMutation({
