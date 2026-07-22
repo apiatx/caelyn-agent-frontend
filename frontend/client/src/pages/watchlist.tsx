@@ -4475,9 +4475,9 @@ export default function WatchlistPage() {
           return t === selectedTheme;
         })
       : screenerFilteredRows;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px 56px';
-    // 31 tracks: original 17 + 13 technical cols + 1 beta col; total min ~2550px
-    const TICKER_TABLE_MIN_WIDTH = 2550;
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px 80px';
+    // 31 tracks: original 17 + 13 technical cols + 1 beta col; total min ~2574px
+    const TICKER_TABLE_MIN_WIDTH = 2574;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
