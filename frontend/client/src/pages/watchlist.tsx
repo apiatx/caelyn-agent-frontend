@@ -3315,6 +3315,10 @@ export default function WatchlistPage() {
         const r = v != null ? (RANK[v] ?? 0) : 0;
         return { v: r, missing: r === 0 };
       }
+      case 'beta': {
+        const n = Number(stock.beta);
+        return { v: n, missing: !Number.isFinite(n) };
+      }
       case 'cash_runway_status': {
         const s = String(fundGetField(stock, key, ['Cash Runway Status','cashRunwayStatus','runway_status']) ?? '').toLowerCase().replace(/-/g,'_').trim();
         const r = RUNWAY_STATUS_RANK[s] ?? 0;
@@ -4471,9 +4475,9 @@ export default function WatchlistPage() {
           return t === selectedTheme;
         })
       : screenerFilteredRows;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px';
-    // 30 tracks: original 17 + 13 technical cols; total min ~2490px
-    const TICKER_TABLE_MIN_WIDTH = 2490;
+    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px 56px';
+    // 31 tracks: original 17 + 13 technical cols + 1 beta col; total min ~2550px
+    const TICKER_TABLE_MIN_WIDTH = 2550;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] = [
       { key: 'ticker', label: 'Ticker' },
       { key: 'company', label: 'Company' },
@@ -4506,6 +4510,7 @@ export default function WatchlistPage() {
       { key: 'atrPct',         label: 'ATR %',             tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
       { key: 'momentumTrend',  label: 'Momentum Trend',    tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
       { key: 'techState',      label: 'Technical State',   tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
+      { key: 'beta',           label: 'Beta',              tooltip: 'Measures price sensitivity to broad market movements. Beta above 1.0 means more volatile than the market; below 1.0 means less volatile; negative beta tends to move opposite to the market.' },
     ];
 
     /* ── inline filter modal ─────────────────────────────────────────── */
@@ -5243,6 +5248,13 @@ export default function WatchlistPage() {
                         <span style={{ ..._sp, color: _atrV != null ? C.text : C.dim }}>{_atrStr}</span>
                         <span style={{ ..._sp, color: _moClr }}>{_tl(_tm?.momentum_trend)}</span>
                         <span style={{ ..._sp, color: _tsClr }}>{_tl(_tsVal)}</span>
+                        {/* Beta — col 31 */}
+                        {(() => {
+                          const _bv = (stock as any).beta != null ? Number((stock as any).beta) : null;
+                          const _bStr = _bv != null && Number.isFinite(_bv) ? _bv.toFixed(2) : DASH;
+                          const _bClr = _bv == null ? C.dim : Math.abs(_bv) > 1.5 ? '#fb923c' : _bv > 1 ? C.amber : _bv < 0 ? '#a78bfa' : C.text;
+                          return <span style={{ ..._sp, color: _bClr }}>{_bStr}</span>;
+                        })()}
                       </>
                     );
                   })(_s2?.technical_metrics, _s2?.technical_state, _s2?.technical_timing_score)}
