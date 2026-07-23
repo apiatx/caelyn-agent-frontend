@@ -1,0 +1,936 @@
+FRONTEND IMPLEMENTATION — EARNINGS INTELLIGENCE IN THE EXISTING WATCHLIST TICKER POPUP
+
+Implement the frontend now.
+
+Work autonomously through audit, implementation, validation, and deployment. Do not stop for routine confirmation unless there is a genuine blocker or the deployed backend contract differs materially from what is documented below.
+
+FRONTEND ONLY.
+
+Do not modify the backend.
+Do not create a new top-level page.
+Do not replace the ticker popup.
+Do not redesign the Watchlist page.
+Do not change watchlist scoring, confluence, technical, fundamentals, news, catalysts, or unrelated popup sections.
+Do not create a second ticker-detail request.
+Do not hardcode a new backend base URL.
+Do not push to Git.
+Do not create a branch.
+
+PRIMARY OBJECTIVE
+
+Add a professional-grade Earnings Intelligence experience inside the existing Watchlist ticker-click popup.
+
+The existing backend endpoint is:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+The existing ticker-detail response now includes:
+
+earnings_intelligence
+
+The frontend must consume this data from the already-existing ticker-detail request. The popup must not make additional FMP, Tradier, EDGAR, or duplicate ticker-detail requests.
+
+TOP-LEVEL UI DECISION
+
+Add one new primary popup tab:
+
+Earnings
+
+Inside Earnings, add four compact secondary tabs:
+
+1. Overview
+2. History
+3. Price Moves
+4. Ratings
+
+Do not add Transcript, Filings, Reports, Events, Audio, or Short Interest yet.
+
+The backend does not currently provide complete data for those sections.
+
+If earnings_intelligence is null, do not render the Earnings tab for that symbol.
+
+This is the expected behavior for ineligible instruments such as ETFs.
+
+If earnings_intelligence exists but individual coverage flags are false, keep the Earnings tab visible and show section-specific unavailable states.
+
+PART 1 — AUDIT BEFORE EDITING
+
+Before writing code, inspect:
+
+1. Existing Watchlist ticker popup component hierarchy
+2. Existing ticker-detail query/hook/API client
+3. Existing primary tab system
+4. Existing secondary-tab or segmented-control components
+5. Existing modal width, scrolling, and responsive behavior
+6. Existing chart library and reusable chart components
+7. Existing cards, badges, tooltips, tables, skeletons, and empty states
+8. Existing number, currency, percentage, and date formatters
+9. Existing dark glass-card styling and spacing tokens
+10. Existing TypeScript models for ticker-detail responses
+
+Reuse current paths and components wherever possible.
+
+Do not create a parallel popup or a second design system.
+
+After the audit, implement without waiting for confirmation unless an actual backend-contract mismatch blocks the work.
+
+PART 2 — BACKEND CONTRACT
+
+The response contains:
+
+earnings_intelligence: {
+  schema_version: 1,
+  earnings_history: EarningsQuarter[],
+  reaction_summary: ReactionSummary,
+  ratings: {
+    consensus: RatingsConsensus | {},
+    monthly_distribution: MonthlyRatingDistribution[],
+    recent_actions: RatingAction[],
+    price_target: PriceTarget | null,
+    price_target_summary: PriceTargetSummary | null
+  },
+  sec_filings: null,
+  source_status: {
+    earnings_fetched_at: string | null,
+    ratings_fetched_at: string | null,
+    history_bars_source: string | null,
+    sec_filings_omitted_reason: string | null,
+    errors: Record<string, string>,
+    coverage: {
+      has_earnings_history: boolean,
+      has_reactions: boolean,
+      has_ratings_consensus: boolean,
+      has_rating_actions: boolean,
+      has_rating_history: boolean,
+      has_price_targets: boolean
+    }
+  }
+}
+
+Each earnings_history record can contain:
+
+- date
+- timing
+- timing_confidence
+- timing_source
+- fiscal_year
+- fiscal_period
+- report_status
+- join_method
+- eps_actual
+- eps_estimate
+- eps_surprise_pct
+- eps_surprise_amount
+- eps_qoq
+- eps_yoy
+- revenue_actual
+- revenue_estimate
+- revenue_surprise_pct
+- revenue_surprise_amount
+- revenue_qoq_pct
+- revenue_yoy_pct
+- price_reaction
+
+price_reaction can contain:
+
+- baseline_date
+- baseline_close
+- first_reaction_session
+- sessions_used
+- opening_gap_pct
+- reaction_1d_pct
+- reaction_3d_pct
+- reaction_5d_pct
+- max_upside_5d_pct
+- max_drawdown_5d_pct
+- bars_source
+- calculation_method
+- calculation_confidence
+- reactions_final
+
+Important semantics:
+
+- Percentages are already percentage points.
+- 16.47 means 16.47%, not 0.1647%.
+- Revenue values are raw dollars.
+- EPS values are dollars per share.
+- earnings_history is sorted most recent first.
+- Null means unavailable. Never display null as zero.
+- reactions_final=false means the reaction window is preliminary.
+- timing_confidence is usually inferred_low.
+- sec_filings is currently null and must not be rendered.
+- Quarterly future estimates are not available.
+- Do not fabricate projected quarterly bars.
+
+Create accurate TypeScript interfaces based on the real deployed response.
+
+Do not type fields as always present when live records can return null.
+
+PART 3 — EARNINGS TAB SHELL
+
+Use the existing popup header. Do not duplicate the company logo, ticker, company name, current price, or daily price change inside the Earnings tab if those already remain visible above the tab content.
+
+The Earnings tab should feel native to the existing popup:
+
+- compact
+- professional
+- data-dense without becoming cramped
+- aligned with Caelyn’s current dark glass-card style
+- restrained green and red usage
+- white primary text
+- muted secondary text
+- subtle borders
+- no giant decorative headers
+- no random gradients
+- no excessive whitespace
+- no bright-blue ticker text
+- no copied third-party branding
+
+Use a compact secondary navigation immediately below the primary popup tabs:
+
+Overview | History | Price Moves | Ratings
+
+Remember the selected secondary tab while the popup remains open.
+
+Do not refetch data when switching secondary tabs.
+
+PART 4 — OVERVIEW
+
+The Overview tab should immediately answer:
+
+- What did the company report?
+- Did it beat or miss?
+- How did the stock react?
+- How does that compare with its normal earnings reaction?
+
+Use the most recent earnings_history record.
+
+A. Quarter header
+
+Show:
+
+- fiscal period and fiscal year
+- report date
+- BMO / AMC / During Market / Timing Unknown badge
+- Reported status
+- preliminary reaction badge when reactions_final=false
+
+When timing_confidence is inferred_low, show a subtle tooltip or footnote:
+
+“Earnings timing inferred from available filing metadata.”
+
+Do not show a dramatic warning.
+
+B. Revenue and EPS cards
+
+Create two compact side-by-side result cards:
+
+Revenue:
+
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+- Beat / Miss / In line label
+
+EPS:
+
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+- Beat / Miss / In line label
+
+Use green only for positive surprise and red only for negative surprise.
+
+When an estimate is null, show:
+
+Estimate unavailable
+
+Do not classify that result as a beat or miss.
+
+C. Growth context
+
+Show:
+
+- Revenue QoQ
+- Revenue YoY
+- EPS QoQ
+- EPS YoY
+
+For EPS, use semantic transition labels supplied by the backend:
+
+- Profit increased
+- Profit decreased
+- Turned profitable
+- Turned negative
+- Loss narrowed
+- Loss widened
+- Flat
+- Unavailable
+
+Do not display ridiculous ordinary percentages when EPS crosses zero.
+
+D. Latest price reaction
+
+Show compact metrics:
+
+- Opening gap
+- 1-day reaction
+- 3-day reaction
+- 5-day reaction
+- Maximum upside over five sessions
+- Maximum drawdown over five sessions
+
+If a value is null, display an em dash.
+
+If calculation_method indicates unknown timing or approximation, label the reaction:
+
+Close-to-close approximation
+
+Do not imply exact historical after-hours precision.
+
+E. Historical context
+
+Use reaction_summary to show:
+
+- Average 1D move
+- Median 1D move
+- Average absolute 1D move
+- Positive reaction rate
+- Largest positive 1D move
+- Largest negative 1D move
+
+Include observation counts in tooltips or supporting text.
+
+Example:
+
+Average 1D move
+-1.28%
+19 observations
+
+PART 5 — HISTORY
+
+Build a polished historical Revenue & Earnings view.
+
+A. Controls
+
+Add a compact timeframe selector:
+
+- 3Y
+- Max
+
+Max should use all available records, generally up to approximately 19–20 quarters.
+
+Do not show 5Y when the symbol has substantially less history unless the control automatically reflects available coverage.
+
+B. Revenue chart
+
+Use the existing chart library.
+
+Display by fiscal quarter:
+
+- Revenue actual
+- Revenue estimate
+
+Recommended visual:
+
+- grouped or overlaid bars
+- actual as primary
+- estimate as muted comparison
+- positive/negative surprise visible in tooltip, not through noisy rainbow coloring
+
+Format revenue in compact units:
+
+- $850M
+- $1.4B
+- $12.3B
+
+The raw backend value is in dollars.
+
+Tooltip:
+
+- quarter
+- report date
+- revenue actual
+- revenue estimate
+- surprise amount
+- surprise percentage
+- revenue QoQ
+- revenue YoY
+
+C. EPS chart
+
+Display:
+
+- EPS actual
+- EPS estimate
+- zero reference line
+
+EPS can be negative.
+
+Tooltip:
+
+- quarter
+- EPS actual
+- EPS estimate
+- EPS surprise
+- QoQ semantic transition
+- YoY semantic transition
+
+D. Beat-rate summary
+
+Show compact text or cards:
+
+- Revenue beats: X of Y valid comparisons
+- EPS beats: X of Y valid comparisons
+
+Calculate these only from records with both actual and estimate values.
+
+Do not count missing estimates as misses.
+
+E. Quarterly table
+
+Below the charts, create a dense responsive table with:
+
+- Quarter
+- Report date
+- Timing
+- Revenue estimate
+- Revenue actual
+- Revenue surprise
+- Revenue QoQ
+- Revenue YoY
+- EPS estimate
+- EPS actual
+- EPS surprise
+- EPS QoQ
+- EPS YoY
+- 1D reaction
+
+Requirements:
+
+- sortable only if the existing table system already supports it cleanly
+- default newest first
+- sticky header if consistent with current modal tables
+- horizontal scrolling inside the table container
+- do not widen or break the entire modal
+- use semantic EPS transition labels
+- use em dash for unavailable values
+- no “$0” or “0%” placeholders for nulls
+
+PART 6 — PRICE MOVES
+
+This is the highest-priority visual section.
+
+A. Summary row
+
+Show:
+
+- Average move
+- Median move
+- Average absolute move
+- Positive reactions
+- Largest gain
+- Largest loss
+
+B. Horizon selector
+
+Add:
+
+- 1D
+- 3D
+- 5D
+
+Switch the chart and headline summary to the selected reaction horizon.
+
+For 3D and 5D, use the corresponding observation count.
+
+C. Historical reaction chart
+
+Create a clean positive/negative earnings-reaction chart:
+
+- one bar per quarter
+- x-axis: compact quarter/date
+- y-axis: selected reaction percentage
+- zero reference line
+- green above zero
+- red below zero
+- no huge empty chart area
+- legible labels
+- responsive width
+- unclipped tooltips
+
+Tooltip must show:
+
+- fiscal quarter
+- report date
+- timing
+- timing confidence
+- revenue surprise
+- EPS surprise
+- opening gap
+- 1D reaction
+- 3D reaction
+- 5D reaction
+- max upside
+- max drawdown
+- calculation method
+- finalized or preliminary status
+
+Records with null selected-horizon values should be omitted from the plotted series rather than plotted as zero.
+
+D. Reaction table
+
+Below the chart show:
+
+- Quarter
+- Timing
+- Revenue surprise
+- EPS surprise
+- Opening gap
+- 1D
+- 3D
+- 5D
+- Max upside
+- Max drawdown
+- Status
+
+Status:
+
+- Final
+- Preliminary
+- Approximation
+- Unavailable
+
+E. Methodology note
+
+Show a muted note at the bottom:
+
+“Historical reactions use regular-session price data. Earnings timing may be inferred from available filing metadata, and exact historical after-hours reactions may be unavailable.”
+
+Do not repeat the note excessively across cards.
+
+PART 7 — RATINGS
+
+A. Consensus
+
+Use ratings.consensus.
+
+Display:
+
+- consensus label
+- total ratings
+- Strong Buy
+- Buy
+- Hold
+- Sell
+- Strong Sell
+
+Use a compact distribution bar or existing donut component.
+
+Do not imply these are price-target analysts.
+
+Use the backend name total_ratings.
+
+When consensus is an empty object or has_ratings_consensus=false, show:
+
+Analyst consensus unavailable
+
+B. Price-target range
+
+Use ratings.price_target.
+
+Display a horizontal target rail with:
+
+- Low
+- Median
+- Average
+- High
+
+Also place the current stock price on the rail using the existing popup quote.
+
+Calculate frontend display upside/downside versus current price only when current price and target are valid.
+
+Prevent label collisions when values are close.
+
+Use a stacked fallback layout on narrower widths.
+
+Do not invent an analyst count or target date.
+
+C. Rolling target summary
+
+Use ratings.price_target_summary.
+
+Show:
+
+- Last month average and count
+- Last quarter average and count
+- Last year average and count
+- All-time average and count
+
+These are rolling summary windows, not a monthly historical target series.
+
+Do not draw a historical price-target line chart from these four values.
+
+Show publishers in a muted expandable or tooltip area when available.
+
+D. Monthly analyst distribution
+
+Use ratings.monthly_distribution.
+
+Create a compact stacked bar chart by month with:
+
+- Strong Buy
+- Buy
+- Hold
+- Sell
+- Strong Sell
+
+This is rating-distribution history.
+
+It is not a history of individual analyst actions.
+
+E. Recent rating actions
+
+Use ratings.recent_actions.
+
+Each row should show:
+
+- firm
+- date
+- action
+- previous grade
+- new grade
+
+Examples:
+
+Oppenheimer
+Maintains Outperform
+
+Piper Sandler
+Maintains Neutral
+
+Do not show:
+
+- analyst name
+- previous price target
+- new price target
+- implied target change
+
+The backend does not provide those fields.
+
+If previous and new grade are identical, render the action naturally:
+
+Maintains Outperform
+
+Do not display:
+
+Outperform → Outperform
+
+unless the existing style strongly favors that representation.
+
+PART 8 — EMPTY AND PARTIAL STATES
+
+The frontend must handle real coverage gaps cleanly.
+
+A. earnings_intelligence === null
+
+Do not render the Earnings primary tab.
+
+This is expected for ineligible securities such as ETFs.
+
+B. Eligible symbol with no earnings history
+
+The Earnings tab remains visible because ratings or targets may still exist.
+
+History and Price Moves should show:
+
+“Historical earnings data is not available from the current provider.”
+
+Do not show a broken chart.
+
+C. One quarter only
+
+Render the available quarter.
+
+Do not hide the section merely because there is insufficient multi-quarter history.
+
+For chart sections requiring multiple observations, show the one record where visually sensible or display:
+
+“More history will appear after additional reported quarters.”
+
+D. Ratings partial coverage
+
+Each ratings subsection fails independently.
+
+Examples:
+
+- consensus available, targets unavailable
+- target available, recent actions unavailable
+- monthly distribution available, no earnings history
+
+Do not replace the entire Ratings tab with one generic error.
+
+E. Backend errors
+
+Use source_status.errors only for meaningful section-level states.
+
+Do not expose raw internal stack traces or backend implementation details.
+
+PART 9 — NUMBER FORMATTING
+
+Reuse existing formatters when available.
+
+Required behavior:
+
+Revenue:
+
+- raw dollars to compact currency
+- $980M
+- $1.42B
+- $24.8B
+
+EPS:
+
+- two decimal places by default
+- preserve useful precision for small values when existing formatters support it
+
+Percentages:
+
+- backend values are already percentage points
+- add the % symbol only
+- do not multiply by 100
+
+Price targets and current stock price:
+
+- standard currency formatting
+- preserve cents where appropriate
+
+Counts:
+
+- integer formatting
+- no decimal places
+
+Null:
+
+- em dash
+
+PART 10 — PERFORMANCE
+
+Consume earnings_intelligence from the existing ticker-detail query.
+
+Do not:
+
+- create another request for the same endpoint
+- fetch historical prices from the frontend
+- call FMP directly
+- refetch when secondary tabs change
+- repeatedly transform large arrays on every render
+
+Memoize derived chart data where useful.
+
+Do not introduce a new state-management or query library.
+
+PART 11 — RESPONSIVE BEHAVIOR
+
+The ticker popup must remain usable on desktop and smaller screens.
+
+Requirements:
+
+- charts resize to modal width
+- cards collapse from multi-column to fewer columns cleanly
+- tables scroll internally
+- no full-page horizontal overflow
+- no clipped tooltips
+- no unreadably tiny text
+- no overlapping price-target labels
+- secondary tabs remain accessible
+- modal height and scrolling remain consistent with current behavior
+
+PART 12 — VISUAL POLISH
+
+Match the rest of Caelyn closely.
+
+Use:
+
+- existing glass-card styling
+- current border radius
+- current background hierarchy
+- current typography
+- existing muted text color
+- current chart-grid styling
+- current positive/negative colors
+- current tooltip styling
+- compact spacing
+
+Avoid:
+
+- copying the screenshots exactly
+- third-party branding
+- excessive gradients
+- neon glow
+- giant KPI tiles
+- thick borders
+- huge headers
+- excessive explanatory copy
+- blue ticker links
+- overly rounded consumer-app cards
+
+The goal is professional market intelligence, not a casino dashboard.
+
+PART 13 — TYPESCRIPT CONTRACT
+
+Create or extend the existing ticker-detail TypeScript types.
+
+Use explicit unions where appropriate:
+
+type EarningsTiming =
+  | "bmo"
+  | "amc"
+  | "during_market"
+  | "unknown";
+
+type TimingConfidence =
+  | "confirmed"
+  | "inferred_high"
+  | "inferred_low"
+  | "unknown";
+
+type EpsTransition =
+  | "profit_increased"
+  | "profit_decreased"
+  | "turned_profitable"
+  | "turned_negative"
+  | "loss_narrowed"
+  | "loss_widened"
+  | "flat"
+  | "unavailable";
+
+Do not type timing_confidence as only inferred_low merely because current records commonly use it.
+
+Do not assume fiscal_year, fiscal_period, price_reaction, targets, estimates, actuals, or growth values are always non-null.
+
+Match the deployed JSON exactly.
+
+PART 14 — TEST SYMBOLS
+
+Test these deployed symbols:
+
+Full coverage:
+
+- COIN
+- AAPL
+- RBLX
+- RDDT
+- NVDA
+- NBIS
+
+Partial coverage:
+
+- SPCX
+- PBLS
+- QNT
+- BTQ
+- CEPL
+- VIVO
+
+Ineligible:
+
+- UFO
+
+Required expectations:
+
+COIN:
+
+- 19 quarters
+- complete ratings
+- complete price targets
+- earnings-reaction chart
+- latest quarter summary
+
+NBIS:
+
+- earnings intelligence renders without NaN or JSON errors
+- partial reaction history is handled correctly
+
+RDDT:
+
+- shorter reaction observation history renders correctly
+
+SPCX, PBLS, QNT:
+
+- one historical quarter renders without broken multi-quarter UI
+
+BTQ, CEPL, VIVO:
+
+- valid partial empty states
+- no fake zero values
+
+UFO:
+
+- Earnings tab does not render
+
+PART 15 — ACCEPTANCE TESTS
+
+Do not declare completion until all pass:
+
+1. Existing ticker popup still opens normally
+2. Existing popup tabs remain intact
+3. Earnings tab appears only when earnings_intelligence is non-null
+4. No duplicate ticker-detail request
+5. No provider calls from the frontend
+6. Overview uses the newest quarter
+7. Revenue and EPS actual/estimate values are correct
+8. Percentages are not multiplied by 100
+9. Raw revenue dollars are formatted correctly
+10. Missing estimates show em dash or unavailable
+11. EPS transition labels render correctly
+12. 1D/3D/5D selector updates the reaction chart
+13. Null reactions are omitted, not plotted as zero
+14. Max drawdown displays negative or zero
+15. Preliminary reactions are labeled
+16. Timing inference tooltip appears where appropriate
+17. Ratings consensus totals match backend data
+18. No analyst names or price-target changes are invented
+19. Price-target labels do not overlap
+20. Rolling target summary is not mislabeled as historical target data
+21. Partial symbols render cleanly
+22. UFO does not show the Earnings tab
+23. Modal remains responsive
+24. No console errors
+25. No new TypeScript errors
+26. No broken charts
+27. No unrelated visual regressions
+28. Production build succeeds
+
+PART 16 — DEPLOYMENT
+
+After implementation and validation:
+
+- run the existing frontend typecheck/build
+- fix only issues caused by this work
+- smoke-test the popup against the deployed backend
+- deploy/publish the frontend using the project’s existing Replit workflow
+- do not modify or redeploy the backend
+
+FINAL REPORT
+
+Return:
+
+1. Audit findings
+2. Existing components and hooks reused
+3. Files changed
+4. New Earnings tab structure
+5. Charts implemented
+6. Tables implemented
+7. TypeScript interfaces added or changed
+8. Empty and partial-state behavior
+9. Responsive behavior
+10. Test results for all requested symbols
+11. Confirmation that no extra backend request was introduced
+12. Build/typecheck results
+13. Deployment status
+14. Any remaining limitations
+
+Do not claim completion unless the production build passes and the deployed popup successfully renders COIN, NBIS, a partial-coverage symbol, and UFO correctly.

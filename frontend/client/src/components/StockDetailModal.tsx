@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
-import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity } from 'lucide-react';
+import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity, BarChart2 } from 'lucide-react';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
+import { EarningsTab } from '@/components/EarningsTab';
 
 /* ── color tokens ─────────────────────────────────────────────────── */
 let C = DARK_C;
@@ -183,7 +184,7 @@ interface StockDetailModalProps {
   allNews?: any[];      /* watchlist live news — fallback for News tab */
   onClose: () => void;
 }
-type TabId = 'overview' | 'technical' | 'fundamentals' | 'news' | 'deep-dive';
+type TabId = 'overview' | 'technical' | 'fundamentals' | 'news' | 'deep-dive' | 'earnings';
 
 /* ── find stock in analysis ─────────────────────────────────────── */
 function findStockInAnalysis(analysis: any, ticker: string): any | null {
@@ -312,12 +313,18 @@ export function StockDetailModal({
     : useRowFallback ? (confluenceRow?.change_pct ?? backendQuote?.change_pct ?? null)
     : (backendQuote?.change_pct ?? null);
 
+  const hasEarnings = !detailLoading && detail?.earnings_intelligence != null;
+  const currentPrice: number | null =
+    stock?.price != null ? Number(stock.price) :
+    backendQuote?.price != null ? Number(backendQuote.price) : null;
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview',     label: 'Overview',     icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
     { id: 'technical',    label: 'Technical',    icon: <Activity   style={{ width: 13, height: 13 }} /> },
     { id: 'fundamentals', label: 'Fundamentals', icon: <BookOpen   style={{ width: 13, height: 13 }} /> },
     { id: 'news',         label: 'News',         icon: <Newspaper  style={{ width: 13, height: 13 }} /> },
     { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
+    ...(hasEarnings ? [{ id: 'earnings' as TabId, label: 'Earnings', icon: <BarChart2 style={{ width: 13, height: 13 }} /> }] : []),
   ];
 
   const { C: _C } = useTheme(); C = _C;
@@ -384,6 +391,7 @@ export function StockDetailModal({
           {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} screenerRow={screenerRow} />}
           {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} allNews={allNews} />}
           {activeTab === 'deep-dive' && <DeepDiveTab ticker={ticker} data={deepDive} loading={deepDiveLoading} error={deepDiveError} selectedModels={selectedModels} setSelectedModels={setSelectedModels} reportModel={reportModel} setReportModel={setReportModel} onGenerate={generateDeepDive} />}
+          {activeTab === 'earnings' && <EarningsTab detail={detail} detailLoading={detailLoading} currentPrice={currentPrice} />}
         </div>
       </div>
     </div>
