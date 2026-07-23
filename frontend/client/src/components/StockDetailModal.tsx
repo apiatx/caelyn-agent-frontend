@@ -325,8 +325,8 @@ export function StockDetailModal({
     { id: 'technical',    label: 'Technical',    icon: <Activity   style={{ width: 13, height: 13 }} /> },
     { id: 'fundamentals', label: 'Fundamentals', icon: <BookOpen   style={{ width: 13, height: 13 }} /> },
     { id: 'news',         label: 'News',         icon: <Newspaper  style={{ width: 13, height: 13 }} /> },
-    { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
     ...(hasEarnings ? [{ id: 'earnings' as TabId, label: 'Earnings', icon: <BarChart2 style={{ width: 13, height: 13 }} /> }] : []),
+    { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
   ];
 
   // If the user clicked into Earnings while loading but data came back with no earnings_intelligence,
@@ -382,7 +382,7 @@ export function StockDetailModal({
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', overflowX: 'auto', borderBottom: `1px solid ${C.border}`, padding: '0 20px', background: C.card }}>
+        <div style={{ display: 'flex', overflowX: 'auto', flexShrink: 0, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: '0 20px', margin: '8px 0 0', background: C.card }}>
           {tabs.map(tab => (
             <button
               key={tab.id}
