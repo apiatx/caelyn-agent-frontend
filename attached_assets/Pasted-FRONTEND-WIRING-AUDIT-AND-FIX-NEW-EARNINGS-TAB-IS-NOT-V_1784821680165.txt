@@ -1,0 +1,170 @@
+FRONTEND WIRING AUDIT AND FIX — NEW EARNINGS TAB IS NOT VISIBLE
+
+Do not redesign or rewrite the EarningsTab component yet.
+
+The implementation report says EarningsTab.tsx was wired into StockDetailModal.tsx, but the new Earnings tab is not visible in the actual Watchlist ticker-click popup.
+
+It is also not present in the Calendar > Earnings popup. The attached/current Calendar popup is clearly still the old UI showing only:
+
+- EPS estimate
+- 4-quarter beat record
+- average surprise
+- four simple earnings-history cards
+- analyst consensus
+- recent news
+
+The new Overview / History / Price Moves / Ratings interface is nowhere visible.
+
+OBJECTIVE
+
+Determine exactly where EarningsTab.tsx currently renders, identify the real component used by the Watchlist ticker-click workflow, and wire the new Earnings tab into the correct popup.
+
+Do not guess.
+Do not create another EarningsTab.
+Do not duplicate the backend request.
+Do not modify the backend.
+Do not redesign the Calendar page unless specifically required after the audit.
+Do not remove or replace the existing Calendar earnings popup.
+
+PART 1 — TRACE THE ACTUAL USER FLOWS
+
+Trace these two workflows separately:
+
+A. Watchlist page:
+- user clicks a ticker row/name
+- identify the exact click handler
+- identify the exact modal/dialog component opened
+- identify the exact ticker-detail hook/query used
+- identify the exact source file and component hierarchy
+
+B. Calendar page > Earnings:
+- user clicks an earnings ticker/event
+- identify the exact click handler
+- identify the exact modal/dialog component opened
+- identify its data source
+- confirm whether it uses StockDetailModal.tsx or another component
+
+Report the exact file paths and component names.
+
+PART 2 — LOCATE CURRENT EARNINGSTAB USAGE
+
+Find every import and render of:
+
+EarningsTab
+
+Report:
+
+- exact importing files
+- exact render conditions
+- exact parent component
+- which page/user workflow can actually reach it
+- whether that component is mounted in production
+- whether StockDetailModal.tsx is the real Watchlist popup or an unused/secondary modal
+
+Do not change code until this is understood.
+
+PART 3 — VERIFY THE REAL WATCHLIST RESPONSE
+
+Open the actual Watchlist ticker popup for COIN and inspect the existing ticker-detail query response.
+
+Confirm:
+
+- which endpoint is called
+- whether earnings_intelligence exists
+- whether it is populated
+- whether detail?.earnings_intelligence != null evaluates true
+- whether the Earnings tab button is created in the DOM
+- whether CSS, tab overflow, permissions, or state hides it
+- whether a stale query type or response transform strips the field
+
+Do not rely only on calling the backend manually. Test through the actual Watchlist UI workflow.
+
+PART 4 — WIRE INTO THE CORRECT WATCHLIST POPUP
+
+If the Watchlist uses a different modal than StockDetailModal.tsx:
+
+- move or reuse the existing EarningsTab component in the actual Watchlist modal
+- consume earnings_intelligence from that modal’s existing ticker-detail response
+- do not make a duplicate request
+- preserve all existing Watchlist popup tabs and behavior
+- add one primary Earnings tab
+- inside it render the existing:
+  - Overview
+  - History
+  - Price Moves
+  - Ratings
+
+If StockDetailModal.tsx is the correct Watchlist modal:
+
+- identify why the tab is hidden
+- fix the response typing, render condition, query transform, tab registration, or deployment issue
+- do not duplicate the component
+
+PART 5 — CALENDAR POPUP DECISION
+
+Do not automatically replace the existing Calendar earnings popup.
+
+First report whether the Calendar popup and Watchlist popup intentionally use separate modal systems.
+
+For this task, the required placement is:
+
+WATCHLIST TICKER-CLICK POPUP
+
+The Calendar popup may keep its existing compact earnings-event design.
+
+Optionally, if the existing architecture supports it cleanly, add an action such as:
+
+“Open Full Earnings Intelligence”
+
+that opens the same full ticker-detail modal.
+
+Do not duplicate the full 1,077-line Earnings interface inside two separate modal implementations.
+
+PART 6 — VISUAL PROOF
+
+After fixing, provide screenshots from the actual Watchlist page showing:
+
+1. Watchlist with COIN or another populated ticker
+2. The ticker-click popup open
+3. The new Earnings primary tab visible
+4. Earnings > Overview
+5. Earnings > History
+6. Earnings > Price Moves
+7. Earnings > Ratings
+8. UFO or an ineligible ETF with no Earnings tab
+
+The screenshot must begin from the real Watchlist user workflow, not an isolated component route or test harness.
+
+PART 7 — DEPLOYMENT VERIFICATION
+
+Confirm:
+
+- frontend production build passes
+- the corrected frontend is published
+- the deployed Watchlist popup shows the Earnings tab
+- COIN displays populated earnings intelligence
+- NBIS displays without NaN errors
+- a partial symbol displays a proper limited-data state
+- UFO does not display the Earnings tab
+- no duplicate ticker-detail request occurs
+- no console errors occur
+- existing Watchlist popup tabs still work
+
+FINAL REPORT
+
+Return:
+
+1. Actual Watchlist modal component path
+2. Actual Calendar modal component path
+3. Where EarningsTab had originally been wired
+4. Why it was not visible
+5. Files changed to correct it
+6. Whether the Calendar modal was changed
+7. Proof the real Watchlist workflow now displays it
+8. Screenshots produced
+9. Build result
+10. Deployment result
+
+Do not declare completion merely because EarningsTab.tsx compiles.
+
+Completion requires the new Earnings tab to be visibly accessible from the deployed Watchlist ticker-click popup.

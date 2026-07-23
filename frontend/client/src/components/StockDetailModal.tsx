@@ -313,7 +313,9 @@ export function StockDetailModal({
     : useRowFallback ? (confluenceRow?.change_pct ?? backendQuote?.change_pct ?? null)
     : (backendQuote?.change_pct ?? null);
 
-  const hasEarnings = !detailLoading && detail?.earnings_intelligence != null;
+  // Show Earnings tab optimistically while the detail is still loading (first fetch can take ~8s).
+  // Hide only once we've confirmed the loaded data has earnings_intelligence === null (ETF/ineligible).
+  const hasEarnings = detailLoading || (detail != null && detail.earnings_intelligence != null);
   const currentPrice: number | null =
     stock?.price != null ? Number(stock.price) :
     backendQuote?.price != null ? Number(backendQuote.price) : null;
@@ -326,6 +328,14 @@ export function StockDetailModal({
     { id: 'deep-dive',    label: 'AI Deep Dive', icon: <Brain      style={{ width: 13, height: 13 }} /> },
     ...(hasEarnings ? [{ id: 'earnings' as TabId, label: 'Earnings', icon: <BarChart2 style={{ width: 13, height: 13 }} /> }] : []),
   ];
+
+  // If the user clicked into Earnings while loading but data came back with no earnings_intelligence,
+  // snap back to overview so they aren't stranded on a vanished tab.
+  useEffect(() => {
+    if (!detailLoading && !hasEarnings && activeTab === 'earnings') {
+      setActiveTab('overview');
+    }
+  }, [detailLoading, hasEarnings, activeTab]);
 
   const { C: _C } = useTheme(); C = _C;
   return (
@@ -372,7 +382,7 @@ export function StockDetailModal({
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, padding: '0 20px', background: C.card }}>
+        <div style={{ display: 'flex', overflowX: 'auto', borderBottom: `1px solid ${C.border}`, padding: '0 20px', background: C.card }}>
           {tabs.map(tab => (
             <button
               key={tab.id}
