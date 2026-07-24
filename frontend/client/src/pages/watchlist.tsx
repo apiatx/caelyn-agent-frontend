@@ -4301,12 +4301,41 @@ export default function WatchlistPage() {
         time: ev.time ?? ev.when ?? null,
         epsEstimate: ev.est_eps ?? ev.eps_estimate ?? null,
         lastEps: ev.last_eps ?? ev.previous_eps ?? null,
+        epsGrowthPct: ev.eps_growth_pct ?? ev.eps_growth_estimate ?? ev.eps_growth_yoy ?? null,
+        epsTransitionLabel: ev.eps_transition_type ?? ev.eps_growth_transition ?? null,
         revenueEstimate: ev.revenue_estimated ?? ev.revenue_estimate ?? null,
         revenueActual: ev.revenue_actual ?? null,
+        lastRevenue: ev.prior_year_revenue ?? ev.last_revenue ?? ev.previous_revenue ?? null,
+        revGrowthPct: ev.revenue_growth_pct ?? ev.revenue_growth_estimate ?? ev.revenue_growth_yoy ?? null,
         importance: ev.importance ?? null,
         logo: ev.logo ?? ev.image ?? ev.company_logo ?? ev.companyLogo ?? ev.profile_image ?? ev.icon ?? null,
         marketCap: ev.market_cap ?? null,
       };
+    }
+
+    // Growth helpers for upcoming cards
+    function calcWlGrowth(
+      estimate: number | null, prior: number | null,
+      explicitPct: number | null, explicitLabel: string | null
+    ): { pct: number | null; label: string | null } {
+      if (explicitPct != null && isFinite(explicitPct)) return { pct: explicitPct, label: null };
+      if (explicitLabel) return { pct: null, label: explicitLabel };
+      if (estimate == null || prior == null || !isFinite(estimate) || !isFinite(prior) || prior === 0) return { pct: null, label: null };
+      if (prior > 0 && estimate > 0) return { pct: ((estimate / prior) - 1) * 100, label: null };
+      if (prior > 0 && estimate <= 0) return { pct: null, label: 'Loss expected' };
+      if (prior < 0 && estimate >= 0) return { pct: null, label: 'Profit expected' };
+      if (prior < 0 && estimate < 0) return { pct: null, label: estimate > prior ? 'Loss narrowing' : 'Loss widening' };
+      return { pct: null, label: null };
+    }
+    function fmtWlGrowth(g: { pct: number | null; label: string | null }): string | null {
+      if (g.label) return g.label;
+      if (g.pct == null || !isFinite(g.pct)) return null;
+      return (g.pct >= 0 ? '+' : '') + g.pct.toFixed(1) + '%';
+    }
+    function wlGrowthCol(g: { pct: number | null; label: string | null }): string {
+      if (g.label) return '#94a3b8';
+      if (g.pct == null) return C.dim;
+      return g.pct >= 0 ? C.green : C.red;
     }
 
     // Normalize recent event fields
@@ -4493,6 +4522,22 @@ export default function WatchlistPage() {
                 const epsDir = (ev.epsEstimate != null && ev.lastEps != null)
                   ? ev.epsEstimate > ev.lastEps ? 'up' : ev.epsEstimate < ev.lastEps ? 'down' : 'flat'
                   : null;
+                const epsG = calcWlGrowth(
+                  ev.epsEstimate as number | null,
+                  ev.lastEps as number | null,
+                  ev.epsGrowthPct as number | null,
+                  ev.epsTransitionLabel as string | null,
+                );
+                const epsGrowthStr = fmtWlGrowth(epsG);
+                const epsGrowthCol = wlGrowthCol(epsG);
+                const revG = calcWlGrowth(
+                  ev.revenueEstimate as number | null,
+                  ev.lastRevenue as number | null,
+                  ev.revGrowthPct as number | null,
+                  null,
+                );
+                const revGrowthStr = fmtWlGrowth(revG);
+                const revGrowthCol = wlGrowthCol(revG);
                 return (
                   <div
                     key={`earn-${ev.ticker}-${i}`}
@@ -4547,35 +4592,51 @@ export default function WatchlistPage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-                      <div style={{ fontSize: 9, fontFamily: font }}>
-                        <span style={{ color: C.dim }}>EPS Est. </span>
-                        {ev.epsEstimate != null ? (
-                          <>
-                            <span style={{ color: C.text, fontWeight: 700 }}>
-                              {(ev.epsEstimate as number) < 0
-                                ? `-$${Math.abs(ev.epsEstimate as number).toFixed(2)}`
-                                : `$${(ev.epsEstimate as number).toFixed(2)}`}
-                            </span>
-                            {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
-                            {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
-                          </>
-                        ) : (
-                          <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
+                      {/* EPS Est. row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 9, fontFamily: font }}>
+                          <span style={{ color: C.dim }}>EPS Est. </span>
+                          {ev.epsEstimate != null ? (
+                            <>
+                              <span style={{ color: C.text, fontWeight: 700 }}>
+                                {(ev.epsEstimate as number) < 0
+                                  ? `-$${Math.abs(ev.epsEstimate as number).toFixed(2)}`
+                                  : `$${(ev.epsEstimate as number).toFixed(2)}`}
+                              </span>
+                              {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
+                              {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
+                            </>
+                          ) : (
+                            <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
+                          )}
+                        </div>
+                        {epsGrowthStr && (
+                          <span style={{ fontSize: 8, color: epsGrowthCol, fontFamily: font, whiteSpace: 'nowrap' as const }}>
+                            · {epsGrowthStr}
+                          </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 9, fontFamily: font }}>
-                        <span style={{ color: C.dim }}>Rev Est. </span>
-                        {ev.revenueEstimate != null ? (
-                          <span style={{ color: C.text, fontWeight: 700 }}>
-                            {(ev.revenueEstimate as number) >= 1e9
-                              ? '$' + ((ev.revenueEstimate as number) / 1e9).toFixed(1) + 'B'
-                              : (ev.revenueEstimate as number) >= 1e6
-                                ? '$' + ((ev.revenueEstimate as number) / 1e6).toFixed(0) + 'M'
-                                : '$' + (ev.revenueEstimate as number).toLocaleString()}
+                      {/* Rev Est. row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 9, fontFamily: font }}>
+                          <span style={{ color: C.dim }}>Rev Est. </span>
+                          {ev.revenueEstimate != null ? (
+                            <span style={{ color: C.text, fontWeight: 700 }}>
+                              {(ev.revenueEstimate as number) >= 1e9
+                                ? '$' + ((ev.revenueEstimate as number) / 1e9).toFixed(1) + 'B'
+                                : (ev.revenueEstimate as number) >= 1e6
+                                  ? '$' + ((ev.revenueEstimate as number) / 1e6).toFixed(0) + 'M'
+                                  : '$' + (ev.revenueEstimate as number).toLocaleString()}
+                            </span>
+                          ) : (
+                            <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
+                          )}
+                        </div>
+                        {revGrowthStr && (
+                          <span style={{ fontSize: 8, color: revGrowthCol, fontFamily: font, whiteSpace: 'nowrap' as const }}>
+                            · {revGrowthStr}
                           </span>
-                        ) : (
-                          <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
                         )}
                       </div>
                     </div>

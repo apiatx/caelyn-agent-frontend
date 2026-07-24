@@ -389,6 +389,21 @@ function pctCol(v: number | null, C: any): string {
   if (v == null) return C.dim;
   return v >= 0 ? C.green : C.red;
 }
+
+/* ── expected growth (upcoming quarters only) ─────────────────── */
+function calcExpectedGrowth(estimate: number | null, priorActual: number | null): { pct: number | null; label: string | null } {
+  if (estimate == null || priorActual == null || !isFinite(estimate) || !isFinite(priorActual) || priorActual === 0) return { pct: null, label: null };
+  if (priorActual > 0 && estimate > 0) return { pct: ((estimate / priorActual) - 1) * 100, label: null };
+  if (priorActual > 0 && estimate <= 0) return { pct: null, label: 'Loss expected' };
+  if (priorActual < 0 && estimate >= 0) return { pct: null, label: 'Profit expected' };
+  if (priorActual < 0 && estimate < 0) return { pct: null, label: estimate > priorActual ? 'Loss narrowing' : 'Loss widening' };
+  return { pct: null, label: null };
+}
+function fmtExpGrowth(pct: number | null, label: string | null): string {
+  if (label) return label;
+  if (pct == null || !isFinite(pct)) return '—';
+  return (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+}
 function consensusCol(label: string): string {
   const l = (label || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (l.includes('BUY')) return '#22c55e';
@@ -955,6 +970,52 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
             C={C}
           />
 
+          {/* ── Analyst Consensus — upcoming expected estimates only ──────── */}
+          {!treatAsReported && (effectiveState === 'scheduled' || effectiveState === 'monitoring') && (() => {
+            if (epsEstimate == null && revEstimate == null) return null;
+            // Prefer backend growth fields; fall back to prior-year-quarter calculation
+            let epsG: { pct: number | null; label: string | null } = { pct: null, label: null };
+            if (q.eps_yoy?.raw_growth_pct != null && isFinite(q.eps_yoy.raw_growth_pct)) {
+              epsG = { pct: q.eps_yoy.raw_growth_pct, label: null };
+            } else if (q.eps_yoy?.transition_type && q.eps_yoy.transition_type !== 'unavailable') {
+              const tt = q.eps_yoy.transition_type;
+              if      (tt === 'turned_profitable') epsG = { pct: null, label: 'Profit expected' };
+              else if (tt === 'turned_negative')   epsG = { pct: null, label: 'Loss expected' };
+              else if (tt === 'loss_narrowed')      epsG = { pct: null, label: 'Loss narrowing' };
+              else if (tt === 'loss_widened')       epsG = { pct: null, label: 'Loss widening' };
+            } else {
+              const prYr = q.fiscal_year ? String(Number(q.fiscal_year) - 1) : null;
+              const prQ  = (q.fiscal_period && prYr) ? hist.slice(1).find(h => h.fiscal_period === q.fiscal_period && h.fiscal_year === prYr) ?? null : null;
+              epsG = calcExpectedGrowth(epsEstimate, prQ?.eps_actual ?? null);
+            }
+            let revGPct: number | null = q.revenue_yoy_pct != null && isFinite(q.revenue_yoy_pct) ? q.revenue_yoy_pct : null;
+            if (revGPct == null) {
+              const prYr = q.fiscal_year ? String(Number(q.fiscal_year) - 1) : null;
+              const prQ  = (q.fiscal_period && prYr) ? hist.slice(1).find(h => h.fiscal_period === q.fiscal_period && h.fiscal_year === prYr) ?? null : null;
+              if (prQ?.revenue_actual != null && revEstimate != null && isFinite(prQ.revenue_actual) && prQ.revenue_actual !== 0) {
+                revGPct = ((revEstimate / prQ.revenue_actual) - 1) * 100;
+              }
+            }
+            return (
+              <GCard C={C}>
+                <SecLabel text="Analyst Consensus" C={C} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
+                  {[
+                    { label: 'EPS Estimate',        val: epsEstimate != null ? fmtEps(epsEstimate) : '—', col: C.text },
+                    { label: 'Expected EPS Growth',  val: fmtExpGrowth(epsG.pct, epsG.label),              col: epsG.label ? C.text : pctCol(epsG.pct, C) },
+                    { label: 'Revenue Estimate',     val: revEstimate != null ? fmtRev(revEstimate) : '—', col: C.text },
+                    { label: 'Expected Rev Growth',  val: fmtExpGrowth(revGPct, null),                     col: pctCol(revGPct, C) },
+                  ].map(({ label, val, col }) => (
+                    <div key={label} style={{ textAlign: 'center' as const }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </GCard>
+            );
+          })()}
+
           <GCard C={C}>
             <SecLabel text="Growth Context" C={C} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
@@ -1020,6 +1081,37 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
         /* ── Different events: upcoming card + ONE unified historical card ─ */
         <>
           {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
+
+          {/* ── Analyst Consensus for upcoming scheduled event ───────────── */}
+          {liveEvent && (liveEvent.state === 'scheduled' || liveEvent.state === 'monitoring') && (() => {
+            const upEps = liveEvent.results_summary?.eps_estimate ?? null;
+            const upRev = liveEvent.results_summary?.revenue_estimate ?? null;
+            if (upEps == null && upRev == null) return null;
+            const lvFp    = liveEvent.fiscal_period;
+            const prYrStr = liveEvent.fiscal_year != null ? String(liveEvent.fiscal_year - 1) : null;
+            const priorQ  = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
+            const epsG    = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
+            const revGPct = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
+              ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
+            return (
+              <GCard C={C}>
+                <SecLabel text="Analyst Consensus" C={C} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
+                  {[
+                    { label: 'EPS Estimate',        val: upEps != null ? fmtEps(upEps) : '—', col: C.text },
+                    { label: 'Expected EPS Growth',  val: fmtExpGrowth(epsG.pct, epsG.label),  col: epsG.label ? C.text : pctCol(epsG.pct, C) },
+                    { label: 'Revenue Estimate',     val: upRev != null ? fmtRev(upRev) : '—', col: C.text },
+                    { label: 'Expected Rev Growth',  val: fmtExpGrowth(revGPct, null),          col: pctCol(revGPct, C) },
+                  ].map(({ label, val, col }) => (
+                    <div key={label} style={{ textAlign: 'center' as const }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </GCard>
+            );
+          })()}
 
           {/* All most-recent-quarter data in one unified section */}
           <GCard C={C}>

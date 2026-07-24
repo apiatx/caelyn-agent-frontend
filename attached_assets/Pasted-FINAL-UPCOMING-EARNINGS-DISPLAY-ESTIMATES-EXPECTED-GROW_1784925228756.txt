@@ -1,0 +1,271 @@
+FINAL UPCOMING EARNINGS DISPLAY — ESTIMATES + EXPECTED GROWTH
+
+This is a focused frontend-only change.
+
+Do not modify the backend.
+Do not create a new endpoint or query.
+Do not redesign the Watchlist earnings cards.
+Do not modify Recent Earnings.
+Do not reset, pull, checkout, or overwrite the current workspace.
+Do not push to Git.
+
+OBJECTIVE
+
+Show both analyst consensus estimates and the associated expected growth percentages in both:
+
+1. The Watchlist Upcoming Earnings cards
+2. The Upcoming Earnings section in Earnings → Overview inside StockDetailModal
+
+IMPORTANT SEMANTIC RULE
+
+Do not label an upcoming percentage as “Beat” or “Miss.”
+
+Before results are reported, actual earnings do not exist, so a beat/miss percentage cannot be calculated truthfully.
+
+For upcoming earnings, display:
+
+- EPS analyst estimate
+- Expected EPS growth percentage
+- Revenue analyst estimate
+- Expected revenue growth percentage
+
+After results are reported, the existing reported-results UI should continue showing actual beat/miss percentages.
+
+PART 1 — AUDIT AVAILABLE FIELDS
+
+Inspect the exact existing frontend data contracts for:
+
+- Watchlist Upcoming Earnings records
+- ticker-detail upcoming live_event
+- latest earnings_history
+- analyst estimate fields
+- expected EPS growth fields
+- expected revenue growth fields
+
+Use the real existing field names.
+
+Potential fields may include equivalents of:
+
+- eps_estimate
+- revenue_estimate
+- eps_growth_estimate
+- revenue_growth_estimate
+- eps_growth_yoy
+- revenue_growth_yoy
+- prior_year_eps
+- prior_year_revenue
+
+Do not guess.
+
+Do not use reported historical actuals from the wrong fiscal quarter.
+
+PART 2 — WATCHLIST UPCOMING CARDS
+
+Each Upcoming Earnings card should display both estimate values and expected growth percentages.
+
+Preferred compact layout:
+
+EPS Est.   $0.47
+EPS Grwth  +18.4%
+
+Rev Est.   $1.8B
+Rev Grwth  +12.7%
+
+A compact one-line version is acceptable where card height must remain unchanged:
+
+EPS Est. $0.47  ·  Grwth +18.4%
+Rev Est. $1.8B  ·  Grwth +12.7%
+
+Preserve:
+
+- current card dimensions
+- horizontal scrolling
+- card ordering
+- ticker logo
+- ticker name
+- confidence badge
+- earnings date
+- click behavior
+- Upcoming/Recent toggle
+
+Do not introduce page-level overflow.
+
+PART 3 — TICKER POPUP UPCOMING EARNINGS SECTION
+
+Inside:
+
+StockDetailModal
+→ Earnings
+→ Overview
+→ Upcoming Earnings
+
+Add a compact analyst-estimate block underneath the date/time/countdown information.
+
+Display:
+
+ANALYST CONSENSUS
+
+EPS Estimate
+$0.47
+
+Expected EPS Growth
++18.4%
+
+Revenue Estimate
+$1.8B
+
+Expected Revenue Growth
++12.7%
+
+Use a clean two-column or four-metric layout consistent with the existing Earnings design.
+
+Do not create another floating card if the current Upcoming Earnings surface can contain these values cleanly.
+
+PART 4 — GROWTH CALCULATION
+
+Prefer explicit backend growth fields when available.
+
+If the backend provides no explicit expected-growth percentage but provides the correctly matched prior-year-quarter actual, calculate:
+
+EPS expected growth:
+
+((current EPS estimate / prior-year-quarter EPS actual) - 1) × 100
+
+Revenue expected growth:
+
+((current revenue estimate / prior-year-quarter revenue actual) - 1) × 100
+
+Only calculate when:
+
+- both values are finite
+- the prior-year value belongs to the matching fiscal quarter
+- the denominator is valid
+
+Do not calculate EPS growth from a zero or negative prior-year EPS using the normal percentage formula.
+
+For negative-to-positive EPS transitions, display:
+
+Profit expected
+
+For positive-to-negative transitions, display:
+
+Loss expected
+
+For negative-to-less-negative transitions, display:
+
+Loss narrowing
+
+For negative-to-more-negative transitions, display:
+
+Loss widening
+
+Do not display misleading EPS growth percentages in these cases.
+
+PART 5 — NULL HANDLING
+
+Missing EPS estimate:
+
+EPS Est. —
+
+Missing Revenue estimate:
+
+Rev Est. —
+
+Missing expected-growth data:
+
+Growth —
+
+Never render null as:
+
+- $0
+- 0%
+- Beat
+- Miss
+
+Do not hide the other metric when only one is missing.
+
+PART 6 — FORMATTING
+
+EPS:
+
+- $0.47
+- −$0.10
+- $2.78
+
+Revenue:
+
+- $10M
+- $121M
+- $1.8B
+- $4.3B
+
+Growth:
+
+- +18.4%
+- −7.2%
+- Profit expected
+- Loss expected
+- Loss narrowing
+- Loss widening
+
+Percentages must not be multiplied by 100 twice.
+
+PART 7 — REPORTED RESULTS MUST REMAIN UNCHANGED
+
+Do not alter the existing reported-results display.
+
+After results arrive, continue showing:
+
+- actual
+- estimate
+- surprise amount
+- beat/miss percentage
+- classification
+- price reaction
+
+The upcoming expected-growth percentage and the reported beat/miss percentage are different concepts and must remain clearly separated.
+
+PART 8 — VALIDATION
+
+Verify:
+
+1. AMKR Watchlist card shows EPS estimate and expected EPS growth.
+2. AMKR Watchlist card shows Revenue estimate and expected Revenue growth.
+3. AMKR ticker popup Upcoming Earnings section shows the same four values.
+4. Negative EPS estimates format correctly.
+5. Negative-to-positive EPS transitions use “Profit expected.”
+6. Null estimates render as —.
+7. No upcoming metric is labeled Beat or Miss.
+8. Recent Earnings remains unchanged.
+9. Reported earnings bubbles remain unchanged.
+10. Card dimensions and scrolling remain unchanged.
+11. No new request or query is introduced.
+12. Targeted TypeScript validation passes.
+13. Full production build passes.
+14. Publish the frontend.
+
+FINAL REPORT
+
+Return:
+
+1. File changed
+2. EPS estimate field used
+3. Revenue estimate field used
+4. EPS growth source/calculation
+5. Revenue growth source/calculation
+6. Watchlist card layout
+7. Popup layout
+8. Null and negative-EPS handling
+9. Build result
+10. Publish result
+11. Screenshots of:
+    - Updated Upcoming Earnings cards
+    - Updated AMKR Earnings → Overview upcoming section
+
+End with exactly:
+
+UPCOMING ESTIMATES AND GROWTH COMPLETE
+
+or:
+
+NOT COMPLETE
