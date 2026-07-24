@@ -452,7 +452,7 @@ export function StockDetailModal({
           {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} screenerRow={screenerRow} />}
           {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} allNews={allNews} />}
           {activeTab === 'deep-dive' && <DeepDiveTab ticker={ticker} data={deepDive} loading={deepDiveLoading} error={deepDiveError} selectedModels={selectedModels} setSelectedModels={setSelectedModels} reportModel={reportModel} setReportModel={setReportModel} onGenerate={generateDeepDive} />}
-          {activeTab === 'earnings' && <EarningsTab detail={detail} detailLoading={detailLoading} currentPrice={currentPrice} ticker={ticker} initialSubTab={initialEarningsTab as any} />}
+          {activeTab === 'earnings' && <EarningsTab detail={detail} detailLoading={detailLoading} currentPrice={currentPrice} ticker={ticker} initialSubTab={initialEarningsTab as any} earningsEntry={earningsEntry} />}
         </div>
       </div>
     </div>
@@ -570,21 +570,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail
         <iframe key={tvSymbol} src={tvUrl} style={{ width: '100%', height: 500, border: 'none', display: 'block' }} title={`${ticker} chart`} />
       </div>
 
-      {/* 2. Upcoming Earnings */}
-      {earningsEntry?.next_date && (
-        <div>
-          <SectionLabel>Upcoming Earnings</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 6 }}>
-            <MetricBox label="Date"    value={earningsEntry.next_date} raw />
-            <MetricBox label="Est EPS" value={earningsEntry.est_eps != null ? `${Number(earningsEntry.est_eps) >= 0 ? '+' : ''}$${Math.abs(Number(earningsEntry.est_eps)).toFixed(2)}` : '—'} raw colored={earningsEntry.est_eps != null ? (Number(earningsEntry.est_eps) >= 0 ? 'green' : 'red') : undefined} />
-            <MetricBox label="Last EPS" value={earningsEntry.last_eps != null ? `${Number(earningsEntry.last_eps) >= 0 ? '+' : ''}$${Math.abs(Number(earningsEntry.last_eps)).toFixed(2)}` : '—'} raw colored={earningsEntry.last_eps != null ? (Number(earningsEntry.last_eps) >= 0 ? 'green' : 'red') : undefined} />
-            <MetricBox label="Rev Est" value={earningsEntry.revenue_estimated != null ? fmtLarge(earningsEntry.revenue_estimated) : '—'} raw />
-            <MetricBox label="Price"   value={earningsEntry.price != null ? `$${Number(earningsEntry.price).toFixed(2)}` : '—'} raw />
-          </div>
-        </div>
-      )}
-
-      {/* 3. About — always rendered, loading state inside */}
+      {/* 2. About — always rendered, loading state inside */}
       <div>
         <SectionLabel>About</SectionLabel>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>

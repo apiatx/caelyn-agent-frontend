@@ -1,0 +1,475 @@
+FINAL FRONTEND FIX — CANONICAL UPCOMING EARNINGS PLACEMENT AND 30-DAY DISPLAY RULE
+
+Complete this entire frontend task in one pass.
+
+This is a targeted consistency correction.
+
+Do not modify the backend.
+Do not create a new API endpoint.
+Do not create a new query.
+Do not create another earnings component architecture.
+Do not redesign the reported-results bubble.
+Do not modify Recent Earnings on the Watchlist.
+Do not reset, pull, checkout, or overwrite the current Git-pushed workspace.
+Do not push to Git.
+
+CURRENT PROBLEMS
+
+1. CGNX shows its upcoming earnings information in the ticker popup’s general Overview tab, but not inside:
+
+Earnings
+→ Overview
+
+On Earnings → Overview, CGNX instead begins with its May 6 reported earnings.
+
+CGNX has upcoming earnings on August 5, so the upcoming earnings card should appear above the previous reported quarter inside Earnings → Overview.
+
+2. The general ticker Overview tab should not contain the dedicated Upcoming Earnings section. Earnings information belongs in the Earnings tab.
+
+3. GLW correctly shows an Upcoming Earnings card inside Earnings → Overview, but that card does not display analyst EPS and Revenue estimates.
+
+4. Upcoming earnings behavior is inconsistent across tickers because different components appear to use different schedule and estimate sources.
+
+5. Tickers that reported earnings within the previous 30 calendar days must continue showing the current reported-results experience exactly like GOOGL.
+
+GOOGL’s current reported-results bubble is correct and must remain unchanged.
+
+CANONICAL DISPLAY RULE
+
+Use one deterministic rule for Earnings → Overview.
+
+A. RECENT REPORTED EVENT
+
+When the newest reported earnings event occurred within the previous 30 calendar days:
+
+- show the unified reported-results bubble exactly as it works for GOOGL
+- show actual Revenue and EPS
+- show estimates and surprise values
+- show result classification
+- show Before/After Earnings
+- show finalized price reaction
+- do not show an Upcoming Earnings card above it
+- do not change the GOOGL design
+
+B. NO REPORT WITHIN 30 DAYS + UPCOMING EVENT EXISTS
+
+When the latest reported earnings event is more than 30 calendar days old and a future event exists:
+
+- show Upcoming Earnings first
+- show the latest reported earnings section directly below it
+- Upcoming Earnings must include:
+  - date
+  - confirmed/inferred time where available
+  - BMO/AMC timing
+  - countdown
+  - EPS analyst estimate
+  - Revenue analyst estimate
+  - expected EPS growth where already available
+  - expected Revenue growth where already available
+
+Examples:
+
+CGNX:
+- Upcoming Earnings: August 5
+- must appear above Q1 2026 reported May 6 earnings
+
+GLW:
+- Upcoming Earnings: July 28
+- must include EPS estimate and Revenue estimate
+- must appear above Q1 2026 reported April 28 earnings
+
+C. NO UPCOMING EVENT
+
+When there is no valid future event:
+
+- show the latest reported earnings section
+- do not render a blank Upcoming Earnings card
+- do not fabricate an upcoming date
+
+PART 1 — AUDIT THE EXISTING DATA PATHS
+
+Inspect the current implementations of:
+
+- StockDetailModal
+- the general Overview tab
+- EarningsTab.tsx
+- OverviewSubTab
+- LiveEarningsCard
+- the existing upcoming-earnings helper
+- ticker-detail query types
+- LiveEarningsEvent types
+- any analyst-estimate normalization helpers
+
+Determine the exact object currently supplying CGNX’s general Overview tab with:
+
+- August 5 earnings date
+- EPS estimate
+- Revenue estimate
+
+Also inspect the data used by GLW’s Upcoming Earnings card inside Earnings → Overview.
+
+The inconsistency likely comes from two different frontend selectors.
+
+Do not guess field names.
+
+After identifying the difference, implement one shared canonical upcoming-event selector.
+
+PART 2 — REMOVE UPCOMING EARNINGS FROM GENERAL OVERVIEW
+
+Remove the dedicated Upcoming Earnings metric section from the ticker popup’s general Overview tab.
+
+For CGNX, remove the row containing values equivalent to:
+
+- Date
+- Est EPS
+- Last EPS
+- Rev Est
+- Price
+
+Do not remove:
+
+- chart
+- company information
+- technical information
+- other general Overview content
+
+Upcoming earnings belongs only in:
+
+Earnings
+→ Overview
+
+PART 3 — CANONICAL UPCOMING EVENT SELECTOR
+
+Create or correct one small shared helper that produces the upcoming earnings presentation model.
+
+It should merge the existing sources rather than creating another query.
+
+Use schedule information precedence such as:
+
+1. Matching scheduled/monitoring live_event
+2. Existing ticker-detail upcoming earnings object
+3. Existing cached earnings calendar record already supplied to the popup
+
+Use estimate precedence based on the real current fields:
+
+EPS estimate:
+
+1. Explicit estimate on the matching upcoming live event
+2. Explicit EPS estimate on ticker-detail upcoming earnings
+3. Matching analyst estimate already present in ticker-detail data
+
+Revenue estimate:
+
+1. Explicit estimate on the matching upcoming live event
+2. Explicit Revenue estimate on ticker-detail upcoming earnings
+3. Matching analyst estimate already present in ticker-detail data
+
+Only combine records representing the same future event.
+
+Match using:
+
+1. fiscal year + fiscal period
+2. expected/report date fallback
+
+Do not combine an August event with the previous May quarter.
+
+Do not use actuals from the prior quarter as upcoming estimates.
+
+PART 4 — 30-DAY RECENT-EARNINGS RULE
+
+Determine whether the newest reported event is recent using its actual report date.
+
+Recent window:
+
+- report date through report date + 30 calendar days
+- include the report date
+- after the 30th calendar day, transition to the Upcoming + Previous Report layout
+
+Use a stable date-only comparison.
+
+Avoid browser-timezone off-by-one errors.
+
+Prefer treating earnings report dates as America/New_York market dates rather than parsing them as UTC timestamps that may shift the calendar date.
+
+Examples:
+
+GOOGL reported July 22:
+- through August 21, keep the current reported-results bubble as the primary/current surface
+- do not show its next upcoming event above it during that period
+
+CGNX reported May 6:
+- outside the 30-day window
+- show August 5 Upcoming Earnings above the May 6 reported section
+
+GLW reported April 28:
+- outside the 30-day window
+- show July 28 Upcoming Earnings above the April 28 reported section
+
+PART 5 — UPCOMING EARNINGS CARD CONTENT
+
+Inside Earnings → Overview, render:
+
+UPCOMING EARNINGS
+
+Date
+Aug 5, 2026
+
+Time
+4:30 PM ET
+
+Timing
+After Market Close
+
+Status
+Confirmed time
+
+Countdown
+Reports in 12d 3h
+
+ANALYST CONSENSUS
+
+EPS Estimate
++$0.42
+
+Expected EPS Growth
++X.X%
+or the existing truthful status such as Profit expected
+
+Revenue Estimate
+$292.1M
+
+Expected Revenue Growth
++Y.Y%
+
+Use the real values supplied by the existing frontend contract.
+
+If the compact card currently uses another polished layout, preserve it while ensuring all fields are visible.
+
+Do not create a second floating card when the existing Upcoming Earnings surface can be extended.
+
+PART 6 — ESTIMATE REQUIREMENTS
+
+EPS estimate:
+
+- show the upcoming analyst consensus estimate
+- preserve negative estimates
+- examples:
+  - +$0.42
+  - −$0.10
+  - +$2.78
+
+Revenue estimate:
+
+- use compact currency formatting
+- examples:
+  - $10M
+  - $292.1M
+  - $1.8B
+  - $4.3B
+
+Missing values:
+
+- EPS Estimate —
+- Revenue Estimate —
+
+Null must never render as zero.
+
+Do not hide the entire analyst-consensus area because one estimate is missing.
+
+PART 7 — EXPECTED GROWTH
+
+Preserve the recently implemented expected-growth behavior.
+
+Prefer explicit backend/frontend contract fields.
+
+Where the current implementation already derives expected growth from the matching prior-year quarter, preserve that logic.
+
+Do not label upcoming growth percentages as Beat or Miss.
+
+Use:
+
+- Expected EPS Growth
+- Expected Revenue Growth
+
+For invalid negative EPS comparisons, preserve truthful labels such as:
+
+- Profit expected
+- Loss expected
+- Loss narrowing
+- Loss widening
+
+PART 8 — REPORTED RESULTS BELOW UPCOMING
+
+For tickers outside the 30-day recent window, retain the latest reported earnings section under Upcoming Earnings.
+
+Do not remove:
+
+- Revenue actual/estimate/surprise
+- EPS actual/estimate/surprise
+- Before vs After Earnings
+- Price Reaction
+- Growth Context
+- Historical Reaction Context
+- Materials links
+
+The intended order is:
+
+1. Upcoming Earnings
+2. Latest Reported Earnings
+3. Remaining context sections
+
+For CGNX:
+
+1. August 5 Upcoming Earnings with analyst estimates
+2. Q1 2026 May 6 reported results
+
+For GLW:
+
+1. July 28 Upcoming Earnings with analyst estimates
+2. Q1 2026 April 28 reported results
+
+PART 9 — GOOGL MUST REMAIN UNCHANGED
+
+GOOGL reported within the previous 30 days.
+
+Preserve exactly:
+
+- green Positive Results / Double Beat treatment
+- Revenue and EPS actuals
+- estimate and surprise values
+- negative Post 1D price reaction
+- Before/After Earnings
+- filing/material actions
+- Growth Context
+- Price Reaction
+
+Do not add an Upcoming Earnings card above GOOGL until the 30-day reported-results window expires.
+
+PART 10 — CONSISTENCY ACROSS ALL TICKERS
+
+The selector and display rule must apply across the full ticker universe.
+
+Do not hardcode:
+
+- CGNX
+- GLW
+- GOOGL
+- any symbol-specific date or estimate
+
+Handle:
+
+- scheduled
+- monitoring
+- confirmed time
+- inferred timing
+- BMO
+- AMC
+- unknown timing
+- missing one estimate
+- missing both estimates
+- recent reported event
+- old reported event
+- no reported history
+- no upcoming event
+
+PART 11 — QUERY SAFETY
+
+Use the existing ticker-detail response and existing live-event context.
+
+Do not introduce:
+
+- another ticker-detail query
+- another Watchlist earnings request
+- direct provider requests
+- polling from the popup
+- per-tab duplicate fetches
+
+Opening the popup should continue using the existing query architecture.
+
+PART 12 — REQUIRED ACCEPTANCE TESTS
+
+CGNX
+
+1. General Overview no longer contains the Upcoming Earnings metric row.
+2. Earnings → Overview shows August 5 Upcoming Earnings.
+3. Upcoming card appears above Q1 2026 May 6 reported earnings.
+4. EPS estimate displays.
+5. Revenue estimate displays.
+6. Expected growth displays when available.
+7. No duplicate upcoming card appears.
+
+GLW
+
+1. Earnings → Overview shows July 28 Upcoming Earnings.
+2. EPS estimate displays.
+3. Revenue estimate displays.
+4. Expected-growth values display where available.
+5. Q1 2026 April 28 reported earnings remains below it.
+6. No blank analyst-consensus section.
+
+GOOGL
+
+1. Current reported-results bubble remains unchanged.
+2. No Upcoming Earnings card appears above it.
+3. Double Beat remains green.
+4. Negative price reaction remains red.
+5. Materials and other Earnings tabs still work.
+
+BOUNDARY TEST
+
+Use a deterministic date test for:
+
+- report 29 days ago
+- report exactly 30 days ago
+- report 31 days ago
+
+Confirm the transition follows the required rule without timezone drift.
+
+PART 13 — BUILD AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for modified files
+- full production build
+- browser console inspection
+- authenticated CGNX test
+- authenticated GLW test
+- authenticated GOOGL regression test
+
+Do not stop at HMR.
+Do not stop at build success.
+Do not declare success without testing the actual popup.
+
+Publish the frontend.
+
+FINAL REPORT
+
+Return:
+
+1. Root cause of the inconsistent placement
+2. Files changed
+3. Canonical upcoming-event selector
+4. Estimate field precedence
+5. 30-day reported-results rule
+6. General Overview removal
+7. CGNX result
+8. GLW result
+9. GOOGL regression result
+10. Query-count verification
+11. Typecheck/build result
+12. Publish result
+13. Screenshots showing:
+    - CGNX Earnings → Overview with August 5 upcoming estimates above May 6 results
+    - GLW upcoming card with EPS and Revenue estimates
+    - GOOGL unchanged
+    - CGNX general Overview without the old Upcoming Earnings metric row
+
+End with exactly:
+
+EARNINGS PLACEMENT CONSISTENCY COMPLETE
+
+or:
+
+NOT COMPLETE
+
+Do not declare completion unless CGNX, GLW, and GOOGL all satisfy the acceptance tests in the deployed frontend.

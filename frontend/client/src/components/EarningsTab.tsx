@@ -578,6 +578,72 @@ function useLocalCountdown(expectedAt: string | null | undefined): string | null
   return mins > 0 ? `in ${hrs}h ${mins}m` : `in ${hrs}h`;
 }
 
+/* ── 30-day recency window (NY timezone, date-only, no drift) ─── */
+function todayNY_ET(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
+function isWithin30DayWindow(reportDate: string | null): boolean {
+  if (!reportDate || !/^\d{4}-\d{2}-\d{2}$/.test(reportDate)) return false;
+  const today = todayNY_ET();
+  const [ty, tm, td] = today.split('-').map(Number);
+  const [ry, rm, rd] = reportDate.split('-').map(Number);
+  const todayMs  = Date.UTC(ty, tm - 1, td);
+  const reportMs = Date.UTC(ry, rm - 1, rd);
+  const diffDays = Math.floor((todayMs - reportMs) / 86_400_000);
+  return diffDays >= 0 && diffDays <= 30;
+}
+
+/* ── Canonical upcoming event from earningsEntry ─────────────── */
+function entryIsoDate(entry: any): string | null {
+  if (!entry) return null;
+  for (const f of ['earnings_date', 'date_raw', 'report_date', 'next_earnings_date']) {
+    const v = (entry as Record<string, unknown>)[f];
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  }
+  const nd = entry.next_date as string | null | undefined;
+  if (!nd) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(nd)) return nd;
+  try {
+    const withYr = /\d{4}/.test(nd) ? nd : `${nd}, ${new Date().getFullYear()}`;
+    const d = new Date(withYr);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  } catch { /* ignore */ }
+  return null;
+}
+function entryToSyntheticEvent(entry: any, sym: string): LiveEarningsEvent | null {
+  const isoDate = entryIsoDate(entry);
+  if (!isoDate) return null;
+  if (isoDate <= todayNY_ET()) return null;
+  return {
+    event_id: `wl-entry-${sym}`,
+    event_key: `${sym.toUpperCase()}-wl`,
+    symbol: sym.toUpperCase(),
+    state: 'scheduled',
+    classification: null,
+    revision: 0,
+    detected_at: null,
+    updated_at: new Date().toISOString(),
+    expected_date: isoDate,
+    expected_at: null,
+    expected_timing: (entry.timing ?? entry.when ?? null) as string | null,
+    report_time_status: null,
+    fiscal_period: null,
+    fiscal_year: null,
+    results_summary: {
+      eps_actual: null,
+      eps_estimate: (entry.est_eps ?? entry.eps_estimate ?? null) as number | null,
+      eps_surprise_amount: null,
+      eps_surprise_pct: null,
+      revenue_actual: null,
+      revenue_estimate: (entry.revenue_estimated ?? entry.revenue_estimate ?? null) as number | null,
+      revenue_surprise_amount: null,
+      revenue_surprise_pct: null,
+    },
+    filing_summary: null,
+    initial_market_reaction: null,
+  };
+}
+
 /* ── Unified Current Earnings Bubble ─────────────────────────── */
 interface UnifiedBubbleProps {
   q: EarningsQuarter;
@@ -866,8 +932,8 @@ function UnifiedEarningsBubble({
   );
 }
 
-function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
-  ei: EarningsIntelligence; C: any; ticker?: string; onSwitchToMaterials?: () => void;
+function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
+  ei: EarningsIntelligence; C: any; ticker?: string; onSwitchToMaterials?: () => void; earningsEntry?: any;
 }) {
   const { eventBySymbol } = useEarningsLive();
 
@@ -888,19 +954,47 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
     return new Date(feedEvent.updated_at) >= new Date(detailEvent.updated_at) ? feedEvent : detailEvent;
   }, [feedEvent, detailEvent]);
 
+  /* Canonical upcoming event: scheduled/monitoring liveEvent (future) wins, earningsEntry as fallback.
+     Estimates are enriched from earningsEntry when liveEvent.results_summary is missing them. */
+  const upcomingLive = useMemo((): LiveEarningsEvent | null => {
+    const today = todayNY_ET();
+    if (liveEvent &&
+        (liveEvent.state === 'scheduled' || liveEvent.state === 'monitoring') &&
+        liveEvent.expected_date && liveEvent.expected_date > today) {
+      const rs0 = liveEvent.results_summary;
+      const epsEst = rs0?.eps_estimate ?? (earningsEntry?.est_eps ?? earningsEntry?.eps_estimate ?? null) as number | null;
+      const revEst = rs0?.revenue_estimate ?? (earningsEntry?.revenue_estimated ?? earningsEntry?.revenue_estimate ?? null) as number | null;
+      if (epsEst === rs0?.eps_estimate && revEst === rs0?.revenue_estimate) return liveEvent;
+      return {
+        ...liveEvent,
+        results_summary: {
+          eps_actual: rs0?.eps_actual ?? null,
+          eps_estimate: epsEst,
+          eps_surprise_amount: rs0?.eps_surprise_amount ?? null,
+          eps_surprise_pct: rs0?.eps_surprise_pct ?? null,
+          revenue_actual: rs0?.revenue_actual ?? null,
+          revenue_estimate: revEst,
+          revenue_surprise_amount: rs0?.revenue_surprise_amount ?? null,
+          revenue_surprise_pct: rs0?.revenue_surprise_pct ?? null,
+        },
+      };
+    }
+    return earningsEntry ? entryToSyntheticEvent(earningsEntry, ticker ?? '') : null;
+  }, [liveEvent, earningsEntry, ticker]);
+
   const cov = ei.source_status.coverage;
   const hist = ei.earnings_history;
   const rs = ei.reaction_summary;
   const hasHistory = cov.has_earnings_history && hist.length > 0;
 
-  if (!hasHistory && !liveEvent) {
+  if (!hasHistory && !liveEvent && !upcomingLive) {
     return <Empty msg="Historical earnings data is not available from the current provider." C={C} />;
   }
 
   if (!hasHistory) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <LiveEarningsCard event={liveEvent!} onOpenMaterials={onSwitchToMaterials} />
+        <LiveEarningsCard event={(upcomingLive ?? liveEvent)!} onOpenMaterials={onSwitchToMaterials} />
       </div>
     );
   }
@@ -950,11 +1044,193 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
     pr.reaction_3d_pct != null || pr.reaction_5d_pct != null
   );
 
+  /* 30-day rule: was the latest reported quarter within 30 days? */
+  const isRecentReport = isWithin30DayWindow(q.date);
+
+  /* Render helper — latest reported GCard (shared by PATH A and PATH C) */
+  const renderReportedCard = () => (
+    <GCard C={C}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+        <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
+          {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
+        </span>
+        {q.date && <span style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{fmtDate(q.date)}</span>}
+        {q.timing && (
+          <span title={TIMING_FULL[q.timing] ?? q.timing}
+            style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f,
+              color: q.timing === 'unknown' ? C.dim : '#000',
+              background: q.timing === 'unknown' ? 'transparent' : '#0ea5e9',
+              border: q.timing === 'unknown' ? `1px solid ${C.border}` : 'none' }}>
+            {TIMING_BADGE[q.timing] ?? q.timing.toUpperCase()}
+          </span>
+        )}
+        {pr && !pr.reactions_final && (
+          <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}50` }}>PRELIMINARY</span>
+        )}
+        <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.green, border: `1px solid ${C.green}40` }}>REPORTED</span>
+      </div>
+      {isInferred && (
+        <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}>
+          ⓘ Timing inferred from available filing metadata
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
+        {[
+          { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
+          { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
+        ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
+          <div key={title} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: '8px 10px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>{title}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
+            {estimate != null ? (
+              <>
+                <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, flexWrap: 'wrap' as const }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
+                  {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
+                  {surpriseLabel(surprisePct) && (
+                    <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
+                      {surpriseLabel(surprisePct)}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
+            )}
+          </div>
+        ))}
+      </div>
+      {hasPrePost && !prePostIsUnavail && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+          <SecLabel text="Before vs After Earnings" C={C} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
+            {[
+              { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
+              { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
+            ].map(({ label, val, session }) => (
+              <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+                {val != null ? (
+                  <>
+                    <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
+                    {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
+                  </>
+                ) : (
+                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
+            ⓘ {['Aligned to nearest regular-session closes', isInferred ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
+          </div>
+        </div>
+      )}
+      {hasPriceReaction && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+          <SecLabel text="Price Reaction" C={C} />
+          {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+            {[
+              { label: 'Opening Gap', v: pr!.opening_gap_pct },
+              { label: 'Post 1D',     v: pr!.reaction_1d_pct },
+              { label: '3-Day',       v: pr!.reaction_3d_pct },
+              { label: '5-Day',       v: pr!.reaction_5d_pct },
+              { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
+              { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
+            ].map(({ label, v }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+        <SecLabel text="Growth Context" C={C} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
+          {[
+            { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
+            { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
+            { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
+            { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
+          ].map(({ label, val, col }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {rs && cov.has_reactions && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+          <SecLabel text="Historical Reaction Context" C={C} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+            {[
+              { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
+              { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
+              { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
+              { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
+              { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
+              { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
+            ].map(({ label, val, obs }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
+                {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </GCard>
+  );
+
+  /* Analyst Consensus card for an upcoming event (shared by PATH A and PATH C) */
+  const renderAnalystConsensus = (ev: LiveEarningsEvent) => {
+    const upEps = ev.results_summary?.eps_estimate ?? null;
+    const upRev = ev.results_summary?.revenue_estimate ?? null;
+    if (upEps == null && upRev == null) return null;
+    const lvFp    = ev.fiscal_period;
+    const prYrStr = ev.fiscal_year != null ? String(ev.fiscal_year - 1) : null;
+    const priorQ  = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
+    const epsG    = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
+    const revGPct = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
+      ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
+    return (
+      <GCard C={C}>
+        <SecLabel text="Analyst Consensus" C={C} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
+          {[
+            { label: 'EPS Estimate',        val: upEps != null ? fmtEps(upEps) : '—', col: C.text },
+            { label: 'Expected EPS Growth',  val: fmtExpGrowth(epsG.pct, epsG.label),  col: epsG.label ? C.text : pctCol(epsG.pct, C) },
+            { label: 'Revenue Estimate',     val: upRev != null ? fmtRev(upRev) : '—', col: C.text },
+            { label: 'Expected Rev Growth',  val: fmtExpGrowth(revGPct, null),          col: pctCol(revGPct, C) },
+          ].map(({ label, val, col }) => (
+            <div key={label} style={{ textAlign: 'center' as const }}>
+              <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+            </div>
+          ))}
+        </div>
+      </GCard>
+    );
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {isSameQ ? (
-        /* ── Same event: UnifiedBubble + separate supporting cards ─────── */
+      {!isRecentReport && upcomingLive ? (
+        /* ── PATH A: Upcoming first (CGNX/GLW pattern) ──────────────────── */
+        <>
+          <LiveEarningsCard event={upcomingLive} onOpenMaterials={onSwitchToMaterials} />
+          {renderAnalystConsensus(upcomingLive)}
+          {renderReportedCard()}
+        </>
+      ) : isSameQ ? (
+        /* ── PATH B: Same event (GOOGL pattern) — UnifiedBubble ─────────── */
         <>
           <UnifiedEarningsBubble
             q={q} liveEvent={liveEvent} effectiveState={effectiveState}
@@ -970,10 +1246,9 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
             C={C}
           />
 
-          {/* ── Analyst Consensus — upcoming expected estimates only ──────── */}
+          {/* Analyst Consensus for upcoming scheduled/monitoring state */}
           {!treatAsReported && (effectiveState === 'scheduled' || effectiveState === 'monitoring') && (() => {
             if (epsEstimate == null && revEstimate == null) return null;
-            // Prefer backend growth fields; fall back to prior-year-quarter calculation
             let epsG: { pct: number | null; label: string | null } = { pct: null, label: null };
             if (q.eps_yoy?.raw_growth_pct != null && isFinite(q.eps_yoy.raw_growth_pct)) {
               epsG = { pct: q.eps_yoy.raw_growth_pct, label: null };
@@ -1078,190 +1353,11 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
           )}
         </>
       ) : (
-        /* ── Different events: upcoming card + ONE unified historical card ─ */
+        /* ── PATH C: Fallback — live card (if any) + reported card ──────── */
         <>
           {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
-
-          {/* ── Analyst Consensus for upcoming scheduled event ───────────── */}
-          {liveEvent && (liveEvent.state === 'scheduled' || liveEvent.state === 'monitoring') && (() => {
-            const upEps = liveEvent.results_summary?.eps_estimate ?? null;
-            const upRev = liveEvent.results_summary?.revenue_estimate ?? null;
-            if (upEps == null && upRev == null) return null;
-            const lvFp    = liveEvent.fiscal_period;
-            const prYrStr = liveEvent.fiscal_year != null ? String(liveEvent.fiscal_year - 1) : null;
-            const priorQ  = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
-            const epsG    = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
-            const revGPct = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
-              ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
-            return (
-              <GCard C={C}>
-                <SecLabel text="Analyst Consensus" C={C} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
-                  {[
-                    { label: 'EPS Estimate',        val: upEps != null ? fmtEps(upEps) : '—', col: C.text },
-                    { label: 'Expected EPS Growth',  val: fmtExpGrowth(epsG.pct, epsG.label),  col: epsG.label ? C.text : pctCol(epsG.pct, C) },
-                    { label: 'Revenue Estimate',     val: upRev != null ? fmtRev(upRev) : '—', col: C.text },
-                    { label: 'Expected Rev Growth',  val: fmtExpGrowth(revGPct, null),          col: pctCol(revGPct, C) },
-                  ].map(({ label, val, col }) => (
-                    <div key={label} style={{ textAlign: 'center' as const }}>
-                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-              </GCard>
-            );
-          })()}
-
-          {/* All most-recent-quarter data in one unified section */}
-          <GCard C={C}>
-            {/* Quarter header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
-                {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
-              </span>
-              {q.date && <span style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{fmtDate(q.date)}</span>}
-              {q.timing && (
-                <span title={TIMING_FULL[q.timing] ?? q.timing}
-                  style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f,
-                    color: q.timing === 'unknown' ? C.dim : '#000',
-                    background: q.timing === 'unknown' ? 'transparent' : '#0ea5e9',
-                    border: q.timing === 'unknown' ? `1px solid ${C.border}` : 'none' }}>
-                  {TIMING_BADGE[q.timing] ?? q.timing.toUpperCase()}
-                </span>
-              )}
-              {pr && !pr.reactions_final && (
-                <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}50` }}>PRELIMINARY</span>
-              )}
-              <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.green, border: `1px solid ${C.green}40` }}>REPORTED</span>
-            </div>
-            {isInferred && (
-              <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}>
-                ⓘ Timing inferred from available filing metadata
-              </div>
-            )}
-
-            {/* Revenue + EPS */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
-              {[
-                { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
-                { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
-              ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
-                <div key={title} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: '8px 10px' }}>
-                  <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>{title}</div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
-                  {estimate != null ? (
-                    <>
-                      <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, flexWrap: 'wrap' as const }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
-                        {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
-                        {surpriseLabel(surprisePct) && (
-                          <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
-                            {surpriseLabel(surprisePct)}
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Before vs After Earnings */}
-            {hasPrePost && !prePostIsUnavail && (
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <SecLabel text="Before vs After Earnings" C={C} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
-                  {[
-                    { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
-                    { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
-                  ].map(({ label, val, session }) => (
-                    <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
-                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
-                      {val != null ? (
-                        <>
-                          <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
-                          {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
-                        </>
-                      ) : (
-                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
-                  ⓘ {['Aligned to nearest regular-session closes', isInferred ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
-                </div>
-              </div>
-            )}
-
-            {/* Price Reaction */}
-            {hasPriceReaction && (
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <SecLabel text="Price Reaction" C={C} />
-                {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
-                  {[
-                    { label: 'Opening Gap', v: pr!.opening_gap_pct },
-                    { label: 'Post 1D',     v: pr!.reaction_1d_pct },
-                    { label: '3-Day',       v: pr!.reaction_3d_pct },
-                    { label: '5-Day',       v: pr!.reaction_5d_pct },
-                    { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
-                    { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
-                  ].map(({ label, v }) => (
-                    <div key={label} style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Growth Context */}
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <SecLabel text="Growth Context" C={C} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
-                {[
-                  { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
-                  { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
-                  { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
-                  { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
-                ].map(({ label, val, col }) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Historical Reaction Context */}
-            {rs && cov.has_reactions && (
-              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-                <SecLabel text="Historical Reaction Context" C={C} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
-                  {[
-                    { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
-                    { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
-                    { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
-                    { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
-                    { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
-                    { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
-                  ].map(({ label, val, obs }) => (
-                    <div key={label} style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
-                      {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </GCard>
+          {liveEvent && (liveEvent.state === 'scheduled' || liveEvent.state === 'monitoring') && renderAnalystConsensus(liveEvent)}
+          {renderReportedCard()}
         </>
       )}
     </div>
@@ -2278,9 +2374,10 @@ export interface EarningsTabProps {
   currentPrice: number | null;
   ticker?: string;
   initialSubTab?: SubTab;
+  earningsEntry?: any;
 }
 
-export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initialSubTab }: EarningsTabProps) {
+export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initialSubTab, earningsEntry }: EarningsTabProps) {
   const { C } = useTheme();
   const [subTab, setSubTab] = useState<SubTab>(initialSubTab ?? 'overview');
 
@@ -2315,7 +2412,7 @@ export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initi
         ))}
       </div>
 
-      {subTab === 'overview'    && <OverviewSubTab    ei={ei} C={C} ticker={ticker} onSwitchToMaterials={() => setSubTab('materials')} />}
+      {subTab === 'overview'    && <OverviewSubTab    ei={ei} C={C} ticker={ticker} onSwitchToMaterials={() => setSubTab('materials')} earningsEntry={earningsEntry} />}
       {subTab === 'history'     && <HistorySubTab     ei={ei} C={C} />}
       {subTab === 'price-moves' && <PriceMovesSubTab  ei={ei} C={C} />}
       {subTab === 'ratings'     && <RatingsSubTab     ei={ei} currentPrice={currentPrice} C={C} />}
