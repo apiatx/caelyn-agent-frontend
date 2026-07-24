@@ -1,0 +1,807 @@
+FINAL FRONTEND COMPLETION — WATCHLIST RECOVERY, RECENT EARNINGS, AND FINALIZED PRICE REACTIONS
+
+Complete this entire frontend task autonomously in one pass.
+
+Do not return an audit-only report.
+Do not stop after compilation.
+Do not ask for routine confirmation.
+Do not modify the backend.
+Do not create another Watchlist query.
+Do not create another Earnings query.
+Do not create another ticker modal.
+Do not create another EarningsTab.
+Do not create a separate Recent Earnings page.
+Do not add FMP, Tradier, SEC, or direct backend-provider calls.
+Do not reset, pull, checkout, or overwrite the current Git-pushed workspace.
+Do not push to Git.
+
+The backend is complete and production is currently healthy.
+
+PRODUCTION BACKEND FACTS
+
+Production backend:
+
+https://fast-api-server-aidanpilon.replit.app
+
+Verified saved Watchlist:
+
+- name: Primary
+- ticker count: 396
+
+Verified backend response:
+
+GET /api/watchlist/earnings
+
+returns:
+
+{
+  "earnings": [...],
+  "upcoming": [...],
+  "recent": [...],
+  "meta": {...}
+}
+
+Verified recent count:
+
+- 9 recent earnings events
+
+Verified finalized reactions in ticker-detail:
+
+NVEC:
+- newest quarter: Q1 2027
+- report date: 2026-07-22
+- timing: AMC
+- classification: unclassified because estimates were unavailable
+- pre_earnings_1d_pct: approximately -1.6453
+- post_earnings_1d_pct: approximately +54.8339
+- reaction_1d_pct: approximately +54.8339
+
+GOOGL:
+- newest quarter: Q2 2026
+- report date: 2026-07-22
+- timing: AMC
+- classification: double_beat
+- pre_earnings_1d_pct: approximately -1.4576
+- post_earnings_1d_pct: approximately -7.1326
+- reaction_1d_pct: approximately -7.1326
+
+INTC:
+- newest quarter: Q2 2026
+- classification: double_beat
+- post_earnings_1d_pct: approximately -4.4198
+
+The backend read paths are cache/database-only.
+
+CURRENT FRONTEND FAILURES
+
+1. The Watchlist sometimes displays:
+
+No watchlist loaded.
+Click + above to add one.
+
+during loading or backend failure, even though the user has a real Watchlist.
+
+2. Recent Earnings toggle displays an empty state even though backend response.recent contains approximately nine records.
+
+3. NVEC and GOOGL still display:
+
+Move Pending
+Price Reaction Preliminary
+
+even though finalized Post 1D values now exist in:
+
+earnings_history[0].price_reaction
+
+4. History and Price Moves can remain stale after ticker-detail data changes.
+
+PRIMARY OBJECTIVES
+
+1. Make Watchlist loading/error/empty states truthful.
+2. Preserve the last-known-good Watchlist during transient API failures.
+3. Render the non-empty Recent Earnings backend array.
+4. Display finalized NVEC, GOOGL, and INTC price reactions.
+5. Keep the unified earnings bubble, History, and Price Moves synchronized.
+6. Preserve all completed Live Earnings, Materials, Ratings, alert, and deep-link work.
+7. Build, test through the authenticated app, and publish.
+
+PART 1 — WORKSPACE SAFETY AND TARGETED AUDIT
+
+Before editing:
+
+- inspect git status
+- inspect the current branch
+- read the current versions of:
+  - watchlist.tsx
+  - the Watchlist list query/hook
+  - the Watchlist earnings query/hook
+  - frontend/server/routes.ts
+  - EarningsTab.tsx
+  - unified earnings bubble code
+  - StockDetailModal.tsx
+  - EarningsLiveContext.tsx
+  - types/live-earnings.ts
+
+Confirm the workspace already contains:
+
+- unified earnings bubble
+- Upcoming / Recent toggle
+- Live Earnings feed
+- alert bell
+- alert deep linking
+- History
+- Price Moves
+- Ratings
+- Materials
+- finalized reaction invalidation logic
+
+Preserve these paths.
+
+Do not rewrite working features.
+
+After the audit, implement without returning an audit-only response.
+
+PART 2 — INSPECT THE ACTUAL FRONTEND-PROXY RESPONSES
+
+Use the frontend’s authenticated proxy, not a direct unauthenticated backend request.
+
+Inspect:
+
+GET /api/watchlist/list
+GET /api/watchlist/earnings
+GET /api/watchlist/ticker-detail/NVEC
+GET /api/watchlist/ticker-detail/GOOGL
+GET /api/watchlist/ticker-detail/INTC
+
+Confirm:
+
+- exact response nesting
+- exact recent-array location
+- exact Watchlist response shape
+- exact price_reaction nesting
+- exact field names
+- nullability
+- whether any frontend proxy reconstructs or strips fields
+
+Do not guess.
+
+PART 3 — FRONTEND PROXY PASSTHROUGH
+
+Audit frontend/server/routes.ts or the canonical proxy used for:
+
+- /api/watchlist/list
+- /api/watchlist/earnings
+- /api/watchlist/ticker-detail/:symbol
+
+The proxy must forward the backend JSON unchanged.
+
+For /api/watchlist/earnings, preserve:
+
+- earnings
+- upcoming
+- recent
+- meta
+
+Do not reconstruct a response containing only earnings or upcoming.
+
+Preserve authentication and existing error handling.
+
+PART 4 — WATCHLIST QUERY STATES
+
+Locate the existing Watchlist list query.
+
+Handle these states explicitly:
+
+1. Initial loading
+2. Background refetching with cached data
+3. Successful response containing saved Watchlists
+4. Successful response containing zero Watchlists
+5. Request/API failure
+
+Do not use logic equivalent to:
+
+!data || data.length === 0
+
+for the true empty state.
+
+PART 5 — WATCHLIST INITIAL LOADING
+
+During the first Watchlist request:
+
+- show the existing loading/skeleton experience
+- do not show “No watchlist loaded”
+- do not clear the selected Watchlist
+- do not flash the empty state
+- do not show a setup prompt while data is unresolved
+
+The backend may take several seconds.
+
+The UI must remain in a loading state until the request succeeds or fails.
+
+PART 6 — PRESERVE LAST-KNOWN-GOOD WATCHLIST
+
+If a Watchlist has already loaded and a later refetch fails:
+
+- keep the existing Watchlist visible
+- keep the selected Watchlist
+- keep ticker rows visible
+- keep filters/toggles usable
+- do not replace data with the empty state
+- show only a compact nonblocking error/retry message
+
+Use the existing query library’s cached-data behavior.
+
+Do not create a second local Watchlist data store.
+
+PART 7 — WATCHLIST ERROR STATE
+
+When there is no cached Watchlist and the request fails, show:
+
+Unable to load watchlist.
+Retry
+
+Use existing page styling.
+
+Retry must refetch the existing Watchlist query.
+
+Do not tell the user to add a new Watchlist during an API failure.
+
+Do not render:
+
+No watchlist loaded.
+
+for a failed request.
+
+PART 8 — TRUE EMPTY STATE
+
+Only after a successful response confirms zero saved Watchlists, show exactly:
+
+No watchlist loaded.
+Click + above to add one.
+
+Remove:
+
+- leading >
+- trailing _
+- “or upload a CSV in AI Terminal”
+- terminal typing/prompt styling
+
+This state must never appear while loading or after a 500 response.
+
+PART 9 — WATCHLIST RECOVERY
+
+When the backend recovers:
+
+- refetch normally
+- restore the user’s Primary Watchlist
+- restore its 396 tickers
+- do not require recreation
+- do not preserve a false empty state
+- preserve normal refetch-on-focus behavior
+- avoid aggressive retry loops
+
+PART 10 — WATCHLIST EARNINGS RESPONSE TYPES
+
+Update the existing Watchlist earnings TypeScript type to match production:
+
+{
+  earnings: UpcomingEarningsRecord[];
+  upcoming: UpcomingEarningsRecord[];
+  recent: RecentEarningsRecord[];
+  meta: {
+    recent_count?: number;
+    [other real fields]
+  };
+}
+
+Use the exact live field names.
+
+Do not use broad any for the recent record.
+
+Do not create another query.
+
+PART 11 — UPCOMING / RECENT TOGGLE
+
+Use the existing toggle:
+
+Upcoming Earnings | Recent Earnings
+
+Requirements:
+
+- Upcoming remains the default
+- Upcoming uses response.upcoming
+- Recent uses response.recent
+- switching is immediate from the same cached response
+- no second request
+- no refetch on toggle click
+- preserve selected toggle while the Watchlist page remains mounted
+
+Do not derive Recent from Upcoming.
+
+PART 12 — RECENT EMPTY-STATE LOGIC
+
+Show:
+
+No watchlist earnings reported in the past 30 days.
+
+only when:
+
+- the Watchlist earnings request succeeded
+- response.recent exists
+- response.recent.length === 0
+
+Do not show the empty state when:
+
+- data is loading
+- response is undefined
+- proxy request failed
+- cached data is stale
+- response shape is temporarily unresolved
+
+Use separate loading and error states.
+
+PART 13 — RECENT EARNINGS FILTERING
+
+Do not filter out recent records because:
+
+- estimates are unavailable
+- classification is unclassified
+- surprise percentages are null
+- Post 3D/5D is pending
+- live target status is complete
+- the ticker is no longer in the upcoming array
+
+Recent means a reported earnings event within the past 30 days.
+
+Preserve backend rows.
+
+Only perform defensive filtering for:
+
+- malformed record
+- missing symbol
+- report date outside the backend-specified 30-day window, if necessary
+
+PART 14 — RECENT SORTING AND DEDUPLICATION
+
+Prefer backend order.
+
+Defensive ordering:
+
+1. report date descending
+2. updated_at descending
+
+One card per:
+
+symbol + fiscal period + fiscal year
+
+Do not display multiple transition rows for one quarter.
+
+Do not sort by reaction size, ticker, or classification.
+
+PART 15 — RECENT CARD DESIGN
+
+Reuse the exact existing Upcoming Earnings glass-card:
+
+- same dimensions
+- same border radius
+- same grid
+- same typography
+- same responsive behavior
+- same ticker click behavior
+
+Adapt only the content hierarchy.
+
+Show prominently before date/timing:
+
+Revenue:
+- surprise amount
+- surprise percentage
+
+EPS:
+- surprise amount
+- surprise percentage
+
+When estimates are unavailable:
+
+Revenue:
+- actual value
+- Estimate unavailable
+
+EPS:
+- actual value
+- Estimate unavailable
+
+Secondary information:
+
+- report date
+- BMO / AMC
+- fiscal quarter/year
+- classification
+- Post 1D reaction
+
+Examples:
+
+INTC
+
+REV +$1.69B  +11.7%
+EPS +$0.21   +100.0%
+
+Jul 23 · AMC
+Double Beat
+Post 1D -4.42%
+
+NVEC
+
+REV $11.0M actual
+Est. unavailable
+
+EPS $1.32 actual
+Est. unavailable
+
+Jul 22 · AMC
+Results Reported
+Post 1D +54.83%
+
+Do not hide metrics in tooltips.
+
+PART 16 — RECENT CARD COLORS
+
+Result classification and market reaction must remain separate.
+
+Card/result accent:
+
+double_beat:
+- restrained green
+
+double_miss:
+- restrained red
+
+mixed:
+- restrained amber/neutral
+
+partial:
+- amber
+
+unclassified:
+- neutral
+
+Reaction chip:
+
+positive Post 1D:
+- green
+
+negative Post 1D:
+- red
+
+zero:
+- neutral
+
+null:
+- Pending
+
+NVEC must remain neutral for result quality because estimates are unavailable, but its +54.83% Post 1D chip must be prominently green.
+
+GOOGL must show:
+
+- green Double Beat result treatment
+- red negative Post 1D reaction
+
+INTC must show:
+
+- green Double Beat result treatment
+- red negative Post 1D reaction
+
+PART 17 — RECENT CARD CLICK
+
+Clicking a Recent Earnings card must:
+
+- open the real StockDetailModal
+- open primary tab Earnings
+- open secondary tab Overview
+- use the existing Watchlist modal/deep-link architecture
+- not create a second modal
+- not create a duplicate ticker-detail request
+
+Do not change normal Watchlist ticker-click behavior.
+
+PART 18 — CANONICAL REACTION SELECTOR
+
+Create or correct one reusable reaction normalization helper.
+
+For Post 1D, use this precedence:
+
+1. earnings_history[0].price_reaction.post_earnings_1d_pct
+2. earnings_history[0].price_reaction.reaction_1d_pct
+3. live_event.reaction_payload.post_earnings_1d_pct
+4. live_event.reaction_payload.post_1d_pct
+5. recent-record post_1d_pct where rendering the Watchlist Recent card
+
+For Pre 1D:
+
+1. earnings_history[0].price_reaction.pre_earnings_1d_pct
+2. live_event.reaction_payload.pre_earnings_1d_pct
+3. live_event.reaction_payload.pre_1d_pct
+4. recent-record pre_1d_pct where rendering the Recent card
+
+Accept only finite numbers.
+
+Use nullish checks.
+
+Do not use:
+
+value || null
+
+because valid zero would be discarded.
+
+PART 19 — UNIFIED BUBBLE REACTION
+
+The ticker-popup unified bubble must consume the normalized Post 1D.
+
+NVEC:
+
+Result segment:
+- RESULTS REPORTED
+- Estimates unavailable
+- neutral
+
+Price Reaction segment:
+- POSITIVE MOVE
+- +54.83%
+- green
+
+Before:
+- approximately -1.65%
+
+After:
+- approximately +54.83%
+
+Move Pending must be absent.
+
+GOOGL:
+
+Result segment:
+- POSITIVE RESULTS
+- DOUBLE BEAT
+- green
+
+Price Reaction segment:
+- NEGATIVE MOVE
+- approximately -7.13%
+- red
+
+Move Pending must be absent.
+
+INTC:
+
+Result segment:
+- DOUBLE BEAT
+- green
+
+Price Reaction:
+- approximately -4.42%
+- red
+
+PART 20 — PRELIMINARY STATUS
+
+Do not show:
+
+Price Reaction Preliminary
+
+after Post 1D has been finalized.
+
+Future 3D or 5D values may remain pending without making the completed Post 1D appear preliminary.
+
+Use horizon-specific status:
+
+- Post 1D Final
+- 3D Pending
+- 5D Pending
+
+Do not use one broad Preliminary badge for the entire event.
+
+PART 21 — HISTORY SYNCHRONIZATION
+
+Ensure History consumes the current ticker-detail response.
+
+Recompute any derived rows when earnings_history changes.
+
+The newest row must show:
+
+- Revenue actual
+- EPS actual
+- estimates where available
+- surprise values where available
+- finalized Pre 1D
+- finalized Post 1D
+
+Missing estimates must not count as misses.
+
+NVEC Q1 2027:
+
+- Revenue approximately $11.0M
+- EPS approximately $1.32
+- estimates unavailable
+- Pre 1D approximately -1.65%
+- Post 1D approximately +54.83%
+
+GOOGL Q2 2026:
+
+- finalized Post 1D approximately -7.13%
+
+PART 22 — PRICE MOVES SYNCHRONIZATION
+
+Ensure Price Moves recomputes when:
+
+- earnings_history changes
+- reaction_summary changes
+- live-event revision/reaction changes
+
+Do not preserve stale arrays through incomplete memo dependencies.
+
+The newest row/chart must show:
+
+NVEC:
+- Pre 1D approximately -1.65%
+- Post 1D approximately +54.83%
+- 3D/5D pending when not yet due
+
+GOOGL:
+- Pre 1D approximately -1.46%
+- Post 1D approximately -7.13%
+
+INTC:
+- Post 1D approximately -4.42%
+
+Do not plot null future horizons as zero.
+
+PART 23 — EVENT-DRIVEN TICKER-DETAIL INVALIDATION
+
+Preserve the existing global live-event feed.
+
+When the open ticker receives a newer reaction revision:
+
+- invalidate/refetch the existing ticker-detail query once
+- use the exact existing query key
+- no second hook
+- no repeated 25-second ticker-detail polling
+
+Deduplicate using:
+
+event_id + revision + reaction payload/status/checksum
+
+This must update:
+
+- unified bubble
+- History
+- Price Moves
+- reaction summary
+
+PART 24 — LOADING AND ERROR STATES FOR EARNINGS SECTION
+
+Upcoming/Recent section must distinguish:
+
+- initial loading
+- cached data + background refetch
+- success
+- error
+- true empty
+
+During an API failure:
+
+- retain cached upcoming/recent cards
+- show a compact retry/error indicator
+- do not replace populated data with the empty state
+
+PART 25 — REQUIRED AUTHENTICATED TESTS
+
+Test through the real authenticated frontend.
+
+WATCHLIST:
+
+1. Primary Watchlist loads.
+2. 396 tickers remain present.
+3. No false empty-state flash.
+4. API failure shows Unable to load watchlist / Retry.
+5. Cached Watchlist remains visible during transient failure.
+
+RECENT EARNINGS:
+
+1. Recent toggle is populated.
+2. Approximately nine recent records appear, subject to current watchlist scope.
+3. Most recent event appears first.
+4. NVEC appears if it belongs to Primary.
+5. GOOGL appears if it belongs to Primary.
+6. Missing-estimate events remain visible.
+7. Cards show metrics before date/timing.
+8. Card click opens Earnings → Overview.
+
+NVEC POPUP:
+
+1. Move Pending is absent.
+2. Post 1D is approximately +54.83%.
+3. Pre 1D is approximately -1.65%.
+4. Result quality remains neutral/unclassified.
+5. Positive reaction is green.
+6. History is current.
+7. Price Moves is current.
+
+GOOGL POPUP:
+
+1. Double Beat remains green.
+2. Post 1D is approximately -7.13%.
+3. Negative move is red.
+4. Move Pending is absent.
+5. History and Price Moves are current.
+
+INTC POPUP:
+
+1. Double Beat remains green.
+2. Post 1D is approximately -4.42%.
+3. Negative move is red.
+
+REQUEST COUNTS:
+
+1. One Watchlist list query.
+2. One Watchlist earnings query.
+3. No second request when switching Upcoming/Recent.
+4. One ticker-detail request per popup open.
+5. No provider calls from frontend.
+6. No continuous ticker-detail polling.
+
+PART 26 — BUILD AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for every modified file
+- full production build
+- browser console inspection
+- authenticated Watchlist test
+- authenticated NVEC/GOOGL/INTC popup tests
+
+Do not stop at HMR.
+Do not stop at build success.
+Do not declare completion from the login screen.
+
+Publish the frontend using the existing Replit workflow.
+
+FINAL REPORT
+
+Return one final report containing:
+
+1. Root cause of the false Watchlist empty state
+2. Root cause of the blank Recent toggle
+3. Root cause of stale Move Pending rendering
+4. Files changed
+5. Watchlist loading/error/empty behavior
+6. Recent Earnings data mapping
+7. Recent card design
+8. Reaction normalization
+9. Unified bubble updates
+10. History synchronization
+11. Price Moves synchronization
+12. Query/request-count verification
+13. NVEC authenticated test
+14. GOOGL authenticated test
+15. INTC authenticated test
+16. Typecheck/build result
+17. Production publish result
+18. Screenshots showing:
+    - loaded Primary Watchlist
+    - populated Recent Earnings toggle
+    - NVEC +54.83% reaction
+    - GOOGL -7.13% reaction
+    - updated NVEC History
+    - updated GOOGL Price Moves
+
+End with exactly:
+
+EARNINGS FRONTEND COMPLETE
+
+or:
+
+NOT COMPLETE
+
+Do not declare EARNINGS FRONTEND COMPLETE unless the deployed frontend shows:
+
+- the real Watchlist rather than a false empty state
+- populated Recent Earnings
+- finalized NVEC and GOOGL Post 1D reactions

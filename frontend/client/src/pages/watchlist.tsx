@@ -2188,7 +2188,7 @@ export default function WatchlistPage() {
   }, []);
 
   /* ── list of all watchlists ──────────────────────────────────────── */
-  const { data: wlMetas, refetch: refetchMetas } = useQuery<WatchlistMeta[]>({
+  const { data: wlMetas, isLoading: wlMetasLoading, isError: wlMetasError, refetch: refetchMetas } = useQuery<WatchlistMeta[]>({
     queryKey: ['/api/watchlist/list'],
     queryFn: async () => {
       const r = await fetch('/api/watchlist/list');
@@ -2334,7 +2334,7 @@ export default function WatchlistPage() {
 
   /* ── watchlist earnings ──────────────────────────────────────────── */
   const { data: earningsResp, isLoading: earningsLoading, isError: earningsIsError } = useQuery<{
-    earnings: any[]; meta?: any;
+    earnings: any[]; upcoming?: any[]; recent?: any[]; meta?: any;
   }>({
     queryKey: ['earnings', 'watchlist', activeId],
     queryFn: async () => {
@@ -4374,8 +4374,8 @@ export default function WatchlistPage() {
       ?? (earningsBySymbolsResp as any)?.data?.events
       ?? (earningsBySymbolsResp as any)?.data?.earnings
       ?? [];
-    // Extract recent events (newest first — backend order preferred, defensive sort as fallback)
-    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? []).slice().sort((a: any, b: any) => {
+    // Extract recent events — prefer by-symbols response, fall back to the watchlist/earnings response
+    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? earningsResp?.recent ?? []).slice().sort((a: any, b: any) => {
       const da = String(a.report_date ?? a.date ?? '');
       const db = String(b.report_date ?? b.date ?? '');
       if (db > da) return 1; if (da > db) return -1;
@@ -6058,8 +6058,8 @@ export default function WatchlistPage() {
     </div>
   );
 
-  /* ── loading state ───────────────────────────────────────────────── */
-  if (wlLoading && !wlMetas?.length) {
+  /* ── loading state: metas not yet resolved (no cached data) ─────── */
+  if (wlMetasLoading && !wlMetas) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="wl-spin" style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%' }} />
@@ -6067,18 +6067,48 @@ export default function WatchlistPage() {
     );
   }
 
-  /* ── empty state — terminal prompt ───────────────────────────────── */
-  if (!activeId || (!wlLoading && (!watchlist || watchlist.empty))) {
+  /* ── error state: failed with no cached data ─────────────────────── */
+  if (wlMetasError && !wlMetas) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: font, display: 'flex', flexDirection: 'column' }}>
         {renderTabBar()}
         {renderAddPanel()}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-          <div style={{ fontFamily: font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
+          <div style={{ textAlign: 'center' as const }}>
+            <div style={{ fontSize: 13, color: C.dim, fontFamily: font, marginBottom: 12 }}>Unable to load watchlist.</div>
+            <button
+              onClick={() => refetchMetas()}
+              style={{ fontSize: 11, fontWeight: 700, fontFamily: font, color: C.teal, background: 'transparent', border: `1px solid ${C.teal}40`, borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── true empty state: metas loaded successfully but no watchlists ── */
+  if (!wlMetasLoading && wlMetas && wlMetas.length === 0) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: font, display: 'flex', flexDirection: 'column' }}>
+        {renderTabBar()}
+        {renderAddPanel()}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <div style={{ fontFamily: font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' as const }}>
             <div>No watchlist loaded.</div>
             <div>Click <span style={{ color: 'rgba(255,255,255,0.70)' }}>+</span> above to add one.</div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  /* ── watchlist data still loading (activeId set, data in flight) ─── */
+  if (activeId && wlLoading && !watchlist) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="wl-spin" style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%' }} />
       </div>
     );
   }

@@ -675,7 +675,9 @@ function UnifiedEarningsBubble({
   const preOk         = pr?.pre_earnings_1d_pct  != null;
   const postOk        = pr?.post_earnings_1d_pct != null;
   const prePostUnavail = !!(pr?.pre_post_method?.includes('unavailable'));
-  const isPrelimReaction = pr != null && !pr.reactions_final;
+  // Treat reaction as final if post_earnings_1d_pct is populated — presence of the
+  // finalized value is the authoritative signal, regardless of the reactions_final flag.
+  const isPrelimReaction = pr != null && !pr.reactions_final && pr.post_earnings_1d_pct == null;
 
   const filingUrl  = liveEvent?.filing_payload?.url ?? liveEvent?.filing_summary?.url ?? mat?.primary_filing?.filing_index_url ?? null;
   const releaseUrl = mat?.earnings_release?.document_url ?? null;
