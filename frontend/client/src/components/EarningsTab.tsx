@@ -1306,7 +1306,7 @@ const HORIZON_LABELS: Record<ReactionHorizon, string> = {
 };
 
 function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
-  const [horizon, setHorizon] = useState<ReactionHorizon>('post-1d');
+  const [horizon, setHorizon] = useState<ReactionHorizon>('pre-vs-post');
   const hist = ei.earnings_history;
   const rs = ei.reaction_summary;
   const cov = ei.source_status.coverage;
