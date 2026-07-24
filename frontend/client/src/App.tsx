@@ -12,7 +12,6 @@ import { AlertProvider } from "@/contexts/AlertContext";
 import { AlertBubbles } from "@/components/alert-bubbles";
 import { AlertHistoryButton } from "@/components/alert-history-drawer";
 import { EarningsLiveProvider } from "@/contexts/EarningsLiveContext";
-import { EarningsAlertBell } from "@/components/EarningsAlertBell";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
@@ -247,7 +246,6 @@ function AppInner() {
                 </MainLayout>
                 <ChatbotWidget />
                 <AlertBubbles />
-                <EarningsAlertBell />
                 <AlertHistoryButton />
               </TooltipProvider>
             </EarningsLiveProvider>

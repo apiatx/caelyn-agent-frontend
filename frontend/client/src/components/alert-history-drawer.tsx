@@ -1,10 +1,13 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AlertDetailModal } from './alert-detail-modal';
 import { AlertItem, useAlerts } from '@/contexts/AlertContext';
+import { useEarningsLive } from '@/contexts/EarningsLiveContext';
+import type { LiveEarningsEvent } from '@/types/live-earnings';
 import {
   Bell, RefreshCw, Search, X, CheckCircle, EyeOff,
-  AlertTriangle, Zap, Activity, Shield, ChevronDown,
+  AlertTriangle, Zap, Activity, Shield, ChevronDown, TrendingUp,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +39,7 @@ interface HistoryResponse {
   has_more: boolean;
 }
 
-type Filter = 'all' | 'unread' | 'high' | 'options' | 'cross' | 'full' | 'hl' | 'dismissed';
+type Filter = 'all' | 'unread' | 'earnings' | 'high' | 'options' | 'cross' | 'full' | 'hl' | 'dismissed';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -113,6 +116,7 @@ const SEV_BORDER: Record<string, string> = {
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all',       label: 'All'          },
   { key: 'unread',    label: 'Unread'       },
+  { key: 'earnings',  label: 'Earnings'     },
   { key: 'high',      label: 'High'         },
   { key: 'options',   label: 'Options'      },
   { key: 'cross',     label: 'Cross'        },
@@ -121,7 +125,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'dismissed', label: 'Dismissed'    },
 ];
 
-// ─── Alert row ────────────────────────────────────────────────────────────────
+// ─── Alert row (market alerts) ────────────────────────────────────────────────
 
 function HistoryRow({
   item,
@@ -207,9 +211,159 @@ function HistoryRow({
   );
 }
 
+// ─── Earnings helpers ─────────────────────────────────────────────────────────
+
+const _fMono = "'JetBrains Mono','Fira Code',monospace";
+const _fSans = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+function earnRelTime(iso: string | null): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000) return 'just now';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function earnStateHeadline(e: LiveEarningsEvent): string {
+  switch (e.state) {
+    case 'scheduled':         return 'Earnings scheduled';
+    case 'monitoring':        return 'Monitoring for earnings';
+    case 'filing_detected':   return 'Earnings materials detected';
+    case 'results_partial':   return 'Partial earnings results available';
+    case 'results_available':
+      switch (e.classification) {
+        case 'double_beat': return 'Double beat reported';
+        case 'double_miss': return 'Double miss reported';
+        case 'mixed':       return 'Mixed earnings results';
+        default:            return 'Earnings results reported';
+      }
+    case 'results_updated':   return 'Earnings results updated';
+    case 'complete':          return 'Earnings event complete';
+    default:                  return 'Earnings update';
+  }
+}
+
+function earnStateColor(e: LiveEarningsEvent): string {
+  switch (e.state) {
+    case 'filing_detected':
+    case 'results_partial':
+    case 'monitoring':        return '#f59e0b';
+    case 'results_available':
+      if (e.classification === 'double_beat') return '#22c55e';
+      if (e.classification === 'double_miss') return '#ef4444';
+      return '#f59e0b';
+    case 'results_updated':   return '#0ea5e9';
+    case 'complete':          return 'rgba(255,255,255,0.35)';
+    default:                  return 'rgba(255,255,255,0.35)';
+  }
+}
+
+function earnClassLabel(e: LiveEarningsEvent): string | null {
+  switch (e.classification) {
+    case 'double_beat': return 'Double Beat';
+    case 'double_miss': return 'Double Miss';
+    case 'mixed':       return 'Mixed';
+    case 'partial':     return 'Partial';
+    default:            return null;
+  }
+}
+
+function earnEpsStr(e: LiveEarningsEvent): string | null {
+  const rs = (e.results_payload ?? e.results_summary) as { eps_actual?: number | null; eps_surprise_pct?: number | null } | null;
+  if (!rs || rs.eps_actual == null) return null;
+  const v = rs.eps_actual;
+  const s = `EPS ${v >= 0 ? '+' : ''}$${v.toFixed(2)}`;
+  if (rs.eps_surprise_pct != null && Math.abs(rs.eps_surprise_pct) < 600) {
+    return `${s} (${rs.eps_surprise_pct >= 0 ? '+' : ''}${rs.eps_surprise_pct.toFixed(1)}%)`;
+  }
+  return s;
+}
+
+function earnMoveStr(e: LiveEarningsEvent): string | null {
+  const mr = e.initial_market_reaction;
+  if (!mr || mr.move_pct == null) return null;
+  return `${mr.move_pct >= 0 ? '+' : ''}${mr.move_pct.toFixed(1)}%`;
+}
+
+// ─── Earnings alert row ───────────────────────────────────────────────────────
+
+function EarningsRow({
+  event,
+  onClick,
+}: {
+  event: LiveEarningsEvent;
+  onClick: () => void;
+}) {
+  const isUnread = event.is_read !== true;
+  const color    = earnStateColor(event);
+  const cl       = earnClassLabel(event);
+  const eps      = earnEpsStr(event);
+  const move     = earnMoveStr(event);
+  const ts       = earnRelTime(event.updated_at);
+  const moveCol  = event.initial_market_reaction?.move_pct != null
+    ? (event.initial_market_reaction.move_pct >= 0 ? '#22c55e' : '#ef4444')
+    : color;
+
+  const stateBadge =
+    event.state === 'scheduled'         ? 'SCHEDULED' :
+    event.state === 'monitoring'        ? 'MONITORING' :
+    event.state === 'filing_detected'   ? 'FILING' :
+    event.state === 'results_partial'   ? 'PARTIAL' :
+    event.state === 'results_available' ? (cl ?? 'RESULTS') :
+    event.state === 'results_updated'   ? 'UPDATED' :
+    'COMPLETE';
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        textAlign: 'left' as const,
+        padding: '10px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: isUnread ? 'rgba(255,255,255,0.025)' : 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'block',
+        transition: 'background 0.15s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isUnread ? 'rgba(255,255,255,0.025)' : 'transparent'; }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        {isUnread && (
+          <span style={{ marginTop: 5, flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: color, display: 'inline-block' }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+            <span style={{ fontSize: 12, fontWeight: 800, fontFamily: _fMono, color: '#fff' }}>{event.symbol}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _fMono, color, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
+              {stateBadge}
+            </span>
+          </div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontFamily: _fSans, marginTop: 2, lineHeight: 1.4 }}>
+            {earnStateHeadline(event)}
+          </div>
+          {(eps || move) && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' as const }}>
+              {eps  && <span style={{ fontSize: 9,  fontWeight: 700, fontFamily: _fMono, color: 'rgba(255,255,255,0.7)' }}>{eps}</span>}
+              {move && <span style={{ fontSize: 10, fontWeight: 800, fontFamily: _fMono, color: moveCol }}>{move}</span>}
+            </div>
+          )}
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: _fSans, marginTop: 4 }}>{ts}</div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AlertHistoryButton() {
+  const [, setLocation]         = useLocation();
   const [open, setOpen]         = useState(false);
   const [items, setItems]       = useState<HistoryItem[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -222,6 +376,17 @@ export function AlertHistoryButton() {
   const [selected, setSelected] = useState<AlertItem | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
   const fetchedOnce = useRef(false);
+
+  // Earnings live events
+  const { events: earnEvents, unreadCount: earnUnread, markRead: markEarnRead, isError: earnError } = useEarningsLive();
+  const earnSorted = useMemo(
+    () => [...earnEvents].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [earnEvents],
+  );
+  const earnFiltered = useMemo(
+    () => search ? earnSorted.filter(e => e.symbol.toLowerCase().includes(search.toLowerCase())) : earnSorted,
+    [earnSorted, search],
+  );
 
   // Right-edge proximity — reveal bell only when cursor is near the right edge
   const [nearRightEdge, setNearRightEdge] = useState(false);
@@ -286,10 +451,11 @@ export function AlertHistoryButton() {
 
   // ── Badge count ────────────────────────────────────────────────────────────
 
-  const badgeCount = useMemo(
+  const marketUnread = useMemo(
     () => items.filter(i => !i.is_acknowledged && !i.is_dismissed).length,
     [items],
   );
+  const badgeCount = marketUnread + earnUnread;
 
   // ── Filtered list ──────────────────────────────────────────────────────────
 
@@ -303,7 +469,6 @@ export function AlertHistoryButton() {
   function handleRowClick(h: HistoryItem) {
     setSelectedHistoryId(h.id);
     setSelected(toAlertItem(h));
-    // Optimistically mark acknowledged in local list
     setItems(prev =>
       prev.map(i =>
         i.id === h.id ? { ...i, is_acknowledged: true, acknowledged_at: new Date().toISOString() } : i,
@@ -311,9 +476,19 @@ export function AlertHistoryButton() {
     );
   }
 
+  function handleEarningsRowClick(e: LiveEarningsEvent) {
+    markEarnRead(e.event_id);
+    setOpen(false);
+    if (window.location.pathname.includes('watchlist')) {
+      window.dispatchEvent(new CustomEvent('caelyn:earnings:open', {
+        detail: { ticker: e.symbol, primaryTab: 'earnings', earningsTab: 'overview' },
+      }));
+    } else {
+      setLocation(`/app/watchlist?openTicker=${e.symbol}&primaryTab=earnings&earningsTab=overview`);
+    }
+  }
+
   function handleModalClose() {
-    // Modal's own useEffect already called ackAlert via AlertContext.
-    // removeFromView adds this id to seenIds so it won't re-popup.
     if (selected) removeFromView(selected.id);
     setSelected(null);
     setSelectedHistoryId(null);
@@ -326,12 +501,11 @@ export function AlertHistoryButton() {
         i.id === h.id ? { ...i, is_dismissed: true, dismissed_at: new Date().toISOString() } : i,
       ),
     );
-    // Go through AlertContext so dismissedIds is persisted to localStorage
     await dismissAlert(String(h.id));
   }
 
   function handleRefresh() {
-    fetchedOnce.current = true; // already opened
+    fetchedOnce.current = true;
     setItems([]);
     setNextOffset(0);
     setHasMore(false);
@@ -341,6 +515,7 @@ export function AlertHistoryButton() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const bellVisible = nearRightEdge || open;
+  const isEarningsTab = filter === 'earnings';
 
   return (
     <>
@@ -393,9 +568,12 @@ export function AlertHistoryButton() {
           <div className="shrink-0 px-4 pt-5 pb-3 border-b border-white/[0.06]">
             <div className="flex items-center justify-between mb-3 pr-6">
               <div className="flex items-center gap-2">
-                <Bell className="w-3.5 h-3.5 text-white/40" />
+                {isEarningsTab
+                  ? <TrendingUp className="w-3.5 h-3.5 text-amber-400/70" />
+                  : <Bell className="w-3.5 h-3.5 text-white/40" />
+                }
                 <span className="text-[11px] font-semibold text-white/70 uppercase tracking-widest">
-                  Alert Radar
+                  {isEarningsTab ? 'Earnings Alerts' : 'Alert Radar'}
                 </span>
                 {badgeCount > 0 && (
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/25">
@@ -403,14 +581,16 @@ export function AlertHistoryButton() {
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={loading}
-                className="text-white/25 hover:text-white/60 transition-colors disabled:opacity-30"
-                aria-label="Refresh"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
+              {!isEarningsTab && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  className="text-white/25 hover:text-white/60 transition-colors disabled:opacity-30"
+                  aria-label="Refresh"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              )}
             </div>
 
             {/* Search */}
@@ -420,7 +600,7 @@ export function AlertHistoryButton() {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Filter by ticker…"
+                placeholder={isEarningsTab ? 'Filter by ticker…' : 'Filter by ticker…'}
                 className="
                   w-full pl-7 pr-3 py-1.5 text-[11px] rounded-md
                   bg-white/[0.04] border border-white/[0.07]
@@ -449,84 +629,119 @@ export function AlertHistoryButton() {
                     shrink-0 text-[9.5px] font-medium uppercase tracking-wider
                     px-2.5 py-1 rounded-md border transition-colors
                     ${filter === f.key
-                      ? 'bg-white/[0.08] border-white/20 text-white/80'
+                      ? f.key === 'earnings'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                        : 'bg-white/[0.08] border-white/20 text-white/80'
                       : 'bg-transparent border-white/[0.06] text-white/30 hover:text-white/55 hover:border-white/15'
                     }
                   `}
                 >
                   {f.label}
+                  {f.key === 'earnings' && earnUnread > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[14px] h-3.5 px-0.5 rounded-full bg-amber-500 text-black text-[7px] font-extrabold leading-none">
+                      {earnUnread > 99 ? '99+' : earnUnread}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Body — scrollable alert list */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+          <div className={`flex-1 overflow-y-auto ${isEarningsTab ? '' : 'px-3 py-3 space-y-1.5'}`}>
 
-            {/* Loading */}
-            {loading && (
-              <div className="flex items-center justify-center py-12 text-white/25 text-[11px]">
-                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                Loading history…
-              </div>
+            {/* ── Earnings tab ─────────────────────────────────────── */}
+            {isEarningsTab && (
+              <>
+                {earnError && (
+                  <div style={{ padding: 20, textAlign: 'center' as const, fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: _fSans }}>
+                    Earnings alerts are temporarily unavailable.
+                  </div>
+                )}
+                {!earnError && earnFiltered.length === 0 && (
+                  <div style={{ padding: '48px 20px', textAlign: 'center' as const, fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: _fSans }}>
+                    {earnEvents.length === 0 ? 'No recent earnings alerts.' : 'No earnings alerts match this filter.'}
+                  </div>
+                )}
+                {earnFiltered.map(ev => (
+                  <EarningsRow
+                    key={ev.event_id}
+                    event={ev}
+                    onClick={() => handleEarningsRowClick(ev)}
+                  />
+                ))}
+              </>
             )}
 
-            {/* Error */}
-            {!loading && error && (
-              <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <span className="text-[11px] text-rose-400/60">{error}</span>
-                <button
-                  onClick={handleRefresh}
-                  className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
+            {/* ── Market alerts tab ─────────────────────────────────── */}
+            {!isEarningsTab && (
+              <>
+                {/* Loading */}
+                {loading && (
+                  <div className="flex items-center justify-center py-12 text-white/25 text-[11px]">
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    Loading history…
+                  </div>
+                )}
+
+                {/* Error */}
+                {!loading && error && (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center">
+                    <span className="text-[11px] text-rose-400/60">{error}</span>
+                    <button
+                      onClick={handleRefresh}
+                      className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                {/* Empty */}
+                {!loading && !error && filtered.length === 0 && (
+                  <div className="flex flex-col items-center gap-1.5 py-12 text-center">
+                    <Bell className="w-5 h-5 text-white/10 mb-1" />
+                    <span className="text-[11px] text-white/25">
+                      {items.length === 0
+                        ? 'No alerts in the past 7 days.'
+                        : 'No alerts match this filter.'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Alert rows */}
+                {!loading && filtered.map(item => (
+                  <HistoryRow
+                    key={item.id}
+                    item={item}
+                    onClick={() => handleRowClick(item)}
+                    onDismiss={(e) => handleDismiss(item, e)}
+                  />
+                ))}
+
+                {/* Load more */}
+                {!loading && hasMore && filtered.length > 0 && (
+                  <button
+                    onClick={() => fetchHistory(false)}
+                    disabled={loadingMore}
+                    className="
+                      w-full mt-2 py-2 flex items-center justify-center gap-1.5
+                      text-[10px] text-white/30 hover:text-white/60
+                      border border-white/[0.06] rounded-lg
+                      hover:border-white/15 transition-colors disabled:opacity-40
+                    "
+                  >
+                    {loadingMore
+                      ? <><RefreshCw className="w-3 h-3 animate-spin" /> Loading…</>
+                      : <><ChevronDown className="w-3 h-3" /> Load more</>
+                    }
+                  </button>
+                )}
+
+                {/* Bottom padding */}
+                <div className="h-4" />
+              </>
             )}
-
-            {/* Empty */}
-            {!loading && !error && filtered.length === 0 && (
-              <div className="flex flex-col items-center gap-1.5 py-12 text-center">
-                <Bell className="w-5 h-5 text-white/10 mb-1" />
-                <span className="text-[11px] text-white/25">
-                  {items.length === 0
-                    ? 'No alerts in the past 7 days.'
-                    : 'No alerts match this filter.'}
-                </span>
-              </div>
-            )}
-
-            {/* Alert rows */}
-            {!loading && filtered.map(item => (
-              <HistoryRow
-                key={item.id}
-                item={item}
-                onClick={() => handleRowClick(item)}
-                onDismiss={(e) => handleDismiss(item, e)}
-              />
-            ))}
-
-            {/* Load more */}
-            {!loading && hasMore && filtered.length > 0 && (
-              <button
-                onClick={() => fetchHistory(false)}
-                disabled={loadingMore}
-                className="
-                  w-full mt-2 py-2 flex items-center justify-center gap-1.5
-                  text-[10px] text-white/30 hover:text-white/60
-                  border border-white/[0.06] rounded-lg
-                  hover:border-white/15 transition-colors disabled:opacity-40
-                "
-              >
-                {loadingMore
-                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> Loading…</>
-                  : <><ChevronDown className="w-3 h-3" /> Load more</>
-                }
-              </button>
-            )}
-
-            {/* Bottom padding */}
-            <div className="h-4" />
           </div>
         </SheetContent>
       </Sheet>
