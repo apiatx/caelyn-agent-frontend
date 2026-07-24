@@ -6075,9 +6075,8 @@ export default function WatchlistPage() {
         {renderAddPanel()}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
           <div style={{ fontFamily: font, fontSize: 14, color: C.dim, lineHeight: 2.2, textAlign: 'center' }}>
-            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> No watchlist loaded.</div>
-            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> Click <span style={{ color: 'rgba(255,255,255,0.70)' }}>+</span> above to add one, or upload a CSV in AI Terminal.</div>
-            <div><span style={{ color: 'rgba(255,255,255,0.40)' }}>&gt;</span> <span className="wl-blink" style={{ color: C.text }}>_</span></div>
+            <div>No watchlist loaded.</div>
+            <div>Click <span style={{ color: 'rgba(255,255,255,0.70)' }}>+</span> above to add one.</div>
           </div>
         </div>
       </div>
