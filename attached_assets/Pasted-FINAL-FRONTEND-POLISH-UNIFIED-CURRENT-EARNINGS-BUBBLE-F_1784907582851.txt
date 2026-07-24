@@ -1,0 +1,289 @@
+FINAL FRONTEND POLISH — UNIFIED CURRENT EARNINGS BUBBLE
+
+Fix the Earnings Overview presentation in one pass.
+
+FRONTEND ONLY.
+
+Do not modify the backend.
+Do not create another component architecture.
+Do not create another query.
+Do not change History, Price Moves, Ratings, or Materials except where required for navigation.
+Do not push to Git.
+
+CURRENT UI PROBLEM
+
+INTC currently displays two duplicative sections:
+
+1. Upcoming Earnings
+   Jul 23, 2026
+   Timing not confirmed
+
+2. Q2 2026
+   Jul 23, 2026
+   AMC
+   Preliminary
+   Reported
+
+followed by the actual Revenue/EPS results.
+
+These are the same earnings event and must be presented as one unified earnings surface.
+
+OBJECTIVE
+
+Replace the separate LiveEarningsCard plus latest-quarter header/results stack with one polished “Current Earnings Event” bubble when they represent the same reporting event.
+
+Use the attached green reference as information-hierarchy inspiration, but preserve Caelyn’s dark design system.
+
+PART 1 — MATCH THE SAME EVENT
+
+Determine whether live_event and earnings_history[0] represent the same event using:
+
+1. fiscal_year + fiscal_period
+2. expected_date/report date
+3. event_key where available
+
+Normalize dates before comparing.
+
+Do not merge unrelated quarters.
+
+PART 2 — SOURCE-OF-TRUTH PRECEDENCE
+
+For the same event:
+
+- reported actuals in earnings_history/results_payload override scheduled presentation
+- the most advanced live-event state wins
+- scheduled must never appear when the same quarter already has actual EPS or revenue
+- results_payload is preferred for immediate live figures
+- earnings_history supplies the persisted detailed quarter
+- backend classification supplies double beat/miss/mixed state
+
+Add a defensive fallback:
+
+If matching earnings_history contains actuals but live_event is still scheduled, display it as reported/results available—not Upcoming Earnings.
+
+Do not rewrite backend data; this is a rendering safeguard.
+
+PART 3 — ONE UNIFIED BUBBLE
+
+Render one main earnings card with:
+
+Header:
+
+Q2 2026 Earnings
+Jul 23, 2026
+After Market Close
+Confirmed time where available
+
+Status treatment:
+
+- Double Beat — green
+- Double Miss — red
+- Mixed Results — amber/neutral
+- Partial Results — amber
+- Awaiting Release — neutral/amber
+- Monitoring — amber
+- Upcoming — neutral
+
+Do not render a separate “Upcoming Earnings” card above it.
+
+PART 4 — REFERENCE-STYLE INFORMATION HIERARCHY
+
+Inside the unified card, use a compact segmented header similar in spirit to the supplied reference:
+
+Left segment:
+Positive Results / Negative Results / Mixed Results / Awaiting Results
+
+Right segment:
+Positive Move / Negative Move / Move Pending
+
+The right-side move state should come only from valid reaction data.
+
+Do not label it positive or negative when the reaction is unavailable.
+
+PART 5 — RESULTS LAYOUT
+
+Display Revenue and EPS in clear rows or compact cards:
+
+Revenue:
+- estimate
+- actual
+- surprise amount
+- surprise percentage
+- Beat / Miss / In Line
+
+EPS:
+- estimate
+- actual
+- surprise amount
+- surprise percentage
+- Beat / Miss / In Line
+
+Use:
+
+- green for beats
+- red for misses
+- muted neutral for in-line or unavailable
+- raw revenue formatted to M/B
+- backend percentages without multiplying by 100
+- em dash for null
+
+For INTC, this unified card should show:
+
+Revenue:
+- Estimate approximately $14.43B
+- Actual approximately $16.13B
+- Beat approximately +11.7%
+
+EPS:
+- Estimate $0.21
+- Actual $0.42
+- Beat
+
+Do not show a second large Revenue/EPS result block underneath for the same event.
+
+PART 6 — BEFORE / AFTER EARNINGS
+
+Include the existing pre/post comparison inside the unified bubble when available:
+
+Before Earnings
+value and session date
+
+After Earnings
+value and session date
+
+When post-event reaction is not finalized:
+
+- show Move Pending
+- do not show zero
+- retain Preliminary only next to the reaction subsection
+
+Do not place a broad PRELIMINARY badge beside the reported earnings result when only the price reaction remains preliminary.
+
+Rename it where necessary:
+
+Price Reaction Preliminary
+
+PART 7 — ACTIONS
+
+At the bottom, show only available actions:
+
+- Open Filing
+- Earnings Release
+- Slides / Presentation
+- Report
+- Webcast / Replay
+- Materials
+
+Use the existing Materials tab and verified SEC links.
+
+Do not show disabled giant buttons for resources that do not exist.
+
+PART 8 — UPCOMING EVENT MODE
+
+Before results exist, the same unified bubble should show:
+
+- quarter/year
+- date
+- exact/estimated time
+- BMO/AMC
+- confirmed/estimated status
+- countdown
+- Monitoring/Awaiting Release state
+
+Once actual results arrive, that exact same card transitions into the result presentation.
+
+Do not stack an upcoming card above a reported card.
+
+PART 9 — HISTORICAL OVERVIEW BEHAVIOR
+
+When the newest reported quarter is being shown in the unified current-event bubble:
+
+- do not repeat its large quarter header and Revenue/EPS cards below
+- continue showing Growth Context, Price Reaction, and Historical Reaction Context where useful
+- or incorporate the current quarter’s price reaction into the unified card
+- prior quarters remain available in History
+
+When no live/current event exists:
+
+- preserve the existing standard latest-quarter Overview design
+
+PART 10 — EVENT SELECTION FIX
+
+Audit the frontend event selector.
+
+For events within the same event family, use this state precedence:
+
+complete
+results_updated
+results_available
+results_partial
+filing_detected
+monitoring
+scheduled
+
+Then compare:
+
+- revision
+- updated_at
+
+Do not allow a recently touched scheduled row to beat results_available.
+
+Across different event families, select the newest expected/reporting date first.
+
+PART 11 — REMOVE DUPLICATE LABELS
+
+For a reported event, do not simultaneously show:
+
+- Upcoming Earnings
+- Reported
+- Live Earnings
+- Preliminary
+
+Use one truthful primary status.
+
+Examples:
+
+DOUBLE BEAT
+Reported Jul 23, 2026
+
+or:
+
+AWAITING RELEASE
+Expected Jul 24, 2026 · After Market Close
+
+Any preliminary label must identify exactly what is preliminary.
+
+PART 12 — INTC ACCEPTANCE TEST
+
+Through the real Watchlist ticker popup, verify:
+
+1. Only one Q2 2026 earnings bubble appears.
+2. “Upcoming Earnings” is absent.
+3. “Timing not confirmed” is absent when AMC/confirmed data exists.
+4. The bubble is green for double beat.
+5. Revenue actual and estimate display correctly.
+6. EPS actual and estimate display correctly.
+7. The old separate Q2 result cards are not duplicated.
+8. Price reaction displays Pending when unavailable.
+9. Price Reaction Preliminary is scoped correctly.
+10. History, Price Moves, Ratings, and Materials remain functional.
+11. No new query is introduced.
+12. No console or TypeScript errors occur.
+
+Run the production build and publish the frontend.
+
+Return screenshots of:
+
+- unified INTC Q2 bubble
+- no duplicate scheduled section
+- result rows
+- before/after or move-pending state
+- Materials actions
+
+End with exactly:
+
+UNIFIED EARNINGS BUBBLE COMPLETE
+
+or:
+
+NOT COMPLETE

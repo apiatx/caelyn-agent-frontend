@@ -505,8 +505,326 @@ const SUB_TABS: { id: SubTab; label: string }[] = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════
-   OVERVIEW SUB-TAB
+   OVERVIEW SUB-TAB — helpers, unified bubble, main function
    ═══════════════════════════════════════════════════════════════ */
+
+/* State rank: higher number wins when selecting between live events */
+const STATE_RANK: Record<string, number> = {
+  complete: 7, results_updated: 6, results_available: 5,
+  results_partial: 4, filing_detected: 3, monitoring: 2, scheduled: 1,
+};
+
+/* Match a LiveEarningsEvent and an EarningsQuarter as the same reporting event */
+function isSameEvent(ev: LiveEarningsEvent, q: EarningsQuarter): boolean {
+  if (ev.fiscal_year && ev.fiscal_period && q.fiscal_year && q.fiscal_period) {
+    if (
+      String(ev.fiscal_year) === String(q.fiscal_year) &&
+      ev.fiscal_period.toUpperCase().trim() === (q.fiscal_period ?? '').toUpperCase().trim()
+    ) return true;
+  }
+  const d1 = ev.expected_date ?? null;
+  const d2 = q.date ?? null;
+  if (d1 && d2) {
+    const diff = Math.abs(
+      new Date(d1 + 'T00:00:00Z').getTime() - new Date(d2 + 'T00:00:00Z').getTime()
+    );
+    if (diff <= 3 * 86_400_000) return true;
+  }
+  return false;
+}
+
+/* Derive classification from history row surprises when live_event omits it */
+function deriveClassification(q: EarningsQuarter): 'double_beat' | 'double_miss' | 'mixed' | null {
+  const epsBeat = q.eps_surprise_pct != null && q.eps_surprise_pct > 2;
+  const revBeat = q.revenue_surprise_pct != null && q.revenue_surprise_pct > 2;
+  const epsMiss = q.eps_surprise_pct != null && q.eps_surprise_pct < -2;
+  const revMiss = q.revenue_surprise_pct != null && q.revenue_surprise_pct < -2;
+  if (epsBeat && revBeat) return 'double_beat';
+  if (epsMiss && revMiss) return 'double_miss';
+  if ((epsBeat || revBeat) && (epsMiss || revMiss)) return 'mixed';
+  return null;
+}
+
+/* Countdown hook — safe to call unconditionally at top of any component */
+function useLocalCountdown(expectedAt: string | null | undefined): string | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!expectedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [expectedAt]);
+  if (!expectedAt) return null;
+  const diff = new Date(expectedAt).getTime() - now;
+  if (diff <= 0) return null;
+  const totalMins = Math.ceil(diff / 60_000);
+  if (totalMins < 60) return `in ${totalMins}m`;
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  return mins > 0 ? `in ${hrs}h ${mins}m` : `in ${hrs}h`;
+}
+
+/* ── Unified Current Earnings Bubble ─────────────────────────── */
+interface UnifiedBubbleProps {
+  q: EarningsQuarter;
+  liveEvent: LiveEarningsEvent | null;
+  effectiveState: string;
+  classification: string | null;
+  treatAsReported: boolean;
+  epsActual: number | null; epsEstimate: number | null;
+  epsSurpriseAmt: number | null; epsSurprisePct: number | null;
+  revActual: number | null; revEstimate: number | null;
+  revSurpriseAmt: number | null; revSurprisePct: number | null;
+  liveReaction: { move_pct?: number | null; session?: string | null; is_preliminary?: boolean } | null;
+  hasPrePost: boolean; prePostIsUnavail: boolean;
+  pr: PriceReaction | null;
+  mat: LatestEarningsPacket | null;
+  onSwitchToMaterials?: () => void;
+  C: any;
+}
+
+function UnifiedEarningsBubble({
+  q, liveEvent, effectiveState, classification,
+  epsActual, epsEstimate, epsSurpriseAmt, epsSurprisePct,
+  revActual, revEstimate, revSurpriseAmt, revSurprisePct,
+  liveReaction, pr, mat, onSwitchToMaterials, C,
+}: UnifiedBubbleProps) {
+  const countdown = useLocalCountdown(liveEvent?.expected_at);
+
+  useMemo(() => {
+    if (typeof document === 'undefined' || document.getElementById('lec-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'lec-styles';
+    s.textContent = '@keyframes lec-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}';
+    document.head.appendChild(s);
+  }, []);
+
+  const isReported = effectiveState === 'results_available' || effectiveState === 'results_updated' || effectiveState === 'complete';
+  const isPartial  = effectiveState === 'results_partial';
+  const isFiling   = effectiveState === 'filing_detected';
+  const isMonitor  = effectiveState === 'monitoring';
+  const isUpcoming = effectiveState === 'scheduled';
+  const isPending  = isMonitor || isFiling;
+
+  let leftLabel: string, statusColor: string, bubbleBg: string, bubbleBorder: string;
+
+  if (isReported || isPartial) {
+    if (classification === 'double_beat') {
+      leftLabel = 'Positive Results'; statusColor = '#22c55e';
+      bubbleBg = 'rgba(34,197,94,0.06)'; bubbleBorder = 'rgba(34,197,94,0.35)';
+    } else if (classification === 'double_miss') {
+      leftLabel = 'Negative Results'; statusColor = '#ef4444';
+      bubbleBg = 'rgba(239,68,68,0.06)'; bubbleBorder = 'rgba(239,68,68,0.35)';
+    } else if (classification === 'mixed') {
+      leftLabel = 'Mixed Results'; statusColor = '#f59e0b';
+      bubbleBg = 'rgba(245,158,11,0.06)'; bubbleBorder = 'rgba(245,158,11,0.35)';
+    } else if (isPartial) {
+      leftLabel = 'Partial Results'; statusColor = '#f59e0b';
+      bubbleBg = 'rgba(245,158,11,0.06)'; bubbleBorder = 'rgba(245,158,11,0.35)';
+    } else {
+      leftLabel = 'Results Reported'; statusColor = C.teal;
+      bubbleBg = 'rgba(14,165,233,0.05)'; bubbleBorder = 'rgba(14,165,233,0.28)';
+    }
+  } else if (isFiling) {
+    leftLabel = 'Release Detected'; statusColor = '#f59e0b';
+    bubbleBg = 'rgba(245,158,11,0.06)'; bubbleBorder = 'rgba(245,158,11,0.38)';
+  } else if (isMonitor) {
+    leftLabel = 'Awaiting Results'; statusColor = '#f59e0b';
+    bubbleBg = 'rgba(245,158,11,0.04)'; bubbleBorder = 'rgba(245,158,11,0.25)';
+  } else {
+    leftLabel = 'Upcoming'; statusColor = C.dim;
+    bubbleBg = 'rgba(255,255,255,0.02)'; bubbleBorder = 'rgba(255,255,255,0.10)';
+  }
+
+  const classLabel =
+    classification === 'double_beat' ? 'Double Beat' :
+    classification === 'double_miss' ? 'Double Miss' :
+    classification === 'mixed'       ? 'Mixed' :
+    classification === 'partial'     ? 'Partial' : null;
+
+  const liveMovePct     = (liveReaction as any)?.move_pct as number | null ?? null;
+  const liveMoveSession = (liveReaction as any)?.session  as string | null ?? null;
+  const liveMovePrelim  = !!(liveReaction as any)?.is_preliminary;
+  const fallbackMove    = (liveMovePct == null && isReported && pr?.reactions_final) ? (pr.reaction_1d_pct ?? null) : null;
+  const displayMove     = liveMovePct ?? fallbackMove;
+  const moveSessionLabel =
+    liveMoveSession === 'premarket'   ? 'Premarket' :
+    liveMoveSession === 'afterhours'  ? 'After Hours' :
+    liveMoveSession === 'regular'     ? 'Regular' : null;
+
+  const quarterLabel = (q.fiscal_period && q.fiscal_year)
+    ? `${q.fiscal_period} ${q.fiscal_year} Earnings`
+    : 'Current Quarter Earnings';
+  const timingBadge = (q.timing && q.timing !== 'unknown') ? (TIMING_BADGE[q.timing] ?? null) : null;
+  const timingFull  = (q.timing && q.timing !== 'unknown') ? (TIMING_FULL[q.timing]  ?? null) : null;
+  const isConfirmed = q.timing_confidence === 'confirmed';
+
+  const epsSpShowPct = epsSurprisePct != null && Math.abs(epsSurprisePct) < 600;
+
+  const preOk         = pr?.pre_earnings_1d_pct  != null;
+  const postOk        = pr?.post_earnings_1d_pct != null;
+  const prePostUnavail = !!(pr?.pre_post_method?.includes('unavailable'));
+  const isPrelimReaction = pr != null && !pr.reactions_final;
+
+  const filingUrl  = liveEvent?.filing_payload?.url ?? liveEvent?.filing_summary?.url ?? mat?.primary_filing?.filing_index_url ?? null;
+  const releaseUrl = mat?.earnings_release?.document_url ?? null;
+  const presentUrl = mat?.investor_presentation?.document_url ?? null;
+  const webcastUrl = mat?.webcast_url ?? null;
+  const hasAnyAction = !!(filingUrl || releaseUrl || presentUrl || webcastUrl || onSwitchToMaterials);
+
+  const abtn = (primary: boolean): React.CSSProperties => ({
+    fontSize: 9, fontWeight: 700, fontFamily: _f, letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const, padding: '5px 12px', borderRadius: 4,
+    cursor: 'pointer', textDecoration: 'none', display: 'inline-block',
+    color: primary ? statusColor : C.dim,
+    background: primary ? `${statusColor}12` : 'rgba(255,255,255,0.03)',
+    border: `1px solid ${primary ? `${statusColor}40` : 'rgba(255,255,255,0.10)'}`,
+  });
+
+  return (
+    <div style={{ background: bubbleBg, border: `1px solid ${bubbleBorder}`, borderRadius: 8, overflow: 'hidden' }}>
+
+      {/* ── Header strip ──────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${bubbleBorder}`, flexWrap: 'wrap' as const, gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          {isPending && (
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: statusColor, animation: 'lec-pulse 1.8s ease-in-out infinite', flexShrink: 0 }} />
+          )}
+          <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: statusColor, letterSpacing: '0.07em', textTransform: 'uppercase' as const }}>{leftLabel}</span>
+          {classLabel && (
+            <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _f, color: statusColor, opacity: 0.8 }}>{classLabel}</span>
+          )}
+        </div>
+        <div style={{ textAlign: 'right' as const }}>
+          {displayMove != null ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontSize: 13, fontWeight: 900, fontFamily: _f, color: displayMove >= 0 ? '#22c55e' : '#ef4444' }}>
+                {displayMove >= 0 ? '+' : ''}{displayMove.toFixed(1)}%
+              </span>
+              {moveSessionLabel && <span style={{ fontSize: 9, color: C.dim, fontFamily: _s }}>{moveSessionLabel}</span>}
+              {liveMovePrelim && <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}40`, padding: '1px 4px', borderRadius: 2 }}>~</span>}
+            </div>
+          ) : (
+            <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.dim, letterSpacing: '0.06em' }}>
+              {(isReported || isPartial) ? 'PRICE REACTION PENDING' : ''}
+            </span>
+          )}
+          {liveMovePrelim && displayMove != null && (
+            <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 1 }}>Price Reaction Preliminary</div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Quarter info ──────────────────────────────────────── */}
+      <div style={{ padding: '10px 14px', borderBottom: `1px solid ${bubbleBorder}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: _f, color: C.bright }}>{quarterLabel}</span>
+          {q.date && <span style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{fmtDateShort(q.date)}</span>}
+          {timingBadge && (
+            <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: '#000', background: '#0ea5e9' }}>
+              {timingBadge}
+            </span>
+          )}
+          {isConfirmed && timingBadge && (
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', fontFamily: _s }}>Confirmed</span>
+          )}
+          {(isUpcoming || isMonitor) && countdown && (
+            <span style={{ fontSize: 10, fontWeight: 700, fontFamily: _f, color: '#f59e0b' }}>Reports {countdown}</span>
+          )}
+        </div>
+        {timingFull && (
+          <div style={{ fontSize: 10, color: C.dim, fontFamily: _s, marginTop: 4 }}>{timingFull}</div>
+        )}
+      </div>
+
+      {/* ── Revenue + EPS rows ────────────────────────────────── */}
+      {(isReported || isPartial) && (
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${bubbleBorder}`, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {[
+            {
+              label: 'Revenue',
+              actual: fmtRev(revActual), estimate: revEstimate != null ? fmtRev(revEstimate) : null,
+              surpriseAmt: revSurpriseAmt != null ? fmtRev(revSurpriseAmt) : null,
+              surprisePct: revSurprisePct, showPct: true,
+            },
+            {
+              label: 'EPS',
+              actual: fmtEps(epsActual), estimate: epsEstimate != null ? fmtEps(epsEstimate) : null,
+              surpriseAmt: epsSurpriseAmt != null ? fmtEps(epsSurpriseAmt) : null,
+              surprisePct: epsSurprisePct, showPct: epsSpShowPct,
+            },
+          ].map(({ label, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
+            <div key={label}>
+              <div style={{ fontSize: 8, fontWeight: 800, color: C.teal, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.12em', marginBottom: 5 }}>{label}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' as const }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</span>
+                {estimate != null && <span style={{ fontSize: 9, color: C.dim, fontFamily: _f }}>est. {estimate}</span>}
+              </div>
+              {estimate != null ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' as const }}>
+                  {surpriseAmt && <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>}
+                  {showPct && surprisePct != null && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
+                  {surpriseLabel(surprisePct) && (
+                    <span style={{ padding: '1px 7px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
+                      {surpriseLabel(surprisePct)}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>Estimate unavailable</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Before / After Earnings ──────────────────────────── */}
+      {isReported && (
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${bubbleBorder}` }}>
+          <div style={{ fontSize: 8, fontWeight: 800, color: C.teal, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.12em', marginBottom: 8 }}>Before vs After Earnings</div>
+          {!prePostUnavail ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { label: 'Before Earnings', val: preOk  ? pr!.pre_earnings_1d_pct  : null, session: pr?.pre_earnings_session  ?? null },
+                { label: 'After Earnings',  val: postOk ? pr!.post_earnings_1d_pct : null, session: pr?.post_earnings_session ?? null },
+              ].map(({ label, val, session }) => (
+                <div key={label} style={{ textAlign: 'center' as const, padding: '4px 0' }}>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+                  {val != null ? (
+                    <>
+                      <div style={{ fontSize: 20, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
+                      {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 2 }}>{fmtDateShort(session)}</div>}
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim }}>Move Pending</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim, textAlign: 'center' as const }}>Move Pending</div>
+          )}
+          {isPrelimReaction && (
+            <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 6 }}>Price Reaction Preliminary</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Actions ──────────────────────────────────────────── */}
+      {hasAnyAction && (
+        <div style={{ padding: '10px 14px', display: 'flex', gap: 6, flexWrap: 'wrap' as const, alignItems: 'center' }}>
+          {filingUrl  && <a href={filingUrl}  target="_blank" rel="noopener noreferrer" style={abtn(true)  as React.CSSProperties}>Open Filing</a>}
+          {releaseUrl && <a href={releaseUrl} target="_blank" rel="noopener noreferrer" style={abtn(false) as React.CSSProperties}>Earnings Release</a>}
+          {presentUrl && <a href={presentUrl} target="_blank" rel="noopener noreferrer" style={abtn(false) as React.CSSProperties}>Presentation</a>}
+          {webcastUrl && <a href={webcastUrl} target="_blank" rel="noopener noreferrer" style={abtn(false) as React.CSSProperties}>Webcast</a>}
+          {onSwitchToMaterials && (
+            <button onClick={onSwitchToMaterials} style={abtn(false) as React.CSSProperties}>All Materials →</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
   ei: EarningsIntelligence; C: any; ticker?: string; onSwitchToMaterials?: () => void;
 }) {
@@ -515,14 +833,18 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
   const feedEvent = ticker ? eventBySymbol(ticker) : null;
   const detailEvent: LiveEarningsEvent | null = (ei.live_event ?? null) as LiveEarningsEvent | null;
 
+  /* Best live event: state rank takes priority over timestamp */
   const liveEvent = useMemo((): LiveEarningsEvent | null => {
     if (!feedEvent && !detailEvent) return null;
     if (!feedEvent) return detailEvent;
     if (!detailEvent) return feedEvent;
-    const feedNewer =
-      new Date(feedEvent.updated_at) >= new Date(detailEvent.updated_at) ||
-      feedEvent.revision >= detailEvent.revision;
-    return feedNewer ? feedEvent : detailEvent;
+    const feedRank   = STATE_RANK[feedEvent.state]   ?? 0;
+    const detailRank = STATE_RANK[detailEvent.state] ?? 0;
+    if (feedRank !== detailRank) return feedRank > detailRank ? feedEvent : detailEvent;
+    if (feedEvent.revision !== detailEvent.revision) {
+      return feedEvent.revision > detailEvent.revision ? feedEvent : detailEvent;
+    }
+    return new Date(feedEvent.updated_at) >= new Date(detailEvent.updated_at) ? feedEvent : detailEvent;
   }, [feedEvent, detailEvent]);
 
   const cov = ei.source_status.coverage;
@@ -544,92 +866,177 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
 
   const q = hist[0];
   const pr = q.price_reaction;
+
+  /* Same event? */
+  const isSameQ = liveEvent != null && isSameEvent(liveEvent, q);
+
+  /* Defensive: hist[0] has actuals but live is still scheduled → treat as reported */
+  const hasActuals = q.eps_actual != null || q.revenue_actual != null;
+  const treatAsReported = isSameQ && hasActuals && (!liveEvent || liveEvent.state === 'scheduled');
+  const effectiveState  = treatAsReported ? 'results_available' : (liveEvent?.state ?? 'complete');
+
+  /* Classification: live event wins, then derive from history */
+  const classification = liveEvent?.classification ?? (hasActuals ? deriveClassification(q) : null);
+
+  /* Merged data: live (immediate) + history (persisted/detailed) */
+  const liveRs = liveEvent
+    ? ((liveEvent.results_payload ?? liveEvent.results_summary) as any)
+    : null;
+
+  const epsActual   = liveRs?.eps_actual              ?? q.eps_actual;
+  const epsEstimate = q.eps_estimate                  ?? liveRs?.eps_estimate;
+  const epsSurpAmt  = q.eps_surprise_amount           ?? liveRs?.eps_surprise_amount;
+  const epsSurpPct  = q.eps_surprise_pct              ?? liveRs?.eps_surprise_pct;
+
+  const revActual   = liveRs?.revenue_actual          ?? q.revenue_actual;
+  const revEstimate = q.revenue_estimate              ?? liveRs?.revenue_estimate;
+  const revSurpAmt  = q.revenue_surprise_amount       ?? liveRs?.revenue_surprise_amount;
+  const revSurpPct  = q.revenue_surprise_pct          ?? liveRs?.revenue_surprise_pct;
+
+  const liveReaction = liveEvent
+    ? ((liveEvent.reaction_payload ?? liveEvent.initial_market_reaction) as any)
+    : null;
+
+  const mat = ei.materials?.latest_earnings_packet ?? null;
+
+  const hasPrePost     = pr != null && (pr.pre_earnings_1d_pct != null || pr.post_earnings_1d_pct != null);
+  const prePostIsUnavail = !!(pr?.pre_post_method?.includes('unavailable'));
+
   const isInferred = q.timing_confidence === 'inferred_low';
-  const isPrelim = pr && !pr.reactions_final;
-  const isApprox = pr?.calculation_method?.includes('inferred');
-
-  const epsSpShowPct = q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600;
-
-  const hasPrePost = pr && (pr.pre_earnings_1d_pct != null || pr.post_earnings_1d_pct != null);
-  const prePostIsLowConf = pr?.pre_post_confidence === 'inferred_low';
-  const prePostIsUnavail = pr?.pre_post_method?.includes('unavailable');
+  const isApprox   = !!(pr?.calculation_method?.includes('inferred'));
+  const hasPriceReaction = pr != null && (
+    pr.opening_gap_pct != null || pr.reaction_1d_pct != null ||
+    pr.reaction_3d_pct != null || pr.reaction_5d_pct != null
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
-      {/* Quarter header */}
-      <GCard C={C}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
-            {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
-          </span>
-          {q.date && <span style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{fmtDate(q.date)}</span>}
-          {q.timing && (
-            <span title={TIMING_FULL[q.timing] ?? q.timing}
-              style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f,
-                color: q.timing === 'unknown' ? C.dim : '#000',
-                background: q.timing === 'unknown' ? 'transparent' : '#0ea5e9',
-                border: q.timing === 'unknown' ? `1px solid ${C.border}` : 'none' }}>
-              {TIMING_BADGE[q.timing] ?? q.timing.toUpperCase()}
-            </span>
-          )}
-          {isPrelim && (
-            <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}50` }}>PRELIMINARY</span>
-          )}
-          <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.green, border: `1px solid ${C.green}40` }}>REPORTED</span>
-        </div>
-        {isInferred && (
-          <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}
-            title="Earnings timing inferred from available filing metadata.">
-            ⓘ Timing inferred from available filing metadata
-          </div>
-        )}
-      </GCard>
 
-      {/* Revenue + EPS */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        {[
-          {
-            title: 'Revenue',
-            actual: fmtRev(q.revenue_actual),
-            estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null,
-            surpriseAmt: fmtRev(q.revenue_surprise_amount),
-            surprisePct: q.revenue_surprise_pct,
-            showPct: true,
-          },
-          {
-            title: 'EPS',
-            actual: fmtEps(q.eps_actual),
-            estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null,
-            surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—',
-            surprisePct: q.eps_surprise_pct,
-            showPct: epsSpShowPct,
-          },
-        ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
-          <GCard key={title} C={C}>
-            <SecLabel text={title} C={C} />
-            <div style={{ fontSize: 20, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
-            {estimate != null ? (
-              <>
-                <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
-                  {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
-                  {surpriseLabel(surprisePct) && (
-                    <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
-                      {surpriseLabel(surprisePct)}
-                    </span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
+      {/* Unified bubble when same event, legacy layout otherwise */}
+      {isSameQ ? (
+        <UnifiedEarningsBubble
+          q={q} liveEvent={liveEvent} effectiveState={effectiveState}
+          classification={classification as any} treatAsReported={treatAsReported}
+          epsActual={epsActual} epsEstimate={epsEstimate}
+          epsSurpriseAmt={epsSurpAmt} epsSurprisePct={epsSurpPct}
+          revActual={revActual} revEstimate={revEstimate}
+          revSurpriseAmt={revSurpAmt} revSurprisePct={revSurpPct}
+          liveReaction={liveReaction}
+          hasPrePost={hasPrePost} prePostIsUnavail={prePostIsUnavail}
+          pr={pr} mat={mat}
+          onSwitchToMaterials={onSwitchToMaterials}
+          C={C}
+        />
+      ) : (
+        <>
+          {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
+          {/* Quarter header */}
+          <GCard C={C}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
+                {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
+              </span>
+              {q.date && <span style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{fmtDate(q.date)}</span>}
+              {q.timing && (
+                <span title={TIMING_FULL[q.timing] ?? q.timing}
+                  style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f,
+                    color: q.timing === 'unknown' ? C.dim : '#000',
+                    background: q.timing === 'unknown' ? 'transparent' : '#0ea5e9',
+                    border: q.timing === 'unknown' ? `1px solid ${C.border}` : 'none' }}>
+                  {TIMING_BADGE[q.timing] ?? q.timing.toUpperCase()}
+                </span>
+              )}
+              {pr && !pr.reactions_final && (
+                <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}50` }}>PRELIMINARY</span>
+              )}
+              <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.green, border: `1px solid ${C.green}40` }}>REPORTED</span>
+            </div>
+            {isInferred && (
+              <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}>
+                ⓘ Timing inferred from available filing metadata
+              </div>
             )}
           </GCard>
-        ))}
-      </div>
+          {/* Revenue + EPS cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[
+              { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
+              { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
+            ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
+              <GCard key={title} C={C}>
+                <SecLabel text={title} C={C} />
+                <div style={{ fontSize: 20, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
+                {estimate != null ? (
+                  <>
+                    <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
+                      {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
+                      {surpriseLabel(surprisePct) && (
+                        <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
+                          {surpriseLabel(surprisePct)}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
+                )}
+              </GCard>
+            ))}
+          </div>
+          {/* Pre/Post and Price Reaction — legacy path only */}
+          {hasPrePost && !prePostIsUnavail && (
+            <GCard C={C}>
+              <SecLabel text="Before vs After Earnings" C={C} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
+                  { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
+                ].map(({ label, val, session }) => (
+                  <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+                    {val != null ? (
+                      <>
+                        <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
+                        {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
+                ⓘ {['Aligned to nearest regular-session closes', isInferred ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
+              </div>
+            </GCard>
+          )}
+          {hasPriceReaction && (
+            <GCard C={C}>
+              <SecLabel text="Price Reaction" C={C} />
+              {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                {[
+                  { label: 'Opening Gap', v: pr!.opening_gap_pct },
+                  { label: 'Post 1D',     v: pr!.reaction_1d_pct },
+                  { label: '3-Day',       v: pr!.reaction_3d_pct },
+                  { label: '5-Day',       v: pr!.reaction_5d_pct },
+                  { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
+                  { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
+                ].map(({ label, v }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </GCard>
+          )}
+        </>
+      )}
 
-      {/* Growth context */}
+      {/* Growth context — always shown */}
       <GCard C={C}>
         <SecLabel text="Growth Context" C={C} />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
@@ -647,57 +1054,23 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
         </div>
       </GCard>
 
-      {/* Pre / Post earnings comparison */}
-      {hasPrePost && !prePostIsUnavail && (
-        <GCard C={C}>
-          <SecLabel text="Before vs After Earnings" C={C} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
-              { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
-            ].map(({ label, val, session }) => (
-              <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
-                {val != null ? (
-                  <>
-                    <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
-                    {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
-                  </>
-                ) : (
-                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
-                )}
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}
-            title={[
-              'Before and after moves are aligned to the closest full regular trading sessions based on the reported earnings timing.',
-              prePostIsLowConf ? 'Earnings timing was inferred from available filing metadata.' : '',
-            ].filter(Boolean).join(' ')}>
-            ⓘ {['Aligned to nearest regular-session closes', prePostIsLowConf ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
-          </div>
-        </GCard>
-      )}
-
-      {/* Price reaction */}
-      {pr && (
+      {/* Price Reaction detail — shown below unified bubble */}
+      {isSameQ && hasPriceReaction && (
         <GCard C={C}>
           <SecLabel text="Price Reaction" C={C} />
           {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
             {[
-              { label: 'Opening Gap', v: pr.opening_gap_pct },
-              { label: 'Post 1D',     v: pr.reaction_1d_pct },
-              { label: '3-Day',       v: pr.reaction_3d_pct },
-              { label: '5-Day',       v: pr.reaction_5d_pct },
-              { label: 'Max Upside',  v: pr.max_upside_5d_pct },
-              { label: 'Max Drawdown',v: pr.max_drawdown_5d_pct },
+              { label: 'Opening Gap', v: pr!.opening_gap_pct },
+              { label: 'Post 1D',     v: pr!.reaction_1d_pct },
+              { label: '3-Day',       v: pr!.reaction_3d_pct },
+              { label: '5-Day',       v: pr!.reaction_5d_pct },
+              { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
+              { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
             ].map(({ label, v }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>
-                  {v != null ? fmtPct(v) : '—'}
-                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
               </div>
             ))}
           </div>
