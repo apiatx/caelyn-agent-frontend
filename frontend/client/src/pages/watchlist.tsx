@@ -2047,6 +2047,19 @@ export default function WatchlistPage() {
   const { C: _C } = useTheme(); C = _C;
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [initialTickerTabs, setInitialTickerTabs] = useState<{ primaryTab?: string; earningsTab?: string }>({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openTicker = params.get('openTicker');
+    const primaryTab  = params.get('primaryTab')  ?? undefined;
+    const earningsTab = params.get('earningsTab') ?? undefined;
+    if (openTicker) {
+      setSelectedTicker(openTicker.toUpperCase());
+      setInitialTickerTabs({ primaryTab, earningsTab });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [plainTextInput, setPlainTextInput] = useState('');
@@ -8001,7 +8014,9 @@ export default function WatchlistPage() {
             confluenceRows={confluenceRows ?? csvMergedScreenerRows}
             screenerRow={_sRow}
             allNews={allNews}
-            onClose={() => setSelectedTicker(null)}
+            initialPrimaryTab={initialTickerTabs.primaryTab}
+            initialEarningsTab={initialTickerTabs.earningsTab}
+            onClose={() => { setSelectedTicker(null); setInitialTickerTabs({}); }}
           />
         );
       })()}

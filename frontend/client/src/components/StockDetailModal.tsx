@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity, BarChart2 } from 'lucide-react';
+import { useEarningsLive } from '@/contexts/EarningsLiveContext';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
@@ -183,6 +184,8 @@ interface StockDetailModalProps {
   screenerRow?: any;    /* full screener row — primary source for Technical/Fundamentals tabs */
   allNews?: any[];      /* watchlist live news — fallback for News tab */
   onClose: () => void;
+  initialPrimaryTab?: string;
+  initialEarningsTab?: string;
 }
 type TabId = 'overview' | 'technical' | 'fundamentals' | 'news' | 'deep-dive' | 'earnings';
 
@@ -213,9 +216,11 @@ function findStockInAnalysis(analysis: any, ticker: string): any | null {
    ═══════════════════════════════════════════════════════════════════ */
 export function StockDetailModal({
   ticker, analysis, csvData, watchlistId, earningsEntry, confluenceRows,
-  screenerRow, allNews, onClose
+  screenerRow, allNews, onClose, initialPrimaryTab, initialEarningsTab,
 }: StockDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>(
+    (initialPrimaryTab as TabId) ?? 'overview',
+  );
   const [deepDive, setDeepDive] = useState<any>(null);
   const [deepDiveLoading, setDeepDiveLoading] = useState(false);
   const [deepDiveError, setDeepDiveError] = useState<string | null>(null);
@@ -304,6 +309,9 @@ export function StockDetailModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  const { eventBySymbol } = useEarningsLive();
+  const sdmLiveEvent = eventBySymbol(ticker);
+
   const companyName = detail?.company?.name ?? stock?.name ?? stock?.company ?? '';
   const displaySignal = stock?.signal ?? detail?.confluence_v42?.action?.label ?? null;
   const sigCol = signalColor(displaySignal);
@@ -377,6 +385,26 @@ export function StockDetailModal({
           {stock?.price_source && (
             <PriceFreshnessBadge meta={{ source: stock.price_source, is_realtime: stock.price_is_realtime, is_live_backup: stock.price_is_live_backup, is_stale: stock.price_is_stale, staleness_seconds: stock.staleness_seconds, quote_timestamp: stock.quote_timestamp, updated_at: stock.price_updated_at }} />
           )}
+          {sdmLiveEvent && (() => {
+            const st = sdmLiveEvent.state;
+            const badgeLabel =
+              st === 'results_available' || st === 'complete' ? 'RESULTS' :
+              st === 'results_updated' ? 'UPDATED' : 'LIVE EARNINGS';
+            const badgeColor =
+              sdmLiveEvent.classification === 'double_beat' ? '#22c55e' :
+              sdmLiveEvent.classification === 'double_miss' ? '#ef4444' :
+              st === 'results_updated' ? '#0ea5e9' :
+              '#f59e0b';
+            return (
+              <span style={{
+                padding: '3px 9px', borderRadius: 3, fontSize: 9, fontWeight: 800,
+                fontFamily: _sdmFont, color: '#000', background: badgeColor,
+                letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+              }}>
+                {badgeLabel}
+              </span>
+            );
+          })()}
           <div style={{ flex: 1 }} />
           <button onClick={onClose} style={{ color: C.dim, cursor: 'pointer', padding: 4, background: 'none', border: 'none' }}><X style={{ width: 18, height: 18 }} /></button>
         </div>
@@ -401,7 +429,7 @@ export function StockDetailModal({
           {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} screenerRow={screenerRow} />}
           {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} allNews={allNews} />}
           {activeTab === 'deep-dive' && <DeepDiveTab ticker={ticker} data={deepDive} loading={deepDiveLoading} error={deepDiveError} selectedModels={selectedModels} setSelectedModels={setSelectedModels} reportModel={reportModel} setReportModel={setReportModel} onGenerate={generateDeepDive} />}
-          {activeTab === 'earnings' && <EarningsTab detail={detail} detailLoading={detailLoading} currentPrice={currentPrice} />}
+          {activeTab === 'earnings' && <EarningsTab detail={detail} detailLoading={detailLoading} currentPrice={currentPrice} ticker={ticker} initialSubTab={initialEarningsTab as any} />}
         </div>
       </div>
     </div>

@@ -7307,5 +7307,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Earnings live events ──────────────────────────────────────────────────
+  app.get('/api/earnings/live-events', async (_req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(`${FA_URL}/api/earnings/live-events`, {
+        headers: { 'X-API-Key': FA_KEY },
+        signal: AbortSignal.timeout(10_000),
+      });
+      const data = await r.json().catch(() => ({ events: [] }));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
+  app.post('/api/earnings/live-events/:eventId/read', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const r = await fetch(
+        `${FA_URL}/api/earnings/live-events/${encodeURIComponent(req.params.eventId)}/read`,
+        {
+          method: 'POST',
+          headers: { 'X-API-Key': FA_KEY },
+          signal: AbortSignal.timeout(8_000),
+        },
+      );
+      const data = await r.json().catch(() => ({}));
+      return res.status(r.status).json(data);
+    } catch (err: any) {
+      return res.status(502).json({ error: err?.message ?? 'Fetch failed' });
+    }
+  });
+
   return httpServer;
 }

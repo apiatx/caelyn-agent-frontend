@@ -11,6 +11,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { AlertBubbles } from "@/components/alert-bubbles";
 import { AlertHistoryButton } from "@/components/alert-history-drawer";
+import { EarningsLiveProvider } from "@/contexts/EarningsLiveContext";
+import { EarningsAlertBell } from "@/components/EarningsAlertBell";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
@@ -228,24 +230,27 @@ function AppInner() {
       <PageContextProvider>
         <ChatbotProvider>
           <AlertProvider>
-            <TooltipProvider>
-              <Toaster />
-              <MainLayout>
-                {/* Normal router — hidden on multicharts route so the always-on instance shows instead */}
-                <div style={isMultichartsRoute ? { display: 'none' } : undefined}>
-                  <Router />
-                </div>
-                {/* Always-mounted MultiChartsPage — iframes are never destroyed on navigation */}
-                {!isLoading && isAuthenticated && (
-                  <div style={isMultichartsRoute ? undefined : { display: 'none' }}>
-                    <MultiChartsPage isActive={isMultichartsRoute} />
+            <EarningsLiveProvider>
+              <TooltipProvider>
+                <Toaster />
+                <MainLayout>
+                  {/* Normal router — hidden on multicharts route so the always-on instance shows instead */}
+                  <div style={isMultichartsRoute ? { display: 'none' } : undefined}>
+                    <Router />
                   </div>
-                )}
-              </MainLayout>
-              <ChatbotWidget />
-              <AlertBubbles />
-              <AlertHistoryButton />
-            </TooltipProvider>
+                  {/* Always-mounted MultiChartsPage — iframes are never destroyed on navigation */}
+                  {!isLoading && isAuthenticated && (
+                    <div style={isMultichartsRoute ? undefined : { display: 'none' }}>
+                      <MultiChartsPage isActive={isMultichartsRoute} />
+                    </div>
+                  )}
+                </MainLayout>
+                <ChatbotWidget />
+                <AlertBubbles />
+                <EarningsAlertBell />
+                <AlertHistoryButton />
+              </TooltipProvider>
+            </EarningsLiveProvider>
           </AlertProvider>
         </ChatbotProvider>
       </PageContextProvider>

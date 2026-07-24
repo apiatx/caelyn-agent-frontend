@@ -1,0 +1,738 @@
+FRONTEND ONE-PASS IMPLEMENTATION — LIVE EARNINGS ALERTS + POLISHED TICKER POPUP
+
+Complete this entire frontend feature in one autonomous pass:
+
+1. Audit the existing frontend architecture.
+2. Inspect the exact deployed backend payloads.
+3. Implement the polished Live Earnings experience inside the existing ticker popup.
+4. Implement the global in-app earnings alert system.
+5. Add alert-to-popup deep linking.
+6. Test every event state.
+7. Run the production build.
+8. Publish the frontend.
+9. Return one final completion report.
+
+Do not stop for routine confirmation.
+
+Only stop when there is a genuine blocker that cannot be resolved from the current repository or live backend contract.
+
+FRONTEND ONLY.
+
+Do not modify the backend.
+Do not create another ticker-detail endpoint.
+Do not create another StockDetailModal.
+Do not create another EarningsTab.
+Do not create a separate Earnings page.
+Do not add WebSockets or SSE.
+Do not add browser push notifications, email, or SMS.
+Do not fabricate missing backend fields.
+Do not push to Git.
+
+IMPORTANT GIT / WORKSPACE SAFETY
+
+The user recently re-pushed to Git.
+
+Before editing:
+
+- inspect git status
+- inspect the current branch
+- inspect the current EarningsTab.tsx and StockDetailModal.tsx
+- confirm the current workspace already contains:
+  - Overview
+  - History
+  - Price Moves
+  - Ratings
+  - Materials
+  - Buy/Hold/Sell bars
+  - pre/post earnings moves
+
+Do not blindly reset, pull, or overwrite newer workspace changes.
+
+Preserve the completed Earnings frontend and extend it surgically.
+
+CURRENT BACKEND SURFACE
+
+Use the existing authenticated frontend API/proxy conventions.
+
+Do not hardcode a second backend base URL.
+
+Backend endpoints:
+
+GET /api/earnings/live-events
+POST /api/earnings/live-events/{event_id}/read
+
+Existing ticker popup endpoint:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Ticker-detail now includes:
+
+earnings_intelligence.live_event
+
+The backend state machine is:
+
+scheduled
+monitoring
+filing_detected
+results_partial
+results_available
+results_updated
+complete
+
+Result classifications:
+
+double_beat
+double_miss
+mixed
+partial
+unclassified
+
+The backend feed is:
+
+- authenticated
+- scoped to the current user’s relevant symbols
+- dry-run events excluded
+- deduplicated
+- persisted in Neon
+
+PART 1 — AUDIT AND EXACT CONTRACT INSPECTION
+
+Before writing code, locate and reuse:
+
+- the root app shell
+- the current global header/navigation
+- any existing notification bell, alerts tray, popover, badge, or activity feed
+- the existing toast library
+- the existing authenticated API client
+- the current query library and query-key conventions
+- StockDetailModal.tsx
+- EarningsTab.tsx
+- Watchlist ticker-click handler
+- Watchlist route/query-parameter handling
+- global modal or ticker-selection context, if one exists
+- existing mobile popover/drawer patterns
+- existing date, number, revenue, EPS, and percentage formatters
+
+Inspect the exact live JSON returned by:
+
+GET /api/earnings/live-events
+
+and:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Do not guess field names.
+
+Create strict TypeScript types that match the real response.
+
+Do not use broad any types for the event, filing, results, or market-reaction payloads.
+
+After the audit, implement without returning an audit-only response.
+
+PART 2 — ONE GLOBAL LIVE-EARNINGS QUERY
+
+Create one reusable global live-earnings query/provider using the existing query library.
+
+Requirements:
+
+- one feed request shared across the app
+- no query instance per ticker
+- poll approximately every 20–30 seconds while the browser tab is visible
+- pause polling while the document is hidden
+- immediately refetch when the window regains focus
+- preserve cached results during temporary failures
+- no aggressive retry loop
+- no polling from logged-out pages
+- do not refetch the ticker-detail endpoint merely to update the alert feed
+
+Reuse existing API/auth/proxy helpers.
+
+Do not call the deployed FastAPI URL directly when the frontend already has an authenticated proxy route.
+
+PART 3 — GLOBAL NOTIFICATION BELL AND ALERT TRAY
+
+Reuse an existing notification bell or alerts area when one exists.
+
+If none exists, add the smallest native-looking notification bell to the existing global header.
+
+Do not create a separate page.
+
+Bell behavior:
+
+- unread badge
+- badge shows a compact count
+- cap display at 99+
+- hidden when count is zero
+- click opens a compact popover or responsive drawer
+- newest events first
+
+Each alert row should show:
+
+- ticker
+- company name when available
+- event headline
+- state
+- result classification when applicable
+- detected or updated timestamp
+- unread indicator
+- compact EPS/revenue context when available
+- preliminary market move when available
+
+Suggested headlines:
+
+scheduled:
+Earnings scheduled
+
+monitoring:
+Monitoring for earnings
+
+filing_detected:
+Earnings materials detected
+
+results_partial:
+Partial earnings results available
+
+results_available + double_beat:
+Double beat reported
+
+results_available + double_miss:
+Double miss reported
+
+results_available + mixed:
+Mixed earnings results
+
+results_updated:
+Earnings results updated
+
+complete:
+Earnings event complete
+
+Do not expose raw enum strings to users.
+
+Empty state:
+
+“No recent earnings alerts.”
+
+Error state:
+
+“Earnings alerts are temporarily unavailable.”
+
+Do not break the rest of the app when the feed request fails.
+
+PART 4 — READ / UNREAD BEHAVIOR
+
+Use:
+
+POST /api/earnings/live-events/{event_id}/read
+
+Mark an event read when the user:
+
+- clicks the alert row, or
+- explicitly clicks a mark-read control if one fits the existing design
+
+Do not mark every event read merely because the tray opened.
+
+Update the local query cache immediately, then reconcile with the backend response.
+
+A failed acknowledgment should not block navigation.
+
+Do not create a frontend-only source of truth for read status.
+
+PART 5 — TOAST ALERTS
+
+Use the existing toast system.
+
+Show new in-app toasts for meaningful transitions:
+
+- filing_detected
+- results_partial
+- results_available
+- results_updated
+
+Do not toast:
+
+- scheduled
+- routine monitoring
+- complete
+
+Prevent notification storms.
+
+On initial app load:
+
+- populate the tray and unread badge
+- do not toast every old unread event
+
+Only toast an event when:
+
+- it appears after the initial feed baseline, or
+- it was created/updated very recently and has not been shown in this browser session
+
+Deduplicate toast display using a stable key based on the real backend fields, such as:
+
+event_id + state + revision
+
+Use bounded sessionStorage or localStorage only for toast-display suppression.
+
+Do not use browser storage as the source of read/unread truth.
+
+Toast content should include:
+
+- ticker
+- concise event headline
+- EPS/revenue result summary when available
+- preliminary move when available
+- click action that opens the ticker popup
+
+Do not show dry-run/replay events.
+
+PART 6 — ALERT-TO-POPUP DEEP LINKING
+
+Clicking an alert from any page must open the actual Watchlist ticker-detail popup at:
+
+Primary tab:
+Earnings
+
+Secondary tab:
+Overview
+
+Audit whether the app already has a global ticker-modal context.
+
+Preferred implementation order:
+
+1. Reuse an existing global ticker-detail modal mechanism.
+2. Otherwise navigate to the existing Watchlist route with query parameters.
+3. Have the Watchlist page read those parameters and open StockDetailModal.
+4. Pass initialPrimaryTab="earnings" and initialEarningsTab="overview" using the smallest compatible change.
+
+The deep link must work:
+
+- from any app page
+- after a page reload
+- when the Watchlist page is already open
+- without opening a second modal
+- without creating a second ticker-detail request
+
+After the modal opens, clean or replace transient query parameters when appropriate so browser navigation remains sane.
+
+Preserve ordinary Watchlist ticker clicking.
+
+PART 7 — LIVE EVENT SELECTION INSIDE THE POPUP
+
+The popup already receives:
+
+detail.earnings_intelligence.live_event
+
+The global feed may contain a newer version of the same event.
+
+Create one selector that:
+
+1. Finds the feed event matching the open ticker.
+2. Compares the real revision / updated timestamp / state fields.
+3. Uses the newer matching feed event when it is newer.
+4. Falls back to ticker-detail live_event.
+5. Returns null when neither exists.
+
+This lets an open popup update promptly without another ticker-detail request.
+
+Do not mutate historical earnings data.
+
+Do not replace the full ticker-detail payload with the feed response.
+
+PART 8 — LIVE EARNINGS CARD IN EARNINGS OVERVIEW
+
+Add a polished Live Earnings card at the top of:
+
+Earnings → Overview
+
+Place it above the historical latest-quarter cards.
+
+Render it only when a live_event exists.
+
+This card is the “lights up when earnings happen” experience.
+
+It must look native to Caelyn:
+
+- dark glass-card styling
+- subtle accent border
+- restrained background tint
+- compact spacing
+- professional typography
+- no giant gradient
+- no casino-style animation
+- no excessive glow
+
+Use a restrained pulse only for active states:
+
+- monitoring
+- filing_detected
+- results_partial
+
+Do not pulse indefinitely for:
+
+- results_available
+- results_updated
+- complete
+
+PART 9 — STATE-SPECIFIC POPUP DESIGN
+
+scheduled
+
+Show:
+
+- Earnings scheduled
+- expected date
+- BMO / AMC / Unknown timing
+- estimates when present
+- muted neutral styling
+
+monitoring
+
+Show:
+
+- Monitoring for earnings
+- expected date/time
+- subtle amber active border
+- compact live indicator
+
+filing_detected
+
+Show prominently:
+
+- Earnings materials detected
+- “Structured results processing”
+- detection timestamp
+- filing form
+- SEC accepted timestamp when available
+- open filing/material action when a URL exists
+- button to open the Materials secondary tab
+
+results_partial
+
+Show:
+
+- Partial results available
+- whichever of EPS or revenue has arrived
+- the other field as “Pending”
+- estimates and surprise when valid
+- detection/update timestamp
+- active amber styling
+
+results_available
+
+Show:
+
+- classification headline
+- EPS actual vs estimate
+- EPS surprise
+- Revenue actual vs estimate
+- Revenue surprise
+- filing/material link
+- detected and updated timestamps
+- initial market move when valid
+- green/red/mixed styling based on actual classification
+
+results_updated
+
+Show:
+
+- Results updated
+- revision badge where useful
+- current EPS/revenue values
+- updated timestamp
+- subtle note that figures changed after initial publication
+- do not display obsolete values unless the backend explicitly provides them
+
+complete
+
+Show:
+
+- finalized compact result card
+- no pulse
+- classification
+- final available figures
+- last updated timestamp
+
+PART 10 — RESULT CLASSIFICATION STYLING
+
+double_beat:
+
+- label: Double Beat
+- positive styling
+
+double_miss:
+
+- label: Double Miss
+- negative styling
+
+mixed:
+
+- label: Mixed Results
+- neutral/mixed styling
+
+partial:
+
+- label: Partial Results
+- amber styling
+
+unclassified:
+
+- label: Results Reported
+- neutral styling
+
+Do not determine classifications from missing values on the frontend.
+
+Use the backend classification.
+
+PART 11 — EPS AND REVENUE DISPLAY
+
+Display fields actually supplied by the backend:
+
+EPS:
+
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+
+Revenue:
+
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+
+Rules:
+
+- backend percentages are already percentage points
+- never multiply by 100
+- revenue is raw dollars and must use existing compact currency formatting
+- null is an em dash or Pending depending on state
+- null is never zero
+- do not show absurd cross-zero EPS percentages as the primary headline
+- preserve existing semantic EPS handling
+
+Suggested compact layout:
+
+EPS
+Actual | Estimate | Surprise
+
+Revenue
+Actual | Estimate | Surprise
+
+PART 12 — INITIAL MARKET REACTION
+
+When the event includes reliable market-reaction data, show:
+
+- move percentage
+- price
+- timestamp
+- session:
+  - Premarket
+  - Regular
+  - After Hours
+- preliminary badge when applicable
+- source tooltip when useful
+
+Do not show a stale regular-session close as an after-hours move.
+
+When unavailable, omit this subsection rather than displaying zero.
+
+PART 13 — MATERIALS INTEGRATION
+
+When the event contains filing/material data:
+
+- show Open Filing or View Materials
+- link to the existing Materials secondary tab
+- preserve direct SEC external links where already supported
+- do not duplicate the full Materials interface inside the Live card
+
+Add a callback or controlled secondary-tab state to EarningsTab so the Live card can switch directly to Materials.
+
+Preserve ordinary secondary-tab behavior.
+
+PART 14 — OPTIONAL POPUP HEADER BADGE
+
+When the open ticker has an active live event, add a small badge near the existing popup ticker/company header:
+
+- LIVE EARNINGS
+- RESULTS
+- UPDATED
+
+Keep it compact.
+
+Do not redesign the entire popup header.
+
+Do not add this badge when live_event is null.
+
+PART 15 — TYPESCRIPT
+
+Inspect the exact backend response and create explicit types for:
+
+- LiveEarningsEvent
+- LiveEarningsState
+- LiveEarningsClassification
+- filing payload
+- results payload
+- initial market-reaction payload
+- source status
+- event-feed response
+- acknowledgment response
+
+Use unions for known enums.
+
+All provider-dependent numeric and timestamp fields must be nullable unless the live response proves otherwise.
+
+Do not force the event-feed payload and ticker-detail payload into identical types unless their real structures match.
+
+Create a small normalization function when necessary.
+
+PART 16 — PERFORMANCE AND QUERY BEHAVIOR
+
+There should be:
+
+- one global live-event feed query
+- one existing ticker-detail query when the modal opens
+- one read-ack mutation when the user reads an alert
+
+There must not be:
+
+- one event-feed query per component
+- one ticker-detail query per alert
+- polling of ticker-detail
+- SEC requests from the frontend
+- FMP requests from the frontend
+- Tradier requests from the frontend
+- refetching on every tab click
+- repeated toast display
+
+Memoize event lookup by symbol where useful.
+
+PART 17 — RESPONSIVE AND ACCESSIBLE DESIGN
+
+Requirements:
+
+- notification tray works on desktop and mobile
+- use a drawer instead of an unusably narrow popover when appropriate
+- keyboard-accessible bell and rows
+- visible focus states
+- sensible ARIA labels
+- tooltip content is not the only way critical information is conveyed
+- Live Earnings card stacks cleanly on smaller screens
+- no full-page horizontal overflow
+- no clipped dropdown
+- no clipped popup tooltips
+- no tiny unreadable metrics
+
+PART 18 — TESTING WITHOUT A CURRENT LIVE RELEASE
+
+The real feed may currently contain no production events.
+
+Do not stop because the feed is empty.
+
+Test the UI against every state using one of these methods:
+
+1. Existing safe backend replay tooling when accessible with current development admin authentication.
+2. Component tests using fixtures copied from the exact deployed JSON contract.
+3. A temporary development-only fixture switch that is removed or guaranteed tree-shaken before production.
+
+Production must never ship hardcoded fake events.
+
+Test:
+
+- scheduled
+- monitoring
+- filing_detected
+- results_partial with EPS only
+- results_partial with revenue only
+- results_available double beat
+- results_available double miss
+- results_available mixed
+- results_updated
+- complete
+- no live event
+- null market reaction
+- null filing
+- revision update
+- duplicate feed response
+- read acknowledgment failure
+- feed request failure
+
+Verify old events do not all generate toasts on initial page load.
+
+PART 19 — REAL USER FLOWS TO VERIFY
+
+Verify through the actual app:
+
+1. Bell opens alert tray.
+2. Unread badge is correct.
+3. Alert row displays correctly.
+4. Clicking an alert marks it read.
+5. Clicking an alert opens the Watchlist popup.
+6. Popup opens directly to Earnings → Overview.
+7. Live Earnings card renders at the top.
+8. Live card can open Materials.
+9. New event feed data updates an already-open popup.
+10. No duplicate ticker-detail request appears.
+11. Existing Overview/History/Price Moves/Ratings/Materials still work.
+12. Normal Watchlist ticker clicking still works.
+13. UFO still has no Earnings tab.
+14. No replay event appears in the real user tray.
+
+PART 20 — BUILD AND PUBLISH
+
+After implementation:
+
+- run the existing TypeScript check
+- run the existing production build
+- fix only errors caused by this work
+- inspect the browser console
+- verify the real Watchlist popup
+- publish the frontend using the existing Replit workflow
+
+Do not stop at “build passes.”
+
+Confirm the deployed frontend loads.
+
+FINAL REPORT
+
+Return one report containing:
+
+1. Existing components reused
+2. Files changed
+3. Exact live-event TypeScript contract
+4. Global polling/query architecture
+5. Notification bell/tray behavior
+6. Toast deduplication behavior
+7. Read/unread behavior
+8. Alert deep-link behavior
+9. Live Earnings popup design
+10. State-by-state UI mapping
+11. Results and market-reaction display
+12. Materials integration
+13. Responsive/accessibility behavior
+14. Tests run
+15. Confirmation that no production mocks remain
+16. Confirmation that no extra ticker-detail requests were added
+17. Typecheck/build results
+18. Deployment result
+19. Screenshots of:
+    - alert tray
+    - filing_detected toast
+    - partial results card
+    - double-beat card
+    - results-updated card
+    - alert opening Earnings → Overview
+20. Backend monitor status observed during testing
+
+End with exactly:
+
+FRONTEND LIVE EARNINGS READY
+
+or
+
+NOT COMPLETE
+
+Do not declare FRONTEND LIVE EARNINGS READY unless the deployed frontend contains both:
+
+- the polished Live Earnings popup card
+- the global alert/feed experience

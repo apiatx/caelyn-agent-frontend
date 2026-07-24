@@ -1,5 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useEarningsLive } from '@/contexts/EarningsLiveContext';
+import { LiveEarningsCard } from '@/components/LiveEarningsCard';
+import type { LiveEarningsEvent } from '@/types/live-earnings';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
   ResponsiveContainer, ReferenceLine, Cell,
@@ -268,6 +271,7 @@ export interface EarningsIntelligence {
   materials: MaterialsData | null;
   sec_filings: null;
   source_status: SourceStatus;
+  live_event?: LiveEarningsEvent | null;
 }
 
 /* ── style constants ──────────────────────────────────────────── */
@@ -503,13 +507,39 @@ const SUB_TABS: { id: SubTab; label: string }[] = [
 /* ═══════════════════════════════════════════════════════════════
    OVERVIEW SUB-TAB
    ═══════════════════════════════════════════════════════════════ */
-function OverviewSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
+function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
+  ei: EarningsIntelligence; C: any; ticker?: string; onSwitchToMaterials?: () => void;
+}) {
+  const { eventBySymbol } = useEarningsLive();
+
+  const feedEvent = ticker ? eventBySymbol(ticker) : null;
+  const detailEvent: LiveEarningsEvent | null = (ei.live_event ?? null) as LiveEarningsEvent | null;
+
+  const liveEvent = useMemo((): LiveEarningsEvent | null => {
+    if (!feedEvent && !detailEvent) return null;
+    if (!feedEvent) return detailEvent;
+    if (!detailEvent) return feedEvent;
+    const feedNewer =
+      new Date(feedEvent.updated_at) >= new Date(detailEvent.updated_at) ||
+      feedEvent.revision >= detailEvent.revision;
+    return feedNewer ? feedEvent : detailEvent;
+  }, [feedEvent, detailEvent]);
+
   const cov = ei.source_status.coverage;
   const hist = ei.earnings_history;
   const rs = ei.reaction_summary;
+  const hasHistory = cov.has_earnings_history && hist.length > 0;
 
-  if (!cov.has_earnings_history || hist.length === 0) {
+  if (!hasHistory && !liveEvent) {
     return <Empty msg="Historical earnings data is not available from the current provider." C={C} />;
+  }
+
+  if (!hasHistory) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <LiveEarningsCard event={liveEvent!} onOpenMaterials={onSwitchToMaterials} />
+      </div>
+    );
   }
 
   const q = hist[0];
@@ -526,6 +556,7 @@ function OverviewSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
       {/* Quarter header */}
       <GCard C={C}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -1707,11 +1738,17 @@ export interface EarningsTabProps {
   detail: any;
   detailLoading: boolean;
   currentPrice: number | null;
+  ticker?: string;
+  initialSubTab?: SubTab;
 }
 
-export function EarningsTab({ detail, detailLoading, currentPrice }: EarningsTabProps) {
+export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initialSubTab }: EarningsTabProps) {
   const { C } = useTheme();
-  const [subTab, setSubTab] = useState<SubTab>('overview');
+  const [subTab, setSubTab] = useState<SubTab>(initialSubTab ?? 'overview');
+
+  useEffect(() => {
+    if (initialSubTab) setSubTab(initialSubTab);
+  }, [initialSubTab]);
   const ei: EarningsIntelligence | null = detail?.earnings_intelligence ?? null;
 
   if (detailLoading) {
@@ -1743,7 +1780,7 @@ export function EarningsTab({ detail, detailLoading, currentPrice }: EarningsTab
         ))}
       </div>
 
-      {subTab === 'overview'    && <OverviewSubTab    ei={ei} C={C} />}
+      {subTab === 'overview'    && <OverviewSubTab    ei={ei} C={C} ticker={ticker} onSwitchToMaterials={() => setSubTab('materials')} />}
       {subTab === 'history'     && <HistorySubTab     ei={ei} C={C} />}
       {subTab === 'price-moves' && <PriceMovesSubTab  ei={ei} C={C} />}
       {subTab === 'ratings'     && <RatingsSubTab     ei={ei} currentPrice={currentPrice} C={C} />}
