@@ -936,27 +936,93 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* Unified bubble when same event, legacy layout otherwise */}
       {isSameQ ? (
-        <UnifiedEarningsBubble
-          q={q} liveEvent={liveEvent} effectiveState={effectiveState}
-          classification={classification as any} treatAsReported={treatAsReported}
-          epsActual={epsActual} epsEstimate={epsEstimate}
-          epsSurpriseAmt={epsSurpAmt} epsSurprisePct={epsSurpPct}
-          revActual={revActual} revEstimate={revEstimate}
-          revSurpriseAmt={revSurpAmt} revSurprisePct={revSurpPct}
-          liveReaction={liveReaction}
-          hasPrePost={hasPrePost} prePostIsUnavail={prePostIsUnavail}
-          pr={pr} mat={mat}
-          onSwitchToMaterials={onSwitchToMaterials}
-          C={C}
-        />
+        /* ── Same event: UnifiedBubble + separate supporting cards ─────── */
+        <>
+          <UnifiedEarningsBubble
+            q={q} liveEvent={liveEvent} effectiveState={effectiveState}
+            classification={classification as any} treatAsReported={treatAsReported}
+            epsActual={epsActual} epsEstimate={epsEstimate}
+            epsSurpriseAmt={epsSurpAmt} epsSurprisePct={epsSurpPct}
+            revActual={revActual} revEstimate={revEstimate}
+            revSurpriseAmt={revSurpAmt} revSurprisePct={revSurpPct}
+            liveReaction={liveReaction}
+            hasPrePost={hasPrePost} prePostIsUnavail={prePostIsUnavail}
+            pr={pr} mat={mat}
+            onSwitchToMaterials={onSwitchToMaterials}
+            C={C}
+          />
+
+          <GCard C={C}>
+            <SecLabel text="Growth Context" C={C} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+              {[
+                { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
+                { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
+                { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
+                { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
+              ].map(({ label, val, col }) => (
+                <div key={label} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+                </div>
+              ))}
+            </div>
+          </GCard>
+
+          {hasPriceReaction && (
+            <GCard C={C}>
+              <SecLabel text="Price Reaction" C={C} />
+              {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                {[
+                  { label: 'Opening Gap', v: pr!.opening_gap_pct },
+                  { label: 'Post 1D',     v: pr!.reaction_1d_pct },
+                  { label: '3-Day',       v: pr!.reaction_3d_pct },
+                  { label: '5-Day',       v: pr!.reaction_5d_pct },
+                  { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
+                  { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
+                ].map(({ label, v }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </GCard>
+          )}
+
+          {rs && cov.has_reactions && (
+            <GCard C={C}>
+              <SecLabel text="Historical Reaction Context" C={C} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                {[
+                  { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
+                  { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
+                  { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
+                  { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
+                  { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
+                  { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
+                ].map(({ label, val, obs }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
+                    {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
+                  </div>
+                ))}
+              </div>
+            </GCard>
+          )}
+        </>
       ) : (
+        /* ── Different events: upcoming card + ONE unified historical card ─ */
         <>
           {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
-          {/* Quarter header */}
+
+          {/* All most-recent-quarter data in one unified section */}
           <GCard C={C}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {/* Quarter header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
                 {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
               </span>
@@ -980,148 +1046,129 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials }: {
                 ⓘ Timing inferred from available filing metadata
               </div>
             )}
-          </GCard>
-          {/* Revenue + EPS cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
-              { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
-            ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
-              <GCard key={title} C={C}>
-                <SecLabel text={title} C={C} />
-                <div style={{ fontSize: 20, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
-                {estimate != null ? (
-                  <>
-                    <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
-                      {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
-                      {surpriseLabel(surprisePct) && (
-                        <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
-                          {surpriseLabel(surprisePct)}
-                        </span>
+
+            {/* Revenue + EPS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
+              {[
+                { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
+                { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
+              ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
+                <div key={title} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: '8px 10px' }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>{title}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
+                  {estimate != null ? (
+                    <>
+                      <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, flexWrap: 'wrap' as const }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
+                        {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
+                        {surpriseLabel(surprisePct) && (
+                          <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
+                            {surpriseLabel(surprisePct)}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Before vs After Earnings */}
+            {hasPrePost && !prePostIsUnavail && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <SecLabel text="Before vs After Earnings" C={C} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
+                  {[
+                    { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
+                    { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
+                  ].map(({ label, val, session }) => (
+                    <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+                      {val != null ? (
+                        <>
+                          <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
+                          {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
                       )}
                     </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 4 }}>Estimate unavailable</div>
-                )}
-              </GCard>
-            ))}
-          </div>
-          {/* Pre/Post and Price Reaction — legacy path only */}
-          {hasPrePost && !prePostIsUnavail && (
-            <GCard C={C}>
-              <SecLabel text="Before vs After Earnings" C={C} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {[
-                  { label: 'Before Earnings', val: pr!.pre_earnings_1d_pct, session: pr!.pre_earnings_session },
-                  { label: 'After Earnings',  val: pr!.post_earnings_1d_pct, session: pr!.post_earnings_session },
-                ].map(({ label, val, session }) => (
-                  <div key={label} style={{ textAlign: 'center', padding: '8px 4px' }}>
-                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
-                    {val != null ? (
-                      <>
-                        <div style={{ fontSize: 22, fontWeight: 900, fontFamily: _f, color: pctCol(val, C) }}>{fmtPct(val)}</div>
-                        {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{fmtDate(session)}</div>}
-                      </>
-                    ) : (
-                      <div style={{ fontSize: 14, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
+                  ⓘ {['Aligned to nearest regular-session closes', isInferred ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
+                </div>
               </div>
-              <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 8, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
-                ⓘ {['Aligned to nearest regular-session closes', isInferred ? '· timing inferred from filing metadata' : ''].filter(Boolean).join(' ')}
+            )}
+
+            {/* Price Reaction */}
+            {hasPriceReaction && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <SecLabel text="Price Reaction" C={C} />
+                {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+                  {[
+                    { label: 'Opening Gap', v: pr!.opening_gap_pct },
+                    { label: 'Post 1D',     v: pr!.reaction_1d_pct },
+                    { label: '3-Day',       v: pr!.reaction_3d_pct },
+                    { label: '5-Day',       v: pr!.reaction_5d_pct },
+                    { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
+                    { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
+                  ].map(({ label, v }) => (
+                    <div key={label} style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </GCard>
-          )}
-          {hasPriceReaction && (
-            <GCard C={C}>
-              <SecLabel text="Price Reaction" C={C} />
-              {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+            )}
+
+            {/* Growth Context */}
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <SecLabel text="Growth Context" C={C} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
                 {[
-                  { label: 'Opening Gap', v: pr!.opening_gap_pct },
-                  { label: 'Post 1D',     v: pr!.reaction_1d_pct },
-                  { label: '3-Day',       v: pr!.reaction_3d_pct },
-                  { label: '5-Day',       v: pr!.reaction_5d_pct },
-                  { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
-                  { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
-                ].map(({ label, v }) => (
+                  { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
+                  { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
+                  { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
+                  { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
+                ].map(({ label, val, col }) => (
                   <div key={label} style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
                   </div>
                 ))}
               </div>
-            </GCard>
-          )}
-        </>
-      )}
-
-      {/* Growth context — always shown */}
-      <GCard C={C}>
-        <SecLabel text="Growth Context" C={C} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-          {[
-            { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
-            { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
-            { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
-            { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
-          ].map(({ label, val, col }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
             </div>
-          ))}
-        </div>
-      </GCard>
 
-      {/* Price Reaction detail — shown below unified bubble */}
-      {isSameQ && hasPriceReaction && (
-        <GCard C={C}>
-          <SecLabel text="Price Reaction" C={C} />
-          {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-            {[
-              { label: 'Opening Gap', v: pr!.opening_gap_pct },
-              { label: 'Post 1D',     v: pr!.reaction_1d_pct },
-              { label: '3-Day',       v: pr!.reaction_3d_pct },
-              { label: '5-Day',       v: pr!.reaction_5d_pct },
-              { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
-              { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
-            ].map(({ label, v }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+            {/* Historical Reaction Context */}
+            {rs && cov.has_reactions && (
+              <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <SecLabel text="Historical Reaction Context" C={C} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+                  {[
+                    { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
+                    { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
+                    { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
+                    { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
+                    { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
+                    { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
+                  ].map(({ label, val, obs }) => (
+                    <div key={label} style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
+                      {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </GCard>
-      )}
-
-      {/* Historical reaction context */}
-      {rs && cov.has_reactions && (
-        <GCard C={C}>
-          <SecLabel text="Historical Reaction Context" C={C} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-            {[
-              { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
-              { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
-              { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
-              { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
-              { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
-              { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
-            ].map(({ label, val, obs }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
-                {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
-              </div>
-            ))}
-          </div>
-        </GCard>
+            )}
+          </GCard>
+        </>
       )}
     </div>
   );

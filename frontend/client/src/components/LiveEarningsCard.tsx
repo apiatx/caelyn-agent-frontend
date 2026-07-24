@@ -288,6 +288,9 @@ export function LiveEarningsCard({ event, onOpenMaterials }: LiveEarningsCardPro
   // ── scheduled ──────────────────────────────────────────────────────────────
   if (st === 'scheduled') {
     const isToday_flag = event.expected_date === todayEt();
+    const epsEst = rs?.eps_estimate ?? null;
+    const revEst = rs?.revenue_estimate ?? null;
+    const hasEstimates = epsEst != null || revEst != null;
     return (
       <CardShell bg="rgba(255,255,255,0.02)" border="rgba(255,255,255,0.1)">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
@@ -297,6 +300,22 @@ export function LiveEarningsCard({ event, onOpenMaterials }: LiveEarningsCardPro
           />
         </div>
         <ScheduleBlock event={event} countdown={countdown} overdue={overdue} C={C} />
+        {hasEstimates && (
+          <div style={{ display: 'flex', gap: 20, marginTop: 4, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' as const }}>
+            {epsEst != null && (
+              <div>
+                <div style={{ fontSize: 8, fontWeight: 700, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 2 }}>EPS Est</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: _f }}>{fmtEps(epsEst)}</div>
+              </div>
+            )}
+            {revEst != null && (
+              <div>
+                <div style={{ fontSize: 8, fontWeight: 700, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 2 }}>Rev Est</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.text, fontFamily: _f }}>{fmtRev(revEst)}</div>
+              </div>
+            )}
+          </div>
+        )}
       </CardShell>
     );
   }
