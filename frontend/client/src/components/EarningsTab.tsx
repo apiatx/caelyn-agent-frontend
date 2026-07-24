@@ -1746,9 +1746,6 @@ export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initi
   const { C } = useTheme();
   const [subTab, setSubTab] = useState<SubTab>(initialSubTab ?? 'overview');
 
-  useEffect(() => {
-    if (initialSubTab) setSubTab(initialSubTab);
-  }, [initialSubTab]);
   const ei: EarningsIntelligence | null = detail?.earnings_intelligence ?? null;
 
   if (detailLoading) {

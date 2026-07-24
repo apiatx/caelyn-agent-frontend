@@ -65,7 +65,7 @@ function fmtRevShort(v: number | null): string {
 }
 
 function toastHeadline(e: LiveEarningsEvent): string {
-  const s = e.results_summary;
+  const s = (e.results_payload ?? e.results_summary) as { eps_actual?: number | null; revenue_actual?: number | null } | null;
   switch (e.state) {
     case 'filing_detected':
       return 'Earnings materials detected';
@@ -185,7 +185,13 @@ export function EarningsLiveProvider({ children }: { children: React.ReactNode }
         action: (
           <button
             onClick={() => {
-              setLocation(`/app/watchlist?openTicker=${sym}&primaryTab=earnings&earningsTab=overview`);
+              if (window.location.pathname.includes('watchlist')) {
+                window.dispatchEvent(new CustomEvent('caelyn:earnings:open', {
+                  detail: { ticker: sym, primaryTab: 'earnings', earningsTab: 'overview' },
+                }));
+              } else {
+                setLocation(`/app/watchlist?openTicker=${sym}&primaryTab=earnings&earningsTab=overview`);
+              }
             }}
             className="text-xs font-semibold text-teal-400 hover:text-teal-300 transition-colors"
           >
@@ -213,7 +219,7 @@ export function EarningsLiveProvider({ children }: { children: React.ReactNode }
   // ── unreadCount ────────────────────────────────────────────────────────────
 
   const unreadCount = useMemo(
-    () => events.filter(e => e.read_at === null).length,
+    () => events.filter(e => e.is_read !== true).length,
     [events],
   );
 

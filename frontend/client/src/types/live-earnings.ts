@@ -25,6 +25,10 @@ export interface LiveResultsSummary {
   revenue_surprise_pct: number | null;
 }
 
+export interface LiveResultsPayload extends LiveResultsSummary {
+  date?: string | null;
+}
+
 export interface LiveFilingSummary {
   form: string | null;
   url: string | null;
@@ -50,18 +54,34 @@ export interface LiveEarningsEvent {
   event_id: string;
   event_key: string;
   symbol: string;
+  company_name?: string | null;
   state: LiveEarningsState;
-  expected_date: string | null;
-  expected_timing: string | null;
-  fiscal_period: string | null;
-  fiscal_year: number | null;
+  classification: LiveEarningsClassification | null;
+  revision: number;
   detected_at: string | null;
   updated_at: string;
-  revision: number;
+
+  expected_date: string | null;
+  expected_at?: string | null;
+  expected_time_local?: string | null;
+  expected_timezone?: string | null;
+  expected_timing: string | null;
+  report_time_status?: 'confirmed' | 'estimated' | string | null;
+  report_period?: string | null;
+  schedule_source?: string | null;
+
+  fiscal_period: string | null;
+  fiscal_year: number | null;
+
   is_dry_run?: boolean;
-  classification: LiveEarningsClassification | null;
-  read_at: string | null;
+  is_read?: boolean | null;
+  read_at?: string | null;
   preliminary?: boolean;
+
+  results_payload?: LiveResultsPayload | null;
+  filing_payload?: LiveFilingSummary | null;
+  reaction_payload?: LiveMarketReaction | null;
+
   results_summary: LiveResultsSummary | null;
   filing_summary: LiveFilingSummary | null;
   initial_market_reaction: LiveMarketReaction | null;

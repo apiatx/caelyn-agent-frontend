@@ -70,7 +70,7 @@ function classLabel(e: LiveEarningsEvent): string | null {
 }
 
 function epsStr(e: LiveEarningsEvent): string | null {
-  const rs = e.results_summary;
+  const rs = (e.results_payload ?? e.results_summary) as { eps_actual?: number | null; eps_surprise_pct?: number | null } | null;
   if (!rs || rs.eps_actual == null) return null;
   const v = rs.eps_actual;
   const s = `EPS ${v >= 0 ? '+' : ''}$${v.toFixed(2)}`;
@@ -95,7 +95,7 @@ function AlertRow({
   event: LiveEarningsEvent;
   onClick: () => void;
 }) {
-  const isUnread = event.read_at === null;
+  const isUnread = event.is_read !== true;
   const color = stateColor(event);
   const cl = classLabel(event);
   const eps = epsStr(event);
@@ -172,10 +172,16 @@ export function EarningsAlertBell() {
   const count = Math.min(unreadCount, 99);
   const showBadge = unreadCount > 0;
 
-  async function handleRowClick(e: LiveEarningsEvent) {
+  function handleRowClick(e: LiveEarningsEvent) {
     setOpen(false);
-    await markRead(e.event_id);
-    setLocation(`/app/watchlist?openTicker=${e.symbol}&primaryTab=earnings&earningsTab=overview`);
+    markRead(e.event_id); // fire and forget — don't block navigation
+    if (window.location.pathname.includes('watchlist')) {
+      window.dispatchEvent(new CustomEvent('caelyn:earnings:open', {
+        detail: { ticker: e.symbol, primaryTab: 'earnings', earningsTab: 'overview' },
+      }));
+    } else {
+      setLocation(`/app/watchlist?openTicker=${e.symbol}&primaryTab=earnings&earningsTab=overview`);
+    }
   }
 
   return (

@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTheme, DARK_C } from '@/contexts/ThemeContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, TrendingUp, BookOpen, Newspaper, Brain, Loader2, Zap, RefreshCw, CheckSquare, Square, Activity, BarChart2 } from 'lucide-react';
 import { useEarningsLive } from '@/contexts/EarningsLiveContext';
 import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
@@ -309,8 +309,21 @@ export function StockDetailModal({
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  const queryClient = useQueryClient();
   const { eventBySymbol } = useEarningsLive();
   const sdmLiveEvent = eventBySymbol(ticker);
+
+  // One-time ticker-detail refetch when results become available for this ticker
+  const lastRefetchKeyRef = useRef<string>('');
+  useEffect(() => {
+    if (!sdmLiveEvent) return;
+    const { state, event_id, revision } = sdmLiveEvent;
+    if (state !== 'results_available' && state !== 'results_updated') return;
+    const key = `${event_id}__${state}__${revision}`;
+    if (lastRefetchKeyRef.current === key) return;
+    lastRefetchKeyRef.current = key;
+    queryClient.invalidateQueries({ queryKey: ['ticker-detail', ticker.toUpperCase(), 'v3'] });
+  }, [sdmLiveEvent, ticker, queryClient]);
 
   const companyName = detail?.company?.name ?? stock?.name ?? stock?.company ?? '';
   const displaySignal = stock?.signal ?? detail?.confluence_v42?.action?.label ?? null;
@@ -387,14 +400,19 @@ export function StockDetailModal({
           )}
           {sdmLiveEvent && (() => {
             const st = sdmLiveEvent.state;
+            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+            if (st === 'scheduled' && sdmLiveEvent.expected_date !== todayStr) return null;
             const badgeLabel =
+              st === 'scheduled' ? 'EARNINGS TODAY' :
+              st === 'monitoring' ? 'LIVE EARNINGS' :
+              st === 'filing_detected' ? 'RELEASE DETECTED' :
+              st === 'results_partial' ? 'PARTIAL RESULTS' :
               st === 'results_available' || st === 'complete' ? 'RESULTS' :
-              st === 'results_updated' ? 'UPDATED' : 'LIVE EARNINGS';
+              st === 'results_updated' ? 'UPDATED' : 'RESULTS';
             const badgeColor =
               sdmLiveEvent.classification === 'double_beat' ? '#22c55e' :
               sdmLiveEvent.classification === 'double_miss' ? '#ef4444' :
-              st === 'results_updated' ? '#0ea5e9' :
-              '#f59e0b';
+              st === 'results_updated' ? '#0ea5e9' : '#f59e0b';
             return (
               <span style={{
                 padding: '3px 9px', borderRadius: 3, fontSize: 9, fontWeight: 800,

@@ -1,0 +1,728 @@
+FINAL FRONTEND COMPLETION — LIVE EARNINGS SCHEDULE, RESULTS, AND ALERT NAVIGATION
+
+Complete this entire frontend task in one autonomous pass.
+
+Do not return an audit-only report.
+Do not stop after code compilation.
+Do not ask for routine confirmation.
+Do not modify the backend.
+Do not create another ticker modal.
+Do not create another EarningsTab.
+Do not create another live-event provider.
+Do not add a second ticker-detail request.
+Do not push to Git.
+
+The backend has already been published and pushed.
+
+CURRENT BACKEND CONTRACT
+
+Use the existing authenticated frontend proxy/API conventions.
+
+Endpoints:
+
+GET /api/earnings/live-events
+POST /api/earnings/live-events/{event_id}/read
+GET /api/watchlist/ticker-detail/{symbol}
+
+The published live-event contract now includes the full payloads and schedule fields:
+
+- event_id
+- event_key
+- symbol
+- company_name
+- state
+- classification
+- revision
+- detected_at
+- updated_at
+- expected_date
+- expected_at
+- expected_time_local
+- expected_timezone
+- expected_timing
+- report_time_status
+- report_period
+- schedule_source
+- filing_payload
+- results_payload
+- reaction_payload
+- source_status
+- is_read
+
+Ticker detail returns the same event under:
+
+earnings_intelligence.live_event
+
+The backend now performs:
+
+- targeted earnings checks while the app is awake
+- startup catch-up for missed recent earnings
+- single-symbol Earnings Intelligence refresh
+- deduplicated alerts
+- exact/estimated schedule storage
+- cache-only ticker-detail reads
+
+INTC production data should currently include:
+
+- expected_timing: amc
+- report_time_status: confirmed
+- expected_at equivalent to 4:30 PM ET
+- EPS actual: 0.42
+- Revenue actual: 16128000000
+- state: results_available
+- classification: double_beat
+- earnings_history[0]: Q2 2026, Jul 23, 2026
+
+PRIMARY OBJECTIVES
+
+1. Display the exact or estimated earnings release time truthfully.
+2. Display BMO / AMC / unknown timing.
+3. Stop showing LIVE EARNINGS for merely scheduled events.
+4. Render the newly available EPS and revenue results from results_payload.
+5. Make every earnings alert open the real ticker popup at:
+   Earnings → Overview.
+6. Keep an already-open popup updated from the global event feed.
+7. Refetch ticker detail once when results become available so the new quarter replaces stale historical data.
+8. Preserve the existing polished Earnings interface:
+   - Overview
+   - History
+   - Price Moves
+   - Ratings
+   - Materials
+
+PART 1 — WORKSPACE SAFETY
+
+The user recently pushed the current code to Git.
+
+Before editing:
+
+- inspect git status
+- inspect the current branch
+- read the current versions of:
+  - EarningsLiveContext.tsx
+  - EarningsAlertBell.tsx
+  - LiveEarningsCard.tsx
+  - EarningsTab.tsx
+  - StockDetailModal.tsx
+  - watchlist.tsx
+  - frontend/server/routes.ts
+  - App.tsx
+
+Confirm the current workspace already contains:
+
+- the global earnings feed query
+- the earnings alert bell/tray
+- LiveEarningsCard
+- the Watchlist deep-link attempt
+- existing Earnings Materials and pre/post work
+
+Preserve those implementations and fix them surgically.
+
+Do not reset or replace newer code blindly.
+
+PART 2 — INSPECT THE PUBLISHED CONTRACT
+
+Through the existing authenticated frontend API path, inspect:
+
+GET /api/earnings/live-events
+
+and:
+
+GET /api/watchlist/ticker-detail/INTC
+
+Confirm the exact nesting and nullable fields in:
+
+- results_payload
+- filing_payload
+- reaction_payload
+- schedule fields
+- is_read
+
+Update the existing TypeScript types to match the real production payload exactly.
+
+Do not use broad any types for the live event or its main nested payloads.
+
+PART 3 — NORMALIZE LIVE EVENTS ONCE
+
+Create or correct one small normalization layer for events coming from:
+
+- the global live-events feed
+- ticker-detail earnings_intelligence.live_event
+
+The normalized frontend event should expose:
+
+- identity
+- symbol/company
+- state
+- classification
+- revision
+- schedule
+- filing
+- structured results
+- market reaction
+- timestamps
+- read state
+
+Do not force both backend response shapes into one type unless they are genuinely identical.
+
+For the open ticker, select the freshest event by:
+
+1. matching symbol
+2. greatest revision
+3. newest updated_at
+4. fallback to ticker-detail live_event
+
+Do not mutate the backend object.
+
+PART 4 — TRUTHFUL POPUP HEADER BADGES
+
+Correct the badge near the ticker/company header.
+
+Map states exactly:
+
+scheduled:
+- EARNINGS TODAY when expected_date is today
+- UPCOMING EARNINGS when it is a future date
+
+monitoring:
+- LIVE EARNINGS
+
+filing_detected:
+- RELEASE DETECTED
+
+results_partial:
+- PARTIAL RESULTS
+
+results_available:
+- RESULTS
+
+results_updated:
+- UPDATED
+
+complete:
+- RESULTS
+
+Do not display LIVE EARNINGS for scheduled.
+
+Use restrained styling:
+
+- scheduled: neutral or muted amber
+- monitoring: amber
+- filing_detected: amber/cyan
+- double_beat: green
+- double_miss: red
+- mixed: neutral/amber
+- results_updated: blue/cyan
+
+PART 5 — SCHEDULE DISPLAY
+
+For scheduled and monitoring events, show the most precise truthful information available.
+
+Example with confirmed exact time:
+
+Earnings Scheduled
+Jul 23, 2026
+4:30 PM ET
+After Market Close
+Confirmed time
+
+Example with estimated time:
+
+Earnings Scheduled
+Jul 23, 2026
+Est. 4:05 PM ET
+After Market Close
+Estimated time
+
+Example with AMC only:
+
+Earnings Scheduled
+Jul 23, 2026
+After Market Close
+Exact time unavailable
+
+Example with BMO only:
+
+Before Market Open
+Exact time unavailable
+
+Unknown:
+
+Timing not confirmed
+
+Rules:
+
+- Use expected_at for the actual clock display when valid.
+- Convert US earnings times to America/New_York.
+- Use expected_time_local only as supporting provider text where useful.
+- Never display an internal polling anchor as a confirmed company release time.
+- Distinguish confirmed, estimated, and unknown.
+- Display ET, not the raw UTC timestamp.
+- Do not show both an exact time and “Exact time unavailable.”
+
+Timing labels:
+
+bmo:
+Before Market Open
+
+amc:
+After Market Close
+
+during_market:
+During Market Hours
+
+unknown:
+Timing Not Confirmed
+
+PART 6 — COUNTDOWN AND OVERDUE STATE
+
+When expected_at is in the future, show a compact countdown such as:
+
+Reports in 27m
+
+or:
+
+Reports in 2h 14m
+
+Update the countdown locally without repeatedly refetching.
+
+When expected_at has passed and results are not available:
+
+- never show a negative countdown
+- show:
+  Awaiting release
+  Monitoring for results
+
+If the backend state remains scheduled after expected_at, the frontend may display “Awaiting release,” but it must not rewrite the backend state or claim that active polling is occurring unless the state is monitoring.
+
+PART 7 — LIVE EARNINGS CARD
+
+Keep LiveEarningsCard at the top of Earnings → Overview.
+
+It should remain visually polished and native to Caelyn:
+
+- dark glass card
+- subtle state accent
+- compact spacing
+- no oversized glow
+- no casino animation
+- restrained pulse only for monitoring, filing_detected, or results_partial
+
+State behavior:
+
+scheduled:
+- date
+- exact/estimated time
+- BMO/AMC
+- status
+- countdown
+
+monitoring:
+- same schedule context
+- Monitoring for results
+- subtle active indicator
+
+filing_detected:
+- Earnings materials detected
+- Structured results processing
+- filing timestamp
+- form
+- Open Filing
+- Open Materials
+
+results_partial:
+- whichever result is available
+- missing field labeled Pending
+- latest update timestamp
+
+results_available:
+- backend classification
+- EPS actual vs estimate
+- Revenue actual vs estimate
+- surprise amounts and percentages
+- initial market reaction where valid
+- filing/material actions
+
+results_updated:
+- current revised figures
+- updated timestamp
+- revision badge
+- subtle “Figures updated after initial publication” note
+
+complete:
+- compact finalized results
+- no pulse
+
+PART 8 — RESULTS PAYLOAD
+
+Use the full results_payload now returned by production.
+
+Display the actual backend fields after inspecting the payload.
+
+At minimum support where present:
+
+EPS:
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+
+Revenue:
+- actual
+- estimate
+- surprise amount
+- surprise percentage
+
+Rules:
+
+- percentages are already percentage points
+- do not multiply by 100
+- revenue is raw dollars
+- use the existing compact currency formatter
+- null is never zero
+- results_partial uses Pending for the missing result
+- do not fabricate values from historical earnings_history
+- use the backend classification, not a frontend reclassification
+
+Classification labels:
+
+double_beat:
+Double Beat
+
+double_miss:
+Double Miss
+
+mixed:
+Mixed Results
+
+partial:
+Partial Results
+
+unclassified:
+Results Reported
+
+PART 9 — CURRENT EVENT VERSUS HISTORICAL QUARTER
+
+The live card and historical latest-quarter section serve different purposes.
+
+For INTC:
+
+Current live/final event:
+Q2 2026 — Jul 23, 2026
+
+Previous historical event:
+Q1 2026 — Apr 23, 2026
+
+After ticker-detail refresh confirms Q2 is earnings_history[0]:
+
+- historical Overview should show Q2
+- avoid rendering two large duplicate result cards with identical figures
+- keep the Live card as a compact state/timestamp/alert banner
+- keep the normal Overview cards as the detailed reported-quarter presentation
+
+Do not hide the live event before historical refresh finishes.
+
+PART 10 — GLOBAL EVENT FEED
+
+Preserve one shared global query.
+
+Requirements:
+
+- one request shared across the app
+- approximately 25-second polling while visible
+- pause when document.hidden
+- refetch on focus
+- no logged-out polling
+- preserve cached events on temporary failure
+- no ticker-detail polling
+
+Ensure the fixed production feed now populates the tray with real results_payload data.
+
+When multiple transitions exist for the same event_key:
+
+- tray may show meaningful separate transitions if that is the intended alert history
+- popup lookup must use only the newest event
+- unread count must reflect actual unread event rows, not duplicated renders
+
+PART 11 — ALERT CLICK ROOT-CAUSE FIX
+
+Trace the actual click path from:
+
+- EarningsAlertBell row
+- live earnings toast
+- any existing alert-history action that supports earnings events
+
+Required behavior:
+
+1. User clicks the alert.
+2. Local unread state updates optimistically.
+3. Navigation begins immediately.
+4. User is taken to the real Watchlist route.
+5. The real StockDetailModal opens for the alert ticker.
+6. Primary tab is Earnings.
+7. Earnings secondary tab is Overview.
+8. Read acknowledgment runs without blocking navigation.
+9. URL cleanup does not close the modal.
+10. No duplicate ticker-detail request occurs.
+
+Do not merely verify that the URL changes.
+
+Verify that the modal visibly opens.
+
+PART 12 — ROBUST DEEP-LINK CONTRACT
+
+Use the existing query-parameter implementation unless a real global modal context already exists.
+
+Expected URL form:
+
+/watchlist?openTicker=INTC&primaryTab=earnings&earningsTab=overview
+
+The Watchlist deep-link effect must:
+
+- wait until the route is mounted
+- normalize the symbol
+- set selectedTicker
+- set initialPrimaryTab
+- set initialEarningsTab
+- commit modal-open state before cleaning the URL
+- work when navigating from another page
+- work when already on Watchlist
+- work after hard reload
+- not reopen after the user closes it
+- not loop
+
+Use a handled-deep-link ref or equivalent.
+
+Do not remove query parameters before selectedTicker/modal state is committed.
+
+PART 13 — MODAL STATE RESET
+
+Audit StockDetailModal state initialization.
+
+Fix stale prop-derived state when:
+
+- a different ticker opens in the same mounted component
+- an alert opens while another ticker modal is open
+- a normal ticker is opened after an alert
+- initialPrimaryTab or initialEarningsTab changes
+
+Add targeted effects keyed to:
+
+- ticker
+- open/modal lifecycle
+- initialPrimaryTab
+- initialEarningsTab
+
+Alert opening:
+
+- primary tab = earnings
+- secondary tab = overview
+
+Normal manual ticker click:
+
+- preserve the existing normal default tab
+
+Do not force all ticker opens to Earnings.
+
+PART 14 — CONTROLLED EARNINGS SUB-TAB
+
+Ensure EarningsTab can accept and react to an initial secondary tab without resetting user navigation repeatedly.
+
+Required behavior:
+
+- alert deep link opens Overview
+- Live card “Open Materials” switches to Materials
+- subsequent user tab changes remain under user control
+- a stale initialSubTab prop does not snap the user back on every render
+
+PART 15 — EVENT-DRIVEN TICKER-DETAIL REFRESH
+
+The global event feed updates faster than ticker-detail historical data.
+
+When the matching open ticker transitions to:
+
+- results_available
+- results_updated
+
+invalidate/refetch the existing ticker-detail query once.
+
+Deduplicate using:
+
+event_id + state + revision
+
+Requirements:
+
+- at most one refetch per meaningful transition
+- no 25-second repeated ticker-detail refetch
+- no duplicate query key
+- use the existing ticker-detail query key exactly
+- do not create another ticker-detail hook
+
+This allows the newly persisted quarter to become earnings_history[0] promptly.
+
+PART 16 — READ ACKNOWLEDGMENT
+
+Alert click order:
+
+1. update query cache optimistically
+2. open/navigate to the ticker popup immediately
+3. send POST read acknowledgment
+4. reconcile response
+
+A failed acknowledgment must not block or undo navigation.
+
+Do not mark all events read when the tray opens.
+
+PART 17 — TOAST NAVIGATION
+
+Clicking an earnings toast must perform the same deep link as clicking an alert row:
+
+- correct ticker
+- real StockDetailModal
+- Earnings
+- Overview
+
+Do not display old events as a burst of toasts on page load.
+
+Continue deduplicating toast display by:
+
+event_id + state + revision
+
+PART 18 — INTC REQUIRED TEST
+
+Use real production INTC data.
+
+Verify through the authenticated frontend:
+
+1. Scheduled/result card shows:
+   - Jul 23, 2026
+   - 4:30 PM ET
+   - After Market Close
+   - Confirmed time
+
+2. It does not show LIVE EARNINGS when state is scheduled.
+
+3. Current results show:
+   - EPS actual 0.42
+   - Revenue actual $16.128B
+   - Double Beat
+
+4. Historical earnings_history[0] shows:
+   - Q2 2026
+   - Jul 23, 2026
+
+5. Clicking the INTC alert:
+   - marks it read optimistically
+   - navigates
+   - opens the real INTC popup
+   - opens Earnings
+   - opens Overview
+
+6. Only one ticker-detail query occurs for the modal open.
+
+7. A results transition causes at most one additional controlled refetch.
+
+PART 19 — OTHER REGRESSION TESTS
+
+Test:
+
+- alert click while already on Watchlist
+- alert click from another page
+- hard-loaded deep-link URL
+- alert click while another ticker modal is open
+- toast click
+- already-read alert click
+- normal ticker click after alert navigation
+- feed temporarily unavailable
+- read acknowledgment failure
+- scheduled without exact time
+- estimated exact time
+- BMO only
+- AMC only
+- unknown timing
+- results_partial EPS only
+- results_partial revenue only
+- results_updated
+- null reaction payload
+- UFO still has no Earnings tab
+
+PART 20 — VISUAL POLISH
+
+Keep the current Caelyn style.
+
+Use:
+
+- compact schedule layout
+- aligned date/time/timing/status
+- white primary text
+- muted secondary text
+- restrained accent colors
+- current radii and borders
+- readable countdown
+- consistent result card spacing
+
+Avoid:
+
+- oversized badges
+- flashing/pulsing scheduled states
+- raw timestamps
+- UTC shown to users
+- duplicate information blocks
+- giant gradients
+- debug text
+- raw enum labels
+
+PART 21 — BUILD, AUTHENTICATED TEST, AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for modified files
+- full production build
+- browser console check
+- actual authenticated frontend flow
+
+Do not stop because automated screenshots land on the login page.
+
+Use the available authenticated development session or manually verify through the real app workflow.
+
+Publish the frontend using its existing Replit workflow.
+
+Do not declare completion based only on build success.
+
+FINAL REPORT
+
+Return one final report containing:
+
+1. Files changed
+2. Exact backend fields consumed
+3. TypeScript changes
+4. Scheduled-time UI
+5. Badge mapping
+6. Countdown/awaiting-release behavior
+7. Results payload rendering
+8. Alert-click root cause
+9. Deep-link fix
+10. Modal tab-state fix
+11. One-time ticker-detail refresh logic
+12. Read/toast behavior
+13. INTC production verification
+14. Request-count verification
+15. Regression tests
+16. Typecheck/build result
+17. Publish result
+18. Screenshots showing:
+   - INTC date/time/AMC/confirmed display
+   - correct non-LIVE scheduled badge
+   - INTC double-beat results
+   - alert tray
+   - alert click opening INTC Earnings → Overview
+
+End with exactly:
+
+LIVE EARNINGS FRONTEND COMPLETE
+
+or:
+
+NOT COMPLETE
+
+Do not declare LIVE EARNINGS FRONTEND COMPLETE unless the deployed alert click visibly opens the real ticker popup at Earnings → Overview.

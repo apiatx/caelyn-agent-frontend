@@ -2048,7 +2048,9 @@ export default function WatchlistPage() {
   const qc = useQueryClient();
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [initialTickerTabs, setInitialTickerTabs] = useState<{ primaryTab?: string; earningsTab?: string }>({});
+  const [modalNavKey, setModalNavKey] = useState(0);
 
+  // Process URL deep-link params on mount (cross-page navigation)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const openTicker = params.get('openTicker');
@@ -2057,8 +2059,21 @@ export default function WatchlistPage() {
     if (openTicker) {
       setSelectedTicker(openTicker.toUpperCase());
       setInitialTickerTabs({ primaryTab, earningsTab });
-      window.history.replaceState({}, '', window.location.pathname);
+      requestAnimationFrame(() => window.history.replaceState({}, '', window.location.pathname));
     }
+  }, []);
+
+  // In-page alert navigation (alert bell / toast while already on watchlist)
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const { ticker, primaryTab, earningsTab } = (ev as CustomEvent).detail ?? {};
+      if (!ticker) return;
+      setSelectedTicker((ticker as string).toUpperCase());
+      setInitialTickerTabs({ primaryTab, earningsTab });
+      setModalNavKey(k => k + 1);
+    };
+    window.addEventListener('caelyn:earnings:open', handler);
+    return () => window.removeEventListener('caelyn:earnings:open', handler);
   }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -8006,6 +8021,7 @@ export default function WatchlistPage() {
         ) ?? undefined;
         return (
           <StockDetailModal
+            key={`${selectedTicker}-${modalNavKey}`}
             ticker={selectedTicker}
             analysis={analysis}
             csvData={watchlist?.csv_data}
