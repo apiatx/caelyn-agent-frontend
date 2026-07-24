@@ -1,0 +1,633 @@
+FINAL EARNINGS OVERVIEW POLISH — MATCHED UPCOMING/LATEST CARDS + PROFESSIONAL INSIGHT LAYOUT
+
+This is a targeted frontend-only visual redesign of the ticker popup:
+
+Earnings
+→ Overview
+
+Complete it autonomously in one pass.
+
+Do not modify the backend.
+Do not create new endpoints or queries.
+Do not change any earnings calculations.
+Do not change the 30-day recent-results rule.
+Do not change History, Price Moves, Ratings, or Materials.
+Do not change the GOOGL-style unified recent-results bubble.
+Do not change Watchlist Upcoming/Recent cards.
+Do not reset, pull, checkout, or overwrite the current workspace.
+Do not push to Git.
+
+CURRENT PROBLEMS
+
+Using NVTS as the reference:
+
+1. “Upcoming Earnings” and the latest reported quarter do not look like two coordinated sections.
+
+2. The reported quarter is labeled only:
+
+Q1 2026
+
+It should sit under a clear section heading:
+
+LATEST EARNINGS
+
+3. The Upcoming Earnings card uses only the left side of a very wide container, leaving excessive empty space on the right.
+
+4. EPS and Revenue estimates are repeated awkwardly:
+
+- once at the bottom of Upcoming Earnings
+- again inside a separate Analyst Consensus card
+
+5. The Upcoming Earnings estimates should use metric bubbles visually consistent with the Revenue and EPS bubbles in Latest Earnings.
+
+6. The following sections are technically useful but visually poor:
+
+- Price Reaction
+- Growth Context
+- Historical Reaction Context
+
+They currently look like labels and values scattered across a large empty surface with weak grouping and hierarchy.
+
+PRIMARY OBJECTIVES
+
+A. Make Upcoming Earnings and Latest Earnings feel like a matching professional pair.
+
+B. Integrate analyst consensus directly into the Upcoming Earnings card.
+
+C. Use the unused right side of the Upcoming Earnings card for prominent Revenue Estimate and EPS Estimate bubbles.
+
+D. Remove the redundant standalone Analyst Consensus card.
+
+E. Redesign Price Reaction, Growth Context, and Historical Reaction Context into clean, compact, professional metric panels.
+
+F. Preserve all existing values, logic, data sources, timing behavior, and responsive functionality.
+
+PART 1 — PRESERVE THE EXISTING DISPLAY RULE
+
+Do not change the existing 30-day behavior.
+
+When the company reported within the previous 30 days:
+
+- preserve the current unified reported-results bubble exactly
+- GOOGL must remain unchanged
+- do not add the Upcoming + Latest layout
+
+When the latest report is older than 30 days and a future event exists:
+
+Show:
+
+1. UPCOMING EARNINGS
+2. LATEST EARNINGS
+
+The NVTS layout is the target for this redesign.
+
+When no upcoming event exists:
+
+- show only LATEST EARNINGS
+- do not create an empty Upcoming Earnings shell
+
+PART 2 — SECTION TITLES
+
+Add clear standalone section labels above the two major surfaces:
+
+UPCOMING EARNINGS
+
+LATEST EARNINGS
+
+Do not rely on “Q1 2026” alone as the title of the latest section.
+
+Inside Latest Earnings, retain:
+
+- quarter/year
+- report date
+- BMO/AMC
+- Reported badge
+- timing-confidence note
+
+Recommended hierarchy:
+
+LATEST EARNINGS
+
+Q1 2026
+May 5, 2026 · AMC · REPORTED
+
+PART 3 — REDESIGN UPCOMING EARNINGS AS ONE COHESIVE CARD
+
+Replace the current vertically sparse Upcoming Earnings card plus separate Analyst Consensus card with one cohesive card.
+
+Desktop layout:
+
+Use a three-column internal grid:
+
+Column 1 — Schedule
+
+- report date
+- report time
+- Before Market Open / After Market Close
+- Confirmed or inferred timing
+- countdown
+
+Column 2 — Revenue Estimate bubble
+
+- REVENUE ESTIMATE
+- $10.0M
+- EXPECTED GROWTH
+- value or truthful unavailable state
+
+Column 3 — EPS Estimate bubble
+
+- EPS ESTIMATE
+- −$0.04
+- EXPECTED GROWTH
+- value or truthful unavailable state
+
+Suggested proportion:
+
+Schedule: approximately 40%
+Revenue Estimate: approximately 30%
+EPS Estimate: approximately 30%
+
+Use the real available width. Do not leave a large blank region on the right.
+
+PART 4 — MATCH THE LATEST-EARNINGS METRIC STYLE
+
+The Revenue Estimate and EPS Estimate bubbles in Upcoming Earnings should visually match the Revenue and EPS result bubbles in Latest Earnings.
+
+Match:
+
+- card height
+- internal padding
+- label sizing
+- primary number sizing
+- border radius
+- background treatment
+- border color
+- number alignment
+- spacing rhythm
+
+They should look related but remain semantically distinct.
+
+Upcoming:
+
+REVENUE ESTIMATE
+$10.0M
+
+EPS ESTIMATE
+−$0.04
+
+Latest:
+
+REVENUE
+$8.6M
+Est. $8.2M
++$376.6K (+4.6%) Beat
+
+EPS
+−$0.04
+Est. −$0.05
++$0.01 (+20.0%) Beat
+
+Do not show Beat or Miss in the Upcoming card.
+
+PART 5 — REMOVE REDUNDANCY
+
+Remove the separate standalone Analyst Consensus card after its values have been incorporated into the Upcoming Earnings card.
+
+Do not display the same EPS and Revenue estimates twice.
+
+The final order should be:
+
+UPCOMING EARNINGS
+[one complete schedule + estimate card]
+
+LATEST EARNINGS
+[reported quarter card]
+
+There should not be another Analyst Consensus block between them.
+
+PART 6 — UPCOMING CARD RESPONSIVE BEHAVIOR
+
+Desktop:
+
+- three-column layout
+- schedule left
+- Revenue Estimate center
+- EPS Estimate right
+
+Medium width:
+
+- schedule across the top
+- two equal estimate bubbles underneath
+
+Mobile:
+
+- stacked schedule
+- Revenue Estimate
+- EPS Estimate
+
+Requirements:
+
+- no page-level horizontal overflow
+- no clipped values
+- no overlapping countdown
+- no tiny unreadable typography
+- no unnecessary increase in total card height
+
+PART 7 — LATEST EARNINGS CARD STRUCTURE
+
+Keep the latest reported results inside one cohesive card.
+
+Recommended internal structure:
+
+Header:
+- Q1 2026
+- May 5, 2026
+- AMC
+- Reported
+
+Results row:
+- Revenue result bubble
+- EPS result bubble
+
+Reaction row:
+- Before Earnings
+- After Earnings
+
+Insights area:
+- Price Reaction panel
+- Growth Context panel
+- Historical Reaction Context panel
+
+Do not break these into unrelated floating cards.
+
+Use consistent dividers and internal spacing.
+
+PART 8 — REDESIGN PRICE REACTION
+
+The current Price Reaction section is too sparse and lacks hierarchy.
+
+Redesign it as a compact metric-panel grid.
+
+Header:
+
+PRICE REACTION
+
+Subtext:
+
+Close-to-close approximation
+
+Desktop layout:
+
+Use six compact metric tiles in a three-column by two-row grid:
+
+Opening Gap
+−3.4%
+
+Post 1D
+−5.0%
+
+3-Day
++3.7%
+
+5-Day
++9.7%
+
+Max Upside
++35.7%
+
+Max Drawdown
+−14.8%
+
+Each tile should have:
+
+- subtle glass background
+- thin border
+- compact internal padding
+- small uppercase label
+- prominent value
+- consistent alignment
+
+Visual hierarchy:
+
+- Post 1D may be slightly emphasized because it is the primary immediate reaction
+- Max Upside and Max Drawdown may use subtler accent treatments
+- do not make every tile equally loud
+
+Color values:
+
+- positive: green
+- negative: red
+- zero/null: neutral
+
+Do not color the full tile bright green or red.
+
+Use restrained tint, border, or value color.
+
+PART 9 — REDESIGN GROWTH CONTEXT
+
+Create a dedicated compact panel:
+
+GROWTH CONTEXT
+
+Use four equal metric tiles:
+
+Revenue QoQ
++17.9%
+
+Revenue YoY
+−38.7%
+
+EPS QoQ
+Loss ↓
+
+EPS YoY
+Loss ↓
+
+Improve the labels:
+
+Use:
+
+- Revenue QoQ
+- Revenue YoY
+- EPS QoQ
+- EPS YoY
+
+rather than overly abbreviated labels where space allows.
+
+For semantic EPS states such as:
+
+- Profit ↑
+- Profit ↓
+- Loss narrowing
+- Loss widening
+- Loss ↓
+
+use clear text plus a restrained directional indicator.
+
+Do not automatically color all “Loss” states red without considering whether the loss is narrowing or widening.
+
+Preserve the existing semantic calculation.
+
+PART 10 — REDESIGN HISTORICAL REACTION CONTEXT
+
+Create a dedicated compact panel:
+
+HISTORICAL REACTION
+
+Optional small subtitle:
+
+Based on 13 completed earnings events
+
+Use six metric tiles:
+
+Average Post 1D
++3.6%
+
+Median Post 1D
++5.1%
+
+Average Absolute Move
+11.2%
+
+Positive Reactions
+62%
+
+Largest Gain
++26.0%
+
+Largest Decline
+−15.9%
+
+Do not repeat “13 obs.” underneath every metric.
+
+Instead, display the observation count once in the panel subtitle or header:
+
+13 observations
+
+This will substantially reduce visual noise.
+
+Keep the individual observation count beside a metric only if the counts genuinely differ between metrics.
+
+PART 11 — PROFESSIONAL PANEL COMPOSITION
+
+Arrange the three insight groups with stronger layout hierarchy.
+
+Recommended desktop design:
+
+Row 1:
+PRICE REACTION
+full width
+
+Row 2:
+GROWTH CONTEXT | HISTORICAL REACTION
+two-column layout
+
+This creates:
+
+- one primary current-event panel
+- two secondary context panels underneath
+
+Alternative acceptable layout:
+
+- three clearly separated full-width panels
+- each using compact tiles
+
+Choose whichever integrates best with the existing modal width, but do not leave the current scattered presentation.
+
+PART 12 — VISUAL STYLE
+
+Match the existing Caelyn design system.
+
+Use:
+
+- dark glass surfaces
+- restrained borders
+- subtle section contrast
+- consistent cyan section labels
+- consistent white primary values
+- muted gray secondary text
+- restrained green/red accents
+- clean monospace typography where already used
+
+Avoid:
+
+- oversized empty areas
+- excessive dividers
+- bright full-card fills
+- inconsistent tile heights
+- excessive uppercase text everywhere
+- floating values without containers
+- giant gaps between labels and numbers
+
+The result should feel like a professional institutional earnings terminal, not a raw statistics dump.
+
+PART 13 — SPACING AND DENSITY
+
+Reduce vertical waste while preserving readability.
+
+Standardize:
+
+- section-to-section spacing
+- card padding
+- tile gaps
+- label-to-value spacing
+- divider margins
+
+The latest earnings section should be materially easier to scan without becoming cramped.
+
+Keep the modal usable without excessive scrolling.
+
+PART 14 — NULL AND PENDING STATES
+
+Keep all existing truthful null handling.
+
+Examples:
+
+- estimate unavailable: —
+- future reaction horizon not due: Pending
+- missing observation: —
+- missing growth comparison: —
+
+Do not render null as:
+
+- 0
+- 0%
+- $0
+- Loss
+- Miss
+
+Tiles with unavailable data should remain present with muted neutral styling if preserving the grid improves consistency.
+
+PART 15 — DO NOT CHANGE DATA LOGIC
+
+This task is presentation-only.
+
+Do not modify:
+
+- earnings result classification
+- surprise calculations
+- reaction calculations
+- reaction session alignment
+- expected growth calculations
+- report timing logic
+- 30-day display rule
+- query keys
+- live-event invalidation
+- provider behavior
+- backend contract
+
+Reuse the existing values exactly.
+
+PART 16 — GOOGL REGRESSION SAFETY
+
+GOOGL reported within 30 days and uses the unified reported-results bubble.
+
+Do not apply the Upcoming + Latest redesign to GOOGL during its 30-day recent-results window.
+
+Preserve:
+
+- Positive Results / Double Beat
+- negative price move
+- Before vs After
+- materials actions
+- Growth Context
+- Price Reaction
+
+Cosmetic improvements to shared lower insight panels may apply only if they do not alter the unified bubble or behavior.
+
+PART 17 — REQUIRED NVTS ACCEPTANCE TEST
+
+Verify in the actual authenticated ticker popup:
+
+1. “UPCOMING EARNINGS” appears as the first section heading.
+2. The Upcoming card uses its full width.
+3. Schedule information appears on the left.
+4. Revenue Estimate appears in a result-style bubble.
+5. EPS Estimate appears in a matching result-style bubble.
+6. The separate Analyst Consensus card is removed.
+7. “LATEST EARNINGS” appears above Q1 2026.
+8. Revenue and EPS result bubbles remain correct.
+9. Before/After Earnings remains correct.
+10. Price Reaction uses six compact tiles.
+11. Growth Context uses four compact tiles.
+12. Historical Reaction uses six compact tiles.
+13. Observation count is not needlessly repeated six times.
+14. No data values changed.
+15. No horizontal overflow exists.
+16. The modal requires less visual effort to scan.
+
+PART 18 — CROSS-TICKER TESTS
+
+Test:
+
+NVTS:
+- full Upcoming + Latest layout
+
+CGNX:
+- Upcoming + Latest layout remains functional
+
+GLW:
+- Upcoming estimates remain visible
+
+GOOGL:
+- recent unified reported-results layout remains unchanged
+
+Ticker with missing estimates:
+- estimate bubbles display — cleanly
+
+Ticker with no upcoming event:
+- only Latest Earnings renders
+- no blank Upcoming card
+
+PART 19 — BUILD AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for modified files
+- full production build
+- browser console inspection
+- authenticated NVTS test
+- authenticated CGNX test
+- authenticated GLW test
+- authenticated GOOGL regression test
+
+Do not stop at HMR.
+Do not stop at build success.
+Do not declare success without inspecting the real modal.
+
+Publish the frontend.
+
+FINAL REPORT
+
+Return:
+
+1. Files changed
+2. Upcoming Earnings redesign
+3. Latest Earnings heading treatment
+4. Estimate-bubble layout
+5. Removed redundancy
+6. Price Reaction redesign
+7. Growth Context redesign
+8. Historical Reaction redesign
+9. Responsive behavior
+10. NVTS test result
+11. CGNX/GLW test result
+12. GOOGL regression result
+13. Typecheck/build result
+14. Publish result
+15. Screenshots showing:
+    - complete NVTS Upcoming Earnings card
+    - NVTS Latest Earnings header and result bubbles
+    - redesigned Price Reaction panel
+    - redesigned Growth + Historical panels
+    - GOOGL regression state
+
+End with exactly:
+
+EARNINGS OVERVIEW POLISH COMPLETE
+
+or:
+
+NOT COMPLETE
+
+Do not declare completion unless the deployed NVTS Earnings Overview has the matched Upcoming/Latest hierarchy and the redesigned insight panels.

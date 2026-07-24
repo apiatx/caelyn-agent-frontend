@@ -577,6 +577,31 @@ function useLocalCountdown(expectedAt: string | null | undefined): string | null
   const mins = totalMins % 60;
   return mins > 0 ? `in ${hrs}h ${mins}m` : `in ${hrs}h`;
 }
+function fmtStaticCountdown(expectedDate: string | null, expectedAt: string | null): string | null {
+  const target = expectedAt
+    ? new Date(expectedAt)
+    : expectedDate ? new Date(expectedDate + 'T20:00:00Z') : null;
+  if (!target || isNaN(target.getTime())) return null;
+  const diff = target.getTime() - Date.now();
+  if (diff <= 0) return null;
+  const mins2 = Math.ceil(diff / 60_000);
+  if (mins2 < 60) return `in ${mins2}m`;
+  const hrs2 = Math.floor(mins2 / 60);
+  if (hrs2 < 48) { const rem = mins2 % 60; return rem > 0 ? `in ${hrs2}h ${rem}m` : `in ${hrs2}h`; }
+  return `in ${Math.floor(hrs2 / 24)} days`;
+}
+function fmtTimingFull(t: string | null | undefined): { label: string; confirmed: boolean } {
+  if (!t) return { label: 'Timing unconfirmed', confirmed: false };
+  const l = t.toLowerCase();
+  if (l === 'bmo' || l.includes('before')) return { label: 'Before Market Open', confirmed: true };
+  if (l === 'amc' || l.includes('after'))  return { label: 'After Market Close',  confirmed: true };
+  if (l.includes('during'))                return { label: 'During Market Hours',  confirmed: true };
+  return { label: 'Timing unconfirmed', confirmed: false };
+}
+function fmtEpsEst(v: number | null): string {
+  if (v == null || !isFinite(v)) return '—';
+  return v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+}
 
 /* ── 30-day recency window (NY timezone, date-only, no drift) ─── */
 function todayNY_ET(): string {
@@ -1047,9 +1072,65 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
   /* 30-day rule: was the latest reported quarter within 30 days? */
   const isRecentReport = isWithin30DayWindow(q.date);
 
-  /* Render helper — latest reported GCard (shared by PATH A and PATH C) */
+  /* ── Upcoming Earnings card: schedule + estimate bubbles ─────── */
+  const renderUpcomingCard = (ev: LiveEarningsEvent) => {
+    const upEps    = ev.results_summary?.eps_estimate ?? null;
+    const upRev    = ev.results_summary?.revenue_estimate ?? null;
+    const lvFp     = ev.fiscal_period;
+    const prYrStr  = ev.fiscal_year != null ? String(ev.fiscal_year - 1) : null;
+    const priorQ   = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
+    const epsG     = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
+    const revGPct  = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
+      ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
+    const timing    = fmtTimingFull(ev.expected_timing);
+    const countdown = fmtStaticCountdown(ev.expected_date, ev.expected_at ?? null);
+    const quarterLabel = ev.fiscal_period && ev.fiscal_year ? `${ev.fiscal_period} ${ev.fiscal_year}` : null;
+
+    const estBubble = (title: string, val: string, growthPct: number | null, growthLabel: string | null) => (
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 6, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, minWidth: 0 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>{title}</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: val === '—' ? C.dim : C.bright, fontFamily: _f }}>{val}</div>
+        <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 6, marginBottom: 2 }}>Expected growth</div>
+        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: growthLabel ? C.text : pctCol(growthPct, C) }}>
+          {fmtExpGrowth(growthPct, growthLabel)}
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ background: 'rgba(14,165,233,0.04)', border: '1px solid rgba(14,165,233,0.18)', borderRadius: 8, padding: '14px 16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1.5fr', gap: 12, alignItems: 'start' }}>
+          {/* Col 1: Schedule */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+            <div style={{ fontSize: 8, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.09em', marginBottom: 2 }}>Schedule</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
+              {ev.expected_date ? fmtDate(ev.expected_date) : '—'}
+            </div>
+            {quarterLabel && <div style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{quarterLabel}</div>}
+            <div style={{ fontSize: 10, color: C.text, fontFamily: _s, marginTop: 2 }}>{timing.label}</div>
+            {ev.report_time_status === 'confirmed'
+              ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.teal, letterSpacing: '0.06em' }}>✓ CONFIRMED</span>
+              : <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>Timing estimated</span>
+            }
+            {countdown && (
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.amber, fontFamily: _f, marginTop: 4, paddingTop: 4, borderTop: `1px solid rgba(255,255,255,0.05)` }}>
+                {countdown}
+              </div>
+            )}
+          </div>
+          {/* Col 2: Revenue Estimate */}
+          {estBubble('Revenue Estimate', upRev != null ? fmtRev(upRev) : '—', revGPct, null)}
+          {/* Col 3: EPS Estimate */}
+          {estBubble('EPS Estimate', fmtEpsEst(upEps), epsG.pct, epsG.label)}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Latest Earnings card: results + reaction + context panels ── */
   const renderReportedCard = () => (
     <GCard C={C}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
         <span style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
           {q.fiscal_period && q.fiscal_year ? `${q.fiscal_period} ${q.fiscal_year}` : fmtDate(q.date)}
@@ -1069,11 +1150,9 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
         )}
         <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.green, border: `1px solid ${C.green}40` }}>REPORTED</span>
       </div>
-      {isInferred && (
-        <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}>
-          ⓘ Timing inferred from available filing metadata
-        </div>
-      )}
+      {isInferred && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 5 }}>ⓘ Timing inferred from available filing metadata</div>}
+
+      {/* Revenue + EPS result bubbles */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
         {[
           { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
@@ -1101,6 +1180,8 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
           </div>
         ))}
       </div>
+
+      {/* Before vs After Earnings */}
       {hasPrePost && !prePostIsUnavail && (
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
           <SecLabel text="Before vs After Earnings" C={C} />
@@ -1127,106 +1208,90 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
           </div>
         </div>
       )}
+
+      {/* Price Reaction — compact glass tile grid */}
       {hasPriceReaction && (
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-          <SecLabel text="Price Reaction" C={C} />
-          {isApprox && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginBottom: 8 }}>Close-to-close approximation</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+            <SecLabel text="Price Reaction" C={C} />
+            {isApprox && <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>close-to-close approx.</span>}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
             {[
-              { label: 'Opening Gap', v: pr!.opening_gap_pct },
-              { label: 'Post 1D',     v: pr!.reaction_1d_pct },
-              { label: '3-Day',       v: pr!.reaction_3d_pct },
-              { label: '5-Day',       v: pr!.reaction_5d_pct },
-              { label: 'Max Upside',  v: pr!.max_upside_5d_pct },
-              { label: 'Max Drawdown',v: pr!.max_drawdown_5d_pct },
-            ].map(({ label, v }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: pctCol(v, C) }}>{v != null ? fmtPct(v) : '—'}</div>
+              { label: 'Opening Gap',  v: pr!.opening_gap_pct,      bold: false },
+              { label: 'Post 1D',      v: pr!.reaction_1d_pct,      bold: true  },
+              { label: '3-Day',        v: pr!.reaction_3d_pct,      bold: false },
+              { label: '5-Day',        v: pr!.reaction_5d_pct,      bold: false },
+              { label: 'Max Upside',   v: pr!.max_upside_5d_pct,    bold: false },
+              { label: 'Max Drawdown', v: pr!.max_drawdown_5d_pct,  bold: false },
+            ].map(({ label, v, bold }) => (
+              <div key={label} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,${bold ? '0.10' : '0.05'})`, borderRadius: 5, padding: '7px 8px', textAlign: 'center' as const }}>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{label}</div>
+                <div style={{ fontSize: bold ? 14 : 12, fontWeight: bold ? 900 : 700, fontFamily: _f, color: v != null ? pctCol(v, C) : C.dim }}>
+                  {v != null ? fmtPct(v) : '—'}
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
-      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-        <SecLabel text="Growth Context" C={C} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
-          {[
-            { label: 'Rev QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
-            { label: 'Rev YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
-            { label: 'EPS QoQ', val: epsTransition(q.eps_qoq), col: C.text },
-            { label: 'EPS YoY', val: epsTransition(q.eps_yoy), col: C.text },
-          ].map(({ label, val, col }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
+
+      {/* Growth Context + Historical Reaction — side-by-side */}
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: 'grid', gridTemplateColumns: rs && cov.has_reactions ? '1fr 1fr' : '1fr', gap: 14 }}>
+        {/* Growth Context */}
+        <div>
+          <SecLabel text="Growth Context" C={C} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
+            {[
+              { label: 'Revenue QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
+              { label: 'Revenue YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
+              { label: 'EPS QoQ',     val: epsTransition(q.eps_qoq),  col: C.text },
+              { label: 'EPS YoY',     val: epsTransition(q.eps_yoy),  col: C.text },
+            ].map(({ label, val, col }) => (
+              <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Historical Reaction */}
+        {rs && cov.has_reactions && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <SecLabel text="Historical Reaction" C={C} />
+              {rs.observations_1d != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>{rs.observations_1d} events</span>}
             </div>
-          ))}
-        </div>
-      </div>
-      {rs && cov.has_reactions && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-          <SecLabel text="Historical Reaction Context" C={C} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 8 }}>
-            {[
-              { label: 'Avg Post 1D', val: fmtPct(rs.average_1d_pct), obs: rs.observations_1d },
-              { label: 'Median 1D',  val: fmtPct(rs.median_1d_pct),   obs: rs.observations_1d },
-              { label: 'Avg |1D|',   val: fmtPct(rs.average_absolute_1d_pct, false), obs: rs.observations_1d },
-              { label: '% Positive', val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
-              { label: 'Largest +',  val: fmtPct(rs.largest_positive_1d_pct), obs: null },
-              { label: 'Largest −',  val: fmtPct(rs.largest_negative_1d_pct), obs: null },
-            ].map(({ label, val, obs }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
-                {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
-              </div>
-            ))}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
+              {[
+                { label: 'Avg Post 1D',    val: fmtPct(rs.average_1d_pct) },
+                { label: 'Median Post 1D', val: fmtPct(rs.median_1d_pct) },
+                { label: 'Avg |Move|',     val: fmtPct(rs.average_absolute_1d_pct, false) },
+                { label: '% Positive',     val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—' },
+                { label: 'Largest Gain',   val: fmtPct(rs.largest_positive_1d_pct) },
+                { label: 'Largest Drop',   val: fmtPct(rs.largest_negative_1d_pct) },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.text }}>{val || '—'}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </GCard>
   );
-
-  /* Analyst Consensus card for an upcoming event (shared by PATH A and PATH C) */
-  const renderAnalystConsensus = (ev: LiveEarningsEvent) => {
-    const upEps = ev.results_summary?.eps_estimate ?? null;
-    const upRev = ev.results_summary?.revenue_estimate ?? null;
-    if (upEps == null && upRev == null) return null;
-    const lvFp    = ev.fiscal_period;
-    const prYrStr = ev.fiscal_year != null ? String(ev.fiscal_year - 1) : null;
-    const priorQ  = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
-    const epsG    = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
-    const revGPct = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
-      ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
-    return (
-      <GCard C={C}>
-        <SecLabel text="Analyst Consensus" C={C} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 8 }}>
-          {[
-            { label: 'EPS Estimate',        val: upEps != null ? fmtEps(upEps) : '—', col: C.text },
-            { label: 'Expected EPS Growth',  val: fmtExpGrowth(epsG.pct, epsG.label),  col: epsG.label ? C.text : pctCol(epsG.pct, C) },
-            { label: 'Revenue Estimate',     val: upRev != null ? fmtRev(upRev) : '—', col: C.text },
-            { label: 'Expected Rev Growth',  val: fmtExpGrowth(revGPct, null),          col: pctCol(revGPct, C) },
-          ].map(({ label, val, col }) => (
-            <div key={label} style={{ textAlign: 'center' as const }}>
-              <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 4 }}>{label}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val}</div>
-            </div>
-          ))}
-        </div>
-      </GCard>
-    );
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
       {!isRecentReport && upcomingLive ? (
-        /* ── PATH A: Upcoming first (CGNX/GLW pattern) ──────────────────── */
+        /* ── PATH A: Upcoming first (CGNX/GLW/NVTS pattern) ─────────────── */
         <>
-          <LiveEarningsCard event={upcomingLive} onOpenMaterials={onSwitchToMaterials} />
-          {renderAnalystConsensus(upcomingLive)}
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.teal, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>Upcoming Earnings</div>
+          {renderUpcomingCard(upcomingLive)}
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.teal, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.12em', marginTop: 2 }}>Latest Earnings</div>
           {renderReportedCard()}
         </>
       ) : isSameQ ? (
@@ -1353,10 +1418,9 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
           )}
         </>
       ) : (
-        /* ── PATH C: Fallback — live card (if any) + reported card ──────── */
+        /* ── PATH C: Fallback — reported card only ───────────────────────── */
         <>
-          {liveEvent && <LiveEarningsCard event={liveEvent} onOpenMaterials={onSwitchToMaterials} />}
-          {liveEvent && (liveEvent.state === 'scheduled' || liveEvent.state === 'monitoring') && renderAnalystConsensus(liveEvent)}
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.teal, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>Latest Earnings</div>
           {renderReportedCard()}
         </>
       )}
