@@ -313,13 +313,18 @@ export function StockDetailModal({
   const { eventBySymbol } = useEarningsLive();
   const sdmLiveEvent = eventBySymbol(ticker);
 
-  // One-time ticker-detail refetch when results become available for this ticker
+  // One-time ticker-detail refetch when results or reaction data change for this ticker
   const lastRefetchKeyRef = useRef<string>('');
   useEffect(() => {
     if (!sdmLiveEvent) return;
     const { state, event_id, revision } = sdmLiveEvent;
-    if (state !== 'results_available' && state !== 'results_updated') return;
-    const key = `${event_id}__${state}__${revision}`;
+    const isResultState = state === 'results_available' || state === 'results_updated' || state === 'complete';
+    const hasReaction = sdmLiveEvent.reaction_payload != null;
+    if (!isResultState && !hasReaction) return;
+    // Deduplicate: event + state + revision + reaction checksum so polling never re-fires for same data
+    const rp = sdmLiveEvent.reaction_payload as any;
+    const rxChecksum = rp ? `${rp.move_pct ?? ''}:${String(rp.is_preliminary ?? '')}` : 'none';
+    const key = `${event_id}__${state}__${revision}__${rxChecksum}`;
     if (lastRefetchKeyRef.current === key) return;
     lastRefetchKeyRef.current = key;
     queryClient.invalidateQueries({ queryKey: ['ticker-detail', ticker.toUpperCase(), 'v3'] });

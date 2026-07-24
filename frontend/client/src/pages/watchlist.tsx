@@ -3646,6 +3646,8 @@ export default function WatchlistPage() {
   } = useQuery<{
     events?: any[];
     earnings?: any[];   // backend may return either key — normalized at render
+    upcoming?: any[];   // structured upcoming events (new backend shape)
+    recent?: any[];     // reported events in the past 30 days, newest first
     symbols_requested?: string[];
     missing_symbols?: string[];
     source?: string;
@@ -3669,6 +3671,9 @@ export default function WatchlistPage() {
     staleTime: 5 * 60_000,
     retry: 1,
   });
+
+  /* ── Upcoming / Recent earnings toggle ─────────────────────────── */
+  const [earningsView, setEarningsView] = useState<'upcoming' | 'recent'>('upcoming');
 
   /* ── tab bar renderer (shared between empty + main states) ─────── */
   const isPrimaryMeta = (m: WatchlistMeta) =>
@@ -4281,12 +4286,12 @@ export default function WatchlistPage() {
     );
   };
 
-  /* ── upcoming earnings section ──────────────────────────────────────
+  /* ── upcoming / recent earnings section ─────────────────────────────
    * Uses the scoped POST /api/watchlist/earnings/by-symbols query.
-   * Never reads old earningsResp/global earnings here.
-   * Response shape normalized: backend may return `events` or `earnings`. */
+   * Two tabs: Upcoming Earnings | Recent Earnings (last 30 days).
+   * No additional API requests — both views use earningsBySymbolsResp. */
   const renderEarningsSection = () => {
-    // Normalize event fields — handles both old (next_date/est_eps) and new (earnings_date/eps_estimate) shapes
+    // Normalize upcoming event fields — handles both old and new backend shapes
     function normalizeEarningsEvent(ev: any) {
       return {
         ticker: String(ev.ticker ?? ev.symbol ?? '').toUpperCase(),
@@ -4304,18 +4309,109 @@ export default function WatchlistPage() {
       };
     }
 
-    // FMP logo URL is deterministic from ticker — same source the old endpoint served
+    // Normalize recent event fields
+    function normalizeRecentEvent(ev: any) {
+      const fp = String(ev.fiscal_period ?? '').trim();
+      const fy = String(ev.fiscal_year ?? '').trim();
+      return {
+        ticker: String(ev.ticker ?? ev.symbol ?? '').toUpperCase(),
+        company: ev.company ?? ev.company_name ?? ev.name ?? '',
+        quarter: fp && fy ? `${fp} ${fy}` : fp || fy || '',
+        date: ev.report_date ?? ev.date ?? ev.date_raw ?? null,
+        timing: ev.timing ?? ev.time ?? ev.when ?? null,
+        classification: ev.classification ?? null,
+        epsActual: ev.eps_actual ?? null,
+        epsEstimate: ev.eps_estimate ?? null,
+        epsSurprisePct: ev.eps_surprise_pct ?? null,
+        revActual: ev.revenue_actual ?? null,
+        revEstimate: ev.revenue_estimate ?? null,
+        revSurprisePct: ev.revenue_surprise_pct ?? null,
+        post1d: ev.post_earnings_1d_pct ?? ev.post_1d_pct ?? ev.reaction_1d_pct ?? null,
+        logo: ev.logo ?? ev.image ?? ev.company_logo ?? null,
+      };
+    }
+
+    // FMP logo URL is deterministic from ticker
     const fmpLogo = (ticker: string) =>
       ticker ? `https://financialmodelingprep.com/image-stock/${ticker}.png` : null;
 
-    // Normalize: backend may return { events: [...] } or { earnings: [...] }
-    const rawEvents: any[] =
-      earningsBySymbolsResp?.events
+    // Revenue compact formatter for recent cards
+    const fmtRevC = (v: number | null): string => {
+      if (v == null) return '—';
+      const abs = Math.abs(v);
+      if (abs >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+      if (abs >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+      if (abs >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
+      return `$${v.toFixed(0)}`;
+    };
+
+    // Classification helpers for recent cards
+    const cls2border = (cls: string | null) => {
+      if (cls === 'double_beat') return '#22c55e';
+      if (cls === 'double_miss') return '#ef4444';
+      if (cls === 'mixed' || cls === 'partial') return '#f59e0b';
+      return 'transparent';
+    };
+    const cls2bg = (cls: string | null) => {
+      if (cls === 'double_beat') return 'rgba(34,197,94,0.04)';
+      if (cls === 'double_miss') return 'rgba(239,68,68,0.04)';
+      if (cls === 'mixed' || cls === 'partial') return 'rgba(245,158,11,0.04)';
+      return 'transparent';
+    };
+    const cls2text = (cls: string | null): { label: string; color: string } => {
+      if (cls === 'double_beat') return { label: 'Double Beat', color: '#22c55e' };
+      if (cls === 'double_miss') return { label: 'Double Miss', color: '#ef4444' };
+      if (cls === 'mixed')       return { label: 'Mixed',       color: '#f59e0b' };
+      if (cls === 'partial')     return { label: 'Partial',     color: '#f59e0b' };
+      return { label: 'Results Reported', color: '#64748b' };
+    };
+
+    // Extract upcoming events (prefer 'upcoming' key, fall back to 'events'/'earnings')
+    const rawUpcoming: any[] =
+      earningsBySymbolsResp?.upcoming
+      ?? earningsBySymbolsResp?.events
       ?? earningsBySymbolsResp?.earnings
       ?? (earningsBySymbolsResp as any)?.data?.events
       ?? (earningsBySymbolsResp as any)?.data?.earnings
       ?? [];
-    const events = rawEvents.map(normalizeEarningsEvent);
+    // Extract recent events (newest first — backend order preferred, defensive sort as fallback)
+    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? []).slice().sort((a: any, b: any) => {
+      const da = String(a.report_date ?? a.date ?? '');
+      const db = String(b.report_date ?? b.date ?? '');
+      if (db > da) return 1; if (da > db) return -1;
+      const ua = String(a.updated_at ?? ''); const ub = String(b.updated_at ?? '');
+      return ub > ua ? 1 : ua > ub ? -1 : 0;
+    });
+
+    const events = rawUpcoming.map(normalizeEarningsEvent);
+    const recentEvents = rawRecent.map(normalizeRecentEvent);
+
+    const sectionTitle = earningsView === 'upcoming' ? 'UPCOMING EARNINGS' : 'RECENT EARNINGS';
+
+    // Compact segmented toggle
+    const renderToggle = () => (
+      <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 4, padding: 2, gap: 1 }}>
+        {(['upcoming', 'recent'] as const).map(view => (
+          <button
+            key={view}
+            onClick={(e) => { e.stopPropagation(); setEarningsView(view); }}
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setEarningsView(view); }}
+            aria-pressed={earningsView === view}
+            style={{
+              fontSize: 9, fontWeight: 700, fontFamily: font,
+              padding: '3px 10px', borderRadius: 3, cursor: 'pointer', border: 'none',
+              textTransform: 'uppercase' as const, letterSpacing: '0.07em',
+              background: earningsView === view ? 'rgba(255,255,255,0.18)' : 'transparent',
+              color: earningsView === view ? '#fff' : '#475569',
+              outline: 'none', transition: 'background 0.12s, color 0.12s',
+            }}
+          >
+            {view === 'upcoming' ? 'Upcoming' : 'Recent'}
+          </button>
+        ))}
+      </div>
+    );
 
     // ── State 1: symbols still resolving (watchlist not yet loaded for this tab)
     const symbolsStillLoading = !isFavoritesTab && sortedTickers.length === 0 && (wlLoading || wlFetching);
@@ -4326,8 +4422,9 @@ export default function WatchlistPage() {
       return (
         <div style={{ padding: '0 20px 4px' }}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>{sectionTitle}</span>
+              {renderToggle()}
             </div>
             <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: font }}>
               No tickers in this watchlist.
@@ -4338,49 +4435,57 @@ export default function WatchlistPage() {
     }
 
     // ── State 3: query in flight — show nothing (avoids flash of "no earnings")
-    if (earningsBySymbolsLoading && events.length === 0) return null;
+    if (earningsBySymbolsLoading && events.length === 0 && recentEvents.length === 0) return null;
 
-    // ── State 4: query complete but no upcoming earnings for these symbols
-    if (!earningsBySymbolsLoading && events.length === 0) {
+    // ── State 4: active view is empty
+    const activeIsEmpty = earningsView === 'upcoming' ? events.length === 0 : recentEvents.length === 0;
+    if (!earningsBySymbolsLoading && activeIsEmpty) {
       return (
         <div style={{ padding: '0 20px 4px' }}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>UPCOMING EARNINGS</span>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, flexWrap: 'wrap' as const, gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>{sectionTitle}</span>
+              {renderToggle()}
             </div>
             <div style={{ padding: '20px 14px', textAlign: 'center' as const, fontSize: 10, color: C.dim, fontFamily: font }}>
-              No upcoming earnings for this watchlist.
+              {earningsView === 'upcoming'
+                ? 'No upcoming earnings for this watchlist.'
+                : 'No watchlist earnings reported in the past 30 days.'}
             </div>
           </div>
         </div>
       );
     }
 
-    // ── State 5: events available — render them
+    // ── State 5: events available — render section
     return (
       <div style={{ padding: '0 20px 4px' }}>
-        <div style={{
-          background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
-          overflow: 'hidden',
-        }}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
           <div style={{
             padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const,
+            flexWrap: 'wrap' as const, gap: 6, flexShrink: 0,
           }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
-              UPCOMING EARNINGS
-            </span>
-            {earningsBySymbolsLoading ? (
-              <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
-            ) : (
-              <span style={{ fontSize: 9, color: C.dim }}>({events.length} in watchlist)</span>
-            )}
-            {earningsBySymbolsError && (
-              <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
+                {sectionTitle}
+              </span>
+              {earningsBySymbolsLoading ? (
+                <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
+              ) : (
+                <span style={{ fontSize: 9, color: C.dim }}>
+                  ({earningsView === 'upcoming' ? events.length : recentEvents.length} in watchlist)
+                </span>
+              )}
+              {earningsBySymbolsError && (
+                <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
+              )}
+            </div>
+            {renderToggle()}
           </div>
 
-          {events.length > 0 && (
+          {/* ── Upcoming Earnings Cards ─────────────────────────────── */}
+          {earningsView === 'upcoming' && events.length > 0 && (
             <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }} className="wl-chip-strip">
               {events.map((ev: any, i: number) => {
                 const importance = ev.importance as string | undefined;
@@ -4403,15 +4508,13 @@ export default function WatchlistPage() {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    {/* ticker + logo + importance badge */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                       {(() => {
                         const logoSrc = ev.logo ?? fmpLogo(ev.ticker);
                         if (logoSrc) {
                           return (
                             <img
-                              src={logoSrc}
-                              alt={ev.ticker}
+                              src={logoSrc} alt={ev.ticker}
                               style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'contain', flexShrink: 0 }}
                               onError={e => {
                                 const img = e.currentTarget;
@@ -4424,30 +4527,16 @@ export default function WatchlistPage() {
                         }
                         return null;
                       })()}
-                      <span
-                        style={{
-                          display: 'none', width: 18, height: 18, borderRadius: 3, flexShrink: 0,
-                          alignItems: 'center', justifyContent: 'center',
-                          background: 'rgba(255,255,255,0.08)',
-                          fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: font,
-                        }}
-                      >
+                      <span style={{ display: 'none', width: 18, height: 18, borderRadius: 3, flexShrink: 0, alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.08)', fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: font }}>
                         {ev.ticker.slice(0, 2)}
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font }}>{ev.ticker}</span>
                       {importance && (
-                        <span style={{
-                          fontSize: 7, fontWeight: 800, fontFamily: font,
-                          padding: '1px 5px', borderRadius: 3,
-                          color: importanceColor, background: importanceColor + '20',
-                          textTransform: 'uppercase' as const, letterSpacing: '0.05em',
-                        }}>
+                        <span style={{ fontSize: 7, fontWeight: 800, fontFamily: font, padding: '1px 5px', borderRadius: 3, color: importanceColor, background: importanceColor + '20', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
                           {importance}
                         </span>
                       )}
                     </div>
-
-                    {/* date + pre/post market */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: font }}>
                         {ev.date || 'Date unavailable'}
@@ -4458,8 +4547,6 @@ export default function WatchlistPage() {
                         </span>
                       )}
                     </div>
-
-                    {/* EPS est + revenue */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
                       {ev.epsEstimate != null && (
                         <div style={{ fontSize: 9, fontFamily: font }}>
@@ -4480,6 +4567,119 @@ export default function WatchlistPage() {
                                 : '$' + (ev.revenueEstimate as number).toLocaleString()}
                           </span>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Recent Earnings Cards ───────────────────────────────── */}
+          {earningsView === 'recent' && recentEvents.length > 0 && (
+            <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }} className="wl-chip-strip">
+              {recentEvents.map((ev: any, i: number) => {
+                const clsInfo = cls2text(ev.classification);
+                const accentBorder = cls2border(ev.classification);
+                const accentBg = cls2bg(ev.classification);
+                const hasRevEst = ev.revEstimate != null;
+                const hasEpsEst = ev.epsEstimate != null;
+                const epsSurpOk = ev.epsSurprisePct != null && Math.abs(ev.epsSurprisePct as number) < 600;
+                const logoSrc = ev.logo ?? fmpLogo(ev.ticker);
+                return (
+                  <div
+                    key={`recent-${ev.ticker}-${i}`}
+                    onClick={() => {
+                      setInitialTickerTabs({ primaryTab: 'earnings', earningsTab: 'overview' });
+                      handleTickerClick(ev.ticker);
+                    }}
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        setInitialTickerTabs({ primaryTab: 'earnings', earningsTab: 'overview' });
+                        handleTickerClick(ev.ticker);
+                      }
+                    }}
+                    style={{
+                      flexShrink: 0, cursor: 'pointer',
+                      padding: '10px 16px',
+                      borderRight: `1px solid ${C.border}`,
+                      borderLeft: accentBorder !== 'transparent' ? `2px solid ${accentBorder}` : '2px solid transparent',
+                      background: accentBg,
+                      display: 'flex', flexDirection: 'column', gap: 6,
+                      minWidth: 168,
+                      outline: 'none',
+                      transition: 'filter 0.1s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.12)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'none'; }}
+                    onFocus={e => { (e.currentTarget as HTMLElement).style.outline = `1px solid ${accentBorder !== 'transparent' ? accentBorder : 'rgba(255,255,255,0.25)'}`; }}
+                    onBlur={e => { (e.currentTarget as HTMLElement).style.outline = 'none'; }}
+                  >
+                    {/* Header: ticker + quarter + company */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' as const }}>
+                      {logoSrc && (
+                        <img src={logoSrc} alt={ev.ticker}
+                          style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'contain', flexShrink: 0 }}
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
+                      {ev.quarter && <span style={{ fontSize: 8, fontWeight: 700, color: C.teal, fontFamily: font, flexShrink: 0 }}>{ev.quarter}</span>}
+                      {ev.company && (
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 80 }} title={ev.company}>
+                          {ev.company}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Primary result row: REV + EPS (visible before date/timing) */}
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: font, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 1 }}>REV</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: font }}>{fmtRevC(ev.revActual)}</div>
+                        {hasRevEst && ev.revSurprisePct != null ? (
+                          <div style={{ fontSize: 9, color: (ev.revSurprisePct as number) >= 0 ? C.green : C.red, fontFamily: font }}>
+                            {(ev.revSurprisePct as number) >= 0 ? '+' : ''}{(ev.revSurprisePct as number).toFixed(1)}%
+                          </div>
+                        ) : !hasRevEst ? (
+                          <div style={{ fontSize: 8, color: C.dim, fontFamily: font }}>Est. N/A</div>
+                        ) : null}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 7, fontWeight: 800, color: C.dim, fontFamily: font, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 1 }}>EPS</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: font }}>
+                          {ev.epsActual != null ? `$${(ev.epsActual as number).toFixed(2)}` : '—'}
+                        </div>
+                        {hasEpsEst && epsSurpOk ? (
+                          <div style={{ fontSize: 9, color: (ev.epsSurprisePct as number) >= 0 ? C.green : C.red, fontFamily: font }}>
+                            {(ev.epsSurprisePct as number) >= 0 ? '+' : ''}{(ev.epsSurprisePct as number).toFixed(1)}%
+                          </div>
+                        ) : !hasEpsEst ? (
+                          <div style={{ fontSize: 8, color: C.dim, fontFamily: font }}>Est. N/A</div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Secondary row: date · timing · classification · Post 1D chip */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' as const }}>
+                      {ev.date && <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>{ev.date}</span>}
+                      {ev.timing && (
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>
+                          {ev.timing === 'amc' ? '· AMC' : ev.timing === 'bmo' ? '· BMO' : `· ${String(ev.timing).toUpperCase()}`}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 8, fontWeight: 600, color: clsInfo.color, fontFamily: font }}>· {clsInfo.label}</span>
+                      {ev.post1d != null ? (
+                        <span style={{
+                          fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: font,
+                          color: (ev.post1d as number) > 0 ? '#22c55e' : (ev.post1d as number) < 0 ? '#ef4444' : C.dim,
+                          background: (ev.post1d as number) > 0 ? 'rgba(34,197,94,0.18)' : (ev.post1d as number) < 0 ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.06)',
+                        }}>
+                          Post 1D {(ev.post1d as number) > 0 ? '+' : ''}{(ev.post1d as number).toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Pending</span>
                       )}
                     </div>
                   </div>

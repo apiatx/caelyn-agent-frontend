@@ -1,0 +1,707 @@
+FINAL FRONTEND PASS — COMPLETE EARNINGS UI, RECENT EARNINGS, AND LIVE REACTION UPDATES
+
+Complete this entire task autonomously in one pass:
+
+1. Inspect the exact published backend responses.
+2. Update the unified ticker-popup Earnings bubble.
+3. Display finalized Pre/Post earnings moves.
+4. Keep History and Price Moves synchronized.
+5. Add Upcoming Earnings / Recent Earnings to the existing Watchlist section.
+6. Test the authenticated user flows.
+7. Run the production build.
+8. Publish the frontend.
+
+Do not return an audit-only report.
+Do not stop after compilation.
+Do not ask for routine confirmation.
+
+FRONTEND ONLY.
+
+Do not modify the backend.
+Do not create another ticker modal.
+Do not create another EarningsTab.
+Do not create another earnings API/query architecture.
+Do not create a separate Recent Earnings page.
+Do not add FMP, Tradier, or SEC calls.
+Do not push to Git.
+
+CURRENT BACKEND BEHAVIOR
+
+The published backend now provides:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+with current:
+
+- earnings_history
+- reaction_summary
+- earnings_intelligence.live_event
+- pre/post reaction fields
+- ratings
+- materials
+
+The existing Watchlist earnings endpoint now returns:
+
+{
+  "earnings": [...],
+  "upcoming": [...],
+  "recent": [...],
+  "meta": {...}
+}
+
+Recent Earnings covers the previous 30 calendar days and is ordered newest first.
+
+Verified backend examples include:
+
+NVEC:
+- report date: Jul 22, 2026
+- timing: AMC
+- EPS actual: approximately 1.32
+- Revenue actual: approximately 11.0M
+- classification: unclassified because no valid analyst estimates were available
+- pre_1d_pct: approximately -1.65%
+- post_1d_pct: approximately +54.83%
+
+INTC:
+- report date: Jul 23, 2026
+- timing: AMC
+- classification: double_beat
+- pre_1d_pct: approximately -2.33%
+- post_1d_pct: approximately -4.42%
+
+The backend reaction finalizer applies broadly to recent eligible earnings events, not only NVEC.
+
+PRIMARY OBJECTIVES
+
+1. Make the unified Earnings bubble represent result quality and price reaction separately and truthfully.
+2. Show NVEC’s finalized +54.83% Post 1D move.
+3. Keep History and Price Moves current when reaction revisions arrive.
+4. Add a compact toggle to the existing Watchlist earnings section:
+   Upcoming Earnings | Recent Earnings
+5. Show recent reported earnings from the previous 30 days in the same glass-card style as Upcoming Earnings.
+6. Make surprise dollars and percentages visible without opening the popup.
+7. Preserve all existing Earnings tabs and alert/deep-link functionality.
+
+PART 1 — WORKSPACE AND CONTRACT AUDIT
+
+Before editing:
+
+- inspect git status and branch
+- inspect the current versions of:
+  - EarningsTab.tsx
+  - the unified earnings bubble implementation
+  - StockDetailModal.tsx
+  - EarningsLiveContext.tsx
+  - types/live-earnings.ts
+  - watchlist.tsx
+  - the existing Upcoming Earnings component/section
+  - the existing Watchlist earnings query/hook
+
+Confirm that the workspace already contains:
+
+- unified current earnings bubble
+- Materials
+- History
+- Price Moves
+- Ratings
+- global live earnings feed
+- alert deep linking
+- ticker-detail invalidation for results revisions
+
+Preserve these paths.
+
+Inspect the exact live JSON for:
+
+- ticker-detail/NVEC
+- ticker-detail/INTC
+- the Watchlist earnings endpoint
+
+Match the actual published field names and nullability.
+
+Do not guess the final contract.
+
+PART 2 — TWO-DIMENSION EARNINGS BUBBLE
+
+The current earnings surface must distinguish:
+
+A. Result quality
+B. Stock-price reaction
+
+Do not use one color or label to imply both.
+
+Create a clear two-segment header inspired by the existing reference design:
+
+Left segment:
+Result Quality
+
+Right segment:
+Price Reaction
+
+RESULT QUALITY MAPPING
+
+double_beat:
+- POSITIVE RESULTS
+- DOUBLE BEAT
+- green
+
+double_miss:
+- NEGATIVE RESULTS
+- DOUBLE MISS
+- red
+
+mixed:
+- MIXED RESULTS
+- amber/neutral
+
+partial:
+- PARTIAL RESULTS
+- amber
+
+unclassified:
+- RESULTS REPORTED
+- neutral
+- display “Estimates unavailable” when applicable
+
+scheduled:
+- UPCOMING EARNINGS
+- neutral
+
+monitoring:
+- MONITORING
+- amber
+
+filing_detected:
+- RELEASE DETECTED
+- amber/cyan
+
+PRICE REACTION MAPPING
+
+post_earnings_1d_pct > 0:
+- POSITIVE MOVE
+- green
+- show percentage
+
+post_earnings_1d_pct < 0:
+- NEGATIVE MOVE
+- red
+- show percentage
+
+post_earnings_1d_pct === 0:
+- FLAT MOVE
+- neutral
+
+post_earnings_1d_pct == null:
+- PRICE REACTION PENDING
+- neutral
+
+Do not label a result as a beat merely because the stock rose.
+
+Do not label a result negative merely because the stock fell.
+
+PART 3 — NVEC TRUTHFUL VISUAL TREATMENT
+
+NVEC has no valid analyst estimates in the backend.
+
+Therefore:
+
+- do not call it Double Beat
+- do not fabricate estimate or surprise values
+- left result segment:
+  - RESULTS REPORTED
+  - Estimates unavailable
+  - neutral result styling
+
+But NVEC’s market reaction is strongly positive:
+
+- right segment:
+  - POSITIVE MOVE
+  - approximately +54.83%
+  - green
+
+Use a visible green reaction segment and a subtle green outer accent if it improves hierarchy, while keeping the result classification truthful.
+
+NVEC should no longer look like nothing happened.
+
+PART 4 — RESULTS ROWS
+
+Inside the unified bubble, display Revenue and EPS.
+
+When estimates exist:
+
+Revenue:
+- estimate
+- actual
+- surprise amount
+- surprise percentage
+- Beat / Miss / In Line
+
+EPS:
+- estimate
+- actual
+- surprise amount
+- surprise percentage
+- Beat / Miss / In Line
+
+When estimates do not exist:
+
+Revenue:
+- actual
+- Estimate unavailable
+
+EPS:
+- actual
+- Estimate unavailable
+
+Rules:
+
+- raw revenue must use existing M/B currency formatting
+- percentages are already percentage points
+- never multiply by 100
+- null is never zero
+- do not calculate frontend surprise values from unrelated estimates
+- use backend classification as the result-quality source
+
+PART 5 — BEFORE / AFTER EARNINGS
+
+Use the finalized fields from the current historical event:
+
+- pre_earnings_1d_pct
+- post_earnings_1d_pct
+- pre_earnings_session
+- post_earnings_session
+- pre_post_method
+- pre_post_confidence
+- reactions_final
+
+Display:
+
+Before Earnings
+-1.65%
+Jul 22 session where applicable
+
+After Earnings
++54.83%
+Jul 23 session
+
+For NVEC, Move Pending must disappear.
+
+For a reaction that is not yet due:
+
+Move Pending
+Available after the first complete post-earnings trading session
+
+Do not show null as zero.
+
+Scope preliminary language precisely:
+
+- “Price Reaction Preliminary”
+- not a broad “Preliminary” label beside finalized EPS/revenue results
+
+PART 6 — CURRENT EVENT MATCHING
+
+Continue merging live_event and earnings_history[0] only when they represent the same event.
+
+Preferred match:
+
+1. fiscal_year + fiscal_period
+2. report/expected date fallback
+3. event_key where useful
+
+Use state precedence within one event family:
+
+complete
+results_updated
+results_available
+results_partial
+filing_detected
+monitoring
+scheduled
+
+Then compare:
+
+- revision
+- updated_at
+
+A scheduled transition must never override a completed result for the same quarter.
+
+PART 7 — FEED-DRIVEN REACTION REFRESH
+
+The existing live-event feed can receive a new reaction revision after results are already available.
+
+Extend the current one-time ticker-detail invalidation behavior.
+
+When the open ticker’s newest event has:
+
+- a higher revision
+- a newer updated_at
+- a newly populated reaction_payload
+- or a changed reaction status/checksum
+
+invalidate the existing ticker-detail query once.
+
+Deduplicate using a stable key such as:
+
+event_id + revision + reaction status/checksum
+
+Requirements:
+
+- no repeated ticker-detail refresh every polling interval
+- no second ticker-detail hook
+- no new query key
+- use the exact existing ticker-detail query key
+- refresh only the matching open ticker
+
+The refreshed ticker-detail response must update:
+
+- unified bubble
+- History
+- Price Moves
+- reaction summary
+
+PART 8 — HISTORY TAB CURRENTNESS
+
+Audit memoization and chart/table derivation in History.
+
+Ensure it recomputes when earnings_history changes.
+
+The newest quarter must display:
+
+- current Revenue actual
+- current EPS actual
+- estimates where available
+- surprise values where available
+- growth values
+- finalized Post 1D when available
+
+Beat-rate calculations:
+
+- only count rows with both actual and estimate
+- missing estimates are not misses
+- no stale derived arrays after ticker-detail refresh
+
+NVEC Q1 2027 should show:
+
+- Revenue actual around $11.0M
+- EPS actual around $1.32
+- estimate fields unavailable unless the backend supplies real estimates
+- Post 1D around +54.83%
+
+PART 9 — PRICE MOVES TAB CURRENTNESS
+
+Ensure Price Moves recomputes when:
+
+- earnings_history changes
+- reaction_summary changes
+- the newest event reaction changes
+
+For the newest event:
+
+- plot finalized Pre 1D
+- plot finalized Post 1D
+- leave future 3D/5D null until due
+- update the table status truthfully
+- include the newest quarter in the chart
+- do not preserve stale `Move Pending` values through memoization
+
+For NVEC:
+
+- latest Q1 2027 row shows Pre 1D around -1.65%
+- Post 1D around +54.83%
+- 3D/5D remain pending if not yet due
+
+For INTC:
+
+- latest Q2 2026 Post 1D shows the finalized backend value
+- do not use the old pending state after refreshed data arrives
+
+PART 10 — EXISTING WATCHLIST EARNINGS SECTION
+
+Locate the exact existing Watchlist section that currently displays Upcoming Earnings.
+
+Reuse:
+
+- the existing section container
+- the current query
+- the existing glass-card dimensions
+- the same responsive grid/row
+- the same symbol click behavior
+- the same loading skeleton
+- existing typography and spacing
+
+Do not create another earnings section elsewhere on the Watchlist.
+
+PART 11 — UPCOMING / RECENT TOGGLE
+
+Add a compact segmented toggle in the current section header:
+
+Upcoming Earnings | Recent Earnings
+
+Default:
+Upcoming Earnings
+
+Behavior:
+
+- Upcoming uses response.upcoming
+- Recent uses response.recent
+- no second API request
+- no new query
+- switching is instantaneous from cached response data
+- preserve the selected state while the Watchlist page remains mounted
+- do not store it as a permanent account setting
+
+Keep the existing section title and spacing professional.
+
+PART 12 — RECENT EARNINGS WINDOW
+
+Recent Earnings must show:
+
+- previous 30 calendar days
+- newest report first
+- one card per symbol/reporting event
+- no duplicate transition rows
+- same watchlist/user universe as Upcoming Earnings
+
+Prefer backend order.
+
+Defensive frontend sorting:
+
+1. report_date descending
+2. updated_at descending
+
+Do not reorder by ticker, classification, or reaction size.
+
+PART 13 — RECENT EARNINGS CARD DESIGN
+
+Use the same card silhouette, dimensions, and glass styling as Upcoming Earnings.
+
+Adapt the information hierarchy for reported results.
+
+The user wants beat/miss numbers visible at the front of the information line before the date/day.
+
+Recommended card structure:
+
+Header:
+NVEC
+NVE Corp
+Q1 2027
+
+Primary result row, before the date:
+
+REV
++$X.XXM
++XX.X%
+
+EPS
++$X.XX
++XX.X%
+
+When estimates are unavailable:
+
+REV
+$11.0M actual
+Est. unavailable
+
+EPS
+$1.32 actual
+Est. unavailable
+
+Secondary row:
+
+Jul 22
+AMC
+Results Reported
+Post 1D +54.83%
+
+For events with estimates:
+
+REV +$1.69B +11.7%
+EPS +$0.21 +100.0%
+Jul 23 · AMC · Double Beat
+Post 1D -4.42%
+
+Do not hide the metrics inside a tooltip.
+
+PART 14 — RECENT CARD COLORS
+
+Use result classification and price reaction separately.
+
+Card border/background accent:
+
+double_beat:
+- restrained green result accent
+
+double_miss:
+- restrained red result accent
+
+mixed:
+- restrained amber result accent
+
+partial:
+- amber
+
+unclassified:
+- neutral card base
+
+Reaction chip:
+
+positive Post 1D:
+- green
+
+negative Post 1D:
+- red
+
+pending:
+- neutral
+
+For NVEC:
+
+- card base/result label remains neutral because classification is unclassified
+- Post 1D chip is prominently green at approximately +54.83%
+
+Do not color the entire NVEC card as a Double Beat without estimates.
+
+PART 15 — RECENT CARD CLICK
+
+Clicking a Recent Earnings card must:
+
+- open the real ticker popup
+- open primary tab Earnings
+- open secondary tab Overview
+- use the existing Watchlist modal/deep-link architecture
+- not create a second modal
+- not create a duplicate ticker-detail query
+
+Upcoming card behavior must remain unchanged unless it already supports opening the same modal cleanly.
+
+PART 16 — EMPTY, LOADING, AND ERROR STATES
+
+Upcoming:
+Preserve current behavior.
+
+Recent loading:
+Use the existing Upcoming skeleton.
+
+No recent earnings:
+
+“No watchlist earnings reported in the past 30 days.”
+
+Partial result:
+
+- show available metric
+- show Pending for the missing result
+
+Missing estimates:
+
+- show actual result
+- show Estimate unavailable
+- do not show Miss
+
+Endpoint failure:
+
+- compact error state
+- preserve the toggle
+- use existing retry behavior where available
+
+PART 17 — ACCESSIBILITY AND RESPONSIVENESS
+
+Requirements:
+
+- toggle is keyboard accessible
+- visible selected state
+- cards remain usable on smaller screens
+- result metrics do not overlap
+- no page-level horizontal overflow
+- long company names truncate cleanly
+- classification and reaction are not conveyed by color alone
+- card click has visible focus state
+
+PART 18 — REQUIRED NVEC TEST
+
+Through the real Watchlist popup:
+
+1. One unified current earnings bubble appears.
+2. NVEC result segment is truthful: Results Reported / Estimates unavailable.
+3. Positive Move segment is green.
+4. Post 1D shows approximately +54.83%.
+5. Move Pending is absent.
+6. Pre 1D shows approximately -1.65%.
+7. History latest row is current.
+8. Price Moves latest row and chart are current.
+9. 3D/5D remain pending if not due.
+10. No duplicate ticker-detail query occurs.
+
+PART 19 — REQUIRED INTC TEST
+
+1. INTC remains Double Beat.
+2. Result segment is green.
+3. Post 1D displays the finalized backend value.
+4. Negative price reaction is red even though results were a Double Beat.
+5. Results and market reaction are visually distinct.
+6. History and Price Moves are current.
+
+PART 20 — WATCHLIST TEST
+
+1. Toggle displays Upcoming Earnings and Recent Earnings.
+2. Upcoming remains default.
+3. Existing Upcoming cards are visually unchanged.
+4. Recent displays the previous 30 days.
+5. Most recent report appears first.
+6. Revenue and EPS metrics appear before date/timing.
+7. Cards retain the same shape and size as Upcoming.
+8. Positive and negative reaction chips display correctly.
+9. Missing estimates remain truthful.
+10. Recent card click opens Earnings → Overview.
+11. No extra Watchlist earnings request occurs.
+
+PART 21 — BUILD AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for all modified files
+- full production build
+- browser console inspection
+- authenticated Watchlist test
+- authenticated NVEC/INTC popup tests
+
+Do not stop at build success.
+
+Publish the frontend using the current Replit workflow.
+
+FINAL REPORT
+
+Return one report containing:
+
+1. Files changed
+2. Unified bubble changes
+3. NVEC result/reaction styling
+4. INTC result/reaction styling
+5. Reaction-driven refresh logic
+6. History synchronization
+7. Price Moves synchronization
+8. Upcoming/Recent toggle
+9. Recent card design
+10. Sorting and 30-day behavior
+11. Click/deep-link behavior
+12. Request-count verification
+13. NVEC test result
+14. INTC test result
+15. Typecheck/build result
+16. Publish result
+17. Screenshots showing:
+    - NVEC Results Reported + Positive Move
+    - NVEC finalized Before/After
+    - NVEC updated History
+    - NVEC updated Price Moves
+    - INTC Double Beat + negative move
+    - Watchlist Upcoming toggle
+    - Watchlist Recent toggle
+
+End with exactly:
+
+EARNINGS FEATURE COMPLETE
+
+or:
+
+NOT COMPLETE
+
+Do not declare completion unless the deployed frontend shows current NVEC reactions and the working Recent Earnings toggle.

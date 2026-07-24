@@ -641,15 +641,27 @@ function UnifiedEarningsBubble({
     classification === 'mixed'       ? 'Mixed' :
     classification === 'partial'     ? 'Partial' : null;
 
-  const liveMovePct     = (liveReaction as any)?.move_pct as number | null ?? null;
-  const liveMoveSession = (liveReaction as any)?.session  as string | null ?? null;
-  const liveMovePrelim  = !!(liveReaction as any)?.is_preliminary;
-  const fallbackMove    = (liveMovePct == null && isReported && pr?.reactions_final) ? (pr.reaction_1d_pct ?? null) : null;
-  const displayMove     = liveMovePct ?? fallbackMove;
+  // Sub-label for unclassified: "Estimates unavailable" shown in left header segment
+  const hasEstimates = revEstimate != null || epsEstimate != null;
+  const classSubLabel = isReported && !hasEstimates && (classification === 'unclassified' || classification == null)
+    ? 'Estimates unavailable' : null;
+
+  const liveMovePct      = (liveReaction as any)?.move_pct as number | null ?? null;
+  const liveMoveSession  = (liveReaction as any)?.session  as string | null ?? null;
+  const liveMovePrelim   = !!(liveReaction as any)?.is_preliminary;
+  // Primary: finalized post_earnings_1d_pct; secondary: live move_pct; fallback: reaction_1d_pct
+  const postEarnings1d   = pr?.post_earnings_1d_pct ?? null;
+  const fallbackMove     = (postEarnings1d == null && liveMovePct == null && isReported) ? (pr?.reaction_1d_pct ?? null) : null;
+  const displayMove      = postEarnings1d ?? liveMovePct ?? fallbackMove;
+  // Only show preliminary label when using live move (not when post_earnings_1d_pct is finalized)
+  const showPrelimLabel  = postEarnings1d == null && liveMovePrelim && displayMove != null;
   const moveSessionLabel =
-    liveMoveSession === 'premarket'   ? 'Premarket' :
-    liveMoveSession === 'afterhours'  ? 'After Hours' :
-    liveMoveSession === 'regular'     ? 'Regular' : null;
+    postEarnings1d != null && pr?.post_earnings_session
+      ? pr.post_earnings_session
+      : liveMoveSession === 'premarket'  ? 'Premarket'
+      : liveMoveSession === 'afterhours' ? 'After Hours'
+      : liveMoveSession === 'regular'    ? 'Regular'
+      : null;
 
   const quarterLabel = (q.fiscal_period && q.fiscal_year)
     ? `${q.fiscal_period} ${q.fiscal_year} Earnings`
@@ -693,23 +705,29 @@ function UnifiedEarningsBubble({
           {classLabel && (
             <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _f, color: statusColor, opacity: 0.8 }}>{classLabel}</span>
           )}
+          {classSubLabel && (
+            <span style={{ fontSize: 9, fontWeight: 600, fontFamily: _f, color: C.dim }}>{classSubLabel}</span>
+          )}
         </div>
         <div style={{ textAlign: 'right' as const }}>
           {displayMove != null ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ fontSize: 13, fontWeight: 900, fontFamily: _f, color: displayMove >= 0 ? '#22c55e' : '#ef4444' }}>
-                {displayMove >= 0 ? '+' : ''}{displayMove.toFixed(1)}%
+            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 2 }}>
+              <span style={{ fontSize: 8, fontWeight: 800, fontFamily: _f, letterSpacing: '0.07em', textTransform: 'uppercase' as const, color: displayMove > 0 ? '#22c55e' : displayMove < 0 ? '#ef4444' : C.dim }}>
+                {displayMove > 0 ? 'POSITIVE MOVE' : displayMove < 0 ? 'NEGATIVE MOVE' : 'FLAT MOVE'}
               </span>
-              {moveSessionLabel && <span style={{ fontSize: 9, color: C.dim, fontFamily: _s }}>{moveSessionLabel}</span>}
-              {liveMovePrelim && <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}40`, padding: '1px 4px', borderRadius: 2 }}>~</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 13, fontWeight: 900, fontFamily: _f, color: displayMove > 0 ? '#22c55e' : displayMove < 0 ? '#ef4444' : C.dim }}>
+                  {displayMove > 0 ? '+' : ''}{displayMove.toFixed(2)}%
+                </span>
+                {moveSessionLabel && <span style={{ fontSize: 9, color: C.dim, fontFamily: _s }}>{moveSessionLabel}</span>}
+                {showPrelimLabel && <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.amber, border: `1px solid ${C.amber}40`, padding: '1px 4px', borderRadius: 2 }}>~</span>}
+              </div>
+              {showPrelimLabel && <div style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>Price Reaction Preliminary</div>}
             </div>
           ) : (
             <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.dim, letterSpacing: '0.06em' }}>
               {(isReported || isPartial) ? 'PRICE REACTION PENDING' : ''}
             </span>
-          )}
-          {liveMovePrelim && displayMove != null && (
-            <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 1 }}>Price Reaction Preliminary</div>
           )}
         </div>
       </div>
@@ -795,13 +813,19 @@ function UnifiedEarningsBubble({
                       {session && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 2 }}>{fmtDateShort(session)}</div>}
                     </>
                   ) : (
-                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim }}>Move Pending</div>
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim }}>Move Pending</div>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Available after the first complete post-earnings trading session</div>
+                    </>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim, textAlign: 'center' as const }}>Move Pending</div>
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim, textAlign: 'center' as const }}>Move Pending</div>
+              <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2, textAlign: 'center' as const }}>Available after the first complete post-earnings trading session</div>
+            </>
           )}
           {isPrelimReaction && (
             <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 6 }}>Price Reaction Preliminary</div>
@@ -1261,7 +1285,7 @@ function HistorySubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
                     <td style={{ padding: '4px 7px', color: surpriseCol(q.eps_surprise_pct, C) }}>{Math.abs(q.eps_surprise_pct ?? 0) < 600 ? fmtPct(q.eps_surprise_pct) : surpriseLabel(q.eps_surprise_pct)}</td>
                     <td style={{ padding: '4px 7px', color: C.dim, whiteSpace: 'nowrap' }}>{epsTransition(q.eps_qoq)}</td>
                     <td style={{ padding: '4px 7px', color: C.dim, whiteSpace: 'nowrap' }}>{epsTransition(q.eps_yoy)}</td>
-                    <td style={{ padding: '4px 7px', color: pctCol(pr?.reaction_1d_pct ?? null, C) }}>{pr?.reaction_1d_pct != null ? fmtPct(pr.reaction_1d_pct) : '—'}</td>
+                    <td style={{ padding: '4px 7px', color: pctCol(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct ?? null, C) }}>{(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct) != null ? fmtPct(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct ?? null) : '—'}</td>
                   </tr>
                 );
               })}
@@ -1295,7 +1319,7 @@ function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
     const pr = q.price_reaction;
     if (!pr) return null;
     if (horizon === 'pre-1d') return pr.pre_earnings_1d_pct;
-    if (horizon === 'post-1d') return pr.reaction_1d_pct;
+    if (horizon === 'post-1d') return pr.post_earnings_1d_pct ?? pr.reaction_1d_pct;
     if (horizon === '3d') return pr.reaction_3d_pct;
     return pr.reaction_5d_pct;
   };
@@ -1538,7 +1562,7 @@ function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
                       {q.eps_surprise_pct != null ? (Math.abs(q.eps_surprise_pct) < 600 ? fmtPct(q.eps_surprise_pct) : surpriseLabel(q.eps_surprise_pct)) : '—'}
                     </td>
                     <td style={{ padding: '4px 7px', color: pctCol(pr?.pre_earnings_1d_pct ?? null, C) }}>{pr?.pre_earnings_1d_pct != null ? fmtPct(pr.pre_earnings_1d_pct) : '—'}</td>
-                    <td style={{ padding: '4px 7px', color: pctCol(pr?.reaction_1d_pct ?? null, C) }}>{pr?.reaction_1d_pct != null ? fmtPct(pr.reaction_1d_pct) : '—'}</td>
+                    <td style={{ padding: '4px 7px', color: pctCol(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct ?? null, C) }}>{(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct) != null ? fmtPct(pr?.post_earnings_1d_pct ?? pr?.reaction_1d_pct ?? null) : '—'}</td>
                     <td style={{ padding: '4px 7px', color: pctCol(pr?.opening_gap_pct ?? null, C) }}>{pr?.opening_gap_pct != null ? fmtPct(pr.opening_gap_pct) : '—'}</td>
                     <td style={{ padding: '4px 7px', color: pctCol(pr?.reaction_3d_pct ?? null, C) }}>{pr?.reaction_3d_pct != null ? fmtPct(pr.reaction_3d_pct) : '—'}</td>
                     <td style={{ padding: '4px 7px', color: pctCol(pr?.reaction_5d_pct ?? null, C) }}>{pr?.reaction_5d_pct != null ? fmtPct(pr.reaction_5d_pct) : '—'}</td>
