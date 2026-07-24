@@ -1,0 +1,772 @@
+FRONTEND FINAL PASS — RATINGS BARS, MATERIALS, AND PRE/POST EARNINGS MOVES
+
+The backend is complete and deployed at:
+
+https://fast-api-server-aidanpilon.replit.app
+
+FRONTEND ONLY.
+
+Do not modify the backend.
+Do not create another EarningsTab component.
+Do not create another ticker-detail request.
+Do not change the Watchlist modal architecture.
+Do not redesign unrelated tabs.
+Do not push to Git.
+
+PRIMARY FILE
+
+Extend the existing:
+
+frontend/client/src/components/EarningsTab.tsx
+
+Only modify StockDetailModal.tsx if required for the new Materials secondary tab or a type adjustment. The existing Watchlist popup wiring is correct.
+
+OBJECTIVES
+
+1. Redesign Analyst Ratings into separate Buy / Hold / Sell percentage bars.
+2. Add a fifth Earnings secondary tab named Materials.
+3. Add pre-earnings versus post-earnings price moves.
+4. Preserve all existing Earnings functionality:
+   - Overview
+   - History
+   - Price Moves
+   - Ratings
+
+The secondary navigation should become:
+
+Overview | History | Price Moves | Ratings | Materials
+
+IMPORTANT BACKEND STATE
+
+The deployed endpoint is:
+
+GET /api/watchlist/ticker-detail/{symbol}
+
+Use the existing ticker-detail request already consumed by StockDetailModal.
+
+Do not call the backend again from EarningsTab.
+
+The live backend has confirmed:
+
+- COIN: 19 earnings events, populated pre/post metrics, ratings, and materials
+- AAPL: populated earnings and materials
+- CLF: populated earnings and materials
+- UFO: earnings_intelligence is null and remains ineligible
+- Materials cache: 343/343 current
+- SEC document URLs resolve
+- Popup reads are cache-only
+
+Before editing types, inspect the exact live JSON for:
+
+- COIN
+- AAPL
+- CLF
+
+Do not invent the Materials structure from assumptions. Match the deployed JSON exactly.
+
+PART 1 — RATINGS REDESIGN
+
+Replace the current top-level consensus distribution visualization with three separate horizontal rows:
+
+Buy
+Hold
+Sell
+
+Calculate:
+
+buyCount =
+strong_buy + buy
+
+holdCount =
+hold
+
+sellCount =
+sell + strong_sell
+
+totalCount =
+buyCount + holdCount + sellCount
+
+buyPct =
+buyCount / totalCount * 100
+
+holdPct =
+holdCount / totalCount * 100
+
+sellPct =
+sellCount / totalCount * 100
+
+Render in the style of the supplied COIN reference, adapted to Caelyn’s existing dark design:
+
+Buy     [horizontal bar]  72%
+Hold    [horizontal bar]  22%
+Sell    [horizontal bar]   6%
+
+Requirements:
+
+- Buy bar uses the existing positive/green styling.
+- Hold uses the existing neutral gray or restrained amber styling.
+- Sell uses the existing negative/red styling.
+- Labels and percentages align consistently.
+- Bar widths use the unrounded percentage.
+- Text may use rounded whole percentages.
+- Show total rating count near the consensus label.
+- Avoid giant bars or excessive vertical spacing.
+- Keep this compact and professional.
+
+Keep the existing monthly five-category rating-distribution chart below it:
+
+- Strong Buy
+- Buy
+- Hold
+- Sell
+- Strong Sell
+
+Do not remove that historical chart.
+
+PART 2 — ANALYST ACTION ROWS
+
+Continue using only fields genuinely returned by the backend:
+
+- firm / grading company
+- date
+- action
+- previous grade
+- new grade
+
+Render naturally:
+
+- Maintains Outperform
+- Maintains Neutral
+- Upgrades to Buy
+- Downgrades to Equal Weight
+- Initiates at Hold
+
+When previous and new grades are identical, do not display:
+
+Outperform → Outperform
+
+Display:
+
+Maintains Outperform
+
+When the action is an upgrade or downgrade, a compact transition is acceptable:
+
+Neutral → Buy
+
+Do not fabricate:
+
+- individual analyst names
+- previous individual price targets
+- revised individual price targets
+- individual-action upside/downside percentages
+
+The deployed backend does not currently provide those fields.
+
+Keep the aggregate price-target rail and its current-price upside/downside calculations.
+
+PART 3 — MATERIALS SECONDARY TAB
+
+Add:
+
+Materials
+
+to the Earnings secondary navigation.
+
+The Materials tab should consume:
+
+earnings_intelligence.materials
+
+using the exact deployed structure.
+
+Do not make any new request.
+
+The tab should have two main areas:
+
+A. Latest Earnings Packet
+B. Recent SEC Filings / Materials History
+
+PART 4 — LATEST EARNINGS PACKET
+
+At the top, show the newest earnings packet.
+
+Display where available:
+
+- fiscal quarter and year
+- earnings date
+- filing date
+- exact SEC acceptance timestamp
+- primary earnings filing
+- earnings release
+- investor presentation
+- supplemental tables
+- corporate guidance
+- prepared remarks
+- related 10-Q, 10-K, 20-F, or other financial report
+- webcast or replay
+- transcript status
+
+Use compact document rows or cards.
+
+Each document should display the fields actually returned by the backend, such as:
+
+- classification
+- form
+- description or title
+- filename
+- filing date
+- accepted timestamp
+- exhibit/document type
+- classification confidence
+- source
+- open-document action
+
+Do not display raw accession numbers prominently unless useful in a tooltip or detail view.
+
+The primary action should be:
+
+Open document
+
+It must open the verified SEC URL in a new browser tab with safe external-link behavior.
+
+PART 5 — MATERIAL TYPE LABELS
+
+Map backend classifications into clean user-facing labels:
+
+primary_filing:
+Primary Filing
+
+earnings_release:
+Earnings Release
+
+investor_presentation:
+Investor Presentation
+
+supplemental_tables:
+Supplemental Tables
+
+corporate_guidance:
+Corporate Guidance
+
+prepared_remarks:
+Prepared Remarks
+
+transcript:
+Transcript
+
+webcast_or_replay:
+Webcast / Replay
+
+financial_report:
+Financial Report
+
+insider_filing:
+Insider Filing
+
+ownership_filing:
+Ownership Filing
+
+offering_document:
+Offering Document
+
+proxy:
+Proxy Statement
+
+transaction_material:
+Transaction Material
+
+other:
+Other Material
+
+Do not assume EX-99.1 is always an earnings release.
+
+Render the classification supplied by the backend.
+
+PART 6 — TRANSCRIPT STATE
+
+Support every backend transcript state:
+
+available_official
+available_sec_exhibit
+available_licensed
+processing
+not_yet_available
+unavailable
+unknown
+
+User-facing labels:
+
+available_official:
+Official transcript available
+
+available_sec_exhibit:
+Transcript available in SEC filing
+
+available_licensed:
+Licensed transcript available
+
+processing:
+Transcript processing
+
+not_yet_available:
+Transcript not yet available
+
+unavailable:
+Transcript unavailable
+
+unknown:
+Transcript availability unknown
+
+For not_yet_available, show a clean state:
+
+Transcript not yet available
+
+Then show the available alternatives underneath:
+
+- Earnings Release
+- SEC Filing
+- Investor Presentation
+- Prepared Remarks
+- Webcast / Replay
+
+Do not generate or synthesize transcript text.
+
+PART 7 — WEBCAST
+
+When a verified webcast or replay URL exists:
+
+- show a Webcast / Replay row
+- use an external-link icon
+- open in a new browser tab
+- identify the source document subtly when provided
+
+When the URL is null:
+
+- do not render a large broken card
+- either omit the row or show “Webcast unavailable” in muted text
+
+PART 8 — RECENT SEC FILINGS
+
+Below the latest packet, show the recent filing/material history returned by the backend.
+
+Add compact category filters only when the deployed response contains enough filings to make them useful:
+
+- All
+- Earnings
+- Financial Reports
+- Current Reports
+- Insider
+- Ownership
+- Offerings
+- Governance
+- Transactions
+
+Support forms including, when returned:
+
+- 10-K
+- 10-K/A
+- 10-Q
+- 10-Q/A
+- 8-K
+- 8-K/A
+- Form 4
+- SC 13D
+- SC 13D/A
+- SC 13G
+- SC 13G/A
+- 6-K
+- 20-F
+- 20-F/A
+- DEF 14A
+- S-1
+- S-1/A
+- 425
+- supported 424B forms
+
+Do not label every 8-K as earnings-related.
+
+Do not label Form 425 as a generic prospectus. Treat it as transaction material when classified that way by the backend.
+
+Each filing row should show:
+
+- form badge
+- category
+- date
+- accepted timestamp
+- title or description
+- number of attachments when available
+- open-filing action
+- expandable attachment list when useful
+
+Default newest first.
+
+PART 9 — MATERIALS COVERAGE STATES
+
+Handle these independently:
+
+No Materials object:
+
+“Earnings materials are not available from the current first-party sources.”
+
+Primary filing available but exhibits incomplete:
+
+Show the primary filing normally.
+
+Show a subtle note:
+
+“Some filing attachments were unavailable from the source.”
+
+Do not imply that a presentation, transcript, or guidance document exists when the backend did not classify one.
+
+No presentation:
+
+Simply omit the presentation card.
+
+No guidance:
+
+Simply omit the guidance card.
+
+No transcript:
+
+Show the correct transcript-state UI.
+
+Materials failure must not break Overview, History, Price Moves, or Ratings.
+
+PART 10 — PRE/POST EARNINGS FIELDS
+
+The deployed backend now returns these fields inside each earnings event’s price_reaction:
+
+- pre_earnings_1d_pct
+- post_earnings_1d_pct
+- pre_earnings_session
+- post_earnings_session
+- pre_post_method
+- pre_post_confidence
+
+Percentages are already percentage points.
+
+Example:
+
+-2.53 means -2.53%
+
+Do not multiply by 100.
+
+PART 11 — OVERVIEW PRE/POST CARD
+
+In Earnings > Overview, add a prominent paired comparison card near the existing price-reaction section:
+
+Before Earnings | After Earnings
+
+Example:
+
+Before Earnings
+-2.53%
+May 6, 2026
+
+After Earnings
++4.25%
+May 8, 2026
+
+Display:
+
+- pre_earnings_1d_pct
+- post_earnings_1d_pct
+- associated trading-session dates
+- subtle methodology/confidence tooltip
+
+Suggested tooltip:
+
+“Before and after moves are aligned to the closest full regular trading sessions based on the reported earnings timing.”
+
+When timing is inferred-low, add:
+
+“Earnings timing was inferred from available filing metadata.”
+
+Do not show null as zero.
+
+PART 12 — PRICE MOVES CONTROLS
+
+Update the Price Moves selector to support:
+
+- Pre 1D
+- Post 1D
+- 3D
+- 5D
+- Pre vs Post
+
+The existing 1D reaction should now be labeled Post 1D where it represents the first full post-earnings session.
+
+Do not remove Opening Gap from tooltips or the table.
+
+PART 13 — PRE VS POST CHART
+
+In Pre vs Post mode, render paired bars for each quarter:
+
+- one bar for Pre 1D
+- one bar for Post 1D
+
+Requirements:
+
+- Preserve actual positive/negative direction.
+- Positive values use green.
+- Negative values use red.
+- Differentiate Pre versus Post using opacity, outline, or bar pattern.
+- Do not use one fixed color for all Pre bars.
+- Include a clear legend.
+- Include a zero reference line.
+- Omit null values rather than plotting zero.
+- Keep tooltips inside the modal viewport.
+
+Tooltip should show:
+
+- fiscal quarter
+- report date
+- earnings timing
+- pre-earnings session
+- Pre 1D
+- post-earnings session
+- Post 1D
+- opening gap
+- 3D
+- 5D
+- continuation or reversal
+- pre/post methodology
+- confidence
+- final/preliminary status
+
+PART 14 — PATTERN CLASSIFICATION
+
+For display only:
+
+Continuation:
+Pre and Post have the same non-zero sign.
+
+Reversal:
+Pre and Post have opposite signs.
+
+Flat:
+One or both valid moves are exactly zero or within an existing negligible-display threshold if one already exists.
+
+Unavailable:
+One or both required values are null.
+
+Do not overwrite backend data.
+
+This is a presentational label.
+
+PART 15 — PRICE MOVES SUMMARY
+
+The deployed reaction_summary now includes fields such as:
+
+- observations_pre_1d
+- observations_post_1d
+- average_pre_1d_pct
+- median_pre_1d_pct
+- average_post_1d_pct
+- median_post_1d_pct
+- average_absolute_pre_1d_pct
+- average_absolute_post_1d_pct
+- continuation_count
+- reversal_count
+- continuation_rate
+- reversal_rate
+- average_post_after_positive_pre
+- average_post_after_negative_pre
+- timing-confidence counts and methodology metadata where returned
+
+Add compact summary metrics:
+
+- Average Pre 1D
+- Median Pre 1D
+- Average Post 1D
+- Median Post 1D
+- Continuation Rate
+- Reversal Rate
+
+Show observation counts in supporting text or tooltips.
+
+Do not recompute the summary from all raw records when the backend has already excluded invalid timing observations.
+
+PART 16 — PRICE MOVES TABLE
+
+Update the table columns to:
+
+- Quarter
+- Timing
+- Revenue Surprise
+- EPS Surprise
+- Pre 1D
+- Post 1D
+- Gap
+- 3D
+- 5D
+- Max Up
+- Max Down
+- Pattern
+- Status
+
+Use internal horizontal scrolling.
+
+Use em dash for null values.
+
+Status remains:
+
+- Final
+- Preliminary
+- Approximation
+- Unavailable
+
+PART 17 — TYPESCRIPT
+
+Extend the existing types based on the exact deployed payload.
+
+Add nullable fields to PriceReaction:
+
+pre_earnings_1d_pct: number | null;
+post_earnings_1d_pct: number | null;
+pre_earnings_session: string | null;
+post_earnings_session: string | null;
+pre_post_method: string | null;
+pre_post_confidence: string | null;
+
+Extend ReactionSummary using the exact live keys.
+
+Create explicit Materials interfaces based on the live COIN response.
+
+Do not use broad any types for the top-level Materials structure.
+
+Nullable and optional fields must reflect reality.
+
+PART 18 — PERFORMANCE
+
+Continue consuming the existing detail prop.
+
+Do not:
+
+- refetch on Materials tab click
+- fetch SEC documents in the frontend
+- fetch filing metadata in the frontend
+- call FMP
+- call Tradier
+- call EDGAR
+- create another query hook
+
+Only external document links should contact SEC, and only when the user actively opens one.
+
+Memoize transformed chart and filing arrays where appropriate.
+
+PART 19 — VISUAL STYLE
+
+Match the existing Earnings implementation.
+
+Use:
+
+- current dark glass-card styling
+- subtle borders
+- compact spacing
+- white primary text
+- muted secondary text
+- restrained green/red
+- current chart-grid and tooltip styling
+- current typography and radii
+
+Avoid:
+
+- copied third-party branding
+- giant gradients
+- oversized KPI cards
+- cluttered filing grids
+- bright-blue ticker labels
+- excessive warnings
+- raw JSON-looking metadata
+
+The Materials tab should feel like first-party market intelligence, not a file browser.
+
+PART 20 — TEST SYMBOLS
+
+Test through the real Watchlist ticker-click popup:
+
+COIN:
+- Buy/Hold/Sell bars
+- 19 earnings events
+- Pre -2.53%
+- Post +4.25%
+- populated Materials
+- working SEC document link
+
+AAPL:
+- populated Materials
+- valid no-presentation state where appropriate
+
+CLF:
+- populated Materials
+- transcript not_yet_available state
+
+One partial-history symbol:
+- limited history renders cleanly
+
+UFO:
+- no Earnings primary tab
+
+PART 21 — ACCEPTANCE TESTS
+
+Do not declare completion until all pass:
+
+1. Existing Watchlist popup opens normally.
+2. Earnings tab remains visible and functional.
+3. Secondary navigation contains Materials.
+4. No duplicate ticker-detail request.
+5. Buy/Hold/Sell bars calculate correctly.
+6. The three percentages total approximately 100%.
+7. Monthly five-category ratings history remains.
+8. No individual target revisions are fabricated.
+9. Pre 1D and Post 1D display correctly.
+10. Percentages are not multiplied by 100.
+11. Null pre/post values are not shown as zero.
+12. Pre vs Post paired chart works.
+13. Mixed positive/negative quarters display correctly.
+14. Reaction table includes Pre and Post.
+15. Summary metrics match the backend.
+16. Materials packet renders.
+17. SEC filing links open successfully.
+18. Transcript states render correctly.
+19. Missing presentation/guidance does not break the tab.
+20. Materials errors do not break other Earnings tabs.
+21. UFO remains excluded.
+22. No console errors.
+23. No new TypeScript errors.
+24. Production build passes.
+25. Frontend is published successfully.
+
+DEPLOYMENT
+
+After implementation:
+
+- run the existing frontend production build
+- fix only errors caused by this work
+- test the real Watchlist popup
+- publish using the existing Replit frontend workflow
+
+FINAL REPORT
+
+Return:
+
+1. Files changed
+2. Ratings redesign
+3. Pre/post Overview changes
+4. Price Moves chart and table changes
+5. Materials tab structure
+6. Transcript/webcast behavior
+7. TypeScript interfaces added
+8. Empty and partial-state handling
+9. Symbols tested
+10. Confirmation of zero additional ticker-detail requests
+11. Build result
+12. Deployment result
+13. Screenshots of:
+    - COIN Ratings
+    - COIN Pre vs Post
+    - COIN Materials
+    - CLF transcript state
+    - UFO without Earnings
+
+Do not claim completion unless the deployed Watchlist popup visibly shows all three completed features.
