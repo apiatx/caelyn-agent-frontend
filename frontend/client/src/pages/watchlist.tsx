@@ -4547,18 +4547,26 @@ export default function WatchlistPage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
-                      {ev.epsEstimate != null && (
-                        <div style={{ fontSize: 9, fontFamily: font }}>
-                          <span style={{ color: C.dim }}>EPS </span>
-                          <span style={{ color: C.text, fontWeight: 700 }}>${(ev.epsEstimate as number).toFixed(2)}</span>
-                          {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
-                          {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
-                        </div>
-                      )}
-                      {ev.revenueEstimate != null && (
-                        <div style={{ fontSize: 9, fontFamily: font }}>
-                          <span style={{ color: C.dim }}>Rev </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                      <div style={{ fontSize: 9, fontFamily: font }}>
+                        <span style={{ color: C.dim }}>EPS Est. </span>
+                        {ev.epsEstimate != null ? (
+                          <>
+                            <span style={{ color: C.text, fontWeight: 700 }}>
+                              {(ev.epsEstimate as number) < 0
+                                ? `-$${Math.abs(ev.epsEstimate as number).toFixed(2)}`
+                                : `$${(ev.epsEstimate as number).toFixed(2)}`}
+                            </span>
+                            {epsDir === 'up' && <span style={{ color: C.green }}> ↑</span>}
+                            {epsDir === 'down' && <span style={{ color: C.red }}> ↓</span>}
+                          </>
+                        ) : (
+                          <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 9, fontFamily: font }}>
+                        <span style={{ color: C.dim }}>Rev Est. </span>
+                        {ev.revenueEstimate != null ? (
                           <span style={{ color: C.text, fontWeight: 700 }}>
                             {(ev.revenueEstimate as number) >= 1e9
                               ? '$' + ((ev.revenueEstimate as number) / 1e9).toFixed(1) + 'B'
@@ -4566,8 +4574,10 @@ export default function WatchlistPage() {
                                 ? '$' + ((ev.revenueEstimate as number) / 1e6).toFixed(0) + 'M'
                                 : '$' + (ev.revenueEstimate as number).toLocaleString()}
                           </span>
-                        </div>
-                      )}
+                        ) : (
+                          <span style={{ color: C.dim, fontWeight: 700 }}>—</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

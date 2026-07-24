@@ -1,0 +1,153 @@
+FINAL WATCHLIST EARNINGS POLISH — LABEL UPCOMING ANALYST ESTIMATES
+
+This is a small frontend-only change.
+
+Do not modify the backend.
+Do not create a new query.
+Do not create a new endpoint.
+Do not redesign the Upcoming Earnings section.
+Do not change Recent Earnings.
+Do not change card dimensions, scrolling, sorting, click behavior, or responsive layout.
+Do not reset, pull, checkout, or overwrite the current Git-pushed workspace.
+Do not push to Git.
+
+CURRENT STATE
+
+The Upcoming Earnings cards already display values such as:
+
+EPS $0.47
+Rev $1.8B
+
+These values represent analyst estimates for the upcoming earnings report, but the UI does not make that clear.
+
+OBJECTIVE
+
+Make both fields explicitly read as analyst estimates while preserving the existing compact card design.
+
+REQUIRED DISPLAY
+
+Change the metric labels on Upcoming Earnings cards to:
+
+EPS Est.
+Rev Est.
+
+Example:
+
+EPS Est.  $0.47
+Rev Est.  $1.8B
+
+Acceptable tighter version if required by the current card width:
+
+EPS Est $0.47
+Rev Est $1.8B
+
+Use the same format consistently across every Upcoming Earnings card.
+
+DATA RULES
+
+Use the existing backend fields already feeding the card.
+
+Before editing, inspect the actual Upcoming Earnings record and identify the canonical fields for:
+
+- EPS analyst estimate
+- Revenue analyst estimate
+
+Do not guess field names.
+Do not derive estimates from actual results.
+Do not use historical-quarter values.
+Do not add provider calls.
+
+FORMATTING
+
+EPS estimates:
+
+- preserve positive and negative values
+- retain the existing currency formatting
+- examples:
+  - $0.47
+  - −$0.10
+  - $2.78
+
+Revenue estimates:
+
+- use the existing compact currency formatter
+- examples:
+  - $10M
+  - $121M
+  - $1.8B
+  - $4.3B
+
+Do not multiply or rescale values incorrectly.
+Null is not zero.
+
+MISSING VALUES
+
+When an estimate is unavailable:
+
+Preferred behavior:
+- display EPS Est. —
+- display Rev Est. —
+
+Do not hide the entire metric row if only one estimate is missing.
+Do not show $0 for a null estimate.
+Do not display “Actual” on an Upcoming Earnings card.
+
+LAYOUT
+
+Preserve the existing single compact metrics line if it fits:
+
+EPS Est. $0.47   Rev Est. $1.8B
+
+If the extra label width causes overlap:
+
+- slightly reduce the gap between metrics
+- allow the company name to truncate normally
+- preserve card width
+- do not introduce page-level horizontal overflow
+- do not make the card taller unless absolutely necessary
+
+Do not shrink the monetary values to unreadable text.
+
+SCOPE
+
+Apply this only to the Upcoming Earnings cards.
+
+Recent Earnings cards must continue displaying actuals, surprises, classifications, and price reactions using their current design.
+
+VALIDATION
+
+Verify:
+
+1. Every Upcoming Earnings card clearly labels EPS as an estimate.
+2. Every Upcoming Earnings card clearly labels Revenue as an estimate.
+3. Negative EPS estimates format correctly.
+4. Million and billion Revenue values format correctly.
+5. Missing values display as — rather than $0.
+6. Card dimensions remain unchanged.
+7. Horizontal scrolling remains unchanged.
+8. No text overlap occurs.
+9. Upcoming/Recent toggle still works.
+10. Card click behavior still works.
+11. No new request or query is introduced.
+12. Targeted TypeScript validation passes.
+13. Full production build passes.
+14. Publish the frontend.
+
+Return:
+
+1. File changed
+2. Canonical EPS estimate field used
+3. Canonical Revenue estimate field used
+4. Final card format
+5. Missing-value behavior
+6. Build result
+7. Publish result
+8. Screenshot of the updated Upcoming Earnings cards
+
+End with exactly:
+
+UPCOMING ESTIMATES COMPLETE
+
+or:
+
+NOT COMPLETE
