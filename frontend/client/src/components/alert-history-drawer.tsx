@@ -138,7 +138,8 @@ function HistoryRow({
 }) {
   const dot    = SEV_DOT[item.severity]    ?? SEV_DOT.low;
   const border = SEV_BORDER[item.severity] ?? SEV_BORDER.low;
-  const tags   = item.source_tags ?? [];
+  // Guard: some earnings-type alerts have {key,value} objects in source_tags — filter to strings only
+  const tags   = (item.source_tags ?? []).filter((t): t is string => typeof t === 'string');
 
   return (
     <button
