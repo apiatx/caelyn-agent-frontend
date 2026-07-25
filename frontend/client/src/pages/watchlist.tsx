@@ -4907,7 +4907,7 @@ export default function WatchlistPage() {
         ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 80px'
         : screenerMode === 'options'
           ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 52px 80px 48px 52px 52px 60px 56px'
-          : /* technical */ '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 88px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
+          : /* technical */ '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 104px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
     const TICKER_TABLE_MIN_WIDTH =
       screenerMode === 'market' ? 960
       : screenerMode === 'options' ? 724
@@ -5297,7 +5297,7 @@ export default function WatchlistPage() {
                         left: 0,
                         zIndex: 1,
                         background: C.card,
-                      } : {}),
+                      } : col.key === 'entryZone' ? { paddingLeft: 16 } : {}),
                     }}
                     title={!col.tooltip ? (sortable ? `Sort by ${col.label}` : col.label) : undefined}
                   >
@@ -5609,7 +5609,7 @@ export default function WatchlistPage() {
                           <span title={_stageReason ?? undefined} style={{ display: 'inline-block', fontSize: 7, fontWeight: 800, fontFamily: font, padding: '2px 5px', borderRadius: 3, color: _sClr, background: _sBg, border: `1px solid ${_sBdr}`, textTransform: 'uppercase' as const, letterSpacing: '0.05em', whiteSpace: 'nowrap' as const, lineHeight: 1.4, cursor: _stageReason ? 'help' : 'default' }}>{_stageLabel}</span>
                         ) : <span style={{ ..._sp, color: C.dim }}>—</span>}
                         <span style={{ ..._sp, color: _tsClr }}>{_tl(_tsVal)}</span>
-                        <span style={{ ..._sp, color: _ezClr }}>{_tl(_tm?.entry_zone)}</span>
+                        <span style={{ ..._sp, color: _ezClr, paddingLeft: 16 }}>{_tl(_tm?.entry_zone)}</span>
                         <span style={{ ..._sp, color: _bsClr }}>{_tl(_tm?.breakout_signal)}</span>
                         <span style={{ ..._sp, color: _moClr }}>{_tl(_tm?.momentum_trend)}</span>
                         <span style={{ ..._sp, color: _extClr }}>{_tm?.extension_risk === 'pullback_buy_zone' ? 'Pullback Buy' : _tl(_tm?.extension_risk)}</span>
