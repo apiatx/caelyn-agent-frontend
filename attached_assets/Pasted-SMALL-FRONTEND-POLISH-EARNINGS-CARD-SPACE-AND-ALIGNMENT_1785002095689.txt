@@ -1,0 +1,97 @@
+SMALL FRONTEND POLISH — EARNINGS CARD SPACE AND ALIGNMENT
+
+Frontend only. Do not change data, calculations, queries, backend contracts, card order, or responsive behavior.
+
+Two cosmetic fixes inside:
+
+Ticker popup → Earnings → Overview
+
+1. UPCOMING EARNINGS — SCHEDULE CARD
+
+The Schedule section currently uses too little of its available glass-card space:
+
+Schedule
+Aug 6, 2026
+Timing unconfirmed
+Timing estimated
+in 12 days
+
+Improve the internal layout so it fills the card more intentionally.
+
+Use:
+
+- clearer vertical hierarchy
+- larger date
+- timing status grouped cleanly
+- countdown emphasized near the bottom
+- consistent padding with the Revenue Estimate and EPS Estimate cards
+- vertically balanced spacing
+- no large dead area
+
+Suggested structure:
+
+SCHEDULE
+
+Aug 6, 2026
+
+Timing Unconfirmed
+Estimated report time
+
+REPORTS IN
+12 DAYS
+
+Keep the existing wording/data truthfully derived from the current fields. Do not imply confirmed timing when it is estimated.
+
+2. LATEST EARNINGS — REVENUE AND EPS RESULT CARDS
+
+The Revenue and EPS cards currently leave too much unused space and compress the surprise information into one awkward line.
+
+Improve both matching cards so their contents fill the card more evenly.
+
+Use this hierarchy:
+
+REVENUE
+
+$151.1M
+
+ESTIMATE
+$157.0M
+
+SURPRISE
+−$5.8M
+−3.7%  MISS
+
+EPS
+
+−$0.07
+
+ESTIMATE
+−$0.05
+
+SURPRISE
+−$0.02
+−42.9%  MISS
+
+Requirements:
+
+- keep Revenue and EPS cards equal height
+- make actual value the largest number
+- place estimate on its own clearly labeled row
+- place surprise amount, percentage, and Beat/Miss badge together cleanly
+- use proper negative currency formatting: −$5.8M, not $−5.8M
+- use green for beats and red for misses
+- preserve neutral styling for in-line results
+- improve spacing without making the cards excessively tall
+- maintain the existing glass-card style
+- no text overlap or horizontal overflow
+- preserve mobile stacking
+
+Do not alter Upcoming estimates, Latest Earnings values, classifications, calculations, Before/After Earnings, Price Reaction, Growth Context, or Historical Reaction.
+
+Test AAOI and one ticker with a beat.
+
+Run targeted TypeScript validation, full build, and publish.
+
+End with:
+
+EARNINGS CARD SPACING POLISHED

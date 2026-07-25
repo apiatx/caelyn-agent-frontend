@@ -1156,20 +1156,23 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
       <div style={{ background: 'rgba(14,165,233,0.04)', border: '1px solid rgba(14,165,233,0.18)', borderRadius: 8, padding: '14px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1.5fr', gap: 12, alignItems: 'start' }}>
           {/* Col 1: Schedule */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-            <div style={{ fontSize: 8, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.09em', marginBottom: 2 }}>Schedule</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: C.bright, fontFamily: _f }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 6, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, minWidth: 0 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>Schedule</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: ev.expected_date ? C.bright : C.dim, fontFamily: _f, lineHeight: '1.1' }}>
               {ev.expected_date ? fmtDate(ev.expected_date) : '—'}
             </div>
-            {quarterLabel && <div style={{ fontSize: 10, color: C.dim, fontFamily: _s }}>{quarterLabel}</div>}
-            <div style={{ fontSize: 10, color: C.text, fontFamily: _s, marginTop: 2 }}>{timing.label}</div>
-            {ev.report_time_status === 'confirmed'
-              ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.teal, letterSpacing: '0.06em' }}>✓ CONFIRMED</span>
-              : <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>Timing estimated</span>
-            }
+            {quarterLabel && <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 3 }}>{quarterLabel}</div>}
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ fontSize: 10, color: C.text, fontFamily: _s, marginBottom: 2 }}>{timing.label}</div>
+              {ev.report_time_status === 'confirmed'
+                ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: _f, color: C.teal, letterSpacing: '0.06em' }}>✓ Confirmed</span>
+                : <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>Estimated report time</span>
+              }
+            </div>
             {countdown && (
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.amber, fontFamily: _f, marginTop: 4, paddingTop: 4, borderTop: `1px solid rgba(255,255,255,0.05)` }}>
-                {countdown}
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ fontSize: 8, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.09em', marginBottom: 3 }}>Reports in</div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: C.amber, fontFamily: _f }}>{countdown}</div>
               </div>
             )}
           </div>
@@ -1210,23 +1213,29 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
       {/* Revenue + EPS result bubbles */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
         {[
-          { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: fmtRev(q.revenue_surprise_amount), surprisePct: q.revenue_surprise_pct, showPct: true },
-          { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEps(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
+          { title: 'Revenue', actual: fmtRev(q.revenue_actual), estimate: q.revenue_estimate != null ? fmtRev(q.revenue_estimate) : null, surpriseAmt: q.revenue_surprise_amount != null ? fmtRevDelta(q.revenue_surprise_amount) : '—', surprisePct: q.revenue_surprise_pct, showPct: true },
+          { title: 'EPS', actual: fmtEps(q.eps_actual), estimate: q.eps_estimate != null ? fmtEps(q.eps_estimate) : null, surpriseAmt: q.eps_surprise_amount != null ? fmtEpsDelta(q.eps_surprise_amount) : '—', surprisePct: q.eps_surprise_pct, showPct: q.eps_surprise_pct != null && Math.abs(q.eps_surprise_pct) < 600 },
         ].map(({ title, actual, estimate, surpriseAmt, surprisePct, showPct }) => (
-          <div key={title} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: '8px 10px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>{title}</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: C.bright, fontFamily: _f }}>{actual}</div>
+          <div key={title} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 5, padding: '10px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>{title}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: C.bright, fontFamily: _f, marginBottom: 8 }}>{actual}</div>
             {estimate != null ? (
               <>
-                <div style={{ fontSize: 9, color: C.dim, fontFamily: _f, marginTop: 2 }}>Est. {estimate}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, flexWrap: 'wrap' as const }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</span>
-                  {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>({fmtPct(surprisePct)})</span>}
-                  {surpriseLabel(surprisePct) && (
-                    <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
-                      {surpriseLabel(surprisePct)}
-                    </span>
-                  )}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 8, marginBottom: 6 }}>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2 }}>Estimate</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, fontFamily: _f, color: C.dim }}>{estimate}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>Surprise</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, fontFamily: _f, color: surpriseCol(surprisePct, C) }}>{surpriseAmt}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, flexWrap: 'wrap' as const }}>
+                    {showPct && <span style={{ fontSize: 10, color: surpriseCol(surprisePct, C), fontFamily: _f }}>{fmtPct(surprisePct)}</span>}
+                    {surpriseLabel(surprisePct) && (
+                      <span style={{ padding: '1px 6px', borderRadius: 2, fontSize: 8, fontWeight: 800, fontFamily: _f, color: '#000', background: surpriseCol(surprisePct, C) }}>
+                        {surpriseLabel(surprisePct)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
