@@ -5103,7 +5103,7 @@ export default function WatchlistPage() {
             {([ ['overview','Overview'], ['financial-strength','Fin. Strength'], ['business-quality','Biz Quality'], ['growth-quality','Growth'], ['valuation','Valuation'] ] as [QualityCategory, string][]).map(([cat, label]) => (
               <button
                 key={cat}
-                onClick={() => { setQualityCategory(cat); try { localStorage.setItem(WL_QUALITY_CATEGORY_KEY, cat); } catch {} setSortKey(null); }}
+                onClick={() => { setQualityCategory(cat); try { localStorage.setItem(WL_QUALITY_CATEGORY_KEY, cat); } catch {} }}
                 style={{
                   fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
                   padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
