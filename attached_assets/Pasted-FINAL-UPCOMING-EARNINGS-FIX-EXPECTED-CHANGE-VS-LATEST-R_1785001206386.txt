@@ -1,0 +1,404 @@
+FINAL UPCOMING EARNINGS FIX — EXPECTED CHANGE VS LATEST REPORTED QUARTER
+
+This is a focused frontend-only enhancement inside:
+
+Ticker popup
+→ Earnings
+→ Overview
+→ Upcoming Earnings
+
+Complete it autonomously in one pass.
+
+Do not modify the backend.
+Do not create a new endpoint.
+Do not create a new query.
+Do not modify the 30-day recent-results rule.
+Do not change Latest Earnings calculations or styling.
+Do not redesign unrelated sections.
+Do not reset, pull, checkout, or overwrite the current workspace.
+Do not push to Git.
+
+CURRENT PROBLEM
+
+The Upcoming Earnings estimate bubbles currently display:
+
+Revenue Estimate
+$1.81B
+Expected growth
+—
+
+EPS Estimate
+$0.47
+Expected growth
+—
+
+The Latest Earnings section directly below already contains the latest reported actual values:
+
+Revenue actual
+$1.68B
+
+EPS actual
+$0.33
+
+The Upcoming Earnings estimate bubbles should calculate and display the expected dollar change and percentage change versus those latest reported actuals.
+
+OBJECTIVE
+
+For each Upcoming Earnings estimate bubble, show:
+
+1. Upcoming analyst consensus estimate
+2. Latest reported actual
+3. Expected dollar change
+4. Expected percentage change where mathematically meaningful
+
+Use the exact raw values from the existing ticker-detail response, not rounded display strings.
+
+PART 1 — DATA SOURCE AUDIT
+
+Inspect the current Earnings Overview implementation and identify the exact existing fields used for:
+
+Upcoming event:
+- revenue analyst estimate
+- EPS analyst estimate
+
+Latest reported earnings:
+- Revenue actual
+- EPS actual
+- report date
+- fiscal period/year
+
+Do not guess field names.
+
+Use the same latest reported event already rendered immediately below in the Latest Earnings section.
+
+Do not use:
+
+- latest Revenue estimate
+- latest EPS estimate
+- a prior-year quarter
+- an annual analyst estimate
+- a different fiscal event
+
+The comparison must be:
+
+Upcoming analyst estimate
+versus
+most recent reported actual
+
+PART 2 — REVENUE EXPECTED CHANGE
+
+Calculate:
+
+Revenue expected change amount:
+
+upcoming_revenue_estimate - latest_reported_revenue_actual
+
+Revenue expected change percentage:
+
+((upcoming_revenue_estimate / latest_reported_revenue_actual) - 1) × 100
+
+Only calculate the percentage when:
+
+- both values are finite
+- latest reported Revenue is greater than zero
+
+Use raw unformatted values.
+
+Example using the AMKR screenshot:
+
+Upcoming Revenue Estimate:
+$1.81B
+
+Latest Reported Revenue:
+$1.68B
+
+Expected Change:
+approximately +$130M (+7.7%)
+
+The exact displayed result must use the underlying unrounded values.
+
+PART 3 — EPS EXPECTED CHANGE
+
+Calculate:
+
+EPS expected change amount:
+
+upcoming_eps_estimate - latest_reported_eps_actual
+
+When latest reported EPS is positive and nonzero:
+
+EPS expected change percentage:
+
+((upcoming_eps_estimate / latest_reported_eps_actual) - 1) × 100
+
+Example using the AMKR screenshot:
+
+Upcoming EPS Estimate:
+$0.47
+
+Latest Reported EPS:
+$0.33
+
+Expected Change:
+approximately +$0.14 (+42.4%)
+
+Again, calculate from raw values rather than rounded UI strings.
+
+PART 4 — NEGATIVE AND ZERO EPS HANDLING
+
+Do not show misleading percentage growth when the latest reported EPS is zero or negative.
+
+Use these states:
+
+Latest EPS negative, upcoming EPS positive:
+
+Expected Change
++$0.XX
+Turned Profitable
+
+Latest EPS positive, upcoming EPS negative:
+
+Expected Change
+−$0.XX
+Turned to a Loss
+
+Both EPS values negative and upcoming is less negative:
+
+Expected Change
++$0.XX
+Loss Narrowing
+
+Both EPS values negative and upcoming is more negative:
+
+Expected Change
+−$0.XX
+Loss Widening
+
+Latest EPS equals zero:
+
+Expected Change
++$0.XX
+Percentage N/M
+
+Do not apply the standard percentage formula to a negative or zero EPS denominator.
+
+Do not display a mathematically inverted or misleading EPS percentage.
+
+PART 5 — UPCOMING ESTIMATE BUBBLE DESIGN
+
+Update the two existing estimate bubbles.
+
+Recommended Revenue bubble:
+
+REVENUE ESTIMATE
+
+$1.81B
+
+LATEST REPORTED
+$1.68B
+
+EXPECTED CHANGE
++$130M (+7.7%)
+
+Recommended EPS bubble:
+
+EPS ESTIMATE
+
+$0.47
+
+LATEST REPORTED
+$0.33
+
+EXPECTED CHANGE
++$0.14 (+42.4%)
+
+Keep the primary estimate as the largest value.
+
+Use muted text for Latest Reported.
+
+Use green for positive expected change, red for negative expected change, and neutral styling for unavailable or N/M values.
+
+Do not color the entire bubble green or red.
+
+PART 6 — LABEL CLARITY
+
+Replace the vague label:
+
+Expected growth
+
+with:
+
+Expected Change vs Latest Earnings
+
+or, where the available card width requires a tighter label:
+
+Expected Change
+
+Add a muted subtitle:
+
+vs latest reported quarter
+
+Do not label this comparison:
+
+- Beat
+- Miss
+- Surprise
+- YoY Growth
+
+The future actual result has not been reported yet.
+
+PART 7 — MISSING DATA
+
+If the upcoming estimate is missing:
+
+- Estimate —
+- Expected Change —
+
+If the latest reported actual is missing:
+
+- Latest Reported —
+- Expected Change —
+
+Do not render missing values as:
+
+- $0
+- 0%
+- N/A growth calculated from zero
+
+Do not hide the other estimate bubble when only one comparison is unavailable.
+
+PART 8 — FORMATTING
+
+Revenue amounts:
+
+- +$130M
+- −$42.5M
+- +$1.2B
+
+EPS amounts:
+
+- +$0.14
+- −$0.08
+
+Percentages:
+
+- +7.7%
+- −12.4%
+
+Preserve the existing compact currency format.
+
+Do not multiply percentage values twice.
+
+PART 9 — RESPONSIVE DESIGN
+
+Preserve the current Upcoming Earnings layout:
+
+- Schedule on the left
+- Revenue Estimate bubble in the center
+- EPS Estimate bubble on the right
+
+Ensure the additional rows do not cause:
+
+- text overlap
+- clipped values
+- page-level horizontal overflow
+- inconsistent bubble heights
+
+Both estimate bubbles should retain matching heights.
+
+At smaller widths, allow the content to stack according to the existing responsive design.
+
+PART 10 — APPLY CONSISTENTLY ACROSS ALL TICKERS
+
+Do not hardcode AMKR.
+
+Apply the comparison to every ticker that has:
+
+- a valid future earnings estimate
+- a valid latest reported actual
+
+Handle:
+
+- positive estimate growth
+- negative estimate growth
+- profit to loss
+- loss to profit
+- loss narrowing
+- loss widening
+- missing Revenue estimate
+- missing EPS estimate
+- missing latest reported quarter
+- zero latest EPS
+
+PART 11 — DO NOT CHANGE REPORTED RESULTS
+
+The Latest Earnings section must remain unchanged.
+
+Do not modify:
+
+- actual-versus-estimate surprise
+- Beat/Miss classification
+- Before vs After Earnings
+- Price Reaction
+- Growth Context
+- Historical Reaction
+- Materials
+- History
+- Price Moves
+
+This task only enhances the Upcoming Earnings estimate bubbles.
+
+PART 12 — REQUIRED VALIDATION
+
+AMKR:
+
+1. Revenue Estimate remains approximately $1.81B.
+2. Latest Reported Revenue shows approximately $1.68B.
+3. Expected Revenue Change shows approximately +$130M (+7.7%), using raw values.
+4. EPS Estimate remains approximately $0.47.
+5. Latest Reported EPS shows approximately $0.33.
+6. Expected EPS Change shows approximately +$0.14 (+42.4%), using raw values.
+
+Also test:
+
+7. A ticker with declining positive EPS.
+8. A ticker turning profitable.
+9. A ticker turning to a loss.
+10. A ticker with a narrowing loss.
+11. A ticker with missing estimates.
+12. A ticker with no latest reported actual.
+13. Revenue and EPS bubbles remain equal height.
+14. No new API request is introduced.
+15. Latest Earnings remains unchanged.
+
+Run:
+
+- targeted TypeScript validation
+- full production build
+- authenticated AMKR popup test
+- browser console inspection
+
+Publish the frontend.
+
+FINAL REPORT
+
+Return:
+
+1. File changed
+2. Upcoming estimate fields used
+3. Latest actual fields used
+4. Revenue calculation
+5. EPS calculation and negative-EPS handling
+6. AMKR displayed results
+7. Responsive behavior
+8. Typecheck/build result
+9. Publish result
+10. Screenshot of the updated AMKR Upcoming Earnings section
+
+End with exactly:
+
+UPCOMING EXPECTED CHANGE COMPLETE
+
+or:
+
+NOT COMPLETE

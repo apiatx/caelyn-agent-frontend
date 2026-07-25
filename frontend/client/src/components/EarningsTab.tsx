@@ -404,6 +404,40 @@ function fmtExpGrowth(pct: number | null, label: string | null): string {
   if (pct == null || !isFinite(pct)) return '—';
   return (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
 }
+
+/* ── upcoming estimate change vs latest reported actual ───────── */
+function fmtRevDelta(delta: number): string {
+  const s = delta >= 0 ? '+' : '-';
+  const a = Math.abs(delta);
+  if (a >= 1e12) return `${s}$${(a / 1e12).toFixed(2)}T`;
+  if (a >= 1e9)  return `${s}$${(a / 1e9).toFixed(2)}B`;
+  if (a >= 1e6)  return `${s}$${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3)  return `${s}$${(a / 1e3).toFixed(1)}K`;
+  return `${s}$${a.toFixed(0)}`;
+}
+function fmtEpsDelta(delta: number): string {
+  const a = Math.abs(delta);
+  return delta >= 0 ? `+$${a.toFixed(2)}` : `-$${a.toFixed(2)}`;
+}
+interface EstChange { amtStr: string; pctStr: string | null; qualifier: string | null; color: string }
+function calcRevChange(upRev: number | null, latestActual: number | null): EstChange | null {
+  if (upRev == null || !isFinite(upRev) || latestActual == null || !isFinite(latestActual)) return null;
+  const delta = upRev - latestActual;
+  const pctStr = latestActual > 0 ? fmtPct(((upRev / latestActual) - 1) * 100) : null;
+  return { amtStr: fmtRevDelta(delta), pctStr, qualifier: null, color: delta >= 0 ? '#22c55e' : '#ef4444' };
+}
+function calcEpsChange(upEps: number | null, latestActual: number | null): EstChange | null {
+  if (upEps == null || !isFinite(upEps) || latestActual == null || !isFinite(latestActual)) return null;
+  const delta = upEps - latestActual;
+  const amtStr = fmtEpsDelta(delta);
+  const color = delta >= 0 ? '#22c55e' : '#ef4444';
+  if (latestActual === 0)              return { amtStr, pctStr: null, qualifier: 'Percentage N/M', color };
+  if (latestActual < 0 && upEps >= 0) return { amtStr, pctStr: null, qualifier: 'Turned Profitable', color };
+  if (latestActual > 0 && upEps < 0)  return { amtStr, pctStr: null, qualifier: 'Turned to a Loss', color };
+  if (latestActual < 0 && upEps < 0)  return { amtStr, pctStr: null, qualifier: upEps > latestActual ? 'Loss Narrowing' : 'Loss Widening', color };
+  return { amtStr, pctStr: fmtPct(((upEps / latestActual) - 1) * 100), qualifier: null, color };
+}
+
 function consensusCol(label: string): string {
   const l = (label || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (l.includes('BUY')) return '#22c55e';
@@ -1076,23 +1110,44 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
   const renderUpcomingCard = (ev: LiveEarningsEvent) => {
     const upEps    = ev.results_summary?.eps_estimate ?? null;
     const upRev    = ev.results_summary?.revenue_estimate ?? null;
-    const lvFp     = ev.fiscal_period;
-    const prYrStr  = ev.fiscal_year != null ? String(ev.fiscal_year - 1) : null;
-    const priorQ   = (lvFp && prYrStr) ? hist.find(h => h.fiscal_period === lvFp && h.fiscal_year === prYrStr) ?? null : null;
-    const epsG     = calcExpectedGrowth(upEps, priorQ?.eps_actual ?? null);
-    const revGPct  = (priorQ?.revenue_actual != null && upRev != null && isFinite(priorQ.revenue_actual) && priorQ.revenue_actual !== 0)
-      ? ((upRev / priorQ.revenue_actual) - 1) * 100 : null;
     const timing    = fmtTimingFull(ev.expected_timing);
     const countdown = fmtStaticCountdown(ev.expected_date, ev.expected_at ?? null);
     const quarterLabel = ev.fiscal_period && ev.fiscal_year ? `${ev.fiscal_period} ${ev.fiscal_year}` : null;
 
-    const estBubble = (title: string, val: string, growthPct: number | null, growthLabel: string | null) => (
+    /* Compare against latest reported actual (hist[0] = q, already in scope) */
+    const latestRevActual = q.revenue_actual;
+    const latestEpsActual = q.eps_actual;
+    const revChg = calcRevChange(upRev, latestRevActual);
+    const epsChg = calcEpsChange(upEps, latestEpsActual);
+
+    const estBubble = (
+      title: string,
+      val: string,
+      latestActualStr: string,
+      chg: EstChange | null,
+    ) => (
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 6, padding: '10px 12px', display: 'flex', flexDirection: 'column' as const, minWidth: 0 }}>
         <div style={{ fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 5 }}>{title}</div>
         <div style={{ fontSize: 18, fontWeight: 900, color: val === '—' ? C.dim : C.bright, fontFamily: _f }}>{val}</div>
-        <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 6, marginBottom: 2 }}>Expected growth</div>
-        <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: growthLabel ? C.text : pctCol(growthPct, C) }}>
-          {fmtExpGrowth(growthPct, growthLabel)}
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2 }}>Latest Reported</div>
+          <div style={{ fontSize: 11, fontWeight: 600, fontFamily: _f, color: C.dim }}>{latestActualStr}</div>
+        </div>
+        <div style={{ marginTop: 6 }}>
+          <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2 }}>Expected Change</div>
+          {chg ? (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: chg.color }}>
+                {chg.pctStr ? `${chg.amtStr} (${chg.pctStr})` : chg.amtStr}
+              </div>
+              {chg.qualifier && (
+                <div style={{ fontSize: 9, color: C.dim, fontFamily: _s, marginTop: 1 }}>{chg.qualifier}</div>
+              )}
+              <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>vs latest reported quarter</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.dim }}>—</div>
+          )}
         </div>
       </div>
     );
@@ -1119,9 +1174,9 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
             )}
           </div>
           {/* Col 2: Revenue Estimate */}
-          {estBubble('Revenue Estimate', upRev != null ? fmtRev(upRev) : '—', revGPct, null)}
+          {estBubble('Revenue Estimate', upRev != null ? fmtRev(upRev) : '—', fmtRev(latestRevActual), revChg)}
           {/* Col 3: EPS Estimate */}
-          {estBubble('EPS Estimate', fmtEpsEst(upEps), epsG.pct, epsG.label)}
+          {estBubble('EPS Estimate', fmtEpsEst(upEps), fmtEpsEst(latestEpsActual), epsChg)}
         </div>
       </div>
     );
