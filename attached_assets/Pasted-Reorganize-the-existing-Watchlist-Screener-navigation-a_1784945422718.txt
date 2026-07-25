@@ -1,0 +1,410 @@
+Reorganize the existing Watchlist Screener navigation and columns.
+
+This is a simple frontend organization task. Do not redesign, refactor, optimize, or rewrite the screener.
+
+## Absolute constraints
+
+* Frontend only.
+* Do not modify the backend.
+* Do not modify any API endpoint, request, response, cache, database, refresh process, or data-fetching logic.
+* Do not delete any existing metric, column definition, formatter, tooltip, sort behavior, filter behavior, cell renderer, conditional styling, or calculation.
+* Do not rename backend field keys.
+* Do not recreate existing metric logic.
+* Preserve the existing toggle behavior exactly:
+
+  * active state
+  * sorting
+  * sort direction
+  * filtering
+  * pagination
+  * tooltips
+  * sticky columns
+  * responsive behavior
+  * loading states
+  * empty states
+  * formatting
+* Move and reuse the existing column definitions wherever possible instead of creating duplicate definitions.
+* Do not touch unrelated Watchlist sections.
+* Do not make cosmetic changes beyond what is necessary to support the new navigation labels and subtoggles.
+* Do not invent replacement paths or parallel implementations.
+
+Before editing, read the current Watchlist Screener implementation and identify:
+
+1. The existing top-level toggle state.
+2. The existing Quality subtoggle state.
+3. Every existing column-definition array.
+4. The existing row-data keys used by every column.
+5. Existing 1-day, 7-day, and 30-day price-performance fields available in the frontend row payload or types.
+
+Then make only the organizational changes below.
+
+# New top-level navigation
+
+Display the top-level toggles in this exact order:
+
+1. Market
+2. Technical
+3. Options
+4. Fundamentals
+5. Earnings & Estimates
+
+Preserve the current default-selected behavior. Do not accidentally change the initial active view merely because the toggle order changed.
+
+---
+
+# 1. Market
+
+This view should contain current price and trading-activity information.
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Price
+5. 1D %
+6. 7D %
+7. 30D %
+8. Volume
+9. VOLX
+10. VOL RANK
+11. Vol/MC
+12. Beta
+
+Requirements:
+
+* Use the existing `Chg %` value and logic for `1D %`. This is a display-label organization change, not a new calculation.
+* Find and reuse the existing frontend fields for 7-day and 30-day price performance.
+* Do not calculate 7D or 30D performance inside the table.
+* Do not create a new API request.
+* Do not change any upstream calculation.
+* If 7D or 30D performance truly does not exist anywhere in the current frontend payload or types, do not invent a field or modify the backend. Report the exact missing fields after completing the rest of the reorganization.
+* Preserve the current percentage formatter, colors, null handling, and sorting behavior.
+
+Move the following existing columns out of Technical and into Market:
+
+* Price
+* Chg % / 1D %
+* Volume
+* VOLX
+* VOL RANK
+* Vol/MC
+* Beta
+
+---
+
+# 2. Technical
+
+This view should contain only chart structure, technical conditions, and setup/actionability information.
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Stage
+5. Technical State
+6. Entry Zone
+7. Breakout Signal
+8. Momentum Trend
+9. Extension Risk
+10. MA Stack
+11. % vs 50D
+12. % vs 200D
+13. 52W Pos
+14. % From 52W High
+15. Accum/Dist
+16. Squeeze
+17. ATR %
+
+Reuse every existing technical column, tooltip, renderer, sort key, and formatter exactly as it currently works.
+
+Do not change how any technical state or signal is calculated.
+
+---
+
+# 3. Options
+
+Move the existing options-related columns out of Technical and into their own top-level view.
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Opt Score
+5. Opt Signal
+6. P/C
+7. IV
+8. EM
+9. Opt Vol
+10. OI
+
+Preserve all current:
+
+* options score logic
+* signal logic
+* badges
+* colors
+* null states
+* tooltips
+* number formatting
+* sorting
+* data-fetch behavior
+
+Do not create a second options implementation. Reuse the existing columns and row values.
+
+---
+
+# 4. Fundamentals
+
+The Fundamentals top-level view should contain these subtoggles in this exact order:
+
+1. Overview
+2. Financials
+3. Strength
+4. Quality
+5. Valuation
+
+Reuse the current Quality-subtoggle implementation and styling rather than building an unrelated second toggle system.
+
+## Fundamentals — Overview
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Mkt Cap
+5. Revenue
+6. Rev Grwth (Y)
+7. Gross Mgn
+8. FCF Mgn
+9. Net Cash/Debt
+10. ROIC
+11. FCF Conv
+12. Shrs Grwth
+13. Rev Accel
+14. Fwd Rev Grwth
+15. Rev Est Δ90D
+16. Fwd P/S
+17. Fwd P/E
+
+This is intentionally a summarized view, so these fields may also appear in their more detailed subtoggles.
+
+## Fundamentals — Financials
+
+This is the reorganized version of the current Fundamental table.
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Mkt Cap
+5. Revenue
+6. Rev Grwth (Q)
+7. Rev Grwth (Y)
+8. Gross Mgn
+9. Op Margin
+10. FCF Mgn
+11. Free CF
+12. Op. Income
+13. EBIT
+14. EPS Grwth
+
+Do not delete P/E, P/S, EV/EBITDA, D/E, ND/EBITDA, Insider %, Earnings Date, or forecast metrics from the codebase. They are being moved to more appropriate views below.
+
+## Fundamentals — Strength
+
+Use the existing Financial Strength columns and logic.
+
+Column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Cash
+5. Net Cash/Debt
+6. Runway Months
+7. Runway Status
+8. Curr Ratio
+9. Int Coverage
+10. D/E
+11. ND/EBITDA
+12. Altman Z
+13. Altman Risk
+14. Piotroski
+
+Only change the visible subtoggle label from `Fin. Strength` to `Strength`.
+
+Do not change any underlying key or calculation.
+
+## Fundamentals — Quality
+
+Use the existing Business Quality columns and logic.
+
+Column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Gross Mgn
+5. Op Margin
+6. FCF Mgn
+7. ROIC
+8. FCF Conv
+9. Shrs Grwth YoY
+10. SBC/Rev
+
+Move FCF Yield into Valuation.
+
+Only change the visible subtoggle label from `Biz Quality` to `Quality`.
+
+Do not change any underlying key or calculation.
+
+## Fundamentals — Valuation
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. P/E
+5. Fwd P/E
+6. P/S
+7. Fwd P/S
+8. EV/EBITDA
+9. Fwd EV/EBITDA
+10. Fwd EV/S
+11. P/FCF
+12. FCF Yield
+
+Reuse all existing valuation column logic exactly.
+
+---
+
+# 5. Earnings & Estimates
+
+This top-level view should contain two subtoggles:
+
+1. Growth
+2. Estimates
+
+Use the same existing subtoggle component and state pattern already used by the current Quality section. Do not build a fundamentally different navigation system.
+
+## Earnings & Estimates — Growth
+
+Move the existing Growth table here.
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Rev Grwth (Q)
+5. Rev Grwth (Y)
+6. Rev Accel
+7. GM Δ YoY
+8. Incr Op Mgn
+9. Fwd Rev Grwth
+10. EPS Grwth
+
+Reuse the current Growth fields, renderers, and sorting exactly.
+
+## Earnings & Estimates — Estimates
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Earn. Date
+5. Rev Grwth Est
+6. Rev Grwth NQ
+7. Rev Grwth NY
+8. Fwd Rev Grwth
+9. Rev Est Δ90D
+10. EPS Grwth Est
+11. EPS Grwth TQ
+12. EPS Grwth NQ
+13. EPS Grwth TY
+14. EPS Grwth NY
+15. EPS Est Δ90D
+
+Use the existing fields exactly as currently named and calculated internally.
+
+Do not change the meaning or period of any estimate field during this task, even if a label could eventually be improved. This task is organization only.
+
+---
+
+# Insider %
+
+Do not delete the existing Insider % column or its logic.
+
+For now, place Insider % at the end of:
+
+`Fundamentals → Financials`
+
+Do not create a new Ownership view during this task.
+
+---
+
+# Implementation guidance
+
+Prefer reorganizing the existing column arrays/configuration rather than moving or rewriting calculation code.
+
+There should remain one canonical implementation for each column.
+
+Do not duplicate formatter logic such as:
+
+* percentages
+* currency
+* market capitalization
+* multiples
+* nullable values
+* N/M values
+* status badges
+* signal colors
+
+Do not use broad identity checks between entire column arrays if the current implementation depends on exact metric keys. Preserve explicit key-based formatting and sorting rules.
+
+Do not change backend contracts to make the frontend organization easier.
+
+---
+
+# Required verification
+
+After implementation, verify every top-level toggle and subtoggle manually.
+
+Confirm:
+
+* Market loads and displays.
+* Technical loads and displays.
+* Options loads and displays.
+* Fundamentals Overview loads and displays.
+* Fundamentals Financials loads and displays.
+* Fundamentals Strength loads and displays.
+* Fundamentals Quality loads and displays.
+* Fundamentals Valuation loads and displays.
+* Earnings & Estimates Growth loads and displays.
+* Earnings & Estimates Estimates loads and displays.
+* Switching repeatedly between views does not blank the table.
+* Sorting works in every view.
+* Switching views after sorting does not crash or incorrectly reuse an unsupported sort key.
+* Existing filters still work.
+* Existing ticker rows remain present.
+* Existing tooltips still work.
+* No existing metric was deleted.
+* No console errors were introduced.
+* No TypeScript errors were introduced.
+* No API calls or backend behavior changed.
+
+At completion, report only:
+
+1. File or files changed.
+2. The final top-level toggle order.
+3. The final subtoggle structure.
+4. Whether existing 7D and 30D performance fields were found and which exact frontend keys were reused.
+5. Confirmation that no backend, API, cache, calculation, formatter, sorting, or filtering logic was changed.
+6. Results of the toggle and sorting verification.

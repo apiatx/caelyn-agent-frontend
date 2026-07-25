@@ -980,8 +980,10 @@ const FUND_COLS: FundColDef[] = [
 /* ═══════════════════════════════════════════════════════════════════
    QUALITY SCREENER — types, category column definitions
    ═══════════════════════════════════════════════════════════════════ */
-type QualityCategory = 'overview' | 'financial-strength' | 'business-quality' | 'growth-quality' | 'valuation';
-const WL_QUALITY_CATEGORY_KEY = 'wl_quality_category';
+type FundamentalsCategory = 'overview' | 'financials' | 'strength' | 'quality' | 'valuation';
+type EarningsCategory = 'growth' | 'estimates';
+const WL_FUNDAMENTALS_CATEGORY_KEY = 'wl_fundamentals_category';
+const WL_EARNINGS_CATEGORY_KEY = 'wl_earnings_category';
 
 const Q_BASE: FundColDef[] = [
   { key: 'ticker',               label: 'Ticker',  aliases: ['symbol'],                                                                                          fmt: 'symbol' },
@@ -1057,6 +1059,82 @@ const QUALITY_VALUATION_COLS: FundColDef[] = [
   { key: 'fcf_yield',         label: 'FCF Yield',     aliases: ['FCF Yield','fcfYield','free_cash_flow_yield','fcf_yield_pct'],                                fmt: 'pct',    tooltip: 'TTM free cash flow divided by current market capitalization. Above 5% is generally attractive, 2–5% is moderate, and below 2% is expensive or weak. Negative means the company is burning cash.' },
 ];
 
+/* ── New column arrays for reorganized navigation ──────────────────────── */
+
+// Fundamentals → Overview
+const FUND_OVERVIEW_COLS: FundColDef[] = [
+  ...Q_BASE,
+  FUND_COLS.find(c => c.key === 'market_cap')!,
+  FUND_COLS.find(c => c.key === 'revenue')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'revenue_growth')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'gross_margin')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'fcf_margin')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'net_cash_debt')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'roic')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'fcf_conversion')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'diluted_shares_growth_yoy')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'revenue_acceleration')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'forward_revenue_growth')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'revenue_estimate_revision_90d')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'forward_ps')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'forward_pe')!,
+];
+
+// Fundamentals → Financials
+const FUND_FINANCIALS_COLS: FundColDef[] = [
+  ...Q_BASE,
+  FUND_COLS.find(c => c.key === 'market_cap')!,
+  FUND_COLS.find(c => c.key === 'revenue')!,
+  FUND_COLS.find(c => c.key === 'revenue_growth_q')!,
+  FUND_COLS.find(c => c.key === 'revenue_growth')!,
+  FUND_COLS.find(c => c.key === 'gross_margin')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'operating_margin')!,
+  FUND_COLS.find(c => c.key === 'fcf_margin')!,
+  FUND_COLS.find(c => c.key === 'free_cash_flow')!,
+  FUND_COLS.find(c => c.key === 'operating_income')!,
+  FUND_COLS.find(c => c.key === 'ebit')!,
+  FUND_COLS.find(c => c.key === 'eps_growth')!,
+  FUND_COLS.find(c => c.key === 'shares_insiders')!,
+];
+
+// Fundamentals → Strength (same data as Financial Strength, label change only)
+const FUND_STRENGTH_COLS = QUALITY_FINANCIAL_STRENGTH_COLS;
+
+// Fundamentals → Quality (Business Quality without FCF Yield, which moves to Valuation)
+const FUND_QUALITY_COLS: FundColDef[] = QUALITY_BUSINESS_QUALITY_COLS.filter(c => c.key !== 'fcf_yield');
+
+// Fundamentals → Valuation (QUALITY_VALUATION_COLS already includes FCF Yield)
+const FUND_VALUATION_COLS = QUALITY_VALUATION_COLS;
+
+// Earnings & Estimates → Growth
+const EARNINGS_GROWTH_COLS: FundColDef[] = [
+  ...Q_BASE,
+  FUND_COLS.find(c => c.key === 'revenue_growth_q')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'revenue_growth')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'revenue_acceleration')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'gross_margin_change_yoy')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'incremental_operating_margin')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'forward_revenue_growth')!,
+  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'eps_growth')!,
+];
+
+// Earnings & Estimates → Estimates
+const EARNINGS_ESTIMATES_COLS: FundColDef[] = [
+  ...Q_BASE,
+  FUND_COLS.find(c => c.key === 'earnings_date')!,
+  FUND_COLS.find(c => c.key === 'revenue_growth_est')!,
+  FUND_COLS.find(c => c.key === 'rev_growth_next_quarter')!,
+  FUND_COLS.find(c => c.key === 'rev_growth_next_year')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'forward_revenue_growth')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'revenue_estimate_revision_90d')!,
+  FUND_COLS.find(c => c.key === 'eps_growth_est')!,
+  FUND_COLS.find(c => c.key === 'eps_growth_tq')!,
+  FUND_COLS.find(c => c.key === 'eps_growth_nq')!,
+  FUND_COLS.find(c => c.key === 'eps_growth_ty')!,
+  FUND_COLS.find(c => c.key === 'eps_growth_ny')!,
+  QUALITY_OVERVIEW_COLS.find(c => c.key === 'eps_estimate_revision_90d')!,
+];
+
 /* Helper: look up a column def across all Quality + Fundamental column sets */
 function findAnyColDef(key: string): FundColDef | undefined {
   return FUND_COLS.find(c => c.key === key)
@@ -1064,14 +1142,19 @@ function findAnyColDef(key: string): FundColDef | undefined {
     || QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === key)
     || QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === key)
     || QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === key)
-    || QUALITY_VALUATION_COLS.find(c => c.key === key);
+    || QUALITY_VALUATION_COLS.find(c => c.key === key)
+    || FUND_OVERVIEW_COLS.find(c => c.key === key)
+    || FUND_FINANCIALS_COLS.find(c => c.key === key)
+    || EARNINGS_GROWTH_COLS.find(c => c.key === key)
+    || EARNINGS_ESTIMATES_COLS.find(c => c.key === key);
 }
 
 /** Keys of Quality columns whose fmt === 'pct' — use qualFmtPct (no ×100 scaling). */
 const QUALITY_PCT_KEYS = new Set<string>(
   [...QUALITY_OVERVIEW_COLS, ...QUALITY_FINANCIAL_STRENGTH_COLS,
    ...QUALITY_BUSINESS_QUALITY_COLS, ...QUALITY_GROWTH_QUALITY_COLS,
-   ...QUALITY_VALUATION_COLS]
+   ...QUALITY_VALUATION_COLS, ...FUND_OVERVIEW_COLS, ...FUND_FINANCIALS_COLS,
+   ...FUND_QUALITY_COLS, ...EARNINGS_GROWTH_COLS, ...EARNINGS_ESTIMATES_COLS]
     .filter(c => c.fmt === 'pct')
     .map(c => c.key)
 );
@@ -2116,16 +2199,26 @@ export default function WatchlistPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [screenerMode, setScreenerMode] = useState<'technical' | 'fundamental' | 'quality'>(() => {
+  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'earnings'>(() => {
     try {
       const v = localStorage.getItem('wl_screener_mode') as string;
-      if (v === 'fundamental' || v === 'technical' || v === 'quality') return v;
+      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals' || v === 'earnings') return v;
+      if (v === 'fundamental' || v === 'quality') return 'fundamentals';
       return 'technical';
     } catch { return 'technical'; }
   });
-  const [qualityCategory, setQualityCategory] = useState<QualityCategory>(() => {
-    try { return (localStorage.getItem(WL_QUALITY_CATEGORY_KEY) as QualityCategory) || 'overview'; }
-    catch { return 'overview'; }
+  const [fundamentalsCategory, setFundamentalsCategory] = useState<FundamentalsCategory>(() => {
+    try {
+      const v = localStorage.getItem(WL_FUNDAMENTALS_CATEGORY_KEY) as string;
+      if (v === 'overview' || v === 'financials' || v === 'strength' || v === 'quality' || v === 'valuation') return v as FundamentalsCategory;
+      if (v === 'financial-strength') return 'strength';
+      if (v === 'business-quality') return 'quality';
+      return 'overview';
+    } catch { return 'overview'; }
+  });
+  const [earningsCategory, setEarningsCategory] = useState<EarningsCategory>(() => {
+    try { return (localStorage.getItem(WL_EARNINGS_CATEGORY_KEY) as EarningsCategory) || 'growth'; }
+    catch { return 'growth'; }
   });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
     try { return localStorage.getItem('wl_hide_foreign') === '1'; } catch { return false; }
@@ -4785,43 +4878,63 @@ export default function WatchlistPage() {
           return t === selectedTheme;
         })
       : screenerFilteredRows;
-    const TICKER_GRID = '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 72px 64px 80px 68px 80px 52px 80px 48px 52px 52px 60px 56px 64px 68px 72px 100px 72px 84px 88px 116px 112px 64px 52px 80px 80px 80px';
-    // 31 tracks: original 17 + 13 technical cols + 1 beta col; total min ~2574px
-    const TICKER_TABLE_MIN_WIDTH = 2574;
-    const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] = [
-      { key: 'ticker', label: 'Ticker' },
-      { key: 'company', label: 'Company' },
-      { key: 'theme', label: 'Theme' },
-      { key: 'price', label: 'Price' },
-      { key: 'chg', label: 'Chg %' },
-      { key: 'volume', label: 'Volume' },
-      { key: 'relVol', label: 'VOLX' },
-      { key: 'rvRankMove', label: 'VOL RANK' },
-      { key: 'volMc', label: 'Vol/MC' },
-      { key: 'stage2', label: 'Stage' },
-      { key: 'optionsScore', label: 'Opt Score' },
-      { label: 'Opt Signal' },
-      { key: 'optionsPutCall', label: 'P/C' },
-      { key: 'optionsIv', label: 'IV' },
-      { key: 'optionsExpectedMove', label: 'EM' },
-      { key: 'optionsVolume', label: 'Opt Vol' },
-      { key: 'optionsOi', label: 'OI' },
-      // ── Technical metrics columns ────────────────────────────────────
-      { key: 'maStack',        label: 'MA Stack',          tooltip: 'Whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull = constructive trend; Bear = weak or broken trend.' },
-      { key: 'pctVs50d',       label: '% vs 50D',          tooltip: 'Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.' },
-      { key: 'pctVs200d',      label: '% vs 200D',         tooltip: 'Price distance from the 200-day moving average. Shows long-term trend context. Below the 200D is generally weaker.' },
-      { key: 'extRisk',        label: 'Extension Risk',    tooltip: 'Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.' },
-      { key: 'pos52w',         label: '52W Pos',           tooltip: 'Where price sits in its 52-week range from 0–100%. Higher = closer to yearly highs / leadership; very low = damaged or early recovery.' },
-      { key: 'pctFrom52wHigh', label: '% From 52W High',  tooltip: 'How far below the 52-week high price currently is. Near 0 = near highs / breakout area; deeply negative = more overhead supply or damage.' },
-      { key: 'entryZone',      label: 'Entry Zone',        tooltip: 'Interpreted entry timing label — shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.' },
-      { key: 'bkSignal',       label: 'Breakout Signal',   tooltip: 'Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Separates actionable breakouts from chase/failed setups.' },
-      { key: 'accumDist',      label: 'Accum/Dist',        tooltip: 'Recent price/volume behavior scored as accumulation vs. distribution. Accumulation = demand; Distribution = selling pressure; Dry-up can indicate a base or squeeze.' },
-      { key: 'squeezeSig',     label: 'Squeeze',           tooltip: 'Volatility compression or expansion. Tight/coiling = setup energy building; Volatile = wider risk; Expansion = the move may already be underway.' },
-      { key: 'atrPct',         label: 'ATR %',             tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
-      { key: 'momentumTrend',  label: 'Momentum Trend',    tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
-      { key: 'techState',      label: 'Technical State',   tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
-      { key: 'beta',           label: 'Beta',              tooltip: 'Measures price sensitivity to broad market movements. Beta above 1.0 means more volatile than the market; below 1.0 means less volatile; negative beta tends to move opposite to the market.' },
-    ];
+    // Mode-specific grid layout and column headers
+    const TICKER_GRID =
+      screenerMode === 'market'
+        ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 80px'
+        : screenerMode === 'options'
+          ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 52px 80px 48px 52px 52px 60px 56px'
+          : /* technical */ '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 88px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
+    const TICKER_TABLE_MIN_WIDTH =
+      screenerMode === 'market' ? 960
+      : screenerMode === 'options' ? 724
+      : /* technical */ 1456;
+    const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] =
+      screenerMode === 'market' ? [
+        { key: 'ticker',      label: 'Ticker' },
+        { key: 'company',     label: 'Company' },
+        { key: 'theme',       label: 'Theme' },
+        { key: 'price',       label: 'Price' },
+        { key: 'chg',         label: '1D %' },
+        { label: '7D %',      tooltip: '7-day price performance — not yet available in the watchlist payload.' },
+        { label: '30D %',     tooltip: '30-day price performance — not yet available in the watchlist payload.' },
+        { key: 'volume',      label: 'Volume' },
+        { key: 'relVol',      label: 'VOLX' },
+        { key: 'rvRankMove',  label: 'VOL RANK' },
+        { key: 'volMc',       label: 'Vol/MC' },
+        { key: 'beta',        label: 'Beta', tooltip: 'Measures price sensitivity to broad market movements. Beta above 1.0 means more volatile than the market; below 1.0 means less volatile; negative beta tends to move opposite to the market.' },
+      ]
+      : screenerMode === 'options' ? [
+        { key: 'ticker',              label: 'Ticker' },
+        { key: 'company',             label: 'Company' },
+        { key: 'theme',               label: 'Theme' },
+        { key: 'optionsScore',        label: 'Opt Score' },
+        { label: 'Opt Signal' },
+        { key: 'optionsPutCall',      label: 'P/C' },
+        { key: 'optionsIv',           label: 'IV' },
+        { key: 'optionsExpectedMove', label: 'EM' },
+        { key: 'optionsVolume',       label: 'Opt Vol' },
+        { key: 'optionsOi',           label: 'OI' },
+      ]
+      : /* technical */ [
+        { key: 'ticker',         label: 'Ticker' },
+        { key: 'company',        label: 'Company' },
+        { key: 'theme',          label: 'Theme' },
+        { key: 'stage2',         label: 'Stage' },
+        { key: 'techState',      label: 'Technical State',  tooltip: 'Summary chart condition: Coiling, Pullback Entry, Breakout Trigger, Trend Advance, Extended, Overheated, Distribution, Broken, or Neutral. Chart timing context — not a buy/sell rating.' },
+        { key: 'entryZone',      label: 'Entry Zone',       tooltip: 'Interpreted entry timing label — shows whether the stock is near a 20D/50D pullback, breakout watch, fresh breakout, extended, overheated, broken, or neutral.' },
+        { key: 'bkSignal',       label: 'Breakout Signal',  tooltip: 'Detects coiling, near-trigger, fresh breakout, confirmed breakout, extended breakout, failed breakout, or no setup. Separates actionable breakouts from chase/failed setups.' },
+        { key: 'momentumTrend',  label: 'Momentum Trend',   tooltip: 'Recent price momentum / rate-of-change trend. Positive or accelerating supports the trend; Cooling, diverging, or negative warns momentum is fading.' },
+        { key: 'extRisk',        label: 'Extension Risk',   tooltip: 'Flags whether price is healthy, extended, overheated, in a pullback zone, or broken. Helps avoid chasing names too far above key moving averages.' },
+        { key: 'maStack',        label: 'MA Stack',         tooltip: 'Whether short/intermediate/long moving averages are aligned bullishly, mixed, or bearishly. Bull = constructive trend; Bear = weak or broken trend.' },
+        { key: 'pctVs50d',       label: '% vs 50D',         tooltip: 'Price distance from the 50-day moving average. Near/above can be healthy; very far above can mean extended; below can signal weakness.' },
+        { key: 'pctVs200d',      label: '% vs 200D',        tooltip: 'Price distance from the 200-day moving average. Shows long-term trend context. Below the 200D is generally weaker.' },
+        { key: 'pos52w',         label: '52W Pos',          tooltip: 'Where price sits in its 52-week range from 0–100%. Higher = closer to yearly highs / leadership; very low = damaged or early recovery.' },
+        { key: 'pctFrom52wHigh', label: '% From 52W High', tooltip: 'How far below the 52-week high price currently is. Near 0 = near highs / breakout area; deeply negative = more overhead supply or damage.' },
+        { key: 'accumDist',      label: 'Accum/Dist',       tooltip: 'Recent price/volume behavior scored as accumulation vs. distribution. Accumulation = demand; Distribution = selling pressure; Dry-up can indicate a base or squeeze.' },
+        { key: 'squeezeSig',     label: 'Squeeze',          tooltip: 'Volatility compression or expansion. Tight/coiling = setup energy building; Volatile = wider risk; Expansion = the move may already be underway.' },
+        { key: 'atrPct',         label: 'ATR %',            tooltip: 'Average true range as a percent of price. Used to size risk — higher ATR means the stock is more volatile and requires wider stops.' },
+      ];
 
     /* ── inline filter modal ─────────────────────────────────────────── */
     const filterModal = (showFilterModal && isMainScreener) ? (() => {
@@ -4958,7 +5071,7 @@ export default function WatchlistPage() {
           </span>
           {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {(['technical', 'fundamental', 'quality'] as const).map((mode, mi, arr) => (
+              {(['market', 'technical', 'options', 'fundamentals', 'earnings'] as const).map((mode, mi, arr) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -4976,7 +5089,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {mode === 'technical' ? 'Technical' : mode === 'fundamental' ? 'Fundamental' : 'Quality'}
+                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : mode === 'fundamentals' ? 'Fundamentals' : 'Earnings'}
                 </button>
               ))}
             </div>
@@ -5007,7 +5120,7 @@ export default function WatchlistPage() {
               REFRESHING…
             </span>
           )}
-          {screenerMode === 'technical' && !opts?.rows && !isRefreshing && pendingCount > 0 && (
+          {(screenerMode === 'market' || screenerMode === 'technical' || screenerMode === 'options') && !opts?.rows && !isRefreshing && pendingCount > 0 && (
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: font,
               padding: '2px 6px', borderRadius: 3,
@@ -5018,7 +5131,7 @@ export default function WatchlistPage() {
               {pendingCount} PENDING ANALYSIS
             </span>
           )}
-          {screenerMode === 'technical' && optionsMeta && (
+          {(screenerMode === 'market' || screenerMode === 'technical' || screenerMode === 'options') && optionsMeta && (
             ((optionsMeta.deferred_symbols_count ?? 0) > 0 || (optionsMeta.inflight_symbols_count ?? 0) > 0) ? (
               <span style={{ fontSize: 7, color: C.amber, opacity: 0.75, letterSpacing: '0.03em' }}>
                 Options scan warming — cached rows shown first
@@ -5098,36 +5211,55 @@ export default function WatchlistPage() {
           </div>
         )}
 
-        {screenerMode === 'quality' && (
+        {screenerMode === 'fundamentals' && (
           <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
-            {([ ['overview','Overview'], ['financial-strength','Fin. Strength'], ['business-quality','Biz Quality'], ['growth-quality','Growth'], ['valuation','Valuation'] ] as [QualityCategory, string][]).map(([cat, label]) => (
+            {([ ['overview','Overview'], ['financials','Financials'], ['strength','Strength'], ['quality','Quality'], ['valuation','Valuation'] ] as [FundamentalsCategory, string][]).map(([cat, label]) => (
               <button
                 key={cat}
-                onClick={() => { setQualityCategory(cat); try { localStorage.setItem(WL_QUALITY_CATEGORY_KEY, cat); } catch {} }}
+                onClick={() => { setFundamentalsCategory(cat); try { localStorage.setItem(WL_FUNDAMENTALS_CATEGORY_KEY, cat); } catch {} }}
                 style={{
                   fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
                   padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
                   textTransform: 'uppercase' as const, fontFamily: font,
-                  background: qualityCategory === cat ? `${C.teal}22` : 'transparent',
-                  color: qualityCategory === cat ? C.teal : C.dim,
-                  border: `1px solid ${qualityCategory === cat ? `${C.teal}55` : C.border}`,
+                  background: fundamentalsCategory === cat ? `${C.teal}22` : 'transparent',
+                  color: fundamentalsCategory === cat ? C.teal : C.dim,
+                  border: `1px solid ${fundamentalsCategory === cat ? `${C.teal}55` : C.border}`,
                   transition: 'all 0.12s',
                 }}
               >{label}</button>
             ))}
           </div>
         )}
-        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamental' || screenerMode === 'quality') ? (
+        {screenerMode === 'earnings' && (
+          <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
+            {([ ['growth','Growth'], ['estimates','Estimates'] ] as [EarningsCategory, string][]).map(([cat, label]) => (
+              <button
+                key={cat}
+                onClick={() => { setEarningsCategory(cat); try { localStorage.setItem(WL_EARNINGS_CATEGORY_KEY, cat); } catch {} }}
+                style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+                  padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
+                  textTransform: 'uppercase' as const, fontFamily: font,
+                  background: earningsCategory === cat ? `${C.teal}22` : 'transparent',
+                  color: earningsCategory === cat ? C.teal : C.dim,
+                  border: `1px solid ${earningsCategory === cat ? `${C.teal}55` : C.border}`,
+                  transition: 'all 0.12s',
+                }}
+              >{label}</button>
+            ))}
+          </div>
+        )}
+        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamentals' || screenerMode === 'earnings') ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
-              screenerMode === 'quality'
-                ? (qualityCategory === 'financial-strength' ? QUALITY_FINANCIAL_STRENGTH_COLS
-                  : qualityCategory === 'business-quality'  ? QUALITY_BUSINESS_QUALITY_COLS
-                  : qualityCategory === 'growth-quality'    ? QUALITY_GROWTH_QUALITY_COLS
-                  : qualityCategory === 'valuation'         ? QUALITY_VALUATION_COLS
-                  : QUALITY_OVERVIEW_COLS)
-                : FUND_COLS,
-              screenerMode === 'quality'
+              screenerMode === 'earnings'
+                ? (earningsCategory === 'estimates' ? EARNINGS_ESTIMATES_COLS : EARNINGS_GROWTH_COLS)
+                : (fundamentalsCategory === 'financials' ? FUND_FINANCIALS_COLS
+                  : fundamentalsCategory === 'strength'  ? FUND_STRENGTH_COLS
+                  : fundamentalsCategory === 'quality'   ? FUND_QUALITY_COLS
+                  : fundamentalsCategory === 'valuation' ? FUND_VALUATION_COLS
+                  : FUND_OVERVIEW_COLS),
+              screenerMode === 'earnings' || fundamentalsCategory !== 'financials'
             )}
           </div>
         ) : (
@@ -5411,163 +5543,97 @@ export default function WatchlistPage() {
                       {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
                     </span>
                   )}
-                  <span style={{ fontSize: 10, fontWeight: 700, color: C.text, fontFamily: font, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', whiteSpace: 'nowrap' as const }}>
-                    {formatPrice(stock.price)}
-                    {!isPending && stock.price_source && (
-                      <PriceFreshnessBadge
-                        compact
-                        meta={{
-                          source: stock.price_source,
-                          is_realtime: stock.price_is_realtime,
-                          is_live_backup: stock.price_is_live_backup,
-                          is_stale: stock.price_is_stale,
-                          staleness_seconds: stock.staleness_seconds,
-                          quote_timestamp: stock.quote_timestamp,
-                          updated_at: stock.price_updated_at,
-                        }}
-                      />
-                    )}
-                  </span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: cCol, fontFamily: font, whiteSpace: 'nowrap' as const }}>
-                    {formatChgPct(chg1d)}
-                  </span>
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, whiteSpace: 'nowrap' as const }}>
-                    {formatVolume(stock.volume)}
-                  </span>
-                  {/* Rel Vol — raw value only */}
-                  <span style={{ fontSize: 10, color: C.text, fontFamily: font, whiteSpace: 'nowrap' as const }}>
-                    {formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}
-                  </span>
-                  {/* REL VOL RANK MOVE — rank position change since last snapshot */}
-                  <span style={{ fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const }}>
-                    {stock.rel_vol_trend === 'up' && stock.rel_vol_rank_delta != null ? (
-                      <span
-                        style={{ color: '#22c55e', fontWeight: 600 }}
-                        title={`Moved up ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}
-                      >
-                        +{Math.abs(stock.rel_vol_rank_delta)} ranks
-                      </span>
-                    ) : stock.rel_vol_trend === 'down' && stock.rel_vol_rank_delta != null ? (
-                      <span
-                        style={{ color: '#ef4444', fontWeight: 600 }}
-                        title={`Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}
-                      >
-                        -{Math.abs(stock.rel_vol_rank_delta)} ranks
-                      </span>
-                    ) : stock.rel_vol_trend === 'flat' ? (
-                      <span style={{ color: C.dim }} title="No meaningful change in relative-volume rank">Flat</span>
-                    ) : stock.rel_vol_trend === 'unknown' ? (
-                      <span style={{ color: C.dim }} title="No prior relative-volume snapshot yet">New</span>
-                    ) : (
-                      <span style={{ color: C.dim }}>—</span>
-                    )}
-                  </span>
-                  {/* Vol/MC — raw value only */}
-                  <span
-                    style={{
-                      fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const,
-                      color: volMcLabelColor(stock.vol_mc_label, C),
-                    }}
-                    title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}
-                  >
-                    {formatVolMcPct(stock.vol_mc_pct)}
-                  </span>
-                  {/* Stage — col 10 */}
-                  {_stageLabel ? (
-                    <span
-                      title={_stageReason ?? undefined}
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 7, fontWeight: 800, fontFamily: font,
-                        padding: '2px 5px', borderRadius: 3,
-                        color: _sClr, background: _sBg,
-                        border: `1px solid ${_sBdr}`,
-                        textTransform: 'uppercase' as const, letterSpacing: '0.05em',
-                        whiteSpace: 'nowrap' as const, lineHeight: 1.4,
-                        cursor: _stageReason ? 'help' : 'default',
-                      }}
-                    >
-                      {_stageLabel}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 10, fontFamily: font, color: C.dim }}>—</span>
-                  )}
-                  {/* Opt Score — col 11 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
-                  {/* Opt Signal — col 12 */}
-                  <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
-                  {/* P/C — col 13 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
-                  {/* IV — col 14 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
-                  {/* EM — col 15 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
-                  {/* Opt Vol — col 16 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
-                  {/* OI — col 17 */}
-                  <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
-                  {/* ── Technical Metrics Columns 18-30 ────────────────────── */}
-                  {((_tm, _ts, _tts) => {
+                  {/* ── Mode-specific cells ──────────────────────────────── */}
+                  {screenerMode === 'market' && (() => {
                     const _sp: React.CSSProperties = { fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const };
-                    const _tl = (s: string | null | undefined) =>
-                      s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : DASH;
-                    const _signedPct = (v: number | null | undefined) =>
-                      v != null && Number.isFinite(Number(v)) ? `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(1)}%` : DASH;
-                    // MA Stack
+                    const _bv = (stock as any).beta != null ? Number((stock as any).beta) : null;
+                    const _bStr = _bv != null && Number.isFinite(_bv) ? _bv.toFixed(2) : DASH;
+                    const _bClr = _bv == null ? C.dim : Math.abs(_bv) > 1.5 ? '#fb923c' : _bv > 1 ? C.amber : _bv < 0 ? '#a78bfa' : C.text;
+                    return (
+                      <>
+                        <span style={{ ..._sp, fontWeight: 700, color: C.text, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+                          {formatPrice(stock.price)}
+                          {!isPending && stock.price_source && (
+                            <PriceFreshnessBadge compact meta={{ source: stock.price_source, is_realtime: stock.price_is_realtime, is_live_backup: stock.price_is_live_backup, is_stale: stock.price_is_stale, staleness_seconds: stock.staleness_seconds, quote_timestamp: stock.quote_timestamp, updated_at: stock.price_updated_at }} />
+                          )}
+                        </span>
+                        <span style={{ ..._sp, fontWeight: 700, color: cCol }}>{formatChgPct(chg1d)}</span>
+                        <span style={{ ..._sp, color: C.dim }}>—</span>
+                        <span style={{ ..._sp, color: C.dim }}>—</span>
+                        <span style={{ ..._sp, color: C.text }}>{formatVolume(stock.volume)}</span>
+                        <span style={{ ..._sp, color: C.text }}>{formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}</span>
+                        <span style={_sp}>
+                          {stock.rel_vol_trend === 'up' && stock.rel_vol_rank_delta != null ? (
+                            <span style={{ color: '#22c55e', fontWeight: 600 }} title={`Moved up ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}>+{Math.abs(stock.rel_vol_rank_delta)} ranks</span>
+                          ) : stock.rel_vol_trend === 'down' && stock.rel_vol_rank_delta != null ? (
+                            <span style={{ color: '#ef4444', fontWeight: 600 }} title={`Moved down ${Math.abs(stock.rel_vol_rank_delta)} spots in relative-volume rank since the previous snapshot`}>-{Math.abs(stock.rel_vol_rank_delta)} ranks</span>
+                          ) : stock.rel_vol_trend === 'flat' ? (
+                            <span style={{ color: C.dim }} title="No meaningful change in relative-volume rank">Flat</span>
+                          ) : stock.rel_vol_trend === 'unknown' ? (
+                            <span style={{ color: C.dim }} title="No prior relative-volume snapshot yet">New</span>
+                          ) : <span style={{ color: C.dim }}>—</span>}
+                        </span>
+                        <span style={{ ..._sp, color: volMcLabelColor(stock.vol_mc_label, C) }} title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}>{formatVolMcPct(stock.vol_mc_pct)}</span>
+                        <span style={{ ..._sp, color: _bClr }}>{_bStr}</span>
+                      </>
+                    );
+                  })()}
+                  {screenerMode === 'technical' && (() => {
+                    const _sp: React.CSSProperties = { fontSize: 10, fontFamily: font, whiteSpace: 'nowrap' as const };
+                    const _tl = (s: string | null | undefined) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : DASH;
+                    const _signedPct = (v: number | null | undefined) => v != null && Number.isFinite(Number(v)) ? `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(1)}%` : DASH;
+                    const _tm = _s2?.technical_metrics;
+                    const _ts = _s2?.technical_state;
+                    const _tsVal: string | null | undefined = _ts ?? _tm?.technical_state;
+                    const _tsClr = _tsVal === 'overheated' ? '#fb923c' : _tsVal === 'extended' ? C.amber : _tsVal === 'normal' ? '#22c55e' : _tsVal === 'weak' ? C.red : C.dim;
+                    const _ezClr = _tm?.entry_zone === 'optimal' ? '#22c55e' : _tm?.entry_zone === 'breakout_watch' ? C.amber : _tm?.entry_zone === 'extended' ? '#fb923c' : C.dim;
+                    const _bsClr = _tm?.breakout_signal === 'triggered' ? '#22c55e' : _tm?.breakout_signal === 'near_trigger' ? C.amber : _tm?.breakout_signal === 'failed' ? C.red : C.dim;
+                    const _moClr = _tm?.momentum_trend === 'positive' ? '#22c55e' : _tm?.momentum_trend === 'negative' ? C.red : C.dim;
+                    const _extClr = _tm?.extension_risk === 'overheated' ? '#fb923c' : _tm?.extension_risk === 'extended' ? C.amber : _tm?.extension_risk === 'normal' ? '#22c55e' : C.dim;
                     const _maClr = _tm?.ma_stack === 'bull' ? '#22c55e' : _tm?.ma_stack === 'bear' ? C.red : _tm?.ma_stack ? C.amber : C.dim;
-                    // % vs 50D / 200D
                     const _p50 = _tm?.pct_vs_sma_50; const _p50Clr = _p50 != null ? (Number(_p50) > 0 ? '#22c55e' : C.red) : C.dim;
                     const _p200 = _tm?.pct_vs_sma_200; const _p200Clr = _p200 != null ? (Number(_p200) > 0 ? '#22c55e' : C.red) : C.dim;
-                    // Extension Risk
-                    const _extClr = _tm?.extension_risk === 'overheated' ? '#fb923c' : _tm?.extension_risk === 'extended' ? C.amber : _tm?.extension_risk === 'normal' ? '#22c55e' : C.dim;
-                    // 52W Pos
                     const _pos52 = _tm?.range_position_52w;
                     const _pos52Str = _pos52 != null && Number.isFinite(Number(_pos52)) ? `${Number(_pos52).toFixed(0)}%` : DASH;
-                    // % From 52W High
                     const _pffh = _tm?.pct_from_52w_high;
                     const _pffhStr = _pffh == null ? DASH : Number(_pffh) >= 0 ? 'At High' : `${Number(_pffh).toFixed(1)}%`;
                     const _pffhClr = _pffh == null ? C.dim : Number(_pffh) >= 0 ? '#22c55e' : Number(_pffh) > -5 ? C.amber : C.dim;
-                    // Entry Zone
-                    const _ezClr = _tm?.entry_zone === 'optimal' ? '#22c55e' : _tm?.entry_zone === 'breakout_watch' ? C.amber : _tm?.entry_zone === 'extended' ? '#fb923c' : C.dim;
-                    // Breakout Signal
-                    const _bsClr = _tm?.breakout_signal === 'triggered' ? '#22c55e' : _tm?.breakout_signal === 'near_trigger' ? C.amber : _tm?.breakout_signal === 'failed' ? C.red : C.dim;
-                    // Accum/Dist
                     const _adClr = _tm?.accumulation_distribution_signal === 'bullish' ? '#22c55e' : _tm?.accumulation_distribution_signal === 'bearish' ? C.red : C.dim;
-                    // Squeeze
                     const _sqClr = _tm?.squeeze_signal === 'expansion' ? '#22c55e' : _tm?.squeeze_signal === 'compression' ? C.red : _tm?.squeeze_signal === 'squeeze' ? C.amber : C.dim;
-                    // ATR %
                     const _atrV = _tm?.atr_14_pct;
                     const _atrStr = _atrV != null && Number.isFinite(Number(_atrV)) ? `${Number(_atrV).toFixed(1)}%` : DASH;
-                    // Momentum Trend
-                    const _moClr = _tm?.momentum_trend === 'positive' ? '#22c55e' : _tm?.momentum_trend === 'negative' ? C.red : C.dim;
-                    // Technical State (root overrides metric copy)
-                    const _tsVal: string | null | undefined = _ts ?? _tm?.technical_state;
-                    const _tsClr = _tsVal === 'overheated' ? '#fb923c' : _tsVal === 'extended' ? C.amber : _tsVal === 'normal' ? '#22c55e' : _tsVal === 'weak' ? C.red : C.dim;
                     return (
                       <>
+                        {_stageLabel ? (
+                          <span title={_stageReason ?? undefined} style={{ display: 'inline-block', fontSize: 7, fontWeight: 800, fontFamily: font, padding: '2px 5px', borderRadius: 3, color: _sClr, background: _sBg, border: `1px solid ${_sBdr}`, textTransform: 'uppercase' as const, letterSpacing: '0.05em', whiteSpace: 'nowrap' as const, lineHeight: 1.4, cursor: _stageReason ? 'help' : 'default' }}>{_stageLabel}</span>
+                        ) : <span style={{ ..._sp, color: C.dim }}>—</span>}
+                        <span style={{ ..._sp, color: _tsClr }}>{_tl(_tsVal)}</span>
+                        <span style={{ ..._sp, color: _ezClr }}>{_tl(_tm?.entry_zone)}</span>
+                        <span style={{ ..._sp, color: _bsClr }}>{_tl(_tm?.breakout_signal)}</span>
+                        <span style={{ ..._sp, color: _moClr }}>{_tl(_tm?.momentum_trend)}</span>
+                        <span style={{ ..._sp, color: _extClr }}>{_tm?.extension_risk === 'pullback_buy_zone' ? 'Pullback Buy' : _tl(_tm?.extension_risk)}</span>
                         <span style={{ ..._sp, color: _maClr }}>{_tl(_tm?.ma_stack)}</span>
                         <span style={{ ..._sp, color: _p50Clr }}>{_signedPct(_p50)}</span>
                         <span style={{ ..._sp, color: _p200Clr }}>{_signedPct(_p200)}</span>
-                        <span style={{ ..._sp, color: _extClr }}>{_tm?.extension_risk === 'pullback_buy_zone' ? 'Pullback Buy' : _tl(_tm?.extension_risk)}</span>
                         <span style={{ ..._sp, color: _pos52 != null ? C.text : C.dim }}>{_pos52Str}</span>
                         <span style={{ ..._sp, color: _pffhClr }}>{_pffhStr}</span>
-                        <span style={{ ..._sp, color: _ezClr }}>{_tl(_tm?.entry_zone)}</span>
-                        <span style={{ ..._sp, color: _bsClr }}>{_tl(_tm?.breakout_signal)}</span>
                         <span style={{ ..._sp, color: _adClr }}>{_tl(_tm?.accumulation_distribution_signal)}</span>
                         <span style={{ ..._sp, color: _sqClr }}>{_tl(_tm?.squeeze_signal)}</span>
                         <span style={{ ..._sp, color: _atrV != null ? C.text : C.dim }}>{_atrStr}</span>
-                        <span style={{ ..._sp, color: _moClr }}>{_tl(_tm?.momentum_trend)}</span>
-                        <span style={{ ..._sp, color: _tsClr }}>{_tl(_tsVal)}</span>
-                        {/* Beta — col 31 */}
-                        {(() => {
-                          const _bv = (stock as any).beta != null ? Number((stock as any).beta) : null;
-                          const _bStr = _bv != null && Number.isFinite(_bv) ? _bv.toFixed(2) : DASH;
-                          const _bClr = _bv == null ? C.dim : Math.abs(_bv) > 1.5 ? '#fb923c' : _bv > 1 ? C.amber : _bv < 0 ? '#a78bfa' : C.text;
-                          return <span style={{ ..._sp, color: _bClr }}>{_bStr}</span>;
-                        })()}
                       </>
                     );
-                  })(_s2?.technical_metrics, _s2?.technical_state, _s2?.technical_timing_score)}
+                  })()}
+                  {screenerMode === 'options' && (
+                    <>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
+                      <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
+                    </>
+                  )}
                 </div>
                 {_isExpanded && _sym && <CaelynRowBreakdown stock={stock} />}
                 </div>
@@ -5953,7 +6019,7 @@ export default function WatchlistPage() {
                   }
 
                   // Generic N/M / history_building catch for non-string non-symbol Quality fields
-                  if (cols !== FUND_COLS && col.fmt !== 'symbol' && col.fmt !== 'str' && col.fmt !== 'status' && col.fmt !== 'risk') {
+                  if (isQualityMode && col.fmt !== 'symbol' && col.fmt !== 'str' && col.fmt !== 'status' && col.fmt !== 'risk') {
                     const sv = String(v ?? '').toLowerCase().trim();
                     if (sv === 'not_meaningful' || sv === 'nm') {
                       const reason = row[`_${col.key}_not_meaningful_reason`] || undefined;
