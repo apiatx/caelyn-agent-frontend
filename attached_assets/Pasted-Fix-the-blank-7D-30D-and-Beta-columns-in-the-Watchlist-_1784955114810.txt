@@ -1,0 +1,188 @@
+Fix the blank `7D %`, `30D %`, and `Beta` columns in the Watchlist Screener → Market view.
+
+This is a targeted data-wiring audit and fix. Do not reorganize the screener again.
+
+## Known facts
+
+* The new Market view currently renders `—` for every row under:
+
+  * 7D %
+  * 30D %
+  * Beta
+* Beta already displays in the ticker popup, so the application is collecting Beta somewhere.
+* 7-day and 30-day price-performance data may already exist in the ticker-universe or watchlist data architecture.
+* The Market columns were initially implemented without confirmed canonical frontend keys.
+
+## Absolute constraints
+
+* Do not modify the backend during this task.
+* Do not add new API requests.
+* Do not fetch popup data individually for every screener row.
+* Do not calculate 7D or 30D price returns inside the React table.
+* Do not hardcode values.
+* Do not invent field names.
+* Do not duplicate Beta or price-performance calculations.
+* Do not modify Market, Technical, Options, or Fundamentals navigation.
+* Do not change unrelated columns.
+* Do not refactor the screener.
+* Preserve existing sorting, filters, formatting, colors, null handling, and row behavior.
+
+## Required audit before editing
+
+Trace all three metrics from the incoming network payload to the rendered cell.
+
+For each metric, identify:
+
+1. Every existing frontend type or interface field that may represent it.
+2. Every existing API response field that may represent it.
+3. Any normalization, transformation, or row-merging layer.
+4. Whether the field exists on:
+
+   * the Watchlist Screener response
+   * the ticker-universe response
+   * the ticker popup response
+   * any already-loaded frontend cache or store
+5. The exact key currently used by the Market column definition.
+6. The exact key currently read by the Market row-cell renderer.
+7. The exact sort key used by the column.
+
+Search for likely semantic variants, but do not assume any is correct:
+
+* Beta:
+
+  * `beta`
+  * nested profile/fundamental Beta fields
+* 7-day performance:
+
+  * `change7d`
+  * `change_7d`
+  * `priceChange7d`
+  * `performance7d`
+  * `return7d`
+  * one-week performance fields
+* 30-day performance:
+
+  * `change30d`
+  * `change_30d`
+  * `priceChange30d`
+  * `performance30d`
+  * `return30d`
+  * one-month performance fields
+
+These names are search hints only. Reuse only the canonical fields actually found in the code and payload.
+
+## Beta fix
+
+Find the exact source used to display Beta in the ticker popup.
+
+Determine whether the same Beta value is already present in the data loaded for the screener.
+
+### If Beta is already present in the screener row or an existing merged frontend object
+
+Wire the Market Beta column to that exact canonical field.
+
+Preserve the existing Beta formatter and sorting behavior.
+
+### If Beta only exists in the popup-specific API response
+
+Do not add per-row popup requests.
+
+Report:
+
+* the popup endpoint
+* the exact Beta response key
+* the screener endpoint
+* whether the screener response lacks Beta entirely
+* the canonical backend/cache source that appears to provide popup Beta
+
+Do not modify the backend in this frontend task.
+
+## 7D % and 30D % fix
+
+Determine whether the existing screener, ticker-universe, technical, quote, or already-loaded frontend payload contains canonical 7-day and 30-day price-performance fields.
+
+### If the fields already exist
+
+Wire the Market columns to those exact fields.
+
+Make sure the fields survive all row normalization and merge operations. A field existing in the raw payload is not sufficient if a later row mapper drops it.
+
+Reuse the existing percentage formatter and positive/negative coloring.
+
+Confirm the values use percentage points consistently with `1D %`. Do not introduce ×100 or ÷100 scaling unless the existing canonical formatter requires it.
+
+### If the fields are loaded in another existing frontend dataset
+
+Reuse the existing dataset and established merge path only if that data is already loaded for the Watchlist page.
+
+Do not add another request or construct a parallel cache.
+
+Merge by the existing canonical normalized ticker key. Preserve handling for foreign/exchange-prefixed symbols.
+
+### If the fields do not exist in any data already loaded for the Watchlist page
+
+Leave the columns present but report the exact finding. Do not invent a frontend calculation or request.
+
+## Row normalization audit
+
+Pay special attention to the recently added mode-conditional implementation.
+
+Verify that:
+
+* the column definition key matches the row renderer key
+* the row mapper does not discard Beta, 7D %, or 30D %
+* spread/merge order does not overwrite valid values with `null` or `undefined`
+* fallback expressions do not incorrectly treat `0` as missing
+* use nullish checks such as `value == null`, not falsy checks that turn zero into `—`
+* ticker normalization does not prevent universe data from merging into watchlist rows
+
+## Sorting audit
+
+For all three columns:
+
+* Use the same canonical value for display and sorting.
+* Do not sort formatted strings.
+* Preserve null-last behavior.
+* Confirm ascending and descending sorting both work.
+* Confirm switching away from Market and back does not leave a stale unsupported sort key.
+
+## Verification
+
+Test multiple ticker types:
+
+* a normal US equity with known Beta
+* a ticker with a positive 7D return
+* a ticker with a negative 7D return
+* a ticker with a positive 30D return
+* a ticker with a negative 30D return
+* a ticker whose Beta is below 1
+* a ticker whose Beta is above 1
+* a row with a legitimate zero value, if available
+* a foreign or exchange-prefixed ticker, if supported
+
+Verify:
+
+* 7D % no longer displays `—` when valid data exists.
+* 30D % no longer displays `—` when valid data exists.
+* Beta no longer displays `—` when valid data exists.
+* Percentage formatting and colors match 1D %.
+* Beta formatting matches the ticker popup.
+* Sorting works.
+* No new network calls appear.
+* No console errors appear.
+* No TypeScript errors appear.
+* No other screener view changed.
+
+## Completion report
+
+Report only:
+
+1. File or files changed.
+2. Exact canonical key used for 7D %.
+3. Exact canonical key used for 30D %.
+4. Exact canonical key used for Beta.
+5. Which endpoint or existing frontend dataset provides each value.
+6. Whether any row-normalization or merge bug was fixed.
+7. Confirmation that no new API calls or calculations were added.
+8. Verification results.
+9. If any metric remains unavailable, state exactly which payload is missing it and stop there.

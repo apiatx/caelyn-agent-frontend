@@ -336,6 +336,20 @@ function getDailyChangePct(row: any): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function get7dChangePct(row: any): number | null {
+  const v = row.change_7d ?? row.change7d ?? row.priceChange7d ??
+    row.performance7d ?? row.return7d ?? row.pct_change_7d ?? row.chg_7d ?? null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function get30dChangePct(row: any): number | null {
+  const v = row.change_30d ?? row.change30d ?? row.priceChange30d ??
+    row.performance30d ?? row.return30d ?? row.pct_change_30d ?? row.chg_30d ?? null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function avgDailyChangePct(rows: any[]): number | null {
   const vals = rows.map(getDailyChangePct).filter((v): v is number => v !== null);
   if (!vals.length) return null;
@@ -3341,6 +3355,14 @@ export default function WatchlistPage() {
         const n = Number(stock.change_pct ?? stock.change_pct_1d);
         return { v: n, missing: !Number.isFinite(n) };
       }
+      case 'chg7d': {
+        const n = get7dChangePct(stock);
+        return { v: n ?? 0, missing: n == null };
+      }
+      case 'chg30d': {
+        const n = get30dChangePct(stock);
+        return { v: n ?? 0, missing: n == null };
+      }
       case 'volume': {
         const n = Number(stock.volume);
         return { v: n, missing: !Number.isFinite(n) };
@@ -4919,8 +4941,8 @@ export default function WatchlistPage() {
         { key: 'theme',       label: 'Theme' },
         { key: 'price',       label: 'Price' },
         { key: 'chg',         label: '1D %' },
-        { label: '7D %',      tooltip: '7-day price performance — not yet available in the watchlist payload.' },
-        { label: '30D %',     tooltip: '30-day price performance — not yet available in the watchlist payload.' },
+        { key: 'chg7d',       label: '7D %',  tooltip: '7-day price performance.' },
+        { key: 'chg30d',      label: '30D %', tooltip: '30-day price performance.' },
         { key: 'volume',      label: 'Volume' },
         { key: 'relVol',      label: 'VOLX' },
         { key: 'rvRankMove',  label: 'VOL RANK' },
@@ -5550,6 +5572,10 @@ export default function WatchlistPage() {
                     const _bv = (stock as any).beta != null ? Number((stock as any).beta) : null;
                     const _bStr = _bv != null && Number.isFinite(_bv) ? _bv.toFixed(2) : DASH;
                     const _bClr = _bv == null ? C.dim : Math.abs(_bv) > 1.5 ? '#fb923c' : _bv > 1 ? C.amber : _bv < 0 ? '#a78bfa' : C.text;
+                    const _c7 = get7dChangePct(stock);
+                    const _c7Clr = _c7 == null ? C.dim : _c7 > 0 ? C.green : _c7 < 0 ? C.red : C.dim;
+                    const _c30 = get30dChangePct(stock);
+                    const _c30Clr = _c30 == null ? C.dim : _c30 > 0 ? C.green : _c30 < 0 ? C.red : C.dim;
                     return (
                       <>
                         <span style={{ ..._sp, fontWeight: 700, color: C.text, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
@@ -5559,8 +5585,8 @@ export default function WatchlistPage() {
                           )}
                         </span>
                         <span style={{ ..._sp, fontWeight: 700, color: cCol }}>{formatChgPct(chg1d)}</span>
-                        <span style={{ ..._sp, color: C.dim }}>—</span>
-                        <span style={{ ..._sp, color: C.dim }}>—</span>
+                        <span style={{ ..._sp, fontWeight: 700, color: _c7Clr }}>{formatChgPct(_c7)}</span>
+                        <span style={{ ..._sp, fontWeight: 700, color: _c30Clr }}>{formatChgPct(_c30)}</span>
                         <span style={{ ..._sp, color: C.text }}>{formatVolume(stock.volume)}</span>
                         <span style={{ ..._sp, color: C.text }}>{formatRelVol(stock.volume, stock.average_volume, stock.relative_volume)}</span>
                         <span style={_sp}>
