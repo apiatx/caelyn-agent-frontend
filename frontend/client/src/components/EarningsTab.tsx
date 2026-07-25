@@ -1241,19 +1241,60 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
         {/* Growth Context */}
         <div>
           <SecLabel text="Growth Context" C={C} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
-            {[
-              { label: 'Revenue QoQ', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C) },
-              { label: 'Revenue YoY', val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C) },
-              { label: 'EPS QoQ',     val: epsTransition(q.eps_qoq),  col: C.text },
-              { label: 'EPS YoY',     val: epsTransition(q.eps_yoy),  col: C.text },
-            ].map(({ label, val, col }) => (
-              <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+          {(() => {
+            const prevQ = hist[1] ?? null;
+            const yoyQ = (q.fiscal_period && q.fiscal_year)
+              ? (hist.find(h => h !== q && h.fiscal_period === q.fiscal_period && h.fiscal_year === String(Number(q.fiscal_year) - 1)) ?? null)
+              : (hist[4] ?? null);
+
+            const epsInfo = (g: EpsGrowth | null): { val: string; col: string } => {
+              if (!g || !g.transition_type || g.transition_type === 'unavailable') return { val: '—', col: C.dim };
+              const tt = g.transition_type;
+              if ((tt === 'profit_increased' || tt === 'profit_decreased') && g.raw_growth_pct != null) {
+                return { val: fmtPct(g.raw_growth_pct), col: pctCol(g.raw_growth_pct, C) };
+              }
+              const SM: Record<string, { val: string; col: string }> = {
+                turned_profitable: { val: 'Turned Profitable', col: C.green },
+                turned_negative:   { val: 'Turned to a Loss',  col: C.red   },
+                loss_narrowed:     { val: 'Loss Narrowed',     col: C.green },
+                loss_widened:      { val: 'Loss Widened',      col: C.red   },
+                flat:              { val: 'Flat',              col: C.dim   },
+                profit_increased:  { val: 'EPS Grew',          col: C.green },
+                profit_decreased:  { val: 'EPS Declined',      col: C.red   },
+              };
+              return SM[tt] ?? { val: '—', col: C.dim };
+            };
+
+            const revArrow = (cur: number | null, cmp: number | null): string | null =>
+              cur != null && cmp != null ? `${fmtRev(cmp)} → ${fmtRev(cur)}` : null;
+            const epsSign = (v: number): string => v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
+            const epsArrow = (cur: number | null, cmp: number | null): string | null =>
+              cur != null && cmp != null ? `${epsSign(cmp)} → ${epsSign(cur)}` : null;
+
+            const qoqEps = epsInfo(q.eps_qoq);
+            const yoyEps = epsInfo(q.eps_yoy);
+
+            const tiles: { label: string; val: string; col: string; arrow: string | null }[] = [
+              { label: 'Revenue vs Previous Quarter', val: fmtPct(q.revenue_qoq_pct), col: pctCol(q.revenue_qoq_pct, C), arrow: revArrow(q.revenue_actual, prevQ?.revenue_actual ?? null) },
+              { label: 'Revenue vs Year Ago',         val: fmtPct(q.revenue_yoy_pct), col: pctCol(q.revenue_yoy_pct, C), arrow: revArrow(q.revenue_actual, yoyQ?.revenue_actual ?? null) },
+              { label: 'EPS vs Previous Quarter',     val: qoqEps.val, col: qoqEps.col, arrow: epsArrow(q.eps_actual, prevQ?.eps_actual ?? null) },
+              { label: 'EPS vs Year Ago',             val: yoyEps.val, col: yoyEps.col, arrow: epsArrow(q.eps_actual, yoyQ?.eps_actual ?? null) },
+            ];
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
+                {tiles.map(({ label, val, col, arrow }) => (
+                  <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, lineHeight: '1.35' }}>{label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+                    {arrow && (
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 3 }}>{arrow}</div>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
         {/* Historical Reaction */}
         {rs && cov.has_reactions && (

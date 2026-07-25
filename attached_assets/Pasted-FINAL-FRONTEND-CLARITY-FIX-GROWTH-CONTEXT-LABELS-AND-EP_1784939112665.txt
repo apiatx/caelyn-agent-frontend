@@ -1,0 +1,229 @@
+FINAL FRONTEND CLARITY FIX — GROWTH CONTEXT LABELS AND EPS COMPARISONS
+
+This is a small frontend-only clarity improvement inside:
+
+Ticker popup
+→ Earnings
+→ Overview
+→ Growth Context
+
+Do not modify the backend.
+Do not create new queries.
+Do not alter earnings calculations.
+Do not redesign unrelated Earnings sections.
+Do not push to Git.
+
+CURRENT PROBLEM
+
+Growth Context currently displays values such as:
+
+Revenue QoQ  -10.8%
+Revenue YoY  +27.5%
+EPS QoQ      Profit ↓
+EPS YoY      Profit ↑
+
+The EPS wording is ambiguous. “Profit ↑” and “Profit ↓” do not explain:
+
+- which periods are being compared
+- the EPS values involved
+- whether EPS increased or decreased
+- why a percentage is not shown
+
+OBJECTIVE
+
+Make every comparison self-explanatory while preserving the existing compact professional layout.
+
+PART 1 — AUDIT THE EXISTING FIELDS
+
+Inspect the current Growth Context implementation and identify the exact fields used for:
+
+- latest-quarter revenue
+- previous-quarter revenue
+- same-quarter-prior-year revenue
+- latest-quarter EPS
+- previous-quarter EPS
+- same-quarter-prior-year EPS
+- existing Revenue QoQ and Revenue YoY percentages
+- existing EPS semantic state
+
+Do not guess field names.
+
+Confirm the existing calculations before changing presentation.
+
+Do not change their source or calculation in this task unless the frontend is clearly displaying the wrong comparison.
+
+PART 2 — REVENUE LABELS
+
+Replace abbreviated labels with clearer labels:
+
+Revenue vs Previous Quarter
+Revenue vs Year Ago
+
+Continue showing the percentage:
+
+Revenue vs Previous Quarter
+−10.8%
+
+Revenue vs Year Ago
++27.5%
+
+Where space permits, add muted comparison values beneath:
+
+$10.0M → $8.9M
+
+Use:
+
+- previous fiscal quarter for the first comparison
+- matching fiscal quarter one year earlier for the second comparison
+
+These are point-to-point comparisons, not historical averages.
+
+PART 3 — EPS POSITIVE-TO-POSITIVE COMPARISONS
+
+When current EPS and comparison EPS are both positive and the denominator is valid, show the actual percentage change rather than “Profit ↑” or “Profit ↓”.
+
+Example:
+
+EPS vs Previous Quarter
+−12.4%
+$0.42 → $0.37
+
+EPS vs Year Ago
++31.8%
+$0.28 → $0.37
+
+Use the existing percentage field if available.
+
+Otherwise calculate only from the correctly matched EPS values:
+
+((current EPS / comparison EPS) - 1) × 100
+
+Do not calculate when the comparison EPS is zero, negative, missing, or too close to zero for a meaningful percentage.
+
+PART 4 — EPS SIGN-CHANGE STATES
+
+Use explicit semantic descriptions when percentage growth would be misleading.
+
+Previous negative, current positive:
+
+Turned Profitable
+−$0.06 → +$0.08
+
+Previous positive, current negative:
+
+Turned to a Loss
++$0.12 → −$0.04
+
+Both negative and current is less negative:
+
+Loss Narrowed
+−$0.18 → −$0.09
+
+Both negative and current is more negative:
+
+Loss Widened
+−$0.07 → −$0.15
+
+Both zero or unavailable:
+
+No Meaningful Comparison
+or
+—
+
+Do not display generic:
+
+Profit ↑
+Profit ↓
+Loss ↑
+Loss ↓
+
+PART 5 — CLEAR PERIOD NAMES
+
+Use:
+
+- Revenue vs Previous Quarter
+- Revenue vs Year Ago
+- EPS vs Previous Quarter
+- EPS vs Year Ago
+
+Avoid unexplained QoQ and YoY abbreviations in the primary labels.
+
+A small muted “QoQ” or “YoY” badge may remain only if useful.
+
+PART 6 — VISUAL TREATMENT
+
+Preserve the current Growth Context metric-tile design.
+
+Each tile should contain:
+
+1. clear comparison label
+2. primary result or semantic state
+3. muted from-value → to-value line where data exists
+
+Examples:
+
+EPS VS PREVIOUS QUARTER
+−12.4%
+$0.42 → $0.37
+
+EPS VS YEAR AGO
+TURNED PROFITABLE
+−$0.06 → +$0.08
+
+Use restrained colors:
+
+- improvement: green
+- deterioration: red
+- neutral/unavailable: gray
+- do not rely on arrows alone
+
+PART 7 — NULL AND EDGE CASES
+
+Do not show:
+
+- 0%
+- Profit
+- Loss
+- Up
+- Down
+
+when the underlying values are missing.
+
+Do not divide by zero.
+
+Do not use a normal percentage when either EPS value is negative.
+
+Do not classify a smaller negative EPS as worsening; it is a narrowing loss.
+
+PART 8 — VALIDATION
+
+Test examples covering:
+
+1. positive EPS increasing
+2. positive EPS decreasing
+3. loss to profit
+4. profit to loss
+5. loss narrowing
+6. loss widening
+7. zero comparison EPS
+8. missing EPS
+9. Revenue QoQ
+10. Revenue YoY
+
+Verify that every tile clearly states:
+
+- what period is being compared
+- whether performance improved or worsened
+- the underlying values where available
+
+Run targeted TypeScript validation and the full production build.
+
+Publish the frontend.
+
+End with exactly:
+
+GROWTH CONTEXT CLARIFIED
+
+or:
+
+NOT COMPLETE
