@@ -1,0 +1,183 @@
+Make one small organizational correction to the Watchlist Screener implementation you just completed.
+
+This is not another reorganization or refactor. Preserve all work already completed and make only the targeted changes below.
+
+## Absolute constraints
+
+* Frontend only.
+* Do not modify the backend.
+* Do not modify APIs, payloads, caches, calculations, formatting, sorting, filtering, persistence, tooltips, or data-fetch logic.
+* Do not delete any column or metric.
+* Do not rewrite the new mode-conditional rendering.
+* Reuse the column definitions and row keys already implemented.
+* Do not introduce parallel implementations.
+* Do not change Market, Technical, or Options beyond the specific navigation rename described below.
+* Keep all toggles working exactly as they work now.
+
+# Final top-level navigation
+
+Change the current top-level navigation from:
+
+Market | Technical | Options | Fundamentals | Earnings
+
+To:
+
+Market | Technical | Options | Fundamentals | Growth
+
+Only change the visible label and corresponding internal mode name where necessary.
+
+The final exact order must be:
+
+1. Market
+2. Technical
+3. Options
+4. Fundamentals
+5. Growth
+
+The current Earnings mode is not primarily an earnings-event view. Its contents are growth and analyst-estimate metrics, so it should be called Growth.
+
+Preserve localStorage migration and existing selected-tab behavior. Existing saved `earnings` mode values should safely resolve to the new Growth mode.
+
+# Growth subtoggles
+
+Inside the new Growth top-level toggle, retain two subtoggles:
+
+1. Growth
+2. Estimates
+
+Do not remove any of the old Fundamental growth or estimate columns.
+
+## Growth → Growth
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Rev Grwth (Q)
+5. Rev Grwth (Y)
+6. Rev Accel
+7. GM Δ YoY
+8. Incr Op Mgn
+9. Fwd Rev Grwth
+10. EPS Grwth
+
+These are the operating growth and growth-quality metrics.
+
+Reuse the existing fields and calculation logic exactly.
+
+## Growth → Estimates
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Earn. Date
+5. Rev Grwth Est
+6. Rev Grwth NQ
+7. Rev Grwth NY
+8. Fwd Rev Grwth
+9. Rev Est Δ90D
+10. EPS Grwth Est
+11. EPS Grwth TQ
+12. EPS Grwth NQ
+13. EPS Grwth TY
+14. EPS Grwth NY
+15. EPS Est Δ90D
+
+This restores and preserves all the revenue-growth and EPS-growth estimate columns that existed in the old Fundamental toggle.
+
+Do not change the underlying meaning, period, key, formatter, or calculation for any of these columns.
+
+# Debt visibility
+
+Debt must remain clearly visible within Fundamentals.
+
+## Fundamentals → Overview
+
+Ensure the existing `Net Cash/Debt` column remains in Overview.
+
+Use this relevant portion of the existing order:
+
+* FCF Mgn
+* Net Cash/Debt
+* ROIC
+* FCF Conv
+
+Do not remove or replace Net Cash/Debt.
+
+## Fundamentals → Strength
+
+Use this exact order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Cash
+5. Total Debt
+6. Net Cash/Debt
+7. Runway Months
+8. Runway Status
+9. Curr Ratio
+10. Int Coverage
+11. D/E
+12. ND/EBITDA
+13. Altman Z
+14. Altman Risk
+15. Piotroski
+
+Important:
+
+* First search the existing frontend row payload, TypeScript types, and existing column definitions for the canonical Total Debt field.
+* Reuse the existing field and formatter if it already exists.
+* Do not calculate Total Debt in the frontend.
+* Do not create a new API call.
+* Do not modify the backend.
+* If no Total Debt field currently exists in the frontend payload, leave the remaining Strength columns unchanged and report the exact result. Do not invent a field.
+
+Debt exposure should therefore be represented by:
+
+* Total Debt: absolute debt amount, when already available
+* Net Cash/Debt: balance-sheet position
+* D/E: leverage relative to equity
+* ND/EBITDA: leverage relative to operating earnings
+* Interest Coverage: ability to service debt
+
+# Fundamentals structure
+
+The Fundamentals subtoggles must remain:
+
+1. Overview
+2. Financials
+3. Strength
+4. Quality
+5. Valuation
+
+Do not move Growth or Estimates back under Fundamentals.
+
+# Verification
+
+Verify:
+
+* The top-level label now says Growth, not Earnings.
+* Existing saved Earnings mode selections safely open Growth.
+* Growth → Growth displays all specified columns.
+* Growth → Estimates displays all specified columns.
+* None of the old revenue-growth or EPS-growth estimate fields were deleted.
+* Fundamentals → Overview still displays Net Cash/Debt.
+* Fundamentals → Strength displays Total Debt if an existing frontend field is available.
+* D/E and ND/EBITDA still sort and format exactly as before.
+* Switching repeatedly between Fundamentals and Growth does not blank the table.
+* No unsupported stale sort key remains when switching views.
+* No console or TypeScript errors are introduced.
+* No backend or API changes were made.
+
+At completion, report only:
+
+1. File or files changed.
+2. Confirmation that Earnings was renamed to Growth.
+3. The final Growth subtoggles and columns.
+4. The exact existing frontend key used for Total Debt, or confirmation that no Total Debt field currently exists.
+5. Confirmation that Net Cash/Debt, D/E, ND/EBITDA, and Interest Coverage remain present.
+6. Confirmation that no backend, API, calculation, formatter, filtering, or sorting logic was changed.

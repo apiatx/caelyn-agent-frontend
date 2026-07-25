@@ -2199,10 +2199,11 @@ export default function WatchlistPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'earnings'>(() => {
+  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'growth'>(() => {
     try {
       const v = localStorage.getItem('wl_screener_mode') as string;
-      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals' || v === 'earnings') return v;
+      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals' || v === 'growth') return v;
+      if (v === 'earnings') return 'growth';
       if (v === 'fundamental' || v === 'quality') return 'fundamentals';
       return 'technical';
     } catch { return 'technical'; }
@@ -5071,7 +5072,7 @@ export default function WatchlistPage() {
           </span>
           {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {(['market', 'technical', 'options', 'fundamentals', 'earnings'] as const).map((mode, mi, arr) => (
+              {(['market', 'technical', 'options', 'fundamentals', 'growth'] as const).map((mode, mi, arr) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -5089,7 +5090,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : mode === 'fundamentals' ? 'Fundamentals' : 'Earnings'}
+                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : mode === 'fundamentals' ? 'Fundamentals' : 'Growth'}
                 </button>
               ))}
             </div>
@@ -5120,7 +5121,7 @@ export default function WatchlistPage() {
               REFRESHING…
             </span>
           )}
-          {(screenerMode === 'market' || screenerMode === 'technical' || screenerMode === 'options') && !opts?.rows && !isRefreshing && pendingCount > 0 && (
+          {(screenerMode === 'market' || screenerMode === 'technical' || screenerMode === 'options') && !opts?.rows && !isRefreshing && pendingCount > 0 && (  // growth/fundamentals use table renderer, no pending indicator needed
             <span style={{
               fontSize: 7, fontWeight: 800, fontFamily: font,
               padding: '2px 6px', borderRadius: 3,
@@ -5230,7 +5231,7 @@ export default function WatchlistPage() {
             ))}
           </div>
         )}
-        {screenerMode === 'earnings' && (
+        {screenerMode === 'growth' && (
           <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
             {([ ['growth','Growth'], ['estimates','Estimates'] ] as [EarningsCategory, string][]).map(([cat, label]) => (
               <button
@@ -5249,17 +5250,17 @@ export default function WatchlistPage() {
             ))}
           </div>
         )}
-        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamentals' || screenerMode === 'earnings') ? (
+        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamentals' || screenerMode === 'growth') ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
-              screenerMode === 'earnings'
+              screenerMode === 'growth'
                 ? (earningsCategory === 'estimates' ? EARNINGS_ESTIMATES_COLS : EARNINGS_GROWTH_COLS)
                 : (fundamentalsCategory === 'financials' ? FUND_FINANCIALS_COLS
                   : fundamentalsCategory === 'strength'  ? FUND_STRENGTH_COLS
                   : fundamentalsCategory === 'quality'   ? FUND_QUALITY_COLS
                   : fundamentalsCategory === 'valuation' ? FUND_VALUATION_COLS
                   : FUND_OVERVIEW_COLS),
-              screenerMode === 'earnings' || fundamentalsCategory !== 'financials'
+              screenerMode === 'growth' || fundamentalsCategory !== 'financials'
             )}
           </div>
         ) : (
