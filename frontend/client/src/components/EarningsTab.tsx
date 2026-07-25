@@ -1236,8 +1236,8 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
         </div>
       )}
 
-      {/* Growth Context + Historical Reaction — side-by-side */}
-      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: 'grid', gridTemplateColumns: rs && cov.has_reactions ? '1fr 1fr' : '1fr', gap: 14 }}>
+      {/* Growth Context + Historical Reaction — stacked */}
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Growth Context */}
         <div>
           <SecLabel text="Growth Context" C={C} />
