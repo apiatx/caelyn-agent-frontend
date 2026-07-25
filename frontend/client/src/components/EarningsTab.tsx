@@ -1299,22 +1299,27 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
         {/* Historical Reaction */}
         {rs && cov.has_reactions && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <div style={{ marginBottom: 6 }}>
               <SecLabel text="Historical Reaction" C={C} />
-              {rs.observations_1d != null && <span style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>{rs.observations_1d} events</span>}
+              {rs.observations_1d != null && (
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 3 }}>
+                  Based on {rs.observations_1d} completed earnings events · First session after earnings
+                </div>
+              )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
-              {[
-                { label: 'Avg Post 1D',    val: fmtPct(rs.average_1d_pct) },
-                { label: 'Median Post 1D', val: fmtPct(rs.median_1d_pct) },
-                { label: 'Avg |Move|',     val: fmtPct(rs.average_absolute_1d_pct, false) },
-                { label: '% Positive',     val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—' },
-                { label: 'Largest Gain',   val: fmtPct(rs.largest_positive_1d_pct) },
-                { label: 'Largest Drop',   val: fmtPct(rs.largest_negative_1d_pct) },
-              ].map(({ label, val }) => (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {([
+                { label: 'Average Post-Earnings Move',  val: fmtPct(rs.average_1d_pct),    sub: 'Mean first-session return',               col: pctCol(rs.average_1d_pct, C) },
+                { label: 'Median Post-Earnings Move',   val: fmtPct(rs.median_1d_pct),     sub: 'Middle first-session return',             col: pctCol(rs.median_1d_pct, C) },
+                { label: 'Average Absolute Move',       val: fmtPct(rs.average_absolute_1d_pct, false), sub: 'Typical move regardless of direction', col: C.text },
+                { label: 'Positive Reaction Rate',      val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', sub: 'Share of reactions above 0%', col: rs.positive_1d_rate != null ? (rs.positive_1d_rate > 52 ? C.green : rs.positive_1d_rate < 48 ? C.red : C.text) : C.dim },
+                { label: 'Best Post-Earnings Gain',     val: fmtPct(rs.largest_positive_1d_pct), sub: 'Strongest first-session gain',    col: pctCol(rs.largest_positive_1d_pct, C) },
+                { label: 'Worst Post-Earnings Decline', val: fmtPct(rs.largest_negative_1d_pct), sub: 'Largest first-session loss',      col: pctCol(rs.largest_negative_1d_pct, C) },
+              ] as Array<{ label: string; val: string; sub: string; col: string }>).map(({ label, val, sub, col }) => (
                 <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
-                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.text }}>{val || '—'}</div>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, lineHeight: '1.35' }}>{label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 3 }}>{sub}</div>
                 </div>
               ))}
             </div>
@@ -1753,38 +1758,111 @@ function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
       {/* Summary metrics */}
       {rs && (
         <GCard C={C}>
-          <SecLabel text="Historical Summary" C={C} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-            {[
-              { label: 'Avg Pre 1D',   val: fmtPct(rs.average_pre_1d_pct),           obs: rs.observations_pre_1d },
-              { label: 'Median Pre 1D',val: fmtPct(rs.median_pre_1d_pct),            obs: null },
-              { label: 'Avg |Pre 1D|', val: fmtPct(rs.average_absolute_pre_1d_pct, false), obs: null },
-              { label: 'Avg Post 1D',  val: fmtPct(rs.average_post_1d_pct),          obs: rs.observations_post_1d },
-              { label: 'Median Post 1D',val: fmtPct(rs.median_post_1d_pct),          obs: null },
-              { label: 'Avg |Post 1D|',val: fmtPct(rs.average_absolute_post_1d_pct, false), obs: null },
-              { label: 'Continuation', val: rs.continuation_rate != null ? `${rs.continuation_rate.toFixed(0)}%` : '—', obs: rs.continuation_count },
-              { label: 'Reversal',     val: rs.reversal_rate != null ? `${rs.reversal_rate.toFixed(0)}%` : '—', obs: rs.reversal_count },
-              { label: '% Positive',   val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', obs: null },
-            ].map(({ label, val, obs }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
-                {obs != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _f }}>{obs} obs.</div>}
+          {/* Panels A + B: Before / After Earnings */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {/* Panel A: Before Earnings */}
+            <div>
+              <div style={{ marginBottom: 6 }}>
+                <SecLabel text="Before Earnings" C={C} />
+                {rs.observations_pre_1d != null && (
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Based on {rs.observations_pre_1d} events · Session before earnings</div>
+                )}
               </div>
-            ))}
-          </div>
-          {(rs.average_post_after_positive_pre != null || rs.average_post_after_negative_pre != null) && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>Avg Post (after + Pre)</div>
-                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: pctCol(rs.average_post_after_positive_pre, C) }}>{fmtPct(rs.average_post_after_positive_pre)}</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', marginBottom: 3 }}>Avg Post (after − Pre)</div>
-                <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: pctCol(rs.average_post_after_negative_pre, C) }}>{fmtPct(rs.average_post_after_negative_pre)}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {([
+                  { label: 'Average Pre-Earnings Move',          val: fmtPct(rs.average_pre_1d_pct),                sub: 'Mean return before earnings',               col: pctCol(rs.average_pre_1d_pct, C) },
+                  { label: 'Median Pre-Earnings Move',           val: fmtPct(rs.median_pre_1d_pct),                sub: 'Middle pre-earnings return',                col: pctCol(rs.median_pre_1d_pct, C) },
+                  { label: 'Average Absolute Pre-Earnings Move', val: fmtPct(rs.average_absolute_pre_1d_pct, false), sub: 'Typical magnitude regardless of direction', col: C.text },
+                ] as Array<{ label: string; val: string; sub: string; col: string }>).map(({ label, val, sub, col }) => (
+                  <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3, lineHeight: '1.35' }}>{label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>{sub}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+            {/* Panel B: After Earnings */}
+            <div>
+              <div style={{ marginBottom: 6 }}>
+                <SecLabel text="After Earnings" C={C} />
+                {rs.observations_post_1d != null && (
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Based on {rs.observations_post_1d} events · First post-earnings session</div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {([
+                  { label: 'Average Post-Earnings Move',          val: fmtPct(rs.average_post_1d_pct),                sub: 'Mean first-session reaction',               col: pctCol(rs.average_post_1d_pct, C) },
+                  { label: 'Median Post-Earnings Move',           val: fmtPct(rs.median_post_1d_pct),                sub: 'Middle first-session reaction',             col: pctCol(rs.median_post_1d_pct, C) },
+                  { label: 'Average Absolute Post-Earnings Move', val: fmtPct(rs.average_absolute_post_1d_pct, false), sub: 'Typical reaction magnitude',               col: C.text },
+                  { label: 'Positive Reaction Rate',              val: rs.positive_1d_rate != null ? `${rs.positive_1d_rate.toFixed(0)}%` : '—', sub: 'Share of reactions above 0%', col: rs.positive_1d_rate != null ? (rs.positive_1d_rate > 52 ? C.green : rs.positive_1d_rate < 48 ? C.red : C.text) : C.dim },
+                ] as Array<{ label: string; val: string; sub: string; col: string }>).map(({ label, val, sub, col }) => (
+                  <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3, lineHeight: '1.35' }}>{label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: col }}>{val || '—'}</div>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Panels C + D: Directional Pattern / Conditional Outcomes */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: (rs.average_post_after_positive_pre != null || rs.average_post_after_negative_pre != null) ? '1fr 1fr' : '1fr',
+            gap: 14, marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`
+          }}>
+            {/* Panel C: Directional Pattern */}
+            <div>
+              <div style={{ marginBottom: 6 }}>
+                <SecLabel text="Directional Pattern" C={C} />
+                <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Compares the direction of pre-earnings and post-earnings moves</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {[
+                  { label: 'Same-Direction Follow-Through', val: rs.continuation_rate != null ? `${rs.continuation_rate.toFixed(0)}%` : '—', count: rs.continuation_count, sub: 'Pre and post move in the same direction' },
+                  { label: 'Opposite-Direction Reversal',   val: rs.reversal_rate     != null ? `${rs.reversal_rate.toFixed(0)}%` : '—',     count: rs.reversal_count,     sub: 'Post-earnings move reversed the pre-earnings direction' },
+                ].map(({ label, val, count, sub }) => (
+                  <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3, lineHeight: '1.35' }}>{label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: C.text }}>{val}</div>
+                      {count != null && <div style={{ fontSize: 8, color: C.dim, fontFamily: _s }}>{count} events</div>}
+                    </div>
+                    <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Panel D: Conditional Outcomes */}
+            {(rs.average_post_after_positive_pre != null || rs.average_post_after_negative_pre != null) && (
+              <div>
+                <div style={{ marginBottom: 6 }}>
+                  <SecLabel text="Conditional Outcomes" C={C} />
+                  <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Average post-earnings move based on pre-earnings direction</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {rs.average_post_after_positive_pre != null && (
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3, lineHeight: '1.35' }}>After a Positive Pre-Earnings Day</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: pctCol(rs.average_post_after_positive_pre, C) }}>{fmtPct(rs.average_post_after_positive_pre)}</div>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Average post-earnings move</div>
+                    </div>
+                  )}
+                  {rs.average_post_after_negative_pre != null && (
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 4, padding: '6px 8px' }}>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _f, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3, lineHeight: '1.35' }}>After a Negative Pre-Earnings Day</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: _f, color: pctCol(rs.average_post_after_negative_pre, C) }}>{fmtPct(rs.average_post_after_negative_pre)}</div>
+                      <div style={{ fontSize: 8, color: C.dim, fontFamily: _s, marginTop: 2 }}>Average post-earnings move</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Horizon-specific summary (chart filter selection — preserved) */}
           {(horizon !== 'pre-vs-post') && (horizonAvg != null || horizonMedian != null) && (
             <div style={{ display: 'flex', gap: 16, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
               <div>

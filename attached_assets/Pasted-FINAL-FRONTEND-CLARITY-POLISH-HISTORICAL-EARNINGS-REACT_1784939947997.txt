@@ -1,0 +1,630 @@
+FINAL FRONTEND CLARITY + POLISH — HISTORICAL EARNINGS REACTION SECTIONS
+
+This is a focused frontend-only presentation and terminology improvement affecting:
+
+1. Ticker popup
+   Earnings → Overview → Historical Reaction
+
+2. Ticker popup
+   Earnings → Price Moves → Historical Summary
+
+Complete the entire task autonomously in one pass.
+
+Do not modify the backend.
+Do not create new endpoints or queries.
+Do not alter reaction calculations.
+Do not alter earnings-session alignment.
+Do not change chart data.
+Do not change History, Ratings, Materials, or the unified results bubble.
+Do not reset, pull, checkout, or overwrite the current workspace.
+Do not push to Git.
+
+CURRENT PROBLEMS
+
+The Earnings Overview currently shows shorthand such as:
+
+Historical Reaction
+13 events
+
+Avg Post 1D
++3.6%
+
+Median Post 1D
++5.1%
+
+Avg |Move|
+11.2%
+
+% Positive
+62%
+
+Largest Gain
++26.0%
+
+Largest Drop
+−15.9%
+
+The data is useful, but the labels do not clearly explain:
+
+- what period is being measured
+- what “Post 1D” means
+- why Average Move differs from Average Absolute Move
+- what the sample size represents
+- whether each metric describes direction, frequency, or volatility
+
+The Earnings → Price Moves tab has an even denser Historical Summary:
+
+Avg Pre 1D
+Median Pre 1D
+Avg |Pre 1D|
+Avg Post 1D
+Median Post 1D
+Avg |Post 1D|
+Continuation
+Reversal
+% Positive
+Avg Post after positive Pre
+Avg Post after negative Pre
+
+It should use the same polished metric-panel design and clear language implemented in Earnings Overview.
+
+PRIMARY OBJECTIVES
+
+A. Spell out every historical reaction metric clearly.
+
+B. Explain the comparison period directly in the UI.
+
+C. Separate direction, volatility, frequency, and behavioral-pattern metrics.
+
+D. Replace abbreviated internal terminology with investor-friendly labels.
+
+E. Redesign the Price Moves Historical Summary to visually match the polished Earnings Overview panels.
+
+F. Preserve every existing value and calculation exactly.
+
+PART 1 — AUDIT EXISTING CALCULATIONS
+
+Inspect the current implementations for:
+
+- Historical Reaction Context in Earnings Overview
+- Historical Summary in Price Moves
+- reaction_summary types
+- continuation and reversal calculations
+- observation counts
+- pre-earnings and post-earnings session definitions
+
+Confirm the exact existing meaning of:
+
+- pre_1d
+- post_1d
+- continuation
+- reversal
+- average absolute move
+- positive reaction
+- conditional averages after positive or negative pre-earnings moves
+
+Do not guess.
+
+Do not change the formulas.
+
+If the implementation’s actual definition differs from the wording below, preserve the true calculation and adjust the UI copy so it describes the real behavior accurately.
+
+PART 2 — SHARED TERMINOLOGY
+
+Use the following investor-friendly terminology where it matches the actual calculation.
+
+Replace:
+
+Avg Post 1D
+
+with:
+
+Average Post-Earnings Move
+
+Replace:
+
+Median Post 1D
+
+with:
+
+Median Post-Earnings Move
+
+Replace:
+
+Avg |Move|
+
+with:
+
+Average Absolute Move
+
+Replace:
+
+% Positive
+
+with:
+
+Positive Reaction Rate
+
+Replace:
+
+Largest Gain
+
+with:
+
+Best Post-Earnings Gain
+
+Replace:
+
+Largest Drop
+
+with:
+
+Worst Post-Earnings Decline
+
+For pre-earnings metrics:
+
+Average Pre-Earnings Move
+Median Pre-Earnings Move
+Average Absolute Pre-Earnings Move
+
+For post-earnings metrics:
+
+Average Post-Earnings Move
+Median Post-Earnings Move
+Average Absolute Post-Earnings Move
+
+Do not make “1D” the main unexplained label.
+
+A small muted subtitle may state:
+
+First complete trading session after earnings
+
+or the exact session definition used by the existing calculation.
+
+PART 3 — EXPLAIN THE SAMPLE ONCE
+
+At the top of the Overview Historical Reaction panel, show:
+
+HISTORICAL REACTION
+
+Based on 13 completed earnings events
+
+Use the real observation count.
+
+Do not repeat:
+
+13 obs.
+
+under every metric when all metrics use the same sample.
+
+Only show an individual observation count on a tile when that metric genuinely uses a different sample size.
+
+PART 4 — REDESIGN OVERVIEW HISTORICAL REACTION
+
+Use six compact metric tiles arranged in a professional grid.
+
+Recommended desktop layout:
+
+Row 1:
+
+Average Post-Earnings Move
++3.6%
+
+Median Post-Earnings Move
++5.1%
+
+Average Absolute Move
+11.2%
+
+Row 2:
+
+Positive Reaction Rate
+62%
+
+Best Post-Earnings Gain
++26.0%
+
+Worst Post-Earnings Decline
+−15.9%
+
+Each tile should contain:
+
+1. clear label
+2. prominent value
+3. optional concise explanation beneath
+
+Suggested explanation text:
+
+Average Post-Earnings Move
+Mean first-session return
+
+Median Post-Earnings Move
+Middle first-session return
+
+Average Absolute Move
+Typical move regardless of direction
+
+Positive Reaction Rate
+Share of reactions above 0%
+
+Best Post-Earnings Gain
+Strongest first-session gain
+
+Worst Post-Earnings Decline
+Largest first-session loss
+
+Keep helper copy short and muted.
+
+PART 5 — OPTIONAL INFORMATION TOOLTIP
+
+Where the existing design system supports it, add one small info icon beside:
+
+HISTORICAL REACTION
+
+Tooltip text:
+
+“Summarizes the stock’s first complete trading-session reaction following prior earnings reports. Average Absolute Move measures magnitude regardless of direction.”
+
+Do not place separate tooltips on every tile unless the app already uses that pattern.
+
+PART 6 — PRICE MOVES HISTORICAL SUMMARY STRUCTURE
+
+Redesign Earnings → Price Moves → Historical Summary into four clearly organized groups.
+
+Do not leave all metrics in one undifferentiated grid.
+
+Recommended composition:
+
+A. BEFORE EARNINGS
+
+B. AFTER EARNINGS
+
+C. DIRECTIONAL PATTERN
+
+D. CONDITIONAL OUTCOMES
+
+Use one cohesive outer card with clearly separated internal panels, or four coordinated glass panels.
+
+PART 7 — BEFORE EARNINGS PANEL
+
+Heading:
+
+BEFORE EARNINGS
+
+Subtitle:
+
+Trading session immediately preceding the earnings reaction window
+
+Use three tiles:
+
+Average Pre-Earnings Move
++0.6%
+
+Median Pre-Earnings Move
++1.2%
+
+Average Absolute Pre-Earnings Move
+5.0%
+
+Suggested helper copy:
+
+Average Pre-Earnings Move
+Mean return before earnings
+
+Median Pre-Earnings Move
+Middle pre-earnings return
+
+Average Absolute Pre-Earnings Move
+Typical magnitude regardless of direction
+
+Show the relevant observation count once in the panel subtitle:
+
+Based on 13 observations
+
+PART 8 — AFTER EARNINGS PANEL
+
+Heading:
+
+AFTER EARNINGS
+
+Subtitle:
+
+First complete post-earnings trading session
+
+Use four tiles:
+
+Average Post-Earnings Move
++3.6%
+
+Median Post-Earnings Move
++5.1%
+
+Average Absolute Post-Earnings Move
+11.2%
+
+Positive Reaction Rate
+62%
+
+Suggested helper copy:
+
+Average Post-Earnings Move
+Mean first-session reaction
+
+Median Post-Earnings Move
+Middle first-session reaction
+
+Average Absolute Post-Earnings Move
+Typical reaction magnitude
+
+Positive Reaction Rate
+Share of reactions above 0%
+
+PART 9 — DIRECTIONAL PATTERN PANEL
+
+Replace the ambiguous Continuation and Reversal metrics with clear labels.
+
+Heading:
+
+DIRECTIONAL PATTERN
+
+Subtitle:
+
+Compares the direction before earnings with the direction after earnings
+
+Use two large coordinated tiles or a segmented bar:
+
+Same-Direction Follow-Through
+54%
+7 events
+
+Opposite-Direction Reversal
+46%
+6 events
+
+Definitions:
+
+Same-Direction Follow-Through:
+The pre-earnings and post-earnings moves had the same sign.
+
+Opposite-Direction Reversal:
+The post-earnings move had the opposite sign from the pre-earnings move.
+
+Do not use “Continuation” alone without explaining what continued.
+
+Do not use “Reversal” alone without explaining what reversed.
+
+If the existing calculation uses another definition, preserve it and describe that exact definition instead.
+
+PART 10 — CONDITIONAL OUTCOMES PANEL
+
+Replace:
+
+Avg Post (after + Pre)
+Avg Post (after − Pre)
+
+with:
+
+Average Post-Earnings Move
+After a Positive Pre-Earnings Day
+
+and:
+
+Average Post-Earnings Move
+After a Negative Pre-Earnings Day
+
+Recommended tile display:
+
+After a Positive Pre-Earnings Day
+Average Post-Earnings Move
++5.0%
+
+After a Negative Pre-Earnings Day
+Average Post-Earnings Move
++1.2%
+
+Include sample counts when available:
+
+7 events
+6 events
+
+Do not abbreviate these as:
+
+after + Pre
+after − Pre
+
+PART 11 — VISUAL DESIGN
+
+Match the recently polished Earnings Overview design.
+
+Use:
+
+- coordinated dark glass panels
+- subtle borders
+- compact metric tiles
+- consistent internal padding
+- clear cyan section labels
+- white primary values
+- muted explanatory text
+- restrained green/red value colors
+- uniform tile heights
+- meaningful visual hierarchy
+
+Avoid:
+
+- repeated “obs.” text everywhere
+- cryptic abbreviations
+- scattered values in empty space
+- giant gaps
+- excessive dividers
+- full-card red or green fills
+- unexplained mathematical notation such as |1D|
+
+PART 12 — COLOR SEMANTICS
+
+Use color according to meaning.
+
+Directional return:
+
+- positive return: green
+- negative return: red
+- zero or unavailable: neutral
+
+Average Absolute Move:
+
+- neutral white or cyan
+- do not color it green merely because it is positive
+- it measures volatility magnitude, not a bullish result
+
+Positive Reaction Rate:
+
+- restrained green when above 50%
+- restrained red when below 50%
+- neutral near 50%
+
+Same-Direction Follow-Through and Opposite-Direction Reversal:
+
+- use neutral/cyan presentation
+- do not imply one is automatically good or bad
+
+PART 13 — RESPONSIVE LAYOUT
+
+Desktop:
+
+Overview Historical Reaction:
+- 3 columns × 2 rows
+
+Price Moves Historical Summary:
+- Before and After panels may sit side by side where space permits
+- Directional Pattern and Conditional Outcomes may sit side by side beneath them
+
+Medium width:
+
+- two-column tile grids
+
+Mobile:
+
+- single-column or two-column compact grids
+- no clipped labels
+- no horizontal page overflow
+- no unreadably small text
+
+PART 14 — NULL AND UNEQUAL SAMPLE HANDLING
+
+If a metric is unavailable:
+
+- display —
+- retain the tile for consistent layout
+- use neutral styling
+
+If observation counts differ:
+
+- show the correct count for that panel or tile
+- do not falsely claim all metrics use 13 observations
+
+If Continuation + Reversal does not equal 100% because some events are neutral or incomplete:
+
+- show an additional neutral/unclassified count where supported
+- do not force percentages to sum to 100%
+
+PART 15 — PRESERVE CHART AND FILTER BEHAVIOR
+
+Do not modify:
+
+- Price Moves chart
+- Pre 1D / Post 1D / 3D / 5D toggles
+- tooltips
+- quarter history table
+- event sorting
+- reaction calculations
+- timing confidence
+- active time-range controls
+
+This task only improves Historical Summary presentation and terminology.
+
+PART 16 — REQUIRED ACCEPTANCE TEST
+
+Using the ticker shown in the current example, verify:
+
+Earnings Overview:
+
+1. “Based on 13 completed earnings events” appears once.
+2. Average Post-Earnings Move shows +3.6%.
+3. Median Post-Earnings Move shows +5.1%.
+4. Average Absolute Move shows 11.2%.
+5. Positive Reaction Rate shows 62%.
+6. Best Post-Earnings Gain shows +26.0%.
+7. Worst Post-Earnings Decline shows −15.9%.
+8. Every label is understandable without knowing internal abbreviations.
+
+Price Moves:
+
+1. Historical Summary is divided into meaningful panels.
+2. Before Earnings metrics are grouped together.
+3. After Earnings metrics are grouped together.
+4. Same-Direction Follow-Through clearly explains Continuation.
+5. Opposite-Direction Reversal clearly explains Reversal.
+6. Conditional outcomes spell out positive and negative pre-earnings days.
+7. Observation counts are not needlessly repeated.
+8. Average Absolute Move is visually neutral.
+9. Existing values remain unchanged.
+10. Chart and table behavior remain unchanged.
+
+PART 17 — CROSS-TICKER VALIDATION
+
+Test:
+
+- ticker with a positive historical average
+- ticker with a negative historical average
+- ticker with fewer observations
+- ticker with unequal metric observation counts
+- ticker with missing historical reaction data
+
+Ensure the layout remains professional and truthful.
+
+PART 18 — BUILD AND PUBLISH
+
+Run:
+
+- targeted TypeScript validation for modified files
+- full production build
+- browser console inspection
+- authenticated Earnings Overview test
+- authenticated Price Moves test
+
+Do not stop at HMR.
+Do not stop at build success.
+Do not declare success without inspecting both tabs in the actual ticker popup.
+
+Publish the frontend.
+
+FINAL REPORT
+
+Return:
+
+1. Files changed
+2. Overview Historical Reaction terminology
+3. Overview panel redesign
+4. Price Moves Historical Summary redesign
+5. Continuation/Reversal clarification
+6. Conditional outcome clarification
+7. Observation-count handling
+8. Responsive behavior
+9. Cross-ticker test results
+10. Typecheck/build result
+11. Publish result
+12. Screenshots showing:
+    - polished Overview Historical Reaction
+    - Before Earnings panel
+    - After Earnings panel
+    - Directional Pattern panel
+    - Conditional Outcomes panel
+
+End with exactly:
+
+HISTORICAL REACTIONS CLARIFIED
+
+or:
+
+NOT COMPLETE
+
+Do not declare completion unless both Earnings Overview and Price Moves use clear language and coordinated professional panels.
