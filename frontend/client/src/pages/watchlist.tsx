@@ -5615,21 +5615,9 @@ export default function WatchlistPage() {
       return merged;
     });
 
-    const sortedFundRows = (() => {
-      if (!sortKey) return fundRows;
-      const dir = sortDir === 'asc' ? 1 : -1;
-      return [...fundRows].sort((a, b) => {
-        const sva = getSortValue(a, sortKey);
-        const svb = getSortValue(b, sortKey);
-        if (sva.missing && svb.missing) return 0;
-        if (sva.missing) return 1;
-        if (svb.missing) return -1;
-        if (typeof sva.v === 'number' && typeof svb.v === 'number') {
-          return (sva.v - svb.v) * dir;
-        }
-        return String(sva.v).localeCompare(String(svb.v)) * dir;
-      });
-    })();
+    // fundRows already arrive pre-sorted via sortedTickers — no independent re-sort needed.
+    // Re-sorting here would diverge from the Technical tab's order when switching views.
+    const sortedFundRows = fundRows;
 
     const handleFundSortLocal = (key: string) => {
       if (sortKey === key) {
