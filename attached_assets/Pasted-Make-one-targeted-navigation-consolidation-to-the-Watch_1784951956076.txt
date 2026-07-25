@@ -1,0 +1,357 @@
+Make one targeted navigation consolidation to the Watchlist Screener.
+
+The current implementation has too many top-level and nested toggles. Simplify the navigation without deleting, recalculating, replacing, or losing any existing metric or logic.
+
+This is a frontend-only organizational change.
+
+## Absolute constraints
+
+* Do not modify the backend.
+* Do not modify any API, database, cache, payload, request, refresh process, or calculation.
+* Do not delete any metric, field, renderer, formatter, tooltip, conditional style, sorting rule, filtering rule, or null-state behavior.
+* Do not recreate existing column logic.
+* Do not change how any value is calculated.
+* Do not change Market, Technical, or Options column contents.
+* Do not rewrite the recently completed mode-conditional table rendering.
+* Reuse the existing column objects, row keys, formatters, and renderers.
+* Do not introduce a parallel screener implementation.
+* Do not touch unrelated Watchlist functionality.
+* Do not make unrelated cosmetic changes.
+* Preserve all existing sorting, filtering, pagination, sticky columns, loading behavior, and responsive behavior.
+
+This task is only:
+
+1. Removing Growth as a top-level toggle.
+2. Moving its existing columns under Fundamentals.
+3. Combining the existing Financials, Strength, and Quality subtoggles into one Financial Health subtoggle.
+4. Preserving every existing metric somewhere in the final structure.
+
+# Final top-level navigation
+
+Use this exact order:
+
+1. Market
+2. Technical
+3. Options
+4. Fundamentals
+
+Remove Growth as a visible top-level toggle.
+
+Do not delete its column definitions or logic. Move the existing Growth and Estimates contents into the new Fundamentals → Growth view described below.
+
+# Final Fundamentals subtoggles
+
+Use this exact order:
+
+1. Overview
+2. Financial Health
+3. Growth
+4. Valuation
+
+The Fundamentals default subtab should remain Overview unless the currently persisted user selection maps to another valid subtab.
+
+---
+
+# Fundamentals → Overview
+
+Keep the current Fundamentals Overview view and its existing logic.
+
+Use this column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Mkt Cap
+5. Revenue
+6. Rev Grwth (Y)
+7. Gross Mgn
+8. FCF Mgn
+9. Net Cash/Debt
+10. ROIC
+11. FCF Conv
+12. Shrs Grwth
+13. Rev Accel
+14. Fwd Rev Grwth
+15. Rev Est Δ90D
+16. Fwd P/S
+17. Fwd P/E
+
+Overview is intentionally a summarized view, so its metrics may also appear in the detailed subtoggles.
+
+---
+
+# Fundamentals → Financial Health
+
+Combine the existing Financials, Strength, and Quality subtoggles into one subtoggle called:
+
+`Financial Health`
+
+This view should contain the existing historical financial, profitability, balance-sheet, debt, solvency, and business-quality metrics.
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Mkt Cap
+5. Revenue
+6. Gross Mgn
+7. Op Margin
+8. FCF Mgn
+9. Free CF
+10. Op. Income
+11. EBIT
+12. ROIC
+13. FCF Conv
+14. Cash
+15. Total Debt
+16. Net Cash/Debt
+17. Curr Ratio
+18. Int Coverage
+19. D/E
+20. ND/EBITDA
+21. Runway Months
+22. Runway Status
+23. Shrs Grwth YoY
+24. SBC/Rev
+25. Insider %
+26. Altman Z
+27. Altman Risk
+28. Piotroski
+
+## Total Debt requirement
+
+Reuse Total Debt only if an existing canonical frontend field is already present.
+
+* Do not calculate Total Debt in the frontend.
+* Do not invent a new row key.
+* Do not create a new API request.
+* Do not modify the backend.
+* If the frontend payload still does not contain Total Debt, omit only that column and report that it remains unavailable.
+
+All other debt metrics must remain visible:
+
+* Net Cash/Debt
+* Interest Coverage
+* D/E
+* ND/EBITDA
+* Runway Months
+* Runway Status
+* Altman Z
+* Altman Risk
+
+Do not remove any of the old Financials, Strength, or Quality column definitions if they are referenced elsewhere. Build Financial Health by reusing their existing canonical column objects.
+
+---
+
+# Fundamentals → Growth
+
+Combine the current top-level Growth → Growth and Growth → Estimates views into one Fundamentals subtab called:
+
+`Growth`
+
+There should not be another nested level beneath Growth.
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. Rev Grwth (Q)
+5. Rev Grwth (Y)
+6. Rev Accel
+7. GM Δ YoY
+8. Incr Op Mgn
+9. Fwd Rev Grwth
+10. Rev Grwth Est
+11. Rev Grwth NQ
+12. Rev Grwth NY
+13. Rev Est Δ90D
+14. EPS Grwth
+15. EPS Grwth Est
+16. EPS Grwth TQ
+17. EPS Grwth NQ
+18. EPS Grwth TY
+19. EPS Grwth NY
+20. EPS Est Δ90D
+21. Earn. Date
+
+This view must preserve every historical growth, forward growth, and analyst-estimate metric from the previous Fundamental, Growth, and Estimates views.
+
+Do not rename the underlying field keys.
+
+Do not reinterpret or recalculate any period.
+
+Do not remove a metric because it appears similar to another metric.
+
+---
+
+# Fundamentals → Valuation
+
+Keep the current Valuation view and all existing valuation logic.
+
+Use this exact column order:
+
+1. Ticker
+2. Company
+3. Theme
+4. P/E
+5. Fwd P/E
+6. P/S
+7. Fwd P/S
+8. EV/EBITDA
+9. Fwd EV/EBITDA
+10. Fwd EV/S
+11. P/FCF
+12. FCF Yield
+
+---
+
+# State and persistence migration
+
+Preserve existing localStorage selections safely.
+
+Required mappings:
+
+* Existing top-level `growth` selection:
+
+  * Open top-level `fundamentals`
+  * Select Fundamentals subtab `growth`
+
+* Any older top-level `earnings` selection:
+
+  * Open top-level `fundamentals`
+  * Select Fundamentals subtab `growth`
+
+* Existing Fundamentals `financials` selection:
+
+  * Map to `financialHealth`
+
+* Existing Fundamentals `strength` selection:
+
+  * Map to `financialHealth`
+
+* Existing Fundamentals `quality` selection:
+
+  * Map to `financialHealth`
+
+* Existing Fundamentals `overview` selection:
+
+  * Keep `overview`
+
+* Existing Fundamentals `valuation` selection:
+
+  * Keep `valuation`
+
+Do not allow an old persisted value to cause a blank table.
+
+Do not change the default top-level mode unless required by a valid persisted selection.
+
+---
+
+# Sorting safety
+
+When consolidating views:
+
+* Preserve every existing column sort key.
+* Do not replace explicit metric-key checks with broad column-array identity checks.
+* When switching to a view that does not contain the currently selected sort key, use the existing safe fallback behavior.
+* Do not allow switching between Financial Health, Growth, and Valuation to blank or crash the table.
+* Do not change sort direction behavior.
+
+---
+
+# Data-preservation audit
+
+Before completing, create an internal checklist of every column that existed in:
+
+* old Fundamental
+* old Overview
+* old Financials
+* old Strength
+* old Quality
+* old Growth
+* old Estimates
+* old Valuation
+
+Confirm that every metric still appears in at least one of these final views:
+
+* Overview
+* Financial Health
+* Growth
+* Valuation
+
+Do not count the Ticker, Company, or Theme identity columns during this audit.
+
+No existing collected or custom-calculated metric may disappear.
+
+---
+
+# Required verification
+
+Verify all of the following:
+
+* Final top-level navigation is:
+
+  * Market
+  * Technical
+  * Options
+  * Fundamentals
+
+* Final Fundamentals navigation is:
+
+  * Overview
+  * Financial Health
+  * Growth
+  * Valuation
+
+* Market still works exactly as before.
+
+* Technical still works exactly as before.
+
+* Options still works exactly as before.
+
+* Overview renders.
+
+* Financial Health renders.
+
+* Growth renders.
+
+* Valuation renders.
+
+* All debt metrics remain present.
+
+* All revenue-growth metrics remain present.
+
+* All EPS-growth metrics remain present.
+
+* All estimate-revision metrics remain present.
+
+* All quality metrics remain present.
+
+* All valuation metrics remain present.
+
+* Switching repeatedly between views does not blank the table.
+
+* Sorting works in every final view.
+
+* Existing filters still work.
+
+* Existing tooltips and formatting still work.
+
+* No console errors were introduced.
+
+* No TypeScript errors were introduced.
+
+* No backend or API changes were made.
+
+At completion, report only:
+
+1. File or files changed.
+2. Final top-level navigation.
+3. Final Fundamentals subtoggles.
+4. Confirmation that every old metric was mapped into a final view.
+5. Exact frontend key used for Total Debt, or confirmation that it remains unavailable.
+6. Persistence migrations added.
+7. Verification results for rendering, sorting, filtering, and view switching.
+8. Confirmation that no backend, API, cache, calculation, formatter, or data-fetch logic changed.

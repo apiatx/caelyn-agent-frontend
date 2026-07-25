@@ -980,10 +980,8 @@ const FUND_COLS: FundColDef[] = [
 /* ═══════════════════════════════════════════════════════════════════
    QUALITY SCREENER — types, category column definitions
    ═══════════════════════════════════════════════════════════════════ */
-type FundamentalsCategory = 'overview' | 'financials' | 'strength' | 'quality' | 'valuation';
-type EarningsCategory = 'growth' | 'estimates';
+type FundamentalsCategory = 'overview' | 'financialHealth' | 'growth' | 'valuation';
 const WL_FUNDAMENTALS_CATEGORY_KEY = 'wl_fundamentals_category';
-const WL_EARNINGS_CATEGORY_KEY = 'wl_earnings_category';
 
 const Q_BASE: FundColDef[] = [
   { key: 'ticker',               label: 'Ticker',  aliases: ['symbol'],                                                                                          fmt: 'symbol' },
@@ -1097,17 +1095,45 @@ const FUND_FINANCIALS_COLS: FundColDef[] = [
   FUND_COLS.find(c => c.key === 'shares_insiders')!,
 ];
 
-// Fundamentals → Strength (same data as Financial Strength, label change only)
+// Legacy arrays — kept for backwards-compat; content absorbed into Financial Health
 const FUND_STRENGTH_COLS = QUALITY_FINANCIAL_STRENGTH_COLS;
-
-// Fundamentals → Quality (Business Quality without FCF Yield, which moves to Valuation)
 const FUND_QUALITY_COLS: FundColDef[] = QUALITY_BUSINESS_QUALITY_COLS.filter(c => c.key !== 'fcf_yield');
 
-// Fundamentals → Valuation (QUALITY_VALUATION_COLS already includes FCF Yield)
+// Fundamentals → Valuation
 const FUND_VALUATION_COLS = QUALITY_VALUATION_COLS;
 
-// Earnings & Estimates → Growth
-const EARNINGS_GROWTH_COLS: FundColDef[] = [
+// Fundamentals → Financial Health (combines old Financials + Strength + Quality)
+const FUND_FINANCIAL_HEALTH_COLS: FundColDef[] = [
+  ...Q_BASE,
+  FUND_COLS.find(c => c.key === 'market_cap')!,
+  FUND_COLS.find(c => c.key === 'revenue')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'gross_margin')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'operating_margin')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'fcf_margin')!,
+  FUND_COLS.find(c => c.key === 'free_cash_flow')!,
+  FUND_COLS.find(c => c.key === 'operating_income')!,
+  FUND_COLS.find(c => c.key === 'ebit')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'roic')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'fcf_conversion')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'cash')!,
+  // Total Debt: no canonical frontend field available — column omitted
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'net_cash_debt')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'current_ratio')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'interest_coverage')!,
+  FUND_COLS.find(c => c.key === 'debt_to_equity')!,
+  FUND_COLS.find(c => c.key === 'net_debt_ebitda')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'cash_runway_months')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'cash_runway_status')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'diluted_shares_growth_yoy')!,
+  QUALITY_BUSINESS_QUALITY_COLS.find(c => c.key === 'sbc_revenue')!,
+  FUND_COLS.find(c => c.key === 'shares_insiders')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'altman_z_score')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'altman_z_risk')!,
+  QUALITY_FINANCIAL_STRENGTH_COLS.find(c => c.key === 'piotroski_score')!,
+];
+
+// Fundamentals → Growth (combines former Growth + Estimates into one flat view)
+const FUND_GROWTH_COMBINED_COLS: FundColDef[] = [
   ...Q_BASE,
   FUND_COLS.find(c => c.key === 'revenue_growth_q')!,
   QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'revenue_growth')!,
@@ -1115,25 +1141,23 @@ const EARNINGS_GROWTH_COLS: FundColDef[] = [
   QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'gross_margin_change_yoy')!,
   QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'incremental_operating_margin')!,
   QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'forward_revenue_growth')!,
-  QUALITY_GROWTH_QUALITY_COLS.find(c => c.key === 'eps_growth')!,
-];
-
-// Earnings & Estimates → Estimates
-const EARNINGS_ESTIMATES_COLS: FundColDef[] = [
-  ...Q_BASE,
-  FUND_COLS.find(c => c.key === 'earnings_date')!,
   FUND_COLS.find(c => c.key === 'revenue_growth_est')!,
   FUND_COLS.find(c => c.key === 'rev_growth_next_quarter')!,
   FUND_COLS.find(c => c.key === 'rev_growth_next_year')!,
-  QUALITY_OVERVIEW_COLS.find(c => c.key === 'forward_revenue_growth')!,
   QUALITY_OVERVIEW_COLS.find(c => c.key === 'revenue_estimate_revision_90d')!,
+  FUND_COLS.find(c => c.key === 'eps_growth')!,
   FUND_COLS.find(c => c.key === 'eps_growth_est')!,
   FUND_COLS.find(c => c.key === 'eps_growth_tq')!,
   FUND_COLS.find(c => c.key === 'eps_growth_nq')!,
   FUND_COLS.find(c => c.key === 'eps_growth_ty')!,
   FUND_COLS.find(c => c.key === 'eps_growth_ny')!,
   QUALITY_OVERVIEW_COLS.find(c => c.key === 'eps_estimate_revision_90d')!,
+  FUND_COLS.find(c => c.key === 'earnings_date')!,
 ];
+
+// Legacy aliases kept for any remaining internal references
+const EARNINGS_GROWTH_COLS = FUND_GROWTH_COMBINED_COLS;
+const EARNINGS_ESTIMATES_COLS = FUND_GROWTH_COMBINED_COLS;
 
 /* Helper: look up a column def across all Quality + Fundamental column sets */
 function findAnyColDef(key: string): FundColDef | undefined {
@@ -1145,8 +1169,8 @@ function findAnyColDef(key: string): FundColDef | undefined {
     || QUALITY_VALUATION_COLS.find(c => c.key === key)
     || FUND_OVERVIEW_COLS.find(c => c.key === key)
     || FUND_FINANCIALS_COLS.find(c => c.key === key)
-    || EARNINGS_GROWTH_COLS.find(c => c.key === key)
-    || EARNINGS_ESTIMATES_COLS.find(c => c.key === key);
+    || FUND_FINANCIAL_HEALTH_COLS.find(c => c.key === key)
+    || FUND_GROWTH_COMBINED_COLS.find(c => c.key === key);
 }
 
 /** Keys of Quality columns whose fmt === 'pct' — use qualFmtPct (no ×100 scaling). */
@@ -1154,7 +1178,7 @@ const QUALITY_PCT_KEYS = new Set<string>(
   [...QUALITY_OVERVIEW_COLS, ...QUALITY_FINANCIAL_STRENGTH_COLS,
    ...QUALITY_BUSINESS_QUALITY_COLS, ...QUALITY_GROWTH_QUALITY_COLS,
    ...QUALITY_VALUATION_COLS, ...FUND_OVERVIEW_COLS, ...FUND_FINANCIALS_COLS,
-   ...FUND_QUALITY_COLS, ...EARNINGS_GROWTH_COLS, ...EARNINGS_ESTIMATES_COLS]
+   ...FUND_QUALITY_COLS, ...FUND_FINANCIAL_HEALTH_COLS, ...FUND_GROWTH_COMBINED_COLS]
     .filter(c => c.fmt === 'pct')
     .map(c => c.key)
 );
@@ -2199,11 +2223,14 @@ export default function WatchlistPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'growth'>(() => {
+  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals'>(() => {
     try {
       const v = localStorage.getItem('wl_screener_mode') as string;
-      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals' || v === 'growth') return v;
-      if (v === 'earnings') return 'growth';
+      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals') return v;
+      if (v === 'growth' || v === 'earnings') {
+        try { localStorage.setItem(WL_FUNDAMENTALS_CATEGORY_KEY, 'growth'); } catch {}
+        return 'fundamentals';
+      }
       if (v === 'fundamental' || v === 'quality') return 'fundamentals';
       return 'technical';
     } catch { return 'technical'; }
@@ -2211,15 +2238,10 @@ export default function WatchlistPage() {
   const [fundamentalsCategory, setFundamentalsCategory] = useState<FundamentalsCategory>(() => {
     try {
       const v = localStorage.getItem(WL_FUNDAMENTALS_CATEGORY_KEY) as string;
-      if (v === 'overview' || v === 'financials' || v === 'strength' || v === 'quality' || v === 'valuation') return v as FundamentalsCategory;
-      if (v === 'financial-strength') return 'strength';
-      if (v === 'business-quality') return 'quality';
+      if (v === 'overview' || v === 'financialHealth' || v === 'growth' || v === 'valuation') return v as FundamentalsCategory;
+      if (v === 'financials' || v === 'strength' || v === 'quality' || v === 'financial-strength' || v === 'business-quality' || v === 'growth-quality') return 'financialHealth';
       return 'overview';
     } catch { return 'overview'; }
-  });
-  const [earningsCategory, setEarningsCategory] = useState<EarningsCategory>(() => {
-    try { return (localStorage.getItem(WL_EARNINGS_CATEGORY_KEY) as EarningsCategory) || 'growth'; }
-    catch { return 'growth'; }
   });
   const [hideForeignTickers, setHideForeignTickers] = useState<boolean>(() => {
     try { return localStorage.getItem('wl_hide_foreign') === '1'; } catch { return false; }
@@ -5072,7 +5094,7 @@ export default function WatchlistPage() {
           </span>
           {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {(['market', 'technical', 'options', 'fundamentals', 'growth'] as const).map((mode, mi, arr) => (
+              {(['market', 'technical', 'options', 'fundamentals'] as const).map((mode, mi, arr) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -5090,7 +5112,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : mode === 'fundamentals' ? 'Fundamentals' : 'Growth'}
+                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : 'Fundamentals'}
                 </button>
               ))}
             </div>
@@ -5214,7 +5236,7 @@ export default function WatchlistPage() {
 
         {screenerMode === 'fundamentals' && (
           <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
-            {([ ['overview','Overview'], ['financials','Financials'], ['strength','Strength'], ['quality','Quality'], ['valuation','Valuation'] ] as [FundamentalsCategory, string][]).map(([cat, label]) => (
+            {([ ['overview','Overview'], ['financialHealth','Financial Health'], ['growth','Growth'], ['valuation','Valuation'] ] as [FundamentalsCategory, string][]).map(([cat, label]) => (
               <button
                 key={cat}
                 onClick={() => { setFundamentalsCategory(cat); try { localStorage.setItem(WL_FUNDAMENTALS_CATEGORY_KEY, cat); } catch {} }}
@@ -5231,36 +5253,14 @@ export default function WatchlistPage() {
             ))}
           </div>
         )}
-        {screenerMode === 'growth' && (
-          <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
-            {([ ['growth','Growth'], ['estimates','Estimates'] ] as [EarningsCategory, string][]).map(([cat, label]) => (
-              <button
-                key={cat}
-                onClick={() => { setEarningsCategory(cat); try { localStorage.setItem(WL_EARNINGS_CATEGORY_KEY, cat); } catch {} }}
-                style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
-                  padding: '3px 10px', borderRadius: 3, cursor: 'pointer',
-                  textTransform: 'uppercase' as const, fontFamily: font,
-                  background: earningsCategory === cat ? `${C.teal}22` : 'transparent',
-                  color: earningsCategory === cat ? C.teal : C.dim,
-                  border: `1px solid ${earningsCategory === cat ? `${C.teal}55` : C.border}`,
-                  transition: 'all 0.12s',
-                }}
-              >{label}</button>
-            ))}
-          </div>
-        )}
-        {tableTitle !== 'CLOSE WATCH' && (screenerMode === 'fundamentals' || screenerMode === 'growth') ? (
+        {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
-              screenerMode === 'growth'
-                ? (earningsCategory === 'estimates' ? EARNINGS_ESTIMATES_COLS : EARNINGS_GROWTH_COLS)
-                : (fundamentalsCategory === 'financials' ? FUND_FINANCIALS_COLS
-                  : fundamentalsCategory === 'strength'  ? FUND_STRENGTH_COLS
-                  : fundamentalsCategory === 'quality'   ? FUND_QUALITY_COLS
-                  : fundamentalsCategory === 'valuation' ? FUND_VALUATION_COLS
-                  : FUND_OVERVIEW_COLS),
-              screenerMode === 'growth' || fundamentalsCategory !== 'financials'
+              fundamentalsCategory === 'financialHealth' ? FUND_FINANCIAL_HEALTH_COLS
+              : fundamentalsCategory === 'growth'        ? FUND_GROWTH_COMBINED_COLS
+              : fundamentalsCategory === 'valuation'     ? FUND_VALUATION_COLS
+              : FUND_OVERVIEW_COLS,
+              true
             )}
           </div>
         ) : (
