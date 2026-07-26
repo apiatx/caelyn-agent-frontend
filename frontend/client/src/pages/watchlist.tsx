@@ -2636,6 +2636,27 @@ export default function WatchlistPage() {
     return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
   }, [themeUniverseResp]);
 
+  const wlIdentityCsv = useMemo(() => {
+    const tickers = (watchlist?.tickers as string[] | undefined) ?? [];
+    return [...tickers].sort().join(',');
+  }, [watchlist?.tickers]);
+  const { data: wlIdentityData } = useQuery<Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }>>({
+    queryKey: ['company-identity', wlIdentityCsv],
+    queryFn: () => fetch(`/api/fmp/company-identity?symbols=${encodeURIComponent(wlIdentityCsv)}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled: wlIdentityCsv.length > 0,
+    staleTime: 24 * 60 * 60_000,
+    retry: 1,
+  });
+  const betaByTicker = useMemo<Record<string, number | null>>(() => {
+    if (!wlIdentityData) return {};
+    const out: Record<string, number | null> = {};
+    for (const [sym, d] of Object.entries(wlIdentityData)) {
+      if (d.beta != null) out[sym.toUpperCase()] = d.beta;
+    }
+    return out;
+  }, [wlIdentityData]);
+
   const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);
   const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
 
@@ -3307,6 +3328,11 @@ export default function WatchlistPage() {
       const opt = rawOpt ? normalizeOptionsSignal(rawOpt) : undefined;
       const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
 
+      // Inject beta from FMP company-identity when not present in analysis row
+      if (sym && (next.beta == null || next.beta === '') && betaByTicker[sym] != null) {
+        next.beta = betaByTicker[sym];
+      }
+
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
       // preserve the last-known-valid value from the previous payload.
       // 0 is treated as a valid value and is NOT preserved over.
@@ -3361,7 +3387,7 @@ export default function WatchlistPage() {
 
     return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId]);
+  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId, betaByTicker]);
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
@@ -5692,36 +5718,36 @@ export default function WatchlistPage() {
                       </button>
                     )}
                   </span>
-                  <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.company || stock.name || ''}>
-                    {stock.company || stock.name || DASH}
+                  <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }} title={stock.company || stock.name || ''}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 1, minWidth: 0 }}>{stock.company || stock.name || DASH}</span>
+                    {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
+                      const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
+                      const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
+                      const isActive = (s: string) => !isTerminal(s) && s !== 'queued' && s !== 'unknown';
+                      const catLabel = (key: string, val: string) => {
+                        if (val === 'done') return `${key} ✓`;
+                        if (val === 'no_options') return `${key}: none`;
+                        if (val === 'queued') return `${key}: queued`;
+                        if (val === 'error') return `${key}: err`;
+                        if (val === 'running') return `${key}: running`;
+                        if (val === 'pending') return `${key}: pending`;
+                        return null;
+                      };
+                      const allDone = isTerminal(hs.quote) && isTerminal(hs.technical) && isTerminal(hs.fundamentals) && isTerminal(hs.options);
+                      const anyActive = isActive(hs.quote) || isActive(hs.technical) || isActive(hs.fundamentals) || isActive(hs.options);
+                      const parts = [
+                        catLabel('Q', hs.quote),
+                        catLabel('T', hs.technical),
+                        catLabel('F', hs.fundamentals),
+                        catLabel('O', hs.options),
+                      ].filter(Boolean).join('  ');
+                      return (
+                        <span style={{ fontSize: 8, color: allDone ? C.green : anyActive ? C.amber : 'rgba(255,255,255,0.35)', background: allDone ? `${C.green}18` : anyActive ? `${C.amber}18` : 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: font, flexShrink: 0 }}>
+                          {parts || 'Hydrating…'}
+                        </span>
+                      );
+                    })()}
                   </span>
-                  {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
-                    const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
-                    const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
-                    const isActive = (s: string) => !isTerminal(s) && s !== 'queued' && s !== 'unknown';
-                    const catLabel = (key: string, val: string) => {
-                      if (val === 'done') return `${key} ✓`;
-                      if (val === 'no_options') return `${key}: none`;
-                      if (val === 'queued') return `${key}: queued`;
-                      if (val === 'error') return `${key}: err`;
-                      if (val === 'running') return `${key}: running`;
-                      if (val === 'pending') return `${key}: pending`;
-                      return null;
-                    };
-                    const allDone = isTerminal(hs.quote) && isTerminal(hs.technical) && isTerminal(hs.fundamentals) && isTerminal(hs.options);
-                    const anyActive = isActive(hs.quote) || isActive(hs.technical) || isActive(hs.fundamentals) || isActive(hs.options);
-                    const parts = [
-                      catLabel('Q', hs.quote),
-                      catLabel('T', hs.technical),
-                      catLabel('F', hs.fundamentals),
-                      catLabel('O', hs.options),
-                    ].filter(Boolean).join('  ');
-                    return (
-                      <span style={{ fontSize: 8, color: allDone ? C.green : anyActive ? C.amber : 'rgba(255,255,255,0.35)', background: allDone ? `${C.green}18` : anyActive ? `${C.amber}18` : 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' as const, fontFamily: font, flexShrink: 0 }}>
-                        {parts || 'Hydrating…'}
-                      </span>
-                    );
-                  })()}
                   {isAdmin && stock.ticker ? (() => {
                     const currentThemeName = localThemeOverrides.get((stock.ticker || '').toUpperCase()) || stock.canonical_theme_name || stock.section_title || stock.theme || null;
                     const rowThemePending = themeAssignPendingTicker === stock.ticker;

@@ -3170,19 +3170,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Company identity batch — used by earnings calendar ───────────
-  const _identityCache = new Map<string, { name: string; logo: string | null; exchange: string | null; ts: number }>();
+  const _identityCache = new Map<string, { name: string; logo: string | null; exchange: string | null; beta: number | null; ts: number }>();
   const _IDENTITY_TTL = 24 * 3600_000;
 
   app.get('/api/fmp/company-identity', async (req, res) => {
     const raw = (req.query.symbols as string || '').trim();
     if (!raw) return res.json({});
     const symbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
-    const result: Record<string, { name: string; logo: string | null; exchange: string | null }> = {};
+    const result: Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }> = {};
     const needFetch: string[] = [];
     for (const sym of symbols) {
       const c = _identityCache.get(sym);
       if (c && Date.now() - c.ts < _IDENTITY_TTL) {
-        result[sym] = { name: c.name, logo: c.logo, exchange: c.exchange };
+        result[sym] = { name: c.name, logo: c.logo, exchange: c.exchange, beta: c.beta };
       } else {
         needFetch.push(sym);
       }
@@ -3200,9 +3200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (!p.symbol) continue;
                 const s = p.symbol.toUpperCase();
                 const exchange = p.exchangeShortName || p.exchange || null;
-                const entry = { name: p.companyName || s, logo: p.image || null, exchange, ts: Date.now() };
+                const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
+                const entry = { name: p.companyName || s, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
                 _identityCache.set(s, entry);
-                result[s] = { name: entry.name, logo: entry.logo, exchange: entry.exchange };
+                result[s] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
               }
             }
           }
@@ -3212,8 +3213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       for (const sym of needFetch) {
         if (!result[sym]) {
-          _identityCache.set(sym, { name: sym, logo: null, exchange: null, ts: Date.now() });
-          result[sym] = { name: sym, logo: null, exchange: null };
+          _identityCache.set(sym, { name: sym, logo: null, exchange: null, beta: null, ts: Date.now() });
+          result[sym] = { name: sym, logo: null, exchange: null, beta: null };
         }
       }
     }
