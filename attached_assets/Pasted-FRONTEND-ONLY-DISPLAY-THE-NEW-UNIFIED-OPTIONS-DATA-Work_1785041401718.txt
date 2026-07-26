@@ -1,0 +1,253 @@
+FRONTEND ONLY — DISPLAY THE NEW UNIFIED OPTIONS DATA
+
+Work only in the frontend repository.
+
+Do not modify the backend.
+Do not add new API calls.
+Do not create separate refresh behavior for Watchlist and Options Flow.
+Do not change any Options Score or signal logic.
+Do not add another row of sub-toggles.
+
+The backend now returns unified options data for both Watchlist and Options Flow. Update the frontend to expose it cleanly and consistently.
+
+Audit the actual current API responses and TypeScript types before editing. Use the backend’s exact existing field names and compatibility aliases rather than inventing replacements.
+
+==================================================
+WATCHLIST — OPTIONS VIEW
+========================
+
+Keep the existing main `Options` toggle.
+
+Do not add Core/Flow/Trend sub-toggles. The application already has enough toggles.
+
+Update the Options table so the following columns are available:
+
+Default visible columns, in this order:
+
+1. Opt Score
+2. Opt Signal
+3. Vol P/C
+4. Prem P/C
+5. Net Prem
+6. Net Prem 1D
+7. Net Prem 7D
+8. Net Prem 30D
+9. IV
+10. EM
+11. Opt Vol
+12. OI
+
+Additional available columns:
+
+* Call Prem
+* Put Prem
+* Ask Prem
+* Bid Prem
+* Mid Prem
+* Call Vol
+* Put Vol
+* Call OI
+* Put OI
+
+Use the existing column-visibility/customization system if one already exists.
+
+If the Options view does not currently have column visibility controls, add one compact `Columns` dropdown. Do not add more table-view toggles.
+
+Preserve the existing sticky ticker column, sorting, resizing, horizontal scrolling, row click behavior, ticker popup, filters, and saved column preferences.
+
+==================================================
+OPTIONS FLOW — TICKER ROWS
+==========================
+
+Keep all existing premium-flow fields.
+
+Add the unified core options fields to the actual ticker rows:
+
+* Opt Score
+* Opt Signal
+* IV
+* EM
+* OI
+* Call OI
+* Put OI
+
+Use the same backend values and score version shown in Watchlist.
+
+Do not recalculate any values in the frontend.
+
+Recommended default column order:
+
+1. Ticker
+2. Opt Score
+3. Opt Signal
+4. Prem P/C
+5. Net Prem
+6. Net Prem 1D
+7. Net Prem 7D
+8. Net Prem 30D
+9. Vol P/C
+10. IV
+11. EM
+12. OI
+13. Ask Prem
+14. Bid Prem
+15. Call Prem
+16. Put Prem
+
+Preserve any current column controls and user preferences.
+
+==================================================
+EXPLICIT P/C LABELS
+===================
+
+Retire generic visible labels such as:
+
+* P/C
+* Put/Call
+
+Use only:
+
+* `Vol P/C`
+* `Prem P/C`
+
+Definitions:
+
+* Vol P/C = put contract volume divided by call contract volume
+* Prem P/C = put premium dollars divided by call premium dollars
+
+Add concise header tooltips explaining each definition.
+
+Do not display Premium P/C as a percentage unless the backend field is explicitly a percentage field. A ratio of 0.72 should display as `0.72`, not `72%`.
+
+==================================================
+FORMATTING
+==========
+
+Opt Score:
+
+* one decimal when needed
+* preserve existing score color and signal styling
+* do not mix fallback score styling with canonical score styling
+
+IV:
+
+* percentage formatting
+* do not multiply values incorrectly; inspect the actual backend unit first
+
+Expected Move:
+
+* use the existing percentage or dollar convention already used by the app
+* remain consistent across both pages
+
+Volume and OI:
+
+* compact formatting such as 950, 12.4K, 1.3M
+
+Premium values:
+
+* compact signed currency
+* examples: `+$3.2M`, `-$840K`, `$125K`
+
+Net-premium trends:
+
+* signed compact currency
+* green for positive
+* red for negative
+* neutral styling for zero
+* em dash only for genuinely unavailable data
+
+Ratios:
+
+* two decimal places
+* preserve zero as `0.00`
+* do not convert zero to missing
+
+Never use truthiness checks that turn valid numeric zero values into an em dash.
+
+==================================================
+CLOSED-MARKET AND LKG DISPLAY
+=============================
+
+Do not blank cached options values after market close or on weekends.
+
+Treat these as displayable:
+
+* available_cached
+* lkg_market_closed
+* stale_but_usable
+* stale_long_term
+
+Use the backend snapshot status and as-of metadata.
+
+Add one subtle status indicator near the Options table header, not repeated loudly in every cell:
+
+Examples:
+
+* `Live · as of 2:46 PM ET`
+* `Prior session · Fri close`
+* `Cached · as of Jul 24`
+* `Stale snapshot · Jul 17`
+
+Do not make stale-but-usable data look like an application error.
+
+For Ask Premium, Bid Premium, and Mid Premium:
+
+* show live interval values during the regular session
+* when live interval values are unavailable, use the backend prior-session fields
+* label or tooltip them as `Prior session`
+* never present prior-session values as live
+* do not blank them when valid prior-session data exists
+
+==================================================
+TYPE SAFETY AND DATA MAPPING
+============================
+
+Update the relevant frontend response types/interfaces to include the backend fields now returned.
+
+Expected concepts include:
+
+* options score/version/source
+* options signal
+* implied volatility
+* expected move
+* total/call/put volume
+* total/call/put OI
+* volume put/call ratio
+* call/put/net premium
+* premium put/call ratio
+* Ask/Bid/Mid premium
+* 1D/7D/30D net-premium changes
+* prior-session premium fields
+* snapshot status/source/as-of
+* expiration and premium methodology metadata
+
+Inspect the real response and map exact keys.
+
+Do not create duplicate frontend calculations or alternate definitions.
+
+==================================================
+VERIFICATION
+============
+
+Verify:
+
+1. The same ticker shows the same Opt Score on Watchlist and Options Flow.
+2. The same ticker shows the same Vol P/C on both pages.
+3. The same ticker shows the same Prem P/C on both pages.
+4. Premium P/C is populated where premium data exists.
+5. Net Prem 1D, 7D, and 30D render correctly.
+6. Zero values display as zero rather than missing.
+7. Cached weekend data remains visible.
+8. Prior-session Ask/Bid/Mid values display honestly after close.
+9. Sorting works for every new numeric column.
+10. No extra API request is triggered by switching pages or toggles.
+11. No backend files were changed.
+
+Return:
+
+* files changed
+* columns added to each page
+* exact backend fields mapped
+* confirmation no API calls were added
+* confirmation no scoring logic changed
+* screenshots or concise visual verification of both tables

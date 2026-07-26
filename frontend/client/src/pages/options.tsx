@@ -2925,6 +2925,18 @@ interface SFTicker {
   bias: string | null;
   heat_score: number | null;
   reason?: string | null;
+  // Unified options fields (added from backend unified endpoint)
+  opt_score?: number | null;             // options quality/conviction score (0–100)
+  options_score?: number | null;         // alias for opt_score
+  opt_signal?: string | null;            // e.g. "Unusual Call Flow", "Gamma Squeeze"
+  options_signal?: string | null;        // alias for opt_signal
+  implied_volatility?: number | null;    // current IV (0–1 or percentage — same unit rules as options_iv)
+  expected_move?: number | null;         // expected move % from ATM straddle
+  total_oi?: number | null;              // total open interest (calls + puts)
+  call_oi?: number | null;              // call open interest
+  put_oi?: number | null;               // put open interest
+  snapshot_status?: string | null;       // "live" | "prior_session" | "cached"
+  data_as_of?: string | null;           // ISO timestamp of the underlying data
   // Net Flow fields (ETF/Stock NF separation)
   instrument_type?: string | null;         // "stock" | "etf" | null
   display_name?: string | null;            // canonical company / fund display name from backend
@@ -3662,6 +3674,46 @@ function sfTooltipTicker(tk: SFTicker): ReactNode {
       {!isPending && tk.premium_per_contract != null && sfTTRow("Prem/Contract", fmtCurrencyShort(tk.premium_per_contract), C.dim)}
       {!isPending && tk.premium_per_contract != null && sfTTNote("est. premium per traded contract — higher = larger contracts")}
       {tk.total_contract_volume != null && sfTTRow("Contracts", tk.total_contract_volume.toLocaleString(), C.dim)}
+      {/* Unified options fields */}
+      {!isPending && (tk.opt_score ?? tk.options_score) != null && (() => {
+        const sc = Number(tk.opt_score ?? tk.options_score);
+        const scClr = sc >= 70 ? C.green : sc >= 50 ? C.amber : C.dim;
+        return sfTTRow("Opt Score", Number.isFinite(sc) ? (sc >= 10 ? Math.round(sc).toString() : sc.toFixed(1)) : "—", scClr);
+      })()}
+      {!isPending && (tk.opt_signal ?? tk.options_signal) && (
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 1 }}>
+          <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>Opt Signal</span>
+          <span style={{ fontSize: 9, color: C.teal, fontFamily: font, textTransform: "uppercase", letterSpacing: "0.05em" }}>{tk.opt_signal ?? tk.options_signal}</span>
+        </div>
+      )}
+      {!isPending && tk.implied_volatility != null && sfTTRow("IV", (() => {
+        const iv = Number(tk.implied_volatility);
+        return Number.isFinite(iv) ? `${(iv > 5 ? iv : iv * 100).toFixed(0)}%` : "—";
+      })(), C.amber)}
+      {!isPending && tk.expected_move != null && sfTTRow("Exp. Move", `${Number(tk.expected_move).toFixed(1)}%`, '#a78bfa')}
+      {!isPending && (tk.call_oi != null || tk.put_oi != null || tk.total_oi != null) && (
+        <div style={{ marginTop: 2 }}>
+          {tk.total_oi != null && sfTTRow("Total OI", Number(tk.total_oi).toLocaleString(), C.dim)}
+          {tk.call_oi != null && sfTTRow("Call OI", Number(tk.call_oi).toLocaleString(), C.green)}
+          {tk.put_oi != null && sfTTRow("Put OI", Number(tk.put_oi).toLocaleString(), C.red)}
+        </div>
+      )}
+      {!isPending && tk.snapshot_status && (() => {
+        const statusColor = tk.snapshot_status === 'live' ? C.green : tk.snapshot_status === 'prior_session' ? C.amber : C.dim;
+        const statusLabel = tk.snapshot_status === 'live' ? 'Live' : tk.snapshot_status === 'prior_session' ? 'Prior session' : tk.snapshot_status === 'cached' ? 'Cached' : tk.snapshot_status;
+        return (
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 2, paddingTop: 3, borderTop: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>Data status</span>
+            <span style={{ fontSize: 9, color: statusColor, fontFamily: font, fontWeight: 700 }}>{statusLabel}{tk.data_as_of ? (() => {
+              try {
+                const d = new Date(tk.data_as_of!);
+                const isToday = new Date().toDateString() === d.toDateString();
+                return isToday ? ` · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ` · ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+              } catch { return ''; }
+            })() : ''}</span>
+          </div>
+        );
+      })()}
       {!isPending && sfNetTrendTTSection(tk)}
       {!isPending && sfIntervalTTSection(tk)}
     </div>

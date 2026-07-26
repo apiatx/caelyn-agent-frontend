@@ -402,6 +402,22 @@ function formatRevEst(v: any): string {
   return `$${Math.round(n)}`;
 }
 
+function fmtOptCurr(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  const a = Math.abs(n);
+  const s = n < 0 ? '-' : '';
+  if (a >= 1_000_000) return `${s}$${(a / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000) return `${s}$${(a / 1_000).toFixed(0)}K`;
+  return `${s}$${a.toFixed(0)}`;
+}
+function fmtOptDelta(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  const a = Math.abs(n);
+  const sign = n >= 0 ? '+' : '-';
+  if (a >= 1_000_000) return `${sign}$${(a / 1_000_000).toFixed(2)}M`;
+  if (a >= 1_000) return `${sign}$${(a / 1_000).toFixed(0)}K`;
+  return `${sign}$${a.toFixed(0)}`;
+}
 function formatRelVol(volume: any, averageVolume: any, preComputed?: any): string {
   // Prefer pre-computed relative_volume from backend (shared cache); fall back
   // to volume / average_volume when only the raw fields are present.
@@ -1929,6 +1945,14 @@ const SIGNAL_LKG_FIELDS = [
   'options_volume', 'opt_vol',
   'options_open_interest', 'oi',
   'options_iv', 'iv',
+  // Unified options fields
+  'options_put_call_ratio', 'options_volume_put_call_ratio',
+  'options_net_premium', 'options_net_premium_delta_1d', 'options_net_premium_delta_7d', 'options_net_premium_delta_30d',
+  'options_call_premium', 'options_put_premium',
+  'options_call_volume', 'options_put_volume',
+  'options_call_oi', 'options_put_oi',
+  'options_ask_premium', 'options_bid_premium', 'options_mid_premium',
+  'options_snapshot_status', 'options_data_as_of',
 ] as const;
 
 const isMissingSignalValue = (v: unknown): boolean =>
@@ -2235,6 +2259,21 @@ export default function WatchlistPage() {
   }>({ open: false, history: [], loading: false, selectedReport: null, selectedLoading: false });
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [optSecColsState, setOptSecColsState] = useState<Set<string>>(() => {
+    try {
+      const s = localStorage.getItem('wl_opt_sec_cols_v1');
+      return s ? new Set(JSON.parse(s) as string[]) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
+  const toggleOptSecCol = (key: string) => {
+    setOptSecColsState(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      try { localStorage.setItem('wl_opt_sec_cols_v1', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+  const [showOptColsMenu, setShowOptColsMenu] = useState(false);
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
   const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals'>(() => {
@@ -3388,6 +3427,19 @@ export default function WatchlistPage() {
       }
       case 'optionsScore': { const n = Number(stock.options_score); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsPutCall': { const n = Number(stock.options_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsVolPc': { const n = Number(stock.options_volume_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsNetPrem': { const n = Number(stock.options_net_premium); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsNetPrem1d': { const n = Number(stock.options_net_premium_delta_1d); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsNetPrem7d': { const n = Number(stock.options_net_premium_delta_7d); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsNetPrem30d': { const n = Number(stock.options_net_premium_delta_30d); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsCallPrem': { const n = Number(stock.options_call_premium); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsPutPrem': { const n = Number(stock.options_put_premium); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsCallVol': { const n = Number(stock.options_call_volume); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsPutVol': { const n = Number(stock.options_put_volume); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsCallOi': { const n = Number(stock.options_call_oi); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsPutOi': { const n = Number(stock.options_put_oi); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsAskPrem': { const n = Number(stock.options_ask_premium); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsBidPrem': { const n = Number(stock.options_bid_premium); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsIv': { const n = Number(stock.options_iv); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsExpectedMove': { const n = Number(stock.options_expected_move); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsVolume': { const n = Number(stock.options_volume); return { v: n, missing: !Number.isFinite(n) }; }
@@ -4924,15 +4976,28 @@ export default function WatchlistPage() {
         })
       : screenerFilteredRows;
     // Mode-specific grid layout and column headers
+    const SEC_OPT_COLS: { key: string; label: string; tooltip?: string }[] = [
+      { key: 'optionsCallPrem', label: 'Call Prem', tooltip: 'Aggregate call option premium for this ticker.' },
+      { key: 'optionsPutPrem',  label: 'Put Prem',  tooltip: 'Aggregate put option premium for this ticker.' },
+      { key: 'optionsAskPrem',  label: 'Ask Prem',  tooltip: 'Interval ask-side premium (session flow).' },
+      { key: 'optionsBidPrem',  label: 'Bid Prem',  tooltip: 'Interval bid-side premium (session flow).' },
+      { key: 'optionsMidPrem',  label: 'Mid Prem',  tooltip: 'Interval mid/unknown-side premium.' },
+      { key: 'optionsCallVol',  label: 'Call Vol',  tooltip: 'Call contract volume.' },
+      { key: 'optionsPutVol',   label: 'Put Vol',   tooltip: 'Put contract volume.' },
+      { key: 'optionsCallOi',   label: 'Call OI',   tooltip: 'Call open interest.' },
+      { key: 'optionsPutOi',    label: 'Put OI',    tooltip: 'Put open interest.' },
+    ];
+    const visibleSecCols = screenerMode === 'options' ? SEC_OPT_COLS.filter(c => optSecColsState.has(c.key)) : [];
+    const OPT_DEFAULT_GRID = '64px minmax(140px,1.6fr) minmax(100px,1fr) 48px minmax(58px,0.8fr) 52px 52px 68px 56px 56px 56px 44px 44px 56px 52px';
     const TICKER_GRID =
       screenerMode === 'market'
         ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 80px'
         : screenerMode === 'options'
-          ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 52px 80px 48px 52px 52px 60px 56px'
+          ? `${OPT_DEFAULT_GRID}${visibleSecCols.length > 0 ? ' ' + visibleSecCols.map(() => '60px').join(' ') : ''}`
           : /* technical */ '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 104px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
     const TICKER_TABLE_MIN_WIDTH =
       screenerMode === 'market' ? 960
-      : screenerMode === 'options' ? 724
+      : screenerMode === 'options' ? (1040 + visibleSecCols.length * 60)
       : /* technical */ 1456;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] =
       screenerMode === 'market' ? [
@@ -4950,16 +5015,22 @@ export default function WatchlistPage() {
         { key: 'beta',        label: 'Beta', tooltip: 'Measures price sensitivity to broad market movements. Beta above 1.0 means more volatile than the market; below 1.0 means less volatile; negative beta tends to move opposite to the market.' },
       ]
       : screenerMode === 'options' ? [
-        { key: 'ticker',              label: 'Ticker' },
-        { key: 'company',             label: 'Company' },
-        { key: 'theme',               label: 'Theme' },
-        { key: 'optionsScore',        label: 'Opt Score' },
+        { key: 'ticker',               label: 'Ticker' },
+        { key: 'company',              label: 'Company' },
+        { key: 'theme',                label: 'Theme' },
+        { key: 'optionsScore',         label: 'Opt Score' },
         { label: 'Opt Signal' },
-        { key: 'optionsPutCall',      label: 'P/C' },
-        { key: 'optionsIv',           label: 'IV' },
-        { key: 'optionsExpectedMove', label: 'EM' },
-        { key: 'optionsVolume',       label: 'Opt Vol' },
-        { key: 'optionsOi',           label: 'OI' },
+        { key: 'optionsVolPc',         label: 'Vol P/C',   tooltip: 'Put contracts ÷ call contracts — lower is more call-active.' },
+        { key: 'optionsPutCall',       label: 'Prem P/C',  tooltip: 'Put premium ÷ call premium — lower is more call-heavy.' },
+        { key: 'optionsNetPrem',       label: 'Net Prem',  tooltip: 'Net options premium (calls minus puts) — positive is call-heavy.' },
+        { key: 'optionsNetPrem1d',     label: 'Net 1D',    tooltip: 'Change in net premium vs 1 day ago.' },
+        { key: 'optionsNetPrem7d',     label: 'Net 7D',    tooltip: 'Change in net premium vs 7 days ago.' },
+        { key: 'optionsNetPrem30d',    label: 'Net 30D',   tooltip: 'Change in net premium vs 30 days ago.' },
+        { key: 'optionsIv',            label: 'IV' },
+        { key: 'optionsExpectedMove',  label: 'EM' },
+        { key: 'optionsVolume',        label: 'Opt Vol' },
+        { key: 'optionsOi',            label: 'OI' },
+        ...visibleSecCols,
       ]
       : /* technical */ [
         { key: 'ticker',         label: 'Ticker' },
@@ -5208,6 +5279,58 @@ export default function WatchlistPage() {
                 {screenerFilters.length > 0 ? `⊙ Filters (${screenerFilters.length})` : '⊕ Filters'}
               </button>
             )}
+            {screenerMode === 'options' && (
+              <div style={{ position: 'relative' }}>
+                {showOptColsMenu && (
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 9990 }} onClick={() => setShowOptColsMenu(false)} />
+                )}
+                <button
+                  onClick={() => setShowOptColsMenu(v => !v)}
+                  style={{
+                    fontSize: 8, fontWeight: 700, letterSpacing: '0.07em',
+                    padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+                    textTransform: 'uppercase' as const, fontFamily: font,
+                    background: optSecColsState.size > 0 ? `${C.purple}22` : 'transparent',
+                    color: optSecColsState.size > 0 ? '#a78bfa' : C.dim,
+                    border: `1px solid ${optSecColsState.size > 0 ? '#a78bfa60' : C.border}`,
+                    transition: 'all 0.12s', flexShrink: 0,
+                  }}
+                  title="Toggle optional columns"
+                >
+                  {optSecColsState.size > 0 ? `⊞ Cols (${optSecColsState.size})` : '⊞ Cols'}
+                </button>
+                {showOptColsMenu && (
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, zIndex: 9991,
+                    background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
+                    padding: '6px 0', minWidth: 156, boxShadow: '0 8px 24px rgba(0,0,0,0.55)',
+                    marginTop: 3,
+                  }} onClick={e => e.stopPropagation()}>
+                    <div style={{ padding: '3px 10px 5px', fontSize: 8, fontWeight: 700, color: C.dim, letterSpacing: '0.08em', textTransform: 'uppercase' as const, fontFamily: font }}>
+                      Optional Columns
+                    </div>
+                    {SEC_OPT_COLS.map(c => (
+                      <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '4px 10px', cursor: 'pointer', fontSize: 11, color: optSecColsState.has(c.key) ? C.text : C.dim, fontFamily: font }}>
+                        <input
+                          type="checkbox"
+                          checked={optSecColsState.has(c.key)}
+                          onChange={() => toggleOptSecCol(c.key)}
+                          style={{ cursor: 'pointer', accentColor: '#a78bfa' }}
+                        />
+                        {c.label}
+                      </label>
+                    ))}
+                    {optSecColsState.size > 0 && (
+                      <div style={{ padding: '4px 10px 2px', borderTop: `1px solid ${C.border}`, marginTop: 3 }}>
+                        <button onClick={() => { setOptSecColsState(new Set()); try { localStorage.removeItem('wl_opt_sec_cols_v1'); } catch {} }} style={{ fontSize: 9, color: C.dim, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: font }}>
+                          Clear all
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={toggleHideForeign}
               style={{
@@ -5256,6 +5379,32 @@ export default function WatchlistPage() {
           </div>
         )}
 
+        {screenerMode === 'options' && (() => {
+          const firstOpt = mergedTickers.find(t => t.options_snapshot_status || t.options_data_as_of);
+          const status   = (firstOpt?.options_snapshot_status ?? null) as string | null;
+          const asOf     = (firstOpt?.options_data_as_of ?? null) as string | null;
+          if (!status && !asOf) return null;
+          const statusColor = status === 'live' ? C.green : status === 'prior_session' ? C.amber : C.dim;
+          const statusDot   = status === 'live' ? '●' : status === 'prior_session' ? '◐' : '○';
+          const statusLabel = status === 'live' ? 'Live' : status === 'prior_session' ? 'Prior session' : status === 'cached' ? 'Cached' : (status ?? 'Options data');
+          let asOfStr = '';
+          if (asOf) {
+            try {
+              const d = new Date(asOf);
+              const isToday = new Date().toDateString() === d.toDateString();
+              asOfStr = isToday
+                ? ` · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} ET`
+                : ` · ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+            } catch {}
+          }
+          return (
+            <div style={{ padding: '3px 14px', borderBottom: `1px solid ${C.border}`, fontSize: 9, color: statusColor, display: 'flex', alignItems: 'center', gap: 4, background: `${statusColor}08`, flexShrink: 0 }}>
+              <span>{statusDot}</span>
+              <span style={{ fontWeight: 700, fontFamily: font }}>{statusLabel}</span>
+              {asOfStr && <span style={{ color: C.dim, fontFamily: font }}>{asOfStr}</span>}
+            </div>
+          );
+        })()}
         {screenerMode === 'fundamentals' && (
           <div style={{ padding: '6px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', gap: 4, flexShrink: 0, background: `${C.teal}06` }}>
             {([ ['overview','Overview'], ['financialHealth','Financial Health'], ['growth','Growth'], ['valuation','Valuation'] ] as [FundamentalsCategory, string][]).map(([cat, label]) => (
@@ -5410,6 +5559,24 @@ export default function WatchlistPage() {
               const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
               const _oVol = _oUn ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
               const _oOI = _oUn ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
+              // Unified options fields (new)
+              const _oVPC = _oUn ? null : (stock.options_volume_put_call_ratio != null ? Number(stock.options_volume_put_call_ratio) : null);
+              const _oVPCStr = _oVPC != null && Number.isFinite(_oVPC) ? _oVPC.toFixed(2) : (_oHas ? DASH : _oLd);
+              const _oVPCClr = _oVPC != null ? (_oVPC < 0.7 ? C.green : _oVPC > 1.3 ? C.red : C.dim) : C.dim;
+              const _oNP    = _oUn ? null : (stock.options_net_premium != null ? Number(stock.options_net_premium) : null);
+              const _oNPClr = _oNP != null ? (_oNP > 0 ? C.green : _oNP < 0 ? C.red : C.dim) : C.dim;
+              const _oNP1d  = _oUn ? null : (stock.options_net_premium_delta_1d  != null ? Number(stock.options_net_premium_delta_1d)  : null);
+              const _oNP7d  = _oUn ? null : (stock.options_net_premium_delta_7d  != null ? Number(stock.options_net_premium_delta_7d)  : null);
+              const _oNP30d = _oUn ? null : (stock.options_net_premium_delta_30d != null ? Number(stock.options_net_premium_delta_30d) : null);
+              const _oCallP = _oUn ? null : (stock.options_call_premium  != null ? Number(stock.options_call_premium)  : null);
+              const _oPutP  = _oUn ? null : (stock.options_put_premium   != null ? Number(stock.options_put_premium)   : null);
+              const _oAskP  = _oUn ? null : (stock.options_ask_premium   != null ? Number(stock.options_ask_premium)   : null);
+              const _oBidP  = _oUn ? null : (stock.options_bid_premium   != null ? Number(stock.options_bid_premium)   : null);
+              const _oMidP  = _oUn ? null : (stock.options_mid_premium   != null ? Number(stock.options_mid_premium)   : null);
+              const _oCallV = _oUn ? null : (stock.options_call_volume   != null ? Number(stock.options_call_volume)   : null);
+              const _oPutV  = _oUn ? null : (stock.options_put_volume    != null ? Number(stock.options_put_volume)    : null);
+              const _oCallO = _oUn ? null : (stock.options_call_oi       != null ? Number(stock.options_call_oi)       : null);
+              const _oPutO  = _oUn ? null : (stock.options_put_oi        != null ? Number(stock.options_put_oi)        : null);
               const _sym = (stock.ticker || stock.symbol || '') as string;
               const _isExpanded = expandedTickers.has(_sym);
               return (
@@ -5652,13 +5819,40 @@ export default function WatchlistPage() {
                   })()}
                   {screenerMode === 'options' && (
                     <>
+                      {/* Opt Score */}
                       <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
+                      {/* Opt Signal */}
                       <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
-                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }}>{_oCPStr}</span>
+                      {/* Vol P/C */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oVPCClr, opacity:_oDim }} title="Put contracts ÷ call contracts">{_oVPCStr}</span>
+                      {/* Prem P/C */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }} title="Put premium ÷ call premium">{_oCPStr}</span>
+                      {/* Net Prem */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNPClr, opacity:_oDim }}>{_oNP != null && Number.isFinite(_oNP) ? fmtOptCurr(_oNP) : (_oHas ? DASH : _oLd)}</span>
+                      {/* Net 1D */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP1d != null ? (_oNP1d > 0 ? C.green : _oNP1d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP1d != null && Number.isFinite(_oNP1d) ? fmtOptDelta(_oNP1d) : (_oHas ? DASH : _oLd)}</span>
+                      {/* Net 7D */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP7d != null ? (_oNP7d > 0 ? C.green : _oNP7d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP7d != null && Number.isFinite(_oNP7d) ? fmtOptDelta(_oNP7d) : (_oHas ? DASH : _oLd)}</span>
+                      {/* Net 30D */}
+                      <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP30d != null ? (_oNP30d > 0 ? C.green : _oNP30d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP30d != null && Number.isFinite(_oNP30d) ? fmtOptDelta(_oNP30d) : (_oHas ? DASH : _oLd)}</span>
+                      {/* IV */}
                       <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
+                      {/* EM */}
                       <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
+                      {/* Opt Vol */}
                       <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
+                      {/* OI */}
                       <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
+                      {/* Secondary columns */}
+                      {optSecColsState.has('optionsCallPrem') && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallP != null ? C.green : C.dim, opacity:_oDim }}>{_oCallP != null ? fmtOptCurr(_oCallP) : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsPutPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutP  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutP  != null ? fmtOptCurr(_oPutP)  : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsAskPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oAskP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oAskP  != null ? fmtOptCurr(_oAskP)  : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsBidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oBidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oBidP  != null ? fmtOptCurr(_oBidP)  : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsMidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oMidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oMidP  != null ? fmtOptCurr(_oMidP)  : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsCallVol')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallV != null ? C.green : C.dim, opacity:_oDim }}>{_oCallV != null ? formatVolume(_oCallV) : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsPutVol')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutV  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutV  != null ? formatVolume(_oPutV)  : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsCallOi')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallO != null ? C.green : C.dim, opacity:_oDim }}>{_oCallO != null ? formatVolume(_oCallO) : (_oHas ? DASH : _oLd)}</span>}
+                      {optSecColsState.has('optionsPutOi')    && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutO  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutO  != null ? formatVolume(_oPutO)  : (_oHas ? DASH : _oLd)}</span>}
                     </>
                   )}
                 </div>
