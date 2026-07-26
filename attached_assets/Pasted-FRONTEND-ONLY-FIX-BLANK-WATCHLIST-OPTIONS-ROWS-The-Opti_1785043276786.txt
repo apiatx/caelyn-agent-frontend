@@ -1,0 +1,257 @@
+FRONTEND ONLY — FIX BLANK WATCHLIST OPTIONS ROWS
+
+The Options Flow page is working and showing cached options data correctly.
+
+Do not touch the backend.
+Do not touch the working Options Flow page.
+Do not add API calls.
+Work only on the Watchlist Options data mapping in `watchlist.tsx`.
+
+The Watchlist Options columns are blank because the frontend is reading field names that do not match the actual `/api/watchlist/{id}/options-signals` response.
+
+Inspect one real populated row from:
+
+`optionsResp.signals`
+
+Then fix the mapping using the backend’s exact response keys.
+
+==================================================
+ROOT FIELD MAPPING
+==================
+
+Create one small normalization function for a Watchlist options signal row and apply it before spreading the signal onto the Watchlist ticker.
+
+Map these exact concepts:
+
+* Opt Score:
+
+  * `options_score`
+  * fallback `score`
+
+* Opt Signal:
+
+  * `options_signal`
+  * fallback `signal`
+
+* Vol P/C:
+
+  * `volume_put_call_ratio`
+  * fallback `options_put_call_ratio`
+  * fallback `p_c`
+  * fallback `put_call_ratio`
+
+* Prem P/C:
+
+  * `premium_put_call_ratio`
+
+IMPORTANT:
+
+`options_put_call_ratio` is a legacy VOLUME P/C alias.
+
+Do not use `options_put_call_ratio` for Prem P/C.
+
+* Net Prem:
+
+  * `options_net_premium`
+  * fallback `net_premium`
+
+* Net 1D:
+
+  * `net_premium_change_1d`
+  * fallback `options_net_premium_delta_1d`
+
+* Net 7D:
+
+  * `net_premium_change_7d`
+  * fallback `options_net_premium_delta_7d`
+
+* Net 30D:
+
+  * `net_premium_change_30d`
+  * fallback `options_net_premium_delta_30d`
+
+* IV:
+
+  * `options_iv`
+  * fallback `iv`
+  * fallback `implied_volatility`
+
+* Expected Move:
+
+  * `options_expected_move`
+  * fallback `expected_move`
+  * fallback `em`
+
+* Options Volume:
+
+  * `options_volume`
+  * fallback `volume`
+  * fallback `vol`
+
+* Total OI:
+
+  * `options_open_interest`
+  * fallback `open_interest`
+  * fallback `total_open_interest`
+  * fallback `total_oi`
+
+* Call Premium:
+
+  * `options_call_premium`
+  * fallback `call_premium`
+
+* Put Premium:
+
+  * `options_put_premium`
+  * fallback `put_premium`
+
+* Call Volume:
+
+  * `options_call_volume`
+  * fallback `call_volume`
+
+* Put Volume:
+
+  * `options_put_volume`
+  * fallback `put_volume`
+
+* Call OI:
+
+  * `options_call_open_interest`
+  * fallback `call_open_interest`
+  * fallback `call_oi`
+
+* Put OI:
+
+  * `options_put_open_interest`
+  * fallback `put_open_interest`
+  * fallback `put_oi`
+
+* Ask Premium:
+
+  * use `options_interval_ask_premium` during live session
+  * fallback `prior_session_ask_premium`
+  * fallback `options_ask_premium`
+
+* Bid Premium:
+
+  * use `options_interval_bid_premium` during live session
+  * fallback `prior_session_bid_premium`
+  * fallback `options_bid_premium`
+
+* Mid Premium:
+
+  * use `options_interval_midpoint_premium`
+  * fallback `prior_session_midpoint_premium`
+  * fallback `options_mid_premium`
+
+* Snapshot Status:
+
+  * `scan_status`
+  * fallback `options_classification`
+  * fallback `snapshot_status`
+  * fallback `options_snapshot_status`
+
+* Snapshot As Of:
+
+  * `snapshot_as_of`
+  * fallback `options_updated_at`
+  * fallback `prior_session_saved_at`
+  * fallback `options_data_as_of`
+
+==================================================
+DO NOT BLANK VALID CACHED DATA
+==============================
+
+The current rendering starts with:
+
+`const _oUn = stock.options_data_available === false`
+
+and then forces every options field to null whenever `_oUn` is true.
+
+Make this safer.
+
+A row should only be treated as unavailable when:
+
+* `options_data_available === false`
+* AND it contains no usable options metrics
+
+If score, signal, IV, EM, volume, OI, Vol P/C, Prem P/C, premium, or history data is present, display it.
+
+Cached/LKG statuses must remain displayable.
+
+Do not hide values merely because the row is:
+
+* stale
+* cached
+* prior session
+* `lkg_market_closed`
+* `stale_but_usable`
+* `stale_long_term`
+
+==================================================
+IMPLEMENTATION
+==============
+
+Normalize every item in `optionsResp.signals` once, before merging it into `baseMergedTickers`.
+
+Do not scatter more fallback expressions throughout every table cell.
+
+The table rendering and sorting should consume the normalized frontend properties.
+
+Suggested normalized frontend properties:
+
+* `options_score`
+* `options_signal`
+* `options_volume_put_call_ratio`
+* `options_premium_put_call_ratio`
+* `options_net_premium`
+* `options_net_premium_delta_1d`
+* `options_net_premium_delta_7d`
+* `options_net_premium_delta_30d`
+* `options_iv`
+* `options_expected_move`
+* `options_volume`
+* `options_open_interest`
+* `options_call_premium`
+* `options_put_premium`
+* `options_call_volume`
+* `options_put_volume`
+* `options_call_oi`
+* `options_put_oi`
+* `options_ask_premium`
+* `options_bid_premium`
+* `options_mid_premium`
+* `options_snapshot_status`
+* `options_data_as_of`
+
+Update the Prem P/C table cell and sorter to use:
+
+`options_premium_put_call_ratio`
+
+Update Vol P/C to use:
+
+`options_volume_put_call_ratio`
+
+Keep zero values valid. Do not use truthiness fallbacks that turn `0` into missing.
+
+==================================================
+VERIFY
+======
+
+Verify with at least three populated tickers:
+
+1. Opt Score is visible.
+2. Opt Signal is visible.
+3. Vol P/C is visible.
+4. Prem P/C is visible and is not copied from Vol P/C.
+5. Net Prem and 1D/7D/30D fields are visible where available.
+6. IV, EM, Opt Vol, and OI are visible.
+7. Cached weekend rows remain visible.
+8. Ask/Bid/Mid use prior-session fields when live interval fields are absent.
+9. Sorting works.
+10. Options Flow remains unchanged.
+11. No backend files were modified.
+12. No new API requests were added.
+
+Return the exact response keys found in one live Watchlist signal row and a screenshot of the populated Watchlist Options table.

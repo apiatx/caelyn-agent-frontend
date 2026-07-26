@@ -418,6 +418,43 @@ function fmtOptDelta(n: number | null | undefined): string {
   if (a >= 1_000) return `${sign}$${(a / 1_000).toFixed(0)}K`;
   return `${sign}$${a.toFixed(0)}`;
 }
+// ── Normalize a raw options-signals row into canonical frontend field names ──
+// Applied once per row before spreading onto the ticker; keeps 0 as valid.
+function normalizeOptionsSignal(raw: Record<string, any>): Record<string, any> {
+  const first = (keys: string[]): any => {
+    for (const k of keys) {
+      const v = raw[k];
+      if (v !== undefined && v !== null) return v;
+    }
+    return null;
+  };
+  return {
+    ...raw,
+    options_score:                  first(['options_score', 'score']),
+    options_signal:                 first(['options_signal', 'signal']),
+    options_volume_put_call_ratio:  first(['volume_put_call_ratio', 'options_put_call_ratio', 'p_c', 'put_call_ratio']),
+    options_premium_put_call_ratio: first(['premium_put_call_ratio']),
+    options_net_premium:            first(['options_net_premium', 'net_premium']),
+    options_net_premium_delta_1d:   first(['net_premium_change_1d', 'options_net_premium_delta_1d']),
+    options_net_premium_delta_7d:   first(['net_premium_change_7d', 'options_net_premium_delta_7d']),
+    options_net_premium_delta_30d:  first(['net_premium_change_30d', 'options_net_premium_delta_30d']),
+    options_iv:                     first(['options_iv', 'iv', 'implied_volatility']),
+    options_expected_move:          first(['options_expected_move', 'expected_move', 'em']),
+    options_volume:                 first(['options_volume', 'volume', 'vol']),
+    options_open_interest:          first(['options_open_interest', 'open_interest', 'total_open_interest', 'total_oi']),
+    options_call_premium:           first(['options_call_premium', 'call_premium']),
+    options_put_premium:            first(['options_put_premium', 'put_premium']),
+    options_call_volume:            first(['options_call_volume', 'call_volume']),
+    options_put_volume:             first(['options_put_volume', 'put_volume']),
+    options_call_oi:                first(['options_call_open_interest', 'call_open_interest', 'call_oi']),
+    options_put_oi:                 first(['options_put_open_interest', 'put_open_interest', 'put_oi']),
+    options_ask_premium:            first(['options_interval_ask_premium', 'prior_session_ask_premium', 'options_ask_premium']),
+    options_bid_premium:            first(['options_interval_bid_premium', 'prior_session_bid_premium', 'options_bid_premium']),
+    options_mid_premium:            first(['options_interval_midpoint_premium', 'prior_session_midpoint_premium', 'options_mid_premium']),
+    options_snapshot_status:        first(['scan_status', 'options_classification', 'snapshot_status', 'options_snapshot_status']),
+    options_data_as_of:             first(['snapshot_as_of', 'options_updated_at', 'prior_session_saved_at', 'options_data_as_of']),
+  };
+}
 function formatRelVol(volume: any, averageVolume: any, preComputed?: any): string {
   // Prefer pre-computed relative_volume from backend (shared cache); fall back
   // to volume / average_volume when only the raw fields are present.
@@ -1946,7 +1983,7 @@ const SIGNAL_LKG_FIELDS = [
   'options_open_interest', 'oi',
   'options_iv', 'iv',
   // Unified options fields
-  'options_put_call_ratio', 'options_volume_put_call_ratio',
+  'options_put_call_ratio', 'options_volume_put_call_ratio', 'options_premium_put_call_ratio',
   'options_net_premium', 'options_net_premium_delta_1d', 'options_net_premium_delta_7d', 'options_net_premium_delta_30d',
   'options_call_premium', 'options_put_premium',
   'options_call_volume', 'options_put_volume',
@@ -3266,7 +3303,8 @@ export default function WatchlistPage() {
       const sym = (t.ticker || '').toString().toUpperCase();
       const rt = sym ? realtimeQuotes[sym] : undefined;
       const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
-      const opt = sym ? optionsSignalsByTicker[sym] : undefined;
+      const rawOpt = sym ? optionsSignalsByTicker[sym] : undefined;
+      const opt = rawOpt ? normalizeOptionsSignal(rawOpt) : undefined;
       const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
@@ -3426,7 +3464,7 @@ export default function WatchlistPage() {
         return { v: Number(delta), missing: false };
       }
       case 'optionsScore': { const n = Number(stock.options_score); return { v: n, missing: !Number.isFinite(n) }; }
-      case 'optionsPutCall': { const n = Number(stock.options_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
+      case 'optionsPutCall': { const n = Number(stock.options_premium_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsVolPc': { const n = Number(stock.options_volume_put_call_ratio); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsNetPrem': { const n = Number(stock.options_net_premium); return { v: n, missing: !Number.isFinite(n) }; }
       case 'optionsNetPrem1d': { const n = Number(stock.options_net_premium_delta_1d); return { v: n, missing: !Number.isFinite(n) }; }
@@ -5537,8 +5575,21 @@ export default function WatchlistPage() {
                 else if (/^S4 Decline/i.test(_stageLabel)) { _sClr = C.red; _sBg = `${C.red}15`; _sBdr = `${C.red}40`; }
               }
               // Options (pre-computed)
-              const _oUn = stock.options_data_available === false;
-              const _oSt = stock.options_stale === true;
+              // _oUn: only truly unavailable when flag is false AND no usable metric is present
+              // (cached, prior_session, stale rows still show data)
+              const _oHasMetrics = (
+                stock.options_score != null || stock.options_signal != null ||
+                stock.options_iv != null || stock.options_expected_move != null ||
+                stock.options_volume != null || stock.options_open_interest != null ||
+                stock.options_volume_put_call_ratio != null || stock.options_premium_put_call_ratio != null ||
+                stock.options_net_premium != null || stock.options_call_premium != null ||
+                stock.options_put_premium != null
+              );
+              const _oUn = stock.options_data_available === false && !_oHasMetrics;
+              const _oSt = !_oUn && (stock.options_stale === true || ((): boolean => {
+                const st = (stock.options_snapshot_status ?? '') as string;
+                return st === 'prior_session' || st === 'lkg_market_closed' || st === 'stale_but_usable' || st === 'stale_long_term';
+              })());
               const _oHas = !optionsLoading || !!optionsResp;
               const _oLd = optionsLoading && !optionsResp ? '…' : DASH;
               const _oDim = _oSt ? 0.6 : 1;
@@ -5549,34 +5600,35 @@ export default function WatchlistPage() {
               const _oSigL = _oSig.toLowerCase();
               const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dim;
               const _oSigStr = _oHas ? (_oUn ? DASH : (_oSig || DASH)) : _oLd;
-              const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale options data' : undefined;
-              const _oCP = _oUn ? null : (stock.options_put_call_ratio != null ? Number(stock.options_put_call_ratio) : null);
+              const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale / prior-session data' : undefined;
+              // Prem P/C uses options_premium_put_call_ratio (NOT volume P/C alias)
+              const _oCP = stock.options_premium_put_call_ratio != null ? Number(stock.options_premium_put_call_ratio) : null;
               const _oCPStr = _oCP != null && Number.isFinite(_oCP) ? _oCP.toFixed(2) : (_oHas ? DASH : _oLd);
               const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dim;
-              const _oIV = _oUn ? null : (stock.options_iv != null ? Number(stock.options_iv) : null);
+              const _oIV = stock.options_iv != null ? Number(stock.options_iv) : null;
               const _oIVStr = _oIV != null && Number.isFinite(_oIV) ? `${(_oIV > 5 ? _oIV : _oIV * 100).toFixed(0)}%` : (_oHas ? DASH : _oLd);
-              const _oEM = _oUn ? null : (stock.options_expected_move != null ? Number(stock.options_expected_move) : null);
+              const _oEM = stock.options_expected_move != null ? Number(stock.options_expected_move) : null;
               const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
-              const _oVol = _oUn ? null : (stock.options_volume != null ? Number(stock.options_volume) : null);
-              const _oOI = _oUn ? null : (stock.options_open_interest != null ? Number(stock.options_open_interest) : null);
-              // Unified options fields (new)
-              const _oVPC = _oUn ? null : (stock.options_volume_put_call_ratio != null ? Number(stock.options_volume_put_call_ratio) : null);
+              const _oVol = stock.options_volume != null ? Number(stock.options_volume) : null;
+              const _oOI  = stock.options_open_interest != null ? Number(stock.options_open_interest) : null;
+              // Unified options fields
+              const _oVPC = stock.options_volume_put_call_ratio != null ? Number(stock.options_volume_put_call_ratio) : null;
               const _oVPCStr = _oVPC != null && Number.isFinite(_oVPC) ? _oVPC.toFixed(2) : (_oHas ? DASH : _oLd);
               const _oVPCClr = _oVPC != null ? (_oVPC < 0.7 ? C.green : _oVPC > 1.3 ? C.red : C.dim) : C.dim;
-              const _oNP    = _oUn ? null : (stock.options_net_premium != null ? Number(stock.options_net_premium) : null);
+              const _oNP    = stock.options_net_premium != null ? Number(stock.options_net_premium) : null;
               const _oNPClr = _oNP != null ? (_oNP > 0 ? C.green : _oNP < 0 ? C.red : C.dim) : C.dim;
-              const _oNP1d  = _oUn ? null : (stock.options_net_premium_delta_1d  != null ? Number(stock.options_net_premium_delta_1d)  : null);
-              const _oNP7d  = _oUn ? null : (stock.options_net_premium_delta_7d  != null ? Number(stock.options_net_premium_delta_7d)  : null);
-              const _oNP30d = _oUn ? null : (stock.options_net_premium_delta_30d != null ? Number(stock.options_net_premium_delta_30d) : null);
-              const _oCallP = _oUn ? null : (stock.options_call_premium  != null ? Number(stock.options_call_premium)  : null);
-              const _oPutP  = _oUn ? null : (stock.options_put_premium   != null ? Number(stock.options_put_premium)   : null);
-              const _oAskP  = _oUn ? null : (stock.options_ask_premium   != null ? Number(stock.options_ask_premium)   : null);
-              const _oBidP  = _oUn ? null : (stock.options_bid_premium   != null ? Number(stock.options_bid_premium)   : null);
-              const _oMidP  = _oUn ? null : (stock.options_mid_premium   != null ? Number(stock.options_mid_premium)   : null);
-              const _oCallV = _oUn ? null : (stock.options_call_volume   != null ? Number(stock.options_call_volume)   : null);
-              const _oPutV  = _oUn ? null : (stock.options_put_volume    != null ? Number(stock.options_put_volume)    : null);
-              const _oCallO = _oUn ? null : (stock.options_call_oi       != null ? Number(stock.options_call_oi)       : null);
-              const _oPutO  = _oUn ? null : (stock.options_put_oi        != null ? Number(stock.options_put_oi)        : null);
+              const _oNP1d  = stock.options_net_premium_delta_1d  != null ? Number(stock.options_net_premium_delta_1d)  : null;
+              const _oNP7d  = stock.options_net_premium_delta_7d  != null ? Number(stock.options_net_premium_delta_7d)  : null;
+              const _oNP30d = stock.options_net_premium_delta_30d != null ? Number(stock.options_net_premium_delta_30d) : null;
+              const _oCallP = stock.options_call_premium  != null ? Number(stock.options_call_premium)  : null;
+              const _oPutP  = stock.options_put_premium   != null ? Number(stock.options_put_premium)   : null;
+              const _oAskP  = stock.options_ask_premium   != null ? Number(stock.options_ask_premium)   : null;
+              const _oBidP  = stock.options_bid_premium   != null ? Number(stock.options_bid_premium)   : null;
+              const _oMidP  = stock.options_mid_premium   != null ? Number(stock.options_mid_premium)   : null;
+              const _oCallV = stock.options_call_volume   != null ? Number(stock.options_call_volume)   : null;
+              const _oPutV  = stock.options_put_volume    != null ? Number(stock.options_put_volume)    : null;
+              const _oCallO = stock.options_call_oi       != null ? Number(stock.options_call_oi)       : null;
+              const _oPutO  = stock.options_put_oi        != null ? Number(stock.options_put_oi)        : null;
               const _sym = (stock.ticker || stock.symbol || '') as string;
               const _isExpanded = expandedTickers.has(_sym);
               return (
