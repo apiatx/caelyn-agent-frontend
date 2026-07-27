@@ -14,6 +14,25 @@ export type LiveEarningsClassification =
   | 'partial'
   | 'unclassified';
 
+export type ResultsStatus = 'reported' | 'pending' | 'scheduled' | string | null;
+export type ReactionStatus = 'reaction_pending' | 'available' | 'completed' | string | null;
+export type MaterialsStatus = 'materials_pending' | 'available' | 'completed' | string | null;
+
+export interface EarningsStatuses {
+  results_status?: ResultsStatus;
+  reaction_status?: ReactionStatus;
+  materials_status?: MaterialsStatus;
+}
+
+/** Backend status fields are authoritative; individual data values are not status signals. */
+export function earningsStatusView(statuses: EarningsStatuses | null | undefined) {
+  return {
+    resultsReported: statuses?.results_status === 'reported',
+    reactionPending: statuses?.reaction_status === 'reaction_pending',
+    materialsPending: statuses?.materials_status === 'materials_pending',
+  };
+}
+
 export interface LiveResultsSummary {
   eps_actual: number | null;
   eps_estimate: number | null;
@@ -56,6 +75,9 @@ export interface LiveEarningsEvent {
   symbol: string;
   company_name?: string | null;
   state: LiveEarningsState;
+  results_status?: ResultsStatus;
+  reaction_status?: ReactionStatus;
+  materials_status?: MaterialsStatus;
   classification: LiveEarningsClassification | null;
   revision: number;
   detected_at: string | null;
