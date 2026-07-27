@@ -274,6 +274,52 @@ export interface EarningsIntelligence {
   live_event?: LiveEarningsEvent | null;
 }
 
+/**
+ * The backend intentionally allows every earnings subsection to be null or
+ * empty. Normalize only the container defaults so each existing sub-tab can
+ * render its own localized empty state instead of taking down the whole tab.
+ */
+function normalizeEarningsIntelligence(value: unknown): EarningsIntelligence | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, any>;
+  const coverage = raw.source_status?.coverage ?? {};
+  return {
+    schema_version: Number(raw.schema_version ?? 1),
+    earnings_history: Array.isArray(raw.earnings_history) ? raw.earnings_history : [],
+    reaction_summary: raw.reaction_summary && typeof raw.reaction_summary === 'object' ? raw.reaction_summary : null,
+    ratings: {
+      consensus: raw.ratings?.consensus && typeof raw.ratings.consensus === 'object' ? raw.ratings.consensus : {},
+      price_target: raw.ratings?.price_target && typeof raw.ratings.price_target === 'object' ? raw.ratings.price_target : null,
+      price_target_summary: raw.ratings?.price_target_summary && typeof raw.ratings.price_target_summary === 'object' ? raw.ratings.price_target_summary : null,
+      monthly_distribution: Array.isArray(raw.ratings?.monthly_distribution) ? raw.ratings.monthly_distribution : [],
+      recent_actions: Array.isArray(raw.ratings?.recent_actions) ? raw.ratings.recent_actions : [],
+    },
+    materials: raw.materials && typeof raw.materials === 'object' ? {
+      latest_earnings_packet: raw.materials.latest_earnings_packet ?? null,
+      recent_filings: Array.isArray(raw.materials.recent_filings) ? raw.materials.recent_filings : [],
+      source_status: raw.materials.source_status ?? {},
+      _cached_at: raw.materials._cached_at ?? null,
+    } : null,
+    sec_filings: null,
+    source_status: {
+      earnings_fetched_at: raw.source_status?.earnings_fetched_at ?? null,
+      ratings_fetched_at: raw.source_status?.ratings_fetched_at ?? null,
+      history_bars_source: raw.source_status?.history_bars_source ?? null,
+      sec_filings_omitted_reason: raw.source_status?.sec_filings_omitted_reason ?? null,
+      errors: raw.source_status?.errors ?? {},
+      coverage: {
+        has_earnings_history: coverage.has_earnings_history === true,
+        has_reactions: coverage.has_reactions === true,
+        has_ratings_consensus: coverage.has_ratings_consensus === true,
+        has_rating_actions: coverage.has_rating_actions === true,
+        has_rating_history: coverage.has_rating_history === true,
+        has_price_targets: coverage.has_price_targets === true,
+      },
+    },
+    live_event: raw.live_event ?? null,
+  };
+}
+
 /* ── style constants ──────────────────────────────────────────── */
 const _f = "'JetBrains Mono','Fira Code',monospace";
 const _s = "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -2628,7 +2674,7 @@ export function EarningsTab({ detail, detailLoading, currentPrice, ticker, initi
   const { C } = useTheme();
   const [subTab, setSubTab] = useState<SubTab>(initialSubTab ?? 'overview');
 
-  const ei: EarningsIntelligence | null = detail?.earnings_intelligence ?? null;
+  const ei = normalizeEarningsIntelligence(detail?.earnings_intelligence);
 
   if (detailLoading) {
     return (
