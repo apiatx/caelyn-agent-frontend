@@ -28,14 +28,23 @@ function authH(): Record<string, string> {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
+/**
+ * Failed upstream requests must reject. Returning null here makes React Query
+ * cache a transient 5xx as successful data, which can leave multiple pages in
+ * an unavailable/empty state even after FastAPI has recovered.
+ */
 async function safeFetch(url: string, init?: RequestInit): Promise<unknown> {
-  try {
-    const r = await fetch(url, init);
-    if (!r.ok) return null;
-    return r.json();
-  } catch {
-    return null;
+  const r = await fetch(url, init);
+  if (!r.ok) {
+    let detail = "";
+    try {
+      detail = (await r.text()).slice(0, 240);
+    } catch {
+      // Preserve the HTTP status even when the error body cannot be read.
+    }
+    throw new Error(`Prefetch failed: ${r.status} ${r.statusText} ${url}${detail ? ` — ${detail}` : ""}`);
   }
+  return r.json();
 }
 
 // ---------------------------------------------------------------------------
@@ -49,17 +58,23 @@ export function GlobalPrefetch() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Helper: fire prefetchQuery only if the cache is empty / stale
+    // Helper: fire prefetchQuery only if the cache is empty / stale.
+    // Remove legacy poisoned null entries before refetching.
     const pre = (
       queryKey: unknown[],
       url: string,
       init?: RequestInit,
       staleTime = 5 * 60_000,
     ) => {
+      if (qc.getQueryData(queryKey) === null) {
+        qc.removeQueries({ queryKey, exact: true });
+      }
       qc.prefetchQuery({
         queryKey,
         queryFn: () => safeFetch(url, init),
         staleTime,
+        retry: 2,
+        retryDelay: attempt => Math.min(750 * 2 ** attempt, 3_000),
       });
     };
 
@@ -99,11 +114,21 @@ export function GlobalPrefetch() {
         console.warn("[GlobalPrefetch] Could not identify Primary watchlist by field — falling back to listData[0]:", primary.name, primary.id);
       }
       const primaryId = primary.id;
+      const primaryKey = ["/api/watchlist", primaryId];
+      if (qc.getQueryData(primaryKey) === null) {
+        qc.removeQueries({ queryKey: primaryKey, exact: true });
+      }
       qc.prefetchQuery({
-        queryKey: ["/api/watchlist", primaryId],
+        queryKey: primaryKey,
         queryFn: () => safeFetch(`/api/watchlist/${primaryId}`, { headers: authH() }),
         staleTime: 2 * 60_000,
+        retry: 2,
+        retryDelay: attempt => Math.min(750 * 2 ** attempt, 3_000),
       });
+    }).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.warn("[GlobalPrefetch] Watchlist list prefetch failed; page query will retry:", error);
+      }
     });
 
     // ── Hyperliquid ─────────────────────────────────────────────────────────
@@ -123,11 +148,14 @@ export function GlobalPrefetch() {
 
     // ── Prophetik ───────────────────────────────────────────────────────────
     pre(["predict-signals"],         "/api/predict/signals",         undefined, 60_000);
+    const scoredKey = ["predict-scored"];
+    if (qc.getQueryData(scoredKey) === null) {
+      qc.removeQueries({ queryKey: scoredKey, exact: true });
+    }
     qc.prefetchQuery({
-      queryKey: ["predict-scored"],
+      queryKey: scoredKey,
       queryFn: async () => {
         const data = await safeFetch("/api/predict/scored?limit=200");
-        if (!data) return [];
         const arr = Array.isArray(data) ? data : ((data as any).markets ?? (data as any).results ?? (data as any).scored ?? []);
         return arr.map((m: any) => ({
           ...m,
@@ -142,6 +170,8 @@ export function GlobalPrefetch() {
         }));
       },
       staleTime: 90_000,
+      retry: 2,
+      retryDelay: attempt => Math.min(750 * 2 ** attempt, 3_000),
     });
     pre(["predict-signal-changes"],        "/api/predict/signal-changes",         undefined, 90_000);
     // Key aligned with Home page useQuery key so the prefetch deduplicates correctly
