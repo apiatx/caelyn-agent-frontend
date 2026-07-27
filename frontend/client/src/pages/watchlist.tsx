@@ -4610,9 +4610,6 @@ export default function WatchlistPage() {
         revEstimate: ev.revenue_estimate ?? null,
         revSurprisePct: ev.revenue_surprise_pct ?? null,
         post1d: ev.post_earnings_1d_pct ?? ev.post_1d_pct ?? ev.reaction_1d_pct ?? null,
-        resultsStatus: ev.results_status ?? null,
-        reactionStatus: ev.reaction_status ?? null,
-        materialsStatus: ev.materials_status ?? null,
         logo: ev.logo ?? ev.image ?? ev.company_logo ?? null,
       };
     }
@@ -4913,9 +4910,6 @@ export default function WatchlistPage() {
                 const hasRevEst = ev.revEstimate != null;
                 const hasEpsEst = ev.epsEstimate != null;
                 const epsSurpOk = ev.epsSurprisePct != null && Math.abs(ev.epsSurprisePct as number) < 600;
-                const resultsReported = ev.resultsStatus === 'reported';
-                const reactionPending = ev.reactionStatus === 'reaction_pending';
-                const materialsPending = ev.materialsStatus === 'materials_pending';
                 const logoSrc = ev.logo ?? fmpLogo(ev.ticker);
                 return (
                   <div
@@ -5001,7 +4995,6 @@ export default function WatchlistPage() {
                         </span>
                       )}
                       <span style={{ fontSize: 8, fontWeight: 600, color: clsInfo.color, fontFamily: font }}>· {clsInfo.label}</span>
-                      {resultsReported && <span style={{ fontSize: 8, color: C.teal, fontFamily: font }}>· Reported</span>}
                       {ev.post1d != null ? (
                         <span style={{
                           fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: font,
@@ -5010,8 +5003,9 @@ export default function WatchlistPage() {
                         }}>
                           Post 1D {(ev.post1d as number) > 0 ? '+' : ''}{(ev.post1d as number).toFixed(2)}%
                         </span>
-                      ) : reactionPending ? <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Reaction pending</span> : null}
-                      {materialsPending && <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Materials pending</span>}
+                      ) : (
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Pending</span>
+                      )}
                     </div>
                   </div>
                 );
