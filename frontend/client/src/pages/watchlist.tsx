@@ -328,12 +328,6 @@ function formatChgPct(c: any): string {
   return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
 }
 
-function formatVolumeAcceleration(v: unknown): string {
-  if (v == null || !Number.isFinite(Number(v))) return DASH;
-  const n = Number(v);
-  return `${n > 0 ? '+' : ''}${n.toFixed(1)} pp`;
-}
-
 function getDailyChangePct(row: any): number | null {
   const v = row.change_pct ?? row.change_pct_1d ?? row.change_percent ?? row.changePct ??
     row.changesPercentage ?? row.day_change_percent ?? row.price_change_percent ??
@@ -345,7 +339,6 @@ function getDailyChangePct(row: any): number | null {
 function get7dChangePct(row: any): number | null {
   const v = row.change_7d ?? row.change7d ?? row.priceChange7d ??
     row.performance7d ?? row.return7d ?? row.pct_change_7d ?? row.chg_7d ?? null;
-  if (v == null) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -353,7 +346,6 @@ function get7dChangePct(row: any): number | null {
 function get30dChangePct(row: any): number | null {
   const v = row.change_30d ?? row.change30d ?? row.priceChange30d ??
     row.performance30d ?? row.return30d ?? row.pct_change_30d ?? row.chg_30d ?? null;
-  if (v == null) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -2644,6 +2636,27 @@ export default function WatchlistPage() {
     return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
   }, [themeUniverseResp]);
 
+  const wlIdentityCsv = useMemo(() => {
+    const tickers = (watchlist?.tickers as string[] | undefined) ?? [];
+    return [...tickers].sort().join(',');
+  }, [watchlist?.tickers]);
+  const { data: wlIdentityData } = useQuery<Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }>>({
+    queryKey: ['company-identity', wlIdentityCsv],
+    queryFn: () => fetch(`/api/fmp/company-identity?symbols=${encodeURIComponent(wlIdentityCsv)}`)
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+    enabled: wlIdentityCsv.length > 0,
+    staleTime: 24 * 60 * 60_000,
+    retry: 1,
+  });
+  const betaByTicker = useMemo<Record<string, number | null>>(() => {
+    if (!wlIdentityData) return {};
+    const out: Record<string, number | null> = {};
+    for (const [sym, d] of Object.entries(wlIdentityData)) {
+      if (d.beta != null) out[sym.toUpperCase()] = d.beta;
+    }
+    return out;
+  }, [wlIdentityData]);
+
   const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);
   const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
 
@@ -3315,6 +3328,11 @@ export default function WatchlistPage() {
       const opt = rawOpt ? normalizeOptionsSignal(rawOpt) : undefined;
       const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
 
+      // Inject beta from FMP company-identity when not present in analysis row
+      if (sym && (next.beta == null || next.beta === '') && betaByTicker[sym] != null) {
+        next.beta = betaByTicker[sym];
+      }
+
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
       // preserve the last-known-valid value from the previous payload.
       // 0 is treated as a valid value and is NOT preserved over.
@@ -3369,7 +3387,7 @@ export default function WatchlistPage() {
 
     return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId]);
+  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId, betaByTicker]);
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
@@ -3463,21 +3481,6 @@ export default function WatchlistPage() {
       case 'volMc': {
         const n = Number(stock.vol_mc_pct ?? stock.vol_mc_ratio);
         return { v: n, missing: !Number.isFinite(n) || n <= 0 };
-      }
-      case 'volumeChange1d':
-      case 'volumeChange7d':
-      case 'volumeChange30d':
-      case 'volumeAcceleration': {
-        const fieldBySortKey: Record<string, string> = {
-          volumeChange1d: 'volume_change_1d_pct',
-          volumeChange7d: 'volume_change_7d_pct',
-          volumeChange30d: 'volume_change_30d_pct',
-          volumeAcceleration: 'volume_acceleration_pp',
-        };
-        const raw = stock[fieldBySortKey[key]];
-        if (raw == null) return { v: null, missing: true };
-        const n = Number(raw);
-        return { v: n, missing: !Number.isFinite(n) };
       }
       case 'rvRankMove': {
         const trend = stock.rel_vol_trend;
@@ -3606,7 +3609,6 @@ export default function WatchlistPage() {
         return { v: r, missing: r === 0 };
       }
       case 'beta': {
-        if (stock.beta == null) return { v: null, missing: true };
         const n = Number(stock.beta);
         return { v: n, missing: !Number.isFinite(n) };
       }
@@ -4911,6 +4913,7 @@ export default function WatchlistPage() {
                 const hasRevEst = ev.revEstimate != null;
                 const hasEpsEst = ev.epsEstimate != null;
                 const epsSurpOk = ev.epsSurprisePct != null && Math.abs(ev.epsSurprisePct as number) < 600;
+                const resultsReported = ev.resultsStatus === 'reported';
                 const reactionPending = ev.reactionStatus === 'reaction_pending';
                 const materialsPending = ev.materialsStatus === 'materials_pending';
                 const logoSrc = ev.logo ?? fmpLogo(ev.ticker);
@@ -4998,6 +5001,7 @@ export default function WatchlistPage() {
                         </span>
                       )}
                       <span style={{ fontSize: 8, fontWeight: 600, color: clsInfo.color, fontFamily: font }}>· {clsInfo.label}</span>
+                      {resultsReported && <span style={{ fontSize: 8, color: C.teal, fontFamily: font }}>· Reported</span>}
                       {ev.post1d != null ? (
                         <span style={{
                           fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 3, fontFamily: font,
@@ -5006,12 +5010,8 @@ export default function WatchlistPage() {
                         }}>
                           Post 1D {(ev.post1d as number) > 0 ? '+' : ''}{(ev.post1d as number).toFixed(2)}%
                         </span>
-                      ) : reactionPending ? (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Reaction pending</span>
-                      ) : null}
-                      {materialsPending && (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Materials pending</span>
-                      )}
+                      ) : reactionPending ? <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Reaction pending</span> : null}
+                      {materialsPending && <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>· Materials pending</span>}
                     </div>
                   </div>
                 );
@@ -5061,12 +5061,12 @@ export default function WatchlistPage() {
     const OPT_DEFAULT_GRID = '64px minmax(140px,1.6fr) minmax(100px,1fr) 48px minmax(58px,0.8fr) 52px 52px 68px 56px 56px 56px 44px 44px 56px 52px';
     const TICKER_GRID =
       screenerMode === 'market'
-        ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 72px 72px 72px 76px 80px'
+        ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 80px'
         : screenerMode === 'options'
           ? `${OPT_DEFAULT_GRID}${visibleSecCols.length > 0 ? ' ' + visibleSecCols.map(() => '60px').join(' ') : ''}`
           : /* technical */ '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 104px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
     const TICKER_TABLE_MIN_WIDTH =
-      screenerMode === 'market' ? 1260
+      screenerMode === 'market' ? 960
       : screenerMode === 'options' ? (1040 + visibleSecCols.length * 60)
       : /* technical */ 1456;
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] =
@@ -5082,10 +5082,6 @@ export default function WatchlistPage() {
         { key: 'relVol',      label: 'VOLX' },
         { key: 'rvRankMove',  label: 'VOL RANK' },
         { key: 'volMc',       label: 'Vol/MC' },
-        { key: 'volumeChange1d',  label: 'Vol Δ 1D',  tooltip: 'Latest completed daily volume versus prior completed session.' },
-        { key: 'volumeChange7d',  label: 'Vol Δ 7D',  tooltip: 'Latest completed daily volume versus prior 7-session average.' },
-        { key: 'volumeChange30d', label: 'Vol Δ 30D', tooltip: 'Latest completed daily volume versus prior 30-session average.' },
-        { key: 'volumeAcceleration', label: 'Vol Accel', tooltip: '7D volume change minus 30D volume change.' },
         { key: 'beta',        label: 'Beta', tooltip: 'Measures price sensitivity to broad market movements. Beta above 1.0 means more volatile than the market; below 1.0 means less volatile; negative beta tends to move opposite to the market.' },
       ]
       : screenerMode === 'options' ? [
@@ -5831,10 +5827,6 @@ export default function WatchlistPage() {
                     const _c7Clr = _c7 == null ? C.dim : _c7 > 0 ? C.green : _c7 < 0 ? C.red : C.dim;
                     const _c30 = get30dChangePct(stock);
                     const _c30Clr = _c30 == null ? C.dim : _c30 > 0 ? C.green : _c30 < 0 ? C.red : C.dim;
-                    const _volChange1d = (stock as any).volume_change_1d_pct;
-                    const _volChange7d = (stock as any).volume_change_7d_pct;
-                    const _volChange30d = (stock as any).volume_change_30d_pct;
-                    const _volAcceleration = (stock as any).volume_acceleration_pp;
                     return (
                       <>
                         <span style={{ ..._sp, fontWeight: 700, color: C.text, display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
@@ -5860,10 +5852,6 @@ export default function WatchlistPage() {
                           ) : <span style={{ color: C.dim }}>—</span>}
                         </span>
                         <span style={{ ..._sp, color: volMcLabelColor(stock.vol_mc_label, C) }} title={stock.vol_mc_unavailable_reason ?? (stock.vol_mc_label ? `Vol/MC: ${stock.vol_mc_label}` : undefined)}>{formatVolMcPct(stock.vol_mc_pct)}</span>
-                        <span style={{ ..._sp, fontWeight: 700, color: changeColor(_volChange1d) }}>{formatChgPct(_volChange1d)}</span>
-                        <span style={{ ..._sp, fontWeight: 700, color: changeColor(_volChange7d) }}>{formatChgPct(_volChange7d)}</span>
-                        <span style={{ ..._sp, fontWeight: 700, color: changeColor(_volChange30d) }}>{formatChgPct(_volChange30d)}</span>
-                        <span style={{ ..._sp, fontWeight: 700, color: changeColor(_volAcceleration) }}>{formatVolumeAcceleration(_volAcceleration)}</span>
                         <span style={{ ..._sp, color: _bClr }}>{_bStr}</span>
                       </>
                     );
