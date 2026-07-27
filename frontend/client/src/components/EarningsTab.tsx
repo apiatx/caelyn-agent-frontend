@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEarningsLive } from '@/contexts/EarningsLiveContext';
 import { LiveEarningsCard } from '@/components/LiveEarningsCard';
-import type { LiveEarningsEvent } from '@/types/live-earnings';
+import { earningsStatusView, type LiveEarningsEvent } from '@/types/live-earnings';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
   ResponsiveContainer, ReferenceLine, Cell,
@@ -51,6 +51,9 @@ interface EarningsQuarter {
   fiscal_year: string | null;
   fiscal_period: string | null;
   report_status: string | null;
+  results_status?: string | null;
+  reaction_status?: string | null;
+  materials_status?: string | null;
   join_method: string | null;
   eps_actual: number | null;
   eps_estimate: number | null;
@@ -764,6 +767,9 @@ interface UnifiedBubbleProps {
   hasPrePost: boolean; prePostIsUnavail: boolean;
   pr: PriceReaction | null;
   mat: LatestEarningsPacket | null;
+  resultsStatus?: string | null;
+  reactionStatus?: string | null;
+  materialsStatus?: string | null;
   onSwitchToMaterials?: () => void;
   C: any;
 }
@@ -772,7 +778,7 @@ function UnifiedEarningsBubble({
   q, liveEvent, effectiveState, classification,
   epsActual, epsEstimate, epsSurpriseAmt, epsSurprisePct,
   revActual, revEstimate, revSurpriseAmt, revSurprisePct,
-  liveReaction, pr, mat, onSwitchToMaterials, C,
+  liveReaction, pr, mat, resultsStatus, reactionStatus, materialsStatus, onSwitchToMaterials, C,
 }: UnifiedBubbleProps) {
   const countdown = useLocalCountdown(liveEvent?.expected_at);
 
@@ -784,7 +790,8 @@ function UnifiedEarningsBubble({
     document.head.appendChild(s);
   }, []);
 
-  const isReported = effectiveState === 'results_available' || effectiveState === 'results_updated' || effectiveState === 'complete';
+  const statuses = earningsStatusView({ results_status: resultsStatus, reaction_status: reactionStatus, materials_status: materialsStatus });
+  const isReported = statuses.resultsReported || (!resultsStatus && (effectiveState === 'results_available' || effectiveState === 'results_updated' || effectiveState === 'complete'));
   const isPartial  = effectiveState === 'results_partial';
   const isFiling   = effectiveState === 'filing_detected';
   const isMonitor  = effectiveState === 'monitoring';
@@ -914,7 +921,7 @@ function UnifiedEarningsBubble({
             </div>
           ) : (
             <span style={{ fontSize: 9, fontWeight: 700, fontFamily: _f, color: C.dim, letterSpacing: '0.06em' }}>
-              {(isReported || isPartial) ? 'PRICE REACTION PENDING' : ''}
+              {statuses.reactionPending ? 'PRICE REACTION PENDING' : ''}
             </span>
           )}
         </div>
@@ -980,6 +987,12 @@ function UnifiedEarningsBubble({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {statuses.materialsPending && (
+        <div style={{ padding: '8px 14px', borderBottom: `1px solid ${bubbleBorder}`, fontSize: 9, color: C.dim, fontFamily: _f, letterSpacing: '0.06em' }}>
+          MATERIALS PENDING
         </div>
       )}
 
@@ -1110,9 +1123,12 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
   /* Same event? */
   const isSameQ = liveEvent != null && isSameEvent(liveEvent, q);
 
-  /* Defensive: hist[0] has actuals but live is still scheduled → treat as reported */
+  /* Backend result status is authoritative, even while the live-event state catches up. */
   const hasActuals = q.eps_actual != null || q.revenue_actual != null;
-  const treatAsReported = isSameQ && hasActuals && (!liveEvent || liveEvent.state === 'scheduled');
+  const resultsStatus = q.results_status ?? liveEvent?.results_status ?? null;
+  const reactionStatus = q.reaction_status ?? liveEvent?.reaction_status ?? null;
+  const materialsStatus = q.materials_status ?? liveEvent?.materials_status ?? null;
+  const treatAsReported = earningsStatusView({ results_status: resultsStatus }).resultsReported;
   const effectiveState  = treatAsReported ? 'results_available' : (liveEvent?.state ?? 'complete');
 
   /* Classification: live event wins, then derive from history */
@@ -1463,6 +1479,7 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
             liveReaction={liveReaction}
             hasPrePost={hasPrePost} prePostIsUnavail={prePostIsUnavail}
             pr={pr} mat={mat}
+            resultsStatus={resultsStatus} reactionStatus={reactionStatus} materialsStatus={materialsStatus}
             onSwitchToMaterials={onSwitchToMaterials}
             C={C}
           />

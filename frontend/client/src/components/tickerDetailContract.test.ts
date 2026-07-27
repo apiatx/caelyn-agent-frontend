@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { hasCompanyProfile, isEarningsSupported, type TickerDetailResponse } from './tickerDetailContract';
+import { earningsStatusView } from '@/types/live-earnings';
 
 const complete: TickerDetailResponse = {
   symbol: 'AMKR',
@@ -41,4 +42,14 @@ test('switching modal tabs cannot create a second ticker-detail request path', (
   assert.equal((source.match(/fetch\(`\/api\/watchlist\/ticker-detail\//g) ?? []).length, 1);
   const queryBlock = source.slice(source.indexOf("queryKey: ['ticker-detail'"), source.indexOf('const confluenceRow'));
   assert.equal(queryBlock.includes('activeTab'), false);
+});
+
+test('reported results retain their status while reaction or materials are pending', () => {
+  assert.deepEqual(earningsStatusView({ results_status: 'reported', reaction_status: 'reaction_pending', materials_status: 'available' }), { resultsReported: true, reactionPending: true, materialsPending: false });
+  assert.deepEqual(earningsStatusView({ results_status: 'reported', reaction_status: 'available', materials_status: 'materials_pending' }), { resultsReported: true, reactionPending: false, materialsPending: true });
+});
+
+test('completed and scheduled status combinations stay distinct', () => {
+  assert.deepEqual(earningsStatusView({ results_status: 'reported', reaction_status: 'completed', materials_status: 'completed' }), { resultsReported: true, reactionPending: false, materialsPending: false });
+  assert.deepEqual(earningsStatusView({ results_status: 'scheduled', reaction_status: null, materials_status: null }), { resultsReported: false, reactionPending: false, materialsPending: false });
 });
