@@ -2639,7 +2639,9 @@ export default function WatchlistPage() {
   const wlIdentityCsv = useMemo(() => {
     const tickers = (watchlist?.tickers as string[] | undefined) ?? [];
     return [...tickers].sort().join(',');
-  }, [watchlist?.tickers]);
+  // Use the joined string as the dependency so reference changes to the array don't re-fire
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(watchlist?.tickers ?? []).join(',')]);
   const { data: wlIdentityData } = useQuery<Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }>>({
     queryKey: ['company-identity', wlIdentityCsv],
     queryFn: () => fetch(`/api/fmp/company-identity?symbols=${encodeURIComponent(wlIdentityCsv)}`)
@@ -2648,11 +2650,14 @@ export default function WatchlistPage() {
     staleTime: 24 * 60 * 60_000,
     retry: 1,
   });
-  const betaByTicker = useMemo<Record<string, number | null>>(() => {
-    if (!wlIdentityData) return {};
-    const out: Record<string, number | null> = {};
+  const betaByTicker = useMemo<Record<string, number>>(() => {
+    if (!wlIdentityData || typeof wlIdentityData !== 'object' || Array.isArray(wlIdentityData)) return {};
+    const out: Record<string, number> = {};
     for (const [sym, d] of Object.entries(wlIdentityData)) {
-      if (d.beta != null) out[sym.toUpperCase()] = d.beta;
+      if (!d || typeof d !== 'object') continue;
+      const bRaw = (d as any).beta;
+      const bNum = Number(bRaw);
+      if (bRaw != null && Number.isFinite(bNum)) out[sym.toUpperCase()] = bNum;
     }
     return out;
   }, [wlIdentityData]);
@@ -3329,8 +3334,9 @@ export default function WatchlistPage() {
       const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
 
       // Inject beta from FMP company-identity when not present in analysis row
-      if (sym && (next.beta == null || next.beta === '') && betaByTicker[sym] != null) {
-        next.beta = betaByTicker[sym];
+      const _injBeta = sym ? betaByTicker[sym] : undefined;
+      if (_injBeta !== undefined && (next.beta == null || next.beta === '')) {
+        next.beta = _injBeta;
       }
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
@@ -5719,7 +5725,7 @@ export default function WatchlistPage() {
                     )}
                   </span>
                   <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }} title={stock.company || stock.name || ''}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 1, minWidth: 0 }}>{stock.company || stock.name || DASH}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 1, minWidth: 0 }}>{typeof (stock.company || stock.name) === 'string' ? (stock.company || stock.name || DASH) : (stock.company || stock.name) ? String(stock.company || stock.name) : DASH}</span>
                     {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
                       const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
                       const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
