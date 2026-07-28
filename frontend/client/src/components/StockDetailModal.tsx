@@ -7,7 +7,6 @@ import { useRealtimeQuotes } from '@/hooks/useRealtimeQuotes';
 import { mergeRealtimeQuote } from '@/lib/mergeRealtimeQuote';
 import { PriceFreshnessBadge } from '@/components/PriceFreshnessBadge';
 import { EarningsTab } from '@/components/EarningsTab';
-import { hasCompanyProfile, isEarningsSupported, type TickerDetailResponse } from '@/components/tickerDetailContract';
 
 /* ── color tokens ─────────────────────────────────────────────────── */
 let C = DARK_C;
@@ -242,7 +241,20 @@ export function StockDetailModal({
     return t?.toUpperCase() === ticker.toUpperCase();
   });
 
-  const { data: detail, isLoading: detailLoading } = useQuery<TickerDetailResponse | null>({
+  const { data: identityData } = useQuery<Record<string, any>>({
+    queryKey: ['company-identity', ticker.toUpperCase()],
+    queryFn: async () => {
+      const r = await fetch(`/api/fmp/company-identity?symbols=${encodeURIComponent(ticker)}`);
+      if (!r.ok) return {};
+      return r.json();
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: 1,
+    enabled: !!ticker,
+  });
+  const fmpExchange: string | null = identityData?.[ticker.toUpperCase()]?.exchange ?? null;
+
+  const { data: detail, isLoading: detailLoading } = useQuery<any>({
     queryKey: ['ticker-detail', ticker.toUpperCase(), 'v3'],
     queryFn: async () => {
       const r = await fetch(`/api/watchlist/ticker-detail/${encodeURIComponent(ticker)}`, {
@@ -327,8 +339,9 @@ export function StockDetailModal({
     : useRowFallback ? (confluenceRow?.change_pct ?? backendQuote?.change_pct ?? null)
     : (backendQuote?.change_pct ?? null);
 
-  // Eligibility is an explicit backend decision. Optional earnings subsections may all be empty.
-  const hasEarnings = detailLoading || isEarningsSupported(detail);
+  // Show Earnings tab optimistically while the detail is still loading (first fetch can take ~8s).
+  // Hide only once we've confirmed the loaded data has earnings_intelligence === null (ETF/ineligible).
+  const hasEarnings = detailLoading || (detail != null && detail.earnings_intelligence != null);
   const currentPrice: number | null =
     stock?.price != null ? Number(stock.price) :
     backendQuote?.price != null ? Number(backendQuote.price) : null;
@@ -434,7 +447,7 @@ export function StockDetailModal({
 
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} />}
+          {activeTab === 'overview' && <OverviewTab stock={stock} ticker={ticker} csvRow={csvRow} earningsEntry={earningsEntry} fmpExchange={fmpExchange} detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} />}
           {activeTab === 'technical' && <TechnicalTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} useRowFallback={useRowFallback} screenerRow={screenerRow} />}
           {activeTab === 'fundamentals' && <FundamentalsTab detail={detail} detailLoading={detailLoading} confluenceRow={confluenceRow} stock={stock} screenerRow={screenerRow} />}
           {activeTab === 'news' && <NewsTab detail={detail} detailLoading={detailLoading} ticker={ticker} allNews={allNews} />}
@@ -487,11 +500,11 @@ function resolveTVSymbol(ticker: string, stock: any, csvRow: any, fmpExchange?: 
 /* ═══════════════════════════════════════════════════════════════════
    Overview Tab
    ═══════════════════════════════════════════════════════════════════ */
-function OverviewTab({ stock, ticker, csvRow, earningsEntry, detail, detailLoading, confluenceRow }: {
-  stock: any; ticker: string; csvRow?: any; earningsEntry?: any;
-  detail?: TickerDetailResponse | null; detailLoading: boolean; confluenceRow?: any;
+function OverviewTab({ stock, ticker, csvRow, earningsEntry, fmpExchange, detail, detailLoading, confluenceRow }: {
+  stock: any; ticker: string; csvRow?: any; earningsEntry?: any; fmpExchange?: string | null;
+  detail?: any; detailLoading: boolean; confluenceRow?: any;
 }) {
-  const tvSymbol = resolveTVSymbol(ticker, stock, csvRow, detail?.company?.exchange ?? null);
+  const tvSymbol = resolveTVSymbol(ticker, stock, csvRow, fmpExchange);
   const tvUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=500&interval=D&range=3M&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
   const [descExpanded, setDescExpanded] = useState(false);
 
@@ -517,6 +530,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, detail, detailLoadi
     detailCompany?.exchange
     ?? stock?.exchange
     ?? confluenceRow?.exchange
+    ?? fmpExchange
     ?? null;
 
   const aboutSector =
@@ -579,25 +593,26 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, detail, detailLoadi
 
               {/* Metadata chips */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 6, marginBottom: 14 }}>
-                <MetricBox label="Sector" value={aboutSector == null ? '—' : String(aboutSector)} raw />
-                <MetricBox label="Industry" value={aboutIndustry == null ? '—' : String(aboutIndustry)} raw />
-                <MetricBox label="Mkt Cap" value={aboutMarketCap == null ? '—' : fmtLarge(aboutMarketCap)} raw />
-                <MetricBox label="Country" value={detailCompany?.country == null ? '—' : String(detailCompany.country)} raw />
-                <MetricBox label="Beta" value={detailCompany?.beta == null ? '—' : Number(detailCompany.beta).toFixed(2)} raw />
-                <MetricBox label="Employees" value={detailCompany?.employees == null ? '—' : fmtLarge(detailCompany.employees)} raw />
-                <MetricBox label="CEO" value={detailCompany?.ceo ?? detailCompany?.ceo_name ?? '—'} raw />
-                <MetricBox label="Exchange" value={aboutExchange ?? '—'} raw />
+                {aboutSector   && <MetricBox label="Sector"    value={String(aboutSector)}   raw />}
+                {aboutIndustry && <MetricBox label="Industry"  value={String(aboutIndustry)} raw />}
+                {aboutMarketCap != null && <MetricBox label="Mkt Cap" value={fmtLarge(aboutMarketCap)} raw />}
+                {detailCompany?.country   && <MetricBox label="Country"   value={detailCompany.country}                              raw />}
+                {detailCompany?.beta != null && <MetricBox label="Beta"   value={Number(detailCompany.beta).toFixed(2)}               raw />}
+                {detailCompany?.employees != null && <MetricBox label="Employees" value={fmtLarge(detailCompany.employees)}          raw />}
+                {(detailCompany?.ceo ?? detailCompany?.ceo_name) && (
+                  <MetricBox label="CEO" value={String(detailCompany?.ceo ?? detailCompany?.ceo_name)} raw />
+                )}
               </div>
 
               {/* Website */}
-              {detailCompany?.website ? (
+              {detailCompany?.website && (
                 <div style={{ marginBottom: 10 }}>
                   <a href={detailCompany.website} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 11, color: C.teal, fontFamily: _sdmSans, textDecoration: 'none' }}>
                     {String(detailCompany.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
                   </a>
                 </div>
-              ) : <p style={{ fontSize: 11, color: C.dim, fontFamily: _sdmSans, margin: '0 0 10px' }}>Website unavailable</p>}
+              )}
 
               {/* Description */}
               {aboutDescription ? (() => {
@@ -615,9 +630,7 @@ function OverviewTab({ stock, ticker, csvRow, earningsEntry, detail, detailLoadi
                     )}
                   </div>
                 );
-              })() : hasCompanyProfile(detail) ? (
-                <p style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans, margin: 0 }}>Description unavailable.</p>
-              ) : (
+              })() : (
                 <p style={{ fontSize: 12, color: C.dim, fontFamily: _sdmSans, margin: 0 }}>
                   Company profile unavailable for <strong style={{ color: C.dim }}>{ticker}</strong>.
                 </p>
