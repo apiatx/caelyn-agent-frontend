@@ -1,0 +1,50 @@
+The Recent Earnings date is still not visible in the actual cards.
+
+Do not assume the previous change worked because JSX was added. Inspect the real rendered Recent Earnings data and fix the visible result.
+
+Required investigation
+
+1. Inspect the actual recent-earnings object for at least two currently displayed cards, such as BE, ENPH, KLAC, LOGI, or MOD.
+2. Identify the exact existing field containing the real earnings announcement date.
+3. Confirm whether the previous `ev.date` reference actually contains a value.
+4. Inspect the rendered DOM and determine whether:
+   - the date value is null,
+   - the wrong field is being used,
+   - or the date is rendered but hidden/shrunk/truncated by the header layout.
+
+Required UI result
+
+Every Recent Earnings card must visibly show the actual earnings announcement date at a glance.
+
+Use a dedicated, non-shrinking date element in the card header, preferably top-right:
+
+BE        Jul 27
+Q2 2026
+
+or another equally obvious layout that preserves the existing card size.
+
+Requirements:
+- The date must be immediately visible without hovering or clicking.
+- Format it as `Jul 27`.
+- Do not place it inside a company-name row where it can be truncated.
+- Give the date `flexShrink: 0` / `shrink-0`.
+- Keep the symbol and fiscal-quarter label.
+- Do not rely on a hidden tooltip.
+- Do not use the fiscal period end date.
+- Do not use the fetch timestamp.
+- Do not invent or estimate a date.
+- Keep Upcoming and Recent cards the same dimensions.
+- Do not change earnings calculations, colors, ordering, toggles, queries, endpoints, or backend logic.
+
+If the real field is not `ev.date`, replace the previous incorrect reference with the actual existing field.
+
+Validation
+
+Do not report completion until you prove:
+1. The actual data field contains a date for a displayed ticker.
+2. The rendered DOM contains the formatted value.
+3. The date is visibly displayed in the card and not clipped, hidden, or truncated.
+4. Null dates safely omit the date without showing `Invalid Date`.
+5. No temporary console logs remain.
+
+This is a surgical correction to the previous frontend change only.

@@ -4602,11 +4602,20 @@ export default function WatchlistPage() {
     function normalizeRecentEvent(ev: any) {
       const fp = String(ev.fiscal_period ?? '').trim();
       const fy = String(ev.fiscal_year ?? '').trim();
+      // Backend returns earnings_date_fmt ("Jul 28") and earnings_date ("2026-07-28").
+      // Older shapes may use report_date / date / date_raw as fallbacks.
+      const rawDate =
+        ev.earnings_date_fmt ??
+        ev.earnings_date ??
+        ev.report_date ??
+        ev.date ??
+        ev.date_raw ??
+        null;
       return {
         ticker: String(ev.ticker ?? ev.symbol ?? '').toUpperCase(),
         company: ev.company ?? ev.company_name ?? ev.name ?? '',
         quarter: fp && fy ? `${fp} ${fy}` : fp || fy || '',
-        date: ev.report_date ?? ev.date ?? ev.date_raw ?? null,
+        date: rawDate,
         timing: ev.timing ?? ev.time ?? ev.when ?? null,
         classification: ev.classification ?? null,
         epsActual: ev.eps_actual ?? null,
@@ -4958,21 +4967,31 @@ export default function WatchlistPage() {
                     onFocus={e => { (e.currentTarget as HTMLElement).style.outline = `1px solid ${accentBorder !== 'transparent' ? accentBorder : 'rgba(255,255,255,0.25)'}`; }}
                     onBlur={e => { (e.currentTarget as HTMLElement).style.outline = 'none'; }}
                   >
-                    {/* Header: ticker + quarter + company */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' as const }}>
-                      {logoSrc && (
-                        <img src={logoSrc} alt={ev.ticker}
-                          style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'contain', flexShrink: 0 }}
-                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      )}
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
-                      {ev.quarter && <span style={{ fontSize: 8, fontWeight: 700, color: C.teal, fontFamily: font, flexShrink: 0 }}>{ev.quarter}</span>}
-                      {(() => { const ds = fmtShortDate(ev.date); return ds ? <span style={{ fontSize: 8, fontWeight: 600, color: C.amber, fontFamily: font, flexShrink: 0 }}>· {ds}</span> : null; })()}
-                      {ev.company && (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 70 }} title={ev.company}>
-                          {ev.company}
-                        </span>
+                    {/* Header: logo+ticker (left) | date (right); quarter on second line */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                          {logoSrc && (
+                            <img src={logoSrc} alt={ev.ticker}
+                              style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'contain', flexShrink: 0 }}
+                              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
+                        </div>
+                        {(() => {
+                          const ds = fmtShortDate(ev.date);
+                          return ds ? (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: font, flexShrink: 0, whiteSpace: 'nowrap' as const }}>
+                              {ds}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                      {ev.quarter && (
+                        <div style={{ marginTop: 2 }}>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: C.teal, fontFamily: font }}>{ev.quarter}</span>
+                        </div>
                       )}
                     </div>
 
