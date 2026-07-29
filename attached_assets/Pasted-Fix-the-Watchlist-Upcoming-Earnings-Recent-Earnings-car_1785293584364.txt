@@ -1,0 +1,105 @@
+Fix the Watchlist Upcoming Earnings / Recent Earnings cards shown in the attached screenshots.
+
+Current problems
+
+1. Upcoming Earnings cards are now too short/small.
+2. Recent Earnings cards are too tall/large.
+3. Recent cards show a fiscal-quarter row such as `Q2 2026`, which I do not need in this Watchlist strip.
+4. Upcoming cards do not show earnings timing, even though that timing already appears in the ticker popup Earnings Overview.
+
+Target layout
+
+Both toggles must use the exact same card width and height.
+
+Recent card:
+- Header: logo, ticker, actual earnings date
+- Remove the fiscal-quarter row entirely
+- Keep revenue, EPS, surprise percentages, beat/miss classification, and reaction/status information
+- Do not replace the actual date with the fiscal-quarter label
+
+Upcoming card:
+- Header: logo, ticker, confidence badge if already present
+- Show the scheduled earnings date
+- Also show the existing earnings timing:
+  - exact time when an actual time is available
+  - otherwise `Before Market Open`, `After Market Close`, `During Market Hours`, or the equivalent existing label
+- Keep EPS estimate and revenue estimate
+
+Preferred compact Upcoming presentation:
+
+Jul 29  ·  After Market Close
+
+or, when exact time exists:
+
+Jul 29  ·  4:05 PM ET
+
+Do not add an unnecessary extra row if the date and timing can fit together cleanly.
+
+Required investigation before editing
+
+Trace the existing:
+- Upcoming card render branch
+- Recent card render branch
+- sizing styles/classes for both branches
+- earnings timing field already used by the ticker popup Earnings Overview
+- normalized earnings object available to this Watchlist component
+- existing timing formatter/mapping, if one exists
+
+Reuse the exact existing data path used by the popup. Do not create a second interpretation of earnings timing.
+
+Sizing requirement
+
+Create or reuse one shared sizing definition for both card variants:
+- same width/min-width/flex-basis
+- same height/min-height
+- same padding
+- same horizontal strip behavior
+
+Do not independently hard-code different dimensions in the Upcoming and Recent branches.
+
+Choose a compact shared height between the current two extremes:
+- Recent should shrink after removing the fiscal-quarter row
+- Upcoming may use the reclaimed space for timing
+- switching tabs must not move or resize the surrounding section
+
+Timing requirements
+
+- Prefer the exact existing reported time when available.
+- Otherwise display the existing timing classification.
+- Use the same source and semantics as the ticker popup.
+- Do not infer timing from the hour unless that is already the application’s canonical logic.
+- Do not display `undefined`, `null`, `TBD`, or raw provider codes such as `bmo` unless the existing UI intentionally uses that format.
+- If timing is genuinely unavailable, safely omit it or display the application’s existing unconfirmed label.
+- Preserve distinctions such as confirmed versus estimated timing when those already exist in the current data.
+
+Do not:
+- add an API request
+- add a React Query query
+- change query keys
+- modify the backend
+- create an endpoint
+- alter earnings calculations
+- alter sorting or which events appear
+- alter card colors or beat/miss border logic
+- refactor unrelated Watchlist code
+- change the ticker popup
+
+Validation
+
+Do not report completion from HMR alone.
+
+Verify in the rendered authenticated Watchlist:
+
+1. Upcoming and Recent cards have identical measured width and height.
+2. Recent cards no longer show `Q2 2026`, `Q1 2027`, or any fiscal-quarter row.
+3. Recent cards still visibly show the actual earnings date.
+4. Upcoming cards visibly show both date and timing.
+5. Verify one exact-time event if available.
+6. Verify one BMO/AMC-style event.
+7. Verify one missing/unconfirmed timing case.
+8. No text is clipped at the normal viewport width.
+9. Horizontal scrolling remains intact.
+10. No new console errors or fetch/render loops.
+11. Run the existing frontend TypeScript/build validation.
+
+Keep this surgical and frontend-only. Preserve the existing earnings data path.

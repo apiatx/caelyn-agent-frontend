@@ -4765,6 +4765,24 @@ export default function WatchlistPage() {
       );
     }
 
+    // ── Shared card sizing — applied to both Upcoming and Recent branches
+    const CARD_STYLE = {
+      flexShrink: 0,
+      cursor: 'pointer',
+      padding: '10px 16px',
+      borderRight: `1px solid ${C.border}`,
+      display: 'flex', flexDirection: 'column' as const, gap: 6,
+      minWidth: 168,
+      minHeight: 110,
+    } as const;
+
+    // Inline TIMING_FULL mapping — same semantics as EarningsTab popup
+    const TIMING_FULL: Record<string, string> = {
+      bmo: 'Before Market Open',
+      amc: 'After Market Close',
+      during_market: 'During Market Hours',
+    };
+
     // ── State 5: events available — render section
     return (
       <div style={{ padding: '0 20px 4px' }}>
@@ -4821,15 +4839,7 @@ export default function WatchlistPage() {
                   <div
                     key={`earn-${ev.ticker}-${i}`}
                     onClick={() => handleTickerClick(ev.ticker)}
-                    style={{
-                      flexShrink: 0, cursor: 'pointer',
-                      padding: '10px 16px',
-                      borderRight: `1px solid ${C.border}`,
-                      borderLeft: '2px solid transparent',
-                      display: 'flex', flexDirection: 'column', gap: 6,
-                      minWidth: 168,
-                      transition: 'background 0.1s',
-                    }}
+                    style={{ ...CARD_STYLE, borderLeft: '2px solid transparent', transition: 'background 0.1s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
@@ -4866,11 +4876,16 @@ export default function WatchlistPage() {
                       <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, fontFamily: font }}>
                         {ev.date || 'Date unavailable'}
                       </span>
-                      {ev.time && (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>
-                          {ev.time === 'bmo' ? 'pre-mkt' : ev.time === 'amc' ? 'post-mkt' : ev.time}
-                        </span>
-                      )}
+                      {(() => {
+                        if (!ev.time) return null;
+                        const t = String(ev.time);
+                        const label = TIMING_FULL[t] ?? (t === 'unknown' ? null : t);
+                        return label ? (
+                          <span style={{ fontSize: 8, color: C.dim, fontFamily: font, whiteSpace: 'nowrap' as const }}>
+                            · {label}
+                          </span>
+                        ) : null;
+                      })()}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
                       {/* EPS Est. row */}
@@ -4951,48 +4966,31 @@ export default function WatchlistPage() {
                         handleTickerClick(ev.ticker);
                       }
                     }}
-                    style={{
-                      flexShrink: 0, cursor: 'pointer',
-                      padding: '10px 16px',
-                      borderRight: `1px solid ${C.border}`,
-                      borderLeft: accentBorder !== 'transparent' ? `2px solid ${accentBorder}` : '2px solid transparent',
-                      background: accentBg,
-                      display: 'flex', flexDirection: 'column', gap: 6,
-                      minWidth: 168,
-                      outline: 'none',
-                      transition: 'filter 0.1s',
-                    }}
+                    style={{ ...CARD_STYLE, borderLeft: accentBorder !== 'transparent' ? `2px solid ${accentBorder}` : '2px solid transparent', background: accentBg, outline: 'none', transition: 'filter 0.1s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = 'brightness(1.12)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = 'none'; }}
                     onFocus={e => { (e.currentTarget as HTMLElement).style.outline = `1px solid ${accentBorder !== 'transparent' ? accentBorder : 'rgba(255,255,255,0.25)'}`; }}
                     onBlur={e => { (e.currentTarget as HTMLElement).style.outline = 'none'; }}
                   >
-                    {/* Header: logo+ticker (left) | date (right); quarter on second line */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-                          {logoSrc && (
-                            <img src={logoSrc} alt={ev.ticker}
-                              style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'contain', flexShrink: 0 }}
-                              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          )}
-                          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
-                        </div>
-                        {(() => {
-                          const ds = fmtShortDate(ev.date);
-                          return ds ? (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: font, flexShrink: 0, whiteSpace: 'nowrap' as const }}>
-                              {ds}
-                            </span>
-                          ) : null;
-                        })()}
+                    {/* Header: logo+ticker (left) | date (right) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                        {logoSrc && (
+                          <img src={logoSrc} alt={ev.ticker}
+                            style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'contain', flexShrink: 0 }}
+                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        )}
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
                       </div>
-                      {ev.quarter && (
-                        <div style={{ marginTop: 2 }}>
-                          <span style={{ fontSize: 8, fontWeight: 700, color: C.teal, fontFamily: font }}>{ev.quarter}</span>
-                        </div>
-                      )}
+                      {(() => {
+                        const ds = fmtShortDate(ev.date);
+                        return ds ? (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: C.amber, fontFamily: font, flexShrink: 0, whiteSpace: 'nowrap' as const }}>
+                            {ds}
+                          </span>
+                        ) : null;
+                      })()}
                     </div>
 
                     {/* Primary result row: REV + EPS (visible before date/timing) */}
