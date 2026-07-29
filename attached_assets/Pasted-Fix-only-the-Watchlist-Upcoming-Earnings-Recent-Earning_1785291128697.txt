@@ -1,0 +1,63 @@
+Fix only the Watchlist Upcoming Earnings / Recent Earnings card strip shown in the attached screenshots.
+
+Requested behavior
+
+1. Make every Upcoming Earnings glasscard exactly the same physical size as the current Recent Earnings glasscards:
+   - same width / min-width / flex-basis
+   - same height / min-height
+   - same internal padding
+   - preserve the existing horizontal scrolling behavior
+   - use the current Recent card size as the canonical size; do not shrink the Recent cards
+
+2. Add the actual earnings announcement date to every Recent Earnings card.
+   - Use the real reported earnings event date already present in the existing earnings data.
+   - Do not use the fiscal quarter label, fiscal period end date, fetch timestamp, or an estimated upcoming date.
+   - Format it consistently with the Upcoming card dates, such as `Jul 24`.
+   - Place it cleanly in the Recent card header near the symbol / fiscal-quarter label without crowding the card.
+   - Keep the existing quarter label such as `Q2 2026`.
+
+Required inspection before editing
+
+Trace the existing:
+- Watchlist earnings strip component
+- Upcoming and Recent card render branches
+- CSS/Tailwind sizing classes
+- recent-earnings data object and its available date fields
+- existing date-formatting helper used by Upcoming cards
+
+This should remain frontend-only because it is a display/layout task. Reuse the existing recent-earnings payload, query, cache, props, and normalization path.
+
+Do not:
+- add an API call
+- add a query
+- change a query key
+- create an endpoint
+- modify the backend
+- create a second earnings data path
+- alter earnings beat/miss calculations
+- change card coloring, borders, labels, toggle behavior, ordering, or scroll behavior
+- broadly refactor the component
+
+If the actual reported earnings date is genuinely absent from every existing frontend response/object, stop and report:
+- the exact response/query inspected
+- the exact fields currently available
+- where the missing date would need to originate
+
+Do not invent a date or start backend work.
+
+Acceptance criteria
+
+- Upcoming and Recent cards have identical rendered width and height.
+- Switching between Upcoming and Recent does not change the card footprint.
+- Upcoming cards continue showing their scheduled earnings date.
+- Recent cards show both the fiscal-quarter label and actual reported earnings date.
+- Missing/null dates render safely without showing `Invalid Date`, `undefined`, or a fabricated value.
+- Horizontal scrolling still works.
+- No changes to card contents beyond sizing and the new Recent date.
+- No new fetch/render loop.
+- Browser console remains clean.
+- Run the frontend build or TypeScript validation.
+
+Keep the change surgical, preferably in the existing Watchlist page/component only. Commit locally with a message such as:
+
+Align earnings card sizes and show recent dates

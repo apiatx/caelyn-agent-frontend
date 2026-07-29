@@ -2300,11 +2300,13 @@ export function CaelynConfluenceSection({
   onTickerClick,
   totalTickers,
   usingAlignmentEndpoint,
+  embedded = false,
 }: {
   rows: any[];
   onTickerClick?: (t: string) => void;
   totalTickers?: number;
   usingAlignmentEndpoint?: boolean;
+  embedded?: boolean;
 }) {
   const [tab, setTab]   = useState<ConfTab>('all');
   const [open, setOpen] = useState(true);
@@ -2349,22 +2351,26 @@ export function CaelynConfluenceSection({
 
   if (!rows.length) return null;
   return (
-    <div style={{ margin: '20px 20px 8px', background: CC.surface, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 8, overflow: 'hidden' }}>
-      <div
-        style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid rgba(255,255,255,0.07)` : 'none' }}
-        onClick={() => setOpen(v => !v)}
-      >
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#fff', fontFamily: CC.font }}>CONFLUENCE</div>
+    <div style={embedded
+      ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: CC.surface, overflow: 'hidden' }
+      : { margin: '20px 20px 8px', background: CC.surface, border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 8, overflow: 'hidden' }}>
+      {!embedded && (
+        <div
+          style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: open ? `1px solid rgba(255,255,255,0.07)` : 'none' }}
+          onClick={() => setOpen(v => !v)}
+        >
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#fff', fontFamily: CC.font }}>CONFLUENCE</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {coverageLabel && (
+              <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, opacity: 0.7 }}>{coverageLabel}</span>
+            )}
+            <span style={{ color: CC.dim, fontSize: 9, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {coverageLabel && (
-            <span style={{ fontSize: 7, color: CC.dim, fontFamily: CC.font, opacity: 0.7 }}>{coverageLabel}</span>
-          )}
-          <span style={{ color: CC.dim, fontSize: 9, fontFamily: CC.font }}>{open ? '▲' : '▼'}</span>
-        </div>
-      </div>
-      {open && (
+      )}
+      {(embedded || open) && (
         <>
           <div style={{ display: 'flex', borderBottom: `1px solid rgba(255,255,255,0.07)`, overflowX: 'auto' as const }}>
             {CONF_TABS.map(t => {
@@ -2386,8 +2392,15 @@ export function CaelynConfluenceSection({
                 </button>
               );
             })}
+            {embedded && coverageLabel && (
+              <span style={{ marginLeft: 'auto', padding: '0 11px', alignSelf: 'center', whiteSpace: 'nowrap' as const, fontSize: 7, color: CC.dim, fontFamily: CC.font, opacity: 0.7 }}>
+                {coverageLabel}
+              </span>
+            )}
           </div>
-          <div style={{ padding: '8px 10px', maxHeight: 560, overflowY: 'auto' as const, overflowX: 'auto' as const }}>
+          <div style={embedded
+            ? { padding: '8px 10px', flex: 1, minHeight: 0, overflowY: 'auto' as const, overflowX: 'auto' as const }
+            : { padding: '8px 10px', maxHeight: 560, overflowY: 'auto' as const, overflowX: 'auto' as const }}>
             {tab === 'all'               && <V42ScreenerTable rows={analyzedRows}                                                    onTickerClick={onTickerClick} />}
             {tab === 'actionable'        && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_actionable_setup   ?? r.is_actionable_setup)   === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_actionable_setup = true." />}
             {tab === 'near_actionable'   && <V42ScreenerTable rows={analyzedRows.filter((r: any) => (r.confluence_v42?.booleans?.is_near_actionable    ?? r.is_near_actionable)    === true)} onTickerClick={onTickerClick} emptyMsg="No rows with is_near_actionable = true." />}

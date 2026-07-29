@@ -2313,10 +2313,10 @@ export default function WatchlistPage() {
   const [showOptColsMenu, setShowOptColsMenu] = useState(false);
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
-  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals'>(() => {
+  const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'confluence'>(() => {
     try {
       const v = localStorage.getItem('wl_screener_mode') as string;
-      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals') return v;
+      if (v === 'market' || v === 'technical' || v === 'options' || v === 'fundamentals' || v === 'confluence') return v;
       if (v === 'growth' || v === 'earnings') {
         try { localStorage.setItem(WL_FUNDAMENTALS_CATEGORY_KEY, 'growth'); } catch {}
         return 'fundamentals';
@@ -4634,6 +4634,16 @@ export default function WatchlistPage() {
       return `$${v.toFixed(0)}`;
     };
 
+    // Short date formatter: "2026-07-24" → "Jul 24". Safe for all timezones.
+    const fmtShortDate = (d: string | null | undefined): string | null => {
+      if (!d) return null;
+      try {
+        const s = String(d).trim();
+        const dt = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T12:00:00` : s);
+        return isNaN(dt.getTime()) ? null : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } catch { return null; }
+    };
+
     // Classification helpers for recent cards
     const cls2border = (cls: string | null) => {
       if (cls === 'double_beat') return '#22c55e';
@@ -4806,8 +4816,9 @@ export default function WatchlistPage() {
                       flexShrink: 0, cursor: 'pointer',
                       padding: '10px 16px',
                       borderRight: `1px solid ${C.border}`,
-                      display: 'flex', flexDirection: 'column', gap: 5,
-                      minWidth: 148,
+                      borderLeft: '2px solid transparent',
+                      display: 'flex', flexDirection: 'column', gap: 6,
+                      minWidth: 168,
                       transition: 'background 0.1s',
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
@@ -4957,8 +4968,9 @@ export default function WatchlistPage() {
                       )}
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: font, flexShrink: 0 }}>{ev.ticker}</span>
                       {ev.quarter && <span style={{ fontSize: 8, fontWeight: 700, color: C.teal, fontFamily: font, flexShrink: 0 }}>{ev.quarter}</span>}
+                      {(() => { const ds = fmtShortDate(ev.date); return ds ? <span style={{ fontSize: 8, fontWeight: 600, color: C.amber, fontFamily: font, flexShrink: 0 }}>· {ds}</span> : null; })()}
                       {ev.company && (
-                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 80 }} title={ev.company}>
+                        <span style={{ fontSize: 8, color: C.dim, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 70 }} title={ev.company}>
                           {ev.company}
                         </span>
                       )}
@@ -4992,9 +5004,8 @@ export default function WatchlistPage() {
                       </div>
                     </div>
 
-                    {/* Secondary row: date · timing · classification · Post 1D chip */}
+                    {/* Secondary row: timing · classification · Post 1D chip */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' as const }}>
-                      {ev.date && <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>{ev.date}</span>}
                       {ev.timing && (
                         <span style={{ fontSize: 8, color: C.dim, fontFamily: font }}>
                           {ev.timing === 'amc' ? '· AMC' : ev.timing === 'bmo' ? '· BMO' : `· ${String(ev.timing).toUpperCase()}`}
@@ -5257,7 +5268,7 @@ export default function WatchlistPage() {
           </span>
           {(
             <div style={{ display: 'flex', borderRadius: 3, overflow: 'hidden', border: `1px solid ${C.border}` }}>
-              {(['market', 'technical', 'options', 'fundamentals'] as const).map((mode, mi, arr) => (
+              {(['market', 'technical', 'options', 'fundamentals', 'confluence'] as const).map((mode, mi, arr) => (
                 <button
                   key={mode}
                   onClick={() => {
@@ -5275,7 +5286,7 @@ export default function WatchlistPage() {
                     transition: 'all 0.12s',
                   }}
                 >
-                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : 'Fundamentals'}
+                  {mode === 'market' ? 'Market' : mode === 'technical' ? 'Technical' : mode === 'options' ? 'Options' : mode === 'fundamentals' ? 'Fundamentals' : 'Confluence'}
                 </button>
               ))}
             </div>
@@ -5494,7 +5505,18 @@ export default function WatchlistPage() {
             ))}
           </div>
         )}
-        {tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
+        {tableTitle !== 'CLOSE WATCH' && (
+          <div style={{ display: screenerMode === 'confluence' ? 'flex' : 'none', flex: 1, minHeight: 0 }}>
+            <CaelynConfluenceSection
+              rows={confluenceRows ?? csvMergedScreenerRows}
+              onTickerClick={handleTickerClick}
+              totalTickers={allTickerSymbols.length}
+              usingAlignmentEndpoint={confluenceRows != null}
+              embedded
+            />
+          </div>
+        )}
+        {screenerMode === 'confluence' ? null : tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
           <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
               fundamentalsCategory === 'financialHealth' ? FUND_FINANCIAL_HEALTH_COLS
@@ -7365,16 +7387,6 @@ export default function WatchlistPage() {
 
             {/* ── Upcoming Earnings ── */}
             {renderEarningsSection()}
-
-            {/* ── Confluence ── use alignment rows when available, else CSV-merged fallback */}
-            {(confluenceRows ?? csvMergedScreenerRows).length > 0 && (
-              <CaelynConfluenceSection
-                rows={confluenceRows ?? csvMergedScreenerRows}
-                onTickerClick={handleTickerClick}
-                totalTickers={allTickerSymbols.length}
-                usingAlignmentEndpoint={confluenceRows != null}
-              />
-            )}
 
             {/* ── Strategy Score Panel ── */}
             {selectedStrategy !== 'default' && (strategyScoreData || strategyScoreLoading) && (
