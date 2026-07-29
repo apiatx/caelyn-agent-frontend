@@ -1,0 +1,533 @@
+Implement the frontend half of the Watchlist reliability and latency fix.
+
+The backend work is complete.
+
+Backend contract now available:
+
+POST /api/watchlist/earnings/by-symbols
+
+Request:
+{
+  "symbols": ["AAPL", "MSFT", ...],
+  "wait_for_sync": false
+}
+
+Response includes:
+- events: Upcoming Earnings
+- recent: Recent Earnings for the same exact symbols
+- cache_status:
+  - hit
+  - refreshed
+  - miss_syncing
+  - partial_syncing
+  - stale_syncing
+  - miss
+  - error
+- stale
+- symbols_requested
+- missing_symbols
+
+The backend now:
+- preserves synchronous behavior for callers that omit wait_for_sync
+- returns stale data while refreshing
+- prevents duplicate FMP synchronization
+- returns Recent and Upcoming through the same scoped response
+- preserves symbol isolation
+
+This frontend task applies to ALL Watchlist tabs and ALL ticker popups.
+EOSE was only one visible example.
+
+Do not touch the backend.
+
+──────────────────────────────────────────────────────────────────────────────
+BEFORE EDITING
+──────────────────────────────────────────────────────────────────────────────
+
+1. Read the frontend AGENTS.md instructions.
+2. Run:
+   git status -sb
+   git diff --name-only
+3. Trace the exact current working-tree implementations for:
+   - active watchlist membership
+   - Watchlist earnings query
+   - Upcoming/Recent rendering
+   - Favorites query and mutations
+   - wlApiHeaders()
+   - frontend Express Favorites proxy routes
+   - StockDetailModal ticker-detail query
+   - company-identity query
+   - ticker-detail Express proxy
+4. Report:
+   - exact files to modify
+   - exact functions/hooks to modify
+   - current request and cache behavior
+5. Do not edit until that trace is complete.
+
+Expected maximum scope:
+
+- frontend/client/src/pages/watchlist.tsx
+- the existing StockDetailModal file
+- frontend/server/routes.ts
+
+Stop and report before editing if more than three production files are necessary.
+
+Do not touch generated files, runtime caches, assets, or unrelated components.
+
+──────────────────────────────────────────────────────────────────────────────
+1. USE CANONICAL WATCHLIST MEMBERSHIP
+──────────────────────────────────────────────────────────────────────────────
+
+For a normal Watchlist tab, derive the earnings symbol universe from:
+
+watchlist.tickers
+
+This is the canonical membership source.
+
+Do not derive earnings membership from:
+
+- sortedTickers
+- filtered rows
+- displayRows
+- merged screener rows
+- csv_data
+- analysis sections
+- fundamentals/options hydration
+- current Screener sorting
+
+Those data structures may enrich or display members, but they must not decide
+which tickers belong to the watchlist.
+
+Requirements:
+
+- uppercase every symbol
+- remove blanks
+- deduplicate
+- alphabetically sort
+- use the stable sorted list in the React Query key
+- include the active watchlist ID in the key
+- do not refetch earnings when the user sorts or filters the Screener
+- do not issue an empty-symbol request while canonical membership is unresolved
+- distinguish unresolved membership from a successfully loaded empty watchlist
+
+For Favorites:
+
+- use the authenticated Favorites symbol response
+- normalize and sort it the same way
+- keep Favorites in a separate query scope from Primary/custom watchlists
+- never use the currently rendered Primary rows to infer Favorites membership
+
+Do not leak Primary cards into Favorites or vice versa.
+
+──────────────────────────────────────────────────────────────────────────────
+2. USE ONE SCOPED EARNINGS QUERY
+──────────────────────────────────────────────────────────────────────────────
+
+Update the existing Watchlist by-symbols request body to send:
+
+{
+  symbols: selectedEarningsSymbols,
+  wait_for_sync: false
+}
+
+Do not create a new query or endpoint.
+
+The Watchlist earnings section must use this one response for both views:
+
+Upcoming:
+- response.events
+- or response.upcoming only if the backend retains that alias
+
+Recent:
+- response.recent
+
+Remove the Watchlist earnings section’s fallback to the separate/global
+GET /api/watchlist/earnings response.
+
+Do not delete the global earnings query blindly. First search for all consumers.
+Keep it intact if another component still needs it.
+
+Switching Upcoming ↔ Recent must be local display state and generate zero
+network requests.
+
+Preserve all existing card content and behavior:
+
+- logos
+- dates
+- timing labels
+- EPS estimates/results
+- revenue estimates/results
+- growth
+- surprise percentages
+- classifications
+- color/border logic
+- card dimensions
+- horizontal scrolling
+- card click behavior
+
+Do not redesign the earnings cards.
+
+──────────────────────────────────────────────────────────────────────────────
+3. HANDLE CACHE WARMING WITHOUT FALSE EMPTY STATES
+──────────────────────────────────────────────────────────────────────────────
+
+Treat these backend statuses as actively warming:
+
+- miss_syncing
+- partial_syncing
+- stale_syncing
+
+They are not legitimate empty results.
+
+Required behavior:
+
+A. Warm cache hit
+
+Render Upcoming and Recent immediately.
+
+B. Stale data while refreshing
+
+Render the stale cards immediately.
+
+Show a subtle existing-style refreshing indicator if appropriate.
+
+Do not blank the cards while refreshing.
+
+C. Cold cache with no Last Known Good data
+
+Show:
+
+Loading earnings…
+
+or reuse an existing loading skeleton.
+
+Do not show:
+
+No upcoming earnings for this watchlist.
+
+D. Partial synchronization
+
+Render matching cached cards that already exist.
+
+Continue refreshing until the response settles.
+
+E. Query error or proxy timeout
+
+- preserve prior successful data for the exact same query key
+- show a retryable error indicator
+- do not replace cards with an empty array
+- do not claim there are no earnings
+
+Only show:
+
+No upcoming earnings for this watchlist.
+
+when all are true:
+
+- canonical membership loaded successfully
+- membership is non-empty
+- request succeeded
+- cache_status is settled, not syncing
+- stale is false
+- Upcoming is genuinely empty
+
+Only show the Recent equivalent after the same settled-success conditions.
+
+Polling behavior:
+
+- refetch every 4 seconds only while cache_status is one of the syncing states
+- stop immediately when the response becomes hit/refreshed/settled
+- bound automatic warming polling to approximately 90 seconds
+- after the bound, leave a manual retry control rather than creating a permanent loop
+- switching Upcoming/Recent must not affect polling
+- do not poll on settled empty results
+- do not poll on an unresolved/disabled query
+
+Use the React Query version and patterns already installed in the repository.
+
+Do not use a global “previous response” that could display Primary data under
+Favorites. Last Known Good behavior must remain scoped to the exact query key.
+
+──────────────────────────────────────────────────────────────────────────────
+4. FIX FAVORITES AUTHENTICATION AND FALSE ZERO COUNTS
+──────────────────────────────────────────────────────────────────────────────
+
+Current symptom:
+
+Favorites may show 0 even though the authenticated user has approximately
+94 saved tickers.
+
+Trace and fix the existing Favorites flow end to end.
+
+Client Favorites GET:
+
+- attach wlApiHeaders()
+- preserve credentials behavior already used elsewhere
+- throw on non-200
+- parse and expose the backend error safely
+- do not return { favorites: [], count: 0 } as a fallback on failure
+- retain prior successful Favorites data during refetch/error
+- do not flash 0 while loading
+- only display 0 after a successful authenticated response genuinely returns 0
+
+Client Favorites POST/DELETE:
+
+- attach wlApiHeaders()
+- throw on non-200
+- preserve existing optimistic star/unstar behavior
+- preserve rollback on failure
+- do not wipe the entire Favorites set after one failed mutation
+
+Express proxy Favorites GET/POST/DELETE:
+
+- forward the incoming Authorization header to FastAPI
+- preserve the existing X-API-Key
+- preserve Content-Type where applicable
+- never log the JWT
+- preserve backend status codes
+- preserve a safe useful backend error body rather than replacing everything
+  with a generic successful empty response
+- clear timeout handles on success and failure
+
+Validate the authenticated result against the actual backend count.
+
+If Favorites records are stored under an unexpected legacy/default user ID:
+
+- do not migrate
+- do not delete
+- do not copy rows
+- report exact counts by user bucket and stop for approval
+
+──────────────────────────────────────────────────────────────────────────────
+5. FIX SHARED TICKER-DETAIL FAILURE HANDLING
+──────────────────────────────────────────────────────────────────────────────
+
+This applies to every StockDetailModal ticker.
+
+Do not special-case EOSE.
+
+Current unsafe behavior to remove:
+
+if (!response.ok) return null;
+
+A failed request must not be cached as a successful null response.
+
+Ticker-detail query requirements:
+
+- non-200 must throw an Error
+- malformed or non-JSON response must throw
+- expose isError, error, and refetch
+- retry a small bounded number of times
+- use reasonable retry delay/backoff
+- retain prior successful detail data during background refetch
+- do not cache a transient null as valid data for 10 minutes
+- do not change the established query key unless absolutely proven necessary
+- do not remove any detail response fields
+
+Preserve all existing modal functionality:
+
+- Overview
+- Technical
+- Fundamentals
+- News
+- Earnings
+- AI Deep Dive
+- charts
+- About/company profile
+- confluence
+- live earnings badge
+- earnings updates/invalidation
+- modal closing and navigation
+
+Earnings-tab visibility:
+
+The Earnings tab must not disappear because of:
+
+- timeout
+- 502/503
+- network failure
+- malformed response
+- temporary detail absence
+- background refetch
+
+Inspect the successful ticker-detail response for an explicit eligibility or
+ineligibility field.
+
+If an explicit confirmed-ineligible field exists:
+
+- hide the Earnings tab only after a successful settled response confirms it
+
+If no explicit eligibility field exists:
+
+- do not infer ineligibility solely from earnings_intelligence === null
+- keep the Earnings tab
+- show an honest “Earnings data unavailable” state inside the tab when needed
+
+During loading or transient error, preserve the Earnings tab when any of these
+already exist:
+
+- prior successful ticker detail
+- earningsEntry
+- live earnings event
+- previously loaded earnings intelligence
+
+Provide a retry control inside the modal.
+
+Do not make the user close and reopen the ticker to recover.
+
+──────────────────────────────────────────────────────────────────────────────
+6. FIX COMPANY-IDENTITY FAILURE CACHING
+──────────────────────────────────────────────────────────────────────────────
+
+The company-identity query must follow the same error semantics.
+
+Do not:
+
+if (!response.ok) return {};
+
+Instead:
+
+- throw on non-200
+- throw on malformed response
+- retain prior successful identity data during refetch
+- do not cache a failed empty object for 24 hours
+- preserve a legitimate successful 200 response that contains no profile data
+- do not remove the About section because of a transient request failure
+- provide a safe unavailable/retry state where the existing UI supports it
+
+Do not add a second company-profile endpoint.
+
+──────────────────────────────────────────────────────────────────────────────
+7. FRONTEND PROXY TIMEOUT AND ERROR HANDLING
+──────────────────────────────────────────────────────────────────────────────
+
+Do not blindly increase the ticker-detail timeout.
+
+The backend audit already measured representative successful requests at roughly
+2–6.5 seconds, within the existing 15-second proxy timeout.
+
+For the existing ticker-detail proxy:
+
+- preserve the route and target
+- clear the AbortController timer in a finally block
+- preserve FastAPI non-200 status codes and safe error details
+- distinguish backend error from proxy timeout
+- do not convert a failure into HTTP 200 with an empty object
+- do not log secrets or authorization headers
+
+Only increase the timeout if fresh direct measurements prove normal successful
+requests exceed the current limit.
+
+Do not modify backend data generation from the frontend project.
+
+──────────────────────────────────────────────────────────────────────────────
+REGRESSION PROTECTION
+──────────────────────────────────────────────────────────────────────────────
+
+Do not break or remove:
+
+- canonical Primary/custom watchlist membership
+- Favorites stars and count
+- optimistic star/unstar
+- Watchlist Screener sorting
+- Screener filters
+- realtime quote updates
+- Last Known Good Watchlist rows
+- Upcoming earnings cards
+- Recent earnings cards
+- timing labels
+- card sizes
+- earnings card click navigation
+- ticker popup tabs
+- charts
+- About/company profile
+- live earnings badges
+- React Query invalidation after Favorites mutations
+- watchlist upload/add/delete/rename
+- any remaining consumer of the global earnings query
+
+Avoid broad refactors.
+
+Do not create:
+
+- a new endpoint
+- another earnings query
+- another Favorites store
+- global app context
+- localStorage earnings cache
+- parallel ticker-detail path
+- new backend assumptions
+
+──────────────────────────────────────────────────────────────────────────────
+VALIDATION
+──────────────────────────────────────────────────────────────────────────────
+
+Run a clean frontend restart.
+
+Validate all of the following:
+
+1. Primary membership and ticker count load from canonical watchlist.tickers.
+
+2. Sorting or filtering the Screener creates no new earnings request.
+
+3. The earnings request body contains:
+   wait_for_sync: false
+
+4. A cold earnings cache shows Loading earnings, not a false empty state.
+
+5. Upcoming populates automatically while staying on the page.
+
+6. Recent populates from the same by-symbols response.
+
+7. Switching Upcoming/Recent creates zero requests.
+
+8. Primary and Favorites have different stable query keys and never leak cards.
+
+9. Favorites shows the authenticated real count, approximately 94.
+
+10. A failed Favorites request does not flash or cache 0.
+
+11. Favorite add/remove still works and rolls back correctly on failure.
+
+12. Simulate one ticker-detail 502 or timeout:
+    - modal remains open
+    - existing tabs remain available
+    - Earnings tab does not disappear
+    - prior data is retained
+    - retry can recover without closing the modal
+
+13. Validate the shared popup behavior across at least:
+    - EOSE
+    - BAND
+    - AAPL
+    - TM or another ADR
+    - SPY or another ETF/ineligible security
+
+14. A company-identity failure does not become a cached 24-hour empty result.
+
+15. Browser console contains no:
+    - unhandled promise rejection
+    - infinite retry/refetch loop
+    - duplicate earnings requests
+    - React key warning
+    - state update after unmount
+
+16. Run the established frontend build or typecheck.
+
+Before committing, show:
+
+- git diff --name-only
+- git diff --check
+- build/typecheck result
+- exact production files changed
+- network request evidence
+- authenticated Favorites count
+- before/after screenshots for:
+  - Primary warming state
+  - populated Upcoming
+  - populated Recent
+  - Favorites count
+  - representative ticker popup
+
+Commit locally with a clear message such as:
+
+Fix Watchlist earnings loading and popup resilience
