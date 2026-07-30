@@ -1138,9 +1138,32 @@ function homeEffectiveTier(card: HomeCatalystCard): HomeSignalTier {
   return "context";
 }
 
+function homeIsMacroCatalyst(card: HomeCatalystCard): boolean {
+  const t = String(card.type ?? "").toLowerCase().replace(/_/g, '');
+  const cat = String(card.category ?? "").toLowerCase().replace(/_/g, '');
+  if (t === "macro_group" || t === "macro") return true;
+  const combined = t || cat;
+  return (
+    combined.includes("fed") ||
+    combined.includes("rate") ||
+    combined.includes("inflat") ||
+    combined.includes("cpi") ||
+    combined.includes("ppi") ||
+    combined.includes("labor") ||
+    combined.includes("jobs") ||
+    combined.includes("employ") ||
+    combined.includes("growth") ||
+    combined.includes("treasury") ||
+    combined.includes("consumer") ||
+    combined.includes("housing") ||
+    combined.includes("macro")
+  );
+}
+
 function homeWeekRisk(catalysts: HomeCatalystCard[]): WeekRiskLevel {
   let hasCritical = false, hasMajor = false, hasSecondary = false;
   for (const c of catalysts) {
+    if (!homeIsMacroCatalyst(c)) continue;
     const t = homeEffectiveTier(c);
     if (t === "critical") hasCritical = true;
     else if (t === "major") hasMajor = true;
