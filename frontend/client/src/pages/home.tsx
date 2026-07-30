@@ -1138,26 +1138,34 @@ function homeEffectiveTier(card: HomeCatalystCard): HomeSignalTier {
   return "context";
 }
 
+function _normStructured(v: unknown): string {
+  return String(v ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\-]+/g, "_")
+    .replace(/_+/g, "_");
+}
+
+const MACRO_TYPES = new Set(["macro", "macro_group"]);
+
+const MACRO_CATEGORIES = new Set([
+  "fed_rates",
+  "inflation",
+  "labor",
+  "growth",
+  "treasury",
+  "consumer",
+  "housing",
+  "macro",
+  "economic_release",
+  "economic_releases",
+  "treasury_macro",
+]);
+
 function homeIsMacroCatalyst(card: HomeCatalystCard): boolean {
-  const t = String(card.type ?? "").toLowerCase().replace(/_/g, '');
-  const cat = String(card.category ?? "").toLowerCase().replace(/_/g, '');
-  if (t === "macro_group" || t === "macro") return true;
-  const combined = t || cat;
-  return (
-    combined.includes("fed") ||
-    combined.includes("rate") ||
-    combined.includes("inflat") ||
-    combined.includes("cpi") ||
-    combined.includes("ppi") ||
-    combined.includes("labor") ||
-    combined.includes("jobs") ||
-    combined.includes("employ") ||
-    combined.includes("growth") ||
-    combined.includes("treasury") ||
-    combined.includes("consumer") ||
-    combined.includes("housing") ||
-    combined.includes("macro")
-  );
+  const type = _normStructured(card.type);
+  const category = _normStructured(card.category);
+  return MACRO_TYPES.has(type) || MACRO_CATEGORIES.has(category);
 }
 
 function homeWeekRisk(catalysts: HomeCatalystCard[]): WeekRiskLevel {
