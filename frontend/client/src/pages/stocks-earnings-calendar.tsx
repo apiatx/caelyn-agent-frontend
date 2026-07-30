@@ -2764,6 +2764,9 @@ interface CatalystEvent {
   eventLabel?: string;
   keyDetails?: string;
   importance?: "high" | "medium" | "low";
+  signal_tier?: "critical" | "major" | "secondary" | "context";
+  event_family?: string;
+  signal_reason?: string;
   sector?: string;
   market_cap?: number;
   details?: Record<string, unknown>;
@@ -2849,6 +2852,94 @@ const IMPORTANCE_COLORS: Record<string, { bg: string; text: string }> = {
   low:    { bg: "rgba(255,255,255,0.06)", text: "rgba(255,255,255,0.4)" },
 };
 
+// ─── Signal-tier helpers ──────────────────────────────────────────────
+// Effective tier precedence: signal_tier → importance fallback.
+//   importance high  → major
+//   importance medium → secondary
+//   importance low / absent → context
+
+type SignalTier = "critical" | "major" | "secondary" | "context";
+
+interface TierPresentation {
+  label: string;
+  labelCls: string;
+  cardBorder: string;
+  cardBg: string;
+  titleWeight: string;
+  isMuted: boolean;
+}
+
+const TIER_PRESENTATION: Record<SignalTier, TierPresentation> = {
+  critical: {
+    label: "Critical",
+    labelCls: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+    cardBorder: "border-rose-500/40",
+    cardBg: "bg-rose-500/[0.04]",
+    titleWeight: "font-bold",
+    isMuted: false,
+  },
+  major: {
+    label: "Major",
+    labelCls: "text-orange-300 bg-orange-500/15 border-orange-500/30",
+    cardBorder: "border-orange-500/30",
+    cardBg: "bg-orange-500/[0.03]",
+    titleWeight: "font-semibold",
+    isMuted: false,
+  },
+  secondary: {
+    label: "Secondary",
+    labelCls: "text-white/50 bg-white/5 border-white/15",
+    cardBorder: "border-white/[0.06]",
+    cardBg: "bg-white/[0.01]",
+    titleWeight: "font-medium",
+    isMuted: false,
+  },
+  context: {
+    label: "Context",
+    labelCls: "text-white/30 bg-white/[0.03] border-white/10",
+    cardBorder: "border-white/[0.03]",
+    cardBg: "bg-transparent",
+    titleWeight: "font-normal",
+    isMuted: true,
+  },
+};
+
+const TIER_ORDER: Record<SignalTier, number> = {
+  critical: 0,
+  major: 1,
+  secondary: 2,
+  context: 3,
+};
+
+function effectiveSignalTier(ev: { signal_tier?: SignalTier; importance?: string }): SignalTier {
+  if (ev.signal_tier) return ev.signal_tier;
+  if (ev.importance === "high") return "major";
+  if (ev.importance === "medium") return "secondary";
+  return "context";
+}
+
+function tierPresentation(ev: { signal_tier?: SignalTier; importance?: string }): TierPresentation {
+  const tier = effectiveSignalTier(ev);
+  return TIER_PRESENTATION[tier];
+}
+
+function SignalTierBadge({ event }: { event: { signal_tier?: SignalTier; importance?: string } }) {
+  const tier = effectiveSignalTier(event);
+  const p = TIER_PRESENTATION[tier];
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold whitespace-nowrap border ${p.labelCls}`}>
+      {p.label}
+    </span>
+  );
+}
+
+// Sort comparator: higher-tier events first; stable for same tier.
+function compareTier(a: CalendarEvent, b: CalendarEvent): number {
+  const ta = TIER_ORDER[effectiveSignalTier(a)];
+  const tb = TIER_ORDER[effectiveSignalTier(b)];
+  return ta - tb;
+}
+
 function EventTypeBadge({ type }: { type: string }) {
   const t = type?.toLowerCase().replace(/ /g, "_") || "macro";
   const c = EVENT_TYPE_COLORS[t] || EVENT_TYPE_COLORS.macro;
@@ -2885,6 +2976,9 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
   const str = (v: unknown) => (v != null ? String(v).trim() : null) || null;
 
   const rows: [string, string][] = [];
+  if (event.signal_tier) rows.push(["Signal Tier", event.signal_tier.charAt(0).toUpperCase() + event.signal_tier.slice(1)]);
+  if (event.event_family) rows.push(["Event Family", event.event_family]);
+  if (event.signal_reason) rows.push(["Why This Matters", event.signal_reason]);
   if (event.date)   rows.push(["Date",   event.date]);
   if (event.symbol) rows.push(["Symbol", event.symbol]);
   const compName = event.companyName || str(r.companyName) || str(r.company) || str(r.name) || event.company;
@@ -2940,9 +3034,10 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
         {/* Header */}
         <div className="px-5 py-4 border-b border-white/[0.06] flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <EventTypeBadge type={event.event_type} />
               <ImportanceBadge importance={event.importance} />
+              {event.signal_tier && <SignalTierBadge event={event} />}
             </div>
             <h2 className="text-base font-bold text-white">
               {getEventDisplayTitle(event)}
@@ -2995,6 +3090,9 @@ interface CalendarEvent {
   subtitle?: string;
   eventType: string;
   importance?: "high" | "medium" | "low";
+  signal_tier?: "critical" | "major" | "secondary" | "context";
+  event_family?: string;
+  signal_reason?: string;
   raw: CatalystEvent;
 }
 
@@ -3171,6 +3269,9 @@ function normalizeCatalystEvent(ev: CatalystEvent, tab: string, idx: number): Ca
     subtitle: subtitle || undefined,
     eventType: ev.event_type || tab,
     importance: ev.importance,
+    signal_tier: ev.signal_tier,
+    event_family: ev.event_family,
+    signal_reason: ev.signal_reason,
     raw: ev,
   };
 }
@@ -4197,6 +4298,74 @@ function macroCardTitle(ev: CalendarEvent): string {
   );
 }
 
+// ─── Shared tier-based event card helpers ───────────────────────────
+// These are used by the four catalyst snapshot views.
+
+/** CSS class pairs for tier-based card styling. Applied to macro tabs only. */
+function tierCardClasses(ev: CalendarEvent, isLead: boolean): { outer: string; title: string } {
+  const t = effectiveSignalTier(ev);
+  const p = TIER_PRESENTATION[t];
+  const leadExtra = isLead && (t === "critical" || t === "major") ? " ring-1 ring-rose-500/20" : "";
+  const muted = p.isMuted ? " opacity-60" : "";
+  const border = p.cardBorder;
+  const bg = p.cardBg;
+  const extraLead = isLead && t === "critical" ? " border-l-2 border-l-rose-500" : isLead && t === "major" ? " border-l-2 border-l-orange-500" : "";
+  return {
+    outer: `border ${border} ${bg}${muted}${leadExtra}${extraLead}`,
+    title: `${p.titleWeight} text-white/90`,
+  };
+}
+
+/** Sort events by tier (critical first), stable within same tier. */
+function sortByTier(events: CalendarEvent[]): CalendarEvent[] {
+  return [...events].sort(compareTier);
+}
+
+/** Split events into visible and collapsed groups by tier.
+ *  - critical, major: always visible.
+ *  - secondary: visible (no collapse for this tier).
+ *  - context: collapsed.
+ */
+function splitByTier(events: CalendarEvent[]): { visible: CalendarEvent[]; contextCount: number } {
+  const visible: CalendarEvent[] = [];
+  let contextCount = 0;
+  for (const ev of sortByTier(events)) {
+    const t = effectiveSignalTier(ev);
+    if (t === "context") {
+      contextCount++;
+    } else {
+      visible.push(ev);
+    }
+  }
+  return { visible, contextCount };
+}
+
+/** For week views: show all critical/major + up to 2 secondary, collapse rest. */
+function splitWeekDayEntries(events: CalendarEvent[]): { visible: CalendarEvent[]; hiddenCount: number } {
+  const sorted = sortByTier(events);
+  const visible: CalendarEvent[] = [];
+  let secondaryCount = 0;
+  for (const ev of sorted) {
+    const t = effectiveSignalTier(ev);
+    if (t === "critical" || t === "major") {
+      visible.push(ev);
+    } else if (t === "secondary" && secondaryCount < 2) {
+      visible.push(ev);
+      secondaryCount++;
+    }
+    // else context or overflow secondary = hidden
+  }
+  return { visible, hiddenCount: events.length - visible.length };
+}
+
+/** Render signal metadata row for macro cards */
+function SignalMetaRow({ ev, tabKey }: { ev: CalendarEvent; tabKey: string }) {
+  if (!MACRO_CARD_TABS.has(tabKey)) return null;
+  const reason = ev.signal_reason;
+  if (!reason) return null;
+  return <p className="text-[9px] text-white/30 mt-0.5 truncate">{reason}</p>;
+}
+
 // ─── Snapshot Recent list — date-grouped list view ────────────────
 // Mirrors the Earnings Recent list pattern (CatalystListTab) but
 // reads events from the snapshot envelope (no new API calls).
@@ -4242,12 +4411,27 @@ function CatalystSnapshotRecentList({
   }
   const sortedDates = Array.from(dateGroups.keys()).sort().reverse();
 
+  // Per-date context collapse state (local to each date group, not persisted)
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const toggleDate = (dk: string) => {
+    setExpandedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(dk)) next.delete(dk);
+      else next.add(dk);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-5">
       {sortedDates.map((dk) => {
         const [y, m, d] = dk.split("-").map((s) => parseInt(s, 10));
         const dt = (y && m && d) ? new Date(y, m - 1, d) : new Date();
         const entries = dateGroups.get(dk) || [];
+        const isMacro = MACRO_CARD_TABS.has(tabKey);
+        const { visible, contextCount } = isMacro ? splitByTier(entries) : { visible: entries, contextCount: 0 };
+        const isExpanded = expandedDates.has(dk);
+        const showContext = isExpanded;
         return (
           <div key={dk}>
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2">
@@ -4257,18 +4441,19 @@ function CatalystSnapshotRecentList({
               </span>
             </p>
             <div className="space-y-2">
-              {entries.map((ev, i) => {
+              {visible.map((ev, i) => {
                 const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                 const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
-                const isMacro = MACRO_CARD_TABS.has(tabKey);
                 const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
                 const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
                 const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
+                const isLead = i === 0 && isMacro;
+                const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "border border-white/[0.06]", title: "" };
                 return (
                   <button
                     key={ev.id || `${dk}-${i}`}
                     onClick={() => onEventClick(ev)}
-                    className="w-full text-left rounded-xl border border-white/[0.06] p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3"
+                    className={`w-full text-left rounded-xl p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3 ${tc.outer}`}
                   >
                     {!isMacro && (
                       <div
@@ -4281,7 +4466,7 @@ function CatalystSnapshotRecentList({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {isMacro ? (
-                          <span className="text-xs font-bold text-white/90 truncate">{displayTitle}</span>
+                          <span className={`text-xs ${tc.title} truncate`}>{displayTitle}</span>
                         ) : (
                           <>
                             {ev.symbol && (
@@ -4291,19 +4476,163 @@ function CatalystSnapshotRecentList({
                             <EventTypeBadge type={ev.eventType} />
                           </>
                         )}
-                        {ev.importance && <ImportanceBadge importance={ev.importance} />}
+                        {isMacro && <SignalTierBadge event={ev} />}
+                        {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
                       </div>
                       {subtitleText && (
                         <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
                       )}
+                      {isMacro && <SignalMetaRow ev={ev} tabKey={tabKey} />}
                     </div>
                   </button>
                 );
               })}
+              {contextCount > 0 && !showContext && (
+                <button
+                  onClick={() => toggleDate(dk)}
+                  className="w-full text-left rounded-xl border border-dashed border-white/[0.08] p-2.5 hover:bg-white/[0.03] transition-all text-[10px] text-white/35 hover:text-white/55"
+                >
+                  Show {contextCount} context event{contextCount !== 1 ? "s" : ""}
+                </button>
+              )}
+              {contextCount > 0 && showContext && (
+                <>
+                  {entries.filter(ev => effectiveSignalTier(ev) === "context").map((ev, i) => {
+                    const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                    const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                    const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
+                    const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+                    const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
+                    const tc = isMacro ? tierCardClasses(ev, false) : { outer: "border border-white/[0.06]", title: "" };
+                    return (
+                      <button
+                        key={ev.id || `${dk}-ctx-${i}`}
+                        onClick={() => onEventClick(ev)}
+                        className={`w-full text-left rounded-xl p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3 ${tc.outer}`}
+                      >
+                        {!isMacro && (
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                          >
+                            <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isMacro ? (
+                              <span className={`text-xs ${tc.title} truncate`}>{displayTitle}</span>
+                            ) : (
+                              <>
+                                {ev.symbol && (
+                                  <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                                )}
+                                <span className="text-xs text-white/70 truncate">{ev.title}</span>
+                                <EventTypeBadge type={ev.eventType} />
+                              </>
+                            )}
+                            {isMacro && <SignalTierBadge event={ev} />}
+                            {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
+                          </div>
+                          {subtitleText && (
+                            <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
+                          )}
+                          {isMacro && <SignalMetaRow ev={ev} tabKey={tabKey} />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => toggleDate(dk)}
+                    className="w-full text-left rounded-xl border border-dashed border-white/[0.08] p-2 text-[10px] text-white/30 hover:text-white/50 transition-all"
+                  >
+                    Hide context events
+                  </button>
+                </>
+              )}
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Week day column content (per-day tier splitting + expand) ──────
+function WeekDayColumnContent({
+  entries, dk, tabKey, tabLabel, onEventClick,
+}: {
+  entries: CalendarEvent[];
+  dk: string;
+  tabKey: string;
+  tabLabel: string;
+  onEventClick: (ev: CalendarEvent) => void;
+}) {
+  const isMacro = MACRO_CARD_TABS.has(tabKey);
+  const [expanded, setExpanded] = useState(false);
+  const { visible, hiddenCount } = isMacro ? splitWeekDayEntries(entries) : { visible: entries, hiddenCount: 0 };
+  const display = (isMacro && !expanded) ? visible : entries;
+
+  return (
+    <div className="space-y-1">
+      {display.map((ev, i) => {
+        const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+        const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+        const displayTitle = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
+        const displaySubtitle = isMacro
+          ? (ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : "")
+          : (ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel));
+        const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+        const isLead = i === 0 && isMacro;
+        const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "", title: "" };
+        return (
+          <button
+            key={ev.id || `${dk}-${i}`}
+            onClick={() => onEventClick(ev)}
+            className={`w-full text-left rounded-lg border bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2 flex items-center gap-2 ${tc.outer || "border-white/[0.05]"}`}
+          >
+            {!isMacro && (
+              <div
+                className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center"
+                style={{ background: c.bg, border: `1px solid ${c.border}` }}
+              >
+                <span className="text-[9px] font-bold" style={{ color: c.text }}>{letter}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 flex-wrap">
+                <p className={`text-[10px] ${tc.title || "font-semibold text-white/90"} truncate leading-tight group-hover:text-white`}>
+                  {displayTitle}
+                </p>
+                {isMacro && <SignalTierBadge event={ev} />}
+              </div>
+              {displaySubtitle && (
+                <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
+                  {displaySubtitle}
+                </p>
+              )}
+              {isMacro && <SignalMetaRow ev={ev} tabKey={tabKey} />}
+            </div>
+            <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0 leading-none">+</span>
+          </button>
+        );
+      })}
+      {isMacro && hiddenCount > 0 && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full text-left rounded-lg border border-dashed border-white/[0.08] p-1.5 hover:bg-white/[0.03] transition-all text-[9px] text-white/30 hover:text-white/50"
+        >
+          {hiddenCount} additional event{hiddenCount !== 1 ? "s" : ""}
+        </button>
+      )}
+      {isMacro && hiddenCount > 0 && expanded && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="w-full text-left rounded-lg border border-dashed border-white/[0.08] p-1.5 text-[9px] text-white/30 hover:text-white/50 transition-all"
+        >
+          Show fewer
+        </button>
+      )}
     </div>
   );
 }
@@ -4411,45 +4740,13 @@ function CatalystSnapshotWeekBoard({
             {entries.length === 0 ? (
               <p className="text-[9px] text-white/15">—</p>
             ) : (
-              <div className="space-y-1">
-                {entries.map((ev, i) => {
-                  const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
-                  const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
-                  const isMacro = MACRO_CARD_TABS.has(tabKey);
-                  const displayTitle = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
-                  const displaySubtitle = isMacro
-                    ? (ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : "")
-                    : (ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel));
-                  const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
-                  return (
-                    <button
-                      key={ev.id || `${dk}-${i}`}
-                      onClick={() => onEventClick(ev)}
-                      className="w-full text-left rounded-lg border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group p-2 flex items-center gap-2"
-                    >
-                      {!isMacro && (
-                        <div
-                          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center"
-                          style={{ background: c.bg, border: `1px solid ${c.border}` }}
-                        >
-                          <span className="text-[9px] font-bold" style={{ color: c.text }}>{letter}</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-semibold text-white/90 truncate leading-tight group-hover:text-white">
-                          {displayTitle}
-                        </p>
-                        {displaySubtitle && (
-                          <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
-                            {displaySubtitle}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-white/20 group-hover:text-white/55 transition-colors text-xs flex-shrink-0 leading-none">+</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <WeekDayColumnContent
+                entries={entries}
+                dk={dk}
+                tabKey={tabKey}
+                tabLabel={tabLabel}
+                onEventClick={onEventClick}
+              />
             )}
           </div>
         );
@@ -4475,6 +4772,7 @@ function CatalystSnapshotDayView({
 }) {
   const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
   const [selectedKey, setSelectedKey] = useState<string>(() => dateKey(new Date()));
+  const [showCtx, setShowCtx] = useState(false);
 
   const dateMap = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
@@ -4614,49 +4912,77 @@ function CatalystSnapshotDayView({
         </div>
       ) : (
         <div className="space-y-2">
-          {entries.map((ev, i) => {
-            const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
-            const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+          {(() => {
             const isMacro = MACRO_CARD_TABS.has(tabKey);
-            const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
-            const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
-            const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
+            const { visible, contextCount } = isMacro ? splitByTier(entries) : { visible: entries, contextCount: 0 };
+            const displayEntries = isMacro && !showCtx ? visible : entries;
             return (
-              <button
-                key={ev.id || i}
-                onClick={() => onEventClick(ev)}
-                className="w-full text-left rounded-xl border border-white/[0.06] p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3"
-              >
-                {!isMacro && (
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ background: c.bg, border: `1px solid ${c.border}` }}
-                  >
-                    <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {isMacro ? (
-                      <span className="text-xs font-bold text-white/90 truncate">{displayTitle}</span>
-                    ) : (
-                      <>
-                        {ev.symbol && (
-                          <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+              <>
+                {displayEntries.map((ev, i) => {
+                  const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                  const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                  const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
+                  const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
+                  const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
+                  const isLead = i === 0 && isMacro;
+                  const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "border border-white/[0.06]", title: "" };
+                  return (
+                    <button
+                      key={ev.id || i}
+                      onClick={() => onEventClick(ev)}
+                      className={`w-full text-left rounded-xl p-3 hover:bg-white/[0.04] transition-all flex items-start gap-3 ${tc.outer}`}
+                    >
+                      {!isMacro && (
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                          style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                        >
+                          <span className="text-xs font-bold" style={{ color: c.text }}>{letter}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isMacro ? (
+                            <span className={`text-xs ${tc.title} truncate`}>{displayTitle}</span>
+                          ) : (
+                            <>
+                              {ev.symbol && (
+                                <span className="text-xs font-bold text-white/90">{ev.symbol}</span>
+                              )}
+                              <span className="text-xs text-white/70 truncate">{ev.title}</span>
+                              <EventTypeBadge type={ev.eventType} />
+                            </>
+                          )}
+                          {isMacro && <SignalTierBadge event={ev} />}
+                          {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
+                        </div>
+                        {subtitleText && (
+                          <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
                         )}
-                        <span className="text-xs text-white/70 truncate">{ev.title}</span>
-                        <EventTypeBadge type={ev.eventType} />
-                      </>
-                    )}
-                    {ev.importance && <ImportanceBadge importance={ev.importance} />}
-                  </div>
-                  {subtitleText && (
-                    <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitleText}</p>
-                  )}
-                </div>
-              </button>
+                        {isMacro && <SignalMetaRow ev={ev} tabKey={tabKey} />}
+                      </div>
+                    </button>
+                  );
+                })}
+                {isMacro && contextCount > 0 && !showCtx && (
+                  <button
+                    onClick={() => setShowCtx(true)}
+                    className="w-full text-left rounded-xl border border-dashed border-white/[0.08] p-2.5 hover:bg-white/[0.03] transition-all text-[10px] text-white/35 hover:text-white/55"
+                  >
+                    Show {contextCount} context event{contextCount !== 1 ? "s" : ""}
+                  </button>
+                )}
+                {isMacro && contextCount > 0 && showCtx && (
+                  <button
+                    onClick={() => setShowCtx(false)}
+                    className="w-full text-left rounded-xl border border-dashed border-white/[0.08] p-2 text-[10px] text-white/30 hover:text-white/50 transition-all"
+                  >
+                    Hide context events
+                  </button>
+                )}
+              </>
             );
-          })}
+          })()}
         </div>
       )}
     </div>
@@ -4791,7 +5117,9 @@ function CatalystSnapshotMonthView({
           const count = entries.length;
           const todayStr = dateKey(new Date());
           const isToday = dateStr === todayStr;
-          const top = entries.slice(0, 3);
+          const isMacro = MACRO_CARD_TABS.has(tabKey);
+          const sortedForDisplay = isMacro ? sortByTier(entries) : entries;
+          const top = sortedForDisplay.slice(0, 3);
           const extra = count - top.length;
           return (
             <div
@@ -4813,14 +5141,15 @@ function CatalystSnapshotMonthView({
                   {top.map((ev, idx) => {
                     const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                     const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
-                    const isMacro = MACRO_CARD_TABS.has(tabKey);
                     const chipLabel = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
+                    const tp = isMacro ? effectiveSignalTier(ev) : null;
+                    const chipBorder = tp === "critical" ? "border-rose-500/40" : tp === "major" ? "border-orange-500/30" : c.border;
                     return (
                       <button
                         key={ev.id || `${dateStr}-${idx}`}
                         onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                        className="w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity"
-                        style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+                        className={`w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity ${tp === "context" ? "opacity-50" : ""}`}
+                        style={{ background: c.bg, color: c.text, border: `1px solid ${chipBorder}` }}
                         title={chipLabel}
                       >
                         {chipLabel}
