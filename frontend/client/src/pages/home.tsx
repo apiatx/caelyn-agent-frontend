@@ -1068,6 +1068,164 @@ function TickerInfoPopup({
   );
 }
 
+// ─── Home Top Catalysts — local types and helpers ────────────────────
+// Safe typed contract for the Catalyst cards returned by
+// /api/home/top-catalysts.  No title‑based macro classification.
+
+type HomeSignalTier = "critical" | "major" | "secondary" | "context";
+
+interface HomeCatalystChild {
+  title?: string;
+  signal_tier?: HomeSignalTier;
+  signal_reason?: string;
+  date_label?: string;
+  start_date?: string;
+  [k: string]: unknown;
+}
+
+interface HomeCatalystCard {
+  id?: string;
+  type?: string;
+  category?: string;
+  title?: string;
+  subtitle?: string;
+  date_label?: string;
+  start_date?: string;
+  end_date?: string;
+  impact?: string;
+  urgency?: string;
+  reason?: string;
+  event_count?: number;
+  hidden_count?: number;
+  children?: HomeCatalystChild[];
+  symbol?: string;
+  options_activity_strength?: number | string;
+  sector_alignment_strength?: number | string;
+  watchlist_boost?: boolean;
+  signal_tier?: HomeSignalTier;
+  signal_reason?: string;
+  event_family?: string;
+  [k: string]: unknown;
+}
+
+type WeekRiskLevel = "Critical" | "Elevated" | "Normal" | "Quiet";
+
+const WEEK_RISK_META: Record<WeekRiskLevel, { label: string; cls: string }> = {
+  Critical:  { label: "Critical macro week",  cls: "text-rose-300 bg-rose-500/15 border-rose-500/30" },
+  Elevated:  { label: "Elevated macro week",  cls: "text-orange-300 bg-orange-500/15 border-orange-500/30" },
+  Normal:    { label: "Normal macro week",    cls: "text-white/50 bg-white/5 border-white/15" },
+  Quiet:     { label: "Quiet macro week",     cls: "text-white/30 bg-white/[0.03] border-white/10" },
+};
+
+const HOME_TIER_ORDER: Record<HomeSignalTier, number> = {
+  critical: 0, major: 1, secondary: 2, context: 3,
+};
+
+function homeEffectiveTier(card: HomeCatalystCard): HomeSignalTier {
+  if (card.signal_tier && HOME_TIER_ORDER[card.signal_tier] !== undefined) return card.signal_tier;
+  if (Array.isArray(card.children)) {
+    let best: HomeSignalTier = "context";
+    for (const ch of card.children) {
+      if (ch.signal_tier && HOME_TIER_ORDER[ch.signal_tier] < HOME_TIER_ORDER[best]) best = ch.signal_tier;
+    }
+    if (best !== "context") return best;
+  }
+  const imp = String(card.impact ?? "").toLowerCase();
+  const urg = String(card.urgency ?? "").toLowerCase();
+  if (imp === "high" && urg === "high") return "major";
+  if (imp === "high") return "major";
+  if (urg === "important") return "secondary";
+  return "context";
+}
+
+function homeWeekRisk(catalysts: HomeCatalystCard[]): WeekRiskLevel {
+  let hasCritical = false, hasMajor = false, hasSecondary = false;
+  for (const c of catalysts) {
+    const t = homeEffectiveTier(c);
+    if (t === "critical") hasCritical = true;
+    else if (t === "major") hasMajor = true;
+    else if (t === "secondary") hasSecondary = true;
+  }
+  if (hasCritical) return "Critical";
+  if (hasMajor) return "Elevated";
+  if (hasSecondary) return "Normal";
+  return "Quiet";
+}
+
+function homePickLead(catalysts: HomeCatalystCard[]): { lead: HomeCatalystCard | null; rest: HomeCatalystCard[] } {
+  if (catalysts.length === 0) return { lead: null, rest: [] };
+  const sorted = [...catalysts].sort((a, b) => {
+    const ta = HOME_TIER_ORDER[homeEffectiveTier(a)];
+    const tb = HOME_TIER_ORDER[homeEffectiveTier(b)];
+    if (ta !== tb) return ta - tb;
+    const sa = a.start_date ?? "";
+    const sb = b.start_date ?? "";
+    if (sa && sb) return sa.localeCompare(sb);
+    if (sa && !sb) return -1;
+    if (!sa && sb) return 1;
+    return 0;
+  });
+  return { lead: sorted[0], rest: sorted.slice(1) };
+}
+
+function homeBestReason(card: HomeCatalystCard): string | null {
+  if (card.signal_reason) return card.signal_reason;
+  if (Array.isArray(card.children)) {
+    let bestChild: HomeCatalystChild | null = null;
+    let bestTier = 99;
+    for (const ch of card.children) {
+      const t = ch.signal_tier && HOME_TIER_ORDER[ch.signal_tier] !== undefined ? HOME_TIER_ORDER[ch.signal_tier] : 99;
+      if (ch.signal_reason && t < bestTier) { bestChild = ch; bestTier = t; }
+    }
+    if (bestChild?.signal_reason) return bestChild.signal_reason;
+  }
+  if (card.reason) return card.reason;
+  if (card.subtitle) return card.subtitle;
+  return null;
+}
+
+function homeChildSummary(children: HomeCatalystChild[]): { names: string[]; extra: number } {
+  const sorted = [...children].sort((a, b) => {
+    const ta = a.signal_tier && HOME_TIER_ORDER[a.signal_tier] !== undefined ? HOME_TIER_ORDER[a.signal_tier] : 99;
+    const tb = b.signal_tier && HOME_TIER_ORDER[b.signal_tier] !== undefined ? HOME_TIER_ORDER[b.signal_tier] : 99;
+    if (ta !== tb) return ta - tb;
+    const sa = a.start_date ?? "";
+    const sb = b.start_date ?? "";
+    if (sa && sb) return sa.localeCompare(sb);
+    return 0;
+  });
+  const names = sorted.slice(0, 3).map(ch => String(ch.title ?? "").trim()).filter(Boolean);
+  const extra = children.length - names.length;
+  return { names, extra };
+}
+
+function homeTierLabelCls(tier: HomeSignalTier): string {
+  switch (tier) {
+    case "critical": return "text-rose-300 bg-rose-500/15 border-rose-500/30";
+    case "major":    return "text-orange-300 bg-orange-500/15 border-orange-500/30";
+    case "secondary": return "text-white/50 bg-white/5 border-white/15";
+    case "context":  return "text-white/30 bg-white/[0.03] border-white/10";
+  }
+}
+
+function homeCardBorderCls(tier: HomeSignalTier, isLead: boolean): string {
+  const base = isLead && tier === "critical" ? "border-rose-500/50" :
+    isLead && tier === "major" ? "border-orange-500/40" :
+    tier === "critical" ? "border-rose-500/30" :
+    tier === "major" ? "border-orange-500/25" :
+    tier === "context" ? "border-white/[0.03]" :
+    "border-white/[0.05]";
+  return base;
+}
+
+function homeCardBgCls(tier: HomeSignalTier, isLead: boolean): string {
+  if (isLead && tier === "critical") return "bg-rose-500/[0.06]";
+  if (isLead && tier === "major") return "bg-orange-500/[0.04]";
+  if (tier === "critical") return "bg-rose-500/[0.03]";
+  if (tier === "context") return "bg-transparent";
+  return "bg-white/[0.01]";
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Main page
 // ───────────────────────────────────────────────────────────────────────────
@@ -1639,14 +1797,44 @@ export default function HomePage() {
           {/* ── Top Catalysts This Week card ── */}
           {(() => {
             const raw: any = topCatalysts;
-            const catalysts: any[] = (
+            const rawCards: HomeCatalystCard[] = (
               Array.isArray(raw)              ? raw :
               Array.isArray(raw?.catalysts)   ? raw.catalysts :
               Array.isArray(raw?.items)       ? raw.items :
               Array.isArray(raw?.data)        ? raw.data : []
-            ).slice(0, 8);
+            );
 
-            const typeBadge = (type: string | undefined, category: string | undefined) => {
+            const catalystCards: HomeCatalystCard[] = rawCards
+              .map((c: Record<string, unknown>) => ({
+                id: String(c.id ?? ""),
+                type: String(c.type ?? c.category ?? ""),
+                category: String(c.category ?? ""),
+                title: String(c.title ?? ""),
+                subtitle: String(c.subtitle ?? ""),
+                date_label: String(c.date_label ?? ""),
+                start_date: String(c.start_date ?? c.window_start ?? ""),
+                end_date: String(c.end_date ?? c.window_end ?? ""),
+                impact: String(c.impact ?? ""),
+                urgency: String(c.urgency ?? ""),
+                reason: String(c.reason ?? ""),
+                event_count: c.event_count != null ? Number(c.event_count) : undefined,
+                hidden_count: c.hidden_count != null ? Number(c.hidden_count) : undefined,
+                children: Array.isArray(c.children) ? c.children as HomeCatalystChild[] : undefined,
+                symbol: String(c.symbol ?? ""),
+                options_activity_strength: c.options_activity_strength,
+                sector_alignment_strength: c.sector_alignment_strength,
+                watchlist_boost: Boolean(c.watchlist_boost),
+                signal_tier: c.signal_tier as HomeSignalTier | undefined,
+                signal_reason: String(c.signal_reason ?? ""),
+                event_family: String(c.event_family ?? ""),
+              } as HomeCatalystCard))
+              .filter((c: HomeCatalystCard) => c.title || c.symbol);
+
+            const { lead, rest } = homePickLead(catalystCards);
+            const weekRisk = catalystCards.length > 0 ? homeWeekRisk(catalystCards) : null;
+            const riskMeta = weekRisk ? WEEK_RISK_META[weekRisk] : null;
+
+            const typeBadge2 = (type: string | undefined, category: string | undefined) => {
               const t = String(type ?? category ?? '').toLowerCase().replace(/_/g, ' ');
               if (t.includes('earn'))                                  return { label: 'Earnings',  cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
               if (t.includes('ipo'))                                   return { label: 'IPO',       cls: 'text-purple-400  bg-purple-500/10  border-purple-500/30'  };
@@ -1659,10 +1847,10 @@ export default function HomePage() {
               return { label: String(type ?? category ?? 'Event').replace(/_/g, ' '), cls: 'text-white/45 bg-white/5 border-white/15' };
             };
 
-            const dateRange = (c: any): string => {
-              if (c.date_label) return String(c.date_label);
-              const s = c.start_date ?? c.window_start;
-              const e = c.end_date   ?? c.window_end;
+            const dateRange2 = (c: HomeCatalystCard): string => {
+              if (c.date_label) return c.date_label;
+              const s = c.start_date;
+              const e = c.end_date;
               if (!s) return '';
               try {
                 const sd = new Date(String(s) + 'T00:00:00');
@@ -1679,10 +1867,76 @@ export default function HomePage() {
               } catch { return String(s); }
             };
 
+            const renderCard = (c: HomeCatalystCard, idx: number, isLead: boolean) => {
+              const tier = homeEffectiveTier(c);
+              const badge = typeBadge2(c.type, c.category);
+              const dl = dateRange2(c);
+              const reason = homeBestReason(c) || undefined;
+              const hasChildren = Array.isArray(c.children) && c.children.length > 0;
+              const childCountAll = hasChildren ? c.children!.length : 0;
+              const hiddenCount = c.hidden_count ?? 0;
+              const groupedCount = hiddenCount > 0 ? hiddenCount : childCountAll;
+              const showCount = groupedCount;
+              const { names: childNames, extra: childExtra } = hasChildren ? homeChildSummary(c.children!) : { names: [], extra: 0 };
+
+              const borderCls = homeCardBorderCls(tier, isLead);
+              const bgCls = homeCardBgCls(tier, isLead);
+              const tierLabelCls = homeTierLabelCls(tier);
+              const muted = tier === "context" ? "opacity-60" : "";
+              const leadExtra = isLead ? "border-l-2" : "";
+
+              return (
+                <div
+                  key={c.id || `tc-${idx}`}
+                  className={`flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-colors ${borderCls} ${bgCls} ${muted} ${leadExtra}`}
+                >
+                  <div className="flex flex-col items-start gap-1 shrink-0 min-w-0">
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase border leading-none ${badge.cls}`}>
+                      {badge.label}
+                    </span>
+                    <span className={`inline-flex items-center px-1 py-0.5 rounded text-[7px] font-semibold uppercase border leading-none ${tierLabelCls}`}>
+                      {tier}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[11px] leading-snug truncate ${isLead ? "font-bold text-white" : tier === "critical" ? "font-semibold text-white/95" : tier === "major" ? "font-semibold text-white/90" : tier === "context" ? "font-normal text-white/60" : "font-medium text-white/85"}`}>
+                      {c.title || 'Untitled'}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {dl && <span className="text-[9px] text-white/35">{dl}</span>}
+                      {c.subtitle && !reason && <span className="text-[9px] text-white/40 truncate max-w-[160px]">{c.subtitle}</span>}
+                    </div>
+                    {reason && (
+                      <div className={`text-[9px] mt-0.5 leading-snug truncate ${isLead ? "text-white/40" : "text-white/25"}`}>{reason}</div>
+                    )}
+                    {showCount > 0 && (
+                      <div className="text-[8px] text-white/20 mt-0.5">
+                        {childNames.length > 0
+                          ? `Includes ${childNames.join(", ")}${childExtra > 0 ? ` +${childExtra} more` : ""}`
+                          : `Includes ${showCount} related release${showCount !== 1 ? "s" : ""}`}
+                      </div>
+                    )}
+                    {isLead && c.watchlist_boost && (
+                      <span className="text-[7px] text-blue-400/60 mt-0.5 inline-flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5" /> On your watchlist
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            };
+
             return (
               <GlassCard className="p-4 flex flex-col">
                 <div className="mb-3 shrink-0">
-                  <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
+                  <div className="flex items-center justify-between mb-1">
+                    <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
+                    {riskMeta && (
+                      <span className={`text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none shrink-0 ml-2 ${riskMeta.cls}`}>
+                        {riskMeta.label}
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     const ws = raw?.window_start;
                     const we = raw?.window_end;
@@ -1723,40 +1977,15 @@ export default function HomePage() {
                   )}
 
                   {/* Empty */}
-                  {!topCatalystsLoading && !topCatalystsError && catalysts.length === 0 && (
+                  {!topCatalystsLoading && !topCatalystsError && catalystCards.length === 0 && (
                     <div className="text-xs text-white/40 py-6 text-center">No major catalysts found for this week.</div>
                   )}
 
-                  {/* Catalyst cards */}
-                  {catalysts.map((c: any, i: number) => {
-                    const badge = typeBadge(c.type, c.category);
-                    const dl = dateRange(c);
-                    const hiddenCount: number = c.hidden_count ?? 0;
-                    const childCount: number = Array.isArray(c.children) ? c.children.length : (Array.isArray(c.events) ? c.events.length : 0);
-                    const groupedCount = hiddenCount > 0 ? hiddenCount : childCount;
-                    return (
-                      <div key={i} className="flex items-start gap-2.5 px-2.5 py-2 rounded-lg border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] transition-colors">
-                        <span className={`shrink-0 mt-0.5 text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none ${badge.cls}`}>
-                          {badge.label}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] text-white/85 font-medium leading-snug truncate">
-                            {c.title || 'Untitled'}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            {dl && <span className="text-[9px] text-white/35">{dl}</span>}
-                            {c.subtitle && <span className="text-[9px] text-white/40 truncate max-w-[160px]">{c.subtitle}</span>}
-                          </div>
-                          {c.reason && (
-                            <div className="text-[9px] text-white/25 mt-0.5 leading-snug truncate">{c.reason}</div>
-                          )}
-                          {groupedCount > 0 && (
-                            <div className="text-[9px] text-white/25 mt-0.5">+{groupedCount} releases grouped</div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {/* Lead catalyst */}
+                  {!topCatalystsLoading && !topCatalystsError && lead && renderCard(lead, 0, true)}
+
+                  {/* Remaining catalysts */}
+                  {!topCatalystsLoading && !topCatalystsError && rest.slice(0, 7).map((c, i) => renderCard(c, i + 1, false))}
 
                 </div>
               </GlassCard>
