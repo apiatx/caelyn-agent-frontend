@@ -1,0 +1,295 @@
+Implement the actual frontend source fix for Watchlist Upcoming Earnings startup
+latency.
+
+The previous Replit task did not land any frontend source changes. The latest
+GitHub commit added an attached prompt file and a runtime market cache, while
+frontend/client/src/pages/watchlist.tsx remained unchanged.
+
+This task is NOT complete unless the source diff contains real changes to:
+
+frontend/client/src/pages/watchlist.tsx
+
+Do not create another attached prompt/report file.
+Do not touch market-overview-cache.json.
+Do not edit the backend.
+Do not edit StockDetailModal or Favorites in this pass.
+Do not redesign any earnings cards.
+
+──────────────────────────────────────────────────────────────────────────────
+PROVEN CURRENT ARCHITECTURE
+──────────────────────────────────────────────────────────────────────────────
+
+The active watchlist response already contains:
+
+watchlist.upcoming_earnings
+
+The backend builds this cache-first and non-blocking while returning the same
+watchlist response that feeds the Screener.
+
+Shape:
+
+watchlist.upcoming_earnings = {
+  events: [...],
+  symbols_requested: [...],
+  missing_symbols: [...],
+  stale: boolean,
+  cache_status: string,
+  last_updated?: string
+}
+
+The existing separate endpoint supports:
+
+POST /api/watchlist/earnings/by-symbols
+
+Request:
+
+{
+  symbols: [...],
+  wait_for_sync: false
+}
+
+Response:
+
+{
+  events: [...],
+  recent: [...],
+  cache_status: "hit" | "refreshed" | "miss_syncing" |
+                "partial_syncing" | "stale_syncing" |
+                "miss" | "error",
+  stale: boolean,
+  symbols_requested: [...],
+  missing_symbols: [...]
+}
+
+──────────────────────────────────────────────────────────────────────────────
+REQUIRED SOURCE CHANGES
+──────────────────────────────────────────────────────────────────────────────
+
+1. Canonical symbol membership
+
+For normal watchlists, replace the current sortedTickers-based earnings universe
+with canonical membership from:
+
+watchlist.tickers
+
+Normalize it by:
+
+- uppercase
+- trim
+- remove blanks
+- deduplicate
+- alphabetically sort
+
+The earnings query key must use this stable sorted list plus activeId.
+
+Screener sorting, filters, row enrichment, options hydration and realtime quote
+updates must not alter the earnings query key or trigger another earnings request.
+
+Favorites behavior is out of scope for this narrow pass; preserve its current
+branch exactly.
+
+2. Render the attached Upcoming payload immediately
+
+For normal watchlists, use:
+
+watchlist.upcoming_earnings.events
+
+as the immediate startup/LKG source for Upcoming Earnings.
+
+This must allow Upcoming cards to render in the same page-load cycle as the
+Screener without waiting for the separate by-symbols request.
+
+Do not treat the attached payload as permanently authoritative. It is an
+immediate cache/bootstrap source while the lightweight by-symbols query confirms
+or refreshes it.
+
+Do not use React Query initialData in a way that prevents the network query from
+running for five minutes.
+
+Use either:
+
+- placeholderData appropriate for the installed React Query version, or
+- explicit status-aware merging in the render layer.
+
+Status-aware rule:
+
+- If the by-symbols response is settled and successful, use its events even when
+  genuinely empty.
+- If by-symbols is loading, syncing, stale or errored, preserve attached/LKG
+  events rather than blanking the section.
+- Never preserve stale attached events after a successful settled response proves
+  there are no upcoming events.
+
+3. Use the backend non-blocking mode
+
+Change the existing POST body to:
+
+{
+  symbols: selectedEarningsSymbols,
+  wait_for_sync: false
+}
+
+Do not create another endpoint or query.
+
+4. Consume Upcoming and Recent from the scoped response
+
+Upcoming source priority:
+
+- settled by-symbols response.events
+- otherwise usable by-symbols stale/partial events
+- otherwise watchlist.upcoming_earnings.events for the same activeId
+
+Recent source:
+
+- earningsBySymbolsResp.recent
+
+Remove only the earnings section’s fallback to:
+
+earningsResp?.recent
+
+Do not delete the global GET /api/watchlist/earnings query unless a full consumer
+search proves nothing else uses earningsResp or earningsMap. Preserve unrelated
+consumers.
+
+5. Implement bounded warming polling
+
+Treat these as warming:
+
+- miss_syncing
+- partial_syncing
+- stale_syncing
+
+While warming:
+
+- keep rendering available attached/stale cards
+- refetch the by-symbols query every 4 seconds
+- stop immediately when status settles
+- stop automatic polling after 90 seconds
+- expose a small manual Retry action after the limit
+- do not poll merely because the Upcoming/Recent display toggle changes
+- do not create multiple timers or an infinite loop
+
+Use the installed TanStack React Query API correctly. Inspect its version before
+coding the refetchInterval callback.
+
+6. Correct UI states
+
+Cold cache with no cards:
+
+Loading earnings…
+
+Warming with attached/stale cards:
+
+Continue showing cards with a subtle “Refreshing…” indicator.
+
+Network/error with prior cards:
+
+Continue showing cards and expose Retry.
+
+Network/error without prior cards:
+
+Show an honest retryable error state.
+
+Show:
+
+No upcoming earnings for this watchlist.
+
+only when:
+
+- canonical watchlist.tickers loaded successfully
+- symbol list is non-empty
+- by-symbols request succeeded
+- cache_status is settled
+- stale is false
+- events is genuinely empty
+
+Do not return null for the entire earnings section while the request is loading.
+The section must remain visibly present.
+
+7. Preserve all existing card behavior
+
+Do not alter:
+
+- card layout or dimensions
+- logos
+- earnings dates
+- timing text
+- estimates
+- growth calculations
+- Recent results
+- surprise percentages
+- classifications
+- horizontal scrolling
+- ticker click behavior
+- Upcoming/Recent toggle appearance
+
+──────────────────────────────────────────────────────────────────────────────
+MANDATORY VALIDATION
+──────────────────────────────────────────────────────────────────────────────
+
+Before claiming completion, prove the actual source change.
+
+Run:
+
+git diff --name-only
+git diff --check
+
+Required git diff --name-only:
+
+frontend/client/src/pages/watchlist.tsx
+
+No attached_assets file.
+No runtime cache file.
+No backend file.
+
+Show exact diff evidence containing all of these strings or equivalent logic:
+
+watchlist.upcoming_earnings
+watchlist.tickers
+wait_for_sync: false
+miss_syncing
+partial_syncing
+stale_syncing
+refetchInterval
+
+Run the established frontend build/typecheck.
+
+Perform a clean frontend restart and record browser Network evidence:
+
+1. The first by-symbols request body includes wait_for_sync:false.
+
+2. The query is triggered from canonical watchlist.tickers, not sortedTickers.
+
+3. Upcoming cards render from watchlist.upcoming_earnings as soon as the main
+   watchlist response completes.
+
+4. When cache_status is syncing, exactly one by-symbols request occurs every
+   approximately 4 seconds.
+
+5. Polling stops after a settled response.
+
+6. Sorting and filtering the Screener produce zero by-symbols requests.
+
+7. Switching Upcoming/Recent produces zero requests.
+
+8. Remaining on the page is sufficient for cold earnings to populate. No tab
+   switching, watchlist switching or navigation is required.
+
+9. Recent comes from earningsBySymbolsResp.recent.
+
+10. No false “No upcoming earnings” appears while warming or errored.
+
+Take screenshots of:
+
+- initial loading state on a true cold cache
+- immediate cards from attached cache
+- refreshing indicator
+- settled Upcoming
+- settled Recent
+
+Do not commit until git diff clearly contains the actual watchlist.tsx source
+changes.
+
+Commit message:
+
+Fix immediate Watchlist earnings loading

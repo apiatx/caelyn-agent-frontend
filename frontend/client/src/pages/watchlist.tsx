@@ -62,6 +62,14 @@ interface WatchlistResponse {
   analysis?: any;
   saved_at?: string;
   empty?: boolean;
+  upcoming_earnings?: {
+    events?: any[];
+    stale?: boolean;
+    cache_status?: string;
+    symbols_requested?: string[];
+    missing_symbols?: string[];
+    last_updated?: string;
+  };
 }
 
 interface NewsItem {
@@ -3875,39 +3883,48 @@ export default function WatchlistPage() {
     ? [...favoritesSet].map(s => s.toUpperCase())
     : displayRows.map(r => (r.ticker || '').toString().toUpperCase()).filter(Boolean);
 
-  /* ── Selected earnings symbols — scoped to active tab ───────────────
-   * Source: sortedTickers (derived from csv_data for the current activeId)
-   * NOT watchlist?.tickers — WatchlistResponse.tickers is optional and
-   * often undefined; the actual membership lives in csv_data rows.
-   * NOT displayRows — that has LKG rows that may belong to another tab.
-   * sortedTickers is always empty when the current watchlist hasn't loaded
-   * yet, which correctly gates the query until real symbols are known.  */
+  /* ── Canonical earnings symbol list — scoped to active tab ──────────
+   * Non-Favorites: derive from watchlist.tickers (canonical membership,
+   * stable across Screener sorts/filters). Falls back to csvMergedTickers
+   * when tickers not yet hydrated.
+   * Favorites branch is unchanged — uses favoritesSet directly.
+   * Alpha-sorted so the query key is stable regardless of render order. */
   const selectedTabKind = isFavoritesTab ? 'favorites' : 'watchlist';
   const selectedTabId   = isFavoritesTab ? 'favorites' : (activeId ?? '');
   const selectedEarningsSymbols: string[] = useMemo(() => {
     if (isFavoritesTab) {
-      return [...favoritesSet].map(s => s.toUpperCase()).filter(Boolean);
+      return [...favoritesSet].map(s => s.toUpperCase()).filter(Boolean).sort();
     }
+    const canonical = watchlist?.tickers;
+    if (canonical && canonical.length > 0) {
+      return [...new Set(
+        canonical.map((s: string) => s.trim().toUpperCase()).filter(Boolean)
+      )].sort();
+    }
+    // Fallback while tickers not yet hydrated — csvMergedTickers has the rows
     return [...new Set(
-      sortedTickers
-        .map(r => (r.ticker || '').toString().toUpperCase())
-        .filter(Boolean)
-    )];
-  }, [isFavoritesTab, favoritesSet, sortedTickers]);
+      csvMergedTickers.map(r => (r.ticker || '').toString().toUpperCase()).filter(Boolean)
+    )].sort();
+  }, [isFavoritesTab, favoritesSet, watchlist, csvMergedTickers]);
 
-  /* ── NEW: earnings scoped to currently-visible symbols ──────────────
-   * Replaces the old global GET /api/watchlist/earnings for the section.
-   * Query key includes tab identity + exact symbols so each tab gets its
-   * own cache slot — no stale Strong Bases data leaks into Primary.    */
+  // Ref to track when warming-poll began — used by refetchInterval to cap at 90 s
+  const earningsPollingStartRef = useRef<number>(0);
+
+  /* ── Earnings scoped to currently-visible symbols ───────────────────
+   * Query key is stable (alpha-sorted symbols) so Screener sort/filter
+   * changes do not fire a second network request.
+   * wait_for_sync:false lets FastAPI return immediately with stale data
+   * while the backend refreshes in the background.                    */
   const {
     data: earningsBySymbolsResp,
     isLoading: earningsBySymbolsLoading,
     isError: earningsBySymbolsError,
+    refetch: refetchEarningsBySymbols,
   } = useQuery<{
     events?: any[];
-    earnings?: any[];   // backend may return either key — normalized at render
-    upcoming?: any[];   // structured upcoming events (new backend shape)
-    recent?: any[];     // reported events in the past 30 days, newest first
+    earnings?: any[];
+    upcoming?: any[];
+    recent?: any[];
     symbols_requested?: string[];
     missing_symbols?: string[];
     source?: string;
@@ -3919,7 +3936,7 @@ export default function WatchlistPage() {
       const r = await fetch('/api/watchlist/earnings/by-symbols', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbols: selectedEarningsSymbols }),
+        body: JSON.stringify({ symbols: selectedEarningsSymbols, wait_for_sync: false }),
       });
       if (!r.ok) throw new Error(`earnings/by-symbols: ${r.status}`);
       const text = await r.text();
@@ -3930,7 +3947,28 @@ export default function WatchlistPage() {
     enabled: selectedEarningsSymbols.length > 0,
     staleTime: 5 * 60_000,
     retry: 1,
+    // Poll every 4 s while cache is warming; stop when settled or after 90 s cap
+    refetchInterval: (query: any) => {
+      const status: string = (query.state.data as any)?.cache_status ?? '';
+      const isSyncing = status === 'miss_syncing' || status === 'partial_syncing' || status === 'stale_syncing';
+      if (!isSyncing) { earningsPollingStartRef.current = 0; return false; }
+      if (earningsPollingStartRef.current === 0) earningsPollingStartRef.current = Date.now();
+      return Date.now() - earningsPollingStartRef.current < 90_000 ? 4_000 : false;
+    },
   });
+
+  /* ── Derived syncing / polling-expired state (component level) ──── */
+  const isSyncingStatus = (
+    earningsBySymbolsResp?.cache_status === 'miss_syncing' ||
+    earningsBySymbolsResp?.cache_status === 'partial_syncing' ||
+    earningsBySymbolsResp?.cache_status === 'stale_syncing'
+  );
+  const [earningsPollingExpired, setEarningsPollingExpired] = useState(false);
+  useEffect(() => {
+    if (!isSyncingStatus) { setEarningsPollingExpired(false); return; }
+    const t = setTimeout(() => setEarningsPollingExpired(true), 90_000);
+    return () => clearTimeout(t);
+  }, [isSyncingStatus]);
 
   /* ── Upcoming / Recent earnings toggle ─────────────────────────── */
   const [earningsView, setEarningsView] = useState<'upcoming' | 'recent'>('upcoming');
@@ -4674,16 +4712,34 @@ export default function WatchlistPage() {
       return { label: 'Results Reported', color: '#64748b' };
     };
 
-    // Extract upcoming events (prefer 'upcoming' key, fall back to 'events'/'earnings')
-    const rawUpcoming: any[] =
+    // LKG: events attached to the watchlist response itself — available in the
+    // same round-trip as the Screener, so Upcoming can render immediately.
+    const attachedEvents: any[] =
+      (!isFavoritesTab && watchlist?.upcoming_earnings?.events)
+        ? watchlist.upcoming_earnings.events
+        : [];
+
+    // Events from the scoped by-symbols response (any alias the backend may use)
+    const bsEvents: any[] =
       earningsBySymbolsResp?.upcoming
       ?? earningsBySymbolsResp?.events
       ?? earningsBySymbolsResp?.earnings
-      ?? (earningsBySymbolsResp as any)?.data?.events
-      ?? (earningsBySymbolsResp as any)?.data?.earnings
       ?? [];
-    // Extract recent events — prefer by-symbols response, fall back to the watchlist/earnings response
-    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? earningsResp?.recent ?? []).slice().sort((a: any, b: any) => {
+
+    // Settled success = response present, not loading, not errored, not syncing
+    const bsSettledSuccess =
+      !earningsBySymbolsLoading && !earningsBySymbolsError &&
+      earningsBySymbolsResp != null && !isSyncingStatus;
+
+    // Merge rule:
+    // – settled success  → use by-symbols events (authoritative, even when empty)
+    // – loading/syncing/error → use partial by-symbols events if any, else LKG
+    const rawUpcoming: any[] = bsSettledSuccess
+      ? bsEvents
+      : bsEvents.length > 0 ? bsEvents : attachedEvents;
+
+    // Recent: scoped to by-symbols response only — no cross-watchlist fallback
+    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? []).slice().sort((a: any, b: any) => {
       const da = String(a.report_date ?? a.date ?? '');
       const db = String(b.report_date ?? b.date ?? '');
       if (db > da) return 1; if (da > db) return -1;
@@ -4721,11 +4777,11 @@ export default function WatchlistPage() {
       </div>
     );
 
-    // ── State 1: symbols still resolving (watchlist not yet loaded for this tab)
-    const symbolsStillLoading = !isFavoritesTab && sortedTickers.length === 0 && (wlLoading || wlFetching);
+    // ── State 1: canonical symbols still resolving (watchlist loading)
+    const symbolsStillLoading = !isFavoritesTab && selectedEarningsSymbols.length === 0 && (wlLoading || wlFetching);
     if (symbolsStillLoading) return null;
 
-    // ── State 2: no tickers in this tab at all
+    // ── State 2: watchlist loaded but genuinely has no tickers
     if (selectedEarningsSymbols.length === 0 && !wlLoading) {
       return (
         <div style={{ padding: '0 20px 4px' }}>
@@ -4742,12 +4798,28 @@ export default function WatchlistPage() {
       );
     }
 
-    // ── State 3: query in flight — show nothing (avoids flash of "no earnings")
-    if (earningsBySymbolsLoading && events.length === 0 && recentEvents.length === 0) return null;
+    // ── State 3: cold loading (query in flight, no cards from LKG or attached)
+    // Section stays visible with a spinner instead of disappearing.
+    if (earningsBySymbolsLoading && events.length === 0 && recentEvents.length === 0) {
+      return (
+        <div style={{ padding: '0 20px 4px' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>{sectionTitle}</span>
+              {renderToggle()}
+            </div>
+            <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%', flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: C.dim, fontFamily: font }}>Loading earnings…</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-    // ── State 4: active view is empty
+    // ── State 4: genuinely empty — only when settled, non-syncing, non-error
     const activeIsEmpty = earningsView === 'upcoming' ? events.length === 0 : recentEvents.length === 0;
-    if (!earningsBySymbolsLoading && activeIsEmpty) {
+    if (activeIsEmpty && bsSettledSuccess) {
       return (
         <div style={{ padding: '0 20px 4px' }}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -4796,8 +4868,13 @@ export default function WatchlistPage() {
               <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>
                 {sectionTitle}
               </span>
-              {earningsBySymbolsLoading ? (
-                <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
+              {(earningsBySymbolsLoading || isSyncingStatus) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div className="wl-spin" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.50)', borderRadius: '50%' }} />
+                  {isSyncingStatus && !earningsBySymbolsLoading && (
+                    <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>Refreshing…</span>
+                  )}
+                </div>
               ) : (
                 <span style={{ fontSize: 9, color: C.dim }}>
                   ({earningsView === 'upcoming' ? events.length : recentEvents.length} in watchlist)
@@ -4805,6 +4882,14 @@ export default function WatchlistPage() {
               )}
               {earningsBySymbolsError && (
                 <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
+              )}
+              {(earningsBySymbolsError || (isSyncingStatus && earningsPollingExpired)) && (
+                <button
+                  onClick={() => { setEarningsPollingExpired(false); void refetchEarningsBySymbols(); }}
+                  style={{ fontSize: 9, color: C.teal, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', fontFamily: font, textDecoration: 'underline' }}
+                >
+                  Retry
+                </button>
               )}
             </div>
             {renderToggle()}
