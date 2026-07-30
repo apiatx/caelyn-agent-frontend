@@ -1,0 +1,312 @@
+Fix the deployed Watchlist Earnings regression and diagnose the actual failing
+by-symbols request.
+
+Current deployed behavior:
+
+- Upcoming Earnings now renders instantly from
+  watchlist.upcoming_earnings.events.
+- The UI simultaneously shows “Failed to load earnings · Retry.”
+- Recent Earnings shows 0 and no cards.
+- This proves POST /api/watchlist/earnings/by-symbols is failing.
+- Upcoming survives because it has the attached Watchlist bootstrap payload.
+- Recent fails because the prior earningsResp.recent fallback was removed.
+
+Do not guess at the failure.
+Do not redesign the cards.
+Do not remove the instant Upcoming bootstrap.
+Do not edit the backend unless direct backend testing proves the backend is the
+failure and this is the backend project.
+Do not create another endpoint, query, store, or attached prompt file.
+
+Maximum expected frontend production scope:
+
+- client/src/pages/watchlist.tsx
+- server/routes.ts only if the Express proxy is proven responsible
+
+──────────────────────────────────────────────────────────────────────────────
+PHASE 1 — PROVE THE REQUEST FAILURE BEFORE EDITING
+──────────────────────────────────────────────────────────────────────────────
+
+Read AGENTS.md and run:
+
+git status -sb
+git diff --name-only
+
+Trace the current implementations of:
+
+- the earningsBySymbolsResp React Query
+- POST /api/watchlist/earnings/by-symbols in server/routes.ts
+- the direct FastAPI backend target used by that proxy
+- earningsResp and its existing Recent payload
+- rawUpcoming and rawRecent construction
+- the global earnings error/banner logic
+
+Obtain the exact canonical Primary symbol array currently sent by the browser.
+
+Using that same full symbol array and:
+
+{
+  "symbols": [...],
+  "wait_for_sync": false
+}
+
+test both paths separately:
+
+A. Frontend Express proxy:
+
+POST http://localhost:<frontend-port>/api/watchlist/earnings/by-symbols
+
+B. Direct FastAPI backend:
+
+POST <existing-WL_URL>/api/watchlist/earnings/by-symbols
+
+Use the same headers the proxy uses, including X-API-Key for the direct backend.
+
+For both calls, record:
+
+- HTTP status
+- elapsed milliseconds
+- Content-Type
+- response byte count
+- first 500 characters of the response body
+- whether valid JSON was returned
+- cache_status
+- events count
+- recent count
+- error/detail field
+- whether the request timed out
+
+Also inspect the frontend server log and backend response body corresponding to
+the failed browser request.
+
+Do not edit until one of these is proven:
+
+1. Direct backend succeeds but Express proxy fails.
+2. Both direct backend and proxy fail.
+3. Both succeed, but the browser query fails because of client parsing/state.
+4. The deployed backend does not recognize or honor wait_for_sync=false.
+
+Report which case is true.
+
+──────────────────────────────────────────────────────────────────────────────
+PHASE 2 — FIX THE PROVEN REQUEST FAILURE
+──────────────────────────────────────────────────────────────────────────────
+
+CASE 1 — Direct backend succeeds, Express proxy fails
+
+Fix only the existing Express proxy route.
+
+Requirements:
+
+- forward the request body unchanged, including wait_for_sync
+- preserve Content-Type and X-API-Key
+- preserve backend non-200 status and safe response body
+- parse the backend response only after capturing its raw text
+- never convert valid JSON into a generic error
+- distinguish AbortError/timeout from backend rejection
+- clear the timeout in finally
+- log status, elapsed_ms, content_type and response byte count
+- never log API keys or authorization tokens
+- do not raise the timeout unless measured backend latency requires it
+
+CASE 2 — Direct backend also fails
+
+Do not disguise the backend failure in the frontend.
+
+Capture the exact backend status, body and traceback/log evidence.
+
+Implement the Recent LKG/frontend resilience work below, then stop and report
+the exact backend defect so it can be fixed in the backend project.
+
+Do not invent a frontend replacement for the backend endpoint.
+
+CASE 3 — Both HTTP calls succeed but React Query fails
+
+Fix the client query function.
+
+Requirements:
+
+- read response as text once
+- include HTTP status and a short response preview in thrown errors
+- validate JSON
+- treat HTTP 200 with cache_status="error" as a backend error
+- do not treat a malformed payload as successful empty earnings
+- expose the exact error in development logging
+- preserve prior successful query data where React Query supports it
+- maintain the existing stable query key and wait_for_sync:false body
+
+CASE 4 — Deployed backend ignores wait_for_sync=false
+
+Prove this with response timing/log behavior and report the deployed backend
+version mismatch.
+
+Do not “solve” it by increasing the frontend timeout.
+
+──────────────────────────────────────────────────────────────────────────────
+PHASE 3 — RESTORE INSTANT, SCOPED RECENT EARNINGS
+──────────────────────────────────────────────────────────────────────────────
+
+The last edit made Recent depend only on:
+
+earningsBySymbolsResp.recent
+
+That is too brittle. Restore the existing fast Recent payload as a scoped
+bootstrap/LKG source without reintroducing cross-watchlist leakage.
+
+Build:
+
+selectedSymbolSet = new Set(selectedEarningsSymbols)
+
+Create attached/scoped Recent fallback from:
+
+earningsResp?.recent
+
+but filter every row so its normalized ticker/symbol exists in
+selectedSymbolSet.
+
+Normalization must accept the existing aliases:
+
+- ticker
+- symbol
+
+Uppercase before comparison.
+
+Recent source priority:
+
+1. If by-symbols completed successfully with a settled non-stale status:
+   use earningsBySymbolsResp.recent, including a legitimate empty array.
+
+2. If by-symbols is loading, syncing, stale or errored:
+   use any non-empty earningsBySymbolsResp.recent partial data first.
+
+3. Otherwise:
+   use the symbol-filtered earningsResp.recent bootstrap/LKG data.
+
+Never show Primary Recent rows in Favorites or another custom watchlist.
+The fallback must always be filtered against selectedEarningsSymbols.
+
+Do not remove the global earnings query because it still provides the fast
+bootstrap/LKG path.
+
+──────────────────────────────────────────────────────────────────────────────
+PHASE 4 — FIX THE ERROR DISPLAY SEMANTICS
+──────────────────────────────────────────────────────────────────────────────
+
+The current global “Failed to load earnings” label is misleading when Upcoming
+cards are already visible from attached cache.
+
+Use source-aware behavior:
+
+Upcoming view with visible cards and failed refresh:
+
+- keep all cards visible
+- display a subtle “Refresh failed · Retry”
+- do not say the entire Earnings section failed to load
+- do not show count 0
+
+Recent view with symbol-scoped LKG cards and failed refresh:
+
+- keep Recent cards visible
+- display “Refresh failed · Retry”
+- preserve the real card count
+
+No cards and request failure:
+
+- show “Earnings temporarily unavailable”
+- show Retry
+- do not show a legitimate-empty message
+
+Only show “No upcoming earnings for this watchlist” after a successful,
+settled, non-stale by-symbols response returns no Upcoming events.
+
+Only show “No watchlist earnings reported in the past 30 days” after a
+successful, settled, non-stale response returns no Recent events and the scoped
+Recent bootstrap is also empty.
+
+The Upcoming/Recent toggle must never change the network request or query key.
+
+──────────────────────────────────────────────────────────────────────────────
+PHASE 5 — KEEP THE WORKING UPCOMING ARCHITECTURE
+──────────────────────────────────────────────────────────────────────────────
+
+Preserve:
+
+- immediate watchlist.upcoming_earnings.events rendering
+- canonical watchlist.tickers membership
+- alphabetically stable query symbols
+- wait_for_sync:false
+- 4-second polling only for:
+  - miss_syncing
+  - partial_syncing
+  - stale_syncing
+- 90-second polling cap
+- manual Retry
+- no requests caused by Screener sorting/filtering
+- no requests caused by Upcoming/Recent toggling
+- all existing card fields, styling and click behavior
+
+Do not revert the instant Upcoming improvement.
+
+──────────────────────────────────────────────────────────────────────────────
+MANDATORY VALIDATION
+──────────────────────────────────────────────────────────────────────────────
+
+Use a clean restart.
+
+Prove all of the following:
+
+1. Direct backend and Express proxy results are recorded side by side.
+
+2. The browser by-symbols request returns HTTP 200 valid JSON.
+
+3. The response contains:
+   - events
+   - recent
+   - cache_status
+   - stale
+
+4. Upcoming renders instantly from watchlist.upcoming_earnings.
+
+5. Recent renders instantly from the symbol-filtered bootstrap while the scoped
+   request is loading.
+
+6. After the scoped request succeeds, its Recent payload replaces the bootstrap.
+
+7. Simulate one by-symbols 502:
+   - Upcoming cards remain visible
+   - Recent cards remain visible
+   - neither count becomes 0
+   - both views show only “Refresh failed · Retry”
+
+8. Primary and Favorites Recent rows remain strictly isolated.
+
+9. Switching Upcoming/Recent creates zero requests.
+
+10. Sorting/filtering the Screener creates zero earnings requests.
+
+11. Browser console logs the useful status/error once, not an infinite loop.
+
+12. Build/typecheck completes with no new errors.
+
+Before committing, show:
+
+git diff --name-only
+git diff --check
+
+Expected source files:
+
+- client/src/pages/watchlist.tsx
+- server/routes.ts only when proxy failure was proven
+
+Do not include:
+
+- attached_assets
+- runtime caches
+- backend files
+- generated files
+
+Show the exact direct-backend and proxy test output in the final report.
+
+Commit message:
+
+Fix scoped Recent earnings fallback and request failure

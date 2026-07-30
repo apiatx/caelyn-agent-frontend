@@ -3938,11 +3938,22 @@ export default function WatchlistPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbols: selectedEarningsSymbols, wait_for_sync: false }),
       });
-      if (!r.ok) throw new Error(`earnings/by-symbols: ${r.status}`);
       const text = await r.text();
-      try { return JSON.parse(text); } catch {
-        throw new Error(`earnings/by-symbols: non-JSON response`);
+      if (!r.ok) {
+        const preview = text.slice(0, 200);
+        console.error('[earnings/by-symbols] HTTP', r.status, preview);
+        throw new Error(`earnings/by-symbols ${r.status}: ${preview}`);
       }
+      let data: any;
+      try { data = JSON.parse(text); } catch {
+        console.error('[earnings/by-symbols] non-JSON:', text.slice(0, 200));
+        throw new Error(`earnings/by-symbols: non-JSON (${text.slice(0, 80)})`);
+      }
+      if (data?.cache_status === 'error') {
+        console.error('[earnings/by-symbols] cache_status=error:', JSON.stringify(data).slice(0, 200));
+        throw new Error('earnings/by-symbols: backend cache_status=error');
+      }
+      return data;
     },
     enabled: selectedEarningsSymbols.length > 0,
     staleTime: 5 * 60_000,
@@ -4738,8 +4749,26 @@ export default function WatchlistPage() {
       ? bsEvents
       : bsEvents.length > 0 ? bsEvents : attachedEvents;
 
-    // Recent: scoped to by-symbols response only — no cross-watchlist fallback
-    const rawRecent: any[] = (earningsBySymbolsResp?.recent ?? []).slice().sort((a: any, b: any) => {
+    // Scoped Recent bootstrap: filter the global earningsResp.recent to only tickers
+    // in this watchlist — prevents cross-watchlist leakage while giving instant LKG data.
+    const selectedSymbolSet = new Set(selectedEarningsSymbols);
+    const scopedRecentBootstrap: any[] = (earningsResp?.recent ?? []).filter((row: any) => {
+      const t = (row?.ticker ?? row?.symbol ?? '').toString().toUpperCase();
+      return t && selectedSymbolSet.has(t);
+    });
+
+    // by-symbols recent (partial or settled)
+    const bsRecent: any[] = earningsBySymbolsResp?.recent ?? [];
+
+    // Recent source priority (spec §3):
+    // 1. by-symbols settled+non-syncing → authoritative (may legitimately be empty)
+    // 2. by-symbols loading/syncing/error with partial data → use it
+    // 3. fallback → scoped bootstrap/LKG filtered to this watchlist's symbols
+    const recentSource: any[] = bsSettledSuccess
+      ? bsRecent
+      : bsRecent.length > 0 ? bsRecent : scopedRecentBootstrap;
+
+    const rawRecent: any[] = recentSource.slice().sort((a: any, b: any) => {
       const da = String(a.report_date ?? a.date ?? '');
       const db = String(b.report_date ?? b.date ?? '');
       if (db > da) return 1; if (da > db) return -1;
@@ -4817,6 +4846,29 @@ export default function WatchlistPage() {
       );
     }
 
+    // ── State 3.5: error with no cards at all — show honest retryable message
+    if (earningsBySymbolsError && events.length === 0 && recentEvents.length === 0) {
+      return (
+        <div style={{ padding: '0 20px 4px' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' as const, gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.1em' }}>{sectionTitle}</span>
+              {renderToggle()}
+            </div>
+            <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' as const }}>
+              <span style={{ fontSize: 10, color: C.red, fontFamily: font }}>Earnings temporarily unavailable</span>
+              <button
+                onClick={() => { setEarningsPollingExpired(false); void refetchEarningsBySymbols(); }}
+                style={{ fontSize: 9, color: C.teal, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', fontFamily: font, textDecoration: 'underline' }}
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ── State 4: genuinely empty — only when settled, non-syncing, non-error
     const activeIsEmpty = earningsView === 'upcoming' ? events.length === 0 : recentEvents.length === 0;
     if (activeIsEmpty && bsSettledSuccess) {
@@ -4875,13 +4927,13 @@ export default function WatchlistPage() {
                     <span style={{ fontSize: 9, color: C.dim, fontFamily: font }}>Refreshing…</span>
                   )}
                 </div>
-              ) : (
+              ) : !earningsBySymbolsError ? (
                 <span style={{ fontSize: 9, color: C.dim }}>
                   ({earningsView === 'upcoming' ? events.length : recentEvents.length} in watchlist)
                 </span>
-              )}
+              ) : null}
               {earningsBySymbolsError && (
-                <span style={{ fontSize: 9, color: C.red }}>Failed to load earnings</span>
+                <span style={{ fontSize: 9, color: C.red }}>Refresh failed</span>
               )}
               {(earningsBySymbolsError || (isSyncingStatus && earningsPollingExpired)) && (
                 <button

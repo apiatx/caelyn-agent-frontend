@@ -5422,16 +5422,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Earnings by explicit symbol list — scoped, no JWT-guessed watchlist
   app.post('/api/watchlist/earnings/by-symbols', async (req, res) => {
+    const t0 = Date.now();
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 20_000);
     try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 15_000);
       const r = await fetch(`${WL_URL}/api/watchlist/earnings/by-symbols`, {
         method: 'POST',
         headers: { ...wlHdr(), 'Content-Type': 'application/json' },
         body: JSON.stringify(req.body),
         signal: ctrl.signal,
       });
+      const elapsed = Date.now() - t0;
+      const ct = r.headers.get('content-type') ?? '';
       const text = await r.text();
+      console.log(`[by-symbols] status=${r.status} elapsed=${elapsed}ms ct=${ct} bytes=${text.length}`);
       if (!r.ok) {
         let errBody: any;
         try { errBody = JSON.parse(text); } catch { errBody = { error: text.slice(0, 300) }; }
@@ -5439,11 +5443,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       let data: any;
       try { data = JSON.parse(text); } catch {
-        return res.status(502).json({ error: 'Non-JSON response from earnings/by-symbols', preview: text.slice(0, 200) });
+        return res.status(502).json({ error: 'Non-JSON from earnings/by-symbols', preview: text.slice(0, 200) });
       }
       res.json(data);
     } catch (e: any) {
-      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'earnings/by-symbols error') });
+      const elapsed = Date.now() - t0;
+      const msg = e?.name === 'AbortError' ? `Timed out after ${elapsed}ms` : (e?.message || 'earnings/by-symbols error');
+      console.error(`[by-symbols] error after ${elapsed}ms:`, msg);
+      res.status(502).json({ error: msg });
+    } finally {
+      clearTimeout(tid);
     }
   });
 
