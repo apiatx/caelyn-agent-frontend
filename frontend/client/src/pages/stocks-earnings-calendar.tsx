@@ -2911,8 +2911,15 @@ const TIER_ORDER: Record<SignalTier, number> = {
   context: 3,
 };
 
-function effectiveSignalTier(ev: { signal_tier?: SignalTier; importance?: string }): SignalTier {
+function effectiveSignalTier(ev: { signal_tier?: SignalTier; importance?: string }, macroTab = false): SignalTier {
   if (ev.signal_tier) return ev.signal_tier;
+  if (macroTab) {
+    // Conservative fallback for macro tabs only: stale/legacy rows must not
+    // render as Critical or Major without an explicit backend signal_tier.
+    if (ev.importance === "low") return "context";
+    if (ev.importance === "high" || ev.importance === "medium") return "secondary";
+    return "context";
+  }
   if (ev.importance === "high") return "major";
   if (ev.importance === "medium") return "secondary";
   return "context";
@@ -2923,8 +2930,8 @@ function tierPresentation(ev: { signal_tier?: SignalTier; importance?: string })
   return TIER_PRESENTATION[tier];
 }
 
-function SignalTierBadge({ event }: { event: { signal_tier?: SignalTier; importance?: string } }) {
-  const tier = effectiveSignalTier(event);
+function SignalTierBadge({ event, macroTab }: { event: { signal_tier?: SignalTier; importance?: string }; macroTab?: boolean }) {
+  const tier = effectiveSignalTier(event, macroTab);
   const p = TIER_PRESENTATION[tier];
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold whitespace-nowrap border ${p.labelCls}`}>
@@ -2934,9 +2941,9 @@ function SignalTierBadge({ event }: { event: { signal_tier?: SignalTier; importa
 }
 
 // Sort comparator: higher-tier events first; stable for same tier.
-function compareTier(a: CalendarEvent, b: CalendarEvent): number {
-  const ta = TIER_ORDER[effectiveSignalTier(a)];
-  const tb = TIER_ORDER[effectiveSignalTier(b)];
+function compareTier(a: CalendarEvent, b: CalendarEvent, macroTab = false): number {
+  const ta = TIER_ORDER[effectiveSignalTier(a, macroTab)];
+  const tb = TIER_ORDER[effectiveSignalTier(b, macroTab)];
   return ta - tb;
 }
 
@@ -4302,8 +4309,8 @@ function macroCardTitle(ev: CalendarEvent): string {
 // These are used by the four catalyst snapshot views.
 
 /** CSS class pairs for tier-based card styling. Applied to macro tabs only. */
-function tierCardClasses(ev: CalendarEvent, isLead: boolean): { outer: string; title: string } {
-  const t = effectiveSignalTier(ev);
+function tierCardClasses(ev: CalendarEvent, isLead: boolean, macroTab = false): { outer: string; title: string } {
+  const t = effectiveSignalTier(ev, macroTab);
   const p = TIER_PRESENTATION[t];
   const leadExtra = isLead && (t === "critical" || t === "major") ? " ring-1 ring-rose-500/20" : "";
   const muted = p.isMuted ? " opacity-60" : "";
@@ -4317,8 +4324,8 @@ function tierCardClasses(ev: CalendarEvent, isLead: boolean): { outer: string; t
 }
 
 /** Sort events by tier (critical first), stable within same tier. */
-function sortByTier(events: CalendarEvent[]): CalendarEvent[] {
-  return [...events].sort(compareTier);
+function sortByTier(events: CalendarEvent[], macroTab = false): CalendarEvent[] {
+  return [...events].sort((a, b) => compareTier(a, b, macroTab));
 }
 
 /** Split events into visible and collapsed groups by tier.
@@ -4326,11 +4333,11 @@ function sortByTier(events: CalendarEvent[]): CalendarEvent[] {
  *  - secondary: visible (no collapse for this tier).
  *  - context: collapsed.
  */
-function splitByTier(events: CalendarEvent[]): { visible: CalendarEvent[]; contextCount: number } {
+function splitByTier(events: CalendarEvent[], macroTab = false): { visible: CalendarEvent[]; contextCount: number } {
   const visible: CalendarEvent[] = [];
   let contextCount = 0;
-  for (const ev of sortByTier(events)) {
-    const t = effectiveSignalTier(ev);
+  for (const ev of sortByTier(events, macroTab)) {
+    const t = effectiveSignalTier(ev, macroTab);
     if (t === "context") {
       contextCount++;
     } else {
@@ -4341,12 +4348,12 @@ function splitByTier(events: CalendarEvent[]): { visible: CalendarEvent[]; conte
 }
 
 /** For week views: show all critical/major + up to 2 secondary, collapse rest. */
-function splitWeekDayEntries(events: CalendarEvent[]): { visible: CalendarEvent[]; hiddenCount: number } {
-  const sorted = sortByTier(events);
+function splitWeekDayEntries(events: CalendarEvent[], macroTab = false): { visible: CalendarEvent[]; hiddenCount: number } {
+  const sorted = sortByTier(events, macroTab);
   const visible: CalendarEvent[] = [];
   let secondaryCount = 0;
   for (const ev of sorted) {
-    const t = effectiveSignalTier(ev);
+    const t = effectiveSignalTier(ev, macroTab);
     if (t === "critical" || t === "major") {
       visible.push(ev);
     } else if (t === "secondary" && secondaryCount < 2) {
@@ -4429,7 +4436,7 @@ function CatalystSnapshotRecentList({
         const dt = (y && m && d) ? new Date(y, m - 1, d) : new Date();
         const entries = dateGroups.get(dk) || [];
         const isMacro = MACRO_CARD_TABS.has(tabKey);
-        const { visible, contextCount } = isMacro ? splitByTier(entries) : { visible: entries, contextCount: 0 };
+        const { visible, contextCount } = isMacro ? splitByTier(entries, isMacro) : { visible: entries, contextCount: 0 };
         const isExpanded = expandedDates.has(dk);
         const showContext = isExpanded;
         return (
@@ -4448,7 +4455,7 @@ function CatalystSnapshotRecentList({
                 const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
                 const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
                 const isLead = i === 0 && isMacro;
-                const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "border border-white/[0.06]", title: "" };
+                const tc = isMacro ? tierCardClasses(ev, isLead, isMacro) : { outer: "border border-white/[0.06]", title: "" };
                 return (
                   <button
                     key={ev.id || `${dk}-${i}`}
@@ -4476,7 +4483,7 @@ function CatalystSnapshotRecentList({
                             <EventTypeBadge type={ev.eventType} />
                           </>
                         )}
-                        {isMacro && <SignalTierBadge event={ev} />}
+                        {isMacro && <SignalTierBadge event={ev} macroTab />}
                         {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
                       </div>
                       {subtitleText && (
@@ -4497,13 +4504,13 @@ function CatalystSnapshotRecentList({
               )}
               {contextCount > 0 && showContext && (
                 <>
-                  {entries.filter(ev => effectiveSignalTier(ev) === "context").map((ev, i) => {
+                  {entries.filter(ev => effectiveSignalTier(ev, isMacro) === "context").map((ev, i) => {
                     const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                     const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
                     const displayTitle = isMacro ? macroCardTitle(ev) : undefined;
                     const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
                     const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
-                    const tc = isMacro ? tierCardClasses(ev, false) : { outer: "border border-white/[0.06]", title: "" };
+                    const tc = isMacro ? tierCardClasses(ev, false, isMacro) : { outer: "border border-white/[0.06]", title: "" };
                     return (
                       <button
                         key={ev.id || `${dk}-ctx-${i}`}
@@ -4531,7 +4538,7 @@ function CatalystSnapshotRecentList({
                                 <EventTypeBadge type={ev.eventType} />
                               </>
                             )}
-                            {isMacro && <SignalTierBadge event={ev} />}
+                            {isMacro && <SignalTierBadge event={ev} macroTab />}
                             {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
                           </div>
                           {subtitleText && (
@@ -4570,7 +4577,7 @@ function WeekDayColumnContent({
 }) {
   const isMacro = MACRO_CARD_TABS.has(tabKey);
   const [expanded, setExpanded] = useState(false);
-  const { visible, hiddenCount } = isMacro ? splitWeekDayEntries(entries) : { visible: entries, hiddenCount: 0 };
+  const { visible, hiddenCount } = isMacro ? splitWeekDayEntries(entries, isMacro) : { visible: entries, hiddenCount: 0 };
   const display = (isMacro && !expanded) ? visible : entries;
 
   return (
@@ -4584,7 +4591,7 @@ function WeekDayColumnContent({
           : (ev.symbol && ev.title !== ev.symbol ? ev.title : (ev.subtitle || tabLabel));
         const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
         const isLead = i === 0 && isMacro;
-        const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "", title: "" };
+        const tc = isMacro ? tierCardClasses(ev, isLead, isMacro) : { outer: "", title: "" };
         return (
           <button
             key={ev.id || `${dk}-${i}`}
@@ -4604,7 +4611,7 @@ function WeekDayColumnContent({
                 <p className={`text-[10px] ${tc.title || "font-semibold text-white/90"} truncate leading-tight group-hover:text-white`}>
                   {displayTitle}
                 </p>
-                {isMacro && <SignalTierBadge event={ev} />}
+                {isMacro && <SignalTierBadge event={ev} macroTab />}
               </div>
               {displaySubtitle && (
                 <p className="text-[8px] text-white/35 truncate mt-0.5 leading-tight">
@@ -4914,7 +4921,7 @@ function CatalystSnapshotDayView({
         <div className="space-y-2">
           {(() => {
             const isMacro = MACRO_CARD_TABS.has(tabKey);
-            const { visible, contextCount } = isMacro ? splitByTier(entries) : { visible: entries, contextCount: 0 };
+            const { visible, contextCount } = isMacro ? splitByTier(entries, isMacro) : { visible: entries, contextCount: 0 };
             const displayEntries = isMacro && !showCtx ? visible : entries;
             return (
               <>
@@ -4925,7 +4932,7 @@ function CatalystSnapshotDayView({
                   const letter = (ev.symbol || ev.title || "?").slice(0, 1).toUpperCase();
                   const subtitleText = ev.subtitle && ev.subtitle !== displayTitle ? ev.subtitle : (isMacro ? "" : ev.subtitle);
                   const isLead = i === 0 && isMacro;
-                  const tc = isMacro ? tierCardClasses(ev, isLead) : { outer: "border border-white/[0.06]", title: "" };
+                  const tc = isMacro ? tierCardClasses(ev, isLead, isMacro) : { outer: "border border-white/[0.06]", title: "" };
                   return (
                     <button
                       key={ev.id || i}
@@ -4953,7 +4960,7 @@ function CatalystSnapshotDayView({
                               <EventTypeBadge type={ev.eventType} />
                             </>
                           )}
-                          {isMacro && <SignalTierBadge event={ev} />}
+                          {isMacro && <SignalTierBadge event={ev} macroTab />}
                           {!isMacro && ev.importance && <ImportanceBadge importance={ev.importance} />}
                         </div>
                         {subtitleText && (
@@ -5118,7 +5125,7 @@ function CatalystSnapshotMonthView({
           const todayStr = dateKey(new Date());
           const isToday = dateStr === todayStr;
           const isMacro = MACRO_CARD_TABS.has(tabKey);
-          const sortedForDisplay = isMacro ? sortByTier(entries) : entries;
+          const sortedForDisplay = isMacro ? sortByTier(entries, isMacro) : entries;
           const top = sortedForDisplay.slice(0, 3);
           const extra = count - top.length;
           return (
@@ -5142,7 +5149,7 @@ function CatalystSnapshotMonthView({
                     const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
                     const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
                     const chipLabel = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
-                    const tp = isMacro ? effectiveSignalTier(ev) : null;
+                    const tp = isMacro ? effectiveSignalTier(ev, isMacro) : null;
                     const chipBorder = tp === "critical" ? "border-rose-500/40" : tp === "major" ? "border-orange-500/30" : c.border;
                     return (
                       <button
