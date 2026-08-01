@@ -4022,6 +4022,167 @@ function CatalystListTab({
 // Month views that mirror the Earnings tab UX. Recent uses the
 // previous_week slice as a list view; Day/Week/Month use the
 // current_week slice rendered as calendar layouts.
+//
+// Economic Releases additionally uses the rolling-horizon window
+// contract: tab=economic_releases&view=recent|day|week|month&date=YYYY-MM-DD.
+// The backend responds with { events, window_start, window_end,
+// coverage_complete, empty_reason, horizon_start, horizon_end, ... }
+// where `events` is the selected window (not the 90-day horizon).
+// The helpers below are the pure, unit-testable core of that wiring.
+
+// ─── Economic Releases horizon helpers ─────────────────────────────
+
+export type HorizonEmptyKind = "no-events" | "outside-horizon" | "incomplete" | null;
+
+export interface HorizonWindowMeta {
+  view?: string;
+  requested_date?: string;
+  window_start?: string;
+  window_end?: string;
+  events?: CatalystEvent[];
+  event_count?: number;
+  coverage_complete?: boolean;
+  horizon_start?: string;
+  horizon_end?: string;
+  empty_reason?: string;
+  current_week?: CatalystEvent[];
+  previous_week?: CatalystEvent[];
+  last_updated?: string | number | null;
+  status?: string;
+  is_stale?: boolean;
+}
+
+/** Parse "YYYY-MM-DD" into a local midnight Date. Falls back to today. */
+export function parseDateKey(dk: string): Date {
+  const [y, m, d] = dk.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+  return y && m && d ? new Date(y, m - 1, d) : new Date();
+}
+
+/** Add `n` calendar days to a "YYYY-MM-DD" key. */
+export function addDaysKey(dk: string, n: number): string {
+  const dt = parseDateKey(dk);
+  dt.setDate(dt.getDate() + n);
+  return dateKey(dt);
+}
+
+/** Add `n` calendar months, snapping the result to the 1st of the target month. */
+export function addMonthsKey(dk: string, n: number): string {
+  const dt = parseDateKey(dk);
+  return dateKey(new Date(dt.getFullYear(), dt.getMonth() + n, 1));
+}
+
+/** Snap a date key to the Monday of its week (Mon-first). */
+export function snapToMondayKey(dk: string): string {
+  return dateKey(getMonday(parseDateKey(dk)));
+}
+
+/** Snap a date key to the 1st of its month. */
+export function snapToFirstOfMonthKey(dk: string): string {
+  const dt = parseDateKey(dk);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+/** Build the snapshot query string. Values are URL-encoded by URLSearchParams. */
+export function buildSnapshotParams(
+  tabKey: string,
+  scope: string,
+  search: string,
+  view?: string,
+  date?: string
+): URLSearchParams {
+  const params = new URLSearchParams({ tab: tabKey, scope });
+  if (search.trim()) params.set("search", search.trim());
+  if (view) params.set("view", view);
+  if (date) params.set("date", date);
+  return params;
+}
+
+/** React Query key. Horizon tabs include the active view + anchor so cached
+ *  windows never collide across views or dates. */
+export function buildSnapshotQueryKey(opts: {
+  tabKey: string;
+  scope: string;
+  search: string;
+  currentWeekId: string;
+  horizon: boolean;
+  view: SnapshotMode;
+  anchor: string;
+}): readonly string[] {
+  if (opts.horizon) {
+    return [
+      "catalysts", "snapshot", opts.tabKey, opts.scope, opts.search.trim(),
+      opts.currentWeekId, opts.view, opts.anchor,
+    ];
+  }
+  return ["catalysts", "snapshot", opts.tabKey, opts.scope, opts.search.trim(), opts.currentWeekId];
+}
+
+/** Extract the horizon envelope from a response. Returns null when the old
+ *  backend shape has no `events` (legacy fallback path). */
+export function extractHorizonMeta(data: unknown): HorizonWindowMeta | null {
+  if (!data) return null;
+  if (Array.isArray(data)) return { events: data as CatalystEvent[], status: "ready" };
+  const obj = data as Record<string, unknown>;
+  if (Array.isArray(obj.events)) return obj as unknown as HorizonWindowMeta;
+  return null;
+}
+
+/** Classify the empty-state kind from backend metadata. Never presents an
+ *  uncovered window as a confirmed empty calendar. */
+export function classifyHorizonEmpty(meta: HorizonWindowMeta): HorizonEmptyKind {
+  const count = meta.event_count ?? meta.events?.length ?? 0;
+  if (meta.coverage_complete === true && count === 0 && (meta.empty_reason === "no_events_in_window" || !meta.empty_reason)) {
+    return "no-events";
+  }
+  if (meta.empty_reason === "outside_horizon") return "outside-horizon";
+  if (meta.empty_reason === "legacy_snapshot_without_horizon" || meta.empty_reason === "snapshot_empty") return "incomplete";
+  if (meta.coverage_complete === false && count === 0) return "incomplete";
+  return null;
+}
+
+/** "Jul 27 – Jul 31, 2026" label from backend window bounds (falls back to
+ *  the requested Monday + 4 weekdays). */
+export function formatWindowLabel(windowStart?: string, windowEnd?: string, fallback?: string): string {
+  const toDate = (s?: string): Date | null => {
+    if (!s) return null;
+    const [y, m, d] = s.slice(0, 10).split("-").map((v) => parseInt(v, 10));
+    return y && m && d ? new Date(y, m - 1, d) : null;
+  };
+  const start = toDate(windowStart) ?? (fallback ? toDate(fallback) : null) ?? new Date();
+  const end = toDate(windowEnd) ?? new Date(start.getFullYear(), start.getMonth(), start.getDate() + 4);
+  return `${MONTH_NAMES_SHORT[start.getMonth()]} ${start.getDate()} – ${MONTH_NAMES_SHORT[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
+}
+
+/** Canonical selected-window event collection. Uses the horizon response
+ *  `events` when present (never merged with current_week/previous_week);
+ *  falls back to the legacy snapshot slices for old responses. */
+export function selectSnapshotEvents(
+  data: unknown,
+  mode: SnapshotMode,
+  legacy: { currentWeek: CatalystEvent[]; previousWeek: CatalystEvent[] }
+): CatalystEvent[] {
+  const horizonMeta = extractHorizonMeta(data);
+  if (horizonMeta) return horizonMeta.events ?? [];
+  return mode !== "recent"
+    ? (legacy.currentWeek.length === 0 && legacy.previousWeek.length > 0 ? legacy.previousWeek : legacy.currentWeek)
+    : legacy.previousWeek;
+}
+
+/** Week prev/next disabled state from the cached horizon bounds. A control is
+ *  disabled only when the adjacent window would fall completely outside the
+ *  known horizon; unknown bounds keep navigation enabled. */
+export function weekNavDisabled(
+  anchorKey: string,
+  horizonStart?: string,
+  horizonEnd?: string
+): { prevDisabled: boolean; nextDisabled: boolean } {
+  const monday = snapToMondayKey(anchorKey);
+  const prevWeekKey = addDaysKey(monday, -7);
+  const prevDisabled = !!(horizonStart && addDaysKey(prevWeekKey, 3) < horizonStart);
+  const nextWeekKey = addDaysKey(monday, 7);
+  const nextDisabled = !!(horizonEnd && nextWeekKey > horizonEnd);
+  return { prevDisabled, nextDisabled };
+}
 
 interface CatalystSnapshotEnvelope {
   current_week?: CatalystEvent[];
@@ -4052,19 +4213,44 @@ function CatalystSnapshotTab({
   rightSlot?: React.ReactNode;
   defaultMode?: SnapshotMode;
 }) {
+  const isHorizonTab = tabKey === "economic_releases";
+
   const [mode, setMode] = useState<SnapshotMode>(defaultMode);
+  // One real calendar-date anchor (YYYY-MM-DD) driving the Economic Releases
+  // Day/Week/Month requests. Shared across views; snapped per view when the
+  // user switches Day ↔ Week ↔ Month.
+  const [anchor, setAnchor] = useState<string>(() => dateKey(new Date()));
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
+
+  const changeMode = useCallback((m: SnapshotMode) => {
+    setMode(m);
+    if (!isHorizonTab) return;
+    if (m === "week") setAnchor((a) => snapToMondayKey(a));
+    else if (m === "month") setAnchor((a) => snapToFirstOfMonthKey(a));
+  }, [isHorizonTab]);
 
   // Snapshot fetch — long staleTime, no polling/refetch on window focus.
   // Re-keyed by tab/scope/search; stable for repeated tab clicks.
-  // Include current week ID so stale-time cache is automatically busted at week boundaries
+  // Include current week ID so stale-time cache is automatically busted at week boundaries.
+  // Economic Releases adds view + anchor so cached windows never collide across
+  // views or dates (clicking prev/next issues a fresh query for the new window).
   const currentWeekId = dateKey(getMonday(new Date()));
-  const queryKey = ["catalysts", "snapshot", tabKey, scope, search.trim(), currentWeekId] as const;
+  const queryKey = buildSnapshotQueryKey({
+    tabKey, scope, search, currentWeekId,
+    horizon: isHorizonTab,
+    view: mode,
+    anchor,
+  });
   const { data, isLoading, error } = useQuery<CatalystSnapshotEnvelope | CatalystEvent[]>({
     queryKey,
     queryFn: async () => {
-      const params = new URLSearchParams({ tab: tabKey, scope });
-      if (search.trim()) params.set("search", search.trim());
+      const params = buildSnapshotParams(
+        tabKey,
+        scope,
+        search,
+        isHorizonTab ? mode : undefined,
+        isHorizonTab && mode !== "recent" ? anchor : undefined
+      );
       const r = await fetch(`/api/catalysts/events?${params}`);
       if (!r.ok) throw new Error(`${r.status}`);
       return r.json();
@@ -4099,14 +4285,22 @@ function CatalystSnapshotTab({
   const isStale = envelope.is_stale === true || status === "stale";
   const backendWindowFrom = envelope.window?.requested_from;
 
+  // Economic Releases rolling-horizon envelope. When the backend returns the
+  // requested window under `events`, that collection is canonical — it is never
+  // merged with current_week/previous_week. Null meta means an old backend
+  // response without `events`, which falls back to the legacy snapshot path.
+  const horizonMeta = isHorizonTab ? extractHorizonMeta(data) : null;
+  const horizonStatus =
+    isHorizonTab && horizonMeta && mode !== "recent"
+      ? classifyHorizonEmpty(horizonMeta)
+      : null;
+
   // Recent → previous_week list view; Day/Week/Month use current_week.
   // If current_week is empty but previous_week has data (stale snapshot),
   // fall back to previous_week so the calendar still shows something.
-  const useCurrentWeek = mode !== "recent";
-  const rawEvents =
-    useCurrentWeek
-      ? (currentWeek.length === 0 && previousWeek.length > 0 ? previousWeek : currentWeek)
-      : previousWeek;
+  // Economic Releases instead renders the selected-window `events` collection
+  // whenever the new contract response provides it.
+  const rawEvents = selectSnapshotEvents(data, mode, { currentWeek, previousWeek });
 
   // Normalize once
   const normalized: CalendarEvent[] = rawEvents
@@ -4170,7 +4364,7 @@ function CatalystSnapshotTab({
             return (
               <button
                 key={btn.key}
-                onClick={() => setMode(btn.key)}
+                onClick={() => changeMode(btn.key)}
                 className="px-4 py-1.5 transition-all"
                 style={style}
               >
@@ -4231,6 +4425,14 @@ function CatalystSnapshotTab({
           tabKey={tabKey}
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
+          {...(isHorizonTab ? {
+            anchorKey: anchor,
+            horizonStatus,
+            onPrevWeek: () => setAnchor((a) => addDaysKey(a, -7)),
+            onNextWeek: () => setAnchor((a) => addDaysKey(a, 7)),
+            onToday: () => setAnchor(dateKey(new Date())),
+            onSelectDay: (dk: string) => setAnchor(dk),
+          } : {})}
         />
       )}
 
@@ -4242,6 +4444,17 @@ function CatalystSnapshotTab({
           tabLabel={TAB_LABELS[tabKey] || "catalyst"}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
           windowFrom={backendWindowFrom}
+          {...(isHorizonTab ? {
+            anchorKey: snapToMondayKey(anchor),
+            horizonStatus,
+            windowStart: horizonMeta?.window_start,
+            windowEnd: horizonMeta?.window_end,
+            horizonStart: horizonMeta?.horizon_start,
+            horizonEnd: horizonMeta?.horizon_end,
+            onPrevWeek: () => setAnchor((a) => addDaysKey(a, -7)),
+            onNextWeek: () => setAnchor((a) => addDaysKey(a, 7)),
+            onToday: () => setAnchor(dateKey(new Date())),
+          } : {})}
         />
       )}
 
@@ -4251,6 +4464,13 @@ function CatalystSnapshotTab({
           loading={isLoading}
           tabKey={tabKey}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
+          {...(isHorizonTab ? {
+            anchorKey: snapToFirstOfMonthKey(anchor),
+            horizonStatus,
+            onPrevMonth: () => setAnchor((a) => addMonthsKey(a, -1)),
+            onNextMonth: () => setAnchor((a) => addMonthsKey(a, 1)),
+            onToday: () => setAnchor(snapToFirstOfMonthKey(dateKey(new Date()))),
+          } : {})}
         />
       )}
 
@@ -4644,6 +4864,31 @@ function WeekDayColumnContent({
   );
 }
 
+// ─── Horizon empty / coverage notice ──────────────────────────────
+// Truthful empty states for the Economic Releases rolling-horizon
+// windows. A covered window with zero events is a real empty; a window
+// outside the cached horizon or with incomplete coverage is reported as
+// such instead of being presented as a confirmed-empty calendar.
+
+function HorizonEmptyNotice({ status, view }: { status: HorizonEmptyKind; view: "day" | "week" | "month" }) {
+  const title = (() => {
+    if (status === "outside-horizon") return "This date is outside the currently cached calendar range.";
+    if (status === "incomplete") return "Economic releases data is currently unavailable for this window.";
+    if (view === "week") return "No economic releases scheduled for this week";
+    if (view === "month") return "No economic releases scheduled for this month";
+    return "No economic releases scheduled for this day";
+  })();
+  return (
+    <div className="text-center py-10 border border-white/[0.04] rounded-xl bg-white/[0.01]">
+      <Calendar className="w-6 h-6 text-white/10 mx-auto mb-2" />
+      <p className="text-sm text-white/25">{title}</p>
+      {status === "outside-horizon" && (
+        <p className="text-[10px] text-white/15 mt-1">Use the arrows to return to a covered date.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Snapshot Week Board — Mon-Fri grid mirroring Earnings ────────
 // Layout parity with WeeklyEarningsBoard: 5-column grid for the
 // active snapshot week. No logos / percent-move enrichment — the
@@ -4656,6 +4901,15 @@ function CatalystSnapshotWeekBoard({
   tabLabel,
   onEventClick,
   windowFrom,
+  anchorKey,
+  horizonStatus,
+  windowStart,
+  windowEnd,
+  horizonStart,
+  horizonEnd,
+  onPrevWeek,
+  onNextWeek,
+  onToday,
 }: {
   events: CalendarEvent[];
   loading: boolean;
@@ -4663,6 +4917,15 @@ function CatalystSnapshotWeekBoard({
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
   windowFrom?: string;
+  anchorKey?: string;
+  horizonStatus?: HorizonEmptyKind;
+  windowStart?: string;
+  windowEnd?: string;
+  horizonStart?: string;
+  horizonEnd?: string;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onToday?: () => void;
 }) {
   const dateMap = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
@@ -4672,6 +4935,11 @@ function CatalystSnapshotWeekBoard({
   }
 
   const anchorMonday = (() => {
+    // Economic Releases: the requested week anchor wins (snapped to Monday).
+    if (anchorKey) {
+      const [y, m, d] = anchorKey.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+      if (y && m && d) return getMonday(new Date(y, m - 1, d));
+    }
     // Prefer the backend-provided requested_from window over the event-based heuristic.
     // This prevents the view from drifting to "last week" when the snapshot carries
     // stale events from the prior week.
@@ -4699,65 +4967,106 @@ function CatalystSnapshotWeekBoard({
   const todayKey = dateKey(new Date());
   const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {WEEKDAYS.map((day) => (
-          <div key={day} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3">
-            <Skeleton className="h-4 w-16 mb-1 rounded" />
-            <Skeleton className="h-3 w-10 mb-3 rounded" />
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-11 w-full mb-1.5 rounded-lg" />
-            ))}
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // Economic Releases horizon navigation — visual parity with the Earnings
+  // week controls (left arrow / centered range label / right arrow / Now).
+  const isHorizonNav = !!(anchorKey && onPrevWeek && onNextWeek && onToday);
+  const weekLabel = formatWindowLabel(windowStart, windowEnd, dateKey(anchorMonday));
+  const isCurrentWeek = dateKey(getMonday(new Date())) === dateKey(anchorMonday);
+  const { prevDisabled, nextDisabled } = weekNavDisabled(dateKey(anchorMonday), horizonStart, horizonEnd);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {WEEKDAYS.map((weekday, idx) => {
-        const dayDate = addDays(anchorMonday, idx);
-        const dk = dateKey(dayDate);
-        const entries = dateMap.get(dk) || [];
-        const isToday = dk === todayKey;
-
-        return (
-          <div
-            key={weekday}
-            className={`rounded-xl border p-3 ${isToday ? "border-blue-500/20 bg-blue-500/[0.02]" : "border-white/[0.06] bg-white/[0.01]"}`}
-          >
-            {/* Day header */}
-            <div className="mb-2.5">
-              <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-blue-400" : "text-white/50"}`}>
-                {weekday.slice(0, 3)}
-              </p>
-              <p className={`text-[9px] ${isToday ? "text-blue-400/70" : "text-white/25"}`}>
-                {MONTH_NAMES_SHORT[dayDate.getMonth()]} {dayDate.getDate()}
-              </p>
-              {entries.length > 0 && (
-                <p className="text-[8px] text-white/20 mt-0.5">
-                  {entries.length} event{entries.length !== 1 ? "s" : ""}
-                </p>
-              )}
-            </div>
-
-            {/* Content */}
-            {entries.length === 0 ? (
-              <p className="text-[9px] text-white/15">—</p>
-            ) : (
-              <WeekDayColumnContent
-                entries={entries}
-                dk={dk}
-                tabKey={tabKey}
-                tabLabel={tabLabel}
-                onEventClick={onEventClick}
-              />
+    <div>
+      {isHorizonNav && (
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onPrevWeek}
+              disabled={prevDisabled}
+              aria-label="Previous week"
+              className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            {!isCurrentWeek && (
+              <button
+                onClick={onToday}
+                className="px-2 py-0.5 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-[10px] font-semibold text-white/35 hover:text-white/65"
+              >
+                Now
+              </button>
             )}
+            <button
+              onClick={onNextWeek}
+              disabled={nextDisabled}
+              aria-label="Next week"
+              className="p-1 rounded border border-white/[0.08] hover:bg-white/[0.05] transition-all text-white/35 hover:text-white/65 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
-        );
-      })}
+          <span className="text-[11px] font-semibold text-white/50">{weekLabel}</span>
+        </div>
+      )}
+
+      {horizonStatus ? (
+        <HorizonEmptyNotice status={horizonStatus} view="week" />
+      ) : loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {WEEKDAYS.map((day) => (
+            <div key={day} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3">
+              <Skeleton className="h-4 w-16 mb-1 rounded" />
+              <Skeleton className="h-3 w-10 mb-3 rounded" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-11 w-full mb-1.5 rounded-lg" />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {WEEKDAYS.map((weekday, idx) => {
+            const dayDate = addDays(anchorMonday, idx);
+            const dk = dateKey(dayDate);
+            const entries = dateMap.get(dk) || [];
+            const isToday = dk === todayKey;
+
+            return (
+              <div
+                key={weekday}
+                className={`rounded-xl border p-3 ${isToday ? "border-blue-500/20 bg-blue-500/[0.02]" : "border-white/[0.06] bg-white/[0.01]"}`}
+              >
+                {/* Day header */}
+                <div className="mb-2.5">
+                  <p className={`text-[10px] font-bold uppercase tracking-wide ${isToday ? "text-blue-400" : "text-white/50"}`}>
+                    {weekday.slice(0, 3)}
+                  </p>
+                  <p className={`text-[9px] ${isToday ? "text-blue-400/70" : "text-white/25"}`}>
+                    {MONTH_NAMES_SHORT[dayDate.getMonth()]} {dayDate.getDate()}
+                  </p>
+                  {entries.length > 0 && (
+                    <p className="text-[8px] text-white/20 mt-0.5">
+                      {entries.length} event{entries.length !== 1 ? "s" : ""}
+                    </p>
+                  )}
+                </div>
+
+                {/* Content */}
+                {entries.length === 0 ? (
+                  <p className="text-[9px] text-white/15">—</p>
+                ) : (
+                  <WeekDayColumnContent
+                    entries={entries}
+                    dk={dk}
+                    tabKey={tabKey}
+                    tabLabel={tabLabel}
+                    onEventClick={onEventClick}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -4770,16 +5079,34 @@ function CatalystSnapshotDayView({
   tabKey,
   tabLabel,
   onEventClick,
+  anchorKey,
+  horizonStatus,
+  onPrevWeek,
+  onNextWeek,
+  onToday,
+  onSelectDay,
 }: {
   events: CalendarEvent[];
   loading: boolean;
   tabKey: string;
   tabLabel: string;
   onEventClick: (ev: CalendarEvent) => void;
+  anchorKey?: string;
+  horizonStatus?: HorizonEmptyKind;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onToday?: () => void;
+  onSelectDay?: (dk: string) => void;
 }) {
-  const [weekStart, setWeekStart] = useState<Date>(() => getSunday(new Date()));
-  const [selectedKey, setSelectedKey] = useState<string>(() => dateKey(new Date()));
+  const [weekStartState, setWeekStartState] = useState<Date>(() => getSunday(new Date()));
+  const [selectedKeyState, setSelectedKeyState] = useState<string>(() => dateKey(new Date()));
   const [showCtx, setShowCtx] = useState(false);
+
+  // Economic Releases drives the anchor from the parent so navigation
+  // refetches view=day&date=<selected>. Legacy tabs keep local state.
+  const isControlled = !!anchorKey;
+  const weekStart = isControlled && anchorKey ? getSunday(parseDateKey(anchorKey)) : weekStartState;
+  const selectedKey = isControlled && anchorKey ? anchorKey : selectedKeyState;
 
   const dateMap = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
@@ -4794,18 +5121,25 @@ function CatalystSnapshotDayView({
   const totalThisWeek = weekDays.reduce((sum, d) => sum + (dateMap.get(dateKey(d))?.length || 0), 0);
 
   const prevWeek = () => {
+    if (isControlled) { onPrevWeek?.(); return; }
     const s = addDays(weekStart, -7);
-    setWeekStart(s);
-    setSelectedKey(dateKey(s));
+    setWeekStartState(s);
+    setSelectedKeyState(dateKey(s));
   };
   const nextWeek = () => {
+    if (isControlled) { onNextWeek?.(); return; }
     const s = addDays(weekStart, 7);
-    setWeekStart(s);
-    setSelectedKey(dateKey(s));
+    setWeekStartState(s);
+    setSelectedKeyState(dateKey(s));
   };
   const goToday = () => {
-    setWeekStart(getSunday(new Date()));
-    setSelectedKey(dateKey(new Date()));
+    if (isControlled) { onToday?.(); return; }
+    setWeekStartState(getSunday(new Date()));
+    setSelectedKeyState(dateKey(new Date()));
+  };
+  const selectDay = (dk: string) => {
+    if (isControlled) { onSelectDay?.(dk); return; }
+    setSelectedKeyState(dk);
   };
 
   const entries = dateMap.get(selectedKey) || [];
@@ -4849,7 +5183,7 @@ function CatalystSnapshotDayView({
           return (
             <button
               key={key}
-              onClick={() => setSelectedKey(key)}
+              onClick={() => selectDay(key)}
               className={`rounded-xl p-2.5 text-center transition-all border ${
                 isSelected
                   ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20"
@@ -4905,7 +5239,9 @@ function CatalystSnapshotDayView({
         </span>
       </div>
 
-      {loading && entries.length === 0 ? (
+      {horizonStatus ? (
+        <HorizonEmptyNotice status={horizonStatus} view="day" />
+      ) : loading && entries.length === 0 ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-14 rounded-xl bg-white/[0.03] animate-pulse border border-white/[0.04]" />
@@ -5006,11 +5342,21 @@ function CatalystSnapshotMonthView({
   loading,
   tabKey,
   onEventClick,
+  anchorKey,
+  horizonStatus,
+  onPrevMonth,
+  onNextMonth,
+  onToday,
 }: {
   events: CalendarEvent[];
   loading: boolean;
   tabKey: string;
   onEventClick: (ev: CalendarEvent) => void;
+  anchorKey?: string;
+  horizonStatus?: HorizonEmptyKind;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
+  onToday?: () => void;
 }) {
   // Anchor: month containing the most events in the snapshot, fallback to today
   const monthKeyOf = (k: string) => k.slice(0, 7);
@@ -5027,7 +5373,12 @@ function CatalystSnapshotMonthView({
     }
     return Array.from(monthCounts.entries()).sort((a, b) => b[1] - a[1])[0][0];
   })();
-  const [anchor, setAnchor] = useState<string>(defaultMonth);
+  const [anchorState, setAnchorState] = useState<string>(defaultMonth);
+
+  // Economic Releases drives the month from the parent anchor so month
+  // navigation requests view=month&date=<selected>. Legacy tabs keep local state.
+  const isControlled = !!anchorKey;
+  const anchor = isControlled && anchorKey ? anchorKey.slice(0, 7) : anchorState;
 
   const [year, monthNum] = anchor.split("-").map((s) => parseInt(s, 10));
   const month = monthNum || 1;
@@ -5061,12 +5412,18 @@ function CatalystSnapshotMonthView({
   while (cells.length % 5 !== 0) cells.push(null);
 
   const navigateMonth = (delta: -1 | 0 | 1) => {
+    if (isControlled) {
+      if (delta === -1) onPrevMonth?.();
+      else if (delta === 1) onNextMonth?.();
+      else onToday?.();
+      return;
+    }
     if (delta === 0) {
-      setAnchor(defaultMonth);
+      setAnchorState(defaultMonth);
       return;
     }
     const d = new Date(safeYear, monthIdx + delta, 1);
-    setAnchor(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    setAnchorState(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
   return (
@@ -5107,30 +5464,34 @@ function CatalystSnapshotMonthView({
       </div>
 
       {/* Weekday header — Mon through Fri only */}
-      <div className="grid grid-cols-5 gap-1 mb-1">
-        {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
-          <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
-        ))}
-      </div>
+      {horizonStatus ? (
+        <HorizonEmptyNotice status={horizonStatus} view="month" />
+      ) : (
+        <>
+          <div className="grid grid-cols-5 gap-1 mb-1">
+            {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
+              <div key={d} className="text-center text-[9px] font-bold uppercase text-white/20 py-1">{d}</div>
+            ))}
+          </div>
 
-      {/* Month grid (5 columns, weekends skipped) */}
-      <div className="grid grid-cols-5 gap-1">
-        {cells.map((dateStr, i) => {
-          if (!dateStr) {
-            return <div key={`empty-${i}`} className="rounded-xl h-[118px]" />;
-          }
-          const dayNum = parseInt(dateStr.split("-")[2], 10);
-          const entries = dateMap.get(dateStr) || [];
-          const count = entries.length;
-          const todayStr = dateKey(new Date());
-          const isToday = dateStr === todayStr;
-          const isMacro = MACRO_CARD_TABS.has(tabKey);
-          const sortedForDisplay = isMacro ? sortByTier(entries, isMacro) : entries;
-          const top = sortedForDisplay.slice(0, 3);
-          const extra = count - top.length;
-          return (
-            <div
-              key={dateStr}
+          {/* Month grid (5 columns, weekends skipped) */}
+          <div className="grid grid-cols-5 gap-1">
+            {cells.map((dateStr, i) => {
+              if (!dateStr) {
+                return <div key={`empty-${i}`} className="rounded-xl h-[118px]" />;
+              }
+              const dayNum = parseInt(dateStr.split("-")[2], 10);
+              const entries = dateMap.get(dateStr) || [];
+              const count = entries.length;
+              const todayStr = dateKey(new Date());
+              const isToday = dateStr === todayStr;
+              const isMacro = MACRO_CARD_TABS.has(tabKey);
+              const sortedForDisplay = isMacro ? sortByTier(entries, isMacro) : entries;
+              const top = sortedForDisplay.slice(0, 3);
+              const extra = count - top.length;
+              return (
+                <div
+                  key={dateStr}
               className={`rounded-xl border transition-all flex flex-col h-[118px] ${
                 count > 0 ? "cursor-default" : "opacity-40 cursor-default"
               } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
@@ -5171,7 +5532,9 @@ function CatalystSnapshotMonthView({
             </div>
           );
         })}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
