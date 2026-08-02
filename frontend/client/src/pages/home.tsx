@@ -1821,7 +1821,7 @@ export default function HomePage() {
 
         {/* Daily Alpha Board + Top Catalysts This Week — equal width and height */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-          <div className="h-full flex flex-col [&>button]:flex-1">
+          <div className="h-[260px] flex flex-col [&>button]:flex-1">
             <DailyAlphaBoard />
           </div>
 
@@ -1958,7 +1958,7 @@ export default function HomePage() {
             };
 
             return (
-              <GlassCard className="p-4 flex flex-col h-full">
+              <GlassCard className="p-4 flex flex-col h-[260px] overflow-hidden">
                 <div className="mb-3 shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
