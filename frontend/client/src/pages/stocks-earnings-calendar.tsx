@@ -4082,6 +4082,36 @@ export function snapToFirstOfMonthKey(dk: string): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+/** Derive the canonical effective anchor for a mode, using the getMonday
+ *  weekend-to-next-Monday convention. A raw Sunday/Saturday anchor is never
+ *  allowed into a Week request — it is always snapped to the planning Monday. */
+export function canonicalAnchorForMode(rawAnchor: string, mode: SnapshotMode): string {
+  if (mode === "week") return snapToMondayKey(rawAnchor);
+  if (mode === "month") return snapToFirstOfMonthKey(rawAnchor);
+  return rawAnchor;
+}
+
+/** Resolve the Monday anchor for the Week board columns, preferring the
+ *  backend's reported window_start over the requested anchor so the rendered
+ *  week columns and label never disagree with the response window. */
+export function resolveWeekMonday(windowStart?: string, anchorKey?: string, windowFrom?: string): Date | null {
+  if (windowStart) {
+    const [y, m, d] = windowStart.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+    if (y && m && d) return new Date(y, m - 1, d);
+  }
+  if (anchorKey) {
+    const [y, m, d] = anchorKey.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+    if (y && m && d) return getMonday(new Date(y, m - 1, d));
+  }
+  if (windowFrom) {
+    try {
+      const [y, m, d] = windowFrom.slice(0, 10).split("-").map((s) => parseInt(s, 10));
+      if (y && m && d) return getMonday(new Date(y, m - 1, d));
+    } catch { /* fall through */ }
+  }
+  return null;
+}
+
 /** Build the snapshot query string. Values are URL-encoded by URLSearchParams. */
 export function buildSnapshotParams(
   tabKey: string,
@@ -4217,9 +4247,11 @@ function CatalystSnapshotTab({
 
   const [mode, setMode] = useState<SnapshotMode>(defaultMode);
   // One real calendar-date anchor (YYYY-MM-DD) driving the Economic Releases
-  // Day/Week/Month requests. Shared across views; snapped per view when the
-  // user switches Day ↔ Week ↔ Month.
-  const [anchor, setAnchor] = useState<string>(() => dateKey(new Date()));
+  // Day/Week/Month requests. Canonicalised on mount so a Sunday anchor
+  // starts a week request as the upcoming planning Monday.
+  const [anchor, setAnchor] = useState<string>(() =>
+    canonicalAnchorForMode(dateKey(new Date()), defaultMode)
+  );
   const [selectedEvent, setSelectedEvent] = useState<CatalystEvent | null>(null);
 
   const changeMode = useCallback((m: SnapshotMode) => {
@@ -4229,17 +4261,25 @@ function CatalystSnapshotTab({
     else if (m === "month") setAnchor((a) => snapToFirstOfMonthKey(a));
   }, [isHorizonTab]);
 
+  // Effective anchor: the canonical value for the active view, derived
+  // from the raw anchor.  Used for the API request, React Query key, and
+  // rendering so there is never one date for the request and another for
+  // the displayed columns / label.
+  const canonicalAnchor = isHorizonTab
+    ? canonicalAnchorForMode(anchor, mode)
+    : anchor;
+
   // Snapshot fetch — long staleTime, no polling/refetch on window focus.
   // Re-keyed by tab/scope/search; stable for repeated tab clicks.
   // Include current week ID so stale-time cache is automatically busted at week boundaries.
-  // Economic Releases adds view + anchor so cached windows never collide across
+  // Economic Releases adds view + canonical anchor so cached windows never collide across
   // views or dates (clicking prev/next issues a fresh query for the new window).
   const currentWeekId = dateKey(getMonday(new Date()));
   const queryKey = buildSnapshotQueryKey({
     tabKey, scope, search, currentWeekId,
     horizon: isHorizonTab,
     view: mode,
-    anchor,
+    anchor: canonicalAnchor,
   });
   const { data, isLoading, error } = useQuery<CatalystSnapshotEnvelope | CatalystEvent[]>({
     queryKey,
@@ -4249,7 +4289,7 @@ function CatalystSnapshotTab({
         scope,
         search,
         isHorizonTab ? mode : undefined,
-        isHorizonTab && mode !== "recent" ? anchor : undefined
+        isHorizonTab && mode !== "recent" ? canonicalAnchor : undefined
       );
       const r = await fetch(`/api/catalysts/events?${params}`);
       if (!r.ok) throw new Error(`${r.status}`);
@@ -4445,15 +4485,15 @@ function CatalystSnapshotTab({
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
           windowFrom={backendWindowFrom}
           {...(isHorizonTab ? {
-            anchorKey: snapToMondayKey(anchor),
+            anchorKey: canonicalAnchor,
             horizonStatus,
             windowStart: horizonMeta?.window_start,
             windowEnd: horizonMeta?.window_end,
             horizonStart: horizonMeta?.horizon_start,
             horizonEnd: horizonMeta?.horizon_end,
-            onPrevWeek: () => setAnchor((a) => addDaysKey(a, -7)),
-            onNextWeek: () => setAnchor((a) => addDaysKey(a, 7)),
-            onToday: () => setAnchor(dateKey(new Date())),
+            onPrevWeek: () => setAnchor((a) => addDaysKey(snapToMondayKey(a), -7)),
+            onNextWeek: () => setAnchor((a) => addDaysKey(snapToMondayKey(a), 7)),
+            onToday: () => setAnchor(snapToMondayKey(dateKey(new Date()))),
           } : {})}
         />
       )}
@@ -4465,10 +4505,10 @@ function CatalystSnapshotTab({
           tabKey={tabKey}
           onEventClick={(ev) => setSelectedEvent(ev.raw)}
           {...(isHorizonTab ? {
-            anchorKey: snapToFirstOfMonthKey(anchor),
+            anchorKey: canonicalAnchor,
             horizonStatus,
-            onPrevMonth: () => setAnchor((a) => addMonthsKey(a, -1)),
-            onNextMonth: () => setAnchor((a) => addMonthsKey(a, 1)),
+            onPrevMonth: () => setAnchor((a) => addMonthsKey(snapToFirstOfMonthKey(a), -1)),
+            onNextMonth: () => setAnchor((a) => addMonthsKey(snapToFirstOfMonthKey(a), 1)),
             onToday: () => setAnchor(snapToFirstOfMonthKey(dateKey(new Date()))),
           } : {})}
         />
@@ -4934,21 +4974,8 @@ function CatalystSnapshotWeekBoard({
     dateMap.set(ev.date, [...list, ev]);
   }
 
-  const anchorMonday = (() => {
-    // Economic Releases: the requested week anchor wins (snapped to Monday).
-    if (anchorKey) {
-      const [y, m, d] = anchorKey.slice(0, 10).split("-").map((s) => parseInt(s, 10));
-      if (y && m && d) return getMonday(new Date(y, m - 1, d));
-    }
-    // Prefer the backend-provided requested_from window over the event-based heuristic.
-    // This prevents the view from drifting to "last week" when the snapshot carries
-    // stale events from the prior week.
-    if (windowFrom) {
-      try {
-        const [y, m, d] = windowFrom.slice(0, 10).split("-").map((s) => parseInt(s, 10));
-        if (y && m && d) return getMonday(new Date(y, m - 1, d));
-      } catch { /* fall through to heuristic */ }
-    }
+  const anchorMonday = resolveWeekMonday(windowStart, anchorKey, windowFrom)
+    ?? (() => {
     if (dateMap.size === 0) return getMonday(new Date());
     const counts = new Map<string, number>();
     Array.from(dateMap.entries()).forEach(([k, list]) => {
