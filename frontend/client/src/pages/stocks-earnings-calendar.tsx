@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSetPageContext } from "@/hooks/useSetPageContext";
 import { useSetScreenContext } from "@/hooks/useSetScreenContext";
 import { usePageContext } from "@/contexts/PageContextContext";
@@ -3089,7 +3089,7 @@ function CatalystDetailModal({ event, onClose }: { event: CatalystEvent; onClose
 
 // ─── Catalyst Calendar — Normalized event type ───────────────────
 
-interface CalendarEvent {
+export interface CalendarEvent {
   id: string;
   date: string;          // YYYY-MM-DD
   symbol?: string;
@@ -4510,6 +4510,10 @@ function CatalystSnapshotTab({
             onPrevMonth: () => setAnchor((a) => addMonthsKey(snapToFirstOfMonthKey(a), -1)),
             onNextMonth: () => setAnchor((a) => addMonthsKey(snapToFirstOfMonthKey(a), 1)),
             onToday: () => setAnchor(snapToFirstOfMonthKey(dateKey(new Date()))),
+            onSelectDay: (dk: string) => {
+              setAnchor(dk);
+              changeMode("day");
+            },
           } : {})}
         />
       )}
@@ -5364,7 +5368,7 @@ function CatalystSnapshotDayView({
 // as 5 across (Mon-Fri). No logos/percent moves — snapshot data only
 // carries lightweight event metadata.
 
-function CatalystSnapshotMonthView({
+export function CatalystSnapshotMonthView({
   events,
   loading,
   tabKey,
@@ -5374,6 +5378,7 @@ function CatalystSnapshotMonthView({
   onPrevMonth,
   onNextMonth,
   onToday,
+  onSelectDay,
 }: {
   events: CalendarEvent[];
   loading: boolean;
@@ -5384,6 +5389,7 @@ function CatalystSnapshotMonthView({
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
   onToday?: () => void;
+  onSelectDay?: (dk: string) => void;
 }) {
   // Anchor: month containing the most events in the snapshot, fallback to today
   const monthKeyOf = (k: string) => k.slice(0, 7);
@@ -5405,6 +5411,7 @@ function CatalystSnapshotMonthView({
   // Economic Releases drives the month from the parent anchor so month
   // navigation requests view=month&date=<selected>. Legacy tabs keep local state.
   const isControlled = !!anchorKey;
+  const isMacroTab = MACRO_CARD_TABS.has(tabKey);
   const anchor = isControlled && anchorKey ? anchorKey.slice(0, 7) : anchorState;
 
   const [year, monthNum] = anchor.split("-").map((s) => parseInt(s, 10));
@@ -5491,6 +5498,20 @@ function CatalystSnapshotMonthView({
       </div>
 
       {/* Weekday header — Mon through Fri only */}
+      {isMacroTab && (
+        <div className="flex flex-wrap items-center gap-2 mb-2" aria-label="Macro tier legend">
+          <span className="text-[10px] text-white/40">Tiers:</span>
+          {( ["critical", "major", "secondary", "context"] as SignalTier[]).map((tier) => {
+            const p = TIER_PRESENTATION[tier];
+            return (
+              <span key={tier} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold whitespace-nowrap border ${p.labelCls}`}>
+                {p.label}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {horizonStatus ? (
         <HorizonEmptyNotice status={horizonStatus} view="month" />
       ) : (
@@ -5512,53 +5533,85 @@ function CatalystSnapshotMonthView({
               const count = entries.length;
               const todayStr = dateKey(new Date());
               const isToday = dateStr === todayStr;
-              const isMacro = MACRO_CARD_TABS.has(tabKey);
-              const sortedForDisplay = isMacro ? sortByTier(entries, isMacro) : entries;
+              const sortedForDisplay = isMacroTab ? sortByTier(entries, isMacroTab) : entries;
               const top = sortedForDisplay.slice(0, 3);
               const extra = count - top.length;
+              const isClickable = !!onSelectDay;
               return (
                 <div
                   key={dateStr}
-              className={`rounded-xl border transition-all flex flex-col h-[118px] ${
-                count > 0 ? "cursor-default" : "opacity-40 cursor-default"
-              } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
-            >
-              {/* Day number + count */}
-              <div className="flex items-start justify-between px-2 pt-1.5 pb-0 flex-shrink-0">
-                <p className={`text-[11px] font-bold leading-none ${isToday ? "text-purple-400" : "text-white/45"}`}>{dayNum}</p>
-                {count > 0 && (
-                  <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
-                )}
-              </div>
+                  role={isClickable ? "button" : undefined}
+                  tabIndex={isClickable ? 0 : undefined}
+                  aria-label={isClickable ? `${dateStr} · ${count} event${count !== 1 ? "s" : ""}` : undefined}
+                  onClick={isClickable ? () => onSelectDay(dateStr) : undefined}
+                  onKeyDown={
+                    isClickable
+                      ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onSelectDay(dateStr);
+                          }
+                        }
+                      : undefined
+                  }
+                  className={`rounded-xl border transition-all flex flex-col h-[118px] ${
+                    isClickable
+                      ? "cursor-pointer hover:border-white/20 hover:bg-white/[0.03] focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                      : count > 0
+                      ? "cursor-default"
+                      : "opacity-40 cursor-default"
+                  } ${isToday ? "border-purple-500/30 bg-purple-500/[0.05]" : "border-white/[0.06] bg-white/[0.015]"}`}
+                >
+                  {/* Day number + count */}
+                  <div className="flex items-start justify-between px-2 pt-1.5 pb-0 flex-shrink-0">
+                    <p className={`text-[11px] font-bold leading-none ${isToday ? "text-purple-400" : "text-white/45"}`}>{dayNum}</p>
+                    {count > 0 && (
+                      <p className="text-[9px] text-white/25 leading-none font-medium">{count}</p>
+                    )}
+                  </div>
 
-              {count > 0 && (
-                <div className="flex-1 flex flex-col items-stretch justify-start gap-0.5 px-1.5 pb-1.5 pt-1 overflow-hidden">
-                  {top.map((ev, idx) => {
-                    const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
-                    const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
-                    const chipLabel = isMacro ? macroCardTitle(ev) : (ev.symbol || ev.title);
-                    const tp = isMacro ? effectiveSignalTier(ev, isMacro) : null;
-                    const chipBorder = tp === "critical" ? "border-rose-500/40" : tp === "major" ? "border-orange-500/30" : c.border;
-                    return (
-                      <button
-                        key={ev.id || `${dateStr}-${idx}`}
-                        onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                        className={`w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity ${tp === "context" ? "opacity-50" : ""}`}
-                        style={{ background: c.bg, color: c.text, border: `1px solid ${chipBorder}` }}
-                        title={chipLabel}
-                      >
-                        {chipLabel}
-                      </button>
-                    );
-                  })}
-                  {extra > 0 && (
-                    <p className="text-[8px] text-white/30 px-1">+{extra} more</p>
-                  )}
+                  <div className="flex-1 flex flex-col items-stretch justify-start gap-0.5 px-1.5 pb-1.5 pt-1 overflow-hidden">
+                    {top.map((ev, idx) => {
+                      const typeKey = (ev.eventType || "macro").toLowerCase().replace(/ /g, "_");
+                      const c = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS.macro;
+                      const chipLabel = isMacroTab ? macroCardTitle(ev) : (ev.symbol || ev.title);
+                      if (isMacroTab) {
+                        const tier = effectiveSignalTier(ev, true);
+                        const p = TIER_PRESENTATION[tier];
+                        return (
+                          <button
+                            key={ev.id || `${dateStr}-${idx}`}
+                            onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                            className={`w-full text-left rounded px-1 py-0.5 border flex items-center gap-1 hover:opacity-80 transition-opacity ${p.cardBg} ${p.cardBorder} ${tier === "context" ? "opacity-50" : ""}`}
+                            title={chipLabel}
+                            aria-label={`${chipLabel} · ${dateStr} · ${p.label}`}
+                          >
+                            <span className="truncate flex-1 min-w-0 text-[9px] text-white/90">{chipLabel}</span>
+                            <span className={`inline-flex items-center px-1 py-0 rounded text-[8px] font-semibold whitespace-nowrap border ${p.labelCls}`}>
+                              {p.label}
+                            </span>
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          key={ev.id || `${dateStr}-${idx}`}
+                          onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                          className="w-full text-left rounded px-1 py-0.5 truncate text-[9px] hover:opacity-80 transition-opacity"
+                          style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+                          title={chipLabel}
+                        >
+                          {chipLabel}
+                        </button>
+                      );
+                    })}
+                    {extra > 0 && (
+                      <p className="text-[8px] text-white/30 px-1">+{extra} more</p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
           </div>
         </>
       )}
@@ -6987,7 +7040,7 @@ function PreIPOWatchlistView({ headerRight }: { headerRight?: React.ReactNode })
 // Always signal-only (no All toggle, no Signal toggle). Fetches once when
 // the tab mounts; no polling and no fetch loops.
 
-interface TopCatalystEntry extends CatalystEvent {
+export interface TopCatalystEntry extends CatalystEvent {
   score?: number;
   rank?: number;
   reasons?: string[];
@@ -7153,7 +7206,7 @@ function CatalystTypeBadge({ type, category }: { type?: string; category?: strin
 }
 
 // Compact event row used inside calendar day columns and in event-type sections.
-function TopCatalystEventRow({
+export function TopCatalystEventRow({
   ev,
   identityMap,
   variant,
@@ -7175,21 +7228,34 @@ function TopCatalystEventRow({
   const score = typeof ev.score === "number" ? ev.score : null;
   const logo = ident?.logo || (ev.logo as string | undefined) || (ev.image as string | undefined);
 
+  const isMacro = variant === "macro";
+  const tier = isMacro ? effectiveSignalTier(ev, true) : null;
+  const tierPres = tier ? TIER_PRESENTATION[tier] : null;
+  const tierClasses = isMacro ? tierCardClasses(ev as unknown as CalendarEvent, false, true) : null;
+
   const variantStyle = variant === "earnings"
     ? { bg: "bg-amber-500/[0.06] hover:bg-amber-500/[0.12]", border: "border-amber-500/20 hover:border-amber-500/40" }
     : variant === "macro"
     ? { bg: "bg-pink-500/[0.05] hover:bg-pink-500/[0.10]", border: "border-pink-500/20 hover:border-pink-500/40" }
     : { bg: "bg-white/[0.02] hover:bg-white/[0.05]", border: "border-white/[0.06] hover:border-white/[0.12]" };
 
-  const tooltip = why
-    ? `Why this matters: ${why}`
+  const tooltipParts: string[] = [];
+  if (tierPres) tooltipParts.push(tierPres.label);
+  if (why) tooltipParts.push(`Why this matters: ${why}`);
+  if (time) tooltipParts.push(time);
+  const tooltip = tooltipParts.length > 0
+    ? tooltipParts.join(" · ")
     : `${eventType}${time ? ` · ${time}` : ""}`;
+
+  const rowClass = isMacro && tierClasses
+    ? `group w-full text-left rounded-lg border transition-all p-2 flex items-center gap-2 ${tierClasses.outer} ${tierPres?.isMuted ? "opacity-70" : ""} hover:bg-white/[0.04]`
+    : `group w-full text-left rounded-lg border ${variantStyle.border} ${variantStyle.bg} transition-all p-2 flex items-center gap-2`;
 
   return (
     <button
       onClick={onClick}
       title={tooltip}
-      className={`group w-full text-left rounded-lg border ${variantStyle.border} ${variantStyle.bg} transition-all p-2 flex items-center gap-2`}
+      className={rowClass}
     >
       {/* Symbol bubble (earnings) or icon-style label (macro/other) */}
       {variant === "earnings" && symbol ? (
@@ -7217,7 +7283,7 @@ function TopCatalystEventRow({
           )}
         </div>
       ) : (
-        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${variant === "macro" ? "bg-pink-500/15 text-pink-300" : "bg-white/5 text-white/50"}`}>
+        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${variant === "macro" ? (tier === "critical" ? "bg-rose-500/15 text-rose-300" : tier === "major" ? "bg-orange-500/15 text-orange-300" : "bg-pink-500/15 text-pink-300") : "bg-white/5 text-white/50"}`}>
           {variant === "macro" ? <Landmark className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
         </div>
       )}
@@ -7227,12 +7293,19 @@ function TopCatalystEventRow({
           {variant === "earnings" && symbol && (
             <span className="text-[10px] font-mono font-bold text-white/85 flex-shrink-0">{symbol}</span>
           )}
-          <p className={`truncate leading-tight ${variant === "earnings" ? "text-[11px] font-semibold text-white/90 group-hover:text-white" : "text-[11px] font-medium text-white/75 group-hover:text-white/95"}`}>
+          <p className={`truncate leading-tight ${
+            isMacro && tierClasses
+              ? `text-[11px] text-white/90 group-hover:text-white ${tierClasses.title}`
+              : variant === "earnings"
+              ? "text-[11px] font-semibold text-white/90 group-hover:text-white"
+              : "text-[11px] font-medium text-white/75 group-hover:text-white/95"
+          }`}>
             {name}
           </p>
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <CatalystTypeBadge type={eventType} />
+          {isMacro && <SignalTierBadge event={ev} macroTab />}
           {time && <span className="text-[8px] px-1 py-0.5 rounded bg-white/[0.04] text-white/35">{time}</span>}
           {variant === "earnings" && score != null && (
             <span className="text-[8px] font-semibold text-amber-300/80">{score.toFixed(1)}</span>
@@ -7244,6 +7317,16 @@ function TopCatalystEventRow({
       </div>
     </button>
   );
+}
+
+/** Sort Top Catalysts macro entries by backend signal_tier (Critical → Major → Secondary → Context),
+ *  preserving original order within the same tier. */
+export function sortTcMacroByTier<T extends TopCatalystEntry>(entries: T[]): T[] {
+  return [...entries].sort((a, b) => {
+    const ta = TIER_ORDER[effectiveSignalTier(a, true)];
+    const tb = TIER_ORDER[effectiveSignalTier(b, true)];
+    return ta - tb;
+  });
 }
 
 function TopCatalystsTab({
@@ -7337,7 +7420,10 @@ function TopCatalystsTab({
   // Earnings: sort by score desc when present
   allEarnings.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  const totalCount = allEarnings.length + allMacro.length + allOther.length;
+  // Macro: sort by explicit signal_tier hierarchy, preserving backend order within tier.
+  const sortedAllMacro = sortTcMacroByTier(allMacro);
+
+  const totalCount = allEarnings.length + sortedAllMacro.length + allOther.length;
 
   // Calendar day-columns: prefer Mon–Fri layout; if backend returned non-weekday
   // dates we still render whatever the backend gave us in order.
@@ -7457,7 +7543,7 @@ function TopCatalystsTab({
               : d.date;
             const isToday = valid && dateKey(new Date()) === d.date;
             const earnings = (d.earnings || []).slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-            const macro = d.macro || [];
+            const macro = sortTcMacroByTier(d.macro || []);
             const other = d.other || [];
             const dayCount = earnings.length + macro.length + other.length;
 
@@ -7580,16 +7666,16 @@ function TopCatalystsTab({
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-pink-300">=== Macro ===</span>
               <span className="text-[10px] text-white/30">
-                {allMacro.length} CPI/PPI/NFP/FOMC/GDP/Treasury event{allMacro.length !== 1 ? "s" : ""}
+                {sortedAllMacro.length} CPI/PPI/NFP/FOMC/GDP/Treasury event{sortedAllMacro.length !== 1 ? "s" : ""}
               </span>
             </div>
-            {allMacro.length === 0 ? (
+            {sortedAllMacro.length === 0 ? (
               <p className="text-[11px] text-white/25 px-2 py-3 border border-white/[0.04] rounded-lg bg-white/[0.01]">
                 No macro events this week.
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {allMacro.map((ev, i) => (
+                {sortedAllMacro.map((ev, i) => (
                   <TopCatalystEventRow
                     key={ev.id || `tm-${i}`}
                     ev={ev}
