@@ -1961,7 +1961,7 @@ export default function HomePage() {
               <GlassCard className="p-4 flex flex-col h-full">
                 <div className="mb-3 shrink-0">
                   <div className="flex items-center justify-between mb-1">
-                    <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
+                    <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
                     {riskMeta && (
                       <span className={`text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded border leading-none shrink-0 ml-2 ${riskMeta.cls}`}>
                         {riskMeta.label}

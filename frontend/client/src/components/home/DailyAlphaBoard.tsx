@@ -619,7 +619,7 @@ export function DailyAlphaBoard() {
     setRefreshKey(k => k + 1);
   }, []);
 
-  const preview = data?.ideas?.slice(0, 3) ?? [];
+  const preview = data?.ideas?.slice(0, 10) ?? [];
   const topIdea = data?.ideas?.[0];
   const rc = data?.regime?.label ? regimeColor(data.regime.label) : null;
 
@@ -630,15 +630,15 @@ export function DailyAlphaBoard() {
       {/* ── Compact teaser card ── */}
       <button
         onClick={handleOpen}
-        className={`w-full text-left rounded-2xl border bg-white/[0.025] transition-all duration-300 hover:bg-white/[0.04] hover:scale-[1.002] active:scale-[0.999] focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500/50 ${
+        className={`w-full text-left rounded-2xl border bg-white/[0.025] overflow-hidden transition-all duration-300 hover:bg-white/[0.04] hover:scale-[1.002] active:scale-[0.999] focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500/50 ${
           fresh
             ? "alpha-gold-glow border-yellow-500/40"
             : "border-white/[0.08] hover:border-white/[0.14]"
         }`}
       >
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5 flex flex-col h-full overflow-hidden">
           {/* Top row */}
-          <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-start justify-between gap-3 mb-3 shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               <Sparkles className={`w-4 h-4 shrink-0 ${fresh ? "text-amber-400" : "text-white/30"}`} />
               <div className="min-w-0">
@@ -674,7 +674,7 @@ export function DailyAlphaBoard() {
           {isLoading && !data ? (
             <TeaserSkeleton />
           ) : preview.length > 0 ? (
-            <div className="mt-1">
+            <div className="flex-1 min-h-0 overflow-y-auto mt-1">
               {preview.map((idea, i) => <MiniIdeaRow key={idea.symbol} idea={idea} rank={i + 1} onChartOpen={handleChartOpen} />)}
             </div>
           ) : isError ? (
@@ -682,7 +682,7 @@ export function DailyAlphaBoard() {
           ) : null}
 
           {/* Footer meta */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 pt-2.5 border-t border-white/[0.05]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 pt-2.5 border-t border-white/[0.05] shrink-0">
             {data?.generated_at && (
               <span className="text-[10px] text-white/25 flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />{fmtAgo(data.generated_at)}
