@@ -1819,9 +1819,9 @@ export default function HomePage() {
           </DialogContent>
         </Dialog>
 
-        {/* Daily Alpha Board + Upcoming Economic Events — equal height columns, right 360px */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-5 mb-6">
-          <div>
+        {/* Daily Alpha Board + Top Catalysts This Week — equal width and height */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <div className="h-full flex flex-col [&>button]:flex-1">
             <DailyAlphaBoard />
           </div>
 
@@ -1958,7 +1958,7 @@ export default function HomePage() {
             };
 
             return (
-              <GlassCard className="p-4 flex flex-col">
+              <GlassCard className="p-4 flex flex-col h-full">
                 <div className="mb-3 shrink-0">
                   <div className="flex items-center justify-between mb-1">
                     <SectionHeader icon={CalendarDays} title="Top Catalysts This Week" accent="upcoming" viewMore="/app/stocks/earnings-calendar?tab=top_catalysts" />
@@ -1995,7 +1995,7 @@ export default function HomePage() {
                     } catch { return null; }
                   })()}
                 </div>
-                <div className="overflow-y-auto max-h-[153px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
+                <div className="overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-1.5 pr-0.5">
 
                   {/* Loading */}
                   {topCatalystsLoading && Array.from({ length: 5 }).map((_, i) => (
