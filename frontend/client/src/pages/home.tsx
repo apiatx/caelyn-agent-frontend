@@ -1719,6 +1719,12 @@ export default function HomePage() {
             if (isNaN(n)) return '—';
             return (n >= 0 ? '+' : '') + Math.round(n) + ' bps';
           };
+          const safeRatio = (v: any): string => {
+            if (v === null || v === undefined || v === '') return '—';
+            const n = typeof v === 'string' ? parseFloat(v) : v as number;
+            if (isNaN(n)) return '—';
+            return Math.round(n) + '%';
+          };
           const pctClr = (v: number | null | undefined): string =>
             v == null ? 'text-white/40' : v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-white/50';
 
@@ -1776,14 +1782,14 @@ export default function HomePage() {
             return m[d] ?? d;
           };
           const dirArrow = (d: string | null | undefined): string => {
-            if (d === 'IMPROVING') return '\u2191';
-            if (d === 'WEAKENING' || d === 'WORSENING') return '\u2193';
-            return '\u2194';
+            if (d === 'IMPROVING') return '↑';
+            if (d === 'WEAKENING' || d === 'WORSENING') return '↓';
+            return '↔';
           };
           const dirClr = (d: string | null | undefined): string => {
             if (d === 'IMPROVING') return 'text-emerald-400';
             if (d === 'WEAKENING' || d === 'WORSENING') return 'text-rose-400';
-            return 'text-white/40';
+            return 'text-white/50';
           };
 
           const fmtBias = (b: string | null | undefined): string => {
@@ -1864,7 +1870,13 @@ export default function HomePage() {
           const renderPillarCard = (pillar: { label: string; p: any; key: string }) => {
             const p = pillar.p;
             const avail = p?.is_available ?? true;
-            const ps = p?.score;
+            const ps: number | null | undefined = ((): number | null | undefined => {
+              const v = p?.risk_score;
+              if (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return undefined;
+              const n = typeof v === 'string' ? parseFloat(v) : v as number;
+              if (isNaN(n) || !isFinite(n)) return undefined;
+              return n;
+            })();
             const pd = p?.direction;
             const pc = p?.confidence;
             const comps: Record<string, any> = p?.components ?? {};
@@ -1872,31 +1884,31 @@ export default function HomePage() {
             const availCnt = p?.available_component_count;
             const expCnt = p?.expected_component_count;
             const confText = availCnt != null && expCnt != null
-              ? `${confLabel(pc)} \u00B7 ${availCnt}/${expCnt} inputs`
+              ? `${confLabel(pc)} · ${availCnt}/${expCnt} inputs`
               : confLabel(pc);
 
             // per-pillar metric extraction
             let metrics: { label: string; value: string; cls?: string }[] = [];
             if (pillar.key === 'trend_and_breadth') {
-              if (comps.spy_1d != null || comps.spy_1d_pct != null)
-                metrics.push({ label: 'SPY 1D', value: safePct(comps.spy_1d ?? comps.spy_1d_pct), cls: pctClr(comps.spy_1d ?? comps.spy_1d_pct) });
-              if (comps.qqq_1d != null || comps.qqq_1d_pct != null)
-                metrics.push({ label: 'QQQ 1D', value: safePct(comps.qqq_1d ?? comps.qqq_1d_pct), cls: pctClr(comps.qqq_1d ?? comps.qqq_1d_pct) });
-              if (comps.spx_7d != null || comps.spx_7d_pct != null)
-                metrics.push({ label: 'SPX 7D', value: safePct(comps.spx_7d ?? comps.spx_7d_pct), cls: pctClr(comps.spx_7d ?? comps.spx_7d_pct) });
-              if (comps.breadth_1d != null || comps.breadth_1d_pct != null)
-                metrics.push({ label: 'Breadth 1D', value: safePct(comps.breadth_1d ?? comps.breadth_1d_pct), cls: pctClr(comps.breadth_1d ?? comps.breadth_1d_pct) });
-              if (comps.breadth_7d != null || comps.breadth_7d_pct != null)
-                metrics.push({ label: 'Breadth 7D', value: safePct(comps.breadth_7d ?? comps.breadth_7d_pct), cls: pctClr(comps.breadth_7d ?? comps.breadth_7d_pct) });
+              if (comps.spy_change_1d != null)
+                metrics.push({ label: 'SPY 1D', value: safePct(comps.spy_change_1d), cls: pctClr(comps.spy_change_1d) });
+              if (comps.qqq_change_1d != null)
+                metrics.push({ label: 'QQQ 1D', value: safePct(comps.qqq_change_1d), cls: pctClr(comps.qqq_change_1d) });
+              if (comps.spx_return_7d != null)
+                metrics.push({ label: 'SPX 7D', value: safePct(comps.spx_return_7d), cls: pctClr(comps.spx_return_7d) });
+              if (comps.breadth_1d != null)
+                metrics.push({ label: 'Breadth 1D', value: safeRatio(comps.breadth_1d) });
+              if (comps.breadth_7d != null)
+                metrics.push({ label: 'Breadth 7D', value: safeRatio(comps.breadth_7d) });
               if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
             } else if (pillar.key === 'volatility_and_credit') {
               if (comps.vix != null) metrics.push({ label: 'VIX', value: safeNum(comps.vix, 1) });
-              if (comps.vix_1d != null || comps.vix_1d_pct != null)
-                metrics.push({ label: 'VIX 1D', value: safePct(comps.vix_1d ?? comps.vix_1d_pct), cls: pctClr(comps.vix_1d ?? comps.vix_1d_pct) });
-              if (comps.vix_7d != null || comps.vix_7d_pct != null)
-                metrics.push({ label: 'VIX 7D', value: safePct(comps.vix_7d ?? comps.vix_7d_pct), cls: pctClr(comps.vix_7d ?? comps.vix_7d_pct) });
-              if (comps.hyg_1d != null || comps.hyg_1d_pct != null)
-                metrics.push({ label: 'HYG 1D', value: safePct(comps.hyg_1d ?? comps.hyg_1d_pct), cls: pctClr(comps.hyg_1d ?? comps.hyg_1d_pct) });
+              if (comps.vix_change_1d != null)
+                metrics.push({ label: 'VIX 1D', value: safePct(comps.vix_change_1d), cls: pctClr(comps.vix_change_1d) });
+              if (comps.vix_return_7d != null)
+                metrics.push({ label: 'VIX 7D', value: safePct(comps.vix_return_7d), cls: pctClr(comps.vix_return_7d) });
+              if (comps.hyg_change_1d != null)
+                metrics.push({ label: 'HYG 1D', value: safePct(comps.hyg_change_1d), cls: pctClr(comps.hyg_change_1d) });
               if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
             } else if (pillar.key === 'rates_and_dollar') {
               if (comps.us10y != null) metrics.push({ label: '10Y', value: safeNum(comps.us10y, 2) + '%' });
@@ -1904,14 +1916,14 @@ export default function HomePage() {
               if (comps.us10y_5d_bps != null) metrics.push({ label: '5D', value: safeBps(comps.us10y_5d_bps), cls: pctClr(comps.us10y_5d_bps) });
               if (comps.us10y_20d_bps != null) metrics.push({ label: '20D', value: safeBps(comps.us10y_20d_bps), cls: pctClr(comps.us10y_20d_bps) });
               if (comps.dxy != null) metrics.push({ label: 'DXY', value: safeNum(comps.dxy, 1) });
-              if (comps.dxy_1d != null || comps.dxy_1d_pct != null)
-                metrics.push({ label: 'DXY 1D', value: safePct(comps.dxy_1d ?? comps.dxy_1d_pct), cls: pctClr(comps.dxy_1d ?? comps.dxy_1d_pct) });
+              if (comps.dxy_change_1d != null)
+                metrics.push({ label: 'DXY 1D', value: safePct(comps.dxy_change_1d), cls: pctClr(comps.dxy_change_1d) });
               if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
             } else if (pillar.key === 'leadership_and_cross_asset') {
-              if (comps.btc_24h != null || comps.btc_24h_pct != null)
-                metrics.push({ label: 'BTC 24H', value: safePct(comps.btc_24h ?? comps.btc_24h_pct), cls: pctClr(comps.btc_24h ?? comps.btc_24h_pct) });
-              if (comps.cyclical_vs_defensive != null)
-                metrics.push({ label: 'Cyc vs Def', value: safePct(comps.cyclical_vs_defensive), cls: pctClr(comps.cyclical_vs_defensive) });
+              if (comps.btc_change_24h != null)
+                metrics.push({ label: 'BTC 24H', value: safePct(comps.btc_change_24h), cls: pctClr(comps.btc_change_24h) });
+              if (comps.cyclical_vs_defensive_spread != null)
+                metrics.push({ label: 'Cyc vs Def', value: safePct(comps.cyclical_vs_defensive_spread), cls: pctClr(comps.cyclical_vs_defensive_spread) });
               if (comps.market_posture != null)
                 metrics.push({ label: 'Posture', value: String(comps.market_posture).replace(/_/g, ' ') });
               if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
@@ -1920,7 +1932,7 @@ export default function HomePage() {
             return (
               <div key={pillar.key} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1.5 min-h-0">
                 <div className="flex items-start justify-between gap-1">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/45 leading-tight">{pillar.label}</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/55 leading-tight">{pillar.label}</div>
                   {!avail && <span className="text-[8px] text-white/25 shrink-0 border border-white/10 rounded px-1 py-px">UNAVAIL</span>}
                 </div>
 
@@ -1940,13 +1952,13 @@ export default function HomePage() {
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                         {metrics.slice(0, 4).map((m, i) => (
                           <span key={i} className="text-[9px]">
-                            <span className="text-white/30">{m.label} </span>
-                            <span className={m.cls ?? 'text-white/55'}>{m.value}</span>
+                            <span className="text-white/35">{m.label} </span>
+                            <span className={m.cls ?? 'text-white/65'}>{m.value}</span>
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="text-[8.5px] text-white/30">{confText}</div>
+                    <div className="text-[8.5px] text-white/35">{confText}</div>
                   </>
                 ) : (
                   <div className="text-[9px] text-white/30 italic flex-1 flex items-center">Insufficient inputs</div>
@@ -2055,14 +2067,14 @@ export default function HomePage() {
                   {/* Left: title and context */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/50">Swing Regime Intelligence</h3>
+                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/55">Swing Regime Intelligence</h3>
                       {isPartial && (
                         <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
                       )}
                     </div>
                     <div className="text-[9px] text-white/25 mt-0.5">
                       Multi-timeframe market risk and positioning
-                      {df?.market_context && <span className="ml-2 text-white/20">\u00B7 {df.market_context}</span>}
+                      {df?.market_context && <span className="ml-2 text-white/20">· {df.market_context}</span>}
                     </div>
                   </div>
 
@@ -2116,7 +2128,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex flex-col items-center min-w-[80px]">
                       <div className="text-[8px] uppercase tracking-wider text-white/25">Sizing</div>
-                      <div className="text-[11px] font-bold text-white/50">{fmtSizing(sizing)}</div>
+                      <div className="text-[11px] font-bold text-white/55">{fmtSizing(sizing)}</div>
                     </div>
                     {assessment && !isComplete && (
                       <span className={`text-[8px] px-1.5 py-px rounded border ${isPartial ? 'border-amber-500/25 text-amber-400/70 bg-amber-500/10' : 'border-white/10 text-white/30 bg-white/5'}`}>
@@ -2161,19 +2173,19 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Col 1 — Dominant driver */}
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1.5">Dominant Driver</div>
-                  <div className="text-[10px] font-semibold text-white/55">{hDriver(dominantDriver)}</div>
-                  {sr?.one_line && <div className="text-[9px] text-white/35 mt-0.5 leading-snug">{sr.one_line}</div>}
+                  <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">Dominant Driver</div>
+                  <div className="text-[10px] font-semibold text-white/65">{hDriver(dominantDriver)}</div>
+                  {sr?.one_line && <div className="text-[9px] text-white/40 mt-0.5 leading-snug">{sr.one_line}</div>}
                 </div>
 
                 {/* Col 2 — What would change the call */}
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1.5">What Would Change This Call</div>
+                  <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">What Would Change This Call</div>
                   {flipConditions.length > 0 ? (
                     <ul className="space-y-0.5">
                       {flipConditions.slice(0, 4).map((c: string, i: number) => (
-                        <li key={i} className="text-[9px] text-white/45 flex gap-1.5">
-                          <span className="text-white/20 shrink-0">\u2192</span>
+                        <li key={i} className="text-[9px] text-white/50 flex gap-1.5">
+                          <span className="text-white/25 shrink-0">→</span>
                           <span className="leading-snug">{c.replace(/^[-*]\s*/, '')}</span>
                         </li>
                       ))}
@@ -2214,18 +2226,23 @@ export default function HomePage() {
                   <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Data</div>
                   <div className="text-[9px] text-white/40 flex flex-wrap gap-x-3 gap-y-0.5">
                     <span>
-                      {isComplete ? 'Complete' : isPartial ? `Partial \u00B7 ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}
+                      {isComplete ? 'Complete' : isPartial ? `Partial · ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}
                     </span>
                     {df?.market_context && (
                       <span className="text-white/30">{df.market_context}</span>
                     )}
                   </div>
-                  {sr?.model_version && (
-                    <div className="text-[8px] text-white/20 mt-1">
-                      {sr.model_version}{sr?.calibration_status ? ` \u00B7 ${sr.calibration_status}` : ''}
-                      {sr?.calibration_status === 'uncalibrated' ? ' \u00B7 not yet historically calibrated' : ''}
-                    </div>
-                  )}
+                  {sr?.model_version && (() => {
+                    const calStatus = sr?.calibration_status;
+                    const calLabel = calStatus === 'deterministic_uncalibrated' ? 'Deterministic v1 · not yet historically calibrated'
+                      : calStatus === 'deterministic_calibrated' ? 'Deterministic · historically calibrated'
+                      : calStatus ? calStatus.replace(/_/g, ' ') : null;
+                    return (
+                      <div className="text-[8px] text-white/20 mt-1">
+                        {sr.model_version}{calLabel ? ` · ${calLabel}` : ''}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
