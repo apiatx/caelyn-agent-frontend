@@ -1370,7 +1370,7 @@ export default function HomePage() {
 
   // Home Risk Intelligence — single source for Should I Trade, Risk Cluster banner,
   // Upcoming Economic Events, and data freshness. No direct FMP/Calendar/Macro calls.
-  const { data: riskIntel, isLoading: riskIntelLoading, isError: riskIntelError } = useQuery<any>({
+  const { data: riskIntel, isLoading: riskIntelLoading, isError: riskIntelError, refetch: riskIntelRefetch } = useQuery<any>({
     queryKey: ["/api/home/risk-intelligence"],
     queryFn: async () => {
       const r = await fetch("/api/home/risk-intelligence");
@@ -1700,92 +1700,205 @@ export default function HomePage() {
 
         {/* ── Risk Cluster + Why Markets Are Moving — side by side when both present ── */}
         {(() => {
-          const hasRiskCluster = !!riskIntelPayload?.risk_cluster?.active;
+          const riskCluster = riskIntelPayload?.risk_cluster;
+          const swingRegime = riskIntelPayload?.swing_regime;
+          const hasRiskData = !!riskCluster;
+          const isRiskActive = riskCluster?.active === true;
+          const isInsufficient = swingRegime?.assessment_status === 'INSUFFICIENT_DATA';
+
           const whyBullets: string[] = Array.isArray(riskIntelPayload?.why_market_is_moving)
             ? riskIntelPayload.why_market_is_moving
             : typeof riskIntelPayload?.why_market_is_moving === 'string'
               ? [riskIntelPayload.why_market_is_moving]
               : [];
           const hasWhyMarkets = whyBullets.length > 0;
-          if (!hasRiskCluster && !hasWhyMarkets) return null;
-          const gridCls = hasRiskCluster && hasWhyMarkets
+          const gridCls = hasWhyMarkets
             ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5'
             : 'mb-5';
+
           return (
             <div className={gridCls}>
 
-        {/* ── Risk Cluster Alert Banner ─────────────────────────────────── */}
-        {hasRiskCluster && (() => {
-          const rc = riskIntelPayload.risk_cluster;
-          const sev: string = rc.severity ?? '';
-          const CHIP_CLS: Record<string, string> = {
-            green:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
-            yellow: 'text-amber-300 bg-amber-500/10 border-amber-500/25',
-            orange: 'text-orange-300 bg-orange-500/10 border-orange-500/25',
-            red:    'text-rose-400 bg-rose-500/10 border-rose-500/25',
-          };
-          const bannerBg =
-            sev === 'EXTREME'  ? 'bg-rose-950/70 border-rose-500/50' :
-            sev === 'HIGH'     ? 'bg-orange-950/60 border-orange-500/40' :
-            sev === 'ELEVATED' ? 'bg-amber-950/50 border-amber-500/30' :
-                                 'bg-white/[0.03] border-white/10';
-          const sevText =
-            sev === 'EXTREME'  ? 'text-rose-300' :
-            sev === 'HIGH'     ? 'text-orange-300' :
-            sev === 'ELEVATED' ? 'text-amber-300' : 'text-white/50';
-          const sevBadge =
-            sev === 'EXTREME'  ? 'text-rose-300 border-rose-500/40 bg-rose-500/15' :
-            sev === 'HIGH'     ? 'text-orange-300 border-orange-500/40 bg-orange-500/15' :
-            sev === 'ELEVATED' ? 'text-amber-300 border-amber-500/40 bg-amber-500/15' :
-                                 'text-white/40 border-white/10 bg-white/5';
-          const triggers: any[] = rc.triggers ?? [];
-          const activeTriggers = triggers.filter(t => t.status !== 'green');
-          return (
-            <div className={`rounded-xl border px-4 py-3 ${bannerBg}`}>
-              <div className="flex items-start gap-3">
-                <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevText}`} />
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${sevText}`}>
-                    ⚠ RISK CLUSTER ACTIVE — {rc.headline ?? `${rc.trigger_count ?? activeTriggers.length} risk signals active`}
-                  </div>
-                  {activeTriggers.length > 0 && (
-                    <div className="text-[10px] text-white/55 mb-2.5 leading-relaxed">
-                      {activeTriggers.slice(0, 4).map((t: any) => t.message).filter(Boolean).join(' | ')}
+              {/* ── Risk Cluster Card — always visible ────────────────────── */}
+              {(() => {
+                if (riskIntelLoading && !riskIntelPayload) {
+                  return (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 animate-pulse">
+                      <div className="flex items-start gap-3">
+                        <div className="w-4 h-4 rounded bg-white/[0.08] shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-[14px] w-48 rounded bg-white/[0.06] mb-2" />
+                          <div className="h-[10px] w-full rounded bg-white/[0.04] mb-2.5" />
+                          <div className="flex flex-wrap gap-1.5">
+                            <div className="h-[18px] w-16 rounded bg-white/[0.06]" />
+                            <div className="h-[18px] w-20 rounded bg-white/[0.06]" />
+                            <div className="h-[18px] w-14 rounded bg-white/[0.06]" />
+                          </div>
+                        </div>
+                        <div className="h-[18px] w-14 rounded bg-white/[0.06] shrink-0 self-start" />
+                      </div>
                     </div>
-                  )}
-                  <div className="flex flex-wrap gap-1.5">
-                    {triggers.map((t: any, i: number) => (
-                      <span key={i} className={`text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none ${CHIP_CLS[t.status] ?? 'text-white/40 bg-white/5 border-white/10'}`}>
-                        {t.label} · {(t.status ?? '').toUpperCase()}
-                      </span>
-                    ))}
-                  </div>
-                  {riskIntelPayload?.trade_decision?.position_size_hint && (
-                    <div className="text-[10px] text-white/35 mt-2">
-                      Suggested posture: <span className="text-white/55">{riskIntelPayload.trade_decision.position_size_hint}</span>
-                    </div>
-                  )}
-                </div>
-                <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start ${sevBadge}`}>{sev}</span>
-              </div>
-            </div>
-          );
-        })()}
+                  );
+                }
 
-        {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
-        {hasWhyMarkets && (
-          <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-            <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
-            <ol className="space-y-1">
-              {whyBullets.slice(0, 3).map((b, i) => (
-                <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
-                  <span className="text-white/25 shrink-0">{i + 1}.</span>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+                if (riskIntelError && !riskIntelPayload) {
+                  return (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">RISK CLUSTER</div>
+                          <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable</div>
+                          <button
+                            onClick={() => riskIntelRefetch()}
+                            className="text-[9px] text-blue-400/70 hover:text-blue-400 underline"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (isInsufficient && hasRiskData) {
+                  return (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/40 mb-1">
+                            RISK CLUSTER — INSUFFICIENT DATA
+                          </div>
+                          <div className="text-[10px] text-white/45 mb-2.5 leading-relaxed">
+                            {riskCluster?.summary ?? swingRegime?.one_line ?? 'Insufficient data to assess current market risk regime.'}
+                          </div>
+                          {(riskCluster?.triggers ?? []).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {riskCluster.triggers.map((t: any, i: number) => (
+                                <span key={i} className="text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none text-white/35 bg-white/5 border-white/10">
+                                  {t.label} · {(t.status ?? '').toUpperCase()}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start text-white/30 border-white/10 bg-white/5">N/D</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (hasRiskData) {
+                  const rc = riskCluster;
+                  const sev: string = rc!.severity ?? '';
+                  const CHIP_CLS: Record<string, string> = {
+                    green:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+                    yellow: 'text-amber-300 bg-amber-500/10 border-amber-500/25',
+                    orange: 'text-orange-300 bg-orange-500/10 border-orange-500/25',
+                    red:    'text-rose-400 bg-rose-500/10 border-rose-500/25',
+                  };
+
+                  const bannerBg = isRiskActive
+                    ? sev === 'EXTREME'  ? 'bg-rose-950/70 border-rose-500/50' :
+                      sev === 'HIGH'     ? 'bg-orange-950/60 border-orange-500/40' :
+                      sev === 'ELEVATED' ? 'bg-amber-950/50 border-amber-500/30' :
+                      'bg-white/[0.03] border-white/10'
+                    : sev === 'LOW'       ? 'bg-emerald-950/20 border-emerald-500/20' :
+                      sev === 'MODERATE'  ? 'bg-amber-900/15 border-amber-500/15' :
+                      'bg-white/[0.03] border-white/10';
+
+                  const sevText = isRiskActive
+                    ? sev === 'EXTREME'  ? 'text-rose-300' :
+                      sev === 'HIGH'     ? 'text-orange-300' :
+                      sev === 'ELEVATED' ? 'text-amber-300' : 'text-white/50'
+                    : sev === 'LOW'       ? 'text-emerald-300' :
+                      sev === 'MODERATE'  ? 'text-amber-200' : 'text-white/50';
+
+                  const sevBadge = isRiskActive
+                    ? sev === 'EXTREME'  ? 'text-rose-300 border-rose-500/40 bg-rose-500/15' :
+                      sev === 'HIGH'     ? 'text-orange-300 border-orange-500/40 bg-orange-500/15' :
+                      sev === 'ELEVATED' ? 'text-amber-300 border-amber-500/40 bg-amber-500/15' :
+                      'text-white/40 border-white/10 bg-white/5'
+                    : sev === 'LOW'       ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' :
+                      sev === 'MODERATE'  ? 'text-amber-200 border-amber-500/20 bg-amber-500/10' :
+                      'text-white/40 border-white/10 bg-white/5';
+
+                  const triggers: any[] = rc!.triggers ?? [];
+
+                  const headingText = isRiskActive
+                    ? `RISK CLUSTER ACTIVE — ${rc!.headline ?? `${rc!.trigger_count ?? triggers.length} risk signals active`}`
+                    : sev === 'LOW'
+                      ? 'RISK CLUSTER — LOW RISK'
+                      : sev === 'MODERATE'
+                        ? 'RISK CLUSTER — MODERATE RISK'
+                        : `RISK CLUSTER — ${rc!.headline ?? sev ?? 'ASSESSING'}`;
+
+                  const summaryText = isRiskActive
+                    ? triggers.filter((t: any) => t.status !== 'green').slice(0, 4).map((t: any) => t.message).filter(Boolean).join(' | ')
+                    : (rc!.summary ?? (triggers.length > 0 ? triggers.map((t: any) => t.message).filter(Boolean).join(' | ') : ''));
+
+                  return (
+                    <div className={`rounded-xl border px-4 py-3 ${bannerBg}`}>
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevText}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${sevText}`}>
+                            {isRiskActive ? '\u26A0\uFE0F ' : ''}{headingText}
+                          </div>
+                          {summaryText && (
+                            <div className="text-[10px] text-white/55 mb-2.5 leading-relaxed">
+                              {summaryText}
+                            </div>
+                          )}
+                          {triggers.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {triggers.map((t: any, i: number) => (
+                                <span key={i} className={`text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none ${CHIP_CLS[t.status] ?? 'text-white/40 bg-white/5 border-white/10'}`}>
+                                  {t.label} · {(t.status ?? '').toUpperCase()}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {(swingRegime?.position_size_hint || riskIntelPayload?.trade_decision?.position_size_hint) && (
+                            <div className="text-[10px] text-white/35 mt-2">
+                              Suggested posture: <span className="text-white/55">{swingRegime?.position_size_hint ?? riskIntelPayload?.trade_decision?.position_size_hint}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start ${sevBadge}`}>{sev}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-white/40 mb-1">RISK CLUSTER</div>
+                        <div className="text-[10px] text-white/45 leading-relaxed">Loading market risk regime...</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
+              {hasWhyMarkets && (
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
+                  <ol className="space-y-1">
+                    {whyBullets.slice(0, 3).map((b, i) => (
+                      <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
+                        <span className="text-white/25 shrink-0">{i + 1}.</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
 
             </div>
           );
