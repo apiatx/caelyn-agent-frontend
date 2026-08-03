@@ -1698,13 +1698,136 @@ export default function HomePage() {
           })()}
         </div>
 
-        {/* ── Risk Cluster + Why Markets Are Moving — side by side when both present ── */}
+        {/* ── Swing Regime Intelligence Panel ─────────────────────────────── */}
         {(() => {
-          const riskCluster = riskIntelPayload?.risk_cluster;
-          const swingRegime = riskIntelPayload?.swing_regime;
-          const hasRiskData = !!riskCluster;
-          const isRiskActive = riskCluster?.active === true;
-          const isInsufficient = swingRegime?.assessment_status === 'INSUFFICIENT_DATA';
+          // —— local formatting helpers —————————————————————————————————
+          const safeNum = (v: any, d = 2): string => {
+            if (v === null || v === undefined || v === '') return '—';
+            const n = typeof v === 'string' ? parseFloat(v) : v as number;
+            if (isNaN(n)) return '—';
+            return n.toFixed(d);
+          };
+          const safePct = (v: any): string => {
+            if (v === null || v === undefined || v === '') return '—';
+            const n = typeof v === 'string' ? parseFloat(v) : v as number;
+            if (isNaN(n)) return '—';
+            return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+          };
+          const safeBps = (v: any): string => {
+            if (v === null || v === undefined || v === '') return '—';
+            const n = typeof v === 'string' ? parseFloat(v) : v as number;
+            if (isNaN(n)) return '—';
+            return (n >= 0 ? '+' : '') + Math.round(n) + ' bps';
+          };
+          const pctClr = (v: number | null | undefined): string =>
+            v == null ? 'text-white/40' : v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-white/50';
+
+          const scoreBand = (s: number | null | undefined): string => {
+            if (s == null) return 'Unknown';
+            if (s <= 24) return 'Low';
+            if (s <= 44) return 'Moderate';
+            if (s <= 64) return 'Elevated';
+            if (s <= 79) return 'High';
+            return 'Extreme';
+          };
+          const scoreTextClr = (s: number | null | undefined): string => {
+            if (s == null) return 'text-white/30';
+            if (s <= 24) return 'text-emerald-400';
+            if (s <= 44) return 'text-amber-200';
+            if (s <= 64) return 'text-amber-300';
+            if (s <= 79) return 'text-orange-400';
+            return 'text-rose-400';
+          };
+          const scoreBarClr = (s: number | null | undefined): string => {
+            if (s == null) return 'bg-white/10';
+            if (s <= 24) return 'bg-emerald-500/50';
+            if (s <= 44) return 'bg-emerald-400/40';
+            if (s <= 64) return 'bg-amber-500/50';
+            if (s <= 79) return 'bg-orange-500/50';
+            return 'bg-rose-500/50';
+          };
+          const scoreRung = (s: number | null | undefined): string => {
+            if (s == null) return 'bg-white/[0.05]';
+            if (s <= 24) return 'bg-emerald-500/20 border-emerald-500/30';
+            if (s <= 44) return 'bg-amber-500/15 border-amber-500/25';
+            if (s <= 64) return 'bg-amber-500/20 border-amber-500/35';
+            if (s <= 79) return 'bg-orange-500/20 border-orange-500/35';
+            return 'bg-rose-500/20 border-rose-500/35';
+          };
+
+          const hDriver = (d: string | null | undefined): string => {
+            if (!d) return '—';
+            const m: Record<string, string> = {
+              broad_market_trend: 'Broad Market Trend',
+              rate_and_dollar_pressure: 'Rates & Dollar',
+              volatility_stress: 'Volatility & Credit',
+              cross_asset_deleveraging: 'Cross-Asset Leadership',
+              credit_deterioration: 'Credit Deterioration',
+              breadth_collapse: 'Breadth Collapse',
+              trend_breadth: 'Trend & Breadth',
+              leadership_cross_asset: 'Leadership & Cross-Asset',
+            };
+            return m[d] ?? d.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+          };
+
+          const fmtDir = (d: string | null | undefined): string => {
+            if (!d) return '—';
+            const m: Record<string, string> = { IMPROVING: 'Improving', STABLE: 'Stable', WEAKENING: 'Weakening', WORSENING: 'Worsening' };
+            return m[d] ?? d;
+          };
+          const dirArrow = (d: string | null | undefined): string => {
+            if (d === 'IMPROVING') return '\u2191';
+            if (d === 'WEAKENING' || d === 'WORSENING') return '\u2193';
+            return '\u2194';
+          };
+          const dirClr = (d: string | null | undefined): string => {
+            if (d === 'IMPROVING') return 'text-emerald-400';
+            if (d === 'WEAKENING' || d === 'WORSENING') return 'text-rose-400';
+            return 'text-white/40';
+          };
+
+          const fmtBias = (b: string | null | undefined): string => {
+            if (!b) return '—';
+            const m: Record<string, string> = {
+              LONG: 'Long', SELECTIVE_LONG: 'Selective Long', NEUTRAL: 'Neutral',
+              SELECTIVE_SHORT: 'Selective Short', SHORT: 'Short / Hedge',
+            };
+            return m[b] ?? b.replace(/_/g, ' ');
+          };
+          const fmtSizing = (s: string | null | undefined): string => {
+            if (!s) return '—';
+            const k = String(s ?? '').toLowerCase().replace(/[_-]/g, ' ');
+            const m: Record<string, string> = { normal: 'Normal', selective: 'Selective', 'half size': 'Half-size', 'preserve capital': 'Preserve Capital' };
+            return m[k] ?? s;
+          };
+          const confLabel = (c: string | null | undefined): string => {
+            if (!c) return 'Unknown';
+            const l = c.toLowerCase();
+            if (l === 'high') return 'High';
+            if (l === 'medium') return 'Medium';
+            if (l === 'low') return 'Low';
+            return c;
+          };
+
+          // —— data extraction ——————————————————————————————————————————
+          const sr = riskIntelPayload?.swing_regime;
+          const df = riskIntelPayload?.data_freshness;
+          const hasRegimeData = !!sr;
+          const assessment = sr?.assessment_status;
+          const isComplete = assessment === 'COMPLETE';
+          const isPartial = assessment === 'PARTIAL';
+          const isInsufficient = assessment === 'INSUFFICIENT_DATA';
+          const riskLevel = sr?.risk_level ?? 'UNKNOWN';
+          const riskScore: number | null | undefined = sr?.risk_score;
+          const direction = sr?.regime_direction;
+          const tradeBias = sr?.trade_bias;
+          const sizing = sr?.position_size_hint;
+          const dominantDriver = sr?.dominant_driver;
+          const pillars = sr?.pillars ?? {};
+          const flipConditions: string[] = Array.isArray(sr?.conditions_that_would_flip)
+            ? sr.conditions_that_would_flip : [];
+          const eventOverlay = sr?.event_overlay;
+          const isActive = riskIntelPayload?.risk_cluster?.active === true;
 
           const whyBullets: string[] = Array.isArray(riskIntelPayload?.why_market_is_moving)
             ? riskIntelPayload.why_market_is_moving
@@ -1712,180 +1835,403 @@ export default function HomePage() {
               ? [riskIntelPayload.why_market_is_moving]
               : [];
           const hasWhyMarkets = whyBullets.length > 0;
-          const gridCls = hasWhyMarkets
-            ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5'
-            : 'mb-5';
 
-          return (
-            <div className={gridCls}>
+          const pillarList = [
+            { key: 'trend_and_breadth', label: 'Trend & Breadth', p: pillars.trend_and_breadth },
+            { key: 'volatility_and_credit', label: 'Volatility & Credit', p: pillars.volatility_and_credit },
+            { key: 'rates_and_dollar', label: 'Rates & Dollar', p: pillars.rates_and_dollar },
+            { key: 'leadership_and_cross_asset', label: 'Leadership & Cross-Asset', p: pillars.leadership_and_cross_asset },
+          ];
 
-              {/* ── Risk Cluster Card — always visible ────────────────────── */}
-              {(() => {
-                if (riskIntelLoading && !riskIntelPayload) {
-                  return (
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 animate-pulse">
-                      <div className="flex items-start gap-3">
-                        <div className="w-4 h-4 rounded bg-white/[0.08] shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="h-[14px] w-48 rounded bg-white/[0.06] mb-2" />
-                          <div className="h-[10px] w-full rounded bg-white/[0.04] mb-2.5" />
-                          <div className="flex flex-wrap gap-1.5">
-                            <div className="h-[18px] w-16 rounded bg-white/[0.06]" />
-                            <div className="h-[18px] w-20 rounded bg-white/[0.06]" />
-                            <div className="h-[18px] w-14 rounded bg-white/[0.06]" />
-                          </div>
-                        </div>
-                        <div className="h-[18px] w-14 rounded bg-white/[0.06] shrink-0 self-start" />
-                      </div>
+          // —— pillar render helpers ————————————————————————————————————
+          const pillarScoreClr = (s: number | null | undefined): string => {
+            if (s == null) return 'text-white/30';
+            if (s <= 24) return 'text-emerald-400';
+            if (s <= 44) return 'text-amber-200';
+            if (s <= 64) return 'text-amber-300';
+            if (s <= 79) return 'text-orange-400';
+            return 'text-rose-400';
+          };
+          const pillarBarClr = (s: number | null | undefined): string => {
+            if (s == null) return 'bg-white/10';
+            if (s <= 24) return 'bg-emerald-500/50';
+            if (s <= 44) return 'bg-emerald-400/40';
+            if (s <= 64) return 'bg-amber-500/50';
+            if (s <= 79) return 'bg-orange-500/50';
+            return 'bg-rose-500/50';
+          };
+
+          const renderPillarCard = (pillar: { label: string; p: any; key: string }) => {
+            const p = pillar.p;
+            const avail = p?.is_available ?? true;
+            const ps = p?.score;
+            const pd = p?.direction;
+            const pc = p?.confidence;
+            const comps: Record<string, any> = p?.components ?? {};
+            const haveComps = avail && Object.keys(comps).length > 0;
+            const availCnt = p?.available_component_count;
+            const expCnt = p?.expected_component_count;
+            const confText = availCnt != null && expCnt != null
+              ? `${confLabel(pc)} \u00B7 ${availCnt}/${expCnt} inputs`
+              : confLabel(pc);
+
+            // per-pillar metric extraction
+            let metrics: { label: string; value: string; cls?: string }[] = [];
+            if (pillar.key === 'trend_and_breadth') {
+              if (comps.spy_1d != null || comps.spy_1d_pct != null)
+                metrics.push({ label: 'SPY 1D', value: safePct(comps.spy_1d ?? comps.spy_1d_pct), cls: pctClr(comps.spy_1d ?? comps.spy_1d_pct) });
+              if (comps.qqq_1d != null || comps.qqq_1d_pct != null)
+                metrics.push({ label: 'QQQ 1D', value: safePct(comps.qqq_1d ?? comps.qqq_1d_pct), cls: pctClr(comps.qqq_1d ?? comps.qqq_1d_pct) });
+              if (comps.spx_7d != null || comps.spx_7d_pct != null)
+                metrics.push({ label: 'SPX 7D', value: safePct(comps.spx_7d ?? comps.spx_7d_pct), cls: pctClr(comps.spx_7d ?? comps.spx_7d_pct) });
+              if (comps.breadth_1d != null || comps.breadth_1d_pct != null)
+                metrics.push({ label: 'Breadth 1D', value: safePct(comps.breadth_1d ?? comps.breadth_1d_pct), cls: pctClr(comps.breadth_1d ?? comps.breadth_1d_pct) });
+              if (comps.breadth_7d != null || comps.breadth_7d_pct != null)
+                metrics.push({ label: 'Breadth 7D', value: safePct(comps.breadth_7d ?? comps.breadth_7d_pct), cls: pctClr(comps.breadth_7d ?? comps.breadth_7d_pct) });
+              if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
+            } else if (pillar.key === 'volatility_and_credit') {
+              if (comps.vix != null) metrics.push({ label: 'VIX', value: safeNum(comps.vix, 1) });
+              if (comps.vix_1d != null || comps.vix_1d_pct != null)
+                metrics.push({ label: 'VIX 1D', value: safePct(comps.vix_1d ?? comps.vix_1d_pct), cls: pctClr(comps.vix_1d ?? comps.vix_1d_pct) });
+              if (comps.vix_7d != null || comps.vix_7d_pct != null)
+                metrics.push({ label: 'VIX 7D', value: safePct(comps.vix_7d ?? comps.vix_7d_pct), cls: pctClr(comps.vix_7d ?? comps.vix_7d_pct) });
+              if (comps.hyg_1d != null || comps.hyg_1d_pct != null)
+                metrics.push({ label: 'HYG 1D', value: safePct(comps.hyg_1d ?? comps.hyg_1d_pct), cls: pctClr(comps.hyg_1d ?? comps.hyg_1d_pct) });
+              if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
+            } else if (pillar.key === 'rates_and_dollar') {
+              if (comps.us10y != null) metrics.push({ label: '10Y', value: safeNum(comps.us10y, 2) + '%' });
+              if (comps.us10y_1d_bps != null) metrics.push({ label: '1D', value: safeBps(comps.us10y_1d_bps), cls: pctClr(comps.us10y_1d_bps) });
+              if (comps.us10y_5d_bps != null) metrics.push({ label: '5D', value: safeBps(comps.us10y_5d_bps), cls: pctClr(comps.us10y_5d_bps) });
+              if (comps.us10y_20d_bps != null) metrics.push({ label: '20D', value: safeBps(comps.us10y_20d_bps), cls: pctClr(comps.us10y_20d_bps) });
+              if (comps.dxy != null) metrics.push({ label: 'DXY', value: safeNum(comps.dxy, 1) });
+              if (comps.dxy_1d != null || comps.dxy_1d_pct != null)
+                metrics.push({ label: 'DXY 1D', value: safePct(comps.dxy_1d ?? comps.dxy_1d_pct), cls: pctClr(comps.dxy_1d ?? comps.dxy_1d_pct) });
+              if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
+            } else if (pillar.key === 'leadership_and_cross_asset') {
+              if (comps.btc_24h != null || comps.btc_24h_pct != null)
+                metrics.push({ label: 'BTC 24H', value: safePct(comps.btc_24h ?? comps.btc_24h_pct), cls: pctClr(comps.btc_24h ?? comps.btc_24h_pct) });
+              if (comps.cyclical_vs_defensive != null)
+                metrics.push({ label: 'Cyc vs Def', value: safePct(comps.cyclical_vs_defensive), cls: pctClr(comps.cyclical_vs_defensive) });
+              if (comps.market_posture != null)
+                metrics.push({ label: 'Posture', value: String(comps.market_posture).replace(/_/g, ' ') });
+              if (metrics.length === 0) { metrics = [{ label: 'No data', value: '—' }]; }
+            }
+
+            return (
+              <div key={pillar.key} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1.5 min-h-0">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/45 leading-tight">{pillar.label}</div>
+                  {!avail && <span className="text-[8px] text-white/25 shrink-0 border border-white/10 rounded px-1 py-px">UNAVAIL</span>}
+                </div>
+
+                {avail ? (
+                  <>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-lg font-bold tabular-nums ${pillarScoreClr(ps)}`}>{ps != null ? Math.round(ps) : '—'}</span>
+                      <span className="text-[9px] text-white/25">/ 100</span>
+                      <span className={`text-[9px] ${dirClr(pd)}`}>{dirArrow(pd)} {fmtDir(pd)}</span>
                     </div>
-                  );
-                }
-
-                if (riskIntelError && !riskIntelPayload) {
-                  return (
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">RISK CLUSTER</div>
-                          <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable</div>
-                          <button
-                            onClick={() => riskIntelRefetch()}
-                            className="text-[9px] text-blue-400/70 hover:text-blue-400 underline"
-                          >
-                            Retry
-                          </button>
-                        </div>
-                      </div>
+                    <div className="w-full h-[3px] rounded-full bg-white/[0.06]">
+                      <div className={`h-full rounded-full ${pillarBarClr(ps)}`}
+                        style={{ width: `${Math.min(100, Math.max(0, ps ?? 0))}%` }}
+                      />
                     </div>
-                  );
-                }
-
-                if (isInsufficient && hasRiskData) {
-                  return (
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-bold uppercase tracking-wider text-white/40 mb-1">
-                            RISK CLUSTER — INSUFFICIENT DATA
-                          </div>
-                          <div className="text-[10px] text-white/45 mb-2.5 leading-relaxed">
-                            {riskCluster?.summary ?? swingRegime?.one_line ?? 'Insufficient data to assess current market risk regime.'}
-                          </div>
-                          {(riskCluster?.triggers ?? []).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {riskCluster.triggers.map((t: any, i: number) => (
-                                <span key={i} className="text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none text-white/35 bg-white/5 border-white/10">
-                                  {t.label} · {(t.status ?? '').toUpperCase()}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start text-white/30 border-white/10 bg-white/5">N/D</span>
+                    {haveComps && (
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                        {metrics.slice(0, 4).map((m, i) => (
+                          <span key={i} className="text-[9px]">
+                            <span className="text-white/30">{m.label} </span>
+                            <span className={m.cls ?? 'text-white/55'}>{m.value}</span>
+                          </span>
+                        ))}
                       </div>
+                    )}
+                    <div className="text-[8.5px] text-white/30">{confText}</div>
+                  </>
+                ) : (
+                  <div className="text-[9px] text-white/30 italic flex-1 flex items-center">Insufficient inputs</div>
+                )}
+              </div>
+            );
+          };
+
+          // —— root render ——————————————————————————————————————————————
+          // Loading — full shell skeleton
+          if (riskIntelLoading && !riskIntelPayload) {
+            return (
+              <div className="mb-5 space-y-3 animate-pulse">
+                {/* exec strip skeleton */}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="h-[14px] w-40 rounded bg-white/[0.06] mb-1" />
+                      <div className="h-[10px] w-60 rounded bg-white/[0.04]" />
                     </div>
-                  );
-                }
-
-                if (hasRiskData) {
-                  const rc = riskCluster;
-                  const sev: string = rc!.severity ?? '';
-                  const CHIP_CLS: Record<string, string> = {
-                    green:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
-                    yellow: 'text-amber-300 bg-amber-500/10 border-amber-500/25',
-                    orange: 'text-orange-300 bg-orange-500/10 border-orange-500/25',
-                    red:    'text-rose-400 bg-rose-500/10 border-rose-500/25',
-                  };
-
-                  const bannerBg = isRiskActive
-                    ? sev === 'EXTREME'  ? 'bg-rose-950/70 border-rose-500/50' :
-                      sev === 'HIGH'     ? 'bg-orange-950/60 border-orange-500/40' :
-                      sev === 'ELEVATED' ? 'bg-amber-950/50 border-amber-500/30' :
-                      'bg-white/[0.03] border-white/10'
-                    : sev === 'LOW'       ? 'bg-emerald-950/20 border-emerald-500/20' :
-                      sev === 'MODERATE'  ? 'bg-amber-900/15 border-amber-500/15' :
-                      'bg-white/[0.03] border-white/10';
-
-                  const sevText = isRiskActive
-                    ? sev === 'EXTREME'  ? 'text-rose-300' :
-                      sev === 'HIGH'     ? 'text-orange-300' :
-                      sev === 'ELEVATED' ? 'text-amber-300' : 'text-white/50'
-                    : sev === 'LOW'       ? 'text-emerald-300' :
-                      sev === 'MODERATE'  ? 'text-amber-200' : 'text-white/50';
-
-                  const sevBadge = isRiskActive
-                    ? sev === 'EXTREME'  ? 'text-rose-300 border-rose-500/40 bg-rose-500/15' :
-                      sev === 'HIGH'     ? 'text-orange-300 border-orange-500/40 bg-orange-500/15' :
-                      sev === 'ELEVATED' ? 'text-amber-300 border-amber-500/40 bg-amber-500/15' :
-                      'text-white/40 border-white/10 bg-white/5'
-                    : sev === 'LOW'       ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' :
-                      sev === 'MODERATE'  ? 'text-amber-200 border-amber-500/20 bg-amber-500/10' :
-                      'text-white/40 border-white/10 bg-white/5';
-
-                  const triggers: any[] = rc!.triggers ?? [];
-
-                  const headingText = isRiskActive
-                    ? `RISK CLUSTER ACTIVE — ${rc!.headline ?? `${rc!.trigger_count ?? triggers.length} risk signals active`}`
-                    : sev === 'LOW'
-                      ? 'RISK CLUSTER — LOW RISK'
-                      : sev === 'MODERATE'
-                        ? 'RISK CLUSTER — MODERATE RISK'
-                        : `RISK CLUSTER — ${rc!.headline ?? sev ?? 'ASSESSING'}`;
-
-                  const summaryText = isRiskActive
-                    ? triggers.filter((t: any) => t.status !== 'green').slice(0, 4).map((t: any) => t.message).filter(Boolean).join(' | ')
-                    : (rc!.summary ?? (triggers.length > 0 ? triggers.map((t: any) => t.message).filter(Boolean).join(' | ') : ''));
-
-                  return (
-                    <div className={`rounded-xl border px-4 py-3 ${bannerBg}`}>
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${sevText}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${sevText}`}>
-                            {isRiskActive ? '\u26A0\uFE0F ' : ''}{headingText}
-                          </div>
-                          {summaryText && (
-                            <div className="text-[10px] text-white/55 mb-2.5 leading-relaxed">
-                              {summaryText}
-                            </div>
-                          )}
-                          {triggers.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {triggers.map((t: any, i: number) => (
-                                <span key={i} className={`text-[8.5px] font-bold uppercase px-2 py-0.5 rounded border leading-none ${CHIP_CLS[t.status] ?? 'text-white/40 bg-white/5 border-white/10'}`}>
-                                  {t.label} · {(t.status ?? '').toUpperCase()}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {(swingRegime?.position_size_hint || riskIntelPayload?.trade_decision?.position_size_hint) && (
-                            <div className="text-[10px] text-white/35 mt-2">
-                              Suggested posture: <span className="text-white/55">{swingRegime?.position_size_hint ?? riskIntelPayload?.trade_decision?.position_size_hint}</span>
-                            </div>
-                          )}
-                        </div>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 self-start ${sevBadge}`}>{sev}</span>
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-white/40 mb-1">RISK CLUSTER</div>
-                        <div className="text-[10px] text-white/45 leading-relaxed">Loading market risk regime...</div>
-                      </div>
+                    <div className="flex items-center gap-6">
+                      <div className="h-[32px] w-20 rounded bg-white/[0.06]" />
+                      <div className="h-[32px] w-16 rounded bg-white/[0.06]" />
+                      <div className="h-[32px] w-24 rounded bg-white/[0.06]" />
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+                {/* pillar grid skeleton */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="h-[10px] w-24 rounded bg-white/[0.06] mb-2" />
+                      <div className="h-[20px] w-12 rounded bg-white/[0.06] mb-2" />
+                      <div className="h-[3px] w-full rounded bg-white/[0.05] mb-2" />
+                      <div className="h-[8px] w-full rounded bg-white/[0.04]" />
+                    </div>
+                  ))}
+                </div>
+                {/* context strip skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="h-[8px] w-16 rounded bg-white/[0.06] mb-1.5" />
+                      <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
+                      <div className="h-[10px] w-3/4 rounded bg-white/[0.04]" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
 
-              {/* ── "Why Markets Are Moving" mini-summary (if present) ─────────── */}
+          // Error — no previous data
+          if (riskIntelError && !riskIntelPayload) {
+            return (
+              <div className="mb-5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">SWING REGIME INTELLIGENCE</div>
+                    <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable</div>
+                    <button onClick={() => riskIntelRefetch()} className="text-[9px] text-blue-400/70 hover:text-blue-400 underline">Retry</button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Insufficient data — neutral full panel
+          if (isInsufficient) {
+            return (
+              <div className="mb-5 space-y-3">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/20" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] uppercase tracking-widest text-white/25 mb-0.5">Swing Regime Intelligence</div>
+                      <div className="text-[13px] font-bold text-white/35">Insufficient data</div>
+                      <div className="text-[9px] text-white/25 mt-0.5">No directional conclusion should be drawn.</div>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="text-[10px] text-white/25">Direction</span>
+                      <span className="text-[9px] text-white/20">UNKNOWN</span>
+                      <span className="text-[9px] text-white/20 mt-0.5">NEUTRAL</span>
+                    </div>
+                  </div>
+                </div>
+                {pillarList.every(pl => !pl.p?.is_available) ? null : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                    {pillarList.map(pl => renderPillarCard(pl))}
+                  </div>
+                )}
+                <div className="text-[9px] text-white/20 text-center">{sr?.available_pillar_count ?? 0}/{pillarList.length} pillars available</div>
+              </div>
+            );
+          }
+
+          // Has regime data — render full panel
+          return (
+            <div className="mb-5 space-y-3">
+              {/* ═══════════════════════════════════════════════════════════
+                  ZONE A — Executive Decision Strip
+                  ═══════════════════════════════════════════════════════════ */}
+              <div className={`rounded-xl border px-4 py-3 ${isActive ? (riskLevel === 'EXTREME' ? 'bg-rose-950/30 border-rose-500/25' : riskLevel === 'HIGH' ? 'bg-orange-950/25 border-orange-500/25' : riskLevel === 'ELEVATED' ? 'bg-amber-950/20 border-amber-500/20' : 'bg-white/[0.02] border-white/[0.07]') : 'bg-white/[0.02] border-white/[0.07]'}`}>
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                  {/* Left: title and context */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/50">Swing Regime Intelligence</h3>
+                      {isPartial && (
+                        <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-white/25 mt-0.5">
+                      Multi-timeframe market risk and positioning
+                      {df?.market_context && <span className="ml-2 text-white/20">\u00B7 {df.market_context}</span>}
+                    </div>
+                  </div>
+
+                  {/* Center: risk score + level + direction */}
+                  <div className="flex items-center gap-5">
+                    <div className="flex flex-col items-center min-w-[72px]">
+                      <div className={`text-2xl font-bold tabular-nums leading-none ${scoreTextClr(riskScore)}`}>
+                        {riskScore != null ? Math.round(riskScore) : '—'}
+                      </div>
+                      <div className="text-[8px] text-white/20">/ 100</div>
+                      <div className={`text-[9px] font-semibold mt-0.5 ${scoreTextClr(riskScore)}`}>{scoreBand(riskScore)}</div>
+                    </div>
+
+                    {/* Risk meter */}
+                    <div className="hidden sm:flex flex-col items-center gap-1 min-w-[120px]">
+                      <div className="text-[7px] uppercase tracking-wider text-white/25 flex justify-between w-full">
+                        <span>LOW</span><span>MOD</span><span>ELEV</span><span>HIGH</span><span>EXT</span>
+                      </div>
+                      <div className="w-full h-[5px] rounded-full bg-white/[0.06] relative overflow-hidden">
+                        <div className="absolute inset-y-0 left-0 flex">
+                          <div className="w-[24%] border-r border-white/10 bg-emerald-500/15" />
+                          <div className="w-[20%] border-r border-white/10 bg-emerald-400/12" />
+                          <div className="w-[20%] border-r border-white/10 bg-amber-500/12" />
+                          <div className="w-[16%] border-r border-white/10 bg-orange-500/12" />
+                          <div className="w-[20%] bg-rose-500/12" />
+                        </div>
+                        {riskScore != null && (
+                          <div className={`absolute top-0 h-full w-[3px] rounded ${scoreBarClr(riskScore)}`}
+                            style={{ left: `${Math.min(98, Math.max(1, riskScore))}%` }}
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[9px]">
+                        <span className={`${dirClr(direction)}`}>{dirArrow(direction)} {fmtDir(direction)}</span>
+                      </div>
+                    </div>
+
+                    {/* Mobile inline direction */}
+                    <div className="sm:hidden text-[9px]">
+                      <span className={`${dirClr(direction)}`}>{dirArrow(direction)} {fmtDir(direction)}</span>
+                    </div>
+                  </div>
+
+                  {/* Right: trade bias + sizing */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex flex-col items-center min-w-[80px]">
+                      <div className="text-[8px] uppercase tracking-wider text-white/25">Bias</div>
+                      <div className={`text-[11px] font-bold ${tradeBias === 'LONG' || tradeBias === 'SELECTIVE_LONG' ? 'text-emerald-400' : tradeBias === 'SHORT' || tradeBias === 'SELECTIVE_SHORT' ? 'text-rose-400' : 'text-white/50'}`}>
+                        {fmtBias(tradeBias)}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center min-w-[80px]">
+                      <div className="text-[8px] uppercase tracking-wider text-white/25">Sizing</div>
+                      <div className="text-[11px] font-bold text-white/50">{fmtSizing(sizing)}</div>
+                    </div>
+                    {assessment && !isComplete && (
+                      <span className={`text-[8px] px-1.5 py-px rounded border ${isPartial ? 'border-amber-500/25 text-amber-400/70 bg-amber-500/10' : 'border-white/10 text-white/30 bg-white/5'}`}>
+                        {assessment}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile risk meter */}
+                <div className="sm:hidden mt-2">
+                  <div className="text-[7px] uppercase tracking-wider text-white/25 flex justify-between">
+                    <span>LOW</span><span>MOD</span><span>ELEV</span><span>HIGH</span><span>EXT</span>
+                  </div>
+                  <div className="w-full h-[4px] rounded-full bg-white/[0.06] relative overflow-hidden mt-0.5">
+                    <div className="absolute inset-y-0 left-0 flex">
+                      <div className="w-[24%] border-r border-white/10 bg-emerald-500/15" />
+                      <div className="w-[20%] border-r border-white/10 bg-emerald-400/12" />
+                      <div className="w-[20%] border-r border-white/10 bg-amber-500/12" />
+                      <div className="w-[16%] border-r border-white/10 bg-orange-500/12" />
+                      <div className="w-[20%] bg-rose-500/12" />
+                    </div>
+                    {riskScore != null && (
+                      <div className={`absolute top-0 h-full w-[2px] rounded ${scoreBarClr(riskScore)}`}
+                        style={{ left: `${Math.min(98, Math.max(1, riskScore))}%` }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════
+                  ZONE B — Four Pillar Intelligence Grid
+                  ═══════════════════════════════════════════════════════════ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {pillarList.map(pl => renderPillarCard(pl))}
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════
+                  ZONE C — Drivers, Flip Conditions, Event & Data Context
+                  ═══════════════════════════════════════════════════════════ */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Col 1 — Dominant driver */}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1.5">Dominant Driver</div>
+                  <div className="text-[10px] font-semibold text-white/55">{hDriver(dominantDriver)}</div>
+                  {sr?.one_line && <div className="text-[9px] text-white/35 mt-0.5 leading-snug">{sr.one_line}</div>}
+                </div>
+
+                {/* Col 2 — What would change the call */}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1.5">What Would Change This Call</div>
+                  {flipConditions.length > 0 ? (
+                    <ul className="space-y-0.5">
+                      {flipConditions.slice(0, 4).map((c: string, i: number) => (
+                        <li key={i} className="text-[9px] text-white/45 flex gap-1.5">
+                          <span className="text-white/20 shrink-0">\u2192</span>
+                          <span className="leading-snug">{c.replace(/^[-*]\s*/, '')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-[9px] text-white/25">No flip conditions available</div>
+                  )}
+                </div>
+
+                {/* Col 3 — Event overlay + data context */}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  {/* Event overlay */}
+                  {eventOverlay?.active ? (
+                    <div className="mb-2 pb-2 border-b border-white/[0.06]">
+                      <div className="text-[8px] uppercase tracking-widest text-amber-400/60 mb-1">Event Risk</div>
+                      <div className="text-[10px] font-semibold text-white/55">{eventOverlay.title}</div>
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                        {eventOverlay.days_until != null && (
+                          <span className="text-[9px] text-white/35">{eventOverlay.days_until} days away</span>
+                        )}
+                        {eventOverlay.severity && (
+                          <span className="text-[9px] text-white/30 capitalize">{eventOverlay.severity}</span>
+                        )}
+                        {eventOverlay.position_size_impact && (
+                          <span className="text-[9px] text-white/40">Sizing: {eventOverlay.position_size_impact}</span>
+                        )}
+                      </div>
+                      <div className="text-[8px] text-white/20 mt-0.5">Event risk affects sizing, not directional score.</div>
+                    </div>
+                  ) : (
+                    <div className="mb-2 pb-2 border-b border-white/[0.06]">
+                      <div className="text-[8px] uppercase tracking-widest text-white/20">Event Risk</div>
+                      <div className="text-[9px] text-white/25 mt-0.5">No major event overlay</div>
+                    </div>
+                  )}
+
+                  {/* Data context */}
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Data</div>
+                  <div className="text-[9px] text-white/40 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span>
+                      {isComplete ? 'Complete' : isPartial ? `Partial \u00B7 ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}
+                    </span>
+                    {df?.market_context && (
+                      <span className="text-white/30">{df.market_context}</span>
+                    )}
+                  </div>
+                  {sr?.model_version && (
+                    <div className="text-[8px] text-white/20 mt-1">
+                      {sr.model_version}{sr?.calibration_status ? ` \u00B7 ${sr.calibration_status}` : ''}
+                      {sr?.calibration_status === 'uncalibrated' ? ' \u00B7 not yet historically calibrated' : ''}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════
+                  Why Markets Are Moving (below the panel)
+                  ═══════════════════════════════════════════════════════════ */}
               {hasWhyMarkets && (
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
                   <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
@@ -1899,7 +2245,6 @@ export default function HomePage() {
                   </ol>
                 </div>
               )}
-
             </div>
           );
         })()}
