@@ -1651,51 +1651,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Thin divider */}
-          <div className="self-stretch w-px bg-white/[0.07] shrink-0" />
 
-          {/* Right: Should I Trade? — powered by riskIntelPayload.trade_decision */}
-          {(() => {
-            const td = riskIntelPayload?.trade_decision;
-            const decision: string | undefined = td?.label;
-            const score: number | undefined = td?.score;
-            const mode: string = td?.mode ?? 'swing';
-            const hint: string | undefined = td?.position_size_hint;
-            const oneLine: string | undefined = td?.one_line;
-            const avoids: string[] = td?.avoid ?? [];
-            const decisionColor = decision === 'YES' ? 'text-emerald-400' : decision === 'CAUTION' ? 'text-amber-400' : decision === 'NO' ? 'text-rose-400' : 'text-white/40';
-            const borderColor = decision === 'YES' ? 'border-emerald-500/25' : decision === 'CAUTION' ? 'border-amber-500/25' : decision === 'NO' ? 'border-rose-500/25' : 'border-white/10';
-            const bgColor = decision === 'YES' ? 'bg-emerald-500/[0.03]' : decision === 'CAUTION' ? 'bg-amber-500/[0.03]' : decision === 'NO' ? 'bg-rose-500/[0.03]' : 'bg-white/[0.02]';
-            const scoreColor = score == null ? 'text-white/30' : score >= 70 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : score >= 30 ? 'text-orange-400' : 'text-rose-400';
-            return (
-              <button
-                onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                className={`flex flex-col justify-center rounded-xl border ${bgColor} hover:bg-white/[0.05] transition-all px-4 py-2.5 shrink-0 text-left ${borderColor}`}
-                style={{ minWidth: 162 }}
-              >
-                <div className="text-[8.5px] uppercase tracking-widest text-white/30 mb-1">Should I Trade?</div>
-                {!td ? (
-                  <div className="text-base font-bold text-white/20">—</div>
-                ) : (
-                  <>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className={`text-base font-bold tabular-nums leading-none ${decisionColor}`}>{decision ?? '—'}</span>
-                      {score != null && (
-                        <span className={`text-[10px] font-semibold tabular-nums ${scoreColor}`}>{score.toFixed(1)}/100</span>
-                      )}
-                    </div>
-                    {mode && <div className="text-[9px] text-white/35 mt-0.5">Mode: {mode}</div>}
-                    {hint && <div className="text-[9px] text-white/40 truncate">{hint}</div>}
-                    {oneLine && <div className="text-[9px] text-white/50 mt-0.5 line-clamp-2 leading-snug">{oneLine}</div>}
-                    {avoids.length > 0 && (
-                      <div className="text-[9px] text-rose-400/60 mt-1 line-clamp-1">Avoid: {avoids.slice(0, 2).join(', ')}</div>
-                    )}
-                  </>
-                )}
-                <div className="text-[8px] text-white/20 mt-1.5 flex items-center gap-0.5">{mode} mode <ChevronRight className="w-2.5 h-2.5" /></div>
-              </button>
-            );
-          })()}
         </div>
 
         {/* ── Swing Regime Intelligence Panel ─────────────────────────────── */}
@@ -1967,22 +1923,119 @@ export default function HomePage() {
             );
           };
 
+          // —— home_decision extraction (new primary unified model) —————
+          const hd = riskIntelPayload?.home_decision;
+          const hasHomeDecision = !!hd;
+          const hdVerdict = hd?.verdict;
+          const hdAction = hd?.action;
+          const hdOneLine = hd?.one_line;
+          const hdPositionSize = hd?.position_size_hint;
+          const hdConfidence = hd?.confidence;
+          const hdAssessment = hd?.assessment_status;
+          const hdMarketContext = hd?.market_context;
+
+          const hdRegime = hd?.regime;
+          const regimeRiskScore: number | null | undefined = hdRegime?.risk_score ?? riskScore;
+          const regimeRiskLevel: string = hdRegime?.risk_level ?? riskLevel;
+          const regimeDirection: string | undefined = hdRegime?.direction ?? direction;
+          const regimeTradeBias: string | undefined = hdRegime?.trade_bias ?? tradeBias;
+          const regimeSizing: string | undefined = hdRegime?.position_size_hint ?? sizing;
+
+          const hdExec = hd?.execution;
+          const execStatus = hdExec?.status;
+          const execQuality = hdExec?.quality;
+          const execMarketQualityScore: number | null | undefined = hdExec?.market_quality_score;
+          const execWindowScore: number | null | undefined = hdExec?.execution_window_score;
+          const execDecision = hdExec?.decision;
+          const execExpired = hdExec?.expired === true;
+          const execWarming = execStatus === 'warming';
+          const execUnavailable = execStatus === 'unavailable';
+
+          const buyReasons: string[] = Array.isArray(hd?.buy_reasons) ? hd.buy_reasons : [];
+          const waitReasons: string[] = Array.isArray(hd?.wait_reasons) ? hd.wait_reasons : [];
+          const reduceReasons: string[] = Array.isArray(hd?.reduce_reasons) ? hd.reduce_reasons : [];
+          const improveConditions: string[] = Array.isArray(hd?.what_would_improve) ? hd.what_would_improve : [];
+          const worsenConditions: string[] = Array.isArray(hd?.what_would_worsen) ? hd.what_would_worsen : [];
+          const whyNow: string[] = Array.isArray(hd?.why_now) ? hd.why_now : [];
+
+          const fmtVerdictClr = (v: string | undefined): string =>
+            v === 'YES' ? 'text-emerald-400' : v === 'CAUTION' ? 'text-amber-400' : v === 'NO' ? 'text-rose-400' : 'text-white/40';
+          const fmtVerdictBorder = (v: string | undefined): string =>
+            v === 'YES' ? 'border-emerald-500/20' : v === 'CAUTION' ? 'border-amber-500/20' : v === 'NO' ? 'border-rose-500/20' : 'border-white/07';
+          const fmtActionLabel = (a: string | undefined): string => {
+            if (!a) return '—';
+            const m: Record<string, string> = { PRESS: 'Press Leaders', SELECTIVE: 'Selective Entries', WAIT: 'Wait for Confirmation', REDUCE: 'Reduce Exposure', HEDGE: 'Hedge / Preserve Capital' };
+            return m[a] ?? a;
+          };
+          const fmtPositionSize = (s: string | undefined): string => {
+            if (!s) return '—';
+            const k = String(s ?? '').toLowerCase().replace(/[_-]/g, ' ');
+            const m: Record<string, string> = { normal: 'Normal', selective: 'Selective', 'half size': 'Half-size', 'preserve capital': 'Preserve Capital' };
+            return m[k] ?? s;
+          };
+          const fmtExecQuality = (q: string | undefined): string => {
+            if (!q) return 'Unavailable';
+            const m: Record<string, string> = { STRONG: 'Strong', MIXED: 'Mixed', WEAK: 'Weak', UNAVAILABLE: 'Unavailable' };
+            return m[q] ?? q;
+          };
+          const fmtExecDecision = (d: string | undefined): string => {
+            if (!d) return '—';
+            const m: Record<string, string> = { YES: 'Yes', CAUTION: 'Caution', NO: 'No' };
+            return m[d] ?? d;
+          };
+          const fmtExecStatus = (status: string | undefined, expired: boolean): string => {
+            if (status === 'warming') return 'Warming';
+            if (expired || status === 'expired') return 'Cached — Refreshing';
+            if (status === 'available') return 'Available';
+            if (status === 'unavailable') return 'Unavailable';
+            return status ?? '—';
+          };
+          const fmtMarketCtx = (ctx: string | undefined): string => {
+            if (!ctx) return '—';
+            const m: Record<string, string> = { live_session: 'Live US session', closed_last_session: 'Latest completed US session', stale: 'Stale market context' };
+            return m[ctx] ?? ctx;
+          };
+          const fmtCalStatus = (s: string | undefined): string => {
+            if (!s) return '';
+            return s === 'deterministic_uncalibrated' ? 'Deterministic v1 · Not yet historically calibrated'
+              : s === 'deterministic_calibrated' ? 'Deterministic · Historically calibrated'
+              : s.replace(/_/g, ' ');
+          };
+          const fmtAssessmentLabel = (s: string | undefined): string => {
+            if (!s) return '';
+            if (s === 'COMPLETE') return 'Complete';
+            if (s === 'PARTIAL') return 'Partial Data';
+            if (s === 'INSUFFICIENT_DATA') return 'Insufficient Data';
+            return s;
+          };
+          const normBullet = (b: string): string => b.replace(/^[-*●]\s*/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+          const whyNowSet = new Set(whyNow.map(normBullet));
+          const dedupedWhy = whyBullets.filter(b => !whyNowSet.has(normBullet(b)));
+          const combinedWhy: string[] = [...whyNow, ...dedupedWhy].slice(0, 6);
+          const hasWhyNowOrMarkets = combinedWhy.length > 0 || whyBullets.length > 0;
+
+          const fallbackVerdict = !hasHomeDecision && riskIntelPayload?.trade_decision
+            ? 'Regime-only fallback'
+            : (!hasHomeDecision ? 'Unified trading decision unavailable' : null);
+
           // —— root render ——————————————————————————————————————————————
-          // Loading — full shell skeleton
+          // Loading — unified panel skeleton
           if (riskIntelLoading && !riskIntelPayload) {
             return (
               <div className="mb-5 space-y-3 animate-pulse">
-                {/* exec strip skeleton */}
+                {/* unified hero skeleton */}
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="h-[14px] w-40 rounded bg-white/[0.06] mb-1" />
-                      <div className="h-[10px] w-60 rounded bg-white/[0.04]" />
+                  <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
+                    <div className="flex-1">
+                      <div className="h-[11px] w-28 rounded bg-white/[0.06] mb-1" />
+                      <div className="h-[22px] w-20 rounded bg-white/[0.06] mb-1" />
+                      <div className="h-[10px] w-48 rounded bg-white/[0.04]" />
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="h-[32px] w-20 rounded bg-white/[0.06]" />
-                      <div className="h-[32px] w-16 rounded bg-white/[0.06]" />
-                      <div className="h-[32px] w-24 rounded bg-white/[0.06]" />
+                    <div className="hidden lg:block self-stretch w-px bg-white/[0.06]" />
+                    <div className="flex-1 flex items-center gap-4">
+                      <div className="h-[40px] w-20 rounded bg-white/[0.06]" />
+                      <div className="h-[40px] w-16 rounded bg-white/[0.06]" />
+                      <div className="h-[40px] w-24 rounded bg-white/[0.06]" />
                     </div>
                   </div>
                 </div>
@@ -1997,9 +2050,9 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                {/* context strip skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {[1, 2, 3].map(i => (
+                {/* reasons skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[1, 2].map(i => (
                     <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="h-[8px] w-16 rounded bg-white/[0.06] mb-1.5" />
                       <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
@@ -2018,8 +2071,8 @@ export default function HomePage() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">SWING REGIME INTELLIGENCE</div>
-                    <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable</div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">SHOULD I TRADE?</div>
+                    <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable.</div>
                     <button onClick={() => riskIntelRefetch()} className="text-[9px] text-blue-400/70 hover:text-blue-400 underline">Retry</button>
                   </div>
                 </div>
@@ -2028,7 +2081,7 @@ export default function HomePage() {
           }
 
           // Insufficient data — neutral full panel
-          if (isInsufficient) {
+          if (isInsufficient && !hasHomeDecision) {
             return (
               <div className="mb-5 space-y-3">
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
@@ -2042,7 +2095,6 @@ export default function HomePage() {
                     <div className="flex flex-col items-end gap-0.5">
                       <span className="text-[10px] text-white/25">Direction</span>
                       <span className="text-[9px] text-white/20">UNKNOWN</span>
-                      <span className="text-[9px] text-white/20 mt-0.5">NEUTRAL</span>
                     </div>
                   </div>
                 </div>
@@ -2056,44 +2108,88 @@ export default function HomePage() {
             );
           }
 
-          // Has regime data — render full panel
+          // Has regime data — render unified panel
           return (
             <div className="mb-5 space-y-3">
-              {/* ═══════════════════════════════════════════════════════════
-                  ZONE A — Executive Decision Strip
-                  ═══════════════════════════════════════════════════════════ */}
-              <div className={`rounded-xl border px-4 py-3 ${isActive ? (riskLevel === 'EXTREME' ? 'bg-rose-950/30 border-rose-500/25' : riskLevel === 'HIGH' ? 'bg-orange-950/25 border-orange-500/25' : riskLevel === 'ELEVATED' ? 'bg-amber-950/20 border-amber-500/20' : 'bg-white/[0.02] border-white/[0.07]') : 'bg-white/[0.02] border-white/[0.07]'}`}>
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                  {/* Left: title and context */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/55">Swing Regime Intelligence</h3>
-                      {isPartial && (
-                        <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
-                      )}
-                    </div>
-                    <div className="text-[9px] text-white/25 mt-0.5">
-                      Multi-timeframe market risk and positioning
-                      {df?.market_context && <span className="ml-2 text-white/20">· {df.market_context}</span>}
-                    </div>
+              {/* ZONE A — Unified Decision Hero */}
+              <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/55">SHOULD I TRADE?</h3>
+                    <div className="text-[9px] text-white/25">Swing Regime + Execution Quality</div>
+                  </div>
+                  {(hdAssessment === 'PARTIAL' || isPartial) && (
+                    <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
+                  )}
+                  {hdAssessment === 'INSUFFICIENT_DATA' && (
+                    <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-white/10 text-white/30 bg-white/5">INSUFFICIENT DATA</span>
+                  )}
+                </div>
+
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
+                  {/* LEFT — Final Answer */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    {!hasHomeDecision ? (
+                      <div className="text-[16px] font-bold text-white/25">{fallbackVerdict ?? '—'}</div>
+                    ) : (
+                      <>
+                        <div className={`text-[22px] font-bold tabular-nums leading-none ${fmtVerdictClr(hdVerdict)}`}>
+                          {hdVerdict ?? '—'}
+                        </div>
+                        <div className={`text-[13px] font-semibold ${fmtVerdictClr(hdVerdict)} mt-0.5`}>
+                          {fmtActionLabel(hdAction)}
+                        </div>
+                        {hdOneLine && (
+                          <div className="text-[10px] text-white/50 mt-1 leading-snug max-w-[380px]">{hdOneLine}</div>
+                        )}
+                        <div className="flex items-center gap-3 mt-1.5 text-[10px] flex-wrap">
+                          <span className="text-white/35">Position size:</span>
+                          <span className="text-white/60 font-semibold">{fmtPositionSize(hdPositionSize)}</span>
+                          {hdConfidence && (
+                            <>
+                              <span className="text-white/20">·</span>
+                              <span className="text-white/35">Confidence:</span>
+                              <span className="text-white/60">{confLabel(hdConfidence)}</span>
+                            </>
+                          )}
+                          {hdAssessment && (
+                            <>
+                              <span className="text-white/20">·</span>
+                              <span className="text-white/30">{fmtAssessmentLabel(hdAssessment)}</span>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Center: risk score + level + direction */}
-                  <div className="flex items-center gap-5">
-                    <div className="flex flex-col items-center min-w-[72px]">
-                      <div className={`text-2xl font-bold tabular-nums leading-none ${scoreTextClr(riskScore)}`}>
-                        {riskScore != null ? Math.round(riskScore) : '—'}
-                      </div>
-                      <div className="text-[8px] text-white/20">/ 100</div>
-                      <div className={`text-[9px] font-semibold mt-0.5 ${scoreTextClr(riskScore)}`}>{scoreBand(riskScore)}</div>
-                    </div>
+                  <div className="hidden lg:block self-stretch w-px bg-white/[0.07]" />
 
-                    {/* Risk meter */}
-                    <div className="hidden sm:flex flex-col items-center gap-1 min-w-[120px]">
-                      <div className="text-[7px] uppercase tracking-wider text-white/25 flex justify-between w-full">
+                  {/* CENTER — Regime Risk */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">REGIME RISK</div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center min-w-[64px]">
+                        <div className={`text-2xl font-bold tabular-nums leading-none ${scoreTextClr(regimeRiskScore)}`}>
+                          {regimeRiskScore != null ? Math.round(regimeRiskScore) : '—'}
+                        </div>
+                        <div className="text-[8px] text-white/20">/ 100</div>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <div className={`text-[10px] font-semibold ${scoreTextClr(regimeRiskScore)}`}>
+                          {scoreBand(regimeRiskScore)}
+                        </div>
+                        <span className={`text-[9px] ${dirClr(regimeDirection)}`}>
+                          {dirArrow(regimeDirection)} {fmtDir(regimeDirection)}
+                        </span>
+                        <span className="text-[9px] text-white/35">Bias: {fmtBias(regimeTradeBias)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-[7px] uppercase tracking-wider text-white/25 flex justify-between">
                         <span>LOW</span><span>MOD</span><span>ELEV</span><span>HIGH</span><span>EXT</span>
                       </div>
-                      <div className="w-full h-[5px] rounded-full bg-white/[0.06] relative overflow-hidden">
+                      <div className="w-full h-[4px] rounded-full bg-white/[0.06] relative overflow-hidden mt-0.5">
                         <div className="absolute inset-y-0 left-0 flex">
                           <div className="w-[24%] border-r border-white/10 bg-emerald-500/15" />
                           <div className="w-[20%] border-r border-white/10 bg-emerald-400/12" />
@@ -2101,166 +2197,283 @@ export default function HomePage() {
                           <div className="w-[16%] border-r border-white/10 bg-orange-500/12" />
                           <div className="w-[20%] bg-rose-500/12" />
                         </div>
-                        {riskScore != null && (
-                          <div className={`absolute top-0 h-full w-[3px] rounded ${scoreBarClr(riskScore)}`}
-                            style={{ left: `${Math.min(98, Math.max(1, riskScore))}%` }}
+                        {regimeRiskScore != null && (
+                          <div className={`absolute top-0 h-full w-[3px] rounded ${scoreBarClr(regimeRiskScore)}`}
+                            style={{ left: `${Math.min(98, Math.max(1, regimeRiskScore))}%` }}
                           />
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[9px]">
-                        <span className={`${dirClr(direction)}`}>{dirArrow(direction)} {fmtDir(direction)}</span>
-                      </div>
-                    </div>
-
-                    {/* Mobile inline direction */}
-                    <div className="sm:hidden text-[9px]">
-                      <span className={`${dirClr(direction)}`}>{dirArrow(direction)} {fmtDir(direction)}</span>
+                      <div className="text-[7px] text-white/20 mt-0.5">Higher = more environmental risk</div>
                     </div>
                   </div>
 
-                  {/* Right: trade bias + sizing */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="flex flex-col items-center min-w-[80px]">
-                      <div className="text-[8px] uppercase tracking-wider text-white/25">Bias</div>
-                      <div className={`text-[11px] font-bold ${tradeBias === 'LONG' || tradeBias === 'SELECTIVE_LONG' ? 'text-emerald-400' : tradeBias === 'SHORT' || tradeBias === 'SELECTIVE_SHORT' ? 'text-rose-400' : 'text-white/50'}`}>
-                        {fmtBias(tradeBias)}
+                  <div className="hidden lg:block self-stretch w-px bg-white/[0.07]" />
+
+                  {/* RIGHT — Execution Quality */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">EXECUTION QUALITY</div>
+
+                    {execWarming && hasHomeDecision ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[13px] font-bold text-white/40">Warming...</div>
+                        <div className="text-[9px] text-white/30 leading-snug">Execution-quality data has not yet confirmed the regime.</div>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-center min-w-[80px]">
-                      <div className="text-[8px] uppercase tracking-wider text-white/25">Sizing</div>
-                      <div className="text-[11px] font-bold text-white/55">{fmtSizing(sizing)}</div>
-                    </div>
-                    {assessment && !isComplete && (
-                      <span className={`text-[8px] px-1.5 py-px rounded border ${isPartial ? 'border-amber-500/25 text-amber-400/70 bg-amber-500/10' : 'border-white/10 text-white/30 bg-white/5'}`}>
-                        {assessment}
-                      </span>
+                    ) : execUnavailable && !hasHomeDecision ? (
+                      <div className="text-[11px] font-semibold text-white/35">Execution unavailable</div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-center min-w-[52px]">
+                            <div className="text-lg font-bold tabular-nums leading-none text-white/65">
+                              {execMarketQualityScore != null ? Math.round(execMarketQualityScore) : '—'}
+                            </div>
+                            <div className="text-[7px] text-white/25">/ 100</div>
+                          </div>
+                          <div className="flex flex-col gap-0.5 text-[9px]">
+                            <span className="text-white/50">Market Quality</span>
+                            <span className="text-white/25">Higher = healthier tape</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <div className="flex flex-col items-center min-w-[52px]">
+                            <div className="text-lg font-bold tabular-nums leading-none text-white/65">
+                              {execWindowScore != null ? Math.round(execWindowScore) : '—'}
+                            </div>
+                            <div className="text-[7px] text-white/25">/ 100</div>
+                          </div>
+                          <div className="flex flex-col gap-0.5 text-[9px]">
+                            <span className="text-white/50">Execution Window</span>
+                            <span className="text-white/25">Higher = stronger entries</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 text-[9px] flex-wrap">
+                          {execQuality && (
+                            <span className={`px-1.5 py-px rounded border ${
+                              execQuality === 'STRONG' ? 'border-emerald-500/25 text-emerald-400/70 bg-emerald-500/10' :
+                              execQuality === 'MIXED' ? 'border-amber-500/25 text-amber-400/70 bg-amber-500/10' :
+                              execQuality === 'WEAK' ? 'border-rose-500/25 text-rose-400/70 bg-rose-500/10' :
+                              'border-white/10 text-white/40 bg-white/5'
+                            }`}>
+                              {fmtExecQuality(execQuality)}
+                            </span>
+                          )}
+                          {execDecision && (
+                            <span className="text-white/40">{fmtExecDecision(execDecision)}</span>
+                          )}
+                          <span className={`${execExpired ? 'text-amber-400/60' : execWarming ? 'text-amber-400/60' : 'text-white/35'}`}>
+                            {fmtExecStatus(execStatus, execExpired)}
+                          </span>
+                        </div>
+                      </>
                     )}
-                  </div>
-                </div>
-
-                {/* Mobile risk meter */}
-                <div className="sm:hidden mt-2">
-                  <div className="text-[7px] uppercase tracking-wider text-white/25 flex justify-between">
-                    <span>LOW</span><span>MOD</span><span>ELEV</span><span>HIGH</span><span>EXT</span>
-                  </div>
-                  <div className="w-full h-[4px] rounded-full bg-white/[0.06] relative overflow-hidden mt-0.5">
-                    <div className="absolute inset-y-0 left-0 flex">
-                      <div className="w-[24%] border-r border-white/10 bg-emerald-500/15" />
-                      <div className="w-[20%] border-r border-white/10 bg-emerald-400/12" />
-                      <div className="w-[20%] border-r border-white/10 bg-amber-500/12" />
-                      <div className="w-[16%] border-r border-white/10 bg-orange-500/12" />
-                      <div className="w-[20%] bg-rose-500/12" />
-                    </div>
-                    {riskScore != null && (
-                      <div className={`absolute top-0 h-full w-[2px] rounded ${scoreBarClr(riskScore)}`}
-                        style={{ left: `${Math.min(98, Math.max(1, riskScore))}%` }}
-                      />
+                    {!hasHomeDecision && !execUnavailable && execMarketQualityScore == null && (
+                      <div className="text-[9px] text-white/25 mt-0.5">Quality data not in legacy response</div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* ═══════════════════════════════════════════════════════════
-                  ZONE B — Four Pillar Intelligence Grid
-                  ═══════════════════════════════════════════════════════════ */}
+              {/* ZONE B — Swing Regime Intelligence: Four Pillars */}
+              <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/45">SWING REGIME INTELLIGENCE</h3>
+                  <span className="text-[8px] text-white/25 hidden sm:inline">What is driving environmental market risk?</span>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 {pillarList.map(pl => renderPillarCard(pl))}
               </div>
 
-              {/* ═══════════════════════════════════════════════════════════
-                  ZONE C — Drivers, Flip Conditions, Event & Data Context
-                  ═══════════════════════════════════════════════════════════ */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Col 1 — Dominant driver */}
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">Dominant Driver</div>
-                  <div className="text-[10px] font-semibold text-white/65">{hDriver(dominantDriver)}</div>
-                  {sr?.one_line && <div className="text-[9px] text-white/40 mt-0.5 leading-snug">{sr.one_line}</div>}
+              {/* ZONE D — Action Reasons */}
+              {hasHomeDecision && (buyReasons.length > 0 || waitReasons.length > 0 || reduceReasons.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {buyReasons.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="text-[8px] uppercase tracking-widest text-emerald-400/60 mb-1.5">WHY TO ADD</div>
+                      <ul className="space-y-0.5">
+                        {buyReasons.slice(0, 3).map((r, i) => (
+                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                            <span className="text-emerald-400/40 shrink-0">+</span>
+                            <span>{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {waitReasons.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="text-[8px] uppercase tracking-widest text-amber-400/60 mb-1.5">WHY TO WAIT</div>
+                      <ul className="space-y-0.5">
+                        {waitReasons.slice(0, 3).map((r, i) => (
+                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                            <span className="text-amber-400/40 shrink-0">~</span>
+                            <span>{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {reduceReasons.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="text-[8px] uppercase tracking-widest text-rose-400/60 mb-1.5">WHY TO REDUCE / HEDGE</div>
+                      <ul className="space-y-0.5">
+                        {reduceReasons.slice(0, 3).map((r, i) => (
+                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                            <span className="text-rose-400/40 shrink-0">−</span>
+                            <span>{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {/* Col 2 — What would change the call */}
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">What Would Change This Call</div>
-                  {flipConditions.length > 0 ? (
+              {/* ZONE C — Why Markets Are Moving (deduped) */}
+              {hasWhyNowOrMarkets && (
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">WHY MARKETS ARE MOVING</div>
+                  {whyNow.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[8px] uppercase tracking-wider text-white/25 mb-1">DECISION CONTEXT</div>
+                      <ul className="space-y-0.5">
+                        {whyNow.slice(0, 2).map((b, i) => (
+                          <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
+                            <span className="text-white/25 shrink-0">→</span>
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {dedupedWhy.length > 0 && (
+                    <div>
+                      <div className="text-[8px] uppercase tracking-wider text-white/25 mb-1">MARKET DRIVERS</div>
+                      <ul className="space-y-0.5">
+                        {dedupedWhy.slice(0, 4).map((b, i) => (
+                          <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
+                            <span className="text-white/25 shrink-0">→</span>
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {whyNow.length === 0 && dedupedWhy.length === 0 && (
                     <ul className="space-y-0.5">
-                      {flipConditions.slice(0, 4).map((c: string, i: number) => (
-                        <li key={i} className="text-[9px] text-white/50 flex gap-1.5">
+                      {whyBullets.slice(0, 4).map((b, i) => (
+                        <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
                           <span className="text-white/25 shrink-0">→</span>
-                          <span className="leading-snug">{c.replace(/^[-*]\s*/, '')}</span>
+                          <span>{b}</span>
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <div className="text-[9px] text-white/25">No flip conditions available</div>
                   )}
                 </div>
+              )}
 
-                {/* Col 3 — Event overlay + data context */}
+              {/* ZONE E — What Would Change the Call */}
+              {(improveConditions.length > 0 || worsenConditions.length > 0 || flipConditions.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {improveConditions.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="text-[8px] uppercase tracking-widest text-emerald-400/50 mb-1.5">WHAT WOULD IMPROVE THE CALL</div>
+                      <ul className="space-y-0.5">
+                        {improveConditions.slice(0, 4).map((c, i) => (
+                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                            <span className="text-emerald-400/40 shrink-0">↑</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {worsenConditions.length > 0 && (
+                    <div className={`rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 ${improveConditions.length === 0 ? 'md:col-span-2' : ''}`}>
+                      <div className="text-[8px] uppercase tracking-widest text-rose-400/50 mb-1.5">WHAT WOULD WORSEN THE CALL</div>
+                      <ul className="space-y-0.5">
+                        {worsenConditions.slice(0, 4).map((c, i) => (
+                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                            <span className="text-rose-400/40 shrink-0">↓</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {improveConditions.length === 0 && worsenConditions.length === 0 && flipConditions.length > 0 && (
+                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 md:col-span-2">
+                      <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">WHAT WOULD CHANGE THIS CALL</div>
+                      <ul className="space-y-0.5">
+                        {flipConditions.slice(0, 4).map((c, i) => (
+                          <li key={i} className="text-[9px] text-white/50 flex gap-1.5">
+                            <span className="text-white/25 shrink-0">→</span>
+                            <span className="leading-snug">{c.replace(/^[-*]\s*/, '')}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ZONE F — Event, Freshness & Data Quality + Terminal link */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  {/* Event overlay */}
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Event Risk</div>
                   {eventOverlay?.active ? (
-                    <div className="mb-2 pb-2 border-b border-white/[0.06]">
-                      <div className="text-[8px] uppercase tracking-widest text-amber-400/60 mb-1">Event Risk</div>
+                    <div>
                       <div className="text-[10px] font-semibold text-white/55">{eventOverlay.title}</div>
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
-                        {eventOverlay.days_until != null && (
-                          <span className="text-[9px] text-white/35">{eventOverlay.days_until} days away</span>
-                        )}
-                        {eventOverlay.severity && (
-                          <span className="text-[9px] text-white/30 capitalize">{eventOverlay.severity}</span>
-                        )}
-                        {eventOverlay.position_size_impact && (
-                          <span className="text-[9px] text-white/40">Sizing: {eventOverlay.position_size_impact}</span>
-                        )}
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[9px]">
+                        {eventOverlay.days_until != null && <span className="text-white/35">{eventOverlay.days_until} days away</span>}
+                        {eventOverlay.severity && <span className="text-white/30 capitalize">{eventOverlay.severity}</span>}
+                        {eventOverlay.position_size_impact && <span className="text-white/40">Sizing: {eventOverlay.position_size_impact}</span>}
                       </div>
                       <div className="text-[8px] text-white/20 mt-0.5">Event risk affects sizing, not directional score.</div>
                     </div>
                   ) : (
-                    <div className="mb-2 pb-2 border-b border-white/[0.06]">
-                      <div className="text-[8px] uppercase tracking-widest text-white/20">Event Risk</div>
-                      <div className="text-[9px] text-white/25 mt-0.5">No major event overlay</div>
-                    </div>
+                    <div className="text-[9px] text-white/25">No major event overlay</div>
                   )}
+                </div>
 
-                  {/* Data context */}
-                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Data</div>
-                  <div className="text-[9px] text-white/40 flex flex-wrap gap-x-3 gap-y-0.5">
-                    <span>
-                      {isComplete ? 'Complete' : isPartial ? `Partial · ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}
-                    </span>
-                    {df?.market_context && (
-                      <span className="text-white/30">{df.market_context}</span>
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Data Quality</div>
+                  <div className="text-[9px] text-white/40 flex flex-col gap-0.5">
+                    {hasHomeDecision ? (
+                      <>
+                        {hdAssessment && <span>Assessment: {fmtAssessmentLabel(hdAssessment)}</span>}
+                        <span>Context: {fmtMarketCtx(hdMarketContext)}</span>
+                        {hd?.confidence && <span>Confidence: {confLabel(hd.confidence)}</span>}
+                        {hd?.calibration_status && <span className="text-white/25">{fmtCalStatus(hd.calibration_status)}</span>}
+                        {sr?.available_pillar_count != null && (
+                          <span>{sr.available_pillar_count}/{pillarList.length} pillars available</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span>{isComplete ? 'Complete' : isPartial ? `Partial · ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}</span>
+                        {df?.market_context && <span className="text-white/30">{df.market_context}</span>}
+                        {sr?.model_version && <span className="text-white/25">{sr.model_version}{sr?.calibration_status ? ` · ${fmtCalStatus(sr.calibration_status)}` : ''}</span>}
+                      </>
                     )}
                   </div>
-                  {sr?.model_version && (() => {
-                    const calStatus = sr?.calibration_status;
-                    const calLabel = calStatus === 'deterministic_uncalibrated' ? 'Deterministic v1 · not yet historically calibrated'
-                      : calStatus === 'deterministic_calibrated' ? 'Deterministic · historically calibrated'
-                      : calStatus ? calStatus.replace(/_/g, ' ') : null;
-                    return (
-                      <div className="text-[8px] text-white/20 mt-1">
-                        {sr.model_version}{calLabel ? ` · ${calLabel}` : ''}
-                      </div>
-                    );
-                  })()}
+                </div>
+
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 flex flex-col justify-center">
+                  <button
+                    onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
+                    className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white/70 transition-colors"
+                  >
+                    <Gauge className="w-3.5 h-3.5" />
+                    OPEN FULL TRADING TERMINAL
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                  <div className="text-[8px] text-white/20 mt-1">Home = concise decision · Macro = full execution analysis</div>
                 </div>
               </div>
 
-              {/* ═══════════════════════════════════════════════════════════
-                  Why Markets Are Moving (below the panel)
-                  ═══════════════════════════════════════════════════════════ */}
-              {hasWhyMarkets && (
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                  <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Why Markets Are Moving</div>
-                  <ol className="space-y-1">
-                    {whyBullets.slice(0, 3).map((b, i) => (
-                      <li key={i} className="text-[11px] text-white/60 leading-snug flex gap-2">
-                        <span className="text-white/25 shrink-0">{i + 1}.</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+              {dominantDriver && (
+                <div className="text-[8px] text-white/20 text-center">Dominant driver: {hDriver(dominantDriver)}</div>
               )}
             </div>
           );
