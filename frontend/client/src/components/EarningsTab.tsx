@@ -166,6 +166,15 @@ interface EarningsCoverage {
   has_price_targets: boolean;
 }
 
+const EMPTY_COVERAGE: EarningsCoverage = {
+  has_earnings_history: false,
+  has_reactions: false,
+  has_ratings_consensus: false,
+  has_rating_actions: false,
+  has_rating_history: false,
+  has_price_targets: false,
+};
+
 interface SourceStatus {
   earnings_fetched_at: string | null;
   ratings_fetched_at: string | null;
@@ -1041,7 +1050,7 @@ function OverviewSubTab({ ei, C, ticker, onSwitchToMaterials, earningsEntry }: {
     return earningsEntry ? entryToSyntheticEvent(earningsEntry, ticker ?? '') : null;
   }, [liveEvent, earningsEntry, ticker]);
 
-  const cov = ei.source_status.coverage;
+  const cov = ei.source_status?.coverage ?? EMPTY_COVERAGE;
   const hist = ei.earnings_history;
   const rs = ei.reaction_summary;
   const hasHistory = cov.has_earnings_history && hist.length > 0;
@@ -1546,7 +1555,7 @@ type HistoryRange = '3y' | 'max';
 function HistorySubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
   const [range, setRange] = useState<HistoryRange>('max');
   const hist = ei.earnings_history;
-  const cov = ei.source_status.coverage;
+  const cov = ei.source_status?.coverage ?? EMPTY_COVERAGE;
 
   if (!cov.has_earnings_history || hist.length === 0) {
     return <Empty msg="Historical earnings data is not available from the current provider." C={C} />;
@@ -1720,7 +1729,7 @@ function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
   const [horizon, setHorizon] = useState<ReactionHorizon>('pre-vs-post');
   const hist = ei.earnings_history;
   const rs = ei.reaction_summary;
-  const cov = ei.source_status.coverage;
+  const cov = ei.source_status?.coverage ?? EMPTY_COVERAGE;
 
   if (!cov.has_reactions) {
     return <Empty msg="Earnings price reaction data is not available for this symbol." C={C} />;
@@ -2074,7 +2083,7 @@ function PriceMovesSubTab({ ei, C }: { ei: EarningsIntelligence; C: any }) {
    ═══════════════════════════════════════════════════════════════ */
 function RatingsSubTab({ ei, currentPrice, C }: { ei: EarningsIntelligence; currentPrice: number | null; C: any }) {
   const { consensus, price_target: pt, price_target_summary: pts, monthly_distribution: monthDist, recent_actions: actions } = ei.ratings;
-  const cov = ei.source_status.coverage;
+  const cov = ei.source_status?.coverage ?? EMPTY_COVERAGE;
   const [pubOpen, setPubOpen] = useState(false);
 
   const cons: RatingsConsensus | null = cov.has_ratings_consensus && consensus && 'total_ratings' in consensus
