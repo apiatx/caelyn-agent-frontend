@@ -1888,7 +1888,15 @@ export default function HomePage() {
             return (
               <div key={pillar.key} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1.5 min-h-0">
                 <div className="flex items-start justify-between gap-1">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-white/55 leading-tight">{pillar.label}</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-white/55 leading-tight">{pillar.label}</div>
+                    {pillar.key === 'leadership_and_cross_asset' && p?.confirmation_status === 'UNCONFIRMED' && (
+                      <span className="text-[7px] font-semibold uppercase px-1 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">UNCONFIRMED</span>
+                    )}
+                    {pillar.key === 'leadership_and_cross_asset' && p?.data_status === 'PARTIAL' && (
+                      <span className="text-[7px] px-1 py-px rounded border border-white/10 text-white/30 bg-white/5">PARTIAL</span>
+                    )}
+                  </div>
                   {!avail && <span className="text-[8px] text-white/25 shrink-0 border border-white/10 rounded px-1 py-px">UNAVAIL</span>}
                 </div>
 
@@ -1904,17 +1912,56 @@ export default function HomePage() {
                         style={{ width: `${Math.min(100, Math.max(0, ps ?? 0))}%` }}
                       />
                     </div>
+
+                    {/* interpretation */}
+                    {p?.interpretation && (
+                      <div className="text-[9px] text-white/55 leading-snug">{p.interpretation}</div>
+                    )}
+
+                    {/* grounded supportive signals */}
+                    {Array.isArray(p?.supportive_signals) && p.supportive_signals.length > 0 && (
+                      <div className="space-y-0.5">
+                        {p.supportive_signals.slice(0, 2).map((s: any, i: number) => (
+                          <div key={`sup-${i}`} className="text-[9px] text-emerald-400/60 flex gap-1 leading-snug">
+                            <span className="shrink-0">+</span>
+                            <span>{s.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* grounded risk signals */}
+                    {Array.isArray(p?.risk_signals) && p.risk_signals.length > 0 && (
+                      <div className="space-y-0.5">
+                        {p.risk_signals.slice(0, 2).map((s: any, i: number) => (
+                          <div key={`risk-${i}`} className="text-[9px] text-rose-400/60 flex gap-1 leading-snug">
+                            <span className="shrink-0">−</span>
+                            <span>{s.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* missing inputs */}
+                    {Array.isArray(p?.missing_inputs) && p.missing_inputs.length > 0 && (
+                      <div className="text-[8px] text-white/25">
+                        Missing: {p.missing_inputs.join(', ')}
+                      </div>
+                    )}
+
+                    {/* raw metrics as secondary detail */}
                     {haveComps && (
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-0.5 border-t border-white/[0.04]">
                         {metrics.slice(0, 4).map((m, i) => (
-                          <span key={i} className="text-[9px]">
-                            <span className="text-white/35">{m.label} </span>
-                            <span className={m.cls ?? 'text-white/65'}>{m.value}</span>
+                          <span key={i} className="text-[8px]">
+                            <span className="text-white/30">{m.label} </span>
+                            <span className={m.cls ?? 'text-white/50'}>{m.value}</span>
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="text-[8.5px] text-white/35">{confText}</div>
+
+                    <div className="text-[8px] text-white/25">{confText}</div>
                   </>
                 ) : (
                   <div className="text-[9px] text-white/30 italic flex-1 flex items-center">Insufficient inputs</div>
@@ -2018,6 +2065,35 @@ export default function HomePage() {
             ? 'Regime-only fallback'
             : (!hasHomeDecision ? 'Unified trading decision unavailable' : null);
 
+          // —— signal_summary & sizing ——————————————————————————————————
+          const signalSummary = hd?.signal_summary;
+          const supports: { source: string; message: string }[] =
+            Array.isArray(signalSummary?.strongest_supports) ? signalSummary.strongest_supports : [];
+          const risks: { source: string; message: string }[] =
+            Array.isArray(signalSummary?.largest_risks) ? signalSummary.largest_risks : [];
+          const missingConfs: { source: string; message: string }[] =
+            Array.isArray(signalSummary?.missing_confirmations) ? signalSummary.missing_confirmations : [];
+          const hasSignalSummary = supports.length > 0 || risks.length > 0 || missingConfs.length > 0;
+          const hdSizing = hd?.sizing;
+          const sizingExplanation: string | undefined = hdSizing?.explanation;
+          const execRefetchSec: number | null | undefined = hdExec?.recommended_refetch_seconds;
+          const execRefreshing: boolean = hdExec?.refresh_in_progress === true;
+
+          // —— bounded execution warmup refetch ———————————————————————————
+          const refetchAttempted = useRef<string | null>(null);
+          useEffect(() => {
+            if (execWarming && execRefetchSec != null && execRefetchSec > 0) {
+              const key = `${execStatus ?? ''}|${hdExec?.as_of ?? ''}|${riskIntelPayload?.as_of ?? ''}`;
+              if (refetchAttempted.current === key) return;
+              const timer = setTimeout(() => {
+                refetchAttempted.current = key;
+                riskIntelRefetch();
+              }, execRefetchSec * 1000);
+              return () => { clearTimeout(timer); };
+            }
+            if (!execWarming) refetchAttempted.current = null;
+          }, [execWarming, execRefetchSec, hdExec?.as_of, riskIntelPayload?.as_of]);
+
           // —— root render ——————————————————————————————————————————————
           // Loading — unified panel skeleton
           if (riskIntelLoading && !riskIntelPayload) {
@@ -2050,13 +2126,23 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                {/* reasons skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[1, 2].map(i => (
+                {/* signal summary skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[1, 2, 3].map(i => (
                     <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="h-[8px] w-16 rounded bg-white/[0.06] mb-1.5" />
                       <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
                       <div className="h-[10px] w-3/4 rounded bg-white/[0.04]" />
+                    </div>
+                  ))}
+                </div>
+                {/* change the call skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[1, 2].map(i => (
+                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                      <div className="h-[8px] w-20 rounded bg-white/[0.06] mb-1.5" />
+                      <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
+                      <div className="h-[10px] w-2/3 rounded bg-white/[0.04]" />
                     </div>
                   ))}
                 </div>
@@ -2159,6 +2245,9 @@ export default function HomePage() {
                             </>
                           )}
                         </div>
+                        {sizingExplanation && (
+                          <div className="text-[9px] text-amber-400/60 mt-1 leading-snug">{sizingExplanation}</div>
+                        )}
                       </>
                     )}
                   </div>
@@ -2215,8 +2304,8 @@ export default function HomePage() {
 
                     {execWarming && hasHomeDecision ? (
                       <div className="flex flex-col gap-1">
-                        <div className="text-[13px] font-bold text-white/40">Warming...</div>
-                        <div className="text-[9px] text-white/30 leading-snug">Execution-quality data has not yet confirmed the regime.</div>
+                        <div className="text-[13px] font-bold text-white/40">Updating execution analysis...</div>
+                        <div className="text-[9px] text-white/30 leading-snug">Regime analysis is available. Entry-quality confirmation is being refreshed.</div>
                       </div>
                     ) : execUnavailable && !hasHomeDecision ? (
                       <div className="text-[11px] font-semibold text-white/35">Execution unavailable</div>
@@ -2284,10 +2373,25 @@ export default function HomePage() {
                 {pillarList.map(pl => renderPillarCard(pl))}
               </div>
 
-              {/* ZONE D — Action Reasons */}
-              {hasHomeDecision && (buyReasons.length > 0 || waitReasons.length > 0 || reduceReasons.length > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {buyReasons.length > 0 && (
+              {/* ZONE D — Grounded Signal Summary */}
+              {hasHomeDecision && (hasSignalSummary || buyReasons.length > 0 || waitReasons.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* WHAT SUPPORTS THE CALL */}
+                  {hasSignalSummary ? (
+                    supports.length > 0 && (
+                      <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                        <div className="text-[8px] uppercase tracking-widest text-emerald-400/60 mb-1.5">WHAT SUPPORTS THE CALL</div>
+                        <ul className="space-y-1">
+                          {supports.slice(0, 3).map((s, i) => (
+                            <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                              <span className="text-emerald-400/40 shrink-0">+</span>
+                              <span>{s.message}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  ) : buyReasons.length > 0 && (
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="text-[8px] uppercase tracking-widest text-emerald-400/60 mb-1.5">WHY TO ADD</div>
                       <ul className="space-y-0.5">
@@ -2300,7 +2404,23 @@ export default function HomePage() {
                       </ul>
                     </div>
                   )}
-                  {waitReasons.length > 0 && (
+
+                  {/* WHAT HOLDS IT BACK */}
+                  {hasSignalSummary ? (
+                    risks.length > 0 && (
+                      <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                        <div className="text-[8px] uppercase tracking-widest text-rose-400/60 mb-1.5">WHAT HOLDS IT BACK</div>
+                        <ul className="space-y-1">
+                          {risks.slice(0, 3).map((s, i) => (
+                            <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
+                              <span className="text-rose-400/40 shrink-0">−</span>
+                              <span>{s.message}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  ) : waitReasons.length > 0 && (
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="text-[8px] uppercase tracking-widest text-amber-400/60 mb-1.5">WHY TO WAIT</div>
                       <ul className="space-y-0.5">
@@ -2313,14 +2433,16 @@ export default function HomePage() {
                       </ul>
                     </div>
                   )}
-                  {reduceReasons.length > 0 && (
+
+                  {/* MISSING CONFIRMATION */}
+                  {hasSignalSummary && missingConfs.length > 0 && (
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                      <div className="text-[8px] uppercase tracking-widest text-rose-400/60 mb-1.5">WHY TO REDUCE / HEDGE</div>
-                      <ul className="space-y-0.5">
-                        {reduceReasons.slice(0, 3).map((r, i) => (
-                          <li key={i} className="text-[9px] text-white/55 flex gap-1.5 leading-snug">
-                            <span className="text-rose-400/40 shrink-0">−</span>
-                            <span>{r}</span>
+                      <div className="text-[8px] uppercase tracking-widest text-white/40 mb-1.5">MISSING CONFIRMATION</div>
+                      <ul className="space-y-1">
+                        {missingConfs.slice(0, 3).map((s, i) => (
+                          <li key={i} className="text-[9px] text-white/50 flex gap-1.5 leading-snug">
+                            <span className="text-white/25 shrink-0">?</span>
+                            <span>{s.message}</span>
                           </li>
                         ))}
                       </ul>
@@ -2329,54 +2451,26 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* ZONE C — Why Markets Are Moving (deduped) */}
+              {/* ZONE C — Why Markets Are Moving (compact, deduped, ~4 bullets) */}
               {hasWhyNowOrMarkets && (
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                  <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">WHY MARKETS ARE MOVING</div>
-                  {whyNow.length > 0 && (
-                    <div className="mb-2">
-                      <div className="text-[8px] uppercase tracking-wider text-white/25 mb-1">DECISION CONTEXT</div>
-                      <ul className="space-y-0.5">
-                        {whyNow.slice(0, 2).map((b, i) => (
-                          <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
-                            <span className="text-white/25 shrink-0">→</span>
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {dedupedWhy.length > 0 && (
-                    <div>
-                      <div className="text-[8px] uppercase tracking-wider text-white/25 mb-1">MARKET DRIVERS</div>
-                      <ul className="space-y-0.5">
-                        {dedupedWhy.slice(0, 4).map((b, i) => (
-                          <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
-                            <span className="text-white/25 shrink-0">→</span>
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {whyNow.length === 0 && dedupedWhy.length === 0 && (
-                    <ul className="space-y-0.5">
-                      {whyBullets.slice(0, 4).map((b, i) => (
-                        <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
-                          <span className="text-white/25 shrink-0">→</span>
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">WHY MARKETS ARE MOVING</div>
+                  <ul className="space-y-0.5">
+                    {combinedWhy.slice(0, 4).map((b, i) => (
+                      <li key={i} className="text-[9px] text-white/50 leading-snug flex gap-1.5">
+                        <span className="text-white/20 shrink-0">→</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
               {/* ZONE E — What Would Change the Call */}
-              {(improveConditions.length > 0 || worsenConditions.length > 0 || flipConditions.length > 0) && (
+              {(improveConditions.length > 0 || worsenConditions.length > 0) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {improveConditions.length > 0 && (
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                    <div className={`rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 ${worsenConditions.length === 0 ? 'md:col-span-2' : ''}`}>
                       <div className="text-[8px] uppercase tracking-widest text-emerald-400/50 mb-1.5">WHAT WOULD IMPROVE THE CALL</div>
                       <ul className="space-y-0.5">
                         {improveConditions.slice(0, 4).map((c, i) => (
@@ -2401,80 +2495,39 @@ export default function HomePage() {
                       </ul>
                     </div>
                   )}
-                  {improveConditions.length === 0 && worsenConditions.length === 0 && flipConditions.length > 0 && (
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 md:col-span-2">
-                      <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">WHAT WOULD CHANGE THIS CALL</div>
-                      <ul className="space-y-0.5">
-                        {flipConditions.slice(0, 4).map((c, i) => (
-                          <li key={i} className="text-[9px] text-white/50 flex gap-1.5">
-                            <span className="text-white/25 shrink-0">→</span>
-                            <span className="leading-snug">{c.replace(/^[-*]\s*/, '')}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* ZONE F — Event, Freshness & Data Quality + Terminal link */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Event Risk</div>
-                  {eventOverlay?.active ? (
-                    <div>
-                      <div className="text-[10px] font-semibold text-white/55">{eventOverlay.title}</div>
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[9px]">
-                        {eventOverlay.days_until != null && <span className="text-white/35">{eventOverlay.days_until} days away</span>}
-                        {eventOverlay.severity && <span className="text-white/30 capitalize">{eventOverlay.severity}</span>}
-                        {eventOverlay.position_size_impact && <span className="text-white/40">Sizing: {eventOverlay.position_size_impact}</span>}
-                      </div>
-                      <div className="text-[8px] text-white/20 mt-0.5">Event risk affects sizing, not directional score.</div>
+              {/* ZONE F — Event Risk + Macro risk link + compact footer */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-[9px]">
+                {/* Event Risk — compact row when active */}
+                {eventOverlay?.active && (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-3 py-2 flex-1 min-w-0">
+                    <div className="text-[9px] leading-snug">
+                      <span className="text-amber-400/70 font-semibold">EVENT RISK: </span>
+                      <span className="text-white/55">{eventOverlay.title}</span>
+                      {eventOverlay.days_until != null && (
+                        <span className="text-white/35"> — {eventOverlay.days_until} day{eventOverlay.days_until !== 1 ? 's' : ''} away</span>
+                      )}
+                      <span className="text-white/30">
+                        . {sizingExplanation ?? `Sizing impact: ${eventOverlay.position_size_impact ?? 'reduced'}`}. Directional verdict unchanged.
+                      </span>
                     </div>
-                  ) : (
-                    <div className="text-[9px] text-white/25">No major event overlay</div>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">Data Quality</div>
-                  <div className="text-[9px] text-white/40 flex flex-col gap-0.5">
-                    {hasHomeDecision ? (
-                      <>
-                        {hdAssessment && <span>Assessment: {fmtAssessmentLabel(hdAssessment)}</span>}
-                        <span>Context: {fmtMarketCtx(hdMarketContext)}</span>
-                        {hd?.confidence && <span>Confidence: {confLabel(hd.confidence)}</span>}
-                        {hd?.calibration_status && <span className="text-white/25">{fmtCalStatus(hd.calibration_status)}</span>}
-                        {sr?.available_pillar_count != null && (
-                          <span>{sr.available_pillar_count}/{pillarList.length} pillars available</span>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <span>{isComplete ? 'Complete' : isPartial ? `Partial · ${sr?.available_pillar_count ?? 0}/${pillarList.length} pillars` : 'Insufficient'}</span>
-                        {df?.market_context && <span className="text-white/30">{df.market_context}</span>}
-                        {sr?.model_version && <span className="text-white/25">{sr.model_version}{sr?.calibration_status ? ` · ${fmtCalStatus(sr.calibration_status)}` : ''}</span>}
-                      </>
-                    )}
                   </div>
-                </div>
+                )}
 
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 flex flex-col justify-center">
-                  <button
-                    onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                    className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white/70 transition-colors"
+                <div className="flex items-center gap-3 text-[9px] text-white/25 flex-shrink-0">
+                  {eventOverlay?.active ? null : (
+                    <span className="text-white/20">{fmtMarketCtx(hdMarketContext ?? df?.market_context)}</span>
+                  )}
+                  <a
+                    onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
+                    className="text-[9px] text-white/35 hover:text-white/55 transition-colors cursor-pointer flex items-center gap-1"
                   >
-                    <Gauge className="w-3.5 h-3.5" />
-                    OPEN FULL TRADING TERMINAL
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                  <div className="text-[8px] text-white/20 mt-1">Home = concise decision · Macro = full execution analysis</div>
+                    VIEW FULL MACRO RISK ANALYSIS <ChevronRight className="w-2.5 h-2.5" />
+                  </a>
                 </div>
               </div>
-
-              {dominantDriver && (
-                <div className="text-[8px] text-white/20 text-center">Dominant driver: {hDriver(dominantDriver)}</div>
-              )}
             </div>
           );
         })()}
