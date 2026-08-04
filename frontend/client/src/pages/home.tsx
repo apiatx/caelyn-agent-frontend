@@ -1996,6 +1996,7 @@ export default function HomePage() {
           const execDecision = hdExec?.decision;
           const execExpired = hdExec?.expired === true;
           const execWarming = execStatus === 'warming';
+          const execFailed = execStatus === 'failed';
           const execUnavailable = execStatus === 'unavailable';
 
           const buyReasons: string[] = Array.isArray(hd?.buy_reasons) ? hd.buy_reasons : [];
@@ -2056,10 +2057,6 @@ export default function HomePage() {
             return s;
           };
           const normBullet = (b: string): string => b.replace(/^[-*●]\s*/, '').replace(/\s+/g, ' ').trim().toLowerCase();
-          const whyNowSet = new Set(whyNow.map(normBullet));
-          const dedupedWhy = whyBullets.filter(b => !whyNowSet.has(normBullet(b)));
-          const combinedWhy: string[] = [...whyNow, ...dedupedWhy].slice(0, 6);
-          const hasWhyNowOrMarkets = combinedWhy.length > 0 || whyBullets.length > 0;
 
           const fallbackVerdict = !hasHomeDecision && riskIntelPayload?.trade_decision
             ? 'Regime-only fallback'
@@ -2073,9 +2070,27 @@ export default function HomePage() {
             Array.isArray(signalSummary?.largest_risks) ? signalSummary.largest_risks : [];
           const missingConfs: { source: string; message: string }[] =
             Array.isArray(signalSummary?.missing_confirmations) ? signalSummary.missing_confirmations : [];
-          const hasSignalSummary = supports.length > 0 || risks.length > 0 || missingConfs.length > 0;
+          // Deduplicate missing confirmations already visible in hero or pillar cards
+          const uniqueMissingConfs = missingConfs.filter(m => {
+            const src = (m.source ?? '').toLowerCase();
+            if (src === 'execution') return false; // shown in hero Execution Quality
+            if (src === 'trend_and_breadth' || src === 'volatility_and_credit' ||
+                src === 'rates_and_dollar' || src === 'leadership_and_cross_asset') return false; // shown in pillar
+            return true;
+          });
+          const hasSignalSummary = supports.length > 0 || risks.length > 0 || uniqueMissingConfs.length > 0;
           const hdSizing = hd?.sizing;
           const sizingExplanation: string | undefined = hdSizing?.explanation;
+
+          // Dedup Why Markets Are Moving against already-visible content
+          const visibleContent = new Set<string>();
+          if (sizingExplanation) visibleContent.add(normBullet(sizingExplanation));
+          supports.forEach(s => { if (s.message) visibleContent.add(normBullet(s.message)); });
+          risks.forEach(s => { if (s.message) visibleContent.add(normBullet(s.message)); });
+          uniqueMissingConfs.forEach(s => { if (s.message) visibleContent.add(normBullet(s.message)); });
+          pillarList.forEach(pl => { if (pl.p?.interpretation) visibleContent.add(normBullet(pl.p.interpretation)); });
+          const uniqueWhyBullets = whyBullets.filter(b => !visibleContent.has(normBullet(b))).slice(0, 2);
+          const hasWhyNowOrMarkets = uniqueWhyBullets.length > 0;
           const execRefetchSec: number | null | undefined = hdExec?.recommended_refetch_seconds;
           const execRefreshing: boolean = hdExec?.refresh_in_progress === true;
 
@@ -2127,8 +2142,8 @@ export default function HomePage() {
                   ))}
                 </div>
                 {/* signal summary skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {[1, 2, 3].map(i => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[1, 2].map(i => (
                     <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="h-[8px] w-16 rounded bg-white/[0.06] mb-1.5" />
                       <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
@@ -2204,12 +2219,20 @@ export default function HomePage() {
                     <h3 className="text-[11px] font-bold uppercase tracking-widest text-white/55">SHOULD I TRADE?</h3>
                     <div className="text-[9px] text-white/25">Swing Regime + Execution Quality</div>
                   </div>
-                  {(hdAssessment === 'PARTIAL' || isPartial) && (
-                    <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
-                  )}
-                  {hdAssessment === 'INSUFFICIENT_DATA' && (
-                    <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-white/10 text-white/30 bg-white/5">INSUFFICIENT DATA</span>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {(hdAssessment === 'PARTIAL' || isPartial) && (
+                      <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
+                    )}
+                    {hdAssessment === 'INSUFFICIENT_DATA' && (
+                      <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-white/10 text-white/30 bg-white/5">INSUFFICIENT DATA</span>
+                    )}
+                    <a
+                      onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
+                      className="text-[8px] text-white/25 hover:text-white/45 transition-colors cursor-pointer flex items-center gap-0.5"
+                    >
+                      VIEW FULL MACRO RISK ANALYSIS <ChevronRight className="w-2 h-2" />
+                    </a>
+                  </div>
                 </div>
 
                 <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
@@ -2302,7 +2325,18 @@ export default function HomePage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1">EXECUTION QUALITY</div>
 
-                    {execWarming && hasHomeDecision ? (
+                    {execFailed && hasHomeDecision ? (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="text-[13px] font-bold text-rose-400/60">Execution analysis unavailable</div>
+                        <div className="text-[9px] text-white/30 leading-snug">The entry-quality refresh did not complete. The Swing Regime assessment remains available, but entry confirmation is currently unavailable.</div>
+                        <button
+                          onClick={() => riskIntelRefetch()}
+                          className="text-[9px] text-blue-400/60 hover:text-blue-400 underline self-start mt-0.5"
+                        >
+                          RETRY EXECUTION ANALYSIS
+                        </button>
+                      </div>
+                    ) : execWarming && hasHomeDecision ? (
                       <div className="flex flex-col gap-1">
                         <div className="text-[13px] font-bold text-white/40">Updating execution analysis...</div>
                         <div className="text-[9px] text-white/30 leading-snug">Regime analysis is available. Entry-quality confirmation is being refreshed.</div>
@@ -2375,7 +2409,7 @@ export default function HomePage() {
 
               {/* ZONE D — Grounded Signal Summary */}
               {hasHomeDecision && (hasSignalSummary || buyReasons.length > 0 || waitReasons.length > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className={`grid grid-cols-1 gap-3 ${uniqueMissingConfs.length > 0 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                   {/* WHAT SUPPORTS THE CALL */}
                   {hasSignalSummary ? (
                     supports.length > 0 && (
@@ -2435,11 +2469,11 @@ export default function HomePage() {
                   )}
 
                   {/* MISSING CONFIRMATION */}
-                  {hasSignalSummary && missingConfs.length > 0 && (
+                  {hasSignalSummary && uniqueMissingConfs.length > 0 && (
                     <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                       <div className="text-[8px] uppercase tracking-widest text-white/40 mb-1.5">MISSING CONFIRMATION</div>
                       <ul className="space-y-1">
-                        {missingConfs.slice(0, 3).map((s, i) => (
+                        {uniqueMissingConfs.slice(0, 3).map((s, i) => (
                           <li key={i} className="text-[9px] text-white/50 flex gap-1.5 leading-snug">
                             <span className="text-white/25 shrink-0">?</span>
                             <span>{s.message}</span>
@@ -2451,12 +2485,12 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* ZONE C — Why Markets Are Moving (compact, deduped, ~4 bullets) */}
+              {/* ZONE C — Why Markets Are Moving (compact, deduped, ≤2 bullets) */}
               {hasWhyNowOrMarkets && (
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                   <div className="text-[8px] uppercase tracking-widest text-white/30 mb-1.5">WHY MARKETS ARE MOVING</div>
                   <ul className="space-y-0.5">
-                    {combinedWhy.slice(0, 4).map((b, i) => (
+                    {uniqueWhyBullets.map((b, i) => (
                       <li key={i} className="text-[9px] text-white/50 leading-snug flex gap-1.5">
                         <span className="text-white/20 shrink-0">→</span>
                         <span>{b}</span>
@@ -2498,36 +2532,6 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* ZONE F — Event Risk + Macro risk link + compact footer */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-[9px]">
-                {/* Event Risk — compact row when active */}
-                {eventOverlay?.active && (
-                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-3 py-2 flex-1 min-w-0">
-                    <div className="text-[9px] leading-snug">
-                      <span className="text-amber-400/70 font-semibold">EVENT RISK: </span>
-                      <span className="text-white/55">{eventOverlay.title}</span>
-                      {eventOverlay.days_until != null && (
-                        <span className="text-white/35"> — {eventOverlay.days_until} day{eventOverlay.days_until !== 1 ? 's' : ''} away</span>
-                      )}
-                      <span className="text-white/30">
-                        . {sizingExplanation ?? `Sizing impact: ${eventOverlay.position_size_impact ?? 'reduced'}`}. Directional verdict unchanged.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 text-[9px] text-white/25 flex-shrink-0">
-                  {eventOverlay?.active ? null : (
-                    <span className="text-white/20">{fmtMarketCtx(hdMarketContext ?? df?.market_context)}</span>
-                  )}
-                  <a
-                    onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                    className="text-[9px] text-white/35 hover:text-white/55 transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    VIEW FULL MACRO RISK ANALYSIS <ChevronRight className="w-2.5 h-2.5" />
-                  </a>
-                </div>
-              </div>
             </div>
           );
         })()}
