@@ -1943,11 +1943,29 @@ export default function HomePage() {
                     )}
 
                     {/* missing inputs */}
-                    {Array.isArray(p?.missing_inputs) && p.missing_inputs.length > 0 && (
-                      <div className="text-[8px] text-white/25">
-                        Missing: {p.missing_inputs.join(', ')}
-                      </div>
-                    )}
+                    {Array.isArray(p?.missing_inputs) && p.missing_inputs.length > 0 && (() => {
+                      const humanizeKey = (k: string): string => {
+                        const m: Record<string, string> = {
+                          btc_change_24h: 'BTC 24-hour confirmation',
+                          spy_change_1d: 'SPY 1-day return',
+                          vix_change_1d: 'VIX 1-day change',
+                          hyg_change_1d: 'HYG 1-day change',
+                          us10y_change_5d_bps: '10Y 5-day bps change',
+                          dxy_change_1d: 'DXY 1-day change',
+                          qqq_change_1d: 'QQQ 1-day return',
+                          spx_return_7d: 'SPX 7-day return',
+                          vix_return_7d: 'VIX 7-session return',
+                        };
+                        return m[k] ?? '';
+                      };
+                      const humanized = p.missing_inputs.map(humanizeKey).filter(Boolean);
+                      if (humanized.length === 0) return null;
+                      return (
+                        <div className="text-[8px] text-white/25">
+                          Missing: {humanized.join(', ')}
+                        </div>
+                      );
+                    })()}
 
                     {/* raw metrics as secondary detail */}
                     {haveComps && (
@@ -1975,11 +1993,21 @@ export default function HomePage() {
           const hasHomeDecision = !!hd;
           const hdVerdict = hd?.verdict;
           const hdAction = hd?.action;
+
+          // new semantic contract fields
+          const entryGuidance = hd?.entry_guidance;
+          const displayAction = entryGuidance?.current_action ?? hdAction;
+          const conditionalSize: string | undefined = entryGuidance?.conditional_size;
+          const showConditionalSize = hdAction === 'WAIT' && conditionalSize;
+          const hdCompleteness = hd?.completeness;
+          const hdSynthExplanation: string | undefined = hd?.synthesized_explanation;
+          const hdMarketContext: string | undefined = riskIntelPayload?.market_context
+            ?? (riskIntelPayload?.data_freshness as any)?.market_context;
+
           const hdOneLine = hd?.one_line;
           const hdPositionSize = hd?.position_size_hint;
           const hdConfidence = hd?.confidence;
           const hdAssessment = hd?.assessment_status;
-          const hdMarketContext = hd?.market_context;
 
           const hdRegime = hd?.regime;
           const regimeRiskScore: number | null | undefined = hdRegime?.risk_score ?? riskScore;
@@ -2220,15 +2248,22 @@ export default function HomePage() {
                     <div className="text-[9px] text-white/25">Swing Regime + Execution Quality</div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {(hdAssessment === 'PARTIAL' || isPartial) && (
+                    {hasHomeDecision && hdCompleteness && (
+                      <>
+                        {hdCompleteness.overall_decision_status === 'PARTIAL' && (
+                          <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL</span>
+                        )}
+                      </>
+                    )}
+                    {!hasHomeDecision && ((hdAssessment === 'PARTIAL' || isPartial) && (
                       <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
-                    )}
-                    {hdAssessment === 'INSUFFICIENT_DATA' && (
+                    ))}
+                    {!hasHomeDecision && (hdAssessment === 'INSUFFICIENT_DATA' && (
                       <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-white/10 text-white/30 bg-white/5">INSUFFICIENT DATA</span>
-                    )}
+                    ))}
                     <a
                       onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                      className="text-[8px] text-white/25 hover:text-white/45 transition-colors cursor-pointer flex items-center gap-0.5"
+                      className="text-[8px] text-white/35 hover:text-white/55 transition-colors cursor-pointer flex items-center gap-0.5"
                     >
                       VIEW FULL MACRO RISK ANALYSIS <ChevronRight className="w-2 h-2" />
                     </a>
@@ -2246,28 +2281,45 @@ export default function HomePage() {
                           {hdVerdict ?? '—'}
                         </div>
                         <div className={`text-[13px] font-semibold ${fmtVerdictClr(hdVerdict)} mt-0.5`}>
-                          {fmtActionLabel(hdAction)}
+                          {fmtActionLabel(displayAction)}
                         </div>
-                        {hdOneLine && (
-                          <div className="text-[10px] text-white/50 mt-1 leading-snug max-w-[380px]">{hdOneLine}</div>
+
+                        {(hdSynthExplanation ?? hdOneLine) && (
+                          <div className="text-[10px] text-white/50 mt-1 leading-snug max-w-[380px]">{hdSynthExplanation ?? hdOneLine}</div>
                         )}
+
+                        {/* current action + conditional size */}
                         <div className="flex items-center gap-3 mt-1.5 text-[10px] flex-wrap">
-                          <span className="text-white/35">Position size:</span>
-                          <span className="text-white/60 font-semibold">{fmtPositionSize(hdPositionSize)}</span>
-                          {hdConfidence && (
+                          {showConditionalSize ? (
                             <>
-                              <span className="text-white/20">·</span>
-                              <span className="text-white/35">Confidence:</span>
-                              <span className="text-white/60">{confLabel(hdConfidence)}</span>
+                              <span className="text-white/35">Maximum size after confirmation:</span>
+                              <span className="text-white/60 font-semibold">{fmtPositionSize(conditionalSize)}</span>
                             </>
-                          )}
-                          {hdAssessment && (
+                          ) : hdAction === 'REDUCE' || hdAction === 'HEDGE' ? (
+                            <span className="text-white/40">Defensive — no new entries</span>
+                          ) : (
                             <>
-                              <span className="text-white/20">·</span>
-                              <span className="text-white/30">{fmtAssessmentLabel(hdAssessment)}</span>
+                              <span className="text-white/35">Position size:</span>
+                              <span className="text-white/60 font-semibold">{fmtPositionSize(hdPositionSize)}</span>
                             </>
                           )}
                         </div>
+
+                        {/* completeness scoped labels */}
+                        {hdCompleteness && (
+                          <div className="flex items-center gap-2 mt-1 text-[9px] text-white/30 flex-wrap">
+                            <span>Regime <span className="text-white/50">{confLabel(hdCompleteness.regime_confidence)}</span></span>
+                            <span className="text-white/15">·</span>
+                            <span>{hdCompleteness.regime_data_status === 'COMPLETE' ? 'Regime Complete' : `Regime ${hdCompleteness.regime_data_status}`}</span>
+                            {(hdCompleteness.execution_confirmation_status !== 'available' || hdCompleteness.leadership_confirmation_status === 'UNCONFIRMED') && (
+                              <>
+                                <span className="text-white/15">·</span>
+                                <span className="text-amber-400/50">Overall Partial</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+
                         {sizingExplanation && (
                           <div className="text-[9px] text-amber-400/60 mt-1 leading-snug">{sizingExplanation}</div>
                         )}
@@ -2327,7 +2379,8 @@ export default function HomePage() {
 
                     {execFailed && hasHomeDecision ? (
                       <div className="flex flex-col gap-1.5">
-                        <div className="text-[13px] font-bold text-rose-400/60">Execution analysis unavailable</div>
+                        <div className="text-[8px] uppercase tracking-widest text-white/25">REGIME-ONLY GUIDANCE</div>
+                        <div className="text-[13px] font-bold text-rose-400/60">Entry confirmation unavailable</div>
                         <div className="text-[9px] text-white/30 leading-snug">The entry-quality refresh did not complete. The Swing Regime assessment remains available, but entry confirmation is currently unavailable.</div>
                         <button
                           onClick={() => riskIntelRefetch()}
@@ -2529,6 +2582,13 @@ export default function HomePage() {
                       </ul>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Market Context — compact separate note */}
+              {hdMarketContext && (
+                <div className="text-[8px] text-white/20 text-center">
+                  {fmtMarketCtx(hdMarketContext)}
                 </div>
               )}
 
