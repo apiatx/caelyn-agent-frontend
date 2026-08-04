@@ -1295,7 +1295,8 @@ export default function HomePage() {
     moverCategory === "commodities" ? "/app/commodities"   :
     "/app/stocks/screening";
   const [macroChartCard, setMacroChartCard] = useState<HomeMacroCard | null>(null);
-  const [themeSortKey, setThemeSortKey] = useState<"gain" | "breadth" | "name">("gain");
+   const [themeSortKey, setThemeSortKey] = useState<"gain" | "breadth" | "name">("gain");
+   const [riskModalOpen, setRiskModalOpen] = useState(false);
 
   // Live clock — updates every 30s so greeting + time stay accurate to the user's local TZ
   const [localNow, setLocalNow] = useState<Date>(() => new Date());
@@ -2092,10 +2093,16 @@ export default function HomePage() {
 
           // —— signal_summary & sizing ——————————————————————————————————
           const signalSummary = hd?.signal_summary;
+          // Prefer decision_summary when present (newer ranked contract)
+          const decisionSummary = hd?.decision_summary;
           const supports: { source: string; message: string }[] =
-            Array.isArray(signalSummary?.strongest_supports) ? signalSummary.strongest_supports : [];
+            Array.isArray(decisionSummary?.strongest_supports)
+              ? decisionSummary.strongest_supports
+              : Array.isArray(signalSummary?.strongest_supports) ? signalSummary.strongest_supports : [];
           const risks: { source: string; message: string }[] =
-            Array.isArray(signalSummary?.largest_risks) ? signalSummary.largest_risks : [];
+            Array.isArray(decisionSummary?.largest_blockers)
+              ? decisionSummary.largest_blockers
+              : Array.isArray(signalSummary?.largest_risks) ? signalSummary.largest_risks : [];
           const missingConfs: { source: string; message: string }[] =
             Array.isArray(signalSummary?.missing_confirmations) ? signalSummary.missing_confirmations : [];
           // Deduplicate missing confirmations already visible in hero or pillar cards
@@ -2138,56 +2145,34 @@ export default function HomePage() {
           }, [execWarming, execRefetchSec, hdExec?.as_of, riskIntelPayload?.as_of]);
 
           // —— root render ——————————————————————————————————————————————
-          // Loading — unified panel skeleton
+          // Loading — compact card skeletons
           if (riskIntelLoading && !riskIntelPayload) {
             return (
-              <div className="mb-5 space-y-3 animate-pulse">
-                {/* unified hero skeleton */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5 animate-pulse">
+                {/* Risk Clusters skeleton */}
                 <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                  <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
-                    <div className="flex-1">
-                      <div className="h-[11px] w-28 rounded bg-white/[0.06] mb-1" />
-                      <div className="h-[22px] w-20 rounded bg-white/[0.06] mb-1" />
-                      <div className="h-[10px] w-48 rounded bg-white/[0.04]" />
-                    </div>
-                    <div className="hidden lg:block self-stretch w-px bg-white/[0.06]" />
-                    <div className="flex-1 flex items-center gap-4">
-                      <div className="h-[40px] w-20 rounded bg-white/[0.06]" />
-                      <div className="h-[40px] w-16 rounded bg-white/[0.06]" />
-                      <div className="h-[40px] w-24 rounded bg-white/[0.06]" />
+                  <div className="h-[10px] w-24 rounded bg-white/[0.06] mb-3" />
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-[24px] w-12 rounded bg-white/[0.06]" />
+                    <div className="flex flex-col gap-1">
+                      <div className="h-[10px] w-20 rounded bg-white/[0.05]" />
+                      <div className="h-[8px] w-12 rounded bg-white/[0.04]" />
                     </div>
                   </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className="h-[32px] rounded-md bg-white/[0.04]" />
+                    ))}
+                  </div>
                 </div>
-                {/* pillar grid skeleton */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                      <div className="h-[10px] w-24 rounded bg-white/[0.06] mb-2" />
-                      <div className="h-[20px] w-12 rounded bg-white/[0.06] mb-2" />
-                      <div className="h-[3px] w-full rounded bg-white/[0.05] mb-2" />
-                      <div className="h-[8px] w-full rounded bg-white/[0.04]" />
-                    </div>
-                  ))}
-                </div>
-                {/* signal summary skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[1, 2].map(i => (
-                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                      <div className="h-[8px] w-16 rounded bg-white/[0.06] mb-1.5" />
-                      <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
-                      <div className="h-[10px] w-3/4 rounded bg-white/[0.04]" />
-                    </div>
-                  ))}
-                </div>
-                {/* change the call skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[1, 2].map(i => (
-                    <div key={i} className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                      <div className="h-[8px] w-20 rounded bg-white/[0.06] mb-1.5" />
-                      <div className="h-[10px] w-full rounded bg-white/[0.04] mb-1" />
-                      <div className="h-[10px] w-2/3 rounded bg-white/[0.04]" />
-                    </div>
-                  ))}
+                {/* Why Markets skeleton */}
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="h-[10px] w-32 rounded bg-white/[0.06] mb-3" />
+                  <div className="space-y-2">
+                    <div className="h-[12px] w-full rounded bg-white/[0.04]" />
+                    <div className="h-[12px] w-3/4 rounded bg-white/[0.04]" />
+                  </div>
+                  <div className="h-[8px] w-24 rounded bg-white/[0.04] mt-3 pt-3 border-t border-white/[0.04]" />
                 </div>
               </div>
             );
@@ -2196,14 +2181,19 @@ export default function HomePage() {
           // Error — no previous data
           if (riskIntelError && !riskIntelPayload) {
             return (
-              <div className="mb-5 rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">SHOULD I TRADE?</div>
-                    <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable.</div>
-                    <button onClick={() => riskIntelRefetch()} className="text-[9px] text-blue-400/70 hover:text-blue-400 underline">Retry</button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-white/30" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-white/30 mb-1">SHOULD I TRADE?</div>
+                      <div className="text-[10px] text-white/40 mb-2.5 leading-relaxed">Risk intelligence temporarily unavailable.</div>
+                      <button onClick={() => riskIntelRefetch()} className="text-[9px] text-blue-400/70 hover:text-blue-400 underline">Retry</button>
+                    </div>
                   </div>
+                </div>
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 opacity-50">
+                  <div className="text-[10px] text-white/25">Why Markets Are Moving</div>
                 </div>
               </div>
             );
@@ -2237,9 +2227,167 @@ export default function HomePage() {
             );
           }
 
-          // Has regime data — render unified panel
+          // Has regime data — render compact cards + detail modal
+          const handleOpenRiskModal = () => setRiskModalOpen(true);
+
+          // ── Compact pillar chip colors ───────────────────────────────
+          const pillarChipClr = (s: number | null | undefined): string => {
+            if (s == null) return 'bg-white/10 text-white/30';
+            if (s <= 24) return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25';
+            if (s <= 44) return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+            if (s <= 64) return 'bg-amber-500/15 text-amber-300 border-amber-500/25';
+            if (s <= 79) return 'bg-orange-500/12 text-orange-400 border-orange-500/25';
+            return 'bg-rose-500/12 text-rose-400 border-rose-500/25';
+          };
+
           return (
-            <div className="mb-5 space-y-3">
+            <>
+              {/* ── Home Risk Cluster Cards (compact side-by-side) ────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+                {/* Risk Clusters Card */}
+                <button
+                  onClick={handleOpenRiskModal}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenRiskModal(); } }}
+                  className="rounded-xl border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.04] transition-colors px-4 py-3 text-left w-full cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/50"
+                  aria-haspopup="dialog"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}>
+                        <Activity className="w-3 h-3 text-white/50" />
+                      </div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/50">Risk Clusters</h3>
+                    </div>
+                    <div className="flex items-center gap-1 text-[8px] text-white/20">
+                      View Details <ChevronRight className="w-2.5 h-2.5" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`text-xl font-bold tabular-nums leading-none ${scoreTextClr(regimeRiskScore)}`}>
+                      {regimeRiskScore != null ? Math.round(regimeRiskScore) : '—'}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <div className={`text-[10px] font-semibold ${scoreTextClr(regimeRiskScore)}`}>
+                        {scoreBand(regimeRiskScore)} Risk
+                      </div>
+                      <span className={`text-[9px] ${dirClr(regimeDirection)}`}>
+                        {dirArrow(regimeDirection)} {fmtDir(regimeDirection)}
+                      </span>
+                    </div>
+                    <div className="ml-auto flex flex-col items-end gap-0.5">
+                      {hasHomeDecision ? (
+                        <>
+                          <span className={`text-xs font-bold ${fmtVerdictClr(hdVerdict)}`}>{hdVerdict}</span>
+                          <span className="text-[8px] text-white/35">{fmtActionLabel(displayAction)}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-white/30">—</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* four compact pillar chips */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {pillarList.map(pl => {
+                      const ps: number | null | undefined = (() => {
+                        const v = pl.p?.risk_score;
+                        if (v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return undefined;
+                        const n = typeof v === 'string' ? parseFloat(v) : v as number;
+                        if (isNaN(n) || !isFinite(n)) return undefined;
+                        return n;
+                      })();
+                      return (
+                        <div key={pl.key} className={`rounded-md border px-1.5 py-1 flex flex-col items-center ${pillarChipClr(ps)}`}>
+                          <span className="text-[7px] font-semibold uppercase leading-tight text-center">{pl.label.replace(' & ', '/')}</span>
+                          <span className="text-[9px] font-bold tabular-nums">{ps != null ? Math.round(ps) : '—'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* primary blocker when available */}
+                  {hasHomeDecision && (hd?.decision_summary as any)?.largest_blockers?.[0] && (
+                    <div className="text-[8px] text-rose-400/50 mt-2 truncate">
+                      Top blocker: {((hd.decision_summary as any).largest_blockers[0] as any).message}
+                    </div>
+                  )}
+                </button>
+
+                {/* Why Markets Are Moving Card */}
+                <button
+                  onClick={handleOpenRiskModal}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenRiskModal(); } }}
+                  className="rounded-xl border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.04] transition-colors px-4 py-3 text-left w-full cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/50"
+                  aria-haspopup="dialog"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)" }}>
+                        <LineChart className="w-3 h-3 text-white/50" />
+                      </div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/50">Why Markets Are Moving</h3>
+                    </div>
+                    <div className="flex items-center gap-1 text-[8px] text-white/20">
+                      View Details <ChevronRight className="w-2.5 h-2.5" />
+                    </div>
+                  </div>
+
+                  {uniqueWhyBullets.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {uniqueWhyBullets.map((b, i) => (
+                        <li key={i} className="text-[10px] text-white/55 leading-snug flex gap-1.5">
+                          <span className="text-white/20 shrink-0">→</span>
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-[9px] text-white/25">Market drivers are fully summarized in the detail view.</div>
+                  )}
+
+                  {hdSynthExplanation && (
+                    <div className="text-[9px] text-white/35 mt-2 pt-2 border-t border-white/[0.05] leading-snug line-clamp-2">
+                      {hdSynthExplanation}
+                    </div>
+                  )}
+
+                  {hdMarketContext && (
+                    <div className="text-[7px] text-white/20 mt-2">
+                      {fmtMarketCtx(hdMarketContext)}
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* ── Detail Modal ──────────────────────────────────────────── */}
+              <Dialog open={riskModalOpen} onOpenChange={(open) => { if (!open) setRiskModalOpen(false); }}>
+                <DialogContent className="max-w-[95vw] w-[1400px] max-h-[92vh] h-auto p-0 bg-[#0d0e11] border-white/10 overflow-hidden flex flex-col">
+                  <VisuallyHidden.Root><DialogTitle>Risk Intelligence Detail</DialogTitle></VisuallyHidden.Root>
+
+                  {/* Sticky header */}
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.07] shrink-0">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Risk Intelligence</h2>
+                      <a
+                        onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); setRiskModalOpen(false); }}
+                        className="text-[9px] text-white/35 hover:text-white/55 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        SHOULD I TRADE? <ChevronRight className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                    <button
+                      onClick={() => setRiskModalOpen(false)}
+                      className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/[0.06] transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="w-3.5 h-3.5 text-white/40" />
+                    </button>
+                  </div>
+
+                  {/* Scrollable body */}
+                  <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 px-5 py-4 space-y-3">
+
               {/* ZONE A — Unified Decision Hero */}
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
                 <div className="flex items-center justify-between mb-3">
@@ -2258,15 +2406,6 @@ export default function HomePage() {
                     {!hasHomeDecision && ((hdAssessment === 'PARTIAL' || isPartial) && (
                       <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-amber-500/25 text-amber-400/70 bg-amber-500/10">PARTIAL DATA</span>
                     ))}
-                    {!hasHomeDecision && (hdAssessment === 'INSUFFICIENT_DATA' && (
-                      <span className="text-[8px] font-semibold uppercase px-1.5 py-px rounded border border-white/10 text-white/30 bg-white/5">INSUFFICIENT DATA</span>
-                    ))}
-                    <a
-                      onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'instant' }); setLocation('/app/macro-terminal?tab=trade'); }}
-                      className="text-[8px] text-white/35 hover:text-white/55 transition-colors cursor-pointer flex items-center gap-0.5"
-                    >
-                      VIEW FULL MACRO RISK ANALYSIS <ChevronRight className="w-2 h-2" />
-                    </a>
                   </div>
                 </div>
 
@@ -2288,7 +2427,6 @@ export default function HomePage() {
                           <div className="text-[10px] text-white/50 mt-1 leading-snug max-w-[380px]">{hdSynthExplanation ?? hdOneLine}</div>
                         )}
 
-                        {/* current action + conditional size */}
                         <div className="flex items-center gap-3 mt-1.5 text-[10px] flex-wrap">
                           {showConditionalSize ? (
                             <>
@@ -2585,14 +2723,32 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Market Context — compact separate note */}
+              {/* completeness reasons */}
+              {hasHomeDecision && hdCompleteness?.reasons && (hdCompleteness.reasons as any[]).length > 0 && (
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[8px] uppercase tracking-widest text-white/25 mb-1.5">DECISION COMPLETENESS</div>
+                  <ul className="space-y-0.5">
+                    {(hdCompleteness.reasons as any[]).map((r: any, i: number) => (
+                      <li key={i} className="text-[9px] text-white/40 flex gap-1.5 leading-snug">
+                        <span className="text-white/20 shrink-0">·</span>
+                        <span>{r.explanation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Market Context */}
               {hdMarketContext && (
                 <div className="text-[8px] text-white/20 text-center">
                   {fmtMarketCtx(hdMarketContext)}
                 </div>
               )}
 
-            </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
           );
         })()}
 
