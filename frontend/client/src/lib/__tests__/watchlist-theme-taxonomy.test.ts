@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildThemeTaxonomyIndex,
   getEffectiveRowThemeIds,
+  getTaxonomyChipOrder,
   rowMatchesTaxonomySelection,
 } from "../watchlist-theme-taxonomy";
 import type {
@@ -399,4 +400,119 @@ test("non_sector node with descendants behaves as parent-theme (live data shape)
   assert.equal(rowMatchesTaxonomySelection(rowGold, new Set(["metals"]), idx), true);
   assert.equal(rowMatchesTaxonomySelection(rowGold, new Set(["gold"]), idx), true);
   assert.equal(rowMatchesTaxonomySelection(rowGold, new Set(["silver"]), idx), false);
+});
+
+// ─── Chip ordering tests ─────────────────────────────────────────────────────
+test("every sector renders exactly once", () => {
+  const idx = s([
+    makeNode({ theme_id: "tech", classification: "sector" }),
+    makeNode({ theme_id: "materials", classification: "sector" }),
+    makeNode({ theme_id: "semi", classification: "sub_theme", rollup_sector_ids: ["tech"] }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.sectorOrder.length, 2);
+  assert.ok(order.sectorOrder.includes("materials"));
+  assert.ok(order.sectorOrder.includes("tech"));
+});
+
+test("every non-sector node renders exactly once", () => {
+  const idx = s([
+    makeNode({ theme_id: "tech", classification: "sector" }),
+    makeNode({ theme_id: "semi", classification: "sub_theme" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme" }),
+    makeNode({ theme_id: "gold", classification: "theme" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.length, 3);
+  const themeSet = new Set(order.themeOrder);
+  assert.equal(themeSet.size, 3);
+});
+
+test("parent with descendants never also added to remaining list", () => {
+  const idx = s([
+    makeNode({ theme_id: "semi", classification: "sub_theme" }),
+    makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.length, 3);
+  assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
+});
+
+test("stale classification sub_theme parent renders once as parent", () => {
+  const idx = s([
+    makeNode({ theme_id: "semi", classification: "sub_theme" }),
+    makeNode({ theme_id: "equip", classification: "sub_theme", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
+  const semiIdx = order.themeOrder.indexOf("semi");
+  assert.ok(semiIdx >= 0);
+  assert.ok(order.themeOrder.indexOf("equip") > semiIdx || order.themeOrder.indexOf("memory") > semiIdx);
+});
+
+test("parent appears before its children", () => {
+  const idx = s([
+    makeNode({ theme_id: "metals", classification: "sub_theme" }),
+    makeNode({ theme_id: "gold", classification: "theme", parent_theme_id: "metals" }),
+    makeNode({ theme_id: "silver", classification: "theme", parent_theme_id: "metals" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  const metalsIdx = order.themeOrder.indexOf("metals");
+  const goldIdx = order.themeOrder.indexOf("gold");
+  const silverIdx = order.themeOrder.indexOf("silver");
+  assert.ok(metalsIdx < goldIdx);
+  assert.ok(metalsIdx < silverIdx);
+});
+
+test("remaining unparented nodes appear after parents and children", () => {
+  const idx = s([
+    makeNode({ theme_id: "semi", classification: "sub_theme" }),
+    makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme" }),
+    makeNode({ theme_id: "dc", classification: "sub_theme" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  const aiIdx = order.themeOrder.indexOf("ai");
+  const dcIdx = order.themeOrder.indexOf("dc");
+  const memoryIdx = order.themeOrder.indexOf("memory");
+  assert.ok(aiIdx > memoryIdx);
+  assert.ok(dcIdx > memoryIdx);
+});
+
+test("sectors sorted by display_name", () => {
+  const idx = s([
+    makeNode({ theme_id: "z", classification: "sector", display_name: "Zebra" }),
+    makeNode({ theme_id: "a", classification: "sector", display_name: "Apple" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.sectorOrder[0], "a");
+  assert.equal(order.sectorOrder[1], "z");
+});
+
+test("node with theme classification and children renders as parent", () => {
+  const idx = s([
+    makeNode({ theme_id: "energy", classification: "theme", display_name: "Energy" }),
+    makeNode({ theme_id: "solar", classification: "sub_theme", parent_theme_id: "energy" }),
+    makeNode({ theme_id: "nuclear", classification: "sub_theme", parent_theme_id: "energy" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.filter(id => id === "energy").length, 1);
+});
+
+test("deep descendant tree renders all nodes once", () => {
+  const idx = s([
+    makeNode({ theme_id: "a", classification: "sub_theme" }),
+    makeNode({ theme_id: "b", classification: "sub_theme", parent_theme_id: "a" }),
+    makeNode({ theme_id: "c", classification: "sub_theme", parent_theme_id: "b" }),
+    makeNode({ theme_id: "d", classification: "sub_theme", parent_theme_id: "c" }),
+  ]);
+  const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.length, 4);
+  assert.equal(new Set(order.themeOrder).size, 4);
+  assert.ok(order.themeOrder.indexOf("a") < order.themeOrder.indexOf("b"));
+  assert.ok(order.themeOrder.indexOf("b") < order.themeOrder.indexOf("c"));
+  assert.ok(order.themeOrder.indexOf("c") < order.themeOrder.indexOf("d"));
 });

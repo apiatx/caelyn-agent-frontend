@@ -45,7 +45,9 @@ export function buildThemeTaxonomyIndex(nodes: ThemeTaxonomyNode[]): ThemeTaxono
   }
 
   const childrenByParentThemeId = new Map<string, string[]>();
-  for (const [id, node] of nodeById) {
+  const nodeEntries = Array.from(nodeById.entries());
+  for (let i = 0; i < nodeEntries.length; i++) {
+    const [id, node] = nodeEntries[i];
     const parent = node.parent_theme_id;
     if (!parent) continue;
     if (!nodeById.has(parent)) {
@@ -62,8 +64,9 @@ export function buildThemeTaxonomyIndex(nodes: ThemeTaxonomyNode[]): ThemeTaxono
     }
   }
 
-  for (const [, list] of childrenByParentThemeId) {
-    list.sort();
+  const childLists = Array.from(childrenByParentThemeId.values());
+  for (let i = 0; i < childLists.length; i++) {
+    childLists[i].sort();
   }
 
   const descendantIdsByThemeId = new Map<string, Set<string>>();
@@ -81,11 +84,15 @@ export function buildThemeTaxonomyIndex(nodes: ThemeTaxonomyNode[]): ThemeTaxono
     const result = new Set<string>();
     const children = childrenByParentThemeId.get(rootId);
     if (children) {
-      for (const childId of children) {
+      for (let i = 0; i < children.length; i++) {
+        const childId = children[i];
         result.add(childId);
         const childDesc = collectDescendants(childId, visiting);
         if (childDesc) {
-          for (const d of childDesc) result.add(d);
+          const childDescArr = Array.from(childDesc);
+          for (let j = 0; j < childDescArr.length; j++) {
+            result.add(childDescArr[j]);
+          }
         }
       }
     }
@@ -94,16 +101,17 @@ export function buildThemeTaxonomyIndex(nodes: ThemeTaxonomyNode[]): ThemeTaxono
     return result;
   }
 
-  const allIds = [...nodeById.keys()].sort();
-  for (const id of allIds) {
-    collectDescendants(id, new Set());
+  const allIds = Array.from(nodeById.keys()).sort();
+  for (let i = 0; i < allIds.length; i++) {
+    collectDescendants(allIds[i], new Set());
   }
 
   const sectorIds: string[] = [];
   const themeIds: string[] = [];
   const standaloneSubthemeIds: string[] = [];
 
-  for (const id of allIds) {
+  for (let i = 0; i < allIds.length; i++) {
+    const id = allIds[i];
     const node = nodeById.get(id);
     if (!node) continue;
     if (node.classification === "sector") {
@@ -131,7 +139,8 @@ export function getEffectiveRowThemeIds(row: WatchlistTaxonomyRow): Set<string> 
   const ids = new Set<string>();
   const themeIds = row.theme_ids;
   if (Array.isArray(themeIds)) {
-    for (const id of themeIds) {
+    for (let i = 0; i < themeIds.length; i++) {
+      const id = themeIds[i];
       if (typeof id === "string" && id.length > 0) ids.add(id);
     }
   }
@@ -159,15 +168,19 @@ export function rowMatchesTaxonomySelection(
   if (selectedIds.size === 0) return true;
 
   const rowThemeIds = getEffectiveRowThemeIds(row);
+  const rowThemeIdsArr = Array.from(rowThemeIds);
   const rowSectorId = typeof row.sector_id === "string" && row.sector_id.length > 0 ? row.sector_id : null;
 
-  for (const selId of selectedIds) {
+  const selIdsArr = Array.from(selectedIds);
+  for (let si = 0; si < selIdsArr.length; si++) {
+    const selId = selIdsArr[si];
     const selNode = index.nodeById.get(selId);
     if (!selNode) continue;
 
     if (selNode.classification === "sector") {
       if (rowSectorId === selId) return true;
-      for (const tid of rowThemeIds) {
+      for (let ti = 0; ti < rowThemeIdsArr.length; ti++) {
+        const tid = rowThemeIdsArr[ti];
         const tNode = index.nodeById.get(tid);
         if (tNode && tNode.rollup_sector_ids.includes(selId)) return true;
       }
@@ -177,13 +190,104 @@ export function rowMatchesTaxonomySelection(
     const matchSet = new Set<string>([selId]);
     const descendants = index.descendantIdsByThemeId.get(selId);
     if (descendants) {
-      for (const d of descendants) matchSet.add(d);
+      const descArr = Array.from(descendants);
+      for (let di = 0; di < descArr.length; di++) {
+        matchSet.add(descArr[di]);
+      }
     }
 
-    for (const tid of rowThemeIds) {
-      if (matchSet.has(tid)) return true;
+    for (let ti = 0; ti < rowThemeIdsArr.length; ti++) {
+      if (matchSet.has(rowThemeIdsArr[ti])) return true;
     }
   }
 
   return false;
+}
+
+export function getTaxonomyChipOrder(index: ThemeTaxonomyIndex): {
+  sectorOrder: string[];
+  themeOrder: string[];
+} {
+  const { nodeById, descendantIdsByThemeId } = index;
+
+  const sectorOrder = [...index.sectorIds].sort((a, b) => {
+    const na = nodeById.get(a);
+    const nb = nodeById.get(b);
+    return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
+  });
+
+  const parentIds: string[] = [];
+  for (let i = 0; i < index.themeIds.length; i++) {
+    const id = index.themeIds[i];
+    const desc = descendantIdsByThemeId.get(id);
+    if (desc && desc.size > 0) parentIds.push(id);
+  }
+  for (let i = 0; i < index.standaloneSubthemeIds.length; i++) {
+    const id = index.standaloneSubthemeIds[i];
+    const desc = descendantIdsByThemeId.get(id);
+    if (desc && desc.size > 0) parentIds.push(id);
+  }
+  parentIds.sort((a, b) => {
+    const na = nodeById.get(a);
+    const nb = nodeById.get(b);
+    return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
+  });
+
+  const themeOrder: string[] = [];
+  const seen = new Set<string>();
+
+  for (let pi = 0; pi < parentIds.length; pi++) {
+    const pid = parentIds[pi];
+    if (seen.has(pid)) continue;
+    seen.add(pid);
+    themeOrder.push(pid);
+
+    const allDescIds = new Set<string>();
+    const stack: string[] = (childrenByDirectId(pid, index) || []).slice();
+    while (stack.length > 0) {
+      const cid = stack.pop()!;
+      if (allDescIds.has(cid)) continue;
+      allDescIds.add(cid);
+      const grandkids = childrenByDirectId(cid, index);
+      if (grandkids) {
+        for (let g = 0; g < grandkids.length; g++) stack.push(grandkids[g]);
+      }
+    }
+
+    const descArr = Array.from(allDescIds).sort((a, b) => {
+      const na = nodeById.get(a);
+      const nb = nodeById.get(b);
+      return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
+    });
+
+    for (let di = 0; di < descArr.length; di++) {
+      const did = descArr[di];
+      if (!seen.has(did)) {
+        seen.add(did);
+        themeOrder.push(did);
+      }
+    }
+  }
+
+  const remaining: string[] = [];
+  const allNonSector = [...index.themeIds, ...index.standaloneSubthemeIds];
+  for (let i = 0; i < allNonSector.length; i++) {
+    const id = allNonSector[i];
+    if (!seen.has(id)) remaining.push(id);
+  }
+  remaining.sort((a, b) => {
+    const na = nodeById.get(a);
+    const nb = nodeById.get(b);
+    return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
+  });
+
+  for (let i = 0; i < remaining.length; i++) {
+    themeOrder.push(remaining[i]);
+  }
+
+  return { sectorOrder, themeOrder };
+}
+
+function childrenByDirectId(parentId: string, index: ThemeTaxonomyIndex): string[] | undefined {
+  return index.childrenByParentThemeId.get(parentId);
 }

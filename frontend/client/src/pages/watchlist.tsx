@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2, Search, X } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2, X } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -19,9 +19,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CaelynConfluenceSection, CaelynRowBreakdown } from '@/components/caelyn-confluence';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { buildThemeTaxonomyIndex, rowMatchesTaxonomySelection } from '@/lib/watchlist-theme-taxonomy';
+import { buildThemeTaxonomyIndex, rowMatchesTaxonomySelection, getTaxonomyChipOrder } from '@/lib/watchlist-theme-taxonomy';
 import type { ThemeTaxonomyIndex } from '@/lib/watchlist-theme-taxonomy';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
@@ -4340,72 +4338,34 @@ export default function WatchlistPage() {
     </div>
   ) : null;
 
-  /* ── canonical taxonomy selector ──────────────────────────────────── */
-  const [taxonomySearch, setTaxonomySearch] = useState('');
-  const [taxonomyOpen, setTaxonomyOpen] = useState(false);
+  /* ── canonical taxonomy chip bar (always visible, no dropdown) ────── */
+  const taxonomyChipOrder = useMemo(
+    () => getTaxonomyChipOrder(taxonomyIndex),
+    [taxonomyIndex],
+  );
 
-  const taxonomyOptionCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    const rows = csvMergedScreenerRows ?? [];
-    for (const id of taxonomyIndex.nodeById.keys()) {
-      let c = 0;
-      for (const row of rows) {
-        if (rowMatchesTaxonomySelection(row as any, new Set([id]), taxonomyIndex)) c++;
-      }
-      counts.set(id, c);
-    }
-    return counts;
-  }, [csvMergedScreenerRows, taxonomyIndex]);
+  const renderTaxonomyBar = () => {
+    const { nodeById } = taxonomyIndex;
+    const { sectorOrder, themeOrder } = taxonomyChipOrder;
 
-  const filteredTaxonomyNodes = useMemo(() => {
-    const q = taxonomySearch.toLowerCase().trim();
-    const all = [...taxonomyIndex.nodeById.values()];
-    if (!q) return all;
-    return all.filter(n =>
-      n.display_name.toLowerCase().includes(q) ||
-      n.theme_id.toLowerCase().includes(q)
-    );
-  }, [taxonomyIndex, taxonomySearch]);
-
-  const renderChip = (id: string) => {
-    const node = taxonomyIndex.nodeById.get(id);
-    return (
-      <span
-        key={id}
-        onClick={() => setSelectedTaxonomyIds(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        })}
-        style={{
-          flexShrink: 0, cursor: 'pointer',
-          padding: '3px 10px', borderRadius: 4,
-          fontSize: 10, fontWeight: 700,
-          fontFamily: sansFont,
-          color: '#fff',
-          background: 'rgba(20,184,166,0.18)',
-          border: `1px solid ${C.teal}`,
-          whiteSpace: 'nowrap',
-          transition: 'background 0.12s',
-        }}
-      >
-        {node?.display_name ?? id} ✕
-      </span>
-    );
-  };
-
-  const renderTaxonomySelector = () => {
-    const { nodeById, sectorIds, standaloneSubthemeIds } = taxonomyIndex;
-
-    const parentThemeIds = [...nodeById.keys()].filter(id => {
-      const n = nodeById.get(id);
-      return n && n.classification !== 'sector' && taxonomyIndex.childrenByParentThemeId.has(id);
+    const chipStyle = (active: boolean, isParent: boolean): React.CSSProperties => ({
+      flexShrink: 0, cursor: 'pointer',
+      padding: '3px 10px', borderRadius: 4,
+      fontSize: 10, fontWeight: active ? 700 : isParent ? 700 : 600,
+      fontFamily: sansFont,
+      color: active ? '#fff' : 'rgba(255,255,255,0.60)',
+      background: active ? 'rgba(20,184,166,0.18)' : 'rgba(255,255,255,0.06)',
+      border: active ? `1px solid ${C.teal}` : `1px solid rgba(255,255,255,0.12)`,
+      whiteSpace: 'nowrap',
+      transition: 'background 0.12s, border-color 0.12s, color 0.12s',
     });
 
-    const childIdsByParent = new Map<string, string[]>();
-    for (const [parentId, children] of taxonomyIndex.childrenByParentThemeId) {
-      childIdsByParent.set(parentId, [...children].sort());
-    }
+    const labelStyle: React.CSSProperties = {
+      fontSize: 8, fontWeight: 800, color: C.dim,
+      fontFamily: font, letterSpacing: '0.08em',
+      textTransform: 'uppercase', flexShrink: 0,
+      marginRight: 2,
+    };
 
     const toggleId = (id: string) => {
       setSelectedTaxonomyIds(prev => {
@@ -4415,183 +4375,27 @@ export default function WatchlistPage() {
       });
     };
 
-    const sectionLabel: React.CSSProperties = {
-      fontSize: 9, fontWeight: 800, color: C.dim,
-      fontFamily: font, letterSpacing: '0.06em',
-      textTransform: 'uppercase', padding: '6px 12px 2px',
-      borderTop: `1px solid ${C.border}`,
+    const hasChildren = (id: string) => {
+      const desc = taxonomyIndex.descendantIdsByThemeId.get(id);
+      return desc != null && desc.size > 0;
     };
-    const itemStyle = (active: boolean): React.CSSProperties => ({
-      display: 'flex', alignItems: 'center', gap: 6,
-      padding: '4px 12px', cursor: 'pointer',
-      fontSize: 11, fontFamily: sansFont,
-      color: active ? '#fff' : C.text,
-      background: active ? 'rgba(20,184,166,0.15)' : 'transparent',
-      borderLeft: active ? `3px solid ${C.teal}` : '3px solid transparent',
-    });
-    const countStyle: React.CSSProperties = {
-      marginLeft: 'auto', fontSize: 9, color: C.dim, fontFamily: font,
-    };
-
-    const searchLower = taxonomySearch.toLowerCase().trim();
 
     return (
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
+        display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap',
         padding: '8px 20px',
         background: C.card2,
         borderBottom: `1px solid ${C.border}`,
-        overflowX: 'auto',
-        flexWrap: 'nowrap',
       }}
         className="wl-chip-strip"
       >
-        <Popover open={taxonomyOpen} onOpenChange={setTaxonomyOpen}>
-          <PopoverTrigger asChild>
-            <button style={{
-              flexShrink: 0, cursor: 'pointer',
-              padding: '3px 12px', borderRadius: 4,
-              fontSize: 10, fontWeight: 700,
-              fontFamily: sansFont,
-              color: C.teal,
-              background: 'rgba(20,184,166,0.10)',
-              border: `1px solid ${C.teal}`,
-              whiteSpace: 'nowrap',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <Search size={11} />
-              Taxonomy
-              {selectedTaxonomyIds.size > 0 && (
-                <span style={{ fontSize: 8, background: C.teal, color: '#000', borderRadius: 10, padding: '0 5px', lineHeight: '14px' }}>
-                  {selectedTaxonomyIds.size}
-                </span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            sideOffset={6}
-            style={{ width: 300, maxHeight: 420, padding: 0, overflow: 'hidden' }}
-          >
-            <div style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
-              <Input
-                placeholder="Search taxonomy..."
-                value={taxonomySearch}
-                onChange={e => setTaxonomySearch(e.target.value)}
-                style={{ height: 28, fontSize: 11, fontFamily: sansFont }}
-              />
-            </div>
-            <div style={{ maxHeight: 340, overflowY: 'auto' }} className="wl-scrollbar">
-              {/* SECTORS */}
-              {(!searchLower || sectorIds.some(id => {
-                const n = nodeById.get(id);
-                return n && (n.display_name.toLowerCase().includes(searchLower) || n.theme_id.toLowerCase().includes(searchLower));
-              })) && (
-                <>
-                  <div style={sectionLabel}>Sectors · ecosystem</div>
-                  {sectorIds.map(id => {
-                    const n = nodeById.get(id);
-                    if (!n) return null;
-                    if (searchLower && !n.display_name.toLowerCase().includes(searchLower) && !n.theme_id.toLowerCase().includes(searchLower)) return null;
-                    const active = selectedTaxonomyIds.has(id);
-                    const count = taxonomyOptionCounts.get(id) ?? 0;
-                    return (
-                      <div key={id} onClick={() => toggleId(id)} style={itemStyle(active)}>
-                        {n.display_name}
-                        <span style={countStyle}>{count}</span>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* THEMES (parents with children) */}
-              {(!searchLower || parentThemeIds.some(pid => {
-                const pn = nodeById.get(pid);
-                if (pn && (pn.display_name.toLowerCase().includes(searchLower) || pn.theme_id.toLowerCase().includes(searchLower))) return true;
-                const children = childIdsByParent.get(pid) ?? [];
-                return children.some(cid => {
-                  const cn = nodeById.get(cid);
-                  return cn && (cn.display_name.toLowerCase().includes(searchLower) || cn.theme_id.toLowerCase().includes(searchLower));
-                });
-              })) && (
-                <>
-                  <div style={sectionLabel}>Themes</div>
-                  {parentThemeIds.map(pid => {
-                    const pn = nodeById.get(pid);
-                    if (!pn) return null;
-                    const children = childIdsByParent.get(pid) ?? [];
-                    const parentMatch = !searchLower || pn.display_name.toLowerCase().includes(searchLower) || pn.theme_id.toLowerCase().includes(searchLower);
-                    const visibleChildren = searchLower ? children.filter(cid => {
-                      const cn = nodeById.get(cid);
-                      return cn && (cn.display_name.toLowerCase().includes(searchLower) || cn.theme_id.toLowerCase().includes(searchLower));
-                    }) : children;
-                    if (!parentMatch && visibleChildren.length === 0) return null;
-                    return (
-                      <div key={pid}>
-                        {parentMatch && (
-                          <div onClick={() => toggleId(pid)} style={itemStyle(selectedTaxonomyIds.has(pid))}>
-                            {pn.display_name}
-                            <span style={countStyle}>{taxonomyOptionCounts.get(pid) ?? 0}</span>
-                          </div>
-                        )}
-                        {visibleChildren.map(cid => {
-                          const cn = nodeById.get(cid);
-                          if (!cn) return null;
-                          return (
-                            <div key={cid} onClick={() => toggleId(cid)} style={{
-                              ...itemStyle(selectedTaxonomyIds.has(cid)),
-                              paddingLeft: 24,
-                            }}>
-                              {cn.display_name}
-                              <span style={countStyle}>{taxonomyOptionCounts.get(cid) ?? 0}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* STANDALONE SUBTHEMES */}
-              {(!searchLower || standaloneSubthemeIds.some(id => {
-                const n = nodeById.get(id);
-                return n && (n.display_name.toLowerCase().includes(searchLower) || n.theme_id.toLowerCase().includes(searchLower));
-              })) && (
-                <>
-                  <div style={sectionLabel}>Standalone subthemes</div>
-                  {standaloneSubthemeIds.map(id => {
-                    const n = nodeById.get(id);
-                    if (!n) return null;
-                    if (searchLower && !n.display_name.toLowerCase().includes(searchLower) && !n.theme_id.toLowerCase().includes(searchLower)) return null;
-                    const active = selectedTaxonomyIds.has(id);
-                    return (
-                      <div key={id} onClick={() => toggleId(id)} style={itemStyle(active)}>
-                        {n.display_name}
-                        <span style={countStyle}>{taxonomyOptionCounts.get(id) ?? 0}</span>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-
-              {filteredTaxonomyNodes.length === 0 && (
-                <div style={{ padding: 12, fontSize: 11, color: C.dim, fontFamily: sansFont, textAlign: 'center' }}>
-                  No matching taxonomy nodes
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Selected chips */}
+        {/* Clear */}
         {selectedTaxonomyIds.size > 0 && (
           <span
             onClick={() => setSelectedTaxonomyIds(new Set())}
             style={{
               flexShrink: 0, cursor: 'pointer',
-              padding: '3px 8px', borderRadius: 4,
+              padding: '3px 10px', borderRadius: 4,
               fontSize: 10, fontWeight: 700,
               fontFamily: sansFont,
               color: C.teal,
@@ -4604,7 +4408,40 @@ export default function WatchlistPage() {
             Clear
           </span>
         )}
-        {[...selectedTaxonomyIds].map(id => renderChip(id))}
+
+        {/* SECTORS */}
+        <span style={labelStyle}>SECTORS</span>
+        {sectorOrder.map(id => {
+          const node = nodeById.get(id);
+          if (!node) return null;
+          const active = selectedTaxonomyIds.has(id);
+          return (
+            <span key={id} onClick={() => toggleId(id)}
+              style={chipStyle(active, false)}
+            >
+              {node.display_name}
+            </span>
+          );
+        })}
+
+        {/* Gap between SECTORS and THEMES */}
+        <span style={{ width: 12, flexShrink: 0 }} />
+
+        {/* THEMES */}
+        <span style={labelStyle}>THEMES</span>
+        {themeOrder.map(id => {
+          const node = nodeById.get(id);
+          if (!node) return null;
+          const active = selectedTaxonomyIds.has(id);
+          const isParent = hasChildren(id);
+          return (
+            <span key={id} onClick={() => toggleId(id)}
+              style={chipStyle(active, isParent)}
+            >
+              {node.display_name}
+            </span>
+          );
+        })}
       </div>
     );
   };
@@ -7281,7 +7118,7 @@ export default function WatchlistPage() {
             {renderUpgradeBanner()}
 
             {/* ── Market Themes Banner (chips) ── */}
-            {renderTaxonomySelector()}
+            {renderTaxonomyBar()}
 
             {/* ── Top Split: Ticker Table + Live News (fixed viewport-aware height) ── */}
             <div style={{
