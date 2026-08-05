@@ -2352,7 +2352,7 @@ export default function WatchlistPage() {
   const [screenerFullscreen, setScreenerFullscreen] = useState(false);
   /* ── Screener filters ────────────────────────────────────────────── */
   const [screenerFilters, setScreenerFilters] = useState<ScreenerFilter[]>(loadStoredFilters);
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [selectedThemes, setSelectedThemes] = useState<Set<string>>(new Set());
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [draftField, setDraftField] = useState<string>(SCREENER_FILTER_FIELDS[0].key);
   const [draftOp, setDraftOp]   = useState<FilterOperator>('gt');
@@ -4367,10 +4367,10 @@ export default function WatchlistPage() {
         }}>
           THEMES
         </span>
-        {/* "All" reset chip — only shown when a theme is active */}
-        {selectedTheme && (
+        {/* "Clear" reset chip — only shown when at least one theme is active */}
+        {selectedThemes.size > 0 && (
           <span
-            onClick={() => setSelectedTheme(null)}
+            onClick={() => setSelectedThemes(new Set())}
             style={{
               flexShrink: 0, cursor: 'pointer',
               padding: '3px 10px', borderRadius: 4,
@@ -4382,15 +4382,19 @@ export default function WatchlistPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            ✕ All
+            ✕ Clear
           </span>
         )}
         {screenerThemes.map((label) => {
-          const active = selectedTheme === label;
+          const active = selectedThemes.has(label);
           return (
             <span
               key={label}
-              onClick={() => setSelectedTheme(active ? null : label)}
+              onClick={() => setSelectedThemes(prev => {
+                const next = new Set(prev);
+                if (next.has(label)) next.delete(label); else next.add(label);
+                return next;
+              })}
               style={{
                 flexShrink: 0, cursor: 'pointer',
                 padding: '3px 10px', borderRadius: 4,
@@ -5203,11 +5207,11 @@ export default function WatchlistPage() {
       ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
       : visibleRows;
     const filterHidden = visibleRows.length - screenerFilteredRows.length;
-    // Apply theme filter (clicking a chip in the THEMES bar)
-    const filteredRows = (isMainScreener && selectedTheme)
+    // Apply theme filter (clicking chips in the THEMES bar — multi-select)
+    const filteredRows = (isMainScreener && selectedThemes.size > 0)
       ? screenerFilteredRows.filter(r => {
           const t = ((r as any).canonical_theme_name || (r as any).section_title || (r as any).theme || '').toString().trim();
-          return t === selectedTheme;
+          return selectedThemes.has(t);
         })
       : screenerFilteredRows;
     // Mode-specific grid layout and column headers

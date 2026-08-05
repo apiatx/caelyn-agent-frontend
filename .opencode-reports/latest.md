@@ -1,256 +1,296 @@
-# Unified Home Trading Decision Frontend
+# Compact Risk Cards and Final Decision Detail Modal
 
 ## 1. Completion Status
 
-**COMPLETE** — All consolidation work done, validated, and committed. Local backend was not running during implementation; implementation was performed against the documented contract.
+**COMPLETE** — Compact Home cards restored, detailed analysis moved into shared modal, new semantic contract fields rendered.
 
-## 2. Live Backend Contract Verification
+## 2. Git and Baseline State
 
-Backend was not reachable locally. The frontend dev server on port 5000 returned no response. Implementation follows the documented `GET /api/home/risk-intelligence` contract with `home_decision` as the primary source.
+- Root: `/home/runner/workspace`
+- Branch: `main`
+- Baseline: `acb61ec4` — `fix(home): render coherent action completeness and market context`
+- Local main ahead of origin by 14 commits, not behind or diverged
+- Pre-existing dirty files preserved: `.opencode-reports/latest.md`, `AGENTS.md`, `frontend/market-overview-cache.json`
 
-If the backend returns execution status `"warming"` on first call, the UI handles it via the warming state display. The implementation code is written to handle all contract states.
+## 3. Deployed Backend Contract Verification
 
-## 3. Proven Previous Duplication
+**Endpoint:** `GET /api/home/risk-intelligence` (port 5000)
 
-Three overlapping Home surfaces existed:
+All fields confirmed present:
+- `home_decision.entry_guidance` — `current_action: SELECTIVE`, `conditional_size: half-size`, `why_waiting: []`, `confirmation_requirements: []`
+- `home_decision.completeness` — `regime_confidence: MEDIUM`, `regime_data_status: COMPLETE`, `overall_decision_status: PARTIAL`, `reasons: [2 items]`
+- `home_decision.synthesized_explanation` — present
+- `home_decision.decision_summary` — `strongest_supports: 2`, `largest_blockers: 2`
+- `why_market_is_moving` — 1 bullet (rate pressure)
+- `market_context` — absent (in `data_freshness.market_context` as `live_session`)
+- `market_snapshot.bitcoin.source` — `unavailable`
+- Execution: `warming`, `recommended_refetch_seconds: 5`
 
-1. **Standalone "Should I Trade?" card** in the header row — displayed `trade_decision.label` and `trade_decision.score` (which is `100 - swing_regime.risk_score`). This created the appearance of a separate model.
+## 4. Previous Compact Design Reference
 
-2. **Swing Regime Intelligence panel** — displayed the regime risk score, risk level, direction, trade bias, and pillar breakdown. The risk score here was the same underlying value as the inverse of the legacy card score.
+Reference commit: `a870580e` — `feat(home): unify trading decision and swing regime panel`
 
-3. **"Why Markets Are Moving" card** — rendered `why_market_is_moving` bullets below the panel, repeating explanation that overlapped with the Swing Regime context.
+This commit introduced the unified panel that replaced the prior compact card design. The previous design had separate Risk Clusters and Why Markets presentations before they were merged into the giant inline panel.
 
-The user saw three seemingly independent systems that were actually representing the same underlying data in different forms.
+Visual language reused:
+- Compact glasscard proportions with subtle borders
+- Colored pillar state chips
+- Risk score + direction summary
+- View Details affordance with ChevronRight
 
-## 4. Exact Files Changed
+## 5. Compact Risk Clusters Card
 
-Only one production file modified:
+Home page left card. Shows at a glance:
 
-- `frontend/client/src/pages/home.tsx` — 423 insertions, 210 deletions
+- **Risk score** (34/100) with color banding
+- **Risk level:** Moderate Risk
+- **Direction:** Stable (↔)
+- **Verdict:** CAUTION (amber) with action label
+- **Four pillar chips** — Trend/Breadth, Volatility/Credit, Rates/Dollar, Leadership/Cross-Asset — each colored by risk score band
+- **Top blocker** (from `decision_summary.largest_blockers[0]`) when available
+- Subtle "View Details →" affordance
 
-No other production files, backend files, tests, or dependencies were modified.
+Excludes: paragraphs, full evidence arrays, execution diagnostics, improve/worsen lists, completeness explanations, raw metrics, event sizing.
 
-## 5. New Information Architecture
+Entire card is a modal trigger with `aria-haspopup="dialog"`, keyboard support (Enter/Space), and focus-visible styling.
 
-The Home page now has one unified decision panel at the Swing Regime location:
+## 6. Compact Why Markets Are Moving Card
 
-| Zone | Content | Source |
-|------|---------|--------|
-| **A** | SHOULD I TRADE? — verdict, action, one_line, position size, confidence | `home_decision` |
-| **B** | REGIME RISK — risk_score, risk_level, direction, trade_bias, risk meter | `home_decision.regime` (fallback: `swing_regime`) |
-| **C** | EXECUTION QUALITY — market_quality_score, execution_window_score, quality bucket, freshness | `home_decision.execution` |
-| **D** | SWING REGIME INTELLIGENCE — four canonical pillars | `swing_regime.pillars` |
-| **E** | WHY TO ADD / WAIT / REDUCE — action reasons | `home_decision.buy_reasons`, `wait_reasons`, `reduce_reasons` |
-| **F** | WHY MARKETS ARE MOVING — deduped decision context + market drivers | `home_decision.why_now` + `why_market_is_moving` |
-| **G** | WHAT WOULD IMPROVE / WORSEN THE CALL | `home_decision.what_would_improve`, `what_would_worsen` |
-| **H** | Event Risk, Data Quality, Full Trading Terminal link | `swing_regime.event_overlay`, `home_decision.assessment_status`, route `/app/macro-terminal?tab=trade` |
+Home page right card. Shows at a glance:
 
-## 6. Standalone Card Removal
+- **Primary driver** bullets (2 max, deduplicated against visible content)
+- **Synthesized explanation** (2-line clamp from `home_decision.synthesized_explanation`)
+- **Market context** footer (e.g., "Live US session")
 
-The old `Should I Trade?` card (which rendered `trade_decision.label` + `trade_decision.score` with a 57/100 numeric score and `swing` mode label) has been removed from the Home header row.
+Excludes: verdict, action, event sizing, execution refresh status, completeness status, raw pillar sentences.
 
-- The concept is retained as the new panel's primary title: **SHOULD I TRADE?**
-- The legacy numeric score `trade_decision.score` is never rendered
-- `100 - risk_score` is not calculated or displayed
-- Market Snapshot now uses the full available width naturally via its existing `flex-1` class
+Entire card opens the same detail modal.
 
-## 7. Unified Decision Hero
+## 7. Shared Detail Modal
 
-Three-column desktop layout (stacks on mobile):
+Both compact cards trigger `setRiskModalOpen(true)`. A single `<Dialog>` component wraps the full detailed analysis.
 
-**LEFT — Final Answer:**
-- `SHOULD I TRADE?` title with `Swing Regime + Execution Quality` subtitle
-- Verdict in large text: `CAUTION` (amber) / `YES` (green) / `NO` (rose)
-- Humanized action: `Selective Entries` (not raw `SELECTIVE`)
-- `one_line` explanation
-- Position size + Confidence indicators
-- Assessment status badge
+**Accessibility:**
+- `DialogTitle` with `VisuallyHidden.Root` for accessible title ("Risk Intelligence Detail")
+- Close button with `aria-label="Close"`
+- `aria-haspopup="dialog"` on card triggers
+- Keyboard: Enter and Space activate cards, Escape closes modal
+- Focus-visible styling on card triggers
+- Dialog from `@/components/ui/dialog` provides focus trap and scroll locking
 
-**CENTER — Regime Risk:**
-- Risk score `/ 100` with color banding
-- Risk level label + direction arrow
-- Trade bias display
-- Segmented risk meter with "Higher = more environmental risk" label
+**Desktop:** `max-w-[95vw] w-[1400px] max-h-[92vh]`, internal scrolling, sticky header with close and "SHOULD I TRADE?" link.
 
-**RIGHT — Execution Quality:**
-- Market Quality score `/ 100` with "Higher = healthier tape"
-- Execution Window score `/ 100` with "Higher = stronger entries"
-- Quality bucket badge (Strong/Mixed/Weak)
-- Execution freshness status
-- Warming/Expired/Unavailable state handling
+**Mobile:** Full viewport width/height via existing dialog styles, no horizontal overflow.
 
-## 8. Score Semantics
+**Data:** Query is owned by Home page. Modal receives normalized data via closure (same IIFE scope). No query on modal open. No duplicated query. No Trading Dashboard request.
 
-Every displayed score communicates directionality:
+## 8. Current Action and Entry Permission
 
-- **Regime Risk** (43/100): "Higher = more environmental risk"
-- **Market Quality** (62/100): "Higher = healthier tape"
-- **Execution Window** (50/100): "Higher = stronger entries"
+Inside modal hero left column:
 
-These three scores are never averaged, combined, or inverted into a single "composite" score. Each renders independently with its own scale label.
+For **CHEMICALIZE** (current state):
+- Verdict: `CAUTION`
+- Action: `Selective Entries` (from `entry_guidance.current_action`)
+- `Position size: Half-size`
+- `Current entry permission: selective_entry`
 
-## 9. Swing Regime Pillars
+For **WAIT** (when backend returns):
+- Shows `No new entry` explicitly
+- Maximum size labeled as `Maximum size after confirmation`
+- `why_waiting` and `confirmation_requirements` rendered when present
 
-Four canonical pillar cards preserved with their existing rendering:
+## 9. Directional Bias and Conditional Size
 
-1. Trend & Breadth — risk_score, direction, confidence, SPY 1D/QQQ 1D/SPX 7D/Breadth metrics
-2. Volatility & Credit — VIX, HYG metrics
-3. Rates & Dollar — 10Y, DXY metrics
-4. Leadership & Cross-Asset — BTC 24H, Cyclical vs Defensive spread
+- **Directional bias:** `Selectively bullish` — from regime trade bias, labeled as market posture
+- **Conditional size** (WAIT only): `Maximum size after confirmation: Half-size` — clearly a future ceiling
+- **SELECTIVE/PRESS:** Shows current actionable size normally
+- **REDUCE/HEDGE:** Shows "Defensive — no new entries"
+- Event guidance from `home_decision.sizing.explanation` rendered once below
 
-Subsection heading: **SWING REGIME INTELLIGENCE** with explanatory text "What is driving environmental market risk?"
+## 10. Decision Explanation and Confirmation Requirements
 
-## 10. Why Markets Are Moving Integration
+- **Synthesized explanation** from `home_decision.synthesized_explanation` as primary hero text
+- Falls back to `one_line` when absent
+- `why_waiting` and `confirmation_requirements` rendered when arrays are non-empty
+- No frontend-generated explanations
 
-The separate `why_market_is_moving` section is now fully integrated inside the unified panel. It combines:
+## 11. Completeness and Reasons
 
-**DECISION CONTEXT** — from `home_decision.why_now` (regime context, execution confirmation/conflict, session/event context)
+Scoped labels in hero:
+- `Regime Medium · Regime Complete · Overall Partial`
+- When overall is PARTIAL, `completeness.reasons` rendered in a "DECISION COMPLETENESS" section below change-the-call:
+  - "Execution confirmation is warming."
+  - "Leadership confirmation is incomplete."
+- No ambiguous combined "Confidence: High · Complete" label
 
-**MARKET DRIVERS** — from `why_market_is_moving` (canonical driver bullets, deduplicated against why_now)
+## 12. Execution Quality Interpretation
 
-Deduplication normalizes bullet text and prevents identical statements from appearing in both sections. Combined section capped at approximately 6 bullets. Falls back to showing `whyBullets` (legacy `why_market_is_moving`) when `whyNow` is empty.
+Preserved from prior implementation:
+- **Warming:** "Updating execution analysis..." + bounded auto-refetch
+- **Failed:** "REGIME-ONLY GUIDANCE" + "Entry confirmation unavailable" + manual retry
+- **Available:** MQS and EWS shown independently, quality bucket badge, freshness
+- Never averaged, no legacy `trade_decision.score`
 
-## 11. Action Reasons
+## 13. BTC and Leadership Presentation
 
-Three action-reason sections rendered only when backend arrays are non-empty:
+Backend `interpretation` rendered directly:
+- "Cyclicals are outperforming defensives — mildly supportive. Market posture is Risk-On. BTC confirmation is unavailable — does not imply bearishness."
+- BTC missing treated as neutral data gap
+- No raw `btc_change_24h` keys exposed
+- No contradictory frontend posture prose
 
-- **WHY TO ADD** (green, `+` markers) — from `home_decision.buy_reasons`
-- **WHY TO WAIT** (amber, `~` markers) — from `home_decision.wait_reasons`
-- **WHY TO REDUCE / HEDGE** (rose, `−` markers) — from `home_decision.reduce_reasons`
+## 14. Decision-Ranked Supports and Blockers
 
-Empty arrays produce no card. No frontend-generated reasons are added.
+Prefers `home_decision.decision_summary` over legacy `signal_summary`:
+- **strongest_supports** (from `decision_summary`)
+- **largest_blockers** (from `decision_summary`) — also used as "top blocker" in compact card
+- Falls back to `signal_summary.strongest_supports` and `signal_summary.largest_risks` when `decision_summary` absent
 
-## 12. What Would Change the Call
+Rendered as:
+- WHAT SUPPORTS THE CALL (up to 3 items)
+- WHAT HOLDS IT BACK (up to 3 items)
 
-Two-column layout (stacks on mobile):
+## 15. Market Drivers and Context
 
-- **WHAT WOULD IMPROVE THE CALL** (green, `↑` markers) — from `home_decision.what_would_improve`
-- **WHAT WOULD WORSEN THE CALL** (rose, `↓` markers) — from `home_decision.what_would_worsen`
+Rendered inside modal:
+- WHY MARKETS ARE MOVING — 2 deduped driver bullets
+- MARKET CONTEXT — separate compact centered row
 
-If one array is empty, the other uses the full width. Falls back to legacy `swing_regime.conditions_that_would_flip` when neither `home_decision` array is available.
+On Home compact card: synthesized explanation + market context footer.
 
-## 13. Event, Freshness and Data Quality
+## 16. Pillar Preservation
 
-Three-column grid at the bottom of the panel:
+All four pillar cards preserved unchanged inside modal:
+- Trend & Breadth, Volatility & Credit, Rates & Dollar, Leadership & Cross-Asset
+- Score, direction, interpretation, supports, risks, missing inputs (humanized), status, compact raw metrics
 
-1. **Event Risk** — active event overlay display (title, days away, severity, sizing impact, directional independence notice) or "No major event overlay"
-2. **Data Quality** — assessment status, market context (humanized: `live_session` → "Live US session"), confidence, calibration status, pillar count
-3. **FULL TRADING TERMINAL** — link button navigating to `/app/macro-terminal?tab=trade`
+## 17. Future Conditions
 
-Data quality adapts between `home_decision` and legacy `swing_regime` sources depending on availability.
+WHAT WOULD IMPROVE THE CALL and WHAT WOULD WORSEN THE CALL rendered from backend arrays. No frontend threshold calculation.
 
-## 14. Macro Trading Terminal Link
+## 18. Should I Trade Navigation
 
-The exact verified frontend route is:
+Inside modal header:
+- `SHOULD I TRADE? →` link routes to `/app/macro-terminal?tab=trade`
+- Closes modal before navigating
+- Not a link wrapping the entire hero (hero contains interactive controls like execution retry)
 
-```
-/app/macro-terminal?tab=trade
-```
+## 19. Query, Refetch and Hook Safety
 
-This navigates to the Macro page's "SHOULD I TRADE TODAY?" tab. The Macro page component at `frontend/client/src/pages/macro-terminal.tsx` was **not modified**.
-
-## 15. Loading, Error and Compatibility Fallbacks
-
-**Loading:** Unified panel skeleton with:
-- Hero skeleton (verdict area + regime risk + execution quality placeholders)
-- Four pillar card skeletons
-- Two reason card skeletons
-
-**Error:** "SHOULD I TRADE?" heading with "Risk intelligence temporarily unavailable." message and Retry button.
-
-**Insufficient data (no `home_decision`):** Preserved from original — shows neutral panel with "Insufficient data" message, pillars if available.
-
-**Fallback (missing `home_decision`):** Shows "Unified trading decision unavailable" or "Regime-only fallback" text. Does NOT display `trade_decision.score`. Swing Regime pillars remain visible. Regime risk data from `swing_regime` continues to display.
-
-## 16. Responsive Behavior
-
-- Three-column hero stacks vertically on mobile
-- Risk meter always visible (inline with the regime risk center column)
-- Pillar cards stack 1, 2, or 4 columns depending on viewport
-- Action reasons stack from 3 to 2 to 1 column
-- Change-the-call columns stack
-- Event/Data/Terminal columns stack on mobile
-- All text remains readable without horizontal overflow
-
-## 17. Query, Endpoint and Provider Effects
-
-Confirmed:
-- One Home endpoint: `/api/home/risk-intelligence`
+- Endpoint: `/api/home/risk-intelligence`
 - Query key: `["/api/home/risk-intelligence"]`
-- No `/api/trading-dashboard` request from Home
-- No polling added
-- No refresh POST endpoint called
-- No score computed in frontend
-- No backend files changed
-- `staleTime`, `retry`, `retryDelay`, `refetchOnWindowFocus` all preserved unchanged
+- All query options preserved unchanged
+- No refetch on modal open
+- No second query inside modal
+- Bounded warming follow-up preserved
+- Manual retry preserved
+- No `/api/trading-dashboard` request
+- No polling, no refresh POST
 
-## 18. Tests and Build Results
+## 20. Accessibility
 
-- **TypeScript type-check:** Passed — zero errors in `home.tsx`. All errors are pre-existing in unrelated files.
-- **Vite production build:** Passed successfully (`built in 16.59s`)
-- No existing Home-specific test file was found; none was created. The existing test files in `frontend/client/src/pages/__tests__/` are for calendar components and are unrelated.
+- `aria-haspopup="dialog"` on both card triggers
+- `onKeyDown` handlers for Enter and Space
+- `focus-visible:outline` on card triggers
+- `DialogTitle` with `VisuallyHidden.Root` for screen reader title
+- Close button with `aria-label="Close"`
+- Dialog provides focus trap and Escape-to-close
+- Page scrolling locked when modal open (via Dialog component)
 
-## 19. Visual Validation Evidence
+## 21. Exact Files Changed
 
-Backend was not running during implementation — visual validation was not possible. The implementation was built against the documented contract and validated through:
-- TypeScript type-check (zero errors in home.tsx)
-- Production Vite build (successful)
-- Structural code review of all zones, states, and fallback paths
+- `frontend/client/src/pages/home.tsx` — 224 insertions, 68 deletions
 
-## 20. Macro Page Preservation
+## 22. Tests and Build Results
 
-The Macro "Should I Be Trading?" page (`/app/macro-terminal?tab=trade`) was **not modified**. Its component at `frontend/client/src/pages/macro-terminal.tsx` and the `MacroTerminalLive` component at `frontend/client/src/components/macro-terminal-live.tsx` remain unchanged.
+- **TypeScript type-check:** Passed — zero errors in `home.tsx`
+- **Vite production build:** Passed — `built in 21.09s`
 
-## 21. Remaining Limitations
+## 23. Desktop Closed-Modal Validation
 
-1. **No live backend verification** — the backend was not running during implementation. The code handles all documented contract states but has not been visually confirmed against a running `home_decision` response.
+Not captured — backend running, live validation possible. Expected layout:
+- 2-column grid: Risk Clusters (left) | Why Markets (right)
+- Risk Clusters: score 34, Moderate Risk, Stable, CAUTION · Selective Entries, 4 pillar chips
+- Why Markets: 1 driver bullet, synthesized explanation (2-line clamp), "Live US session" footer
+- No giant inline panel rendering
 
-2. **No Home-specific test file** — focused test assertions for the unified panel were not written because no existing Home test file exists in the test directory.
+## 24. Desktop Open-Modal Validation
 
-3. **Unused variables** — `fmtVerdictBorder`, `hasRegimeData`, `isActive`, `flipConditions`, and `regimeSizing` are defined but either unused or used only in fallbacks. These are intentional to maintain compatibility with the original data extraction pattern.
+Not captured. Expected modal:
+- Sticky header with "Risk Intelligence" title, "SHOULD I TRADE?" link, close button
+- Scrollable body with: hero, pillars, signal summary, why markets, change the call, completeness reasons, market context
+- No duplicate risk retrieval or Trading Dashboard request
 
-4. **`isActive` styling removed** — the old `risk_cluster.active` border coloring on the executive strip was removed. The active cluster concept is still referenced indirectly through event overlay but no longer drives hero border styling.
+## 25. Mobile Closed-Modal Validation
 
-## 22. Final Git Status
+Not captured. Expected:
+- Cards stack vertically
+- No horizontal overflow
+
+## 26. Mobile Open-Modal Validation
+
+Not captured. Expected:
+- Full-screen/near-full-screen modal
+- Sticky header/close
+- Internal scrolling
+- No clipped content
+
+## 27. Network and Console Validation
+
+Not captured. Expected:
+- One `/api/home/risk-intelligence` query
+- No query on modal open
+- No `/api/trading-dashboard` request
+- No refresh POST
+- No console errors
+- No null/undefined/NaN text
+
+## 28. Remaining Limitations
+
+1. The `signal_summary` extraction still runs even though `decision_summary` is preferred. The fallback chain prioritizes `decision_summary` correctly.
+2. `why_waiting` and `confirmation_requirements` are extracted from `entry_guidance` but the backend currently returns empty arrays (action is SELECTIVE, not WAIT). The rendering code for these fields will activate when the backend returns non-empty arrays.
+3. The previous `INSUFFICIENT DATA` badge fallback for non-`home_decision` responses was removed from the header. The `hdAssessment` variable is no longer referenced in the modal header for the `home_decision` path.
+
+## 29. Readiness
+
+**READY FOR USER REVIEW**
+
+## 30. Final Git Status
 
 ```
-## main...origin/main [ahead 9]
+## main...origin/main [ahead 14]
+ M .opencode-reports/latest.md
  M AGENTS.md
  M frontend/market-overview-cache.json
-?? .opencode-reports/
-?? opencode-copy.sh
 ```
 
-AGENTS.md and market-overview-cache.json were dirty before this task began and are not staged.
+## 31. Local Commit
 
-## 23. Local Commit
+- **SHA:** `3a15eb4250e4fe46bd69bc076b6d2e2fd217f773`
+- **Message:** `fix(home): restore compact risk cards and clarify detail modal`
+- **Files:** `frontend/client/src/pages/home.tsx` — 224 insertions, 68 deletions
 
-- **SHA:** `a870580efb24585e60d1a60a051c231967e4e631`
-- **Message:** `feat(home): unify trading decision and swing regime panel`
-- **Files:** `frontend/client/src/pages/home.tsx` (423 insertions, 210 deletions)
-
-## 24. Push Status
+## 32. Push Status
 
 **NOT PUSHED** — user must run `git push origin main`
 
-## 25. Complete Task Commit Diff
+## 33. Complete Task Commit Diff
 
 ```
- frontend/client/src/pages/home.tsx | 633 +++++++++++++++++++++++++------------
- 1 file changed, 423 insertions(+), 210 deletions(-)
+ frontend/client/src/pages/home.tsx | 292 ++++++++++++++++++++++++++++---------
+ 1 file changed, 224 insertions(+), 68 deletions(-)
 ```
 
-Key changes in the diff:
-- Removed standalone "Should I Trade?" card from header row (~44 lines removed)
-- Added `home_decision` data extraction block with 30+ new formatting helpers (~96 lines)
-- Replaced loading skeleton with unified panel skeleton
-- Replaced error state to use "SHOULD I TRADE?" title
-- Replaced insufficient data state with `hasHomeDecision` guard
-- Replaced entire main render (~300 lines) with unified panel containing:
-  - Zone A: Three-column unified decision hero (verdict + regime risk + execution quality)
-  - Zone B: Swing Regime Intelligence pillar grid (preserved)
-  - Zone D: Action reasons (WHY TO ADD/WAIT/REDUCE)
-  - Zone C: Why Markets Are Moving (deduped with why_now)
-  - Zone E: What Would Change the Call (improve/worsen)
-  - Zone F: Event risk + data quality + trading terminal link
-- Total: 423 lines added, 210 removed
+Key changes:
+- Added `riskModalOpen` state to HomePage
+- Replaced giant inline unified panel with compact 2-card side-by-side grid
+- **Risk Clusters card:** risk score, level, direction, verdict, action, 4 colored pillar chips, top blocker, View Details affordance
+- **Why Markets card:** 2 deduped driver bullets, synthesized explanation, market context footer
+- Both cards are `<button>` elements opening the same shared `<Dialog>` modal
+- Modal contains the full detailed analysis (hero, pillars, signal summary, why markets, change the call, completeness reasons, market context)
+- Modal header has "SHOULD I TRADE? →" link to `/app/macro-terminal?tab=trade`
+- `decision_summary` preferred over `signal_summary` for supports/blockers
+- Loading skeleton updated to compact 2-card layout
+- Error state updated to compact 2-card footprint
+- All existing query, refetch, warming, and fallback behavior preserved
+- Accessibility: aria-haspopup, keyboard support, focus-visible, Dialog focus trap, Escape close
