@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2, Search, X } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -19,6 +19,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CaelynConfluenceSection, CaelynRowBreakdown } from '@/components/caelyn-confluence';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { buildThemeTaxonomyIndex, rowMatchesTaxonomySelection } from '@/lib/watchlist-theme-taxonomy';
+import type { ThemeTaxonomyIndex } from '@/lib/watchlist-theme-taxonomy';
 
 /* ── color tokens (Hyperliquid style) ──────────────────────────────── */
 let C = DARK_C;
@@ -287,15 +291,6 @@ function flattenNews(newsMap: Record<string, NewsItem[]> | null | undefined): Fl
 /* ── check if analysis is new format ───────────────────────────────── */
 function isNewFormat(analysis: any): boolean {
   return analysis && Array.isArray(analysis.sections);
-}
-
-/* ── resolve theme label from string or canonical object ────────────── */
-// Backend may return market_themes entries as plain strings (old) or as
-// { canonical_theme_name, canonical_theme_id } objects (new). Always prefer
-// canonical_theme_name; fall back gracefully to the raw string.
-function resolveThemeLabel(entry: string | { canonical_theme_name?: string; canonical_theme_id?: string; [k: string]: any }): string {
-  if (typeof entry === 'string') return entry;
-  return entry?.canonical_theme_name || entry?.canonical_theme_id || String(entry);
 }
 
 /* ── resolve section display title ─────────────────────────────────── */
@@ -2352,7 +2347,7 @@ export default function WatchlistPage() {
   const [screenerFullscreen, setScreenerFullscreen] = useState(false);
   /* ── Screener filters ────────────────────────────────────────────── */
   const [screenerFilters, setScreenerFilters] = useState<ScreenerFilter[]>(loadStoredFilters);
-  const [selectedThemes, setSelectedThemes] = useState<Set<string>>(new Set());
+  const [selectedTaxonomyIds, setSelectedTaxonomyIds] = useState<Set<string>>(new Set());
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [draftField, setDraftField] = useState<string>(SCREENER_FILTER_FIELDS[0].key);
   const [draftOp, setDraftOp]   = useState<FilterOperator>('gt');
@@ -2622,25 +2617,28 @@ export default function WatchlistPage() {
     retry: 1,
   });
 
-  /* ── Admin Theme assign/reassign (Screener THEME column) ────────────
-     Reuses existing authenticated admin capability + existing Theme
-     Universe query key ("themes-unified") so cache is shared with the
-     Sectors/Themes page. Backend is authoritative — no local Theme map. */
+  /* ── Canonical Taxonomy — shared query reusing global prefetch cache ──
+   *   key ["themes-unified", "themes"] matches GlobalDataContext.tsx:90
+   *   timeframe=1D&classification=all provides the canonical taxonomy for
+   *   filter options, admin assignment, and matching logic. */
   const { isAdmin, token } = useAuth();
   const getThemeJwt = useCallback(
     () => token ?? localStorage.getItem('caelyn_jwt') ?? sessionStorage.getItem('caelyn_jwt') ?? '',
     [token]
   );
   const { data: themeUniverseResp } = useQuery({
-    queryKey: ['themes-unified', 'all', '7D'],
-    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=7D&classification=all`)
+    queryKey: ['themes-unified', 'themes'],
+    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=1D&classification=all`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    enabled: isAdmin,
     staleTime: 5 * 60_000,
     retry: 1,
   });
+  const taxonomyIndex: ThemeTaxonomyIndex = useMemo(() => {
+    const nodes = (themeUniverseResp as any)?.themes ?? [];
+    return buildThemeTaxonomyIndex(nodes);
+  }, [themeUniverseResp]);
   const themeUniverse: Array<{ theme_id: string; display_name: string }> = useMemo(() => {
-    const list = (themeUniverseResp?.themes ?? []) as Array<{ theme_id: string; display_name: string }>;
+    const list = ((themeUniverseResp as any)?.themes ?? []) as Array<{ theme_id: string; display_name: string }>;
     return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
   }, [themeUniverseResp]);
 
@@ -3305,7 +3303,6 @@ export default function WatchlistPage() {
   const newsIsBuilding: boolean = newsData?.is_building ?? false;
   const newsCacheAge: number | null = newsData?.cache_age_s ?? null;
   const majorNews: MajorNewsItem[] = (majorNewsData?.major_developments ?? []).slice(0, 20);
-  const marketThemes: string[] = newFmt ? (analysis?.market_themes || []) : [];
   const lastUpdated: string | undefined = newFmt ? analysis?.last_updated : watchlist?.saved_at;
 
   /* ── merged ticker list: all CSV tickers + analysis data where available ── */
@@ -3825,22 +3822,10 @@ export default function WatchlistPage() {
     });
   }, [mergedTickers, watchlist]);
 
-  /* ── unique themes from actual screener rows (used by THEMES bar) ── */
-  const SCREENER_THEME_HIDDEN = new Set(['Semiconductor Equipment', 'Semi Materials']);
-  const screenerThemes = useMemo<string[]>(() => {
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const s of sortedTickers) {
-      const t = ((s as any).canonical_theme_name || (s as any).section_title || (s as any).theme || '').toString().trim();
-      if (t && !seen.has(t) && !SCREENER_THEME_HIDDEN.has(t)) { seen.add(t); out.push(t); }
-    }
-    // Also fold in any backend market_themes not already covered
-    for (const entry of marketThemes) {
-      const label = resolveThemeLabel(entry as any).trim();
-      if (label && !seen.has(label) && !SCREENER_THEME_HIDDEN.has(label)) { seen.add(label); out.push(label); }
-    }
-    return out.sort((a, b) => a.localeCompare(b));
-  }, [sortedTickers, marketThemes]);
+  /* ── Taxonomy filter is now derived from canonical backend response
+   *   via buildThemeTaxonomyIndex — see taxonomyIndex above.
+   *   The old screenerThemes / SCREENER_THEME_HIDDEN / label-based
+   *   filtering has been removed. */
 
   /* ── filtered symbol set — null = no active filters ─────────────── */
   const filteredSymbolSet = useMemo<Set<string> | null>(() => {
@@ -4355,11 +4340,101 @@ export default function WatchlistPage() {
     </div>
   ) : null;
 
-  /* ── market themes banner ────────────────────────────────────────── */
-  // Derives themes from actual screener rows so the bar always matches
-  // what is shown in the Theme column. Clicking a chip filters the screener.
-  const renderMarketThemes = () => {
-    if (!screenerThemes.length) return null;
+  /* ── canonical taxonomy selector ──────────────────────────────────── */
+  const [taxonomySearch, setTaxonomySearch] = useState('');
+  const [taxonomyOpen, setTaxonomyOpen] = useState(false);
+
+  const taxonomyOptionCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const rows = csvMergedScreenerRows ?? [];
+    for (const id of taxonomyIndex.nodeById.keys()) {
+      let c = 0;
+      for (const row of rows) {
+        if (rowMatchesTaxonomySelection(row as any, new Set([id]), taxonomyIndex)) c++;
+      }
+      counts.set(id, c);
+    }
+    return counts;
+  }, [csvMergedScreenerRows, taxonomyIndex]);
+
+  const filteredTaxonomyNodes = useMemo(() => {
+    const q = taxonomySearch.toLowerCase().trim();
+    const all = [...taxonomyIndex.nodeById.values()];
+    if (!q) return all;
+    return all.filter(n =>
+      n.display_name.toLowerCase().includes(q) ||
+      n.theme_id.toLowerCase().includes(q)
+    );
+  }, [taxonomyIndex, taxonomySearch]);
+
+  const renderChip = (id: string) => {
+    const node = taxonomyIndex.nodeById.get(id);
+    return (
+      <span
+        key={id}
+        onClick={() => setSelectedTaxonomyIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        })}
+        style={{
+          flexShrink: 0, cursor: 'pointer',
+          padding: '3px 10px', borderRadius: 4,
+          fontSize: 10, fontWeight: 700,
+          fontFamily: sansFont,
+          color: '#fff',
+          background: 'rgba(20,184,166,0.18)',
+          border: `1px solid ${C.teal}`,
+          whiteSpace: 'nowrap',
+          transition: 'background 0.12s',
+        }}
+      >
+        {node?.display_name ?? id} ✕
+      </span>
+    );
+  };
+
+  const renderTaxonomySelector = () => {
+    const { nodeById, sectorIds, standaloneSubthemeIds } = taxonomyIndex;
+
+    const parentThemeIds = [...nodeById.keys()].filter(id => {
+      const n = nodeById.get(id);
+      return n && n.classification !== 'sector' && taxonomyIndex.childrenByParentThemeId.has(id);
+    });
+
+    const childIdsByParent = new Map<string, string[]>();
+    for (const [parentId, children] of taxonomyIndex.childrenByParentThemeId) {
+      childIdsByParent.set(parentId, [...children].sort());
+    }
+
+    const toggleId = (id: string) => {
+      setSelectedTaxonomyIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+      });
+    };
+
+    const sectionLabel: React.CSSProperties = {
+      fontSize: 9, fontWeight: 800, color: C.dim,
+      fontFamily: font, letterSpacing: '0.06em',
+      textTransform: 'uppercase', padding: '6px 12px 2px',
+      borderTop: `1px solid ${C.border}`,
+    };
+    const itemStyle = (active: boolean): React.CSSProperties => ({
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '4px 12px', cursor: 'pointer',
+      fontSize: 11, fontFamily: sansFont,
+      color: active ? '#fff' : C.text,
+      background: active ? 'rgba(20,184,166,0.15)' : 'transparent',
+      borderLeft: active ? `3px solid ${C.teal}` : '3px solid transparent',
+    });
+    const countStyle: React.CSSProperties = {
+      marginLeft: 'auto', fontSize: 9, color: C.dim, fontFamily: font,
+    };
+
+    const searchLower = taxonomySearch.toLowerCase().trim();
+
     return (
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
@@ -4367,23 +4442,156 @@ export default function WatchlistPage() {
         background: C.card2,
         borderBottom: `1px solid ${C.border}`,
         overflowX: 'auto',
+        flexWrap: 'nowrap',
       }}
         className="wl-chip-strip"
       >
-        <span style={{
-          fontSize: 8, fontWeight: 800, color: C.dim,
-          fontFamily: font, letterSpacing: '0.08em',
-          textTransform: 'uppercase', flexShrink: 0,
-        }}>
-          THEMES
-        </span>
-        {/* "Clear" reset chip — only shown when at least one theme is active */}
-        {selectedThemes.size > 0 && (
+        <Popover open={taxonomyOpen} onOpenChange={setTaxonomyOpen}>
+          <PopoverTrigger asChild>
+            <button style={{
+              flexShrink: 0, cursor: 'pointer',
+              padding: '3px 12px', borderRadius: 4,
+              fontSize: 10, fontWeight: 700,
+              fontFamily: sansFont,
+              color: C.teal,
+              background: 'rgba(20,184,166,0.10)',
+              border: `1px solid ${C.teal}`,
+              whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              <Search size={11} />
+              Taxonomy
+              {selectedTaxonomyIds.size > 0 && (
+                <span style={{ fontSize: 8, background: C.teal, color: '#000', borderRadius: 10, padding: '0 5px', lineHeight: '14px' }}>
+                  {selectedTaxonomyIds.size}
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={6}
+            style={{ width: 300, maxHeight: 420, padding: 0, overflow: 'hidden' }}
+          >
+            <div style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+              <Input
+                placeholder="Search taxonomy..."
+                value={taxonomySearch}
+                onChange={e => setTaxonomySearch(e.target.value)}
+                style={{ height: 28, fontSize: 11, fontFamily: sansFont }}
+              />
+            </div>
+            <div style={{ maxHeight: 340, overflowY: 'auto' }} className="wl-scrollbar">
+              {/* SECTORS */}
+              {(!searchLower || sectorIds.some(id => {
+                const n = nodeById.get(id);
+                return n && (n.display_name.toLowerCase().includes(searchLower) || n.theme_id.toLowerCase().includes(searchLower));
+              })) && (
+                <>
+                  <div style={sectionLabel}>Sectors · ecosystem</div>
+                  {sectorIds.map(id => {
+                    const n = nodeById.get(id);
+                    if (!n) return null;
+                    if (searchLower && !n.display_name.toLowerCase().includes(searchLower) && !n.theme_id.toLowerCase().includes(searchLower)) return null;
+                    const active = selectedTaxonomyIds.has(id);
+                    const count = taxonomyOptionCounts.get(id) ?? 0;
+                    return (
+                      <div key={id} onClick={() => toggleId(id)} style={itemStyle(active)}>
+                        {n.display_name}
+                        <span style={countStyle}>{count}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* THEMES (parents with children) */}
+              {(!searchLower || parentThemeIds.some(pid => {
+                const pn = nodeById.get(pid);
+                if (pn && (pn.display_name.toLowerCase().includes(searchLower) || pn.theme_id.toLowerCase().includes(searchLower))) return true;
+                const children = childIdsByParent.get(pid) ?? [];
+                return children.some(cid => {
+                  const cn = nodeById.get(cid);
+                  return cn && (cn.display_name.toLowerCase().includes(searchLower) || cn.theme_id.toLowerCase().includes(searchLower));
+                });
+              })) && (
+                <>
+                  <div style={sectionLabel}>Themes</div>
+                  {parentThemeIds.map(pid => {
+                    const pn = nodeById.get(pid);
+                    if (!pn) return null;
+                    const children = childIdsByParent.get(pid) ?? [];
+                    const parentMatch = !searchLower || pn.display_name.toLowerCase().includes(searchLower) || pn.theme_id.toLowerCase().includes(searchLower);
+                    const visibleChildren = searchLower ? children.filter(cid => {
+                      const cn = nodeById.get(cid);
+                      return cn && (cn.display_name.toLowerCase().includes(searchLower) || cn.theme_id.toLowerCase().includes(searchLower));
+                    }) : children;
+                    if (!parentMatch && visibleChildren.length === 0) return null;
+                    return (
+                      <div key={pid}>
+                        {parentMatch && (
+                          <div onClick={() => toggleId(pid)} style={itemStyle(selectedTaxonomyIds.has(pid))}>
+                            {pn.display_name}
+                            <span style={countStyle}>{taxonomyOptionCounts.get(pid) ?? 0}</span>
+                          </div>
+                        )}
+                        {visibleChildren.map(cid => {
+                          const cn = nodeById.get(cid);
+                          if (!cn) return null;
+                          return (
+                            <div key={cid} onClick={() => toggleId(cid)} style={{
+                              ...itemStyle(selectedTaxonomyIds.has(cid)),
+                              paddingLeft: 24,
+                            }}>
+                              {cn.display_name}
+                              <span style={countStyle}>{taxonomyOptionCounts.get(cid) ?? 0}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* STANDALONE SUBTHEMES */}
+              {(!searchLower || standaloneSubthemeIds.some(id => {
+                const n = nodeById.get(id);
+                return n && (n.display_name.toLowerCase().includes(searchLower) || n.theme_id.toLowerCase().includes(searchLower));
+              })) && (
+                <>
+                  <div style={sectionLabel}>Standalone subthemes</div>
+                  {standaloneSubthemeIds.map(id => {
+                    const n = nodeById.get(id);
+                    if (!n) return null;
+                    if (searchLower && !n.display_name.toLowerCase().includes(searchLower) && !n.theme_id.toLowerCase().includes(searchLower)) return null;
+                    const active = selectedTaxonomyIds.has(id);
+                    return (
+                      <div key={id} onClick={() => toggleId(id)} style={itemStyle(active)}>
+                        {n.display_name}
+                        <span style={countStyle}>{taxonomyOptionCounts.get(id) ?? 0}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {filteredTaxonomyNodes.length === 0 && (
+                <div style={{ padding: 12, fontSize: 11, color: C.dim, fontFamily: sansFont, textAlign: 'center' }}>
+                  No matching taxonomy nodes
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Selected chips */}
+        {selectedTaxonomyIds.size > 0 && (
           <span
-            onClick={() => setSelectedThemes(new Set())}
+            onClick={() => setSelectedTaxonomyIds(new Set())}
             style={{
               flexShrink: 0, cursor: 'pointer',
-              padding: '3px 10px', borderRadius: 4,
+              padding: '3px 8px', borderRadius: 4,
               fontSize: 10, fontWeight: 700,
               fontFamily: sansFont,
               color: C.teal,
@@ -4392,35 +4600,11 @@ export default function WatchlistPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            ✕ Clear
+            <X size={10} style={{ marginRight: 2, verticalAlign: 'middle' }} />
+            Clear
           </span>
         )}
-        {screenerThemes.map((label) => {
-          const active = selectedThemes.has(label);
-          return (
-            <span
-              key={label}
-              onClick={() => setSelectedThemes(prev => {
-                const next = new Set(prev);
-                if (next.has(label)) next.delete(label); else next.add(label);
-                return next;
-              })}
-              style={{
-                flexShrink: 0, cursor: 'pointer',
-                padding: '3px 10px', borderRadius: 4,
-                fontSize: 10, fontWeight: active ? 700 : 600,
-                fontFamily: sansFont,
-                color: active ? '#fff' : 'rgba(255,255,255,0.60)',
-                background: active ? 'rgba(20,184,166,0.18)' : 'rgba(255,255,255,0.06)',
-                border: active ? `1px solid ${C.teal}` : '1px solid rgba(255,255,255,0.12)',
-                whiteSpace: 'nowrap',
-                transition: 'background 0.12s, border-color 0.12s, color 0.12s',
-              }}
-            >
-              {label}
-            </span>
-          );
-        })}
+        {[...selectedTaxonomyIds].map(id => renderChip(id))}
       </div>
     );
   };
@@ -5217,12 +5401,10 @@ export default function WatchlistPage() {
       ? visibleRows.filter(r => filteredSymbolSet.has(String((r as any).ticker || (r as any).symbol || '').toUpperCase()))
       : visibleRows;
     const filterHidden = visibleRows.length - screenerFilteredRows.length;
-    // Apply theme filter (clicking chips in the THEMES bar — multi-select)
-    const filteredRows = (isMainScreener && selectedThemes.size > 0)
-      ? screenerFilteredRows.filter(r => {
-          const t = ((r as any).canonical_theme_name || (r as any).section_title || (r as any).theme || '').toString().trim();
-          return selectedThemes.has(t);
-        })
+    // Apply canonical taxonomy filter (ID-based, multi-select union semantics)
+    const filteredRows = (isMainScreener && selectedTaxonomyIds.size > 0)
+      ? screenerFilteredRows.filter(r =>
+          rowMatchesTaxonomySelection(r as any, selectedTaxonomyIds, taxonomyIndex))
       : screenerFilteredRows;
     // Mode-specific grid layout and column headers
     const SEC_OPT_COLS: { key: string; label: string; tooltip?: string }[] = [
@@ -7099,7 +7281,7 @@ export default function WatchlistPage() {
             {renderUpgradeBanner()}
 
             {/* ── Market Themes Banner (chips) ── */}
-            {renderMarketThemes()}
+            {renderTaxonomySelector()}
 
             {/* ── Top Split: Ticker Table + Live News (fixed viewport-aware height) ── */}
             <div style={{
