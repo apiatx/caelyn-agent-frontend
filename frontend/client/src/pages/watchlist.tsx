@@ -2744,14 +2744,24 @@ export default function WatchlistPage() {
     count: number;
   }>({
     queryKey: ['watchlist-security-search', debouncedSearch],
-    queryFn: async () => {
-      const r = await fetch(`/api/watchlist/security-search?q=${encodeURIComponent(debouncedSearch)}&limit=25`);
-      if (!r.ok) throw new Error(`Search ${r.status}`);
-      return r.json();
+    queryFn: async ({ signal }) => {
+      const r = await fetch(`/api/watchlist/security-search?q=${encodeURIComponent(debouncedSearch)}&limit=25`, { signal });
+      if (!r.ok) throw new Error(`search-${r.status}`);
+      const json = await r.json();
+      if (json?.error) throw new Error(`search-provider: ${json.error}`);
+      if (!Array.isArray(json?.results)) throw new Error('search-malformed: no results array');
+      return json;
     },
     enabled: searchEnabled,
     staleTime: 30_000,
-    retry: false,
+    retry: (failureCount, error: any) => {
+      // No retry for aborted (superseded) queries or ordinary 4xx responses
+      if (error?.name === 'AbortError') return false;
+      const msg = String(error?.message ?? '');
+      if (/^search-4\d\d/.test(msg)) return false;
+      return failureCount < 1;
+    },
+    retryDelay: 800,
   });
 
   const toggleFavorite = useCallback(async (ticker: string) => {

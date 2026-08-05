@@ -5553,19 +5553,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Canonical security search (must be before /:wid to avoid param capture)
   app.get('/api/watchlist/security-search', async (req, res) => {
+    const t0 = Date.now();
     try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 10_000);
       const q = String(req.query.q || '');
       const limit = String(req.query.limit || '25');
       const r = await fetch(
         `${WL_URL}/api/watchlist/security-search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`,
-        { headers: wlHdr(), signal: ctrl.signal },
+        { headers: wlHdr(), signal: AbortSignal.timeout(20_000) },
       );
-      if (!r.ok) return res.status(r.status).json({ error: `security-search failed: ${r.status}` });
+      const elapsed = Date.now() - t0;
+      console.log(`[security-search] q="${q}" status=${r.status} elapsed=${elapsed}ms`);
+      if (!r.ok) return res.status(r.status).json({ error: `security-search upstream: ${r.status}` });
       res.json(await r.json());
     } catch (e: any) {
-      res.status(502).json({ error: e?.name === 'AbortError' ? 'Timed out' : (e?.message || 'security-search error') });
+      const elapsed = Date.now() - t0;
+      const isTimeout = e?.name === 'AbortError' || e?.name === 'TimeoutError';
+      console.error(`[security-search] error after ${elapsed}ms: ${e?.name} ${e?.message}`);
+      res.status(502).json({ error: isTimeout ? `Timed out after ${elapsed}ms` : (e?.message || 'security-search error') });
     }
   });
 
