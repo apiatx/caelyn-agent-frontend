@@ -2349,6 +2349,9 @@ function TradingTab() {
   );
 
   const d = data;
+  const pillars = d.pillars ?? [];
+  const execution_conditions = d.execution_conditions ?? [];
+  const terminal_analysis = d.terminal_analysis ?? [];
   const mqs = d.market_quality_score;
   const ews = d.execution_window_score;
   const dc = stDecisionColor(d.decision);
@@ -2384,7 +2387,7 @@ function TradingTab() {
       </div>
 
       {/* ── TICKER TAPE ─────────────────────────────── */}
-      <STTickerTape pillars={d.pillars} />
+      <STTickerTape pillars={pillars} />
 
       <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* ── HERO ROW ──────────────────────────────── */}
@@ -2406,7 +2409,7 @@ function TradingTab() {
             </div>
           </div>
           <div style={{ flex: 1, display: 'flex', gap: 0, padding: '0 10px' }}>
-            {d.pillars.map((p, i) => {
+            {pillars.map((p, i) => {
               const color = stScoreColor(p.score);
               const barWidth = Math.min(p.score, 100);
               return (
@@ -2445,7 +2448,7 @@ function TradingTab() {
 
         {/* ── 5 PILLAR CARDS ───────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-          {d.pillars.map((p, i) => {
+          {pillars.map((p, i) => {
             const color = stScoreColor(p.score);
             return (
               <div key={i} style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -2464,7 +2467,7 @@ function TradingTab() {
                   </div>
                 </div>
                 <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {p.metrics.map((m, j) => {
+                  {(p.metrics ?? []).map((m, j) => {
                     const { main, sub } = stParseVal(m.value);
                     const statusText = m.status ?? sub ?? '';
                     const sColor = statusText ? stStatusWordColor(statusText, m.ok) : (m.ok ? ST.green : ST.red);
@@ -2501,7 +2504,7 @@ function TradingTab() {
               <div style={{ height: '100%', width: `${Math.min(ews ?? 0, 100)}%`, background: stScoreColor(ews ?? 0), transition: 'width 0.8s ease' }} />
             </div>
             <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 9 }}>
-              {d.execution_conditions.map((ec, i) => {
+              {execution_conditions.map((ec, i) => {
                 const okColor = ec.ok ? ST.green : ST.red;
                 const statusColor = ec.status ? stStatusWordColor(ec.status, ec.ok) : okColor;
                 const rawLabel = ec.label.includes('(') ? ec.label.split('(')[0].trim() : ec.label;
@@ -2529,7 +2532,7 @@ function TradingTab() {
 
           {/* MARKET METRICS */}
           {(() => {
-            const allMetrics = d.pillars.flatMap(p => p.metrics.map(m => ({ ...m })));
+            const allMetrics = pillars.flatMap(p => (p.metrics ?? []).map(m => ({ ...m })));
             const barItems = allMetrics.slice(0, 10);
             return (
               <div style={{ background: ST.card, border: `1px solid ${ST.border}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -2593,7 +2596,7 @@ function TradingTab() {
                         <span style={{ color, fontSize: 9, fontWeight: 600, width: 42, textAlign: 'right', flexShrink: 0 }}>{isPos ? '+' : ''}{s.change_pct.toFixed(2)}%</span>
                       </div>
                     );
-                  }) : d.pillars.map((p, i) => {
+                  }) : pillars.map((p, i) => {
                     const color = stScoreColor(p.score);
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -2621,7 +2624,7 @@ function TradingTab() {
               </div>
             </div>
             <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {d.pillars.map((p, i) => {
+              {pillars.map((p, i) => {
                 const color = stScoreColor(p.score);
                 const shortTitle = p.title.split('/')[0].trim().replace('MARKET ','').replace('MOMENTUM','Momentum').replace('VOLATILITY','Volatility');
                 return (
@@ -2638,7 +2641,7 @@ function TradingTab() {
               <div style={{ height: 1, background: ST.border, margin: '4px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: ST.dim, fontSize: 10 }}>TOTAL SCORE</span>
-                <span style={{ color: stScoreColor(mqs), fontSize: 14, fontWeight: 900 }}>{mqs.toFixed(0)}/100</span>
+                <span style={{ color: stScoreColor(mqs ?? 0), fontSize: 14, fontWeight: 900 }}>{mqs != null ? mqs.toFixed(0) : '—'}/100</span>
               </div>
               <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {[
@@ -2667,7 +2670,7 @@ function TradingTab() {
             <span style={{ color: ST.dimLow, fontSize: 9 }}>Updated {asOf.toLocaleString()}</span>
           </div>
           <div style={{ padding: '12px 14px' }}>
-            {d.terminal_analysis.map((line, i) => (
+            {terminal_analysis.map((line, i) => (
               <div key={i} style={{ fontFamily: 'inherit', fontSize: 11, lineHeight: 1.9, color: stTermColor(line.type), whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {line.text || '\u00A0'}
               </div>
