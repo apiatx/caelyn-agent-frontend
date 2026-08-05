@@ -1,0 +1,316 @@
+Fix the intermittent Watchlist manual stock-search failure in the CaelynAI frontend and frontend Express proxy.
+
+The user reports that searching through the Watchlist manual stock-add bar succeeds approximately 1 out of 5 times and otherwise fails to load stock results.
+
+This is a focused reliability correction. Preserve the existing manual-add UX, canonical ticker selection, backend endpoint, React Query architecture, Watchlist membership behavior, and exact add/delete paths.
+
+## Operating rules
+
+Read and follow the local `AGENTS.md` first.
+
+Work only in `/home/runner/workspace` on the existing local `main` branch.
+
+Before editing:
+
+1. Confirm the repository root.
+2. Confirm the branch is `main`.
+3. Run `git status -sb`.
+4. Preserve pre-existing work and unrelated dirty files.
+5. Confirm local `main` is not behind or diverged from `origin/main`.
+
+Do not push, pull, merge, rebase, reset, clean, stash, clone, create branches, or create worktrees.
+
+Local Replit files are authoritative. GitHub is only reference evidence.
+
+## Known GitHub evidence to verify locally
+
+The GitHub backup currently appears to contain:
+
+### Express proxy
+
+`frontend/server/routes.ts` proxies:
+
+`GET /api/watchlist/security-search`
+
+to the FastAPI Watchlist search endpoint.
+
+The proxy currently appears to:
+
+* manually create an `AbortController`
+* abort the upstream request after exactly 10,000 milliseconds
+* call a backend whose FMP requests independently have a 10-second deadline
+* return HTTP 502 on proxy timeout
+
+That creates effectively zero timing margin between the backend deadline and proxy deadline.
+
+### React page
+
+`frontend/client/src/pages/watchlist.tsx` currently appears to:
+
+* debounce the manual-add search by 300 milliseconds
+* use query key:
+  `['watchlist-security-search', debouncedSearch]`
+* call the Express proxy with plain `fetch()`
+* check only `response.ok`
+* return the JSON body without checking for a payload-level `error`
+* set `retry: false`
+* not pass React Query’s supplied abort signal into `fetch()`
+
+Verify all of this against the local code before editing.
+
+## Scope
+
+Expected production files:
+
+* `frontend/server/routes.ts`
+* `frontend/client/src/pages/watchlist.tsx`
+
+Tests may be added or updated in existing appropriate test files.
+
+Do not modify backend code from this Replit.
+
+Do not add:
+
+* a new endpoint or proxy
+* a direct browser call to FMP
+* a fallback local ticker directory
+* a second search query path
+* a new global context
+* a new cache
+* a new dependency
+* raw-text ticker submission
+* client-side canonical ticker construction
+
+## Phase 1 — reproduce and trace
+
+Trace:
+
+1. input state
+2. 300ms debounce
+3. React Query key
+4. browser `fetch`
+5. Express proxy
+6. upstream FastAPI request
+7. response/error parsing
+8. dropdown loading/error/empty rendering
+9. selection state
+10. canonical add mutation
+
+Inspect browser and server logs while reproducing searches for:
+
+* `NVDA`
+* `Nvidia`
+* `MSFT`
+* `CRWV`
+* `TRT`
+* `Soitec`
+* `000660`
+
+Test:
+
+* one search entered slowly
+* rapid typing
+* deleting and replacing a query
+* repeatedly switching between two queries
+* 20 sequential completed searches
+* a small concurrent burst through the proxy
+
+Record:
+
+* proxy HTTP status
+* upstream status when available
+* elapsed time
+* whether the request was aborted
+* whether the UI displayed loading, error, no match, or results
+* whether an old request completed after a newer query
+
+Do not expose authentication values or API keys in logs.
+
+## Required proxy correction
+
+The proxy deadline must be longer than the backend’s bounded provider deadline plus reasonable processing/network margin.
+
+Unless local evidence proves a different backend timeout, change the proxy security-search deadline from 10 seconds to 20 seconds.
+
+Prefer the existing runtime’s native bounded timeout mechanism, such as:
+
+`AbortSignal.timeout(20_000)`
+
+instead of leaving an uncleared manual timer.
+
+Preserve:
+
+* the same proxy path
+* the same backend target
+* the same authentication/header helper
+* the same query and limit forwarding
+* the same canonical response payload
+
+For upstream failures:
+
+* preserve the upstream HTTP status where safe
+* return a compact usable JSON error
+* do not turn upstream 502/503/timeout into HTTP 200
+* do not leak the upstream body when it could contain sensitive information
+* distinguish proxy timeout from general proxy failure
+
+Do not solve this by removing the timeout entirely.
+
+## Required React Query correction
+
+Update the existing security-search query only.
+
+Use React Query’s query-function context:
+
+* accept its `signal`
+* pass that signal into browser `fetch`
+
+This must cancel superseded searches when the debounced query key changes.
+
+After receiving JSON:
+
+* if the HTTP response is not successful, throw an appropriate search error
+* if the JSON payload contains `error`, throw an appropriate search error even when HTTP status is 200
+* only treat `results: []` without an error as a legitimate zero-result response
+* validate that `results` is an array before rendering it
+
+Do not silently normalize malformed or failed payloads to an empty result array.
+
+Configure one bounded retry for transient search failures only.
+
+Retryable examples:
+
+* network failure
+* proxy timeout
+* HTTP 502
+* HTTP 503
+* backend `provider_error`
+
+Do not retry:
+
+* abort caused by a superseded query
+* ordinary 4xx validation responses
+* a legitimate zero-result search
+
+Use a short bounded retry delay. Do not create a long retry loop.
+
+Keep:
+
+* the 300ms debounce
+* one-character symbol support because valid US tickers can contain one character
+* the existing query key
+* the existing selected-security requirement
+* the existing canonical ticker returned by the backend
+
+## UI state requirements
+
+Continue displaying three distinct states:
+
+* `Searching securities…`
+* `Security search unavailable. Try again.`
+* `No matching securities found.`
+
+Make sure:
+
+* provider/proxy failure displays the error state
+* valid empty results display the no-match state
+* an aborted stale request does not replace the current query’s state
+* previous-query results are not displayed as results for the current input
+* the dropdown remains usable after one failed request
+* editing the input after selection still clears the selected security
+* typing text alone never adds a stock
+
+Do not add a large new UI or toast framework.
+
+## Tests
+
+Add deterministic tests using the existing frontend test stack for:
+
+1. successful result response
+2. valid empty response
+3. HTTP 502 response
+4. HTTP 503 response
+5. HTTP 200 containing `error: "provider_error"`
+6. malformed response with no results array
+7. transient failure followed by successful single retry
+8. aborted old query when a new query begins
+9. late old response cannot replace newer results
+10. no retry after AbortError
+11. manual Add still requires a selected canonical result
+12. selected canonical ticker remains unchanged
+
+Add or update a focused Express proxy test for:
+
+* the upstream URL and query forwarding
+* upstream successful response
+* upstream non-2xx propagation
+* timeout behavior
+* no dangling manual timeout
+* no modification to authorization/header forwarding
+
+Avoid broad snapshot rewrites.
+
+## Validation
+
+Run:
+
+* focused tests
+* TypeScript checking
+* the relevant frontend build
+* `git diff --check`
+
+Then perform a manual/browser reliability run:
+
+* 20 sequential stock searches
+* rapid typing and query replacement
+* several uncached company-name searches
+* at least one valid no-match search
+* verify browser console and frontend server logs
+
+Report:
+
+* successes
+* actual errors
+* valid no-match responses
+* p50/p95/max latency
+* number of proxy timeouts
+* number of stale responses rendered
+
+Acceptance criteria:
+
+* at least 20/20 ordinary valid searches complete or return an explicit real error
+* provider failure is never displayed as “No matching securities found”
+* superseded searches are canceled
+* one transient failure gets one bounded retry
+* no direct provider call is added to the browser
+* canonical selection/add behavior is unchanged
+* no new fetch loop or render loop
+* no unrelated Watchlist regression
+
+## Commit and report
+
+Stage only exact approved files. Never use `git add .` or `git add -A`.
+
+Create exactly one descriptive local commit after validation succeeds.
+
+Do not push.
+
+Overwrite `/home/runner/workspace/.opencode-reports/latest.md` with:
+
+* task requested
+* completion status
+* proven root cause
+* whether local code differed from GitHub
+* exact files changed
+* exact timeout behavior before and after
+* exact query cancellation/retry behavior
+* behavior deliberately preserved
+* test/build commands and results
+* browser reliability results
+* runtime and data effects
+* remaining risks
+* final `git status -sb`
+* commit SHA and message
+* complete committed diff
+
+Stop after the local commit and report.
