@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import WatchlistAnalysis from '@/components/WatchlistAnalysis';
 import type { AnalysisSection, TickerCard } from '@/components/WatchlistAnalysis';
 import { StockDetailModal } from '@/components/StockDetailModal';
-import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2, X } from 'lucide-react';
+import { RefreshCw, ExternalLink, Plus, Upload, FileText, Star, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import StrategySelector from '@/components/strategy-selector';
 import { WatchlistScorePanel } from '@/components/playbook-score-panel';
 import { fetchPlaybooks, scoreWatchlist } from '@/lib/playbooks';
@@ -4380,68 +4380,72 @@ export default function WatchlistPage() {
       return desc != null && desc.size > 0;
     };
 
+    const rowStyle: React.CSSProperties = {
+      display: 'flex', alignItems: 'center', gap: 4,
+      overflowX: 'auto', overflowY: 'hidden',
+      flexWrap: 'nowrap',
+    };
+
     return (
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap',
-        padding: '8px 20px',
+        display: 'flex', flexDirection: 'column', gap: 4,
+        padding: '6px 20px',
         background: C.card2,
         borderBottom: `1px solid ${C.border}`,
-      }}
-        className="wl-chip-strip"
-      >
-        {/* Clear */}
-        {selectedTaxonomyIds.size > 0 && (
-          <span
-            onClick={() => setSelectedTaxonomyIds(new Set())}
-            style={{
-              flexShrink: 0, cursor: 'pointer',
-              padding: '3px 10px', borderRadius: 4,
-              fontSize: 10, fontWeight: 700,
-              fontFamily: sansFont,
-              color: C.teal,
-              background: 'rgba(20,184,166,0.12)',
-              border: `1px solid ${C.teal}`,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <X size={10} style={{ marginRight: 2, verticalAlign: 'middle' }} />
-            Clear
-          </span>
-        )}
-
-        {/* SECTORS */}
-        <span style={labelStyle}>SECTORS</span>
-        {sectorOrder.map(id => {
-          const node = nodeById.get(id);
-          if (!node) return null;
-          const active = selectedTaxonomyIds.has(id);
-          return (
-            <span key={id} onClick={() => toggleId(id)}
-              style={chipStyle(active, false)}
+      }}>
+        {/* Row 1: SECTORS + Clear pinned right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ ...rowStyle, flex: 1, minWidth: 0 }} className="wl-chip-strip">
+            <span style={labelStyle}>SECTORS</span>
+            {sectorOrder.map(id => {
+              const node = nodeById.get(id);
+              if (!node) return null;
+              const active = selectedTaxonomyIds.has(id);
+              return (
+                <span key={id} onClick={() => toggleId(id)}
+                  style={chipStyle(active, false)}
+                >
+                  {node.display_name}
+                </span>
+              );
+            })}
+          </div>
+          {selectedTaxonomyIds.size > 0 && (
+            <span
+              onClick={() => setSelectedTaxonomyIds(new Set())}
+              style={{
+                flexShrink: 0, cursor: 'pointer',
+                padding: '3px 8px', borderRadius: 4,
+                fontSize: 10, fontWeight: 700,
+                fontFamily: sansFont,
+                color: C.teal,
+                background: 'rgba(20,184,166,0.12)',
+                border: `1px solid ${C.teal}`,
+                whiteSpace: 'nowrap',
+              }}
             >
-              {node.display_name}
+              Clear
             </span>
-          );
-        })}
+          )}
+        </div>
 
-        {/* Gap between SECTORS and THEMES */}
-        <span style={{ width: 12, flexShrink: 0 }} />
-
-        {/* THEMES */}
-        <span style={labelStyle}>THEMES</span>
-        {themeOrder.map(id => {
-          const node = nodeById.get(id);
-          if (!node) return null;
-          const active = selectedTaxonomyIds.has(id);
-          const isParent = hasChildren(id);
-          return (
-            <span key={id} onClick={() => toggleId(id)}
-              style={chipStyle(active, isParent)}
-            >
-              {node.display_name}
-            </span>
-          );
-        })}
+        {/* Row 2: THEMES */}
+        <div style={rowStyle} className="wl-chip-strip">
+          <span style={labelStyle}>THEMES</span>
+          {themeOrder.map(id => {
+            const node = nodeById.get(id);
+            if (!node) return null;
+            const active = selectedTaxonomyIds.has(id);
+            const isParent = hasChildren(id);
+            return (
+              <span key={id} onClick={() => toggleId(id)}
+                style={chipStyle(active, isParent)}
+              >
+                {node.display_name}
+              </span>
+            );
+          })}
+        </div>
       </div>
     );
   };

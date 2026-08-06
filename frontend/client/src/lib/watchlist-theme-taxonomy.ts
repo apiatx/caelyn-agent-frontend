@@ -208,7 +208,7 @@ export function getTaxonomyChipOrder(index: ThemeTaxonomyIndex): {
   sectorOrder: string[];
   themeOrder: string[];
 } {
-  const { nodeById, descendantIdsByThemeId } = index;
+  const { nodeById } = index;
 
   const sectorOrder = [...index.sectorIds].sort((a, b) => {
     const na = nodeById.get(a);
@@ -216,78 +216,21 @@ export function getTaxonomyChipOrder(index: ThemeTaxonomyIndex): {
     return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
   });
 
-  const parentIds: string[] = [];
-  for (let i = 0; i < index.themeIds.length; i++) {
-    const id = index.themeIds[i];
-    const desc = descendantIdsByThemeId.get(id);
-    if (desc && desc.size > 0) parentIds.push(id);
+  const allNonSector: string[] = [];
+  const allIds = Array.from(nodeById.keys());
+  for (let i = 0; i < allIds.length; i++) {
+    const id = allIds[i];
+    const node = nodeById.get(id);
+    if (node && node.classification !== "sector") {
+      allNonSector.push(id);
+    }
   }
-  for (let i = 0; i < index.standaloneSubthemeIds.length; i++) {
-    const id = index.standaloneSubthemeIds[i];
-    const desc = descendantIdsByThemeId.get(id);
-    if (desc && desc.size > 0) parentIds.push(id);
-  }
-  parentIds.sort((a, b) => {
+
+  const themeOrder = allNonSector.sort((a, b) => {
     const na = nodeById.get(a);
     const nb = nodeById.get(b);
     return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
   });
-
-  const themeOrder: string[] = [];
-  const seen = new Set<string>();
-
-  for (let pi = 0; pi < parentIds.length; pi++) {
-    const pid = parentIds[pi];
-    if (seen.has(pid)) continue;
-    seen.add(pid);
-    themeOrder.push(pid);
-
-    const allDescIds = new Set<string>();
-    const stack: string[] = (childrenByDirectId(pid, index) || []).slice();
-    while (stack.length > 0) {
-      const cid = stack.pop()!;
-      if (allDescIds.has(cid)) continue;
-      allDescIds.add(cid);
-      const grandkids = childrenByDirectId(cid, index);
-      if (grandkids) {
-        for (let g = 0; g < grandkids.length; g++) stack.push(grandkids[g]);
-      }
-    }
-
-    const descArr = Array.from(allDescIds).sort((a, b) => {
-      const na = nodeById.get(a);
-      const nb = nodeById.get(b);
-      return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
-    });
-
-    for (let di = 0; di < descArr.length; di++) {
-      const did = descArr[di];
-      if (!seen.has(did)) {
-        seen.add(did);
-        themeOrder.push(did);
-      }
-    }
-  }
-
-  const remaining: string[] = [];
-  const allNonSector = [...index.themeIds, ...index.standaloneSubthemeIds];
-  for (let i = 0; i < allNonSector.length; i++) {
-    const id = allNonSector[i];
-    if (!seen.has(id)) remaining.push(id);
-  }
-  remaining.sort((a, b) => {
-    const na = nodeById.get(a);
-    const nb = nodeById.get(b);
-    return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
-  });
-
-  for (let i = 0; i < remaining.length; i++) {
-    themeOrder.push(remaining[i]);
-  }
 
   return { sectorOrder, themeOrder };
-}
-
-function childrenByDirectId(parentId: string, index: ThemeTaxonomyIndex): string[] | undefined {
-  return index.childrenByParentThemeId.get(parentId);
 }

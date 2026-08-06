@@ -1,0 +1,471 @@
+FRONTEND OPENCODE / DEEPSEEK — READ-ONLY REPLIT AND APPLICATION LATENCY AUDIT
+
+Work only in the live frontend Replit workspace:
+
+`/home/runner/workspace`
+
+Follow the current frontend `AGENTS.md`.
+
+The live Replit filesystem and running processes are authoritative. GitHub is reference only.
+
+## Mode
+
+This is a strictly read-only diagnostic task.
+
+Do not:
+
+* edit source files
+* edit configuration
+* create a commit
+* push
+* install packages
+* clear caches
+* delete files
+* restart the Repl before collecting initial evidence
+* kill processes before recording them
+* modify frontend prefetch behavior
+* modify backend APIs
+* implement theme membership changes
+* implement the proposed atomic taxonomy-save endpoint
+
+Write the audit report only to:
+
+`/home/runner/workspace/.opencode-reports/latest.md`
+
+The report file itself is the only permitted write.
+
+## Problem
+
+The frontend Replit has become severely latent and may be difficult to access after recent Watchlist taxonomy work.
+
+Determine whether the primary bottleneck is:
+
+1. Replit workspace CPU or memory saturation.
+2. Duplicate/stale Node, Vite, esbuild, TypeScript, OpenCode, or test processes.
+3. Frontend dev-server startup or HMR behavior.
+4. Replit proxy/port behavior.
+5. Global authenticated prefetch pressure.
+6. Primary Watchlist API latency.
+7. Large Watchlist browser rendering.
+8. A regression from commits `76da9d97` or `7a1b343e`.
+9. Another proven source.
+
+The proposed atomic Neon multi-theme save has not been implemented and must not be treated as a possible current cause unless direct code evidence contradicts that statement.
+
+## Known relevant commits
+
+* `76da9d97` — canonical Watchlist taxonomy filtering
+* `7a1b343e` — restored always-visible taxonomy chip bar
+
+Do not assume either commit caused the latency. Measure first.
+
+---
+
+# Phase 1 — repository state
+
+Record:
+
+```bash
+cd /home/runner/workspace
+
+git status -sb
+git log --oneline --decorate -12
+git rev-parse HEAD
+git branch --show-current
+git diff --stat
+git diff -- frontend/client/src/pages/watchlist.tsx
+```
+
+Identify all current uncommitted files.
+
+Do not modify or stage them.
+
+Confirm whether the current live HEAD contains `7a1b343e`.
+
+---
+
+# Phase 2 — process and resource snapshot
+
+Before stopping or restarting anything, capture:
+
+```bash
+date
+uptime
+free -m
+df -h
+ps -eo pid,ppid,%cpu,%mem,rss,etime,state,cmd --sort=-%cpu | head -60
+ps -eo pid,ppid,%cpu,%mem,rss,etime,state,cmd --sort=-%mem | head -60
+pgrep -af 'opencode|node|npm|npx|vite|tsx|tsc|esbuild|playwright|python|uvicorn'
+lsof -nP -iTCP -sTCP:LISTEN
+```
+
+Where available, also capture:
+
+```bash
+top -b -n 1 | head -80
+```
+
+Report:
+
+* total memory
+* free/available memory
+* swap use
+* CPU load
+* every Node-related process
+* every OpenCode process
+* every Vite/tsx/esbuild/tsc process
+* process elapsed times
+* duplicate dev servers
+* orphaned test/build processes
+* which processes own ports 5000, 5001, and 23636
+
+Do not print environment variables, authentication tokens, API keys, cookies, or secrets.
+
+## Process classification
+
+Classify each significant process as:
+
+* expected current dev server
+* OpenCode agent
+* test process
+* build/typecheck process
+* stale/orphaned process
+* unknown
+
+A process is not stale merely because it is old. Use parent PID, command, port ownership, logs, and current task state.
+
+---
+
+# Phase 3 — inspect startup architecture
+
+Read without editing:
+
+```text
+.replit
+frontend/package.json
+frontend/server/index.ts
+frontend/vite.config.ts
+frontend/client/src/contexts/GlobalDataContext.tsx
+frontend/client/src/pages/watchlist.tsx
+frontend/client/src/lib/watchlist-theme-taxonomy.ts
+```
+
+Document:
+
+1. Exact Replit workflow command.
+2. Which port it starts.
+3. What the workflow kills before restart.
+4. Whether it can leave unrelated Node/OpenCode/test processes running.
+5. Whether multiple startup paths can run concurrently.
+6. Whether Vite is watching runtime-generated files.
+7. Whether `sessions.db`, cache JSON, report files, or other frequently changing files are inside watched directories.
+8. Whether any generated file is changing continuously and causing HMR rebuild loops.
+
+Inspect recent dev-server output for repeated:
+
+* restart cycles
+* HMR invalidations
+* file-change storms
+* proxy failures
+* unhandled promise rejections
+* memory warnings
+* websocket reconnect loops
+
+Do not change watcher configuration during this audit.
+
+---
+
+# Phase 4 — quantify global prefetch load
+
+Audit `GlobalDataContext.tsx`.
+
+Create an exact inventory of every request started when authentication becomes true.
+
+For each request document:
+
+* React Query key
+* URL
+* whether authenticated
+* whether it starts immediately
+* stale time
+* retry count
+* whether another direct request duplicates it
+* approximate response size when measurable
+* measured duration when measurable
+
+Explicitly determine whether `/api/watchlist/list` is requested twice:
+
+1. Through `prefetchQuery()`.
+2. Through a separate direct `safeFetch()` used to locate Primary.
+
+Determine whether the entire Primary Watchlist detail is automatically prefetched on every authenticated application startup.
+
+Count the maximum initial requests and retry-expanded request count.
+
+Do not modify prefetch behavior.
+
+---
+
+# Phase 5 — local server timing
+
+First determine whether exactly one legitimate frontend dev server is already running.
+
+Do not start a second server.
+
+Measure the existing local server with repeated requests. Use the actual local port found in Phase 2.
+
+For each request, run at least five samples and report:
+
+* DNS/connect time when applicable
+* time to first byte
+* total time
+* response status
+* response byte size
+
+Suggested format:
+
+```bash
+curl -sS -o /dev/null \
+  -w 'status=%{http_code} connect=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total} bytes=%{size_download}\n' \
+  http://127.0.0.1:5000/
+```
+
+Measure:
+
+1. Frontend root document.
+2. A representative static JavaScript asset.
+3. A lightweight frontend API route.
+4. `/api/themes/relative-strength?timeframe=1D&classification=all`.
+5. `/api/watchlist/list`, using an existing safe authenticated method when available.
+6. Primary `/api/watchlist/{id}`, using an existing safe authenticated method when available.
+
+Do not print the JWT or authentication headers.
+
+If no safe authenticated method exists, state that the authenticated measurement could not be performed.
+
+Do not fabricate results.
+
+---
+
+# Phase 6 — direct backend versus frontend proxy
+
+For endpoints supported by the current architecture, compare:
+
+```text
+frontend local/proxied request
+versus
+direct deployed backend request
+```
+
+At minimum compare:
+
+* Theme Relative Strength
+* Watchlist list, when authenticated access is safely available
+* Primary Watchlist detail, when authenticated access is safely available
+
+Determine whether latency occurs:
+
+* before the frontend proxy
+* in the frontend proxy
+* in the backend
+* in response transfer
+* after data reaches the browser
+
+Do not make mutation requests.
+
+Do not refresh or rebuild Watchlist analysis.
+
+---
+
+# Phase 7 — taxonomy-regression assessment
+
+Audit the exact current code from `7a1b343e`.
+
+Measure or reason with concrete operation counts for:
+
+## Initial unfiltered render
+
+Confirm whether:
+
+```ts
+selectedTaxonomyIds.size === 0
+```
+
+bypasses `rowMatchesTaxonomySelection()` for all Watchlist rows.
+
+## Taxonomy-index construction
+
+Record:
+
+* taxonomy node count
+* how often `buildThemeTaxonomyIndex()` executes
+* how often `getTaxonomyChipOrder()` executes
+* whether both are memoized
+* approximate operation count
+
+## Chip rendering
+
+Record:
+
+* number of sector chips
+* number of non-sector chips
+* total additional DOM elements
+
+## Active taxonomy selection
+
+For one selected node, estimate:
+
+```text
+Watchlist row count
+× selected node count
+× theme membership checks
+```
+
+Determine whether this work is plausibly capable of freezing the Replit workspace or browser.
+
+Compare the taxonomy commit against its parent without modifying files:
+
+```bash
+git show --stat 76da9d97
+git show --stat 7a1b343e
+git diff 76da9d97^..7a1b343e -- \
+  frontend/client/src/pages/watchlist.tsx \
+  frontend/client/src/lib/watchlist-theme-taxonomy.ts
+```
+
+Do not blame the taxonomy work without timing or complexity evidence.
+
+---
+
+# Phase 8 — browser/render assessment
+
+Use an existing available browser or preview diagnostic mechanism without installing new tooling.
+
+Measure where possible:
+
+* initial route navigation time
+* time until the app shell appears
+* time until Watchlist rows appear
+* scripting time
+* layout time
+* paint time
+* number of rendered Watchlist rows
+* DOM node count
+* React commit count
+* long tasks over 50 ms
+* websocket reconnects
+* failed/retried network calls
+
+Test separately:
+
+1. A lightweight page.
+2. Home.
+3. Watchlist with no taxonomy selected.
+4. Watchlist with one taxonomy selected.
+
+Do not alter source to insert profiling instrumentation.
+
+If browser performance tooling is unavailable, state that explicitly and rely only on collected network/process evidence.
+
+---
+
+# Phase 9 — controlled process cleanup only if proven necessary
+
+Only after all initial evidence is captured:
+
+* identify confirmed stale/orphaned processes
+* report exactly why each is stale
+* do not kill the active OpenCode process executing this audit
+* do not kill the only legitimate dev server unless necessary
+* do not restart the Repl automatically
+
+Provide the exact recommended cleanup commands in the report, but do not execute them unless the user explicitly requested remediation rather than audit.
+
+---
+
+# Required conclusions
+
+The report must clearly answer:
+
+1. Is the Replit workspace itself resource-saturated?
+2. Are duplicate or orphaned processes present?
+3. Is the dev server slow before any API call?
+4. Is the frontend proxy adding measurable latency?
+5. Is the deployed backend the dominant source?
+6. Is the Primary Watchlist prefetch a dominant source?
+7. Does global prefetch create a startup request storm?
+8. Does the taxonomy work materially increase initial render cost?
+9. Is the proposed atomic Neon theme-save endpoint present?
+10. What is the single primary root cause?
+11. What secondary causes are proven?
+12. What evidence rules out other suspected causes?
+
+Use these verdict labels:
+
+```text
+PROVEN PRIMARY ROOT CAUSE
+PROVEN SECONDARY CONTRIBUTORS
+PLAUSIBLE BUT UNPROVEN
+RULED OUT
+```
+
+---
+
+# Remediation recommendation
+
+Do not implement the remediation.
+
+Provide a minimal remediation plan ordered by expected impact.
+
+It must preserve:
+
+* existing Watchlist API paths
+* existing React Query keys unless a proven duplication requires consolidation
+* existing page behavior
+* current taxonomy functionality
+* current backend architecture
+* current live Replit paths
+
+Potential remediations may only be recommended when supported by audit evidence, such as:
+
+* remove the duplicate Watchlist-list request
+* route-gate or defer heavy Primary Watchlist prefetch
+* stagger noncritical global prefetches
+* ensure one dev server
+* stop confirmed orphaned build/test processes
+* reduce full-table initial rendering with virtualization
+* fix a proven backend endpoint bottleneck
+
+Do not recommend broad rewrites.
+
+---
+
+# Report format
+
+Overwrite:
+
+`/home/runner/workspace/.opencode-reports/latest.md`
+
+Include:
+
+1. Starting branch and HEAD.
+2. Git status.
+3. Process/resource snapshot.
+4. Port ownership.
+5. Startup workflow analysis.
+6. Global prefetch request inventory.
+7. Duplicate request findings.
+8. Local timing table.
+9. Direct-backend timing table.
+10. Frontend-proxy comparison.
+11. Browser/render evidence.
+12. Taxonomy complexity evidence.
+13. Proven primary root cause.
+14. Proven secondary contributors.
+15. Ruled-out causes.
+16. Minimal recommended remediation.
+17. Exact commands used.
+18. Confirmation that no source files changed.
+19. Final `git status -sb`.
+
+Do not create a commit.

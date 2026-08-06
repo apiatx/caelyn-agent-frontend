@@ -428,7 +428,7 @@ test("every non-sector node renders exactly once", () => {
   assert.equal(themeSet.size, 3);
 });
 
-test("parent with descendants never also added to remaining list", () => {
+test("every non-sector node renders exactly once including children", () => {
   const idx = s([
     makeNode({ theme_id: "semi", classification: "sub_theme" }),
     makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
@@ -436,50 +436,50 @@ test("parent with descendants never also added to remaining list", () => {
   ]);
   const order = getTaxonomyChipOrder(idx);
   assert.equal(order.themeOrder.length, 3);
+  assert.equal(new Set(order.themeOrder).size, 3);
   assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
+  assert.equal(order.themeOrder.filter(id => id === "memory").length, 1);
+  assert.equal(order.themeOrder.filter(id => id === "ai").length, 1);
 });
 
-test("stale classification sub_theme parent renders once as parent", () => {
+test("stale classification sub_theme parent renders once", () => {
   const idx = s([
-    makeNode({ theme_id: "semi", classification: "sub_theme" }),
-    makeNode({ theme_id: "equip", classification: "sub_theme", parent_theme_id: "semi" }),
-    makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
-    makeNode({ theme_id: "ai", classification: "sub_theme" }),
+    makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
+    makeNode({ theme_id: "equip", classification: "sub_theme", display_name: "Equipment", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "memory", classification: "sub_theme", display_name: "Memory", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme", display_name: "AI Networking" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
+  assert.equal(order.themeOrder.length, 4);
   assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
-  const semiIdx = order.themeOrder.indexOf("semi");
-  assert.ok(semiIdx >= 0);
-  assert.ok(order.themeOrder.indexOf("equip") > semiIdx || order.themeOrder.indexOf("memory") > semiIdx);
+  assert.equal(order.themeOrder.filter(id => id === "memory").length, 1);
 });
 
-test("parent appears before its children", () => {
+test("themes sorted alphabetically by display_name", () => {
   const idx = s([
-    makeNode({ theme_id: "metals", classification: "sub_theme" }),
-    makeNode({ theme_id: "gold", classification: "theme", parent_theme_id: "metals" }),
-    makeNode({ theme_id: "silver", classification: "theme", parent_theme_id: "metals" }),
+    makeNode({ theme_id: "zinc", classification: "sub_theme", display_name: "Zinc" }),
+    makeNode({ theme_id: "gold", classification: "theme", display_name: "Gold" }),
+    makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  const metalsIdx = order.themeOrder.indexOf("metals");
-  const goldIdx = order.themeOrder.indexOf("gold");
-  const silverIdx = order.themeOrder.indexOf("silver");
-  assert.ok(metalsIdx < goldIdx);
-  assert.ok(metalsIdx < silverIdx);
+  assert.equal(order.themeOrder[0], "gold");
+  assert.equal(order.themeOrder[1], "semi");
+  assert.equal(order.themeOrder[2], "zinc");
 });
 
-test("remaining unparented nodes appear after parents and children", () => {
+test("all non-sector nodes appear exactly once in alphabetical order", () => {
   const idx = s([
-    makeNode({ theme_id: "semi", classification: "sub_theme" }),
-    makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
-    makeNode({ theme_id: "ai", classification: "sub_theme" }),
-    makeNode({ theme_id: "dc", classification: "sub_theme" }),
+    makeNode({ theme_id: "memory", classification: "sub_theme", display_name: "Memory", parent_theme_id: "semi" }),
+    makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
+    makeNode({ theme_id: "ai", classification: "sub_theme", display_name: "AI Networking" }),
+    makeNode({ theme_id: "dc", classification: "sub_theme", display_name: "Data Center" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  const aiIdx = order.themeOrder.indexOf("ai");
-  const dcIdx = order.themeOrder.indexOf("dc");
-  const memoryIdx = order.themeOrder.indexOf("memory");
-  assert.ok(aiIdx > memoryIdx);
-  assert.ok(dcIdx > memoryIdx);
+  assert.equal(order.themeOrder.length, 4);
+  assert.equal(order.themeOrder[0], "ai");
+  assert.equal(order.themeOrder[1], "dc");
+  assert.equal(order.themeOrder[2], "memory");
+  assert.equal(order.themeOrder[3], "semi");
 });
 
 test("sectors sorted by display_name", () => {
@@ -502,17 +502,17 @@ test("node with theme classification and children renders as parent", () => {
   assert.equal(order.themeOrder.filter(id => id === "energy").length, 1);
 });
 
-test("deep descendant tree renders all nodes once", () => {
+test("tree with descendants renders all alphabetically not by hierarchy", () => {
   const idx = s([
-    makeNode({ theme_id: "a", classification: "sub_theme" }),
-    makeNode({ theme_id: "b", classification: "sub_theme", parent_theme_id: "a" }),
-    makeNode({ theme_id: "c", classification: "sub_theme", parent_theme_id: "b" }),
-    makeNode({ theme_id: "d", classification: "sub_theme", parent_theme_id: "c" }),
+    makeNode({ theme_id: "a", classification: "sub_theme", display_name: "Alpha" }),
+    makeNode({ theme_id: "b", classification: "sub_theme", display_name: "Beta", parent_theme_id: "a" }),
+    makeNode({ theme_id: "c", classification: "sub_theme", display_name: "Charlie", parent_theme_id: "b" }),
+    makeNode({ theme_id: "d", classification: "sub_theme", display_name: "Delta", parent_theme_id: "c" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
   assert.equal(order.themeOrder.length, 4);
-  assert.equal(new Set(order.themeOrder).size, 4);
-  assert.ok(order.themeOrder.indexOf("a") < order.themeOrder.indexOf("b"));
-  assert.ok(order.themeOrder.indexOf("b") < order.themeOrder.indexOf("c"));
-  assert.ok(order.themeOrder.indexOf("c") < order.themeOrder.indexOf("d"));
+  assert.equal(order.themeOrder[0], "a");
+  assert.equal(order.themeOrder[1], "b");
+  assert.equal(order.themeOrder[2], "c");
+  assert.equal(order.themeOrder[3], "d");
 });
