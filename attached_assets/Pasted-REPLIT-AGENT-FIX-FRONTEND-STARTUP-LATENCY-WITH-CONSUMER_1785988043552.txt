@@ -1,0 +1,1032 @@
+REPLIT AGENT — FIX FRONTEND STARTUP LATENCY WITH CONSUMER-DRIVEN DATA OWNERSHIP
+
+Work only in the live frontend Replit workspace:
+
+`/home/runner/workspace`
+
+## Mandatory first step
+
+Before inspecting or changing anything:
+
+1. Find and read the frontend `AGENTS.md` completely.
+2. Follow every applicable instruction in it.
+3. Use the report destination required by `AGENTS.md`.
+4. If `AGENTS.md` specifies `.opencode-reports/latest.md`, continue using that exact path even though this task is being performed by Replit Agent.
+5. Do not invent a second report convention.
+
+The live Replit files and running application are authoritative.
+
+GitHub is only a backup and audit reference.
+
+Work from the current live HEAD. Preserve all existing local changes that are unrelated to this task.
+
+Do not push.
+
+---
+
+# Objective
+
+Fix the proven authenticated-startup latency without breaking the Home page’s live cross-product snippets.
+
+The architecture must be **consumer-driven**, not rigidly page-isolated.
+
+The user intentionally designed Home as a command center containing live snippets from:
+
+* Watchlist
+* Portfolio
+* Themes
+* Options and unusual flow
+* Hyperliquid
+* Prediction Markets
+* Macro and risk intelligence
+* Catalysts and news
+* other destination pages
+
+Those Home surfaces must remain live.
+
+The correct distinction is:
+
+```text
+Compact/shared data required by a visible Home surface
+versus
+full-detail payload required only by the destination page
+```
+
+Do not broadly disable cross-product data on Home.
+
+Do not replace live Home cards with stale placeholders.
+
+Do not implement the future atomic multi-theme Neon save in this task.
+
+---
+
+# Proven audit findings
+
+The prior read-only audit established:
+
+## Primary cause
+
+The complete Primary Watchlist detail response:
+
+```text
+/api/watchlist/{primaryId}
+```
+
+is approximately:
+
+```text
+6.3 MB
+462 tickers
+3.9–5.0 seconds
+```
+
+It is currently prefetched on every authenticated application startup, regardless of which route is open.
+
+That includes Home and other pages that do not render the full Watchlist Screener payload.
+
+## Secondary causes
+
+1. `/api/watchlist/list` is requested twice during authenticated startup:
+
+   * once through React Query prefetch
+   * once through a separate raw `safeFetch()`
+
+2. Approximately 22 requests can begin together when authentication becomes active.
+
+3. Retry settings can expand the burst to approximately 66 attempts.
+
+## Ruled out by the audit
+
+* Workspace memory saturation
+* Duplicate frontend dev servers
+* Vite/HMR loops
+* Frontend proxy overhead as the main cause
+* Watchlist taxonomy calculations
+* The proposed atomic Neon save, which does not exist yet
+
+Use the existing audit report as evidence, but independently verify the live code before editing.
+
+---
+
+# Critical architectural principle
+
+Backend freshness and browser fetching are different concerns.
+
+The backend may already maintain current data through:
+
+* scheduled jobs
+* providers
+* caches
+* Neon persistence
+* Watchlist refresh logic
+* options collectors
+* theme calculations
+* macro collectors
+
+The browser does not need to download every full page response at login merely because the backend already maintains that data.
+
+Use this model:
+
+```text
+Backend/cache = complete warehouse
+
+Home = compact live dashboards and summaries
+
+Destination page = full detailed dataset
+```
+
+Removing an unnecessary frontend prefetch must not disable backend data collection.
+
+---
+
+# Mandatory audit before editing
+
+Inspect the current live versions of at least:
+
+```text
+AGENTS.md
+frontend/client/src/App.tsx
+frontend/client/src/contexts/GlobalDataContext.tsx
+frontend/client/src/pages/home.tsx
+frontend/client/src/pages/watchlist.tsx
+frontend/client/src/pages/stocks-sectors.tsx
+frontend/client/src/pages/portfolio.tsx
+frontend/client/src/pages/options.tsx
+frontend/client/src/pages/hyperliquid-screener.tsx
+frontend/client/src/pages/bittensor.tsx
+frontend/client/src/pages/notifai.tsx
+frontend/client/src/pages/predict.tsx
+frontend/client/src/lib/queryClient.ts
+frontend/package.json
+```
+
+Use the actual live paths when names differ.
+
+Also inspect every component imported by Home that owns its own queries.
+
+## Build an exact dependency matrix
+
+For every request currently launched by `GlobalPrefetch`, record:
+
+```text
+Query key
+URL
+Visible consumer
+Routes where that consumer is mounted
+Response size
+Measured latency
+Stale time
+Retry behavior
+Whether a page already owns the same query
+Whether Home visibly consumes the result
+Whether it is compact summary data or full-detail data
+```
+
+Classify every request as exactly one of:
+
+```text
+A. Required by the authenticated application shell
+B. Required by a visible Home surface
+C. Required by the current destination page
+D. Useful shared cache warmup but not required for current rendering
+E. No proven current consumer
+```
+
+Do not classify requests merely by product name.
+
+Inspect the actual component consumers.
+
+---
+
+# Known Home consumers that must be preserved
+
+The current Home page is known to own or consume queries including:
+
+```text
+/api/home/dashboard
+["themes-unified", "themes"]
+["hl-advanced-signals"]
+["/api/home/risk-intelligence"]
+["/api/home/top-catalysts"]
+["/api/predict/investor/overview"]
+["/api/predict/odds/live"]
+["/api/macro/extra-cards"]
+["/api/macro/sparklines"]
+```
+
+The live code may contain additional Home queries. Audit all of them.
+
+## `/api/home/dashboard`
+
+This compact Home aggregate currently supplies Home data including:
+
+* Watchlist Snapshot
+* Portfolio Snapshot
+* unusual options-flow summary
+* highlighted companies
+* other Home dashboard fields
+
+Preserve this architecture.
+
+Do not replace the compact Home Watchlist Snapshot with the complete 6.3 MB Watchlist-detail response.
+
+## Theme Relative Strength
+
+Home visibly uses:
+
+```ts
+["themes-unified", "themes"]
+```
+
+for Theme Performance.
+
+The Themes page and Watchlist taxonomy also reuse this canonical key.
+
+Keep it live on Home.
+
+Preserve the exact key and endpoint:
+
+```text
+/api/themes/relative-strength?timeframe=1D&classification=all
+```
+
+## Hyperliquid
+
+Home visibly uses:
+
+```ts
+["hl-advanced-signals"]
+```
+
+Keep that query live on Home.
+
+Do not assume Home also needs:
+
+```text
+["hl-screener", "perp"]
+["tsmom-signals"]
+```
+
+unless a visible Home component actually consumes them.
+
+## Prediction Markets
+
+Home visibly consumes at least:
+
+```ts
+["/api/predict/investor/overview"]
+["/api/predict/odds/live"]
+```
+
+Keep those live.
+
+Do not assume Home needs every full Prediction-page query.
+
+---
+
+# Contract 1 — Home retains every visible live snippet
+
+After this task, all currently visible Home sections must continue to populate with current data.
+
+At minimum preserve:
+
+* Watchlist Snapshot
+* Portfolio Snapshot
+* Theme Performance
+* Hyperliquid signals
+* Prediction-market snippets
+* macro cards
+* macro sparklines
+* risk intelligence
+* top catalysts
+* unusual options-flow summary
+* every other currently visible Home card
+
+Preserve current:
+
+* React Query keys
+* polling intervals
+* stale times
+* refetch-on-focus settings
+* error states
+* loading states
+* destination links
+* card layouts
+
+unless a specific duplicate or harmful retry is proven and corrected.
+
+Do not remove a Home query just because its destination page belongs to another product.
+
+---
+
+# Contract 2 — remove universal full Watchlist-detail prefetch
+
+The complete request:
+
+```text
+/api/watchlist/{primaryId}
+```
+
+must not run merely because authentication became true.
+
+## Home
+
+On:
+
+```text
+/app/home
+/home
+```
+
+required result:
+
+```text
+Full Watchlist-detail requests: 0
+```
+
+The Home Watchlist Snapshot must continue using its compact current source.
+
+## Unrelated pages
+
+On routes such as:
+
+```text
+/app/options
+/app/portfolio
+/app/hyperliquid-screener
+/app/bittensor
+/app/predict
+```
+
+required result:
+
+```text
+Full Watchlist-detail requests: 0
+```
+
+unless the audit finds a concrete visible component on that exact route that directly consumes the full Watchlist response.
+
+Do not infer dependency from shared subject matter.
+
+## Watchlist route
+
+On:
+
+```text
+/app/watchlist
+/watchlist
+```
+
+the existing Watchlist page may load the full detail response.
+
+Preserve its exact query key:
+
+```ts
+["/api/watchlist", primaryId]
+```
+
+The page query and any route-local prefetch must deduplicate.
+
+Maximum cold-route network behavior:
+
+```text
+/api/watchlist/list         at most 1 request
+/api/watchlist/{primaryId}  at most 1 request
+```
+
+Do not automatically refresh or rebuild Watchlist analysis.
+
+## Themes-page dependency audit
+
+Determine whether the Themes page genuinely needs the complete Watchlist-detail response.
+
+Possible valid dependency shapes include:
+
+1. The backend Theme response already includes Watchlist-aware membership or highlights.
+2. The Themes page uses a compact Watchlist membership source.
+3. The Themes page actually consumes the complete Watchlist detail.
+
+Do not guess.
+
+If the complete detail response is genuinely consumed by Themes:
+
+* preserve it only on the relevant Themes route
+* preserve the same React Query key
+* document exactly which fields are consumed
+* do not load it globally
+
+If the Themes page does not consume it:
+
+* do not fetch it there
+
+Do not create a new backend endpoint in this task.
+
+---
+
+# Contract 3 — remove duplicate `/api/watchlist/list`
+
+The current global flow effectively performs both:
+
+```ts
+prefetchQuery(["/api/watchlist/list"])
+```
+
+and:
+
+```ts
+safeFetch("/api/watchlist/list")
+```
+
+The second raw fetch bypasses React Query deduplication.
+
+Replace this with one React Query-owned read wherever the list is actually needed.
+
+Preserve the exact query key:
+
+```ts
+["/api/watchlist/list"]
+```
+
+Preserve current authentication headers.
+
+Preserve Primary identification precedence:
+
+1. `is_primary`
+2. `kind === "primary"`
+3. `type === "primary"`
+4. case-insensitive `name === "primary"`
+5. case-insensitive `title === "primary"`
+6. last-resort first row, with the existing development warning
+
+Do not create a second list cache.
+
+Do not issue a raw duplicate request to find Primary.
+
+On Home, `/api/watchlist/list` should be zero requests unless a visible Home component genuinely requires the list itself.
+
+A compact Watchlist Snapshot embedded in `/api/home/dashboard` is not proof that Home needs `/api/watchlist/list`.
+
+---
+
+# Contract 4 — convert `GlobalPrefetch` into true ownership, not a second page loader
+
+`GlobalPrefetch` should not duplicate every page’s `useQuery()` calls.
+
+A page-mounted `useQuery()` with the correct shared key already:
+
+* loads its visible data
+* stores it in React Query
+* warms the cache for later navigation
+* deduplicates with another consumer using the same key
+
+Therefore:
+
+## Keep globally only
+
+Requests consumed by the authenticated application shell itself on almost every route.
+
+Examples might include:
+
+* shell-level notifications
+* global alert counts
+* account/session metadata
+
+Keep only when proven by direct consumers outside individual pages.
+
+## Home-owned
+
+Queries required by visible Home components should be owned by Home or its mounted child components.
+
+Do not duplicate them in `GlobalPrefetch`.
+
+When Home and another page share a key, Home’s query naturally warms that destination page.
+
+## Destination-page-owned
+
+Full page datasets should normally be owned by the destination page.
+
+Do not add a duplicate global prefetch merely to avoid a future navigation request.
+
+## Optional idle warmups
+
+A genuinely useful likely-next-route warmup may remain only when all of these are true:
+
+1. It is compact.
+2. It is not already requested by the current page.
+3. It begins after first meaningful content.
+4. It does not compete with visible current-route data.
+5. It is canceled on route/auth change.
+6. It has bounded retries.
+7. Its value is documented.
+
+Do not idle-prefetch the 6.3 MB Watchlist detail.
+
+---
+
+# Contract 5 — prioritize visible Home data without removing freshness
+
+After duplicate and hidden full-detail requests are removed, inspect the Home page’s own current query burst.
+
+Do not impose arbitrary product-based route gating.
+
+Instead classify Home requests by visibility:
+
+## Immediate
+
+Queries required for:
+
+* app shell
+* above-the-fold Home content
+* first meaningful Home paint
+
+## Deferred until first content or browser idle
+
+Queries used only by lower Home sections that are not yet visible.
+
+Use a small existing-compatible mechanism such as:
+
+```text
+requestIdleCallback with setTimeout fallback
+```
+
+or an existing section-visibility mechanism if already present.
+
+Requirements:
+
+* preserve the same query key
+* preserve the same endpoint
+* preserve data freshness after activation
+* cancel deferred activation on unmount
+* do not defer indefinitely
+* do not add a scheduling library
+* do not create a generic task framework
+
+Only implement deferred activation when actual layout evidence shows the Home query is below the initial viewport.
+
+Do not defer Theme Performance, Watchlist Snapshot, or other first-section content merely because it belongs to another product.
+
+---
+
+# Contract 6 — preserve summary-versus-detail boundaries
+
+Use compact summary sources for compact surfaces.
+
+## Home Watchlist
+
+Use:
+
+```text
+/api/home/dashboard → watchlist_snapshot
+```
+
+Do not use:
+
+```text
+/api/watchlist/{id}
+```
+
+## Home Portfolio
+
+Use:
+
+```text
+/api/home/dashboard → portfolio_snapshot
+```
+
+Do not load the full Portfolio page payload unless a visible Home component consumes fields unavailable from the snapshot.
+
+## Home Options
+
+Use the existing compact Home unusual-flow data or exact compact shared query consumed by the Home section.
+
+Do not globally fetch the entire Options page dataset without a direct visible consumer.
+
+## Home Themes
+
+Use the existing shared Theme RS key because Home visibly uses it and the response is appropriately shared.
+
+## Home Hyperliquid
+
+Use the exact shared advanced-signals key that Home visibly renders.
+
+Do not fetch hidden full screener datasets without a direct consumer.
+
+---
+
+# Contract 7 — preserve backend freshness architecture
+
+Do not change:
+
+* backend collectors
+* backend scheduled jobs
+* Neon persistence
+* provider refresh schedules
+* Watchlist analysis jobs
+* Theme RS calculations
+* options collectors
+* macro collectors
+* endpoint paths
+* backend cache keys
+
+This is a frontend request-ownership task.
+
+Do not modify backend files.
+
+Do not attempt to make browser prefetch responsible for backend freshness.
+
+---
+
+# Contract 8 — bound duplicate requests and retry amplification
+
+For every remaining request:
+
+* use one query owner
+* preserve one canonical key
+* do not issue a raw parallel duplicate
+* do not create a “prefetch” alias key
+* cancel requests on unmount where supported
+* do not retry aborted requests
+* do not retry HTTP 4xx
+* limit transient network/5xx retries
+* avoid global and page-level retry multiplication
+
+Do not broadly change application-wide QueryClient defaults unless absolutely required and proven.
+
+Prefer local correction of the problematic request owner.
+
+---
+
+# Preferred implementation shape
+
+Do not overengineer this.
+
+A small pure helper is acceptable if useful, such as:
+
+```text
+frontend/client/src/lib/data-consumer-plan.ts
+```
+
+It may describe:
+
+```ts
+type DataConsumer =
+  | "app_shell"
+  | "home_visible"
+  | "watchlist_page"
+  | "themes_page"
+  | "portfolio_page"
+  | "options_page"
+  | "hyperliquid_page"
+  | "bittensor_page"
+  | "notifai_page"
+  | "predict_page";
+```
+
+Possible pure functions:
+
+```ts
+isWatchlistRoute(location: string): boolean;
+
+getVisibleConsumerFamilies(location: string): DataConsumer[];
+```
+
+However, do not move endpoint URLs or full query definitions into a large duplicate registry merely to satisfy this task.
+
+The existing page queries should remain close to their consumers.
+
+It is acceptable for the final correction to primarily simplify or remove `GlobalPrefetch`.
+
+If no request is truly app-shell-global, `GlobalPrefetch` may become minimal or empty. Do not preserve historical global requests without a consumer.
+
+---
+
+# Required tests
+
+Use the existing frontend testing conventions and packages.
+
+Do not install a new framework.
+
+## Dependency ownership
+
+Prove:
+
+1. Home retains every exact query consumed by visible Home components.
+2. Theme RS remains available on Home using:
+
+   ```ts
+   ["themes-unified", "themes"]
+   ```
+3. Hyperliquid advanced signals remain available on Home using:
+
+   ```ts
+   ["hl-advanced-signals"]
+   ```
+4. Prediction investor overview remains available on Home.
+5. Prediction live odds remain available on Home.
+6. Home dashboard remains the source of compact Watchlist and Portfolio snapshots.
+7. No Home component reads the complete Primary Watchlist response.
+
+## Watchlist request behavior
+
+8. Home schedules zero `/api/watchlist/{id}` requests.
+9. Portfolio schedules zero `/api/watchlist/{id}` requests unless a direct consumer is proven.
+10. Options schedules zero `/api/watchlist/{id}` requests unless a direct consumer is proven.
+11. Direct Watchlist route schedules at most one list request.
+12. Direct Watchlist route schedules at most one detail request.
+13. Watchlist list uses `["/api/watchlist/list"]`.
+14. Watchlist detail uses `["/api/watchlist", primaryId]`.
+15. No raw duplicate Watchlist-list fetch exists.
+16. Fresh cached list data is reused.
+17. Fresh cached detail data is reused.
+18. Navigating Home → Watchlist produces at most one cold detail request.
+19. Navigating away and back while fresh reuses the detail cache.
+
+## Shared-key behavior
+
+20. Home Theme RS and Themes page use the same key.
+21. Home HL advanced signals and HL page use the same key.
+22. Shared queries do not issue parallel requests for the same key.
+23. No alternate `prefetch-*` keys are introduced.
+
+## Home freshness
+
+24. Home’s visible query stale times remain unchanged unless explicitly justified.
+25. Existing polling remains active after a deferred query is enabled.
+26. Deferred lower-section requests activate after first content/idle.
+27. Deferred activation is canceled on unmount.
+28. Above-the-fold required Home requests are not deferred.
+
+## Regression protection
+
+29. Watchlist taxonomy code is unchanged.
+30. Watchlist chip bar is unchanged.
+31. Theme assignment UI is unchanged.
+32. Portfolio page behavior is unchanged.
+33. Options page behavior is unchanged.
+34. No backend endpoint was added or changed.
+
+If effect-level tests are difficult with the existing setup, extract only small pure routing/ownership decisions for deterministic tests and perform the rest through network validation.
+
+---
+
+# Required live validation
+
+Use the existing Replit preview and browser network tooling where available.
+
+Do not start duplicate dev servers.
+
+## Baseline
+
+Record the prior audit values:
+
+```text
+Primary Watchlist detail: ~6.3 MB
+Primary detail duration: ~3.9–5.0 s
+Authenticated-start requests: ~22
+Retry-expanded maximum: ~66
+Duplicate /api/watchlist/list: 2
+```
+
+## Home
+
+On a cold authenticated Home load, prove:
+
+```text
+/api/watchlist/{id}: 0
+```
+
+Record:
+
+* every request in the first 2 seconds
+* every request in the first 10 seconds
+* transferred bytes
+* retries
+* time to first meaningful content
+* time until every visible Home section populates
+
+Explicitly verify:
+
+* Watchlist Snapshot loads
+* Portfolio Snapshot loads
+* Theme Performance loads
+* Hyperliquid snippet loads
+* prediction snippets load
+* macro/risk/catalyst sections load
+* no visible Home section is missing because a global prefetch was removed
+
+## Watchlist
+
+On cold direct navigation, prove:
+
+```text
+/api/watchlist/list: at most 1
+/api/watchlist/{primaryId}: at most 1
+```
+
+Record:
+
+* response size
+* response duration
+* loading-state appearance
+* time until rows display
+* repeat-navigation cache behavior
+
+## Themes
+
+Prove:
+
+* Theme RS data loads.
+* Watchlist-aware functionality still works.
+* Whether complete Watchlist detail is requested.
+* If requested, exactly which visible Themes feature requires it.
+* No duplicate Theme RS request occurs.
+
+## Portfolio
+
+Prove the full Portfolio page still loads correctly.
+
+Confirm Home’s compact Portfolio Snapshot remains live without globally downloading the full Portfolio page payload.
+
+## Options
+
+Prove the full Options page still loads correctly.
+
+Confirm Home’s options-flow summary remains live without globally downloading all Options page data.
+
+## Hyperliquid
+
+Prove:
+
+* Home advanced-signals snippet remains live.
+* Full HL page loads its page-specific datasets.
+* Home does not globally fetch hidden HL page datasets without a consumer.
+
+## Prediction Markets
+
+Prove:
+
+* Home investor overview and live odds remain live.
+* Full Prediction page loads its additional datasets on that page.
+* Home does not preload every Prediction-page response.
+
+---
+
+# Acceptance criteria
+
+The task is complete only when all of the following are true:
+
+1. Home’s cross-product snippets remain live.
+2. Home no longer downloads the complete Primary Watchlist payload.
+3. Unrelated routes no longer download the complete Primary Watchlist payload.
+4. `/api/watchlist/list` is not requested twice.
+5. Shared Home/destination queries retain identical keys.
+6. Destination pages continue loading correctly.
+7. Backend freshness behavior is unchanged.
+8. Initial request count is materially lower.
+9. Initial transferred bytes are materially lower.
+10. No taxonomy behavior changes.
+11. No backend changes.
+12. No new endpoint is introduced.
+
+---
+
+# Validation commands
+
+Run the relevant tests discovered in `package.json`, plus:
+
+```bash
+npm run check
+npm run build
+git diff --check
+```
+
+Report actual exit codes honestly.
+
+If `npm run check` still has repository-wide pre-existing errors:
+
+1. Run the exact same command against the parent commit in an isolated worktree.
+2. Provide direct before/after evidence.
+3. Prove no new errors in changed files.
+4. Do not call a nonzero command “passed.”
+
+Do not run multiple dev servers.
+
+---
+
+# Scope restrictions
+
+Do not:
+
+* modify backend files
+* implement the new taxonomy
+* reassign stock themes
+* implement atomic theme writes
+* change Watchlist payload shape
+* add pagination
+* add virtualization
+* change taxonomy filtering
+* change the Watchlist chip bar
+* modify Theme memberships
+* modify Screener columns
+* redesign Home
+* remove live Home snippets
+* replace live data with static cache-only display
+* disable backend jobs
+* change authentication architecture
+* install dependencies
+
+This task is only frontend data ownership, deduplication, compact-versus-detail separation, limited scheduling, tests, and performance validation.
+
+---
+
+# Repository hygiene
+
+Do not use:
+
+```bash
+git add .
+git add -A
+```
+
+Do not stage:
+
+* `frontend/market-overview-cache.json`
+* `frontend/sessions.db`
+* runtime cache files
+* attached prompt files
+* screenshots
+* build output
+* browser artifacts
+* unrelated formatting
+* unrelated reports
+
+Stage exact intended source, test, and required report files only.
+
+Inspect:
+
+```bash
+git diff --cached --name-status
+```
+
+Create exactly one local commit on top of current live HEAD.
+
+Do not amend prior commits.
+
+Do not push.
+
+Suggested commit message:
+
+```text
+fix: align frontend fetching with visible consumers
+```
+
+---
+
+# Required report
+
+Write the report to the exact destination specified by `AGENTS.md`.
+
+The report must include:
+
+1. Confirmation that `AGENTS.md` was read before work began.
+2. Starting branch and exact HEAD.
+3. Exact files inspected.
+4. Full original `GlobalPrefetch` inventory.
+5. Exact Home query inventory.
+6. Exact visible consumer for every retained Home query.
+7. Compact-summary versus full-detail classification.
+8. Complete dependency matrix.
+9. Requests proven app-shell-global.
+10. Requests moved to page ownership.
+11. Requests removed as duplicates or hidden full-detail loads.
+12. Exact duplicate Watchlist-list correction.
+13. Exact full Watchlist-detail ownership after the change.
+14. Themes-page Watchlist dependency findings.
+15. Portfolio dependency findings.
+16. Options dependency findings.
+17. Shared query keys preserved.
+18. Polling and stale-time behavior preserved.
+19. Deferred Home queries and why each was safe to defer.
+20. Exact files changed.
+21. Exact files staged.
+22. Complete test commands and results.
+23. Typecheck command, exit code, and before/after proof when needed.
+24. Build result.
+25. `git diff --check`.
+26. Before/after Home request counts.
+27. Before/after Home transferred bytes.
+28. Confirmation that Home issues zero full Watchlist-detail requests.
+29. Before/after Watchlist network behavior.
+30. Themes route validation.
+31. Portfolio route validation.
+32. Options route validation.
+33. Hyperliquid route validation.
+34. Prediction route validation.
+35. Confirmation that all Home snippets remain live.
+36. Confirmation that no backend files changed.
+37. Confirmation that taxonomy code and UI were unchanged.
+38. Final `git status -sb`.
+39. Commit SHA and message.
+40. Complete diff for this commit only.
+
+Stop and report rather than removing a Home query when its consumer or ownership cannot be established confidently.
