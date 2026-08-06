@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useRef,
+  useState,
   useCallback,
   useMemo,
 } from 'react';
@@ -128,22 +129,61 @@ export function EarningsLiveProvider({ children }: { children: React.ReactNode }
 
   const baselineSetRef = useRef(false);
 
+  // ── Circuit breaker ────────────────────────────────────────────────────────
+  // /api/earnings/live-events is served by an external FastAPI process that is
+  // sometimes offline for extended periods.  Without a circuit breaker the
+  // query fires every 25 s, each attempt times out after 10 s, and the
+  // immediate retry (retry:1) adds another 10 s.  Together that consumes
+  // roughly 20–25 s of backend capacity per 50 s cycle, starving every other
+  // endpoint (Home dashboard, Watchlist detail, etc.).
+  //
+  // After CIRCUIT_TRIPS consecutive failures the provider stops polling for
+  // CIRCUIT_RESET_MS.  The circuit resets automatically — no UI change needed.
+  const CIRCUIT_TRIPS = 3;
+  const CIRCUIT_RESET_MS = 10 * 60_000; // 10 minutes
+
+  const consecutiveFailsRef = useRef(0);
+  const [pollEnabled, setPollEnabled] = useState(true);
+
+  useEffect(() => {
+    if (pollEnabled) return;
+    const timer = setTimeout(() => {
+      consecutiveFailsRef.current = 0;
+      setPollEnabled(true);
+    }, CIRCUIT_RESET_MS);
+    return () => clearTimeout(timer);
+  }, [pollEnabled]);
+
+  const circuitQueryFn = useCallback(async (): Promise<LiveEventsFeedResponse> => {
+    const r = await fetch('/api/earnings/live-events', { credentials: 'include' });
+    if (!r.ok) {
+      consecutiveFailsRef.current += 1;
+      if (consecutiveFailsRef.current >= CIRCUIT_TRIPS) {
+        // Open the circuit in a microtask so we don't setState during render
+        Promise.resolve().then(() => setPollEnabled(false));
+      }
+      throw new Error(`Status ${r.status}`);
+    }
+    consecutiveFailsRef.current = 0;
+    return r.json() as Promise<LiveEventsFeedResponse>;
+  }, []);
+
   // ── Query ──────────────────────────────────────────────────────────────────
 
   const { data, isLoading, isError } = useQuery<LiveEventsFeedResponse>({
     queryKey: LIVE_EVENTS_KEY,
-    queryFn: async () => {
-      const r = await fetch('/api/earnings/live-events', { credentials: 'include' });
-      if (!r.ok) throw new Error(`Status ${r.status}`);
-      return r.json();
-    },
-    enabled: isAuthenticated,
+    queryFn: circuitQueryFn,
+    enabled: isAuthenticated && pollEnabled,
     refetchInterval: POLL_MS,
     refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
+    // Changed from true: window-focus retries bypass the circuit breaker and
+    // would re-hit a still-down endpoint on every tab switch.
+    refetchOnWindowFocus: false,
     staleTime: 20_000,
-    retry: 1,
-    retryDelay: 5_000,
+    // Changed from 1: no immediate retry when the endpoint is consistently
+    // returning 5xx.  The circuit breaker accumulates failures across
+    // refetchInterval ticks instead of within a single attempt.
+    retry: 0,
   });
 
   const events: LiveEarningsEvent[] = useMemo(
