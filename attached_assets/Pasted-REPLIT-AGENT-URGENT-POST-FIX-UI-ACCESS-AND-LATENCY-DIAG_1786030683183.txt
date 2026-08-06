@@ -1,0 +1,541 @@
+REPLIT AGENT — URGENT POST-FIX UI ACCESS AND LATENCY DIAGNOSIS
+
+Work only in the live frontend Replit workspace:
+
+`/home/runner/workspace`
+
+The user currently cannot reliably access the application UI because it remains extremely slow.
+
+This is urgent.
+
+## Mandatory first step
+
+1. Find and read frontend `AGENTS.md` completely.
+2. Follow its instructions and report path.
+3. Record current branch, HEAD, status, and recent commits.
+4. Confirm whether the live workspace contains:
+
+   * `d9862e4e` — consumer-driven frontend data ownership
+   * `981977a0` or its live equivalent
+5. Preserve unrelated work.
+6. Do not push.
+
+The live Replit filesystem and running preview are authoritative. GitHub is reference only.
+
+---
+
+# Mode
+
+Begin as a read-only diagnosis.
+
+Do not edit source until the current failure is reproduced and the primary cause is proven.
+
+After proving the cause, implement only the smallest safe correction needed to restore usable UI access.
+
+Do not modify backend files.
+
+Do not modify taxonomy functionality.
+
+Do not reintroduce `GlobalPrefetch`.
+
+---
+
+# Critical clarification
+
+Commit `d9862e4e` fixed the authenticated global prefetch burst, but it did not prove all UI latency was resolved.
+
+It removed:
+
+* 22 immediate global requests
+* retry expansion up to approximately 66 calls
+* duplicate `/api/watchlist/list`
+* universal 6.3 MB `/api/watchlist/{primaryId}` download
+
+It did not remove:
+
+* Home-owned visible queries
+* the full 6.3 MB Watchlist request when the Watchlist page is opened
+* browser parsing and rendering of approximately 462 rows
+* endpoint-level backend latency
+* possible runtime crashes
+* possible auth, proxy, or preview failures
+
+Do not treat passing source-pattern tests as end-to-end performance proof.
+
+---
+
+# Phase 1 — reproduce the exact current failure
+
+Use the running Replit preview and application logs.
+
+Test these routes separately:
+
+```text
+/
+login route if applicable
+/app/home
+/home
+/app/watchlist
+/watchlist
+a lightweight authenticated page
+```
+
+For each route record:
+
+* whether HTML/app shell appears
+* whether authentication completes
+* whether navigation changes URL
+* whether loading UI appears
+* whether content eventually appears
+* total wait time
+* browser console errors
+* uncaught exceptions
+* failed network requests
+* repeated redirects
+* websocket/HMR reconnects
+* blank-screen behavior
+* whether the route crashes React
+
+Do not summarize the UI merely as “slow.” Classify each route as:
+
+```text
+DOES_NOT_OPEN
+RUNTIME_CRASH
+AUTH_LOOP
+SHELL_LOADS_CONTENT_STALLS
+SLOW_BUT_EVENTUALLY_LOADS
+NORMAL
+```
+
+---
+
+# Phase 2 — process and server health
+
+Before restarting anything, capture:
+
+```bash
+cd /home/runner/workspace
+
+date
+uptime
+free -m
+df -h
+ps -eo pid,ppid,%cpu,%mem,rss,etime,state,cmd --sort=-%cpu | head -60
+ps -eo pid,ppid,%cpu,%mem,rss,etime,state,cmd --sort=-%mem | head -60
+pgrep -af 'node|npm|tsx|vite|esbuild|tsc|opencode|python|uvicorn'
+lsof -nP -iTCP -sTCP:LISTEN
+git status -sb
+git log --oneline --decorate -12
+```
+
+Determine:
+
+* whether the main frontend server is alive
+* whether port 5000 is listening
+* whether the proxy can reach the backend
+* whether the Replit workflow is repeatedly restarting
+* whether a build/test/agent process is consuming resources
+* whether the frontend serves the current bundle
+* whether a stale server is running an older commit
+
+Do not kill processes before collecting evidence.
+
+---
+
+# Phase 3 — current runtime-error audit
+
+Capture the browser console and frontend server logs.
+
+Search for:
+
+```text
+Uncaught
+TypeError
+Cannot read properties
+Maximum update depth
+ChunkLoadError
+Failed to fetch
+401
+403
+404
+429
+500
+502
+503
+504
+AbortError
+WebSocket
+hydration
+React error boundary
+```
+
+The recent Macro Terminal crash involving `.map()` on undefined was supposedly fixed. Confirm that current live code contains that guard and that no equivalent crash remains.
+
+If a top-level runtime exception prevents the UI from opening, fix that before performance work.
+
+---
+
+# Phase 4 — post-fix network waterfall
+
+Measure a cold authenticated load of Home after `d9862e4e`.
+
+Inventory every request initiated in:
+
+```text
+first 2 seconds
+first 10 seconds
+until all visible Home cards settle
+```
+
+For every request record:
+
+* query key where identifiable
+* URL
+* status
+* start time
+* duration
+* TTFB
+* total bytes
+* retry count
+* whether it blocks visible content
+* whether it is duplicated
+* whether it remains pending indefinitely
+
+At minimum measure:
+
+```text
+/api/home/dashboard
+/api/themes/relative-strength?timeframe=1D&classification=all
+/api/hyperliquid/signals
+/api/predict/investor/overview
+/api/predict/odds/live
+/api/home/risk-intelligence
+/api/home/top-catalysts
+/api/macro/extra-cards
+/api/macro/sparklines
+```
+
+Use the actual live endpoints and query keys when they differ.
+
+Required questions:
+
+1. How many Home requests start concurrently?
+2. Which request is slowest?
+3. Which payload is largest?
+4. Which requests fail or retry?
+5. Does Home wait for all queries before rendering anything?
+6. Does one child component throw when its request is missing?
+7. Does `/api/home/dashboard` itself perform expensive synchronous backend work?
+8. Are queries duplicated between Home and nested components?
+9. Is any polling interval causing sustained load?
+10. Are hidden/offscreen Home sections requesting data immediately?
+
+---
+
+# Phase 5 — lightweight route comparison
+
+Load a lightweight authenticated route that does not contain the Home dashboard or Watchlist.
+
+Compare:
+
+```text
+HTML/app-shell latency
+JavaScript startup
+authentication latency
+route rendering
+network count
+```
+
+Interpretation:
+
+* If every route is slow, investigate app shell/auth/server/proxy/runtime.
+* If only Home is slow, investigate Home-owned query and render waterfall.
+* If only Watchlist is slow, isolate the 6.3 MB payload and table rendering.
+* If routes crash, fix the crash first.
+
+---
+
+# Phase 6 — Watchlist end-to-end measurement
+
+Cold-load the Watchlist route.
+
+Measure:
+
+```text
+/api/watchlist/list
+/api/watchlist/{activeId}
+theme taxonomy request
+quote requests
+any secondary Watchlist requests
+```
+
+Record:
+
+* `/api/watchlist/list` count
+* detail request count
+* detail response bytes
+* TTFB
+* total request duration
+* JSON parse time where measurable
+* normalization/scripting time
+* React commit/render time
+* DOM node count
+* number of rendered rows
+* long tasks above 50 ms
+* time until loading UI
+* time until first rows
+* time until interaction is responsive
+
+Confirm whether the full response remains approximately 6.3 MB and approximately 462 rows.
+
+Separate:
+
+```text
+backend wait
+network transfer
+JSON parsing
+frontend normalization
+React rendering
+layout/paint
+```
+
+Do not simply attribute all delay to Neon.
+
+---
+
+# Phase 7 — verify the GlobalPrefetch fix remains active
+
+Confirm:
+
+```text
+GlobalPrefetch sends 0 HTTP requests
+Home sends 0 full /api/watchlist/{id} requests
+unrelated routes send 0 full /api/watchlist/{id} requests
+/api/watchlist/list is not globally duplicated
+```
+
+Do not undo this architecture.
+
+If these regressions are present, identify why the running preview does not match committed source.
+
+---
+
+# Phase 8 — backend availability comparison
+
+For the slowest endpoints, compare:
+
+```text
+frontend proxy request
+direct deployed backend request
+```
+
+Use five samples when safe.
+
+Record:
+
+* cold response
+* warm responses
+* response size
+* status
+* variance
+
+Determine whether the delay is primarily:
+
+```text
+frontend server/proxy
+backend startup/cold cache
+backend compute
+Neon read
+response serialization
+network transfer
+browser processing
+```
+
+Do not guess.
+
+---
+
+# Phase 9 — inspect Home render architecture
+
+Audit `home.tsx` and every mounted Home child component.
+
+Document:
+
+* exact number of `useQuery()` subscriptions
+* which are above the fold
+* which are below the fold
+* whether hidden tabs/components remain mounted
+* whether all chart components initialize immediately
+* TradingView script/widget count
+* Recharts component count
+* drag-and-drop initialization cost
+* repeated transformations over large arrays
+* non-memoized calculations
+* effects that update state repeatedly
+* query results copied into local state
+* unstable query keys
+* render loops
+
+Do not optimize speculatively.
+
+Use profiler or timing evidence.
+
+---
+
+# Phase 10 — minimal correction
+
+After proving the primary cause, implement the smallest safe fix.
+
+Allowed examples only when proven:
+
+## Runtime crash
+
+* add narrowly scoped null/shape guards
+* preserve error and loading UI
+* add regression tests
+
+## Home request congestion
+
+* ensure duplicate queries use the same key
+* remove confirmed hidden/nonconsumer request
+* defer below-the-fold mounted sections until browser idle or intersection visibility
+* preserve the section’s live behavior once activated
+* do not defer above-the-fold content
+* do not reintroduce global prefetch
+
+## Slow single endpoint
+
+* improve frontend failure isolation so one slow card does not block the page shell
+* do not modify backend in this task
+* produce a separate backend prompt when backend work is required
+
+## Watchlist rendering
+
+* only implement safe frontend virtualization if browser profiling proves row rendering is a dominant cause and existing table behavior can be preserved
+* do not alter Watchlist data contracts in this task
+* otherwise report the required backend payload-slimming follow-up
+
+## Stale preview/server
+
+* restart only the appropriate frontend workflow after collecting evidence
+* verify the running bundle matches current HEAD
+
+Do not combine unrelated optimizations.
+
+---
+
+# Required acceptance criteria
+
+At minimum:
+
+1. App shell opens reliably.
+2. No uncaught route-level runtime errors.
+3. Home visibly begins rendering without waiting for every lower-priority request.
+4. A failed or slow Home card does not prevent the rest of Home from opening.
+5. GlobalPrefetch remains request-free.
+6. Home sends zero full Watchlist-detail requests.
+7. `/api/watchlist/list` is not duplicated.
+8. Watchlist delay is measured and separated by stage.
+9. The primary current root cause is proven.
+10. Any code fix directly addresses that root cause.
+11. No taxonomy behavior changes.
+12. No backend changes.
+
+---
+
+# Tests and validation
+
+Use existing frontend tooling.
+
+Run focused tests plus:
+
+```bash
+npm run check
+npm run build
+git diff --check
+```
+
+Report exit codes honestly.
+
+Perform actual browser/preview validation after any change.
+
+Source-pattern unit tests alone are not sufficient for acceptance.
+
+---
+
+# Scope restrictions
+
+Do not:
+
+* modify backend files
+* modify Taxonomy v2
+* modify theme assignments
+* restore GlobalPrefetch
+* add universal data preloading
+* redesign Home
+* remove Home sections
+* remove live data
+* change authentication architecture
+* install dependencies
+* push
+
+---
+
+# Repository hygiene
+
+Do not use:
+
+```bash
+git add .
+git add -A
+```
+
+Stage exact intended files only.
+
+Do not stage:
+
+* runtime caches
+* sessions databases
+* browser artifacts
+* screenshots
+* prompt files
+* unrelated reports
+* build output
+
+If source changes are required, create exactly one local commit:
+
+```text
+fix: restore responsive frontend access
+```
+
+Do not push.
+
+---
+
+# Required report
+
+Write to the exact path required by `AGENTS.md`.
+
+Include:
+
+1. Confirmation `AGENTS.md` was read first.
+2. Starting HEAD and status.
+3. Exact failure reproduction by route.
+4. Process and port evidence.
+5. Runtime errors.
+6. Cold Home network waterfall.
+7. Home request count and concurrency.
+8. Slowest and largest Home endpoints.
+9. Lightweight-route comparison.
+10. Watchlist end-to-end timing.
+11. Backend versus proxy comparison.
+12. Browser scripting/render evidence.
+13. GlobalPrefetch regression checks.
+14. Proven primary root cause.
+15. Proven secondary contributors.
+16. Exact correction, if made.
+17. Before/after UI timing.
+18. Tests and exit codes.
+19. Files changed and staged.
+20. Confirmation no backend/taxonomy files changed.
+21. Final status and commit.

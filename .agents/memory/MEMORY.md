@@ -3,3 +3,4 @@
 - [Prophetik Investor Tab](prophetik-investor-tab.md) — intelligence-first data fetch, TS pitfalls (Map.entries spread, Lucide title prop, concat type widening).
 - [Alignment endpoint row shape](alignment-endpoint-shape.md) — /api/watchlist/:wid/alignment returns nested objects; must flatten in confluenceRows transform.
 - [Unified ticker popup](unified-ticker-popup.md) — StockDetailModal is the ONE popup; V42DetailDrawer disabled; ticker-detail proxy uses WL_URL/wlHdr(); new Technical tab; NewsTab uses backend data not activity-news endpoint.
+- [EarningsLive circuit breaker](earnings-live-circuit-breaker.md) — /api/earnings/live-events is permanently down; circuit breaker (3 failures → 10 min cooldown) prevents 40% backend capacity drain.
