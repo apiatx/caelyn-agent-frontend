@@ -1,0 +1,491 @@
+REPLIT AGENT — REMOVE WATCHLIST ROW VIRTUALIZATION AND RESTORE CONTINUOUS
+SCREENER SCROLLING WHILE PRESERVING THE GOOD PASS-3 ROW-ISOLATION FIXES
+
+Work only in the live FRONTEND Replit workspace.
+
+Current relevant commits:
+
+9fd56e16 — perf: skip hidden Watchlist render work
+53dac93b — perf: virtualize Watchlist screener rows
+
+USER FEEDBACK AFTER 53dac93b:
+
+The virtualized/windowed Screener UX is unacceptable.
+
+When scrolling down the Watchlist Screener:
+
+- portions appear black/empty before rows render
+- content visibly catches up to scrolling
+- scrolling feels latent
+- the Screener no longer feels like a continuous fully-rendered financial table
+
+Before 53dac93b, the user could scroll smoothly down the Screener with rows
+continuously visible.
+
+THE USER WANTS THAT BEHAVIOR BACK.
+
+This task is a SURGICAL CORRECTION.
+
+Do NOT broadly revert all of 53dac93b.
+
+Keep the good row-isolation/memoization changes.
+
+Remove only the row-window/virtualization architecture and restore the full
+continuous row renderer.
+
+The live Replit filesystem is authoritative.
+GitHub is reference/history only.
+
+────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────
+
+1. Find and read live frontend AGENTS.md completely.
+2. Follow its exact report/repository rules.
+3. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent 15 commits
+4. Confirm 53dac93b or exact live equivalent.
+5. Read the exact diff:
+   git diff 9fd56e16..53dac93b -- frontend/client/src/pages/watchlist.tsx
+6. Do not reset/revert/rebase/pull/push.
+7. Preserve unrelated work.
+
+IMPORTANT:
+
+Do NOT simply restore watchlist.tsx wholesale from 9fd56e16.
+
+53dac93b contains several good improvements we want to retain.
+
+────────────────────────────────────────────────────
+REMOVE — MAIN TICKER ROW VIRTUAL WINDOW
+────────────────────────────────────────────────────
+
+Remove the virtual/windowed row architecture introduced by 53dac93b.
+
+Remove all main ticker-table state/ref machinery that exists solely for
+windowing, including the live equivalents of:
+
+wlScrollContainerRef
+wlScrollTop
+wlViewportHeight
+wlRowHeightRef
+scroll handlers used solely for virtual windows
+ResizeObserver logic used solely for window sizing
+wStart
+wEnd
+topSpacer
+bottomSpacer
+OVERSCAN
+filteredRows.slice(...)
+
+Remove synthetic spacer divs whose purpose is representing unmounted rows.
+
+Restore the complete continuous renderer:
+
+filteredRows.map(...)
+
+All filtered ticker rows must be mounted again.
+
+No pagination.
+No load-more.
+No virtualization.
+No row-window slicing.
+
+When the user grabs the scrollbar and moves quickly from top to bottom, every
+intermediate part of the table must already contain real row DOM — no empty
+spacer region waiting for React.
+
+────────────────────────────────────────────────────
+REMOVE — FUNDAMENTALS VIRTUAL WINDOW
+────────────────────────────────────────────────────
+
+Remove Fundamentals-specific virtual windowing introduced by 53dac93b.
+
+Remove live equivalents of:
+
+fundScrollContainerRef
+fundScrollTop
+fundViewportHeight
+FUND_ROW_H
+FUND_OVERSCAN
+fStart
+fEnd
+fTopSpacer
+fBottomSpacer
+sortedFundRows.slice(...)
+
+Remove synthetic spacer <tr> rows.
+
+Restore:
+
+sortedFundRows.map(...)
+
+for the full Fundamentals table.
+
+Scrolling Fundamentals must once again behave as a continuous table.
+
+────────────────────────────────────────────────────
+KEEP — SORT INDEX REMOVAL
+────────────────────────────────────────────────────
+
+KEEP the 53dac93b change that removed:
+
+i: number
+
+from WlTickerRow props.
+
+Do NOT reintroduce sort position as a row prop.
+
+Sorting should not make React.memo rerender a ticker merely because its absolute
+position changed.
+
+Keep ticker-based stable keys.
+
+────────────────────────────────────────────────────
+KEEP — ZEBRA STRIPING WITHOUT ROW PROP
+────────────────────────────────────────────────────
+
+KEEP the new layout/CSS-owned zebra striping approach if it works correctly.
+
+Do not reintroduce:
+
+i % 2
+
+inside WlTickerRow.
+
+The row component itself should remain independent of its sort position.
+
+After sorting:
+
+visible alternating row backgrounds must still be correct.
+
+Sticky ticker-column background must remain visually correct.
+
+────────────────────────────────────────────────────
+KEEP — ROW CONTEXT ISOLATION
+────────────────────────────────────────────────────
+
+KEEP the 53dac93b WlRowCtx cleanup.
+
+Do not put these whole mutable collections back into shared rowCtx:
+
+hydrationStatus
+localThemeOverrides
+themeAssignPendingTicker
+themeAssignFeedback
+
+Continue resolving ticker-specific values at the parent and pass only that
+ticker's scalar/reference props.
+
+KEEP:
+
+optionsAvailable: boolean
+
+instead of passing the entire optionsResp reference merely as a row-context
+dependency.
+
+Goal:
+
+AAPL hydration/theme change must not cause MSFT row to rerender.
+
+────────────────────────────────────────────────────
+KEEP — FUNDAMENTALS DATA PRECOMPUTATION
+────────────────────────────────────────────────────
+
+KEEP fundRowModels or its exact live equivalent introduced by 53dac93b.
+
+The expensive:
+
+CSV merge
+canonical-theme merge
+fundamental row normalization
+
+should remain memoized and reused.
+
+Technical → Fundamentals should therefore use already-prepared Fundamental row
+objects while rendering the full continuous table.
+
+Do NOT return to rebuilding the complete Fundamental merge every time the tab
+is selected.
+
+────────────────────────────────────────────────────
+KEEP — PASS-2 CORRECTNESS / PERFORMANCE FIXES
+────────────────────────────────────────────────────
+
+Preserve from 9fd56e16:
+
+- safe source/input-identity row cache
+- quote stabilization including timestamp/staleness fields
+- lazy-first Confluence mount
+- options-only calculations isolated to Options mode
+- stable ticker keys
+- memoized wlCsvMap
+
+Do not regress these.
+
+────────────────────────────────────────────────────
+RESTORE PRE-VIRTUALIZATION OFFSCREEN BEHAVIOR
+────────────────────────────────────────────────────
+
+53dac93b removed:
+
+contentVisibility: 'auto'
+containIntrinsicSize: '0 44px'
+
+because it was considered redundant with virtualization.
+
+Virtualization is now being removed.
+
+Restore the exact content-visibility behavior from the known-good 9fd56e16
+version FIRST, because that is the version the user describes as visually
+smooth and continuously populated.
+
+Use the exact historical implementation as reference:
+
+git show 9fd56e16:frontend/client/src/pages/watchlist.tsx
+
+Do not invent new CSS values during this correction.
+
+Important:
+
+The user-visible scrolling result is authoritative.
+
+If live browser validation shows content-visibility itself causes blank/black
+scroll regions after virtualization is gone, remove content-visibility and
+prefer complete full rendering.
+
+But begin by restoring the exact known-good pre-53dac93b behavior.
+
+────────────────────────────────────────────────────
+NO NEW PERFORMANCE ARCHITECTURE IN THIS TASK
+────────────────────────────────────────────────────
+
+Do NOT replace virtualization with another:
+
+virtualizer
+IntersectionObserver row renderer
+pagination
+progressive chunk renderer
+requestAnimationFrame row loader
+lazy row renderer
+infinite scroll
+DOM recycling engine
+
+This correction is explicitly about restoring continuous rendering.
+
+────────────────────────────────────────────────────
+REALTIME DATA — NON-NEGOTIABLE
+────────────────────────────────────────────────────
+
+Do not touch:
+
+20-second regular live quote cadence
+45-second pre/post cadence
+3-minute closed cadence
+
+Do not alter options freshness.
+
+Do not alter earnings.
+
+Do not alter backend.
+
+All 463 tickers remain realtime-updated exactly as before.
+
+────────────────────────────────────────────────────
+BROWSER VALIDATION — MOST IMPORTANT PART
+────────────────────────────────────────────────────
+
+Do not judge success from unit tests alone.
+
+Open the real Watchlist page.
+
+Test:
+
+1. Market Screener top → bottom using mouse wheel slowly.
+2. Market Screener top → bottom rapidly.
+3. Drag scrollbar thumb from top toward bottom.
+4. Technical top → bottom rapidly.
+5. Fundamentals top → bottom rapidly.
+6. Sort:
+   Price
+   7D %
+   Volume
+7. Switch:
+   Market → Technical
+   Technical → Fundamentals
+   Fundamentals → Options
+   Options → Market
+
+Required visual result:
+
+NO black blank regions.
+
+NO empty row gaps while scrolling.
+
+NO visible "catch-up" rendering.
+
+NO rows popping into existence after the scrollbar has already moved.
+
+The Screener should look like a continuous fully populated table.
+
+────────────────────────────────────────────────────
+INTERACTION PERFORMANCE TARGET
+────────────────────────────────────────────────────
+
+Because we are preserving Pass-3 row isolation and fundRowModels:
+
+Sorting and Technical → Fundamentals should be at least as responsive as the
+pre-Pass-3 build, preferably faster.
+
+Measure:
+
+Price sort click → settled
+7D sort click → settled
+Technical → Fundamentals
+Fundamentals → Technical
+
+Do not optimize these further in this correction if doing so risks scrolling UX.
+
+First priority:
+continuous beautiful scrolling.
+
+────────────────────────────────────────────────────
+TESTS
+────────────────────────────────────────────────────
+
+Update/remove tests that specifically assert virtualization/windowing.
+
+The tests must no longer require:
+
+wStart/wEnd
+spacer math
+overscan
+virtual mounted row count
+FUND_ROW_H windowing
+
+Keep tests for:
+
+1. no sort-index prop in WlTickerRow
+2. stable ticker keys
+3. AAPL hydration change does not alter MSFT row-specific props
+4. AAPL theme override does not alter MSFT row-specific props
+5. optionsAvailable does not churn with optionsResp identity
+6. fundRowModels correctness
+7. canonical input-cache correctness
+8. quote timestamp/staleness propagation
+9. realtime cadence constants
+10. full filteredRows renderer preserves every ticker
+11. full Fundamentals renderer preserves every ticker
+12. sort does not lose/duplicate symbols
+13. expanded rows work
+14. favorites work
+15. ticker popup works
+
+Run all existing relevant tests.
+
+────────────────────────────────────────────────────
+VALIDATION
+────────────────────────────────────────────────────
+
+Run:
+
+npm run check
+npm run build
+git diff --check
+
+No new TypeScript errors.
+
+Report actual exit codes.
+
+────────────────────────────────────────────────────
+DO NOT TOUCH
+────────────────────────────────────────────────────
+
+No backend changes.
+
+No API changes.
+
+No query-cadence changes.
+
+No provider changes.
+
+No options changes.
+
+No earnings changes.
+
+No Confluence data contract changes.
+
+No fundamental values/formulas.
+
+No taxonomy changes.
+
+No Watchlist columns.
+
+No ticker reduction.
+
+────────────────────────────────────────────────────
+REPOSITORY HYGIENE
+────────────────────────────────────────────────────
+
+Do not use:
+
+git add .
+git add -A
+
+Do not stage runtime/cache files.
+
+Do not stage pasted prompt artifacts.
+
+Note that the 9fd56e16..53dac93b Git range also contains automatic report/cache/
+attached_asset changes unrelated to the source correction.
+
+Do not copy those into this commit.
+
+Stage exact intended frontend source/test files only.
+
+One local commit:
+
+fix: restore continuous Watchlist scrolling
+
+Do not push until user reviews.
+
+────────────────────────────────────────────────────
+REPORT
+────────────────────────────────────────────────────
+
+Write to exact AGENTS.md-required report path.
+
+Include:
+
+1. Starting HEAD/status.
+2. Exact virtualization code removed.
+3. Main table full-render restoration.
+4. Fundamentals full-render restoration.
+5. Pass-3 improvements preserved:
+   - index prop removal
+   - rowCtx isolation
+   - optionsAvailable scalar
+   - fundRowModels
+6. Pass-2 improvements preserved.
+7. content-visibility final decision and browser evidence.
+8. Real scroll validation:
+   - slow wheel
+   - fast wheel
+   - scrollbar drag
+   - Market
+   - Technical
+   - Fundamentals
+9. Sort timings.
+10. tab-switch timings.
+11. confirmation zero black/empty catch-up regions.
+12. confirmation all rows remain available.
+13. confirmation quote cadence unchanged.
+14. tests/build/check.
+15. exact files changed.
+16. git diff --check.
+17. final SHA.

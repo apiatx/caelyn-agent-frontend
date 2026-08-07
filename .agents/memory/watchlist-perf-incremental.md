@@ -1,9 +1,9 @@
 ---
-name: Watchlist perf passes 1-3
-description: All three perf passes on watchlist.tsx — what was done, key pitfalls, and durable rules.
+name: Watchlist perf passes 1-3 + continuous scrolling fix
+description: All perf passes on watchlist.tsx — what was done, key pitfalls, durable rules. Includes the surgical undo of row virtualization.
 ---
 
-# Watchlist Performance Passes 1–3
+# Watchlist Performance Passes 1–3 + Continuous Scrolling Fix
 
 ## Pass 1 (commit `5918150e`)
 - Extracted `WlTickerRow = React.memo(...)` at module level.
@@ -20,75 +20,95 @@ description: All three perf passes on watchlist.tsx — what was done, key pitfa
 - `wlCsvMap` useMemo; `fundRowModels` pre-builds CSV-merge per ticker.
 - Options-only `_o*` calculations inside `screenerMode === 'options'` IIFE.
 
-## Pass 3 (commit `53dac93b`)
-- **Removed `i: number` prop** from `WlTickerRow` — the main cause of 463-row
-  re-renders on every sort. Zebra striping via CSS vars on outer `display:contents`
-  wrapper instead.
-- **Stripped mutable Maps from WlRowCtx** (`hydrationStatus`, `localThemeOverrides`,
-  `themeAssignPendingTicker`, `themeAssignFeedback`, `optionsResp`). Per-ticker values
-  resolved at `.map()` call site and passed as direct props.
-- **`optionsAvailable: boolean`** replaces `optionsResp: any` in rowCtx — context
-  rebuilds only once per session (false→true), not on every 20 s poll.
-- **Ticker row windowing**: `wStart/wEnd` from scroll position; OVERSCAN=8; top/bottom
-  spacer `<div>`; full-render fallback when `expandedTickers.size > 0`.
-- **Fundamentals windowing**: same math, `FUND_ROW_H=38`; spacers as `<tr aria-hidden>`.
-- **`fundRowModels` useMemo**: CSV-merge done once; `renderFundamentalScreenerContent`
-  does O(1) lookup per ticker — no rebuild on tab switch.
-- Removed `content-visibility: auto` — redundant with real windowing, measured to
-  worsen sort latency.
+## Pass 3 (commit `53dac93b`) → PARTIALLY REVERTED by fix below
+- Removed `i: number` prop from `WlTickerRow` — KEPT.
+- CSS vars zebra via `display:contents` wrapper — KEPT.
+- Stripped mutable Maps from `WlRowCtx` — KEPT.
+- `optionsAvailable: boolean` in rowCtx — KEPT.
+- `fundRowModels` useMemo — KEPT.
+- **Virtual row windowing (ticker + fundamentals) — REMOVED** (see fix below).
+
+## Continuous Scrolling Fix (commit `3bc5d6e6`)
+
+**Problem**: Windowed rows caused black/empty regions and visible catch-up during
+fast scrolling. The browser renders content only when React re-renders with updated
+scroll position — React state is not as fast as native browser scroll events.
+
+**Fix**: Removed all windowing machinery. Restored `filteredRows.map(...)` and
+`sortedFundRows.map((row, ri) => ...)` continuous full renders.
+
+**What was removed**:
+- `wlScrollContainerRef`, `wlScrollTop`, `wlViewportHeight`, `wlRowHeightRef`
+- `fundScrollContainerRef`, `fundScrollTop`, `fundViewportHeight`
+- 3 windowing `useEffect`s (scroll listener, row-height measurer, fund scroll listener)
+- Ticker windowing IIFE (`wStart`/`wEnd`/`topSpacer`/`bottomSpacer`)
+- Fundamentals windowing IIFE (`fStart`/`fEnd`/`fTopSpacer`/`fBottomSpacer`)
+- Synthetic spacer `<div>` and `<tr>` rows
+
+**What was restored**:
+- `contentVisibility: 'auto'` + `containIntrinsicSize: '0 44px'` on inner ticker grid div
+  (from `9fd56e16` known-good state). This is a native browser optimization — rows are in
+  DOM but off-screen paint is skipped. Does NOT cause blank scroll regions.
 
 ## Key pitfalls / rules
 
 **Why sort index is lethal:**
 Any numeric prop that changes for every row on sort causes React.memo to see "changed"
-for all 463 rows simultaneously — equivalent to unmemoized rendering.
+for all rows simultaneously. Never pass positional index as a prop to a memoized component.
+Use CSS vars on the wrapper or derive zebra from DOM index instead.
 
 **Why:**
 The sort index `i` changes value for every row whenever the sort column or direction
 changes. Even if the row's data didn't change, the changed `i` prop defeats memo.
 
 **How to apply:**
-Never pass positional index as a prop to a memoized component. Use CSS vars on the
-wrapper or derive zebra class from DOM index instead.
+CSS vars on the outer `display:contents` div; `WlTickerRow` reads `var(--wl-row-bg)`.
+
+---
+
+**React state-driven virtualization defeats browser scroll:**
+React state updates (e.g., `setWlScrollTop`) are batched and asynchronous relative to
+native scroll events. Even with `requestAnimationFrame`, there is always a frame or two
+lag between the user scrolling and React re-rendering with the new slice window. This
+causes blank spacer regions to be visible during fast scrolling.
+
+**Why:**
+Native browser scroll operates at 60–120fps. React reconciliation adds at least one
+frame of delay. Spacer divs are immediately visible to the user during that gap.
+
+**How to apply:**
+For tables with ≤500 rows, full DOM render + `contentVisibility: auto` is almost always
+the right answer. Only use React-state windowing when you can measure that the DOM itself
+is causing performance problems (e.g., thousands of rows causing layout thrash on sort).
+In that case, prefer a library (react-virtual, tanstack-virtual) that uses CSS transform
+rather than spacer divs.
 
 ---
 
 **Mutable Maps in context defeat memo:**
-If rowCtx holds a Map reference, any `.set()` on that Map does NOT change the Map
-reference (Maps are mutated in place). But if the component re-renders (e.g., any
-state change), a new `useMemo` result for rowCtx is produced because the Map itself
-is in the dep array — and the reference IS a new object if the state setter created a
-new Map (`new Map(prev)` pattern). This causes all memoized rows to see a new context.
-
-**Why:**
-`hydrationStatus` is stored as `useState<Map<string, any>>` and updated via
-`setHydrationStatus(prev => { const m = new Map(prev); m.set(key, val); return m; })`.
-Every update creates a new Map reference → rowCtx dep array changes → rowCtx rebuilds
-→ all consumers potentially re-render.
-
-**How to apply:**
-Resolve per-ticker values at the `.map()` call site using `.get(symUp)`. Pass the
-resolved primitive/undefined as a direct prop. Context only holds values that are truly
-shared and change infrequently (e.g., boolean flags, stable callbacks).
+If rowCtx holds a Map reference, any `setState(prev => new Map(prev))` creates a new Map
+reference → rowCtx dep array changes → rowCtx rebuilds → all consumers potentially re-render.
+Resolve per-ticker values at the `.map()` call site using `.get(symUp)`. Context should only
+hold values that change infrequently (stable booleans, stable callbacks).
 
 ---
 
 **`display: contents` preserves CSS inheritance:**
 A `display: contents` wrapper does NOT create a layout box but DOES remain in the
-element's inheritance tree. CSS custom properties (vars) set on it ARE inherited by
-children — can safely use it for passing CSS vars without affecting layout.
+inheritance tree. CSS custom properties (vars) set on it ARE inherited by children.
 
 ---
 
-**analysis binding ordering in watchlist.tsx:**
-The `analysis` binding is declared around line 3729. Anything above that line must use
-`watchlist?.analysis` not the bare `analysis` variable. Pass 1 caught this pitfall.
+**contentVisibility: auto is safe for continuous full renders:**
+`contentVisibility: auto` tells the browser to skip paint/layout for off-screen rows.
+All rows remain in the DOM. Scrollbar size and position are correct. No blank regions.
+Scrolling is native-speed. The browser handles the optimization, not React.
 
 ---
 
-**Test count baseline:**
+**Test count baseline (all passing as of `3bc5d6e6`):**
 - Pass 1: 25 tests (watchlist-perf-incremental.test.ts)
 - Pass 2: 20 tests (watchlist-perf-pass2.test.ts)
-- Pass 3: 21 tests (watchlist-perf-pass3.test.ts)
+- Pass 3: 21 tests (watchlist-perf-pass3.test.ts) — updated after fix
 - Security/search: 15 tests
-- Total: 81 tests, all passing as of commit `53dac93b`
+- Total: 81 tests
