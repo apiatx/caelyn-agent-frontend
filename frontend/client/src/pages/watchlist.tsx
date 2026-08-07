@@ -2288,56 +2288,6 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
     else if (/^S3-S4 Top/i.test(_stageLabel)) { _sClr = '#fb923c'; _sBg = 'rgba(251,146,60,0.10)'; _sBdr = 'rgba(251,146,60,0.30)'; }
     else if (/^S4 Decline/i.test(_stageLabel)) { _sClr = C.red; _sBg = `${C.red}15`; _sBdr = `${C.red}40`; }
   }
-  const _oHasMetrics = (
-    stock.options_score != null || stock.options_signal != null ||
-    stock.options_iv != null || stock.options_expected_move != null ||
-    stock.options_volume != null || stock.options_open_interest != null ||
-    stock.options_volume_put_call_ratio != null || stock.options_premium_put_call_ratio != null ||
-    stock.options_net_premium != null || stock.options_call_premium != null ||
-    stock.options_put_premium != null
-  );
-  const _oUn = stock.options_data_available === false && !_oHasMetrics;
-  const _oSt = !_oUn && (stock.options_stale === true || ((): boolean => {
-    const st = (stock.options_snapshot_status ?? '') as string;
-    return st === 'prior_session' || st === 'lkg_market_closed' || st === 'stale_but_usable' || st === 'stale_long_term';
-  })());
-  const _oHas = !optionsLoading || !!optionsResp;
-  const _oLd = optionsLoading && !optionsResp ? '…' : DASH;
-  const _oDim = _oSt ? 0.6 : 1;
-  const _scVal = _oUn ? null : (stock.options_score != null ? Number(stock.options_score) : null);
-  const _scStr = _scVal != null && Number.isFinite(_scVal) ? (_scVal >= 10 ? Math.round(_scVal).toString() : _scVal.toFixed(1)) : (_oHas ? DASH : _oLd);
-  const _scClr = _scVal != null && _scVal >= 70 ? C.green : _scVal != null && _scVal >= 50 ? C.amber : C.dim;
-  const _oSig = _oUn ? '' : (stock.options_signal ?? '');
-  const _oSigL = _oSig.toLowerCase();
-  const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dim;
-  const _oSigStr = _oHas ? (_oUn ? DASH : (_oSig || DASH)) : _oLd;
-  const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale / prior-session data' : undefined;
-  const _oCP = stock.options_premium_put_call_ratio != null ? Number(stock.options_premium_put_call_ratio) : null;
-  const _oCPStr = _oCP != null && Number.isFinite(_oCP) ? _oCP.toFixed(2) : (_oHas ? DASH : _oLd);
-  const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dim;
-  const _oIV = stock.options_iv != null ? Number(stock.options_iv) : null;
-  const _oIVStr = _oIV != null && Number.isFinite(_oIV) ? `${(_oIV > 5 ? _oIV : _oIV * 100).toFixed(0)}%` : (_oHas ? DASH : _oLd);
-  const _oEM = stock.options_expected_move != null ? Number(stock.options_expected_move) : null;
-  const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
-  const _oVol = stock.options_volume != null ? Number(stock.options_volume) : null;
-  const _oOI  = stock.options_open_interest != null ? Number(stock.options_open_interest) : null;
-  const _oVPC = stock.options_volume_put_call_ratio != null ? Number(stock.options_volume_put_call_ratio) : null;
-  const _oVPCStr = _oVPC != null && Number.isFinite(_oVPC) ? _oVPC.toFixed(2) : (_oHas ? DASH : _oLd);
-  const _oVPCClr = _oVPC != null ? (_oVPC < 0.7 ? C.green : _oVPC > 1.3 ? C.red : C.dim) : C.dim;
-  const _oNP    = stock.options_net_premium != null ? Number(stock.options_net_premium) : null;
-  const _oNPClr = _oNP != null ? (_oNP > 0 ? C.green : _oNP < 0 ? C.red : C.dim) : C.dim;
-  const _oNP1d  = stock.options_net_premium_delta_1d  != null ? Number(stock.options_net_premium_delta_1d)  : null;
-  const _oNP7d  = stock.options_net_premium_delta_7d  != null ? Number(stock.options_net_premium_delta_7d)  : null;
-  const _oNP30d = stock.options_net_premium_delta_30d != null ? Number(stock.options_net_premium_delta_30d) : null;
-  const _oCallP = stock.options_call_premium  != null ? Number(stock.options_call_premium)  : null;
-  const _oPutP  = stock.options_put_premium   != null ? Number(stock.options_put_premium)   : null;
-  const _oAskP  = stock.options_ask_premium   != null ? Number(stock.options_ask_premium)   : null;
-  const _oBidP  = stock.options_bid_premium   != null ? Number(stock.options_bid_premium)   : null;
-  const _oMidP  = stock.options_mid_premium   != null ? Number(stock.options_mid_premium)   : null;
-  const _oCallV = stock.options_call_volume   != null ? Number(stock.options_call_volume)   : null;
-  const _oPutV  = stock.options_put_volume    != null ? Number(stock.options_put_volume)    : null;
-  const _oCallO = stock.options_call_oi       != null ? Number(stock.options_call_oi)       : null;
-  const _oPutO  = stock.options_put_oi        != null ? Number(stock.options_put_oi)        : null;
   const _sym = (stock.ticker || stock.symbol || '') as string;
   const _isExpanded = isExpanded;
 
@@ -2359,6 +2309,8 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
         gap: 6,
         position: 'relative' as const,
         zIndex: 0,
+        contentVisibility: 'auto' as any,
+        containIntrinsicSize: '0 44px' as any,
       }}
       onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
@@ -2579,44 +2531,98 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
           </>
         );
       })()}
-      {screenerMode === 'options' && (
-        <>
-          {/* Opt Score */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
-          {/* Opt Signal */}
-          <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
-          {/* Vol P/C */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oVPCClr, opacity:_oDim }} title="Put contracts ÷ call contracts">{_oVPCStr}</span>
-          {/* Prem P/C */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }} title="Put premium ÷ call premium">{_oCPStr}</span>
-          {/* Net Prem */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNPClr, opacity:_oDim }}>{_oNP != null && Number.isFinite(_oNP) ? fmtOptCurr(_oNP) : (_oHas ? DASH : _oLd)}</span>
-          {/* Net 1D */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP1d != null ? (_oNP1d > 0 ? C.green : _oNP1d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP1d != null && Number.isFinite(_oNP1d) ? fmtOptDelta(_oNP1d) : (_oHas ? DASH : _oLd)}</span>
-          {/* Net 7D */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP7d != null ? (_oNP7d > 0 ? C.green : _oNP7d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP7d != null && Number.isFinite(_oNP7d) ? fmtOptDelta(_oNP7d) : (_oHas ? DASH : _oLd)}</span>
-          {/* Net 30D */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP30d != null ? (_oNP30d > 0 ? C.green : _oNP30d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP30d != null && Number.isFinite(_oNP30d) ? fmtOptDelta(_oNP30d) : (_oHas ? DASH : _oLd)}</span>
-          {/* IV */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
-          {/* EM */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
-          {/* Opt Vol */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
-          {/* OI */}
-          <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
-          {/* Secondary columns */}
-          {optSecColsState.has('optionsCallPrem') && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallP != null ? C.green : C.dim, opacity:_oDim }}>{_oCallP != null ? fmtOptCurr(_oCallP) : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsPutPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutP  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutP  != null ? fmtOptCurr(_oPutP)  : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsAskPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oAskP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oAskP  != null ? fmtOptCurr(_oAskP)  : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsBidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oBidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oBidP  != null ? fmtOptCurr(_oBidP)  : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsMidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oMidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oMidP  != null ? fmtOptCurr(_oMidP)  : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsCallVol')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallV != null ? C.green : C.dim, opacity:_oDim }}>{_oCallV != null ? formatVolume(_oCallV) : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsPutVol')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutV  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutV  != null ? formatVolume(_oPutV)  : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsCallOi')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallO != null ? C.green : C.dim, opacity:_oDim }}>{_oCallO != null ? formatVolume(_oCallO) : (_oHas ? DASH : _oLd)}</span>}
-          {optSecColsState.has('optionsPutOi')    && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutO  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutO  != null ? formatVolume(_oPutO)  : (_oHas ? DASH : _oLd)}</span>}
-        </>
-      )}
+      {screenerMode === 'options' && (() => {
+        // Options-mode-only calculations — only execute when Options tab is active.
+        // In Market/Technical/Fundamentals modes these ~40 Number() conversions are skipped.
+        const _oHasMetrics = (
+          stock.options_score != null || stock.options_signal != null ||
+          stock.options_iv != null || stock.options_expected_move != null ||
+          stock.options_volume != null || stock.options_open_interest != null ||
+          stock.options_volume_put_call_ratio != null || stock.options_premium_put_call_ratio != null ||
+          stock.options_net_premium != null || stock.options_call_premium != null ||
+          stock.options_put_premium != null
+        );
+        const _oUn = stock.options_data_available === false && !_oHasMetrics;
+        const _oSt = !_oUn && (stock.options_stale === true || ((): boolean => {
+          const st = (stock.options_snapshot_status ?? '') as string;
+          return st === 'prior_session' || st === 'lkg_market_closed' || st === 'stale_but_usable' || st === 'stale_long_term';
+        })());
+        const _oHas = !optionsLoading || !!optionsResp;
+        const _oLd = optionsLoading && !optionsResp ? '…' : DASH;
+        const _oDim = _oSt ? 0.6 : 1;
+        const _scVal = _oUn ? null : (stock.options_score != null ? Number(stock.options_score) : null);
+        const _scStr = _scVal != null && Number.isFinite(_scVal) ? (_scVal >= 10 ? Math.round(_scVal).toString() : _scVal.toFixed(1)) : (_oHas ? DASH : _oLd);
+        const _scClr = _scVal != null && _scVal >= 70 ? C.green : _scVal != null && _scVal >= 50 ? C.amber : C.dim;
+        const _oSig = _oUn ? '' : (stock.options_signal ?? '');
+        const _oSigL = _oSig.toLowerCase();
+        const _oSigClr = _oSigL.includes('unusual') ? C.amber : _oSigL.includes('gamma') ? '#a78bfa' : _oSigL.includes('asym') ? C.green : _oSigL.includes('vol') ? C.amber : _oSig ? C.teal : C.dim;
+        const _oSigStr = _oHas ? (_oUn ? DASH : (_oSig || DASH)) : _oLd;
+        const _oSigT = _oUn ? (stock.options_unavailable_reason ?? 'Options data unavailable') : _oSt ? 'Stale / prior-session data' : undefined;
+        const _oCP = stock.options_premium_put_call_ratio != null ? Number(stock.options_premium_put_call_ratio) : null;
+        const _oCPStr = _oCP != null && Number.isFinite(_oCP) ? _oCP.toFixed(2) : (_oHas ? DASH : _oLd);
+        const _oCPClr = _oCP != null ? (_oCP < 0.7 ? C.green : _oCP > 1.3 ? C.red : C.dim) : C.dim;
+        const _oIV = stock.options_iv != null ? Number(stock.options_iv) : null;
+        const _oIVStr = _oIV != null && Number.isFinite(_oIV) ? `${(_oIV > 5 ? _oIV : _oIV * 100).toFixed(0)}%` : (_oHas ? DASH : _oLd);
+        const _oEM = stock.options_expected_move != null ? Number(stock.options_expected_move) : null;
+        const _oEMStr = _oEM != null && Number.isFinite(_oEM) ? `${_oEM.toFixed(1)}%` : (_oHas ? DASH : _oLd);
+        const _oVol = stock.options_volume != null ? Number(stock.options_volume) : null;
+        const _oOI  = stock.options_open_interest != null ? Number(stock.options_open_interest) : null;
+        const _oVPC = stock.options_volume_put_call_ratio != null ? Number(stock.options_volume_put_call_ratio) : null;
+        const _oVPCStr = _oVPC != null && Number.isFinite(_oVPC) ? _oVPC.toFixed(2) : (_oHas ? DASH : _oLd);
+        const _oVPCClr = _oVPC != null ? (_oVPC < 0.7 ? C.green : _oVPC > 1.3 ? C.red : C.dim) : C.dim;
+        const _oNP    = stock.options_net_premium != null ? Number(stock.options_net_premium) : null;
+        const _oNPClr = _oNP != null ? (_oNP > 0 ? C.green : _oNP < 0 ? C.red : C.dim) : C.dim;
+        const _oNP1d  = stock.options_net_premium_delta_1d  != null ? Number(stock.options_net_premium_delta_1d)  : null;
+        const _oNP7d  = stock.options_net_premium_delta_7d  != null ? Number(stock.options_net_premium_delta_7d)  : null;
+        const _oNP30d = stock.options_net_premium_delta_30d != null ? Number(stock.options_net_premium_delta_30d) : null;
+        const _oCallP = stock.options_call_premium  != null ? Number(stock.options_call_premium)  : null;
+        const _oPutP  = stock.options_put_premium   != null ? Number(stock.options_put_premium)   : null;
+        const _oAskP  = stock.options_ask_premium   != null ? Number(stock.options_ask_premium)   : null;
+        const _oBidP  = stock.options_bid_premium   != null ? Number(stock.options_bid_premium)   : null;
+        const _oMidP  = stock.options_mid_premium   != null ? Number(stock.options_mid_premium)   : null;
+        const _oCallV = stock.options_call_volume   != null ? Number(stock.options_call_volume)   : null;
+        const _oPutV  = stock.options_put_volume    != null ? Number(stock.options_put_volume)    : null;
+        const _oCallO = stock.options_call_oi       != null ? Number(stock.options_call_oi)       : null;
+        const _oPutO  = stock.options_put_oi        != null ? Number(stock.options_put_oi)        : null;
+        return (
+          <>
+            {/* Opt Score */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_scClr, opacity:_oDim }} title={_oSt ? 'Stale options data' : undefined}>{_scStr}</span>
+            {/* Opt Signal */}
+            <span style={{ fontSize:9, fontFamily:font, color:_oSigClr, textTransform:'uppercase' as const, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, opacity:_oDim }} title={_oSigT}>{_oSigStr}</span>
+            {/* Vol P/C */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oVPCClr, opacity:_oDim }} title="Put contracts ÷ call contracts">{_oVPCStr}</span>
+            {/* Prem P/C */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oCPClr, opacity:_oDim }} title="Put premium ÷ call premium">{_oCPStr}</span>
+            {/* Net Prem */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNPClr, opacity:_oDim }}>{_oNP != null && Number.isFinite(_oNP) ? fmtOptCurr(_oNP) : (_oHas ? DASH : _oLd)}</span>
+            {/* Net 1D */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP1d != null ? (_oNP1d > 0 ? C.green : _oNP1d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP1d != null && Number.isFinite(_oNP1d) ? fmtOptDelta(_oNP1d) : (_oHas ? DASH : _oLd)}</span>
+            {/* Net 7D */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP7d != null ? (_oNP7d > 0 ? C.green : _oNP7d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP7d != null && Number.isFinite(_oNP7d) ? fmtOptDelta(_oNP7d) : (_oHas ? DASH : _oLd)}</span>
+            {/* Net 30D */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:_oNP30d != null ? (_oNP30d > 0 ? C.green : _oNP30d < 0 ? C.red : C.dim) : C.dim, opacity:_oDim }}>{_oNP30d != null && Number.isFinite(_oNP30d) ? fmtOptDelta(_oNP30d) : (_oHas ? DASH : _oLd)}</span>
+            {/* IV */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oIV != null ? C.amber : C.dim, opacity:_oDim }}>{_oIVStr}</span>
+            {/* EM */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oEM != null ? '#a78bfa' : C.dim, opacity:_oDim }}>{_oEMStr}</span>
+            {/* Opt Vol */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oVol != null ? formatVolume(_oVol) : (_oHas ? DASH : _oLd)}</span>
+            {/* OI */}
+            <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color:C.text, opacity:_oDim }}>{_oOI != null ? formatVolume(_oOI) : (_oHas ? DASH : _oLd)}</span>
+            {/* Secondary columns */}
+            {optSecColsState.has('optionsCallPrem') && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallP != null ? C.green : C.dim, opacity:_oDim }}>{_oCallP != null ? fmtOptCurr(_oCallP) : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsPutPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutP  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutP  != null ? fmtOptCurr(_oPutP)  : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsAskPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oAskP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oAskP  != null ? fmtOptCurr(_oAskP)  : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsBidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oBidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oBidP  != null ? fmtOptCurr(_oBidP)  : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsMidPrem')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oMidP  != null ? C.text  : C.dim, opacity:_oDim }}>{_oMidP  != null ? fmtOptCurr(_oMidP)  : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsCallVol')  && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallV != null ? C.green : C.dim, opacity:_oDim }}>{_oCallV != null ? formatVolume(_oCallV) : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsPutVol')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutV  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutV  != null ? formatVolume(_oPutV)  : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsCallOi')   && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oCallO != null ? C.green : C.dim, opacity:_oDim }}>{_oCallO != null ? formatVolume(_oCallO) : (_oHas ? DASH : _oLd)}</span>}
+            {optSecColsState.has('optionsPutOi')    && <span style={{ fontSize:10, fontFamily:font, whiteSpace:'nowrap' as const, color: _oPutO  != null ? C.red   : C.dim, opacity:_oDim }}>{_oPutO  != null ? formatVolume(_oPutO)  : (_oHas ? DASH : _oLd)}</span>}
+          </>
+        );
+      })()}
     </div>
     {_isExpanded && _sym && <CaelynRowBreakdown stock={stock} />}
     </div>
@@ -2711,6 +2717,7 @@ export default function WatchlistPage() {
   const [showOptColsMenu, setShowOptColsMenu] = useState(false);
   const [bottomView, setBottomView] = useState<'golden' | 'gromo' | 'themes' | 'marketcap' | 'fundGrouping' | 'hciz' | 'hctz'>('golden');
   const [mcSort, setMcSort] = useState<{ key: 'mktcap' | 'ticker' | 'price' | 'chg' | 'volx'; dir: 'asc' | 'desc' }>({ key: 'mktcap', dir: 'desc' });
+  const [confluenceEverMounted, setConfluenceEverMounted] = useState(false);
   const [screenerMode, setScreenerMode] = useState<'market' | 'technical' | 'options' | 'fundamentals' | 'confluence'>(() => {
     try {
       const v = localStorage.getItem('wl_screener_mode') as string;
@@ -2991,6 +2998,14 @@ export default function WatchlistPage() {
   /* Only fetch when Confluence tab is active or a ticker popup is open —
    * alignment is only consumed by CaelynConfluenceSection and (optionally)
    * StockDetailModal. Saves a cold-backend round-trip on every other tab. */
+  // Lazy-first-mount: mark Confluence as ever-mounted on first activation.
+  // Before first activation CaelynConfluenceSection is not mounted at all,
+  // eliminating its initial render cost. After first use it stays mounted
+  // (display:none while hidden) to preserve internal filter state.
+  useEffect(() => {
+    if (screenerMode === 'confluence') setConfluenceEverMounted(true);
+  }, [screenerMode]);
+
   const { data: alignmentResp } = useQuery({
     queryKey: ['watchlist-alignment', activeId],
     queryFn: async () => {
@@ -3815,45 +3830,107 @@ export default function WatchlistPage() {
   }, [baseMergedTickers.map(t => t.ticker).join('|')]);
   const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(realtimeSymbols, { enabled: realtimeSymbols.length > 0 });
 
-  // Per-symbol row identity: preserves the previous row object when key display
-  // fields haven't changed, allowing React.memo(WlTickerRow) to skip re-renders
-  // for the ~460 rows not touched by any given realtime quote poll.
-  const rowIdentityRef = useRef<Map<string, any>>(new Map());
+  // Per-symbol input identity cache: reuse merged output only when ALL merge inputs
+  // are unchanged (base row, stabilized quote, raw options, beta). This replaces the
+  // unsafe 10-field display-field whitelist with source-level tracking — any canonical
+  // change (technical, fundamental, taxonomy, 7D, IV, OI, etc.) forces a new output.
+  type _RowInputCache = { base: any; quote: any; rawOpt: any; beta: any; output: any };
+  const rowIdentityRef = useRef<Map<string, _RowInputCache>>(new Map());
+  // Stabilized realtime quote: reuses previous quote object when all 15 tracked fields
+  // are identical so an unchanged poll does not produce a new reference.
+  const stableQuoteRef = useRef<Map<string, any>>(new Map());
+  const QUOTE_STABILITY_FIELDS = [
+    'price', 'last', 'change', 'change_percent', 'volume', 'high', 'low',
+    'source', 'is_realtime', 'is_live_backup', 'is_stale',
+    'updated_at', 'quote_timestamp', 'staleness_seconds', 'market_session',
+  ] as const;
 
   const mergedTickers = useMemo(() => {
-    // Clear LKG map when switching to a different watchlist
+    // Clear caches when switching to a different watchlist
     if (lkgActiveIdRef.current !== activeId) {
       lkgSignalMapRef.current = new Map();
       lkgActiveIdRef.current = activeId;
+      rowIdentityRef.current = new Map();
+      stableQuoteRef.current = new Map();
     }
     const prev = lkgSignalMapRef.current;
 
-    const result = baseMergedTickers.map((t) => {
-      const sym = (t.ticker || '').toString().toUpperCase();
-      const rt = sym ? realtimeQuotes[sym] : undefined;
-      const quoteMerged = rt ? mergeRealtimeQuote(t, rt) : t;
+    const result = baseMergedTickers.map((baseRow) => {
+      const sym = (baseRow.ticker || '').toString().toUpperCase();
+
+      // ── Quote stabilization ──────────────────────────────────────────────
+      // If the incoming quote object is new (fresh deserialization) but ALL 15
+      // tracked fields are bit-identical to the last stable quote, reuse the
+      // previous object. This prevents an unchanged realtime poll from producing
+      // a new reference and defeating the input-identity check below.
+      const rawQuote = sym ? realtimeQuotes[sym] : undefined;
+      let stableQuote: typeof rawQuote = rawQuote;
+      if (rawQuote) {
+        const prevStable = stableQuoteRef.current.get(sym);
+        if (prevStable) {
+          let unchanged = true;
+          for (const f of QUOTE_STABILITY_FIELDS) {
+            if (!Object.is((prevStable as any)[f], (rawQuote as any)[f])) { unchanged = false; break; }
+          }
+          if (unchanged) stableQuote = prevStable;
+        }
+        stableQuoteRef.current.set(sym, stableQuote!);
+      }
+
       const rawOpt = sym ? optionsSignalsByTicker[sym] : undefined;
+      const beta = sym ? betaByTicker[sym] : undefined;
+
+      // ── Input identity check ─────────────────────────────────────────────
+      // Reuse the previous merged output ONLY when all 4 merge inputs are the
+      // same reference (or same scalar value for beta). This guarantees:
+      //   • Any canonical change (technical, fundamental, taxonomy, 7D, IV, OI…)
+      //     forces a new output because baseMergedTickers spreads new objects.
+      //   • A quote poll where no values changed reuses the previous output.
+      //   • An options refetch (every 2 min) only rebuilds when rawOpt changed.
+      const prevCache = sym ? rowIdentityRef.current.get(sym) : undefined;
+      if (prevCache &&
+          prevCache.base === baseRow &&
+          prevCache.quote === stableQuote &&
+          prevCache.rawOpt === rawOpt &&
+          Object.is(prevCache.beta, beta)) {
+        // All inputs unchanged — reuse cached output; keep LKG map current
+        if (sym) prev.set(sym, prevCache.output);
+        return prevCache.output;
+      }
+
+      // ── Build new merged row ─────────────────────────────────────────────
+      const quoteMerged = stableQuote ? mergeRealtimeQuote(baseRow, stableQuote) : baseRow;
       const opt = rawOpt ? normalizeOptionsSignal(rawOpt) : undefined;
       const next: any = opt ? { ...quoteMerged, ...opt } : quoteMerged;
 
       // Inject beta from FMP company-identity when not present in analysis row
-      const _injBeta = sym ? betaByTicker[sym] : undefined;
-      if (_injBeta !== undefined && (next.beta == null || next.beta === '')) {
-        next.beta = _injBeta;
+      if (beta !== undefined && (next.beta == null || next.beta === '')) {
+        next.beta = beta;
       }
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
       // preserve the last-known-valid value from the previous payload.
       // 0 is treated as a valid value and is NOT preserved over.
       const prevRow = sym ? prev.get(sym) : undefined;
-      if (!prevRow) return next;
-      const merged: any = { ...next };
-      for (const field of SIGNAL_LKG_FIELDS) {
-        if (isMissingSignalValue(next[field]) && !isMissingSignalValue(prevRow[field])) {
-          merged[field] = prevRow[field];
+      let output: any;
+      if (!prevRow) {
+        output = next;
+      } else {
+        const merged: any = { ...next };
+        for (const field of SIGNAL_LKG_FIELDS) {
+          if (isMissingSignalValue(next[field]) && !isMissingSignalValue(prevRow[field])) {
+            merged[field] = prevRow[field];
+          }
         }
+        output = merged;
       }
-      return merged;
+
+      // Store in identity cache and update LKG
+      if (sym) {
+        rowIdentityRef.current.set(sym, { base: baseRow, quote: stableQuote, rawOpt, beta, output });
+        prev.set(sym, output);
+      }
+      return output;
     });
 
     // ── LKG validation debug (set to true to diagnose signal data loss) ─────
@@ -3866,56 +3943,11 @@ export default function WatchlistPage() {
       console.log('relative_volume — prev:', countNonNull(prevArr, 'relative_volume'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'relative_volume'), '/ merged:', countNonNull(result, 'relative_volume'));
       console.log('vol_mc_pct      — prev:', countNonNull(prevArr, 'vol_mc_pct'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'vol_mc_pct'), '/ merged:', countNonNull(result, 'vol_mc_pct'));
       console.log('options_score   — prev:', countNonNull(prevArr, 'options_score'), '/ next (raw):', countNonNull(baseMergedTickers as any[], 'options_score'), '/ merged:', countNonNull(result, 'options_score'));
-      const lkgRestored = result.filter(r => {
-        const s = (r.ticker || '').toString().toUpperCase();
-        const p = prev.get(s);
-        if (!p) return false;
-        return SIGNAL_LKG_FIELDS.some(f => isMissingSignalValue((baseMergedTickers as any[]).find(t => (t.ticker||'').toString().toUpperCase() === s)?.[f]) && !isMissingSignalValue(p[f]));
-      });
-      if (lkgRestored.length > 0) {
-        console.group('[LKG] Tickers that would have lost signal data (now preserved):');
-        for (const r of lkgRestored) {
-          const s = (r.ticker || '').toString().toUpperCase();
-          const p = prev.get(s)!;
-          const raw = (baseMergedTickers as any[]).find(t => (t.ticker||'').toString().toUpperCase() === s);
-          console.log(s, '| VolX prev:', p.relative_volume, '→ raw:', raw?.relative_volume, '→ merged:', r.relative_volume,
-            '| VolMC prev:', p.vol_mc_pct, '→ raw:', raw?.vol_mc_pct, '→ merged:', r.vol_mc_pct,
-            '| OptScore prev:', p.options_score, '→ raw:', raw?.options_score, '→ merged:', r.options_score);
-        }
-        console.groupEnd();
-      }
       console.groupEnd();
     }
     // ── end LKG debug ─────────────────────────────────────────────────────
 
-    // Identity-preserve: return the PREVIOUS row object for any symbol whose
-    // price/options display fields are identical. React.memo(WlTickerRow) then
-    // uses referential equality to skip unchanged rows on every quote poll.
-    const IDENTITY_FIELDS = [
-      'price', 'last', 'change', 'change_percent', 'volume', 'relative_volume',
-      'options_score', 'options_signal', 'price_is_stale', 'market_session',
-    ] as const;
-    const stableResult = result.map(row => {
-      const sym = (row.ticker || '').toString().toUpperCase();
-      const prevId = rowIdentityRef.current.get(sym);
-      if (prevId) {
-        let same = true;
-        for (const f of IDENTITY_FIELDS) {
-          if (!Object.is((prevId as any)[f], (row as any)[f])) { same = false; break; }
-        }
-        if (same) return prevId;
-      }
-      rowIdentityRef.current.set(sym, row);
-      return row;
-    });
-
-    // Update LKG map so the next refetch can compare against current values
-    for (const row of stableResult) {
-      const sym = (row.ticker || '').toString().toUpperCase();
-      if (sym) prev.set(sym, row);
-    }
-
-    return stableResult;
+    return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId, betaByTicker]);
 
@@ -6209,13 +6241,16 @@ export default function WatchlistPage() {
         )}
         {tableTitle !== 'CLOSE WATCH' && (
           <div style={{ display: screenerMode === 'confluence' ? 'flex' : 'none', flex: 1, minHeight: 0 }}>
-            <CaelynConfluenceSection
-              rows={confluenceRows ?? csvMergedScreenerRows}
-              onTickerClick={handleTickerClick}
-              totalTickers={allTickerSymbols.length}
-              usingAlignmentEndpoint={confluenceRows != null}
-              embedded
-            />
+            {/* Only mount after first activation — zero initial Confluence render cost */}
+            {confluenceEverMounted && (
+              <CaelynConfluenceSection
+                rows={confluenceRows ?? csvMergedScreenerRows}
+                onTickerClick={handleTickerClick}
+                totalTickers={allTickerSymbols.length}
+                usingAlignmentEndpoint={confluenceRows != null}
+                embedded
+              />
+            )}
           </div>
         )}
         {screenerMode === 'confluence' ? null : tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
@@ -6315,7 +6350,7 @@ export default function WatchlistPage() {
               const sym = (stock.ticker || stock.symbol || '') as string;
               return (
                 <WlTickerRow
-                  key={`row-frag-${sym}-${i}`}
+                  key={`${activeId}:${sym}`}
                   stock={stock}
                   i={i}
                   isExpanded={expandedTickers.has(sym)}
@@ -6338,13 +6373,20 @@ export default function WatchlistPage() {
     );
   };
 
-  /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
-  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS, isQualityMode = false) => {
-    const csvMap: Record<string, any> = {};
+  /* ── CSV map memoized at component level so renderFundamentalScreenerContent
+   * does not rebuild it on every screener render ─────────────────────────── */
+  const wlCsvMap = useMemo<Record<string, any>>(() => {
+    const m: Record<string, any> = {};
     for (const row of (watchlist?.csv_data || [])) {
       const t = (row.ticker || row.Ticker || row.TICKER || row.symbol || row.Symbol || '').toString().toUpperCase();
-      if (t) csvMap[t] = row;
+      if (t) m[t] = row;
     }
+    return m;
+  }, [watchlist?.csv_data]);
+
+  /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
+  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS, isQualityMode = false) => {
+    const csvMap = wlCsvMap;
     const fundRows = srcRows.map(s => {
       const tkKey = (s.ticker || '').toString().toUpperCase();
       const csv = csvMap[tkKey] || {};
@@ -6452,7 +6494,7 @@ export default function WatchlistPage() {
               const fundSym = (row.ticker || '').toString().toUpperCase();
               const fundExpanded = expandedTickers.has(fundSym);
               return (
-              <Fragment key={`${row.ticker}-${ri}`}>
+              <Fragment key={row.ticker || String(ri)}>
               <tr
                 onClick={() => row.ticker && handleTickerClick(row.ticker)}
                 style={{ cursor: row.ticker ? 'pointer' : 'default', transition: 'background 0.1s' }}
