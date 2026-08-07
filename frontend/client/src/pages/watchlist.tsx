@@ -2313,6 +2313,8 @@ const WlTickerRow = memo(function WlTickerRow({ stock, isExpanded, isFavorite, h
         gap: 6,
         position: 'relative' as const,
         zIndex: 0,
+        contentVisibility: 'auto' as any,
+        containIntrinsicSize: '0 44px' as any,
       }}
       onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'var(--wl-row-bg, transparent)'; }}
@@ -2772,17 +2774,6 @@ export default function WatchlistPage() {
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
 
-  // ── Row-windowing scroll tracking ────────────────────────────────────────
-  // Market / Technical / Options ticker table
-  const wlScrollContainerRef = useRef<HTMLDivElement>(null);
-  const [wlScrollTop, setWlScrollTop] = useState(0);
-  const [wlViewportHeight, setWlViewportHeight] = useState(600);
-  /** Actual measured row height; updated after first non-empty render. */
-  const wlRowHeightRef = useRef(44);
-  // Fundamentals table
-  const fundScrollContainerRef = useRef<HTMLDivElement>(null);
-  const [fundScrollTop, setFundScrollTop] = useState(0);
-  const [fundViewportHeight, setFundViewportHeight] = useState(600);
   const toggleExpandedTicker = useCallback((sym: string) => setExpandedTickers(prev => {
     const next = new Set(prev);
     if (next.has(sym)) next.delete(sym); else next.add(sym);
@@ -2790,53 +2781,6 @@ export default function WatchlistPage() {
   }), []);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
-
-  // ── Scroll tracking for ticker-table row windowing ─────────────────────
-  useEffect(() => {
-    const el = wlScrollContainerRef.current;
-    if (!el) return;
-    setWlScrollTop(0);
-    setWlViewportHeight(el.clientHeight || 600);
-    let rafId: number;
-    const onScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => setWlScrollTop(el.scrollTop));
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    const ro = new ResizeObserver(() => setWlViewportHeight(el.clientHeight || 600));
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); cancelAnimationFrame(rafId); };
-  }, [activeId]); // re-run when watchlist changes (container scrolled back to top)
-
-  // Measure actual ticker-row height after the first non-empty render.
-  // The measurement runs once per unique filtered-row count change so repeated
-  // sorts don't trigger it (count stays stable).
-  useEffect(() => {
-    const el = wlScrollContainerRef.current;
-    if (!el) return;
-    const firstRow = el.querySelector('[data-wl-row]') as HTMLElement | null;
-    if (firstRow) {
-      const h = firstRow.getBoundingClientRect().height;
-      if (h > 20) wlRowHeightRef.current = Math.ceil(h);
-    }
-  });  // intentionally no dep array — runs cheaply after every render to capture first measured height
-
-  // ── Scroll tracking for fundamentals-table row windowing ───────────────
-  useEffect(() => {
-    const el = fundScrollContainerRef.current;
-    if (!el) return;
-    setFundScrollTop(0);
-    setFundViewportHeight(el.clientHeight || 600);
-    let rafId: number;
-    const onScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => setFundScrollTop(el.scrollTop));
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    const ro = new ResizeObserver(() => setFundViewportHeight(el.clientHeight || 600));
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); cancelAnimationFrame(rafId); };
-  }, [activeId]);
 
   // Debounce add input for security search (300ms); clear when security selected
   useEffect(() => {
@@ -6317,7 +6261,7 @@ export default function WatchlistPage() {
           </div>
         )}
         {screenerMode === 'confluence' ? null : tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
-          <div ref={fundScrollContainerRef} style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
+          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
               fundamentalsCategory === 'financialHealth' ? FUND_FINANCIAL_HEALTH_COLS
               : fundamentalsCategory === 'growth'        ? FUND_GROWTH_COMBINED_COLS
@@ -6327,7 +6271,7 @@ export default function WatchlistPage() {
             )}
           </div>
         ) : (
-        <div ref={wlScrollContainerRef} style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
+        <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
           <div style={{ minWidth: TICKER_TABLE_MIN_WIDTH }}>
             {/* table header */}
             <div style={{
@@ -6408,55 +6352,35 @@ export default function WatchlistPage() {
               </div>
             )}
 
-            {/* table rows — virtual window: render only the visible slice + overscan */}
-            {(() => {
-              const ROW_H = wlRowHeightRef.current;
-              const OVERSCAN = 8;
-              // Fall back to full render when any row is expanded (variable height).
-              const hasExpanded = expandedTickers.size > 0;
-              const wStart = hasExpanded ? 0 : Math.max(0, Math.floor(wlScrollTop / ROW_H) - OVERSCAN);
-              const visCount = Math.ceil(wlViewportHeight / ROW_H);
-              const wEnd = hasExpanded
-                ? filteredRows.length
-                : Math.min(filteredRows.length, wStart + visCount + OVERSCAN * 2);
-              const topSpacer = wStart * ROW_H;
-              const bottomSpacer = hasExpanded ? 0 : Math.max(0, (filteredRows.length - wEnd) * ROW_H);
+            {/* table rows — continuous render: all filtered tickers mounted for smooth scrolling */}
+            {filteredRows.map((stock, absoluteIdx) => {
+              const sym = (stock.ticker || stock.symbol || '') as string;
+              const symUp = sym.toUpperCase();
               return (
-                <>
-                  {topSpacer > 0 && <div aria-hidden style={{ height: topSpacer }} />}
-                  {filteredRows.slice(wStart, wEnd).map((stock, relIdx) => {
-                    const absoluteIdx = wStart + relIdx;
-                    const sym = (stock.ticker || stock.symbol || '') as string;
-                    const symUp = sym.toUpperCase();
-                    return (
-                      // Outer display:contents div carries CSS vars for zebra striping.
-                      // React.memo on WlTickerRow never sees the sort index —
-                      // only stock/isExpanded/isFavorite/per-ticker-props/ctx change.
-                      <div
-                        key={`${activeId}:${sym}`}
-                        style={{
-                          display: 'contents',
-                          ['--wl-row-bg' as any]: absoluteIdx % 2 === 0 ? 'transparent' : `${C.border}08`,
-                          ['--wl-sticky-bg' as any]: absoluteIdx % 2 === 0 ? C.bg : C.card,
-                        }}
-                      >
-                        <WlTickerRow
-                          stock={stock}
-                          isExpanded={expandedTickers.has(sym)}
-                          isFavorite={favoritesSet.has(symUp)}
-                          hydrationEntry={hydrationStatus.get(symUp)}
-                          localThemeOverride={localThemeOverrides.get(symUp)}
-                          themeAssignPending={themeAssignPendingTicker === sym}
-                          rowThemeFeedback={themeAssignFeedback?.ticker === sym ? { type: themeAssignFeedback.type, msg: themeAssignFeedback.msg } : null}
-                          ctx={rowCtx}
-                        />
-                      </div>
-                    );
-                  })}
-                  {bottomSpacer > 0 && <div aria-hidden style={{ height: bottomSpacer }} />}
-                </>
+                // Outer display:contents div carries CSS vars for zebra striping.
+                // React.memo on WlTickerRow never sees the sort index —
+                // only stock/isExpanded/isFavorite/per-ticker-props/ctx change.
+                <div
+                  key={`${activeId}:${sym}`}
+                  style={{
+                    display: 'contents',
+                    ['--wl-row-bg' as any]: absoluteIdx % 2 === 0 ? 'transparent' : `${C.border}08`,
+                    ['--wl-sticky-bg' as any]: absoluteIdx % 2 === 0 ? C.bg : C.card,
+                  }}
+                >
+                  <WlTickerRow
+                    stock={stock}
+                    isExpanded={expandedTickers.has(sym)}
+                    isFavorite={favoritesSet.has(symUp)}
+                    hydrationEntry={hydrationStatus.get(symUp)}
+                    localThemeOverride={localThemeOverrides.get(symUp)}
+                    themeAssignPending={themeAssignPendingTicker === sym}
+                    rowThemeFeedback={themeAssignFeedback?.ticker === sym ? { type: themeAssignFeedback.type, msg: themeAssignFeedback.msg } : null}
+                    ctx={rowCtx}
+                  />
+                </div>
               );
-            })()}
+            })}
             {visibleRows.length === 0 && (
               <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
                 {tableTitle === 'FAVORITES'
@@ -6592,24 +6516,7 @@ export default function WatchlistPage() {
                   No tickers
                 </td>
               </tr>
-            ) : (() => {
-              // Fundamentals virtual window — mirrors ticker-table windowing.
-              // Falls back to full render when any row is expanded (variable height).
-              const FUND_ROW_H = 38; // 7px*2 padding + ~22px content + 1px border
-              const FUND_OVERSCAN = 8;
-              const hasExpandedFund = expandedTickers.size > 0;
-              const fStart = hasExpandedFund ? 0 : Math.max(0, Math.floor(fundScrollTop / FUND_ROW_H) - FUND_OVERSCAN);
-              const fVisCount = Math.ceil(fundViewportHeight / FUND_ROW_H);
-              const fEnd = hasExpandedFund
-                ? sortedFundRows.length
-                : Math.min(sortedFundRows.length, fStart + fVisCount + FUND_OVERSCAN * 2);
-              const fTopSpacer = fStart * FUND_ROW_H;
-              const fBottomSpacer = hasExpandedFund ? 0 : Math.max(0, (sortedFundRows.length - fEnd) * FUND_ROW_H);
-              return (
-                <>
-                  {fTopSpacer > 0 && <tr aria-hidden><td colSpan={cols.length} style={{ height: fTopSpacer, padding: 0, border: 'none' }} /></tr>}
-                  {sortedFundRows.slice(fStart, fEnd).map((row, relIdx) => {
-              const ri = fStart + relIdx;
+            ) : sortedFundRows.map((row, ri) => {
               const rowBg      = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
               const rowHover   = 'rgba(255,255,255,0.03)';
               const stickyBase = ri % 2 === 0 ? C.bg : C.card;
@@ -6923,10 +6830,6 @@ export default function WatchlistPage() {
               </Fragment>
               );
             })}
-                  {fBottomSpacer > 0 && <tr aria-hidden><td colSpan={cols.length} style={{ height: fBottomSpacer, padding: 0, border: 'none' }} /></tr>}
-                </>
-              );
-            })()}
           </tbody>
         </table>
       </div>
