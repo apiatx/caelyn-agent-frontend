@@ -2234,15 +2234,12 @@ function wlApiHeaders(): Record<string, string> {
 interface WlRowCtx {
   screenerMode: string;
   optionsLoading: boolean;
-  optionsResp: any;
+  /** True once the options query has resolved at least once (stable: false→true only). */
+  optionsAvailable: boolean;
   optSecColsState: Set<string>;
   activeId: string;
   isAdmin: boolean;
   themeUniverse: Array<{ theme_id: string; display_name: string }>;
-  themeAssignPendingTicker: string | null;
-  themeAssignFeedback: { ticker: string; type: 'ok' | 'err'; msg: string } | null;
-  hydrationStatus: Map<string, { quote: string; technical: string; fundamentals: string; options: string }>;
-  localThemeOverrides: Map<string, string>;
   tickerGrid: string;
   tickerTableMinWidth: number;
   onTickerClick: (ticker: string) => void;
@@ -2254,20 +2251,26 @@ interface WlRowCtx {
 
 interface WlTickerRowProps {
   stock: any;
-  i: number;
   isExpanded: boolean;
   isFavorite: boolean;
+  /** Per-ticker hydration entry — undefined when the ticker is not being hydrated. */
+  hydrationEntry?: { quote: string; technical: string; fundamentals: string; options: string };
+  /** Per-ticker local theme override set by the admin theme-assign flow. */
+  localThemeOverride?: string;
+  /** True while a theme assignment is in flight for this specific ticker. */
+  themeAssignPending: boolean;
+  /** Theme-assign result feedback for this specific ticker; null when none. */
+  rowThemeFeedback: { type: 'ok' | 'err'; msg: string } | null;
   ctx: WlRowCtx;
 }
 
 /** Re-renders only when stock object identity or ctx identity changes.
  *  Per-symbol identity preservation in mergedTickers ensures rows with unchanged
  *  price/options data receive the same stock reference across quote polls. */
-const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite, ctx }: WlTickerRowProps) {
+const WlTickerRow = memo(function WlTickerRow({ stock, isExpanded, isFavorite, hydrationEntry, localThemeOverride, themeAssignPending, rowThemeFeedback, ctx }: WlTickerRowProps) {
   const {
-    screenerMode, optionsLoading, optionsResp, optSecColsState, activeId,
-    isAdmin, themeUniverse, themeAssignPendingTicker, themeAssignFeedback,
-    hydrationStatus, localThemeOverrides, tickerGrid, tickerTableMinWidth,
+    screenerMode, optionsLoading, optionsAvailable, optSecColsState, activeId,
+    isAdmin, themeUniverse, tickerGrid, tickerTableMinWidth,
     onTickerClick, onToggleFavorite, onDeleteStart, onToggleExpand, onThemeAssign,
   } = ctx;
 
@@ -2294,6 +2297,7 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
   return (
     <div style={{ display: 'contents' }}>
     <div
+      data-wl-row
       onClick={() => !isPending && stock.ticker && onTickerClick(stock.ticker)}
       style={{
         display: 'grid',
@@ -2301,7 +2305,7 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
         minWidth: tickerTableMinWidth,
         padding: '7px 14px',
         borderBottom: `1px solid ${C.border}`,
-        background: i % 2 === 0 ? 'transparent' : `${C.border}08`,
+        background: 'var(--wl-row-bg, transparent)',
         cursor: isPending ? 'default' : 'pointer',
         transition: 'background 0.1s',
         alignItems: 'center',
@@ -2309,13 +2313,11 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
         gap: 6,
         position: 'relative' as const,
         zIndex: 0,
-        contentVisibility: 'auto' as any,
-        containIntrinsicSize: '0 44px' as any,
       }}
       onMouseEnter={e => { if (!isPending) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : `${C.border}08`; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--wl-row-bg, transparent)'; }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', position: 'sticky' as const, left: 0, zIndex: 1, background: i % 2 === 0 ? C.bg : C.card, alignSelf: 'stretch' as const }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', position: 'sticky' as const, left: 0, zIndex: 1, background: 'var(--wl-sticky-bg, transparent)', alignSelf: 'stretch' as const }}>
         {!isPending && stock.ticker && (
           <button
             onClick={e => { e.stopPropagation(); e.preventDefault(); void onToggleFavorite(stock.ticker!); }}
@@ -2356,8 +2358,8 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
       </span>
       <span style={{ fontSize: 10, color: C.dim, overflow: 'hidden', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }} title={stock.company || stock.name || ''}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flexShrink: 1, minWidth: 0 }}>{typeof (stock.company || stock.name) === 'string' ? (stock.company || stock.name || DASH) : (stock.company || stock.name) ? String(stock.company || stock.name) : DASH}</span>
-        {hydrationStatus.has((stock.ticker || '').toUpperCase()) && (() => {
-          const hs = hydrationStatus.get((stock.ticker || '').toUpperCase())!;
+        {hydrationEntry && (() => {
+          const hs = hydrationEntry;
           const isTerminal = (s: string) => s === 'done' || s === 'error' || s === 'no_options';
           const isActive = (s: string) => !isTerminal(s) && s !== 'queued' && s !== 'unknown';
           const catLabel = (key: string, val: string) => {
@@ -2385,9 +2387,8 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
         })()}
       </span>
       {isAdmin && stock.ticker ? (() => {
-        const currentThemeName = localThemeOverrides.get((stock.ticker || '').toUpperCase()) || stock.canonical_theme_name || stock.section_title || stock.theme || null;
-        const rowThemePending = themeAssignPendingTicker === stock.ticker;
-        const rowThemeFeedback = themeAssignFeedback?.ticker === stock.ticker ? themeAssignFeedback : null;
+        const currentThemeName = localThemeOverride || stock.canonical_theme_name || stock.section_title || stock.theme || null;
+        const rowThemePending = themeAssignPending;
         return (
           <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
             <DropdownMenu>
@@ -2547,8 +2548,8 @@ const WlTickerRow = memo(function WlTickerRow({ stock, i, isExpanded, isFavorite
           const st = (stock.options_snapshot_status ?? '') as string;
           return st === 'prior_session' || st === 'lkg_market_closed' || st === 'stale_but_usable' || st === 'stale_long_term';
         })());
-        const _oHas = !optionsLoading || !!optionsResp;
-        const _oLd = optionsLoading && !optionsResp ? '…' : DASH;
+        const _oHas = !optionsLoading || optionsAvailable;
+        const _oLd = optionsLoading && !optionsAvailable ? '…' : DASH;
         const _oDim = _oSt ? 0.6 : 1;
         const _scVal = _oUn ? null : (stock.options_score != null ? Number(stock.options_score) : null);
         const _scStr = _scVal != null && Number.isFinite(_scVal) ? (_scVal >= 10 ? Math.round(_scVal).toString() : _scVal.toFixed(1)) : (_oHas ? DASH : _oLd);
@@ -2770,6 +2771,18 @@ export default function WatchlistPage() {
   const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string; options: string }>>(new Map());
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
+
+  // ── Row-windowing scroll tracking ────────────────────────────────────────
+  // Market / Technical / Options ticker table
+  const wlScrollContainerRef = useRef<HTMLDivElement>(null);
+  const [wlScrollTop, setWlScrollTop] = useState(0);
+  const [wlViewportHeight, setWlViewportHeight] = useState(600);
+  /** Actual measured row height; updated after first non-empty render. */
+  const wlRowHeightRef = useRef(44);
+  // Fundamentals table
+  const fundScrollContainerRef = useRef<HTMLDivElement>(null);
+  const [fundScrollTop, setFundScrollTop] = useState(0);
+  const [fundViewportHeight, setFundViewportHeight] = useState(600);
   const toggleExpandedTicker = useCallback((sym: string) => setExpandedTickers(prev => {
     const next = new Set(prev);
     if (next.has(sym)) next.delete(sym); else next.add(sym);
@@ -2777,6 +2790,53 @@ export default function WatchlistPage() {
   }), []);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
+
+  // ── Scroll tracking for ticker-table row windowing ─────────────────────
+  useEffect(() => {
+    const el = wlScrollContainerRef.current;
+    if (!el) return;
+    setWlScrollTop(0);
+    setWlViewportHeight(el.clientHeight || 600);
+    let rafId: number;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => setWlScrollTop(el.scrollTop));
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = new ResizeObserver(() => setWlViewportHeight(el.clientHeight || 600));
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); cancelAnimationFrame(rafId); };
+  }, [activeId]); // re-run when watchlist changes (container scrolled back to top)
+
+  // Measure actual ticker-row height after the first non-empty render.
+  // The measurement runs once per unique filtered-row count change so repeated
+  // sorts don't trigger it (count stays stable).
+  useEffect(() => {
+    const el = wlScrollContainerRef.current;
+    if (!el) return;
+    const firstRow = el.querySelector('[data-wl-row]') as HTMLElement | null;
+    if (firstRow) {
+      const h = firstRow.getBoundingClientRect().height;
+      if (h > 20) wlRowHeightRef.current = Math.ceil(h);
+    }
+  });  // intentionally no dep array — runs cheaply after every render to capture first measured height
+
+  // ── Scroll tracking for fundamentals-table row windowing ───────────────
+  useEffect(() => {
+    const el = fundScrollContainerRef.current;
+    if (!el) return;
+    setFundScrollTop(0);
+    setFundViewportHeight(el.clientHeight || 600);
+    let rafId: number;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => setFundScrollTop(el.scrollTop));
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = new ResizeObserver(() => setFundViewportHeight(el.clientHeight || 600));
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); cancelAnimationFrame(rafId); };
+  }, [activeId]);
 
   // Debounce add input for security search (300ms); clear when security selected
   useEffect(() => {
@@ -3655,18 +3715,22 @@ export default function WatchlistPage() {
   /* Shared context object for every WlTickerRow — rebuilt only when one of its
    * values changes, NOT on realtime-quote polls. Combined with per-symbol
    * identity preservation in mergedTickers, React.memo skips unchanged rows. */
+  // Stable boolean: false until options query resolves, then true for the lifetime
+  // of the watchlist session. Put outside useMemo so it's stable across polls.
+  const optionsAvailable = !!optionsResp;
+
+  /* Shared context for WlTickerRow — contains ONLY truly shared, stable values.
+   * Per-ticker dynamic values (hydration, theme override, theme pending, feedback)
+   * are resolved at the map call-site and passed as individual row props,
+   * preventing Map-mutation from invalidating ALL rows on every update. */
   const rowCtx = useMemo<WlRowCtx>(() => ({
     screenerMode,
     optionsLoading,
-    optionsResp,
+    optionsAvailable,
     optSecColsState,
     activeId: activeId ?? '',
     isAdmin,
     themeUniverse,
-    themeAssignPendingTicker,
-    themeAssignFeedback,
-    hydrationStatus,
-    localThemeOverrides,
     tickerGrid: _wlTickerGrid,
     tickerTableMinWidth: _wlTickerTableMinWidth,
     onTickerClick: handleTickerClick,
@@ -3675,9 +3739,8 @@ export default function WatchlistPage() {
     onToggleExpand: toggleExpandedTicker,
     onThemeAssign: onThemeAssignStable,
   }), [
-    screenerMode, optionsLoading, optionsResp, optSecColsState, activeId,
-    isAdmin, themeUniverse, themeAssignPendingTicker, themeAssignFeedback,
-    hydrationStatus, localThemeOverrides, _wlTickerGrid, _wlTickerTableMinWidth,
+    screenerMode, optionsLoading, optionsAvailable, optSecColsState, activeId,
+    isAdmin, themeUniverse, _wlTickerGrid, _wlTickerTableMinWidth,
     handleTickerClick, toggleFavorite, toggleExpandedTicker, onThemeAssignStable,
   ]);
 
@@ -6254,7 +6317,7 @@ export default function WatchlistPage() {
           </div>
         )}
         {screenerMode === 'confluence' ? null : tableTitle !== 'CLOSE WATCH' && screenerMode === 'fundamentals' ? (
-          <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
+          <div ref={fundScrollContainerRef} style={{ flex: 1, overflow: 'auto', minHeight: 0 }} className="wl-scrollbar">
             {renderFundamentalScreenerContent(filteredRows,
               fundamentalsCategory === 'financialHealth' ? FUND_FINANCIAL_HEALTH_COLS
               : fundamentalsCategory === 'growth'        ? FUND_GROWTH_COMBINED_COLS
@@ -6264,7 +6327,7 @@ export default function WatchlistPage() {
             )}
           </div>
         ) : (
-        <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
+        <div ref={wlScrollContainerRef} style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
           <div style={{ minWidth: TICKER_TABLE_MIN_WIDTH }}>
             {/* table header */}
             <div style={{
@@ -6345,20 +6408,55 @@ export default function WatchlistPage() {
               </div>
             )}
 
-            {/* table rows */}
-            {filteredRows.map((stock, i) => {
-              const sym = (stock.ticker || stock.symbol || '') as string;
+            {/* table rows — virtual window: render only the visible slice + overscan */}
+            {(() => {
+              const ROW_H = wlRowHeightRef.current;
+              const OVERSCAN = 8;
+              // Fall back to full render when any row is expanded (variable height).
+              const hasExpanded = expandedTickers.size > 0;
+              const wStart = hasExpanded ? 0 : Math.max(0, Math.floor(wlScrollTop / ROW_H) - OVERSCAN);
+              const visCount = Math.ceil(wlViewportHeight / ROW_H);
+              const wEnd = hasExpanded
+                ? filteredRows.length
+                : Math.min(filteredRows.length, wStart + visCount + OVERSCAN * 2);
+              const topSpacer = wStart * ROW_H;
+              const bottomSpacer = hasExpanded ? 0 : Math.max(0, (filteredRows.length - wEnd) * ROW_H);
               return (
-                <WlTickerRow
-                  key={`${activeId}:${sym}`}
-                  stock={stock}
-                  i={i}
-                  isExpanded={expandedTickers.has(sym)}
-                  isFavorite={favoritesSet.has(sym.toUpperCase())}
-                  ctx={rowCtx}
-                />
+                <>
+                  {topSpacer > 0 && <div aria-hidden style={{ height: topSpacer }} />}
+                  {filteredRows.slice(wStart, wEnd).map((stock, relIdx) => {
+                    const absoluteIdx = wStart + relIdx;
+                    const sym = (stock.ticker || stock.symbol || '') as string;
+                    const symUp = sym.toUpperCase();
+                    return (
+                      // Outer display:contents div carries CSS vars for zebra striping.
+                      // React.memo on WlTickerRow never sees the sort index —
+                      // only stock/isExpanded/isFavorite/per-ticker-props/ctx change.
+                      <div
+                        key={`${activeId}:${sym}`}
+                        style={{
+                          display: 'contents',
+                          ['--wl-row-bg' as any]: absoluteIdx % 2 === 0 ? 'transparent' : `${C.border}08`,
+                          ['--wl-sticky-bg' as any]: absoluteIdx % 2 === 0 ? C.bg : C.card,
+                        }}
+                      >
+                        <WlTickerRow
+                          stock={stock}
+                          isExpanded={expandedTickers.has(sym)}
+                          isFavorite={favoritesSet.has(symUp)}
+                          hydrationEntry={hydrationStatus.get(symUp)}
+                          localThemeOverride={localThemeOverrides.get(symUp)}
+                          themeAssignPending={themeAssignPendingTicker === sym}
+                          rowThemeFeedback={themeAssignFeedback?.ticker === sym ? { type: themeAssignFeedback.type, msg: themeAssignFeedback.msg } : null}
+                          ctx={rowCtx}
+                        />
+                      </div>
+                    );
+                  })}
+                  {bottomSpacer > 0 && <div aria-hidden style={{ height: bottomSpacer }} />}
+                </>
               );
-            })}
+            })()}
             {visibleRows.length === 0 && (
               <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.dim }}>
                 {tableTitle === 'FAVORITES'
@@ -6384,13 +6482,16 @@ export default function WatchlistPage() {
     return m;
   }, [watchlist?.csv_data]);
 
-  /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
-  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS, isQualityMode = false) => {
-    const csvMap = wlCsvMap;
-    const fundRows = srcRows.map(s => {
+  /* ── Memoized per-ticker Fundamentals view-models ─────────────────────────
+   * The CSV-merge / canonical-theme-override work is done once when allStocks or
+   * wlCsvMap changes — NOT repeated every time the user clicks the Fundamentals tab.
+   * renderFundamentalScreenerContent just sorts and slices these pre-built models. */
+  const fundRowModels = useMemo<Record<string, any>>(() => {
+    const models: Record<string, any> = {};
+    for (const s of allStocks) {
       const tkKey = (s.ticker || '').toString().toUpperCase();
-      const csv = csvMap[tkKey] || {};
-      // Snapshot canonical theme before any merge so CSV cannot overwrite it
+      if (!tkKey) continue;
+      const csv = wlCsvMap[tkKey] || {};
       const canonicalTheme = getWatchlistTheme(s);
       const merged: Record<string, any> = { ...csv };
       for (const [k, v] of Object.entries(s)) {
@@ -6400,12 +6501,20 @@ export default function WatchlistPage() {
           merged[k] = v;
         }
       }
-      // Restore AI-enhanced theme — always wins over any CSV industry/sector/category
       if (canonicalTheme) merged['canonical_theme_name'] = canonicalTheme;
-      // Preserve raw CSV industry separately in case it is useful for future reference
       if (csv.industry != null) merged['csv_industry'] = csv.industry;
       else if (csv.sector != null) merged['csv_industry'] = csv.sector;
-      return merged;
+      models[tkKey] = merged;
+    }
+    return models;
+  }, [allStocks, wlCsvMap]);
+
+  /* ── fundamental screener content (reused in top Screener panel + formerly bottom tab) ─── */
+  const renderFundamentalScreenerContent = (srcRows: typeof sortedTickers, cols: FundColDef[] = FUND_COLS, isQualityMode = false) => {
+    // Look up pre-built view-models — CSV merge already done in fundRowModels useMemo.
+    const fundRows = srcRows.map(s => {
+      const tkKey = (s.ticker || '').toString().toUpperCase();
+      return fundRowModels[tkKey] ?? { ...s };
     });
 
     // fundRows already arrive pre-sorted via sortedTickers — no independent re-sort needed.
@@ -6483,7 +6592,24 @@ export default function WatchlistPage() {
                   No tickers
                 </td>
               </tr>
-            ) : sortedFundRows.map((row, ri) => {
+            ) : (() => {
+              // Fundamentals virtual window — mirrors ticker-table windowing.
+              // Falls back to full render when any row is expanded (variable height).
+              const FUND_ROW_H = 38; // 7px*2 padding + ~22px content + 1px border
+              const FUND_OVERSCAN = 8;
+              const hasExpandedFund = expandedTickers.size > 0;
+              const fStart = hasExpandedFund ? 0 : Math.max(0, Math.floor(fundScrollTop / FUND_ROW_H) - FUND_OVERSCAN);
+              const fVisCount = Math.ceil(fundViewportHeight / FUND_ROW_H);
+              const fEnd = hasExpandedFund
+                ? sortedFundRows.length
+                : Math.min(sortedFundRows.length, fStart + fVisCount + FUND_OVERSCAN * 2);
+              const fTopSpacer = fStart * FUND_ROW_H;
+              const fBottomSpacer = hasExpandedFund ? 0 : Math.max(0, (sortedFundRows.length - fEnd) * FUND_ROW_H);
+              return (
+                <>
+                  {fTopSpacer > 0 && <tr aria-hidden><td colSpan={cols.length} style={{ height: fTopSpacer, padding: 0, border: 'none' }} /></tr>}
+                  {sortedFundRows.slice(fStart, fEnd).map((row, relIdx) => {
+              const ri = fStart + relIdx;
               const rowBg      = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
               const rowHover   = 'rgba(255,255,255,0.03)';
               const stickyBase = ri % 2 === 0 ? C.bg : C.card;
@@ -6797,6 +6923,10 @@ export default function WatchlistPage() {
               </Fragment>
               );
             })}
+                  {fBottomSpacer > 0 && <tr aria-hidden><td colSpan={cols.length} style={{ height: fBottomSpacer, padding: 0, border: 'none' }} /></tr>}
+                </>
+              );
+            })()}
           </tbody>
         </table>
       </div>
