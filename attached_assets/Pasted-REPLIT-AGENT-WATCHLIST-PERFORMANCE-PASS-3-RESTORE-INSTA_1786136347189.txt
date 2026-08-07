@@ -1,0 +1,632 @@
+REPLIT AGENT — WATCHLIST PERFORMANCE PASS 3:
+RESTORE INSTANT SORT/TAB RESPONSIVENESS WITH REAL ROW WINDOWING
+WITHOUT SACRIFICING INITIAL-LOAD IMPROVEMENTS OR DATA FRESHNESS
+
+Work only in the live FRONTEND Replit workspace.
+
+Current relevant commits:
+
+5918150e — perf: make Watchlist rendering incremental
+9fd56e16 — perf: skip hidden Watchlist render work
+
+USER FEEDBACK AFTER 9fd56e16:
+
+- Watchlist initial load is slightly faster.
+- Screener interaction is now noticeably worse.
+- Sorting feels sluggish.
+- Switching Technical → Fundamentals feels sluggish.
+- The user does NOT accept slower interaction as the price for a slightly
+  faster initial load.
+
+TARGET:
+
+Restore or exceed the old Screener interaction speed while keeping or improving
+the current initial-load speed.
+
+DO NOT reduce:
+- realtime price cadence
+- options freshness
+- ticker count
+- columns
+- functionality
+
+The live Replit filesystem/runtime is authoritative.
+GitHub is reference only.
+
+────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────
+
+1. Read live frontend AGENTS.md completely.
+2. Follow its exact report destination/repository rules.
+3. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent 15 commits
+4. Confirm 9fd56e16 or exact live equivalent.
+5. Preserve unrelated work.
+6. Do not reset/revert/rebase/pull/push.
+7. Read:
+   - watchlist.tsx
+   - useRealtimeQuotes.ts
+   - mergeRealtimeQuote.ts
+   - caelyn-confluence.tsx
+   - current Watchlist performance tests
+
+Do not modify backend.
+
+────────────────────────────────────────────────────
+KEEP THESE 9fd56e16 CORRECTIONS
+────────────────────────────────────────────────────
+
+Do NOT broadly revert Pass 2.
+
+Preserve:
+
+1. Source/input-identity row cache replacing the unsafe 10-field whitelist.
+2. Stable quote comparison including freshness/timestamp fields.
+3. Lazy-first Confluence mount.
+4. Options-only calculations running only in Options mode.
+5. Ticker-based stable row keys.
+6. Memoized wlCsvMap.
+7. Realtime quote cadence:
+   - regular: 20s
+   - pre/post: 45s
+   - closed: 3m
+
+These were intentional and should survive unless a measured correctness defect
+is found.
+
+────────────────────────────────────────────────────
+PROVEN ISSUE 1 — SORT STILL RERENDERS EVERY ROW
+────────────────────────────────────────────────────
+
+Current WlTickerRow props still include:
+
+i: number
+
+and the component uses:
+
+i % 2
+
+for alternating backgrounds/sticky backgrounds.
+
+Therefore sorting changes i for most/all tickers.
+
+Even though the row key is now stable, React.memo sees:
+
+old i != new i
+
+and rerenders most of the ~463 row components.
+
+Fix this.
+
+Remove sort position/index from WlTickerRow props entirely.
+
+Do NOT replace it with another changing parity boolean prop.
+
+Move zebra striping to layout/CSS ownership, for example using stable row
+container selectors / nth-child semantics.
+
+Sticky ticker-cell background must remain visually correct.
+
+Required proof:
+
+Sort by Price when 463 rows exist.
+
+A ticker whose stock/state inputs are unchanged must NOT rerender solely because
+its sort index changed.
+
+Measure actual renders.
+
+────────────────────────────────────────────────────
+PROVEN ISSUE 2 — SHARED rowCtx INVALIDATES ALL ROWS
+────────────────────────────────────────────────────
+
+Current WlRowCtx includes mutable whole-page objects such as:
+
+optionsResp
+hydrationStatus
+localThemeOverrides
+themeAssignPendingTicker
+themeAssignFeedback
+
+This defeats row isolation.
+
+For example:
+
+one ticker hydration update
+→ hydrationStatus Map changes
+→ rowCtx changes
+→ every WlTickerRow receives new ctx
+→ React.memo cannot skip them
+
+Refactor row props into:
+
+A. SHARED STABLE CONTEXT
+
+Only values truly shared across rows and stable during normal updates:
+
+- activeId
+- isAdmin
+- themeUniverse
+- grid/layout config
+- stable callbacks
+- active screener mode/config
+
+B. ROW-SPECIFIC DYNAMIC PROPS
+
+Resolve at the parent for the specific ticker:
+
+- hydration status for this ticker
+- local theme override for this ticker
+- theme assignment pending boolean for this ticker
+- theme assignment feedback for this ticker
+- favorite boolean
+- expanded boolean
+
+Do not pass whole Maps merely so each row can call .get(sym).
+
+OPTIONS:
+
+Do not pass the whole optionsResp object to every row.
+
+The merged stock row already owns normalized ticker-level options data.
+
+If the row only needs to know:
+
+loading vs available
+
+pass the minimum stable scalar needed, and only let it change when its visible
+meaning actually changes.
+
+Required proof:
+
+One ticker hydration state update must not rerender 462 unrelated ticker rows.
+
+One theme assignment must not rerender 462 unrelated ticker rows.
+
+One new options response must not rerender every Market/Technical row solely
+because optionsResp reference changed.
+
+────────────────────────────────────────────────────
+PROVEN ISSUE 3 — FUNDAMENTALS FIRST SWITCH BUILDS 463 ROWS
+────────────────────────────────────────────────────
+
+renderFundamentalScreenerContent currently:
+
+- maps all source rows
+- merges CSV + canonical data
+- maps all columns
+- builds all ~463 <tr> trees
+- calculates styles/formatting for every row
+
+when Fundamentals becomes active.
+
+Memoizing wlCsvMap alone did not solve this.
+
+First separate DATA PREPARATION from DOM RENDERING.
+
+Create a memoized per-ticker Fundamental row/view-model cache.
+
+The expensive:
+
+CSV merge
+canonical field merge
+fundamental field normalization
+
+should NOT be repeated merely because the user switches into Fundamentals.
+
+The underlying per-ticker Fundamental view model should be reusable across
+sorting/category switching where source data did not change.
+
+Sorting should reorder references to already-built row models.
+
+Do not change fundamental values or sort semantics.
+
+────────────────────────────────────────────────────
+PRIMARY PERFORMANCE CHANGE — REAL ROW WINDOWING
+────────────────────────────────────────────────────
+
+The Screener viewport has a bounded scroll container.
+
+Implement a lightweight internal row window for the active Screener.
+
+Do NOT install a dependency.
+
+Do NOT paginate.
+
+Do NOT add Load More.
+
+All ~463 tickers stay:
+
+- in memory
+- sorted
+- filtered
+- searchable
+- realtime-updated
+
+Only the DOM/rendered row subset is windowed.
+
+Architecture:
+
+full filteredRows[]
+        ↓
+sort/filter as today
+        ↓
+scrollTop + viewport height
+        ↓
+visible start/end + overscan
+        ↓
+render approximately visible rows + overscan
+        ↓
+top spacer
+visible rows
+bottom spacer
+
+Use generous overscan so fast scrolling remains smooth.
+
+Target normal mounted row count:
+
+approximately 20–50 rows
+
+rather than ~463.
+
+Measure the actual collapsed row height from the live DOM.
+
+Do not guess 44px.
+
+────────────────────────────────────────────────────
+MARKET / TECHNICAL / OPTIONS WINDOW
+────────────────────────────────────────────────────
+
+Use the existing Screener scroll container.
+
+Preserve:
+
+- sticky header
+- horizontal scrolling
+- sticky ticker column
+- favorites
+- remove button
+- ticker popup
+- theme editing
+- sorting
+- filters
+- fullscreen
+- realtime quote updates
+
+Only visible/overscan WlTickerRow components should be mounted.
+
+The full rows array must remain the source of truth.
+
+────────────────────────────────────────────────────
+FUNDAMENTALS WINDOW
+────────────────────────────────────────────────────
+
+Apply equivalent windowing to the Fundamentals renderer.
+
+For a table structure, use safe top/bottom spacer rows or an equivalent layout
+that preserves:
+
+- sticky header
+- sticky ticker column
+- column sizing
+- horizontal scroll
+- row clicks
+- favorite/remove buttons
+- expansion
+
+Do NOT mount all 463 Fundamentals rows on first tab entry.
+
+This is the primary fix for Technical → Fundamentals latency.
+
+────────────────────────────────────────────────────
+EXPANDED CAELYN ROWS
+────────────────────────────────────────────────────
+
+Expanded rows have variable height.
+
+Do NOT break expansion for virtualization.
+
+Choose the smallest reliable architecture.
+
+Acceptable safe approach:
+
+- normal collapsed state:
+    windowing enabled
+
+- if one or more rows are expanded and the current simple virtualizer cannot
+  safely account for their dynamic height:
+    temporarily fall back to the current complete-row renderer while expansion
+    is active
+
+This preserves functionality.
+
+If implementing measured dynamic heights is straightforward using existing
+ResizeObserver/browser APIs, that is also acceptable.
+
+Do not create a fragile custom layout engine.
+
+Report which approach was used.
+
+────────────────────────────────────────────────────
+content-visibility A/B TEST
+────────────────────────────────────────────────────
+
+9fd56e16 added:
+
+contentVisibility: 'auto'
+containIntrinsicSize: '0 44px'
+
+to each ticker row.
+
+The 44px value was not demonstrated in the report as a measured live row
+height.
+
+Before retaining it, benchmark:
+
+A. current content-visibility
+B. without content-visibility
+C. with row windowing
+
+Measure:
+
+initial row paint
+sort latency
+scroll behavior
+layout time
+
+Once true windowing is active, content-visibility may be redundant.
+
+If it makes sort/layout interaction worse or adds no measurable value:
+remove it.
+
+Do not keep an optimization solely because it sounds useful.
+
+────────────────────────────────────────────────────
+MODE SWITCH RESPONSIVENESS
+────────────────────────────────────────────────────
+
+Measure:
+
+Market → Technical
+Technical → Fundamentals
+Fundamentals → Options
+Options → Market
+
+The active view must render only its visible row window.
+
+Do not permanently mount four complete 463-row tables in hidden DOM.
+
+That would merely trade initial load/memory for switch speed.
+
+If Fundamental row DATA preparation remains noticeable after memoization,
+you may schedule view-model preparation with requestIdleCallback AFTER the
+initial Watchlist becomes interactive.
+
+This is allowed only for pure in-memory calculation.
+
+Do not trigger API calls from idle prewarm.
+
+Do not mount hidden row trees.
+
+Goal:
+
+initial page remains light
++
+alternate view DATA is warm before user clicks when browser idle time permits.
+
+Provide fallback for browsers without requestIdleCallback.
+
+────────────────────────────────────────────────────
+SORTING
+────────────────────────────────────────────────────
+
+Sorting all 463 in-memory objects is fine.
+
+Do not optimize the comparator unless profiling says it is expensive.
+
+The expensive problem is React/DOM work after sorting.
+
+Required behavior:
+
+- sort full dataset
+- update spacer math
+- render visible window only
+- no mass component rerender/remount
+- no change to sort semantics
+
+Measure click → settled frame.
+
+────────────────────────────────────────────────────
+REALTIME DATA
+────────────────────────────────────────────────────
+
+DO NOT alter useRealtimeQuotes cadence.
+
+Realtime updates continue for ALL active Watchlist symbols.
+
+Windowing controls DOM rendering only.
+
+Offscreen symbols must continue updating in memory.
+
+When an offscreen ticker later scrolls into view, it must immediately show its
+latest price/options state.
+
+No stale-screen optimization is acceptable.
+
+────────────────────────────────────────────────────
+TEST REQUIREMENTS
+────────────────────────────────────────────────────
+
+The previous test suites largely replicated logic without mounting React.
+
+Keep them, but add meaningful production-path tests where current test tooling
+supports them.
+
+At minimum prove:
+
+1. sort index is no longer a WlTickerRow prop.
+2. zebra styling remains correct after sorting.
+3. stable ticker row input does not rerender solely because its position moved.
+4. hydration update for AAPL does not invalidate MSFT row props.
+5. theme override for AAPL does not invalidate MSFT row props.
+6. Market mode does not depend on full optionsResp object identity.
+7. virtual window returns correct start/end.
+8. overscan boundaries are correct.
+9. all filtered rows remain represented by spacer + mounted window.
+10. top/bottom spacer heights equal omitted row height.
+11. sorting preserves complete universe.
+12. Market visible row values unchanged.
+13. Technical visible row values unchanged.
+14. Options visible row values unchanged.
+15. Fundamentals visible row values unchanged.
+16. Fundamentals sort unchanged.
+17. favorites still work.
+18. ticker click still works.
+19. expanded-row fallback/dynamic-height behavior works.
+20. realtime cadence constants unchanged.
+21. an offscreen updated ticker shows the new quote when scrolled into view.
+
+────────────────────────────────────────────────────
+BROWSER VALIDATION — REQUIRED
+────────────────────────────────────────────────────
+
+Use the real page.
+
+Record before/after for:
+
+Initial:
+- first row visible
+- interactive time
+- mounted ticker rows
+- ticker-table DOM nodes
+
+Sort:
+- Price sort click → settled
+- 7D sort click → settled
+- number of WlTickerRow renders
+- number of row remounts
+
+Tabs:
+- Market → Technical
+- Technical → Fundamentals
+- Fundamentals → Options
+- Options → Market
+
+Scroll:
+- top → middle → bottom
+- visible input delay
+- long tasks
+
+Realtime:
+- one quote poll
+- visible rows updated
+- offscreen rows remain current when scrolled into view
+
+Required targets:
+
+normal mounted row count:
+<= ~50 unless viewport/overscan genuinely requires more
+
+sort:
+no visible multi-second stall
+
+Technical → Fundamentals:
+no visible multi-second stall
+
+scroll:
+smooth without delayed input
+
+────────────────────────────────────────────────────
+DO NOT CHANGE
+────────────────────────────────────────────────────
+
+No backend changes.
+
+No provider changes.
+
+No quote cadence changes.
+
+No options scanner changes.
+
+No earnings changes.
+
+No FMP changes.
+
+No Watchlist API changes.
+
+No feature removal.
+
+No pagination.
+
+No reduced ticker universe.
+
+No new dependency.
+
+No GlobalPrefetch.
+
+────────────────────────────────────────────────────
+VALIDATION
+────────────────────────────────────────────────────
+
+Run:
+
+npm run check
+npm run build
+git diff --check
+
+plus all AGENTS.md-required tests.
+
+No new TS errors.
+
+────────────────────────────────────────────────────
+COMMIT
+────────────────────────────────────────────────────
+
+Stage exact intended source/test files only.
+
+Do not use:
+
+git add .
+git add -A
+
+One local commit:
+
+perf: virtualize Watchlist screener rows
+
+Do not push until user reviews report.
+
+────────────────────────────────────────────────────
+REPORT
+────────────────────────────────────────────────────
+
+Write to the exact AGENTS.md-required path.
+
+Include:
+
+1. Starting HEAD/status.
+2. Browser baseline.
+3. Proof index prop caused sort-wide rerenders.
+4. rowCtx invalidation findings.
+5. Fundamentals mount cost.
+6. row window implementation.
+7. actual measured row heights.
+8. mounted rows before/after.
+9. DOM nodes before/after.
+10. content-visibility A/B result.
+11. sort timings before/after.
+12. tab-switch timings before/after.
+13. scroll behavior before/after.
+14. realtime update behavior.
+15. expanded-row strategy.
+16. confirmation full 463-ticker data remains in memory.
+17. confirmation quote/options cadence unchanged.
+18. tests/check/build.
+19. exact files changed.
+20. git diff --check.
+21. final commit SHA.
