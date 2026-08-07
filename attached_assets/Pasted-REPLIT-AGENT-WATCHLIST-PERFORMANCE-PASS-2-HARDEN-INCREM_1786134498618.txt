@@ -1,0 +1,617 @@
+REPLIT AGENT — WATCHLIST PERFORMANCE PASS 2:
+HARDEN INCREMENTAL ROW CORRECTNESS, SKIP OFFSCREEN/HIDDEN WORK,
+AND MEASURE THE REAL BROWSER BOTTLENECK
+
+Work only in the live FRONTEND Replit workspace.
+
+The live Replit filesystem/runtime is authoritative.
+GitHub is reference/history only.
+
+Current relevant commit:
+
+5918150e — perf: make Watchlist rendering incremental
+
+The user reports this materially improved Watchlist performance, but the page is
+still noticeably slower than the rest of the application.
+
+DO NOT reduce realtime quote freshness.
+DO NOT reduce options freshness.
+DO NOT remove stocks, columns, filters, tabs, news, earnings, Confluence,
+fundamentals, ticker popup functionality, taxonomy functionality, or any other
+intentional feature.
+
+This task must preserve:
+
+useRealtimeQuotes regular cadence = 20s
+pre/post cadence = 45s
+closed cadence = 3m
+
+and all existing backend/provider contracts.
+
+────────────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────────────
+
+1. Find and read live frontend AGENTS.md completely.
+2. Follow its exact report destination and repository rules.
+3. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent 15 commits
+4. Confirm 5918150e or exact live equivalent.
+5. Preserve all unrelated changes.
+6. Do not reset/revert/rebase/pull/push.
+7. Read:
+   - frontend/client/src/pages/watchlist.tsx
+   - frontend/client/src/hooks/useRealtimeQuotes.ts
+   - frontend/client/src/lib/mergeRealtimeQuote.ts
+   - frontend/client/src/components/caelyn-confluence.tsx
+   - relevant Watchlist tests
+8. Preserve:
+   - d9862e4e GlobalPrefetch removal
+   - 595c3265 earnings circuit breaker
+
+────────────────────────────────────────────────────────────
+PHASE 1 — ACTUALLY PROFILE THE LIVE BROWSER
+────────────────────────────────────────────────────────────
+
+The prior report did NOT provide the required browser before/after measurements.
+
+Do not infer render counts from unit tests.
+
+Capture a browser performance trace against the deployed healthy backend.
+
+Baseline sequence:
+
+A. navigate from Home → Watchlist
+B. wait until first visible ticker rows appear
+C. scroll the ticker table top → middle → bottom
+D. wait through one regular realtime quote update if market is open
+E. sort Price
+F. sort 7D %
+G. switch Market → Technical → Fundamentals → Options → Market
+H. switch Confluence on and back
+I. open and close one ticker popup
+
+Record:
+
+- /api/watchlist/{id} TTFB
+- response complete
+- response transfer bytes
+- decoded response bytes
+- first Watchlist shell paint
+- first ticker row paint
+- page usable/interactable
+- total DOM node count
+- ticker-table DOM node count
+- mounted ticker rows
+- main-thread long tasks >50ms
+- largest long task
+- scripting time
+- style/layout time
+- paint time
+- React Watchlist commits if profiler available
+- WlTickerRow renders during one quote refresh
+- row renders during sort
+- row renders during screener-mode switch
+
+This measurement is required.
+
+────────────────────────────────────────────────────────────
+CORRECTNESS DEFECT — 5918150e ROW IDENTITY WHITELIST
+────────────────────────────────────────────────────────────
+
+Current mergedTickers uses rowIdentityRef and decides that an ENTIRE row can be
+reused when only these fields match:
+
+price
+last
+change
+change_percent
+volume
+relative_volume
+options_score
+options_signal
+price_is_stale
+market_session
+
+This is unsafe.
+
+The row contains many other independently changing values including, but not
+limited to:
+
+technical/stage fields
+change_7d/change_30d
+fundamentals
+valuation
+beta
+taxonomy/theme fields
+options IV
+expected move
+options volume
+open interest
+premium P/C
+volume P/C
+net premium
+premium deltas
+call/put premium
+high/low
+price_source
+price_updated_at
+quote_timestamp
+staleness_seconds
+
+A newly fetched canonical Watchlist row must NEVER be discarded just because
+the 10-field whitelist happens to match.
+
+Replace this architecture.
+
+Preferred safe model:
+
+For each symbol cache the actual merge INPUT identities:
+
+canonicalBaseRow
+realtimeQuoteInput
+normalizedOptionsInput
+betaInput
+outputRow
+
+Reuse outputRow only when ALL corresponding inputs are unchanged.
+
+Conceptually:
+
+prev.base === baseRow
+AND prev.quote === stableQuote
+AND prev.options === stableOptions
+AND Object.is(prev.beta, beta)
+
+→ reuse prev.output
+
+Otherwise:
+→ build a new merged output row
+
+Critical invariant:
+
+A new canonical base Watchlist row reference MUST force a new output row,
+therefore all technical/fundamental/taxonomy/history fields propagate.
+
+Do not use a manually maintained whole-row display-field whitelist.
+
+If realtime quote objects themselves receive new references on every poll even
+when values are identical, stabilize them safely.
+
+A quote may be reused only if every field consumed by mergeRealtimeQuote is
+unchanged:
+
+price
+last
+change
+change_percent
+volume
+high
+low
+source
+is_realtime
+is_live_backup
+is_stale
+updated_at
+quote_timestamp
+staleness_seconds
+market_session
+
+Prefer a shallow canonical comparison local to Watchlist unless changing
+useRealtimeQuotes globally is clearly safe for every consumer.
+
+No stale quote metadata may be hidden.
+
+Likewise normalize options data outside the realtime quote loop so unchanged
+options inputs do not create a new object on every quote update.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 1 — DO NOT MOUNT HIDDEN CONFLUENCE ON INITIAL LOAD
+────────────────────────────────────────────────────────────
+
+Current code mounts CaelynConfluenceSection for every normal Watchlist render:
+
+<div style={{
+  display: screenerMode === 'confluence' ? 'flex' : 'none'
+}}>
+  <CaelynConfluenceSection ... />
+</div>
+
+This means the component mounts even while Market/Technical/Options/Fundamentals
+is active.
+
+Do not do this on initial load.
+
+Implement lazy-first-mount:
+
+- Before Confluence has ever been selected:
+    component is not mounted at all.
+- First time screenerMode becomes "confluence":
+    mount it.
+- After it has mounted once:
+    preserving the mounted instance while hidden is acceptable if needed to
+    preserve its internal UI state.
+
+This gives zero initial Confluence render cost while preserving state after
+first use.
+
+Alignment query remains lazy exactly as 5918150e intended.
+
+Test Confluence internal filters/state before and after switching away/back.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 2 — OFFSCREEN TICKER ROW RENDER CONTAINMENT
+────────────────────────────────────────────────────────────
+
+There is currently no content-visibility implementation in WlTickerRow.
+
+Measure the collapsed ticker-row height.
+
+Apply browser-native offscreen containment to the actual row grid:
+
+contentVisibility: 'auto'
+containIntrinsicSize: '<measured row height>px'
+
+or equivalent CSS class.
+
+Do NOT place content-visibility on a display:contents node because it has no box.
+
+Verify carefully:
+
+- vertical scrolling
+- horizontal scrolling
+- sticky ticker column
+- sticky header
+- hover state
+- favorite button
+- delete button
+- ticker popup
+- theme editor
+- tooltip behavior
+- expanded CaelynRowBreakdown
+- sorting
+- fullscreen Screener
+
+If content-visibility breaks sticky positioning or expansion:
+do not force it.
+
+Report the actual behavior.
+
+Do NOT implement a custom virtualizer yet unless measured evidence proves
+content-visibility is insufficient.
+
+No new dependency.
+No pagination.
+No load-more.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 3 — STABLE ROW KEYS ACROSS SORTING
+────────────────────────────────────────────────────────────
+
+Current ticker rows use:
+
+key={`row-frag-${sym}-${i}`}
+
+Ticker membership is already deduplicated.
+
+The index makes component identity depend on its current sort position.
+
+Change to a stable symbol/watchlist identity, for example:
+
+key={`${activeId}:${sym}`}
+
+or the smallest equivalent stable key.
+
+Do not include the sort index.
+
+Also audit the Fundamentals table, which currently uses index-containing keys
+such as:
+
+`${row.ticker}-${ri}`
+
+Use stable ticker keys there too where uniqueness is guaranteed.
+
+Preserve visible zebra striping.
+
+If row index is only used for alternating backgrounds, move zebra styling to CSS
+or another layout-owned mechanism so changing sort order does not force
+expensive React rerenders solely to recolor every row.
+
+Sorting should primarily MOVE existing row DOM, not remount 463 row trees.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 4 — FUNDAMENTALS PATH
+────────────────────────────────────────────────────────────
+
+5918150e optimized the main WlTickerRow path, but
+renderFundamentalScreenerContent still:
+
+- rebuilds csvMap inside the renderer
+- remaps all source rows
+- merges CSV + canonical rows again
+- renders every <tr> inline
+- uses index-sensitive row keys
+
+Profile Fundamentals separately.
+
+Reuse the already memoized canonical CSV map if available.
+
+Memoize the merged Fundamentals input rows.
+
+Extract a memoized fundamentals row if profiling shows row rendering is material.
+
+Apply the same safe offscreen strategy if appropriate.
+
+Do not change columns, sorting semantics, expanded-row behavior, or displayed
+values.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 5 — DO NOT COMPUTE INVISIBLE MODE DATA
+────────────────────────────────────────────────────────────
+
+WlTickerRow currently performs a large amount of Stage + Options calculation
+before the active screener-mode JSX has selected which columns are visible.
+
+Audit every per-row calculation.
+
+Market mode should not calculate IV/OI/premium/expected-move/etc values that
+are only rendered in Options mode.
+
+Technical mode should not calculate unused Options display values.
+
+Options mode may calculate all required Options values.
+
+Move expensive/mode-specific calculations into the relevant branch or narrowly
+scoped memoized child component.
+
+Do not duplicate formulas.
+Do not change formatting.
+Do not change displayed values.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 6 — OPTIONS QUERY OWNERSHIP AUDIT
+────────────────────────────────────────────────────────────
+
+Do NOT automatically change this.
+
+Current Watchlist options query still starts broadly on the Tickers/Close Watch
+view.
+
+Trace every consumer of optionsResp/optionsSignalsByTicker.
+
+Determine whether Options data is actually needed while:
+
+- screenerMode = market
+- screenerMode = technical
+- screenerMode = fundamentals
+- screenerMode = confluence
+- ticker popup is open
+- Favorites is selected
+
+If Market/Technical/Fundamentals have zero visible options consumer:
+do not fetch the bulk options payload merely because innerView == tickers.
+
+Enable it only for the actual consumers.
+
+If Confluence needs it before alignment arrives, preserve that requirement.
+
+If ticker popup owns its own canonical options fetch, do not keep the entire
+bulk options query alive solely for the popup.
+
+NO options freshness reduction is permitted.
+
+When Options mode is selected, the exact current options payload and freshness
+must be available.
+
+A short consumer-triggered fetch on entering Options is acceptable only if
+there was previously no visible Options consumer before the click.
+
+Report consumer evidence before changing the enabled predicate.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE FIX 7 — LOWER-PAGE WORK
+────────────────────────────────────────────────────────────
+
+Audit expensive lower-page sections including:
+
+- earnings
+- strategy score
+- bottom grouping cards
+
+Do not remove them.
+
+If a section is substantially below the initial viewport and performs expensive
+rendering/query work, use IntersectionObserver with generous rootMargin to begin
+hydration BEFORE the user reaches it.
+
+Do not delay Live News — it is visible in the initial top split.
+
+Ticker popup consumers must still be able to trigger required data immediately.
+
+Preserve all existing data.
+
+────────────────────────────────────────────────────────────
+DO NOT CHANGE
+────────────────────────────────────────────────────────────
+
+Do not change backend.
+
+Do not change Tradier cadence.
+
+Do not change:
+20s regular live quotes
+45s pre/post
+3m closed
+
+Do not change options scanner schedules.
+
+Do not change earnings scanner.
+
+Do not change FMP fundamentals.
+
+Do not change Watchlist API shapes.
+
+Do not remove rows.
+Do not remove columns.
+Do not paginate.
+Do not install a virtualization library.
+Do not reintroduce GlobalPrefetch.
+Do not add a new frontend global cache.
+
+────────────────────────────────────────────────────────────
+REAL TESTS — NOT HELPER REPLICAS ONLY
+────────────────────────────────────────────────────────────
+
+The 5918150e tests explicitly state:
+
+"No React mount. All logic is extracted inline or tested via helper replicas."
+
+That is insufficient for the next pass.
+
+Preserve them, but add tests that exercise real source/component behavior where
+the existing project test setup allows it.
+
+At minimum prove:
+
+1. Canonical base-row change propagates even when price/options score unchanged.
+2. IV-only change propagates.
+3. expected-move-only change propagates.
+4. OI-only change propagates.
+5. 7D-only change propagates.
+6. technical-stage-only change propagates.
+7. taxonomy-only change propagates.
+8. quote timestamp/staleness-only change propagates.
+9. unchanged quote row preserves identity.
+10. changed quote price propagates.
+11. stable row key contains no sort index.
+12. sorting preserves ticker component identity.
+13. Confluence is not mounted before first activation.
+14. Confluence mounts on selection.
+15. Confluence state survives switch-away/back if that is the chosen design.
+16. Fundamentals values/sorts remain identical.
+17. realtime cadence constants unchanged.
+18. options values still update.
+19. expanded row works.
+20. sticky ticker column works in browser validation.
+
+────────────────────────────────────────────────────────────
+VALIDATION
+────────────────────────────────────────────────────────────
+
+Run all AGENTS.md-required tests.
+
+Run:
+
+npm run check
+npm run build
+git diff --check
+
+No new TypeScript errors.
+
+Then repeat EXACTLY the Phase-1 browser trace.
+
+Report BEFORE vs AFTER:
+
+- endpoint TTFB
+- endpoint complete
+- first row visible
+- usable time
+- DOM nodes
+- ticker DOM nodes
+- largest long task
+- scripting time
+- layout time
+- paint time
+- row renders per quote update
+- row remounts per sort
+- Market → Technical latency
+- Market → Fundamentals latency
+- Market → Options latency
+- scroll responsiveness
+
+Do not call an inferred render count a measurement.
+
+────────────────────────────────────────────────────────────
+ACCEPTANCE
+────────────────────────────────────────────────────────────
+
+No stale data caused by memoization.
+
+No reduction in realtime cadence.
+
+No reduction in options freshness.
+
+No lost functionality.
+
+Initial Market Watchlist:
+materially faster than 5918150e baseline.
+
+Scrolling:
+no visible delayed input/jank under normal use.
+
+Sorting:
+no mass row remount.
+
+Realtime quote update:
+only rows whose consumed realtime inputs changed should update.
+
+New canonical Watchlist response:
+ALL changed canonical row fields must become visible.
+
+────────────────────────────────────────────────────────────
+REPOSITORY HYGIENE
+────────────────────────────────────────────────────────────
+
+Read live AGENTS.md and obey its artifact/report rules.
+
+Do not use:
+
+git add .
+git add -A
+
+Stage exact source/test files only.
+
+Do not commit generated runtime data caches or pasted prompt assets.
+
+One local source commit after successful validation:
+
+perf: skip hidden Watchlist render work
+
+Do not push until user reviews report.
+
+────────────────────────────────────────────────────────────
+REQUIRED REPORT
+────────────────────────────────────────────────────────────
+
+Write to the exact AGENTS.md-required destination.
+
+Include:
+
+1. Starting HEAD/status.
+2. Baseline REAL browser profile.
+3. 5918150e identity correctness defect.
+4. New identity architecture.
+5. Proof canonical non-price changes propagate.
+6. Hidden Confluence initial cost before/after.
+7. content-visibility result.
+8. stable-key sorting result.
+9. Fundamentals optimization.
+10. mode-specific calculation changes.
+11. options-query consumer audit.
+12. lower-page lazy hydration findings.
+13. before/after DOM count.
+14. before/after long tasks.
+15. before/after row render counts.
+16. before/after sort remount counts.
+17. before/after navigation/interactive timing.
+18. confirmation live quote cadence unchanged.
+19. confirmation options freshness unchanged.
+20. tests/check/build exit codes.
+21. exact files changed.
+22. git diff --check.
+23. final commit SHA.

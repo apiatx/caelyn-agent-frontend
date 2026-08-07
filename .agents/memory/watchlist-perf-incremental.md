@@ -1,34 +1,56 @@
 ---
-name: Watchlist Perf Incremental
-description: Key decisions and pitfalls from the incremental rendering optimization of watchlist.tsx
+name: Watchlist Perf Incremental + Pass 2
+description: Key decisions from two incremental rendering optimization passes on watchlist.tsx. Covers identity cache design, lazy Confluence, stable keys, mode-specific calc isolation, and known pitfalls.
 ---
 
-## Row identity preservation pattern
+## Row identity architecture (Pass 2 — input-identity cache)
 
-The mergedTickers useMemo now preserves per-symbol object references when key display fields haven't changed. This requires a `rowIdentityRef = useRef<Map<string,any>>()` INSIDE WatchlistPage (not module-level) so it resets on component unmount.
+Do NOT use a display-field whitelist to decide whether to reuse a merged row. Use source-level input identity: track `{ base, quote, rawOpt, beta, output }` per symbol. Reuse output only when ALL 4 inputs are unchanged (reference equality for objects, `Object.is` for scalars).
 
-**Why:** React.memo on WlTickerRow is useless without this — every quote poll produces new spread objects for all 463 rows even if the data is identical.
+**Why:** A 10-field whitelist silently drops canonical changes (7D, IV, OI, taxonomy, stage, etc.) when the 10 whitelist fields happen to match. This is a correctness bug that shows stale data in the UI.
 
-**How to apply:** Any future change that adds a new reactive field (e.g., a new alert badge computed from realtime data) must be added to `IDENTITY_FIELDS` if it should trigger a re-render. If it's omitted, rows showing that badge will not update.
+**How to apply:**
+- `base === baseMergedTickers[i]` — `baseMergedTickers` creates new spreads on every useMemo run, so any canonical refetch → all rows miss
+- `quote === stableQuote` — stabilize quote by field comparison first (see QUOTE_STABILITY_FIELDS); only differs if a realtime field actually changed
+- `rawOpt === rawOpt` — reference-stable between options refetches (every 2 min)
+- `Object.is(beta, beta)` — scalar; null vs undefined are distinct
 
-## WlRowCtx must be useMemo'd at WatchlistPage level
+## Quote stabilization (15 fields)
 
-The `rowCtx` object and all its computed deps (`_wlTickerGrid`, `_wlTickerTableMinWidth`, `_wlVisibleSecColsLen`) must be memoized at WatchlistPage component level, NOT inside `renderNewFormatTickerTable`. The render function cannot use React hooks.
+Before checking input identity, stabilize the incoming realtime quote against the previous stable quote using: `price, last, change, change_percent, volume, high, low, source, is_realtime, is_live_backup, is_stale, updated_at, quote_timestamp, staleness_seconds, market_session`. If all match via Object.is, reuse the previous quote object reference. This prevents unchanged polls from producing new references and defeating the input identity check.
 
-**Why:** If ctx is a new object on every call to renderNewFormatTickerTable, React.memo can never skip rows — referential equality always fails.
+## LKG map and identity cache reset on watchlist switch
 
-## `analysis` vs `watchlist?.analysis` ordering
+When `lkgActiveIdRef.current !== activeId`, clear: lkgSignalMapRef, rowIdentityRef, and stableQuoteRef. Previously only lkgSignalMapRef was cleared, which would incorrectly match cross-watchlist entries in the identity cache.
 
-In WatchlistPage, `const analysis = watchlist?.analysis` is declared around line 3729 (after many queries). The `wlIdentityCsv` useMemo is at line ~2648. Therefore wlIdentityCsv must use `watchlist?.analysis?.sections` (inline access) rather than the `analysis` binding to avoid "used before declaration" TS error.
+## Lazy Confluence mount
 
-## toggleExpandedTicker must be useCallback
+Use `confluenceEverMounted` state + `useEffect(() => { if (mode==='confluence') setMounted(true) }, [mode])`. Gate `<CaelynConfluenceSection>` on `confluenceEverMounted`. The div stays mounted after first use (keeps internal filter state). Zero initial render cost before first selection.
 
-Without useCallback, every WatchlistPage render creates a new function reference, which causes rowCtx to get a new identity on every render, defeating React.memo for ALL rows. Wrap in useCallback with `[]` deps.
+## Options calculations: mode-specific IIFE
 
-## company-identity query is lazy for healthy watchlists
+All ~40 options-specific `_o*` variable declarations must be inside the `screenerMode === 'options' && (() => { ... return (<>...</>); })()` IIFE. Never put them at the top of WlTickerRow body where they execute in all modes. ~18,520 operations saved per non-options quote poll across 463 rows.
 
-`wlIdentityCsv` now filters to only symbols missing beta from analysis rows. For a fully-analyzed watchlist, this returns empty string and the query never fires (`enabled: false`). Only fire when wlIdentityCsv.length > 0.
+## Stable row keys
 
-## alignment query enable predicate
+Use `key={\`${activeId}:${sym}\`}` not `key={\`row-frag-${sym}-${i}\`}`. The index in the key causes React to unmount/remount all 463 rows on every sort. Stable keys allow React to move DOM nodes instead.
 
-`enabled: !!activeId && (screenerMode === 'confluence' || !!selectedTicker)` — alignment data is only needed for the Confluence tab and the ticker popup. Firing it on every watchlist load (the old `enabled: !!activeId`) was wasteful.
+## analysis vs watchlist?.analysis in wlIdentityCsv
+
+`const analysis = watchlist?.analysis` is declared after wlIdentityCsv in the component body. The wlIdentityCsv useMemo must use `watchlist?.analysis?.sections` (inline) not the `analysis` binding to avoid "used before declaration" TS error.
+
+## rowCtx must be useMemo at WatchlistPage level
+
+The `rowCtx` shared context object and its computed deps (`_wlTickerGrid`, `_wlTickerTableMinWidth`) must be memoized at component level, NOT inside renderNewFormatTickerTable. React hooks cannot be called inside non-component functions.
+
+## content-visibility placement
+
+Apply `contentVisibility: 'auto', containIntrinsicSize: '0 44px'` to the inner grid div (`display: 'grid'`), NOT the outer `display: 'contents'` wrapper. `content-visibility` has no effect on `display: contents` since it has no box.
+
+## wlCsvMap should be useMemo at component level
+
+Don't rebuild the CSV symbol→row map inside `renderFundamentalScreenerContent`. Compute it as `const wlCsvMap = useMemo(() => {...}, [watchlist?.csv_data])` at component level. Fundamentals renders are frequent (every sort click).
+
+## Options query consumer audit
+
+`optionsResp` feeds `optionsSignalsByTicker` which is merged into ALL rows in `mergedTickers` regardless of mode. This is intentional — Confluence and ticker popup need options data without a separate fetch. Do not add mode-gating to the options query without auditing all consumers (Confluence alignment, popup, market-mode signal badges).
