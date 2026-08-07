@@ -1,3 +1,4 @@
+- [Watchlist perf incremental](watchlist-perf-incremental.md) — rowIdentityRef + WlRowCtx useMemo + useCallback on toggleExpandedTicker; analysis dep ordering pitfall; alignment/identity query lazy enable rules.
 - [GlobalPrefetch ownership](global-prefetch-ownership.md) — GlobalPrefetch is now empty (returns null); every query has a page/component owner. Never re-add global warmups without checking ownership.
 - [Flex height chain](flex-height-chain.md) — minHeight:100vh does NOT create definite flex height; use calc(100vh-Npx) on leaf panels instead of flex:1 chain.
 - [Prophetik Investor Tab](prophetik-investor-tab.md) — intelligence-first data fetch, TS pitfalls (Map.entries spread, Lucide title prop, concat type widening).

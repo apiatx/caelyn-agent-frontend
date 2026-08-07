@@ -1,0 +1,616 @@
+REPLIT AGENT — MAKE THE WATCHLIST PAGE FAST AND SMOOTH WITHOUT REDUCING
+REALTIME PRICE/OPTIONS FRESHNESS OR CHANGING ANY BACKEND CONTRACT
+
+Work only in the live FRONTEND Replit workspace.
+
+The live Replit filesystem is authoritative.
+GitHub is reference/history only.
+
+Do NOT modify backend.
+
+User-visible situation:
+
+- The rest of the application is now materially faster after backend
+  Tradier-contention corrections.
+- Watchlist remains substantially slower and scrolling remains sluggish.
+- Therefore this task is specifically about the Watchlist browser/render path.
+
+CRITICAL REQUIREMENT:
+
+DO NOT improve performance by slowing or removing realtime market data.
+
+Preserve exactly the existing useRealtimeQuotes refresh contract:
+
+regular session: 20 seconds
+pre/post:        45 seconds
+closed:          3 minutes
+
+Do not change those constants.
+
+Preserve all existing options-data freshness/contracts.
+
+──────────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+──────────────────────────────────────────────────────────
+
+1. Find and read frontend AGENTS.md completely.
+2. Follow its exact report destination/repository rules.
+3. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent commits
+4. Preserve all unrelated live changes.
+5. Read:
+   frontend/client/src/pages/watchlist.tsx
+   frontend/client/src/hooks/useRealtimeQuotes.ts
+   frontend/client/src/lib/mergeRealtimeQuote.ts
+   frontend/client/src/components/caelyn-confluence.tsx
+   frontend/client/src/components/StockDetailModal.tsx
+   GlobalDataContext.tsx
+6. Preserve:
+   d9862e4e consumer-driven data ownership
+   595c3265 earnings circuit breaker
+7. No reset/revert/rebase/pull/push.
+8. Do not add dependencies.
+
+──────────────────────────────────────────────────────────
+PHASE 1 — PROFILE THE ACTUAL PAGE BEFORE EDITING
+──────────────────────────────────────────────────────────
+
+Use the live frontend against the currently deployed backend.
+
+The rest of the application is now responsive, so do NOT reuse old backend
+latency assumptions.
+
+Capture a browser performance trace for:
+
+A. fresh navigation to Watchlist
+B. 10 seconds idle
+C. 10 seconds of realtime quote activity
+D. scrolling top → middle → bottom
+E. sort one column
+F. switch Market → Technical → Fundamentals → Options
+G. switch to Confluence and back
+
+Record:
+
+navigation start
+/api/watchlist/{id} request start
+response headers/TTFB
+response complete
+JSON parsing complete if observable
+first Watchlist shell paint
+first ticker rows paint
+time interactive
+
+main-thread long tasks >50ms
+largest scripting tasks
+layout time
+paint time
+
+total DOM node count
+ticker-row DOM node count
+number of ticker rows mounted
+
+React component commits if profiler available
+Watchlist page renders in 10 sec
+row renders in 10 sec
+renders caused by one realtime quote poll
+
+Record actual response bytes for /api/watchlist/{id}.
+
+Explicitly answer:
+
+Does the HTTP response finish quickly but the UI appear materially later?
+
+Do not edit until this baseline is recorded.
+
+──────────────────────────────────────────────────────────
+PROVEN CURRENT ISSUE 1 — DERIVED WATCHLIST DATA IS REBUILT
+ON EVERY PARENT RENDER
+──────────────────────────────────────────────────────────
+
+Current code contains approximately:
+
+const allStocks = extractAllStocks(analysis);
+
+const analyzedMap = new Map(
+  allStocks.map(...)
+);
+
+const baseMergedTickers = [
+  ...allTickerSymbols.map(...)
+];
+
+These are recreated every render.
+
+Downstream:
+
+const mergedTickers = useMemo(..., [baseMergedTickers, ...]);
+
+Therefore the mergedTickers memo is defeated because baseMergedTickers receives
+a new reference on every render.
+
+Fix this properly.
+
+At minimum memoize:
+
+allStocks
+analyzedMap
+allTickerSymbols where needed
+baseMergedTickers
+CSV map
+csvMergedTickers
+
+Use primitive/stable dependencies.
+
+Do not add JSON.stringify of giant row structures as a dependency workaround.
+
+Do not compute:
+
+baseMergedTickers.map(...).join(...)
+
+on every render merely to create a dependency if a stable canonical symbol key
+already exists.
+
+Measure before/after invocation counts.
+
+──────────────────────────────────────────────────────────
+PROVEN CURRENT ISSUE 2 — INLINE FULL-UNIVERSE ROW RENDER
+──────────────────────────────────────────────────────────
+
+Current Screener uses:
+
+filteredRows.map((stock, i) => {
+    ...entire ticker row...
+})
+
+for the complete filtered universe.
+
+There is no current row virtualization/content-visibility/React.memo boundary.
+
+With ~460 tickers and many columns this creates thousands of interactive DOM
+children and is a likely source of scroll jank.
+
+FIRST:
+
+measure current:
+- mounted row count
+- DOM nodes
+- render duration
+- scroll long tasks
+
+THEN implement the safest effective solution.
+
+Preferred order:
+
+1. Extract the individual ticker row into a stable React.memo component.
+
+2. Give unchanged rows stable props/identities.
+
+3. Apply browser-native offscreen rendering containment to ticker rows if
+   profiling proves the full DOM is expensive:
+
+   content-visibility: auto
+
+   with an appropriate contain-intrinsic-size matching the normal collapsed row.
+
+   Verify:
+   - scrolling
+   - sorting
+   - sticky headers
+   - tooltips
+   - dropdowns
+   - expanded CaelynRowBreakdown
+   - ticker popup clicks
+
+4. If profiling proves content-visibility is insufficient, implement simple
+   viewport/window rendering using EXISTING project primitives only.
+
+There is no @tanstack/react-virtual dependency today.
+
+Do NOT install a virtualization package.
+
+Do NOT paginate.
+
+Do NOT reduce the number of stocks available.
+
+Do NOT make the user click "load more."
+
+If row expansion makes fixed-height windowing unsafe, retain content-visibility
+rather than inventing a fragile virtualizer.
+
+──────────────────────────────────────────────────────────
+PROVEN CURRENT ISSUE 3 — REALTIME QUOTE POLL TRIGGERS
+WHOLE-WATCHLIST WORK
+──────────────────────────────────────────────────────────
+
+Preserve useRealtimeQuotes cadence exactly.
+
+Current Watchlist subscribes the entire active symbol set and receives a new
+quotesBySymbol map when the 20-second query refresh completes.
+
+The solution is NOT fewer quote refreshes.
+
+Measure:
+
+one ordinary quote refresh
+→ Watchlist parent render count
+→ merged row recomputation count
+→ ticker-row render count
+
+Required target:
+
+A realtime poll must not force expensive rerender/reconciliation of every
+offscreen ticker row.
+
+Implement row-level isolation.
+
+Preferred architecture:
+
+Watchlist derived structural row
++
+individual symbol realtime quote
++
+individual symbol options signal
+
+→ memoized ticker-row component
+
+Unchanged rows should preserve stable props where possible.
+
+If useRealtimeQuotes reconstructs all quote objects even when an individual
+quote payload is identical, consider preserving per-symbol object identity
+inside the hook using a ref + shallow value comparison.
+
+Do this only if profiling proves it materially reduces renders.
+
+Do not introduce mutable stale quote state.
+
+Price/source/is_stale/timestamp changes must always propagate.
+
+──────────────────────────────────────────────────────────
+CURRENT QUERY FIX — BULK WATCHLIST
+──────────────────────────────────────────────────────────
+
+Current main query has:
+
+retry: 2
+staleTime: 60_000
+gcTime: 8h
+
+Change only this query to:
+
+retry: 0
+refetchOnWindowFocus: false
+
+Evaluate and use:
+
+refetchOnReconnect: false
+
+if cached Watchlist data is already preserved and there is no functional need
+for an automatic reconnect refetch.
+
+Pass React Query AbortSignal through to fetch:
+
+queryFn: async ({ signal }) => {
+    fetch(..., { signal })
+}
+
+so navigation/superseded requests can be cancelled.
+
+Keep:
+
+gcTime: 8h
+
+Preserve cached data when navigating away/back.
+
+Do not create another frontend cache.
+
+──────────────────────────────────────────────────────────
+SECONDARY QUERY OWNERSHIP
+──────────────────────────────────────────────────────────
+
+Audit current startup queries by ACTUAL visible consumers.
+
+Do not blindly remove requests.
+
+A. ALIGNMENT
+
+Current:
+
+/api/watchlist/{id}/alignment
+
+is enabled for every activeId.
+
+Its primary visible consumer is Caelyn Confluence.
+
+It is also passed to StockDetailModal when available.
+
+Change ownership so the alignment query is enabled only when a true consumer
+exists, for example:
+
+screenerMode === 'confluence'
+OR
+selectedTicker != null if the popup genuinely requires canonical alignment
+
+Confirm popup behavior before selecting the exact predicate.
+
+When neither consumer is active:
+zero alignment request.
+
+B. COMPANY IDENTITY
+
+Current:
+
+/api/fmp/company-identity?symbols=<entire watchlist>
+
+is used in watchlist.tsx to build betaByTicker.
+
+Audit the canonical backend Watchlist rows.
+
+If backend rows already contain valid beta:
+
+derive missingBetaSymbols from current rows.
+
+Only query company-identity for symbols whose beta is genuinely absent.
+
+If no symbols lack beta:
+zero company-identity request.
+
+Do NOT remove logos/names from another consumer if one is discovered.
+
+C. OPTIONS SIGNALS
+
+Audit current visible consumers before changing its enabled predicate.
+
+If optionsSignals are only required for:
+- Options screener mode
+- ticker popup
+- Favorites display
+
+then lazy-enable accordingly.
+
+If Market/Technical screens visibly require any options-derived field, preserve
+the query there.
+
+Evidence first.
+
+D. EARNINGS
+
+There are currently both:
+
+/api/watchlist/earnings
+/api/watchlist/earnings/by-symbols
+
+Do NOT consolidate them in this performance pass unless complete field/consumer
+parity is proven.
+
+Recent bootstrap and ticker-modal earnings currently depend on the global
+response.
+
+Preserve earnings correctness.
+
+──────────────────────────────────────────────────────────
+OTHER DERIVED-DATA CLEANUP
+──────────────────────────────────────────────────────────
+
+Audit and memoize other expensive render-time work including:
+
+flattenNews(newsData?.articles)
+major-news slicing
+confluence row flattening
+taxonomy filter inputs
+CSV maps
+selected symbol sets
+sorting inputs
+
+Do not memoize trivial scalar formatting functions merely for style.
+
+Focus on measured expensive work.
+
+──────────────────────────────────────────────────────────
+INITIAL RENDER PRIORITY
+──────────────────────────────────────────────────────────
+
+The page should become usable from the canonical Watchlist response first.
+
+Do not wait for:
+
+alignment
+company identity fallback
+options
+earnings
+taxonomy enrichment
+news
+
+to make the ticker table interactive unless a field in the currently selected
+view genuinely requires it.
+
+Secondary cards may hydrate independently.
+
+Preserve all data and features.
+
+──────────────────────────────────────────────────────────
+DO NOT CHANGE
+──────────────────────────────────────────────────────────
+
+Do not change backend.
+
+Do not change /api/watchlist paths.
+
+Do not change realtime quote polling cadence.
+
+Do not change Tradier/FMP ownership.
+
+Do not change options scanner cadence.
+
+Do not change earnings scanner behavior.
+
+Do not remove columns.
+
+Do not remove stocks.
+
+Do not paginate.
+
+Do not reduce functionality.
+
+Do not reintroduce GlobalPrefetch.
+
+Do not create another global context.
+
+Do not install dependencies.
+
+──────────────────────────────────────────────────────────
+REQUIRED REGRESSION TESTS
+──────────────────────────────────────────────────────────
+
+Add/extend tests proving at minimum:
+
+1. Main Watchlist query retry == 0.
+2. refetchOnWindowFocus == false.
+3. fetch receives AbortSignal.
+4. allStocks is not recomputed on unrelated parent state update.
+5. baseMergedTickers retains identity when structural inputs are unchanged.
+6. realtime quote data still updates price fields.
+7. realtime refresh cadence constants unchanged.
+8. row memoization does not suppress a changed quote.
+9. unchanged row does not rerender for unrelated parent state.
+10. sorting still correct.
+11. taxonomy filters still correct.
+12. Favorites still correct.
+13. pending rows still appear.
+14. LKG rows still appear while refetching.
+15. row expansion still works.
+16. ticker popup still opens.
+17. Confluence loads when selected.
+18. alignment is not fetched without a consumer.
+19. alignment is fetched when Confluence is selected.
+20. company identity is skipped when all beta values are already present.
+21. missing beta fallback still works.
+22. options fields still hydrate in their required views.
+23. earnings cards still work.
+24. recent earnings bootstrap still works.
+25. live news remains functional.
+
+Preserve all existing tests.
+
+──────────────────────────────────────────────────────────
+VALIDATION
+──────────────────────────────────────────────────────────
+
+Run:
+
+npm run check
+npm run build
+
+plus relevant tests required by AGENTS.md.
+
+Run:
+
+git diff --check
+
+Then repeat the SAME browser trace from Phase 1.
+
+Report before/after:
+
+Watchlist HTTP completion
+first rows
+interactive time
+DOM node count
+mounted row count
+largest long task
+total scripting
+layout
+paint
+React commits
+row renders per quote poll
+scroll FPS/jank evidence
+
+──────────────────────────────────────────────────────────
+TARGETS
+──────────────────────────────────────────────────────────
+
+With backend already warm/healthy:
+
+Watchlist shell:
+<1 second
+
+first ticker rows:
+target <2 seconds
+
+usable/interactable:
+target <2 seconds
+
+sorting/tab switch:
+no multi-second stalls
+
+scroll:
+no visible multi-second input delay
+
+realtime quote poll:
+no full expensive 460-row offscreen rerender
+
+Return navigation:
+cached rows immediately visible
+
+No loss of:
+prices
+options
+earnings
+fundamentals
+technicals
+taxonomy
+news
+Confluence
+
+──────────────────────────────────────────────────────────
+REPOSITORY HYGIENE
+──────────────────────────────────────────────────────────
+
+Do not use:
+
+git add .
+git add -A
+
+Do not stage:
+runtime data
+screenshots
+prompt artifacts
+reports unless AGENTS.md explicitly requires the canonical report path
+
+Stage exact intended frontend source/test files only.
+
+One local commit if validation succeeds:
+
+perf: make Watchlist rendering incremental
+
+Do not push until the user reviews the report.
+
+──────────────────────────────────────────────────────────
+REQUIRED REPORT
+──────────────────────────────────────────────────────────
+
+Write to the exact AGENTS.md-required report destination.
+
+Include:
+
+1. Starting HEAD/status.
+2. Baseline browser timings.
+3. /api/watchlist response bytes/timing.
+4. Initial DOM/row count.
+5. React render/commit evidence.
+6. Derived-data recomputation evidence.
+7. Realtime-poll render evidence.
+8. Exact changes made.
+9. Row rendering strategy.
+10. Secondary-query ownership changes.
+11. Confirmation 20s/45s/3m realtime quote cadence unchanged.
+12. Confirmation options freshness/cadence unchanged.
+13. Before/after browser profile.
+14. Tests/build/check results.
+15. Exact files changed.
+16. git diff --check.
+17. Final commit SHA.
