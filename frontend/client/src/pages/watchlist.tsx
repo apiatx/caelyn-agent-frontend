@@ -3185,6 +3185,18 @@ export default function WatchlistPage() {
   }>({ open: false, history: [], loading: false, selectedReport: null, selectedLoading: false });
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // ── Column resize state ──────────────────────────────────────────────────
+  // null = use default TICKER_GRID; number[] = user-dragged pixel widths.
+  // Resets to null on screenerMode change (different column count) and on
+  // tab-switch / page-leave (visibilitychange). Never persisted.
+  const [colWidths, setColWidths] = useState<number[] | null>(null);
+  const wlColDragRef = useRef<{
+    colIdx: number;
+    startX: number;
+    startWidths: number[];
+    pointerId: number;
+  } | null>(null);
   const [optSecColsState, setOptSecColsState] = useState<Set<string>>(() => {
     try {
       const s = localStorage.getItem('wl_opt_sec_cols_v1');
@@ -3263,6 +3275,16 @@ export default function WatchlistPage() {
   }), []);
 
   useEffect(() => { ensureBlinkStyle(); }, []);
+
+  // Reset column widths when screener mode changes (different column counts)
+  useEffect(() => { setColWidths(null); }, [screenerMode]);
+
+  // Reset column widths when the user switches tabs or leaves the page
+  useEffect(() => {
+    function onVisibility() { if (document.hidden) setColWidths(null); }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   // Debounce add input for security search (300ms); clear when security selected
   useEffect(() => {
@@ -4112,19 +4134,24 @@ export default function WatchlistPage() {
   }, [screenerMode, optSecColsState]);
 
   const _wlTickerGrid = useMemo(() => {
+    // User-dragged widths take priority — return flat pixel string.
+    // The screenerMode-change effect resets colWidths so this is always
+    // sized correctly for the current mode.
+    if (colWidths) return colWidths.map(w => `${Math.round(w)}px`).join(' ');
     const OD = '64px minmax(140px,1.6fr) minmax(100px,1fr) 48px minmax(58px,0.8fr) 52px 52px 68px 56px 56px 56px 44px 44px 56px 52px';
     return screenerMode === 'market'
       ? '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 64px 64px 64px 72px 64px 80px 68px 80px'
       : screenerMode === 'options'
         ? `${OD}${_wlVisibleSecColsLen > 0 ? ' ' + Array(_wlVisibleSecColsLen).fill('60px').join(' ') : ''}`
         : '64px minmax(140px, 1.6fr) minmax(120px, 1fr) 80px 80px 104px 116px 80px 100px 64px 68px 72px 72px 84px 112px 64px 52px';
-  }, [screenerMode, _wlVisibleSecColsLen]);
+  }, [screenerMode, _wlVisibleSecColsLen, colWidths]);
 
-  const _wlTickerTableMinWidth = useMemo(() =>
-    screenerMode === 'market' ? 960
+  const _wlTickerTableMinWidth = useMemo(() => {
+    if (colWidths) return colWidths.reduce((s, w) => s + w, 0);
+    return screenerMode === 'market' ? 960
       : screenerMode === 'options' ? (1040 + _wlVisibleSecColsLen * 60)
-      : 1456,
-  [screenerMode, _wlVisibleSecColsLen]);
+      : 1456;
+  }, [screenerMode, _wlVisibleSecColsLen, colWidths]);
 
   /* Shared context object for every WlTickerRow — rebuilt only when one of its
    * values changes, NOT on realtime-quote polls. Combined with per-symbol
@@ -6373,6 +6400,46 @@ export default function WatchlistPage() {
       screenerMode === 'market' ? 960
       : screenerMode === 'options' ? (1040 + visibleSecCols.length * 60)
       : /* technical */ 1456;
+
+    // ── Column-resize helpers ─────────────────────────────────────────────
+    // Parse a CSS grid-template-columns string into an array of pixel widths.
+    // minmax(Npx, ...) → N; Npx → N. Used to seed drag widths on first drag.
+    function parseGridWidths(grid: string): number[] {
+      const tokens: string[] = [];
+      let depth = 0, cur = '';
+      for (const ch of grid) {
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        if (ch === ' ' && depth === 0) { if (cur) tokens.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      if (cur) tokens.push(cur);
+      return tokens.map(t => {
+        const mm = t.match(/minmax\((\d+(?:\.\d+)?)px/);
+        if (mm) return parseFloat(mm[1]);
+        const px = t.match(/^(\d+(?:\.\d+)?)px$/);
+        if (px) return parseFloat(px[1]);
+        return 60;
+      });
+    }
+    function handleColResizeStart(e: React.PointerEvent<HTMLDivElement>, colIdx: number) {
+      e.stopPropagation();
+      e.preventDefault();
+      const startWidths = colWidths ?? parseGridWidths(TICKER_GRID);
+      wlColDragRef.current = { colIdx, startX: e.clientX, startWidths: [...startWidths], pointerId: e.pointerId };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    function handleColResizeMove(e: React.PointerEvent<HTMLDivElement>) {
+      const drag = wlColDragRef.current;
+      if (!drag) return;
+      const delta = e.clientX - drag.startX;
+      const next = [...drag.startWidths];
+      next[drag.colIdx] = Math.max(44, drag.startWidths[drag.colIdx] + delta);
+      setColWidths(next);
+    }
+    function handleColResizeEnd() {
+      wlColDragRef.current = null;
+    }
     const tickerColumns: { key?: NonNullable<typeof sortKey>; label: string; tooltip?: string }[] =
       screenerMode === 'market' ? [
         { key: 'ticker',      label: 'Ticker' },
@@ -6824,12 +6891,12 @@ export default function WatchlistPage() {
           </div>
         ) : (
         <div style={{ flex: 1, overflow: 'auto', minHeight: 0, position: 'relative' as const, zIndex: 0 }} className="wl-scrollbar">
-          <div style={{ minWidth: TICKER_TABLE_MIN_WIDTH }}>
-            {/* table header */}
+          <div style={{ minWidth: _wlTickerTableMinWidth }}>
+            {/* table header — uses _wlTickerGrid which is colWidths-aware */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: TICKER_GRID,
-              minWidth: TICKER_TABLE_MIN_WIDTH,
+              gridTemplateColumns: _wlTickerGrid,
+              minWidth: _wlTickerTableMinWidth,
               padding: '6px 14px',
               borderBottom: `1px solid ${C.border}`,
               position: 'sticky' as const, top: 0, zIndex: 2,
@@ -6839,18 +6906,21 @@ export default function WatchlistPage() {
               gap: 6,
             }}>
               <TooltipProvider delayDuration={180}>
-              {tickerColumns.map(col => {
+              {tickerColumns.map((col, colIdx) => {
                 const sortable = col.key != null;
                 const active = sortable && sortKey === col.key;
-                const spanEl = (
+                const isLast = colIdx === tickerColumns.length - 1;
+
+                // Label span — preserves all existing sort + sticky behaviour
+                const labelSpan = (
                   <span
-                    key={col.key ?? col.label}
                     onClick={() => { if (col.key) handleSortClick(col.key); }}
                     style={{
                       cursor: sortable ? 'pointer' : 'default',
                       color: active ? '#f5f5f0' : C.dim,
                       display: 'inline-flex', alignItems: 'center', gap: 3,
                       overflow: 'hidden', whiteSpace: 'nowrap' as const,
+                      flexShrink: 1, minWidth: 0,
                       ...(col.key === 'ticker' ? {
                         position: 'sticky' as const,
                         left: 0,
@@ -6871,10 +6941,11 @@ export default function WatchlistPage() {
                     )}
                   </span>
                 );
-                if (!col.tooltip) return spanEl;
-                return (
-                  <Tooltip key={col.key ?? col.label}>
-                    <TooltipTrigger asChild>{spanEl}</TooltipTrigger>
+
+                // Wrap with tooltip when needed
+                const labelContent = !col.tooltip ? labelSpan : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>{labelSpan}</TooltipTrigger>
                     <TooltipContent
                       side="bottom"
                       style={{
@@ -6887,6 +6958,47 @@ export default function WatchlistPage() {
                       <p style={{ margin: 0, opacity: 0.8, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>{col.tooltip}</p>
                     </TooltipContent>
                   </Tooltip>
+                );
+
+                // Drag-resize handle — sits at the right edge of each column (not last)
+                const resizeHandle = !isLast && (
+                  <div
+                    onPointerDown={e => handleColResizeStart(e, colIdx)}
+                    onPointerMove={handleColResizeMove}
+                    onPointerUp={handleColResizeEnd}
+                    onPointerCancel={handleColResizeEnd}
+                    style={{
+                      position: 'absolute', right: -4, top: 0,
+                      width: 8, height: '100%',
+                      cursor: 'col-resize',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      zIndex: 4,
+                      // Don't trigger the sort click on the label
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {/* thin visual tick — visible on hover via parent group */}
+                    <div style={{
+                      width: 1, height: 10,
+                      background: 'rgba(255,255,255,0.22)',
+                      borderRadius: 1,
+                      pointerEvents: 'none',
+                    }} />
+                  </div>
+                );
+
+                return (
+                  <div
+                    key={col.key ?? col.label}
+                    style={{
+                      position: 'relative',
+                      display: 'flex', alignItems: 'center',
+                      minWidth: 0, overflow: 'hidden',
+                    }}
+                  >
+                    {labelContent}
+                    {resizeHandle}
+                  </div>
                 );
               })}
               </TooltipProvider>
