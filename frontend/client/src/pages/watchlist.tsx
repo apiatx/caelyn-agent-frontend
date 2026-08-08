@@ -2539,10 +2539,11 @@ function WlTaxonomyEditorPanel({
           }),
         );
 
-        // Background invalidation so next refetch converges with backend state
+        // Background invalidation so next refetch converges with backend state.
+        // NOTE: ["theme-taxonomy", "list"] is NOT invalidated here — a ticker
+        // assignment changes memberships, not the canonical taxonomy registry.
         queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
         queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
-        queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });
       } catch {
         // Network error / fetch threw — reconcile via single canonical refetch
         queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
@@ -3517,20 +3518,33 @@ export default function WatchlistPage() {
     retry: 1,
   });
 
-  /* ── Canonical Taxonomy — shared query reusing global prefetch cache ──
-   *   key ["themes-unified", "themes"] matches GlobalDataContext.tsx:90
-   *   timeframe=1D&classification=all provides the canonical taxonomy for
-   *   filter options, admin assignment, and matching logic. */
+  /* ── Canonical Taxonomy — static registry, not market-data-dependent ──
+   *
+   * IMPORTANT: Do NOT use ["themes-unified", "themes"] here.
+   *   That key is owned by home.tsx / stocks-sectors.tsx for the
+   *   Relative Strength payload (/api/themes/relative-strength).
+   *   RS intentionally skips nodes with no current performance row,
+   *   so using it for the assignment editor silently hides valid canonical
+   *   taxonomy nodes (e.g. robotics_automation) whenever RS has no data.
+   *
+   * This query uses the CANONICAL REGISTRY endpoint (/api/themes/list)
+   * with its own isolated key ["theme-taxonomy", "list"].
+   *
+   * Taxonomy availability must NEVER depend on Tradier, FMP, proxy prices,
+   * RS calculation success, or market hours.                               */
   const { isAdmin, token } = useAuth();
   const getThemeJwt = useCallback(
     () => token ?? localStorage.getItem('caelyn_jwt') ?? sessionStorage.getItem('caelyn_jwt') ?? '',
     [token]
   );
   const { data: themeUniverseResp } = useQuery({
-    queryKey: ['themes-unified', 'themes'],
-    queryFn: () => fetch(`/api/themes/relative-strength?timeframe=1D&classification=all`)
+    queryKey: ['theme-taxonomy', 'list'],
+    queryFn: () => fetch(`/api/themes/list?classification=all`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    staleTime: 5 * 60_000,
+    // Taxonomy registry is static structure — 24h stale is fine.
+    // Assignments change memberships, NOT the registry; do not invalidate
+    // this key after every ticker save.
+    staleTime: 24 * 60 * 60_000,
     retry: 1,
   });
   const taxonomyIndex: ThemeTaxonomyIndex = useMemo(() => {
