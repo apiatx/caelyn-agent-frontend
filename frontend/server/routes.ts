@@ -3246,10 +3246,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (FMP_KEY) {
         const { providerToCanonicals, providerSymbols } = _buildProviderMap(needFetch);
 
-        // Chunk provider symbols into batches of 50 for FMP profile endpoint
+        // FMP stable/profile returns [] for ANY batch containing OTC symbols — even
+        // when mixed with regular US symbols. Split into two groups and fetch OTC
+        // symbols individually (in parallel), regular symbols in batches of 50.
+        const OTC_CANONICAL_PREFIXES = new Set([
+          'OTC', 'OTCPK', 'OTCBB', 'OTCQB', 'OTCQX', 'OTCMKTS', 'PINK', 'PNK',
+        ]);
+        const otcProviders: string[] = [];
+        const regularProviders: string[] = [];
+        for (const ps of providerSymbols) {
+          const canonicals = providerToCanonicals.get(ps) ?? [];
+          const isOTC = canonicals.some(cs => {
+            const ci = cs.indexOf(':');
+            return ci > 0 && OTC_CANONICAL_PREFIXES.has(cs.slice(0, ci).toUpperCase());
+          });
+          (isOTC ? otcProviders : regularProviders).push(ps);
+        }
+
+        // Shared helpers to apply a resolved profile or a negative entry
+        const _applyProfile = (p: any, ps: string) => {
+          const name = p.companyName || ps;
+          const exchange = p.exchangeShortName || p.exchange || null;
+          const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
+          const canonicals = providerToCanonicals.get(ps) || [ps];
+          for (const canonical of canonicals) {
+            const entry = { name, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
+            _identityCache.set(canonical, entry);
+            result[canonical] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
+          }
+        };
+        const _applyNeg = (ps: string) => {
+          const canonicals = providerToCanonicals.get(ps) || [ps];
+          for (const canonical of canonicals) {
+            _identityCache.set(canonical, { name: canonical, logo: null, exchange: null, beta: null, ts: Date.now() });
+            result[canonical] = result[canonical] || { name: canonical, logo: null, exchange: null, beta: null };
+          }
+        };
+
+        // OTC symbols: fetch individually in parallel (batching breaks FMP for OTC)
+        await Promise.all(otcProviders.map(async (ps) => {
+          try {
+            const url = `https://financialmodelingprep.com/stable/profile?symbol=${encodeURIComponent(ps)}&apikey=${FMP_KEY}`;
+            const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (r.ok) {
+              const profiles: any[] = await r.json();
+              if (Array.isArray(profiles) && profiles.length > 0) {
+                _applyProfile(profiles[0], ps);
+              } else {
+                _applyNeg(ps);
+              }
+            } else {
+              _applyNeg(ps);
+            }
+          } catch (e: any) {
+            console.warn('[company-identity] OTC FMP fetch failed for', ps, ':', e?.message);
+            _applyNeg(ps);
+          }
+        }));
+
+        // Regular US symbols: batch in groups of 50 (unchanged)
         const FMP_BATCH_SIZE = 50;
-        for (let i = 0; i < providerSymbols.length; i += FMP_BATCH_SIZE) {
-          const batch = providerSymbols.slice(i, i + FMP_BATCH_SIZE);
+        for (let i = 0; i < regularProviders.length; i += FMP_BATCH_SIZE) {
+          const batch = regularProviders.slice(i, i + FMP_BATCH_SIZE);
           try {
             const url = `https://financialmodelingprep.com/stable/profile?symbol=${batch.join(',')}&apikey=${FMP_KEY}`;
             const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -3261,39 +3319,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!p.symbol) continue;
                   const ps = p.symbol.toUpperCase();
                   returnedProviderSyms.add(ps);
-                  const exchange = p.exchangeShortName || p.exchange || null;
-                  const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
-                  const name = p.companyName || ps;
-                  // Map provider symbol back to ALL canonical symbols that reduce to it
-                  const canonicals = providerToCanonicals.get(ps) || [ps];
-                  for (const canonical of canonicals) {
-                    const entry = { name, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
-                    _identityCache.set(canonical, entry);
-                    result[canonical] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
-                  }
+                  _applyProfile(p, ps);
                 }
               }
               // Any provider symbol NOT returned by FMP is unresolved — short negative cache
               for (const ps of batch) {
                 if (!returnedProviderSyms.has(ps)) {
-                  const canonicals = providerToCanonicals.get(ps) || [ps];
-                  for (const canonical of canonicals) {
-                    _identityCache.set(canonical, { name: canonical, logo: null, exchange: null, beta: null, ts: Date.now() });
-                    result[canonical] = result[canonical] || { name: canonical, logo: null, exchange: null, beta: null };
-                  }
+                  _applyNeg(ps);
                 }
               }
             }
           } catch (e: any) {
-            console.warn('[company-identity] FMP fetch failed:', e?.message);
-            // Provider failure: short negative cache for this batch
-            for (const ps of batch) {
-              const canonicals = providerToCanonicals.get(ps) || [ps];
-              for (const canonical of canonicals) {
-                _identityCache.set(canonical, { name: canonical, logo: null, exchange: null, beta: null, ts: Date.now() });
-                result[canonical] = result[canonical] || { name: canonical, logo: null, exchange: null, beta: null };
-              }
-            }
+            console.warn('[company-identity] FMP batch fetch failed:', e?.message);
+            for (const ps of batch) _applyNeg(ps);
           }
         }
       }
