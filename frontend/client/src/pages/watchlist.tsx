@@ -2231,6 +2231,382 @@ function wlApiHeaders(): Record<string, string> {
  * Context object + memo-wrapped row for the watchlist ticker table.
  * Module-level so React.memo comparison is stable across WatchlistPage renders.
  * ─────────────────────────────────────────────────────────────────────────── */
+/* ─── Taxonomy editor helpers (module-level, used by WlTaxonomyEditorPanel) ── */
+
+/** Hydrate editor draft state from a Watchlist stock row. */
+function wlHydrateTaxonomyDraft(
+  stock: any,
+  index: ThemeTaxonomyIndex,
+): { themeId: string | null; subthemeId: string | null; additionals: string[] } {
+  const primaryId =
+    (stock?.primary_theme_id as string | null | undefined) ||
+    (stock?.canonical_theme_id as string | null | undefined) ||
+    null;
+  let themeId: string | null = null;
+  let subthemeId: string | null = null;
+  if (primaryId) {
+    const node = index.nodeById.get(primaryId);
+    if (node?.classification === 'theme') {
+      themeId = primaryId;
+    } else if (node?.classification === 'sub_theme') {
+      subthemeId = primaryId;
+      const parentId = node.parent_theme_id;
+      if (parentId && index.nodeById.has(parentId)) themeId = parentId;
+    }
+  }
+  const rawIds: string[] = Array.isArray(stock?.theme_ids) ? (stock.theme_ids as string[]) : [];
+  const additionals = rawIds.filter((id: string) => id !== primaryId);
+  return { themeId, subthemeId, additionals };
+}
+
+/** Derive the most-specific primary label for the theme cell. */
+function wlBuildThemeCellLabel(stock: any, index: ThemeTaxonomyIndex): string | null {
+  const primaryId =
+    (stock?.primary_theme_id as string | null | undefined) ||
+    (stock?.canonical_theme_id as string | null | undefined) ||
+    null;
+  if (primaryId) {
+    const n = index.nodeById.get(primaryId);
+    if (n) return n.display_name;
+  }
+  return (stock?.canonical_theme_name as string | null | undefined) || null;
+}
+
+/** Count of additional (non-primary) theme memberships. */
+function wlBuildThemeCellAdditionalCount(stock: any): number {
+  if (Array.isArray(stock?.additional_theme_ids)) return (stock.additional_theme_ids as string[]).length;
+  const primaryId =
+    (stock?.primary_theme_id as string | null | undefined) ||
+    (stock?.canonical_theme_id as string | null | undefined);
+  if (!primaryId || !Array.isArray(stock?.theme_ids)) return 0;
+  return (stock.theme_ids as string[]).filter((id: string) => id !== primaryId).length;
+}
+
+/** Build a multiline tooltip for the theme cell. */
+function wlBuildThemeCellTooltip(stock: any, index: ThemeTaxonomyIndex): string {
+  const parts: string[] = [];
+  const sector = stock?.sector as string | null | undefined;
+  if (sector) parts.push(`Sector: ${sector}`);
+  const primaryId =
+    (stock?.primary_theme_id as string | null | undefined) ||
+    (stock?.canonical_theme_id as string | null | undefined) ||
+    null;
+  if (primaryId) {
+    const node = index.nodeById.get(primaryId);
+    if (node?.classification === 'theme') {
+      parts.push(`Theme: ${node.display_name}`);
+      parts.push('Subtheme: —');
+    } else if (node?.classification === 'sub_theme') {
+      const parent = node.parent_theme_id ? index.nodeById.get(node.parent_theme_id) : null;
+      if (parent) parts.push(`Theme: ${parent.display_name}`);
+      parts.push(`Subtheme: ${node.display_name}`);
+    }
+  }
+  const addIds: string[] = Array.isArray(stock?.additional_theme_ids)
+    ? (stock.additional_theme_ids as string[])
+    : [];
+  if (addIds.length > 0) {
+    const names = addIds.map((id: string) => index.nodeById.get(id)?.display_name || id);
+    parts.push(`Additional: ${names.join(', ')}`);
+  }
+  return parts.join('\n');
+}
+
+/* ─── WlTaxonomyEditorPanel — hierarchical taxonomy assignment editor ───── */
+
+interface WlTaxonomyEditorPanelProps {
+  ticker: string;
+  stockRow: any;
+  taxonomyIndex: ThemeTaxonomyIndex;
+  token: string;
+  activeWatchlistId: string;
+  queryClient: any; // QueryClient from @tanstack/react-query
+  onClose: () => void;
+  onSaveSuccess: (ticker: string) => void;
+}
+
+/** Compact hierarchical taxonomy editor rendered as a fixed overlay.
+ *  All draft state is local — nothing persists until Save is clicked.
+ *  Save fires exactly ONE PUT /api/themes/admin/ticker-taxonomy/{ticker}. */
+function WlTaxonomyEditorPanel({
+  ticker, stockRow, taxonomyIndex, token, activeWatchlistId, queryClient, onClose, onSaveSuccess,
+}: WlTaxonomyEditorPanelProps) {
+  const [draftThemeId, setDraftThemeId] = useState<string | null>(null);
+  const [draftSubthemeId, setDraftSubthemeId] = useState<string | null>(null);
+  const [draftAdditionals, setDraftAdditionals] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showAddPicker, setShowAddPicker] = useState(false);
+  const [addSearch, setAddSearch] = useState('');
+
+  // Hydrate draft from stock row on open (run once)
+  useEffect(() => {
+    const h = wlHydrateTaxonomyDraft(stockRow, taxonomyIndex);
+    setDraftThemeId(h.themeId);
+    setDraftSubthemeId(h.subthemeId);
+    setDraftAdditionals(h.additionals);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { nodeById, childrenByParentThemeId } = taxonomyIndex;
+
+  // Top-level themes (classification==="theme") sorted A→Z
+  // market_lens, deprecated, sector are naturally excluded by classification filter
+  const topLevelThemes = useMemo(() => {
+    const result: { theme_id: string; display_name: string }[] = [];
+    nodeById.forEach(node => {
+      if (node.classification === 'theme') result.push({ theme_id: node.theme_id, display_name: node.display_name });
+    });
+    return result.sort((a, b) => a.display_name.localeCompare(b.display_name));
+  }, [nodeById]);
+
+  // Subthemes for the selected draft theme (children via parent_theme_id)
+  const subthemesForDraftTheme = useMemo(() => {
+    if (!draftThemeId) return [];
+    const childIds = childrenByParentThemeId.get(draftThemeId) ?? [];
+    return childIds
+      .map(id => nodeById.get(id))
+      .filter((n): n is NonNullable<typeof n> => !!n && n.classification === 'sub_theme')
+      .map(n => ({ theme_id: n.theme_id, display_name: n.display_name }))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  }, [draftThemeId, nodeById, childrenByParentThemeId]);
+
+  // Effective primary_theme_id sent to backend:
+  //   sub_theme selected → draftSubthemeId
+  //   theme-only selected → draftThemeId
+  const effectivePrimaryId = draftSubthemeId ?? draftThemeId ?? null;
+
+  // Set of already-selected IDs so "Add" picker can exclude them
+  const addedSet = useMemo(
+    () => new Set([...(effectivePrimaryId ? [effectivePrimaryId] : []), ...draftAdditionals]),
+    [effectivePrimaryId, draftAdditionals],
+  );
+
+  // "Add additional" picker: grouped by parent theme, filtered by search
+  // Only classification==="theme" or "sub_theme"; market_lens/deprecated/sector excluded
+  const pickerGroups = useMemo(() => {
+    const q = addSearch.trim().toLowerCase();
+    const groups: { parentId: string; parentName: string; items: { id: string; label: string }[] }[] = [];
+    topLevelThemes.forEach(theme => {
+      const items: { id: string; label: string }[] = [];
+      // The theme node itself
+      if (!addedSet.has(theme.theme_id) && (!q || theme.display_name.toLowerCase().includes(q))) {
+        items.push({ id: theme.theme_id, label: theme.display_name });
+      }
+      // Sub_theme children of this theme
+      const childIds = childrenByParentThemeId.get(theme.theme_id) ?? [];
+      childIds.forEach(cid => {
+        const cn = nodeById.get(cid);
+        if (!cn || cn.classification !== 'sub_theme') return;
+        if (addedSet.has(cn.theme_id)) return;
+        if (q && !cn.display_name.toLowerCase().includes(q) && !theme.display_name.toLowerCase().includes(q)) return;
+        items.push({ id: cn.theme_id, label: cn.display_name });
+      });
+      if (items.length > 0) groups.push({ parentId: theme.theme_id, parentName: theme.display_name, items });
+    });
+    return groups;
+  }, [topLevelThemes, nodeById, childrenByParentThemeId, addedSet, addSearch]);
+
+  const sectorLabel = (stockRow?.sector as string | null | undefined) || null;
+
+  async function handleSave() {
+    setIsSaving(true);
+    setSaveError(null);
+    // Defensive: remove effectivePrimaryId from additionals if present
+    const cleanAdditionals = draftAdditionals.filter(id => id !== effectivePrimaryId);
+    try {
+      const r = await fetch(`/api/themes/admin/ticker-taxonomy/${encodeURIComponent(ticker)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          primary_theme_id: effectivePrimaryId ?? null,
+          additional_theme_ids: cleanAdditionals,
+        }),
+      });
+      const data: any = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data?.detail || data?.error || `Save failed (${r.status})`);
+      // Invalidate watchlist + theme performance queries so rows refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
+      queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });
+      onSaveSuccess(ticker);
+      onClose();
+    } catch (e: any) {
+      setSaveError(e?.message || 'Save failed. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Shared styles
+  const _lbl: React.CSSProperties = { fontSize: 9, fontWeight: 700, color: C.dim, fontFamily: font, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 5 };
+  const _sec: React.CSSProperties = { padding: '10px 16px', borderBottom: `1px solid ${C.border}` };
+  const _sel: React.CSSProperties = { width: '100%', background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4, padding: '5px 8px', fontSize: 11, fontFamily: sansFont, outline: 'none', cursor: 'pointer' };
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{ width: 380, maxHeight: '85vh', overflowY: 'auto', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.text, fontFamily: sansFont }}>{ticker} — Edit Classification</span>
+          <button onClick={onClose} disabled={isSaving} style={{ background: 'none', border: 'none', color: C.dim, cursor: 'pointer', padding: 2, fontSize: 14, lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Sector — read-only; actual company sector, not thematic rollup */}
+        <div style={_sec}>
+          <div style={_lbl}>Sector</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: C.text, fontFamily: sansFont }}>{sectorLabel || '—'}</span>
+            <span style={{ fontSize: 9, color: C.dim, opacity: 0.55, fontFamily: sansFont }}>Actual company sector · read-only</span>
+          </div>
+        </div>
+
+        {/* Primary Theme — classification==="theme" only */}
+        <div style={_sec}>
+          <div style={_lbl}>Primary Theme</div>
+          <select
+            value={draftThemeId ?? ''}
+            onChange={e => { setDraftThemeId(e.target.value || null); setDraftSubthemeId(null); }}
+            style={_sel}
+          >
+            <option value="">— None —</option>
+            {topLevelThemes.map(t => (
+              <option key={t.theme_id} value={t.theme_id}>{t.display_name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Subtheme — shown when theme is selected and has sub_theme children */}
+        {draftThemeId && subthemesForDraftTheme.length > 0 && (
+          <div style={_sec}>
+            <div style={_lbl}>Subtheme</div>
+            <select
+              value={draftSubthemeId ?? ''}
+              onChange={e => setDraftSubthemeId(e.target.value || null)}
+              style={_sel}
+            >
+              <option value="">— General {nodeById.get(draftThemeId)?.display_name ?? ''} —</option>
+              {subthemesForDraftTheme.map(s => (
+                <option key={s.theme_id} value={s.theme_id}>{s.display_name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Additional Themes — optional; grouped in "Add" picker */}
+        <div style={_sec}>
+          <div style={_lbl}>Additional Themes</div>
+          {draftAdditionals.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              {draftAdditionals.map(id => {
+                const n = nodeById.get(id);
+                if (!n) return null;
+                return (
+                  <span
+                    key={id}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 12, fontSize: 10, fontFamily: sansFont, fontWeight: 600, background: `${C.border}20`, border: `1px solid ${C.border}`, color: C.text, whiteSpace: 'nowrap' as const }}
+                  >
+                    {n.display_name}
+                    <span
+                      onClick={() => setDraftAdditionals(prev => prev.filter(a => a !== id))}
+                      title={`Remove ${n.display_name}`}
+                      style={{ cursor: 'pointer', opacity: 0.65, fontWeight: 700, fontSize: 11, lineHeight: 1 }}
+                    >×</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {!showAddPicker ? (
+            <button
+              onClick={() => setShowAddPicker(true)}
+              style={{ background: 'none', border: `1px dashed ${C.border}`, color: C.teal, fontSize: 10, fontFamily: sansFont, cursor: 'pointer', padding: '4px 10px', borderRadius: 4 }}
+            >
+              + Add additional theme
+            </button>
+          ) : (
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
+              <input
+                autoFocus
+                placeholder="Search themes…"
+                value={addSearch}
+                onChange={e => setAddSearch(e.target.value)}
+                style={{ width: '100%', background: C.card2, color: C.text, border: 'none', borderBottom: `1px solid ${C.border}`, padding: '6px 10px', fontSize: 11, fontFamily: sansFont, outline: 'none', boxSizing: 'border-box' as const }}
+              />
+              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {pickerGroups.length === 0 ? (
+                  <div style={{ padding: '8px 10px', fontSize: 10, color: C.dim, fontFamily: sansFont }}>No matches</div>
+                ) : pickerGroups.map(g => (
+                  <div key={g.parentId}>
+                    <div style={{ padding: '4px 10px', fontSize: 9, fontWeight: 800, color: C.dim, fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.07em', background: `${C.border}18` }}>
+                      {g.parentName}
+                    </div>
+                    {g.items.map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => { setDraftAdditionals(prev => prev.includes(item.id) ? prev : [...prev, item.id]); setAddSearch(''); setShowAddPicker(false); }}
+                        style={{ padding: '5px 10px 5px 18px', fontSize: 11, color: C.text, fontFamily: sansFont, cursor: 'pointer', borderBottom: `1px solid ${C.border}18` }}
+                        onMouseEnter={e => (e.currentTarget.style.background = `${C.teal}15`)}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {item.label}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '6px 10px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { setShowAddPicker(false); setAddSearch(''); }}
+                  style={{ fontSize: 10, color: C.dim, background: 'none', border: 'none', cursor: 'pointer', fontFamily: sansFont }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Save error */}
+        {saveError && (
+          <div style={{ margin: '0 16px 8px', padding: '8px 10px', background: `${C.red}15`, border: `1px solid ${C.red}40`, borderRadius: 4, fontSize: 10, color: C.red, fontFamily: sansFont }}>
+            {saveError}
+          </div>
+        )}
+
+        {/* Cancel / Save */}
+        <div style={{ display: 'flex', gap: 8, padding: '12px 16px', justifyContent: 'flex-end', borderTop: `1px solid ${C.border}` }}>
+          <button
+            onClick={onClose}
+            disabled={isSaving}
+            style={{ padding: '6px 16px', borderRadius: 4, fontSize: 10, fontWeight: 600, fontFamily: sansFont, background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border}`, color: C.text, cursor: isSaving ? 'default' : 'pointer', opacity: isSaving ? 0.5 : 1 }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            style={{ padding: '6px 18px', borderRadius: 4, fontSize: 10, fontWeight: 700, fontFamily: sansFont, background: isSaving ? `${C.teal}12` : `${C.teal}22`, border: `1px solid ${C.teal}`, color: C.teal, cursor: isSaving ? 'default' : 'pointer' }}
+          >
+            {isSaving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 interface WlRowCtx {
   screenerMode: string;
   optionsLoading: boolean;
@@ -2239,14 +2615,13 @@ interface WlRowCtx {
   optSecColsState: Set<string>;
   activeId: string;
   isAdmin: boolean;
-  themeUniverse: Array<{ theme_id: string; display_name: string }>;
   tickerGrid: string;
   tickerTableMinWidth: number;
   onTickerClick: (ticker: string) => void;
   onToggleFavorite: (ticker: string) => void;
   onDeleteStart: (info: { ticker: string; company: string | null; wid: string }) => void;
   onToggleExpand: (sym: string) => void;
-  onThemeAssign: (args: { ticker: string; themeId: string; displayName: string }) => void;
+  onOpenTaxonomyEditor: (ticker: string) => void;
 }
 
 interface WlTickerRowProps {
@@ -2255,8 +2630,12 @@ interface WlTickerRowProps {
   isFavorite: boolean;
   /** Per-ticker hydration entry — undefined when the ticker is not being hydrated. */
   hydrationEntry?: { quote: string; technical: string; fundamentals: string; options: string };
-  /** Per-ticker local theme override set by the admin theme-assign flow. */
-  localThemeOverride?: string;
+  /** Most-specific primary theme label (display_name) — computed at map call-site. */
+  primaryThemeLabel: string | null;
+  /** Count of additional (non-primary) theme memberships for the +N chip. */
+  additionalThemeCount: number;
+  /** Multiline tooltip with Sector/Theme/Subtheme/Additional context. */
+  themeTooltip: string;
   /** True while a theme assignment is in flight for this specific ticker. */
   themeAssignPending: boolean;
   /** Theme-assign result feedback for this specific ticker; null when none. */
@@ -2267,11 +2646,11 @@ interface WlTickerRowProps {
 /** Re-renders only when stock object identity or ctx identity changes.
  *  Per-symbol identity preservation in mergedTickers ensures rows with unchanged
  *  price/options data receive the same stock reference across quote polls. */
-const WlTickerRow = memo(function WlTickerRow({ stock, isExpanded, isFavorite, hydrationEntry, localThemeOverride, themeAssignPending, rowThemeFeedback, ctx }: WlTickerRowProps) {
+const WlTickerRow = memo(function WlTickerRow({ stock, isExpanded, isFavorite, hydrationEntry, primaryThemeLabel, additionalThemeCount, themeTooltip, themeAssignPending, rowThemeFeedback, ctx }: WlTickerRowProps) {
   const {
     screenerMode, optionsLoading, optionsAvailable, optSecColsState, activeId,
-    isAdmin, themeUniverse, tickerGrid, tickerTableMinWidth,
-    onTickerClick, onToggleFavorite, onDeleteStart, onToggleExpand, onThemeAssign,
+    isAdmin, tickerGrid, tickerTableMinWidth,
+    onTickerClick, onToggleFavorite, onDeleteStart, onToggleExpand, onOpenTaxonomyEditor,
   } = ctx;
 
   const isPending = stock._pending;
@@ -2388,66 +2767,43 @@ const WlTickerRow = memo(function WlTickerRow({ stock, isExpanded, isFavorite, h
           );
         })()}
       </span>
-      {isAdmin && stock.ticker ? (() => {
-        const currentThemeName = localThemeOverride || stock.canonical_theme_name || stock.section_title || stock.theme || null;
-        const rowThemePending = themeAssignPending;
-        return (
-          <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  onClick={e => e.stopPropagation()}
-                  onPointerDown={e => e.stopPropagation()}
-                  disabled={rowThemePending}
-                  title={currentThemeName ? `Reassign primary Theme for ${stock.ticker}` : `Assign a primary Theme to ${stock.ticker}`}
-                  style={{
-                    background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
-                    fontSize: 10, fontFamily: font,
-                    color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
-                    opacity: rowThemePending ? 0.6 : 1,
-                  }}
-                >
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                    {rowThemePending ? 'Updating…' : (currentThemeName || '+ Assign Theme')}
-                  </span>
-                  {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                style={{ maxHeight: 320, overflowY: 'auto' }}
-                onClick={e => e.stopPropagation()}
-                onPointerDown={e => e.stopPropagation()}
-              >
-                {themeUniverse.length === 0 && (
-                  <DropdownMenuItem disabled>Loading Theme universe…</DropdownMenuItem>
-                )}
-                {themeUniverse.map(t => (
-                  <DropdownMenuItem
-                    key={t.theme_id}
-                    onSelect={() => {
-                      if (!stock.ticker || t.theme_id === undefined) return;
-                      onThemeAssign({ ticker: stock.ticker, themeId: t.theme_id, displayName: t.display_name });
-                    }}
-                    onClick={e => e.stopPropagation()}
-                    style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
-                  >
-                    {t.display_name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {rowThemeFeedback && (
-              <span style={{ fontSize: 8.5, color: rowThemeFeedback.type === 'ok' ? C.green : C.red, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {rowThemeFeedback.msg}
+      {isAdmin && stock.ticker ? (
+        <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <button
+            onClick={e => { e.stopPropagation(); onOpenTaxonomyEditor(stock.ticker); }}
+            onPointerDown={e => e.stopPropagation()}
+            disabled={themeAssignPending}
+            title={themeTooltip || (primaryThemeLabel ? `Edit taxonomy: ${primaryThemeLabel}` : `Assign taxonomy to ${stock.ticker}`)}
+            style={{
+              background: 'none', border: 'none', padding: 0, cursor: themeAssignPending ? 'default' : 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
+              fontSize: 10, fontFamily: font,
+              color: themeAssignPending ? C.dim : (primaryThemeLabel ? 'rgba(255,255,255,0.50)' : C.teal),
+              opacity: themeAssignPending ? 0.6 : 1,
+            }}
+          >
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+              {themeAssignPending ? 'Updating…' : (primaryThemeLabel || '+ Assign')}
+            </span>
+            {additionalThemeCount > 0 && !themeAssignPending && (
+              <span style={{ fontSize: 9, fontFamily: sansFont, color: C.teal, background: `${C.teal}20`, borderRadius: 10, padding: '0 4px', flexShrink: 0 }}>
+                +{additionalThemeCount}
               </span>
             )}
-          </span>
-        );
-      })() : (
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={stock.canonical_theme_name || stock.section_title || stock.theme || ''}>
-          {stock.canonical_theme_name || stock.section_title || stock.theme || 'Unassigned / Needs Theme'}
+            {!themeAssignPending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
+          </button>
+          {rowThemeFeedback && (
+            <span style={{ fontSize: 8.5, color: rowThemeFeedback.type === 'ok' ? C.green : C.red, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {rowThemeFeedback.msg}
+            </span>
+          )}
+        </span>
+      ) : (
+        <span
+          style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}
+          title={themeTooltip || primaryThemeLabel || ''}
+        >
+          {primaryThemeLabel || 'Unassigned / Needs Theme'}
         </span>
       )}
       {/* ── Mode-specific cells ──────────────────────────────── */}
@@ -2772,7 +3128,7 @@ export default function WatchlistPage() {
   const lastGoodRowsByWid = useRef<Map<string, any[]>>(new Map());
   const [hydrationStatus, setHydrationStatus] = useState<Map<string, { quote: string; technical: string; fundamentals: string; options: string }>>(new Map());
   const hydrationIntervals = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
-  const [localThemeOverrides, setLocalThemeOverrides] = useState<Map<string, string>>(new Map());
+  const [activeTaxonomyEditTicker, setActiveTaxonomyEditTicker] = useState<string | null>(null);
 
   const toggleExpandedTicker = useCallback((sym: string) => setExpandedTickers(prev => {
     const next = new Set(prev);
@@ -3056,11 +3412,6 @@ export default function WatchlistPage() {
     const nodes = (themeUniverseResp as any)?.themes ?? [];
     return buildThemeTaxonomyIndex(nodes);
   }, [themeUniverseResp]);
-  const themeUniverse: Array<{ theme_id: string; display_name: string }> = useMemo(() => {
-    const list = ((themeUniverseResp as any)?.themes ?? []) as Array<{ theme_id: string; display_name: string }>;
-    return [...list].sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
-  }, [themeUniverseResp]);
-
   const wlIdentityCsv = useMemo(() => {
     const tickers: string[] = (watchlist?.tickers as string[] | undefined) ?? [];
     if (!tickers.length) return '';
@@ -3103,54 +3454,12 @@ export default function WatchlistPage() {
   const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);
   const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
 
-  const assignPrimaryThemeMutation = useMutation({
-    mutationFn: async ({ ticker, themeId: _themeId, displayName }: { ticker: string; themeId: string; displayName: string }) => {
-      if (!activeId) throw new Error('No active watchlist');
-      const r = await fetch(`/api/watchlist/${activeId}/tickers/${encodeURIComponent(ticker)}/theme`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: displayName }),
-      });
-      const ct = r.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) {
-        const text = await r.text();
-        console.error('[theme-patch] non-JSON response:', r.status, text.slice(0, 200));
-        throw new Error(`Could not update theme. Try again.`);
-      }
-      const data = await r.json();
-      if (!r.ok) {
-        const detail = data?.detail ?? data?.error ?? '';
-        throw new Error(detail || `Could not update theme. Try again.`);
-      }
-      return data;
-    },
-    onMutate: ({ ticker, displayName }) => {
-      setThemeAssignPendingTicker(ticker);
-      setThemeAssignFeedback(null);
-      const sym = ticker.toUpperCase();
-      const prev = localThemeOverrides.get(sym);
-      setLocalThemeOverrides(m => new Map(m).set(sym, displayName));
-      return { prevTheme: prev };
-    },
-    onSuccess: (_, { ticker }) => {
-      setThemeAssignFeedback({ ticker, type: 'ok', msg: 'Theme updated' });
-      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId] });
-      qc.invalidateQueries({ queryKey: ['/api/watchlist', activeId, 'performance/theme'] });
-      setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 4000);
-      setTimeout(() => setLocalThemeOverrides(m => { const n = new Map(m); n.delete(ticker.toUpperCase()); return n; }), 8000);
-    },
-    onError: (e: any, { ticker }, context: any) => {
-      setThemeAssignFeedback({ ticker, type: 'err', msg: e?.message || 'Could not update theme. Try again.' });
-      const sym = ticker.toUpperCase();
-      setLocalThemeOverrides(m => {
-        const n = new Map(m);
-        if (context?.prevTheme != null) n.set(sym, context.prevTheme); else n.delete(sym);
-        return n;
-      });
-      setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 6000);
-    },
-    onSettled: () => setThemeAssignPendingTicker(null),
-  });
+  // Taxonomy save success handler: sets brief feedback, clears pending
+  const handleTaxonomySaveSuccess = useCallback((ticker: string) => {
+    setThemeAssignFeedback({ ticker, type: 'ok', msg: 'Taxonomy saved' });
+    setTimeout(() => setThemeAssignFeedback(f => (f?.ticker === ticker ? null : f)), 4000);
+  }, []);
+
   const optionsSignalsByTicker = (optionsResp?.signals ?? {}) as Record<string, any>;
   const optionsMeta = optionsResp?.options_meta as Record<string, any> | undefined;
 
@@ -3623,15 +3932,6 @@ export default function WatchlistPage() {
     setSelectedTicker(ticker);
   }, []);
 
-  // Stable theme-assign wrapper: assignPrimaryThemeMutation.mutate is stable
-  // across renders per React Query guarantee, so this never causes rowCtx churn.
-  const onThemeAssignStable = useCallback(
-    (args: { ticker: string; themeId: string; displayName: string }) =>
-      assignPrimaryThemeMutation.mutate(args),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
   // Grid layout values computed at component level so rowCtx stays stable
   // across realtime-quote polls (changes only when screenerMode / optSecCols change).
   const _wlVisibleSecColsLen = useMemo(() => {
@@ -3667,6 +3967,11 @@ export default function WatchlistPage() {
    * Per-ticker dynamic values (hydration, theme override, theme pending, feedback)
    * are resolved at the map call-site and passed as individual row props,
    * preventing Map-mutation from invalidating ALL rows on every update. */
+  const onOpenTaxonomyEditorStable = useCallback(
+    (ticker: string) => setActiveTaxonomyEditTicker(ticker),
+    [],
+  );
+
   const rowCtx = useMemo<WlRowCtx>(() => ({
     screenerMode,
     optionsLoading,
@@ -3674,18 +3979,17 @@ export default function WatchlistPage() {
     optSecColsState,
     activeId: activeId ?? '',
     isAdmin,
-    themeUniverse,
     tickerGrid: _wlTickerGrid,
     tickerTableMinWidth: _wlTickerTableMinWidth,
     onTickerClick: handleTickerClick,
     onToggleFavorite: toggleFavorite,
     onDeleteStart: (info) => setDeleteConfirm(info),
     onToggleExpand: toggleExpandedTicker,
-    onThemeAssign: onThemeAssignStable,
+    onOpenTaxonomyEditor: onOpenTaxonomyEditorStable,
   }), [
     screenerMode, optionsLoading, optionsAvailable, optSecColsState, activeId,
-    isAdmin, themeUniverse, _wlTickerGrid, _wlTickerTableMinWidth,
-    handleTickerClick, toggleFavorite, toggleExpandedTicker, onThemeAssignStable,
+    isAdmin, _wlTickerGrid, _wlTickerTableMinWidth,
+    handleTickerClick, toggleFavorite, toggleExpandedTicker, onOpenTaxonomyEditorStable,
   ]);
 
   /* ── upload handlers ────────────────────────────────────────────── */
@@ -3769,7 +4073,6 @@ export default function WatchlistPage() {
   useEffect(() => {
     setPendingOptRows(new Map());
     setHydrationStatus(new Map());
-    setLocalThemeOverrides(new Map());
     for (const id of hydrationIntervals.current.values()) clearInterval(id);
     hydrationIntervals.current.clear();
   }, [activeId]);
@@ -6395,7 +6698,9 @@ export default function WatchlistPage() {
                     isExpanded={expandedTickers.has(sym)}
                     isFavorite={favoritesSet.has(symUp)}
                     hydrationEntry={hydrationStatus.get(symUp)}
-                    localThemeOverride={localThemeOverrides.get(symUp)}
+                    primaryThemeLabel={wlBuildThemeCellLabel(stock, taxonomyIndex)}
+                    additionalThemeCount={wlBuildThemeCellAdditionalCount(stock)}
+                    themeTooltip={wlBuildThemeCellTooltip(stock, taxonomyIndex)}
                     themeAssignPending={themeAssignPendingTicker === sym}
                     rowThemeFeedback={themeAssignFeedback?.ticker === sym ? { type: themeAssignFeedback.type, msg: themeAssignFeedback.msg } : null}
                     ctx={rowCtx}
@@ -6618,57 +6923,36 @@ export default function WatchlistPage() {
                     );
                     color = 'inherit';
                   } else if (col.fmt === 'str' && col.key === 'canonical_theme_name') {
-                    const tk = (row.ticker || '').toString().toUpperCase();
-                    const currentThemeName = localThemeOverrides.get(tk) || String(v || row.canonical_theme_name || row.section_title || row.theme || '');
                     const rowThemePending = themeAssignPendingTicker === row.ticker;
                     const rowThemeFeedback = themeAssignFeedback?.ticker === row.ticker ? themeAssignFeedback : null;
+                    const fundThemeLabel = wlBuildThemeCellLabel(row, taxonomyIndex) || String(v || row.canonical_theme_name || row.section_title || row.theme || '') || null;
+                    const fundThemeAddlCount = wlBuildThemeCellAdditionalCount(row);
+                    const fundThemeTooltip = wlBuildThemeCellTooltip(row, taxonomyIndex);
                     content = isAdmin && row.ticker ? (
                       <span style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              onClick={e => e.stopPropagation()}
-                              onPointerDown={e => e.stopPropagation()}
-                              disabled={rowThemePending}
-                              title={currentThemeName ? `Reassign primary Theme for ${row.ticker}` : `Assign a primary Theme to ${row.ticker}`}
-                              style={{
-                                background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
-                                display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
-                                fontSize: 10, fontFamily: font,
-                                color: rowThemePending ? C.dim : (currentThemeName ? 'rgba(255,255,255,0.50)' : C.teal),
-                                opacity: rowThemePending ? 0.6 : 1,
-                              }}
-                            >
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                                {rowThemePending ? 'Updating…' : (currentThemeName || '+ Assign Theme')}
-                              </span>
-                              {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="start"
-                            style={{ maxHeight: 320, overflowY: 'auto' }}
-                            onClick={e => e.stopPropagation()}
-                            onPointerDown={e => e.stopPropagation()}
-                          >
-                            {themeUniverse.length === 0 && (
-                              <DropdownMenuItem disabled>Loading Theme universe…</DropdownMenuItem>
-                            )}
-                            {themeUniverse.map(t => (
-                              <DropdownMenuItem
-                                key={t.theme_id}
-                                onSelect={() => {
-                                  if (!row.ticker || t.theme_id === undefined) return;
-                                  assignPrimaryThemeMutation.mutate({ ticker: row.ticker, themeId: t.theme_id, displayName: t.display_name });
-                                }}
-                                onClick={e => e.stopPropagation()}
-                                style={t.display_name === currentThemeName ? { fontWeight: 700 } : undefined}
-                              >
-                                {t.display_name}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <button
+                          onClick={e => { e.stopPropagation(); setActiveTaxonomyEditTicker(row.ticker); }}
+                          onPointerDown={e => e.stopPropagation()}
+                          disabled={rowThemePending}
+                          title={fundThemeTooltip || (fundThemeLabel ? `Edit taxonomy: ${fundThemeLabel}` : `Assign taxonomy to ${row.ticker}`)}
+                          style={{
+                            background: 'none', border: 'none', padding: 0, cursor: rowThemePending ? 'default' : 'pointer',
+                            display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden',
+                            fontSize: 10, fontFamily: font,
+                            color: rowThemePending ? C.dim : (fundThemeLabel ? 'rgba(255,255,255,0.50)' : C.teal),
+                            opacity: rowThemePending ? 0.6 : 1,
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                            {rowThemePending ? 'Updating…' : (fundThemeLabel || '+ Assign')}
+                          </span>
+                          {fundThemeAddlCount > 0 && !rowThemePending && (
+                            <span style={{ fontSize: 9, fontFamily: sansFont, color: C.teal, background: `${C.teal}20`, borderRadius: 10, padding: '0 4px', flexShrink: 0 }}>
+                              +{fundThemeAddlCount}
+                            </span>
+                          )}
+                          {!rowThemePending && <ChevronDown size={10} style={{ flexShrink: 0, opacity: 0.6 }} />}
+                        </button>
                         {rowThemeFeedback && (
                           <span style={{ fontSize: 8.5, color: rowThemeFeedback.type === 'ok' ? C.green : C.red, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {rowThemeFeedback.msg}
@@ -6676,8 +6960,8 @@ export default function WatchlistPage() {
                         )}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={currentThemeName}>
-                        {currentThemeName || 'Unassigned / Needs Theme'}
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }} title={fundThemeTooltip || fundThemeLabel || ''}>
+                        {fundThemeLabel || 'Unassigned / Needs Theme'}
                       </span>
                     );
                     color = 'inherit';
@@ -9136,6 +9420,23 @@ export default function WatchlistPage() {
           </div>
         </div>
       )}
+
+      {/* ═══ Taxonomy Editor Panel ═══ */}
+      {activeTaxonomyEditTicker && (() => {
+        const _edStock = allStocks.find(s => (s.ticker || '').toUpperCase() === activeTaxonomyEditTicker.toUpperCase()) ?? {};
+        return (
+          <WlTaxonomyEditorPanel
+            ticker={activeTaxonomyEditTicker}
+            stockRow={_edStock}
+            taxonomyIndex={taxonomyIndex}
+            token={token || ''}
+            activeWatchlistId={activeId ?? ''}
+            queryClient={qc}
+            onClose={() => setActiveTaxonomyEditTicker(null)}
+            onSaveSuccess={handleTaxonomySaveSuccess}
+          />
+        );
+      })()}
 
       {/* ═══ Stock Detail Modal ═══ */}
       {selectedTicker && (() => {

@@ -1,0 +1,1036 @@
+REPLIT AGENT — REPLACE THE OBSOLETE FLAT WATCHLIST THEME DROPDOWN
+WITH THE CANONICAL SECTOR / THEME / SUBTHEME + ADDITIONAL THEMES EDITOR
+
+Work only in the live FRONTEND Replit workspace.
+
+This is the next phase of the Watchlist taxonomy UI.
+
+CURRENT STATE:
+
+1. The Watchlist filter bar is now correctly split into:
+
+   SECTORS
+   THEMES
+   SUBTHEMES
+
+2. market_lens and deprecated nodes are correctly excluded from those filters.
+
+3. BUT the editable Theme-cell dropdown is still the old Phase-1 flat
+   single-select control.
+
+The user can currently still see choices such as:
+
+"Silver (Commodity Lens)"
+
+inside that assignment dropdown.
+
+That is wrong.
+
+Market lenses are performance/reference series and are NEVER valid stock
+taxonomy assignments.
+
+The current flat selector must be replaced rather than patched.
+
+────────────────────────────────────────────────────────────
+CANONICAL PRODUCT MODEL
+────────────────────────────────────────────────────────────
+
+The intended stock taxonomy UI is:
+
+ONE ACTUAL ECONOMIC SECTOR
++
+ONE PRIMARY THEMATIC MEMBERSHIP
++
+ZERO OR MORE ADDITIONAL THEMATIC MEMBERSHIPS
+
+The primary thematic membership can be either:
+
+classification="theme"
+
+OR
+
+classification="sub_theme"
+
+When the primary is a sub_theme, its parent Theme is derived through:
+
+parent_theme_id
+
+Do NOT redundantly store both parent Theme + child Subtheme as primary.
+
+Example:
+
+Sector:
+Technology
+
+Primary hierarchy:
+Semiconductors
+→ Foundry & Manufacturing
+
+Stored primary_theme_id:
+
+foundry_manufacturing
+
+NOT:
+
+semiconductors + foundry_manufacturing as two primary memberships.
+
+The parent Theme is derived.
+
+────────────────────────────────────────────────────────────
+BACKEND CONTRACT — ALREADY IMPLEMENTED
+────────────────────────────────────────────────────────────
+
+Do NOT invent another backend endpoint.
+
+The canonical atomic endpoint already exists:
+
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+
+Body:
+
+{
+  "primary_theme_id": "<theme or sub_theme id> | null",
+  "additional_theme_ids": ["<theme or sub_theme id>", ...],
+  "note": optional,
+  "created_by": optional
+}
+
+The backend already:
+
+- authenticates admin
+- validates IDs
+- rejects sector IDs as thematic memberships
+- rejects market_lens
+- rejects deprecated
+- rejects non-assignable nodes
+- permits theme or sub_theme
+- removes primary from additional
+- deduplicates
+- prunes redundant ancestor memberships
+- computes membership additions/removals
+- writes primary + all membership changes in ONE Neon transaction
+- invalidates taxonomy caches once
+- rereads authoritative state
+- verifies persisted state
+- returns authoritative:
+
+  primary_theme_id
+  additional_theme_ids
+  theme_ids
+  subtheme_ids
+  sector_id
+
+Use this endpoint.
+
+Do NOT sequence several POST calls from frontend.
+
+Do NOT use:
+
+POST /api/themes/admin/assign-primary-theme
+
+for the new editor's Save action.
+
+That is the old single-primary compatibility path.
+
+────────────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────────────
+
+1. Find and read live frontend AGENTS.md completely.
+2. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent 15 commits
+3. Preserve unrelated work.
+4. Do not reset/revert/rebase/pull/push/clean/stash.
+5. Confirm the recent Watchlist taxonomy split commit or live equivalent:
+   05e85300 — feat: split Watchlist theme filters by hierarchy
+6. Read:
+   - frontend/client/src/pages/watchlist.tsx
+   - frontend/client/src/lib/watchlist-theme-taxonomy.ts
+   - taxonomy tests
+   - GlobalDataContext taxonomy source
+   - authenticated API/fetch helper
+7. Trace the CURRENT Theme-cell editing code:
+   - component
+   - state
+   - list source
+   - current mutation endpoint
+   - current query invalidation
+   - admin capability
+8. Trace the current row fields:
+   - sector / sector_id
+   - primary_theme_id
+   - canonical_theme_id
+   - theme_ids
+   - subtheme_ids
+9. Trace whether frontend currently uses:
+   GET /api/themes/admin/ticker-memberships/{ticker}
+
+Do not edit until all paths are understood.
+
+────────────────────────────────────────────────────────────
+CONFIRM WHY SILVER LENS IS CURRENTLY VISIBLE
+────────────────────────────────────────────────────────────
+
+Find the exact current source of the flat assignment choices.
+
+Prove why:
+
+Silver (Commodity Lens)
+
+is entering the assignment dropdown.
+
+Do not merely hide the display string.
+
+The new assignable universe must be structurally derived from:
+
+classification === "theme"
+OR
+classification === "sub_theme"
+
+AND:
+
+assignable !== false, if assignable is available in the current read contract.
+
+Explicitly exclude:
+
+sector
+market_lens
+deprecated
+
+Never filter by text containing "(Commodity Lens)".
+
+Use canonical classification.
+
+────────────────────────────────────────────────────────────
+NEW THEME CELL UX
+────────────────────────────────────────────────────────────
+
+DO NOT add separate Screener columns for:
+
+Sector
+Theme
+Subtheme
+Additional Themes
+
+Keep the existing single Theme column.
+
+For a ticker with a specific primary Subtheme:
+
+TSM
+Foundry & Manufacturing  +1  ▾
+
+For a ticker whose primary is a parent Theme:
+
+XYZ
+Semiconductors  ▾
+
+For a ticker with no primary:
+
+XYZ
++ Assign  ▾
+
+If there are additional memberships:
+
+show a compact:
+
++1
++2
+etc.
+
+next to the primary display label.
+
+Do not list all memberships directly inside the table cell.
+
+Preserve current table density.
+
+────────────────────────────────────────────────────────────
+EDITOR / POPOVER DESIGN
+────────────────────────────────────────────────────────────
+
+Clicking the Theme cell for an authenticated admin opens a compact taxonomy
+editor.
+
+Conceptually:
+
+─────────────────────────────
+TSM — Edit Classification
+─────────────────────────────
+
+SECTOR
+Technology
+
+PRIMARY THEME
+Semiconductors
+
+SUBTHEME
+Foundry & Manufacturing
+
+ADDITIONAL THEMES
+Packaging & Substrates    ×
++ Add additional theme
+
+Cancel                 Save
+─────────────────────────────
+
+This should use the existing app design language and existing popover/dropdown/
+combobox primitives where practical.
+
+Do not create a huge full-screen modal.
+
+The editor needs enough width to be comfortable, but should remain compact.
+
+────────────────────────────────────────────────────────────
+SECTOR FIELD
+────────────────────────────────────────────────────────────
+
+Sector is the company's ACTUAL economic sector.
+
+It is NOT a thematic membership.
+
+Display it prominently at the top of the editor.
+
+Use current Watchlist row canonical sector data:
+
+sector_id
+and/or actual sector field
+
+depending on the existing live contract.
+
+IMPORTANT:
+
+Audit backend/frontend for an EXISTING canonical manual Sector write path.
+
+IF an existing supported canonical Sector override endpoint/store already exists:
+
+- report it first
+- wire Sector editing through that existing path
+- never store Sector as a Theme membership
+
+IF no canonical Sector write path exists:
+
+- Sector is READ-ONLY in this task
+- label it clearly, e.g.:
+
+  Sector
+  Technology
+  Actual company sector
+
+- do NOT invent a frontend sector override
+- do NOT send sector ID into ticker-taxonomy
+- do NOT create a new backend endpoint in this frontend task
+
+Report whether Sector is editable or read-only and why.
+
+────────────────────────────────────────────────────────────
+PRIMARY THEME + SUBTHEME UX
+────────────────────────────────────────────────────────────
+
+Do not expose one giant alphabetized list anymore.
+
+PRIMARY THEME control:
+
+show only:
+
+classification === "theme"
+
+Example:
+
+Semiconductors
+Software
+Data Center Infrastructure
+Defense & Aerospace
+Nuclear Energy
+Metals & Mining
+etc.
+
+When a primary Theme is selected:
+
+show its child Subthemes separately using:
+
+node.parent_theme_id === selectedThemeId
+
+Example:
+
+PRIMARY THEME
+Semiconductors
+
+SUBTHEME
+None / Semiconductors itself
+AI Accelerators & Compute Silicon
+Analog, Power & Mixed-Signal
+Data Center Connectivity & Interconnect Silicon
+Foundry & Manufacturing
+Memory & Storage
+Packaging & Substrates
+Semiconductor Equipment
+Semiconductor Materials
+Test & Measurement
+...
+
+Do NOT hardcode these names.
+
+Use parent_theme_id.
+
+────────────────────────────────────────────────────────────
+PRIMARY STORAGE SEMANTICS
+────────────────────────────────────────────────────────────
+
+If the user selects:
+
+Theme:
+Semiconductors
+
+Subtheme:
+None / General Semiconductors
+
+save:
+
+primary_theme_id = "semiconductors"
+
+If the user selects:
+
+Theme:
+Semiconductors
+
+Subtheme:
+Foundry & Manufacturing
+
+save:
+
+primary_theme_id = "<Foundry & Manufacturing subtheme ID>"
+
+The child is the actual primary thematic membership.
+
+Do NOT also put "semiconductors" into additional_theme_ids merely because it is
+the parent.
+
+Parent rollup is derived by taxonomy.
+
+────────────────────────────────────────────────────────────
+EDITING AN EXISTING SUBTHEME PRIMARY
+────────────────────────────────────────────────────────────
+
+If the existing row has:
+
+primary_theme_id = a sub_theme
+
+when editor opens:
+
+derive:
+
+selectedSubtheme = primary_theme_id
+selectedTheme = taxonomy[parent_theme_id]
+
+Example:
+
+stored:
+foundry_manufacturing
+
+editor opens as:
+
+Theme:
+Semiconductors
+
+Subtheme:
+Foundry & Manufacturing
+
+The user should not have to understand storage IDs.
+
+────────────────────────────────────────────────────────────
+ADDITIONAL THEMES
+────────────────────────────────────────────────────────────
+
+Below Primary, provide:
+
+ADDITIONAL THEMES
+
+These are optional.
+
+Display existing additional memberships as removable chips.
+
+Example:
+
+Packaging & Substrates ×
+Data Center Infrastructure ×
+
+Then:
+
++ Add additional theme
+
+The Add control should be searchable/hierarchical.
+
+Do NOT show a single mixed raw 104-node list.
+
+Present choices grouped by parent Theme.
+
+Conceptually:
+
+Data Center Infrastructure
+  Networking & Fabric Infrastructure
+  Power & Cooling
+  Servers & Compute Systems
+  ...
+
+Semiconductors
+  AI Accelerators & Compute Silicon
+  Memory & Storage
+  Packaging & Substrates
+  ...
+
+Nuclear Energy
+  SMRs & Advanced Reactors
+  Uranium Mining & Nuclear Fuel
+  Nuclear Equipment & Services
+  ...
+
+The exact live taxonomy is authoritative.
+
+────────────────────────────────────────────────────────────
+ADDITIONAL MEMBERSHIP RULES
+────────────────────────────────────────────────────────────
+
+Additional choices may be:
+
+classification === "theme"
+OR
+classification === "sub_theme"
+
+Never:
+
+sector
+market_lens
+deprecated
+assignable === false
+
+Do not allow the exact primary ID as an additional membership.
+
+Prefer frontend prevention for obviously redundant choices, but backend remains
+authoritative.
+
+Examples:
+
+If primary is:
+
+Foundry & Manufacturing
+
+do not add:
+
+Foundry & Manufacturing
+
+again.
+
+If the user adds both a parent and its child, backend will prune redundant
+ancestors.
+
+The frontend may prevent/normalize this too if cleanly supported by the existing
+taxonomy helper.
+
+Do not create independent rules that disagree with backend.
+
+────────────────────────────────────────────────────────────
+LOCAL DRAFT + ONE SAVE
+────────────────────────────────────────────────────────────
+
+This is important.
+
+Opening the editor should create LOCAL DRAFT state:
+
+draftPrimaryThemeId
+draftThemeParentId
+draftAdditionalThemeIds
+
+Changing controls must NOT write immediately.
+
+The user may make several edits:
+
+change Theme
+change Subtheme
+remove an additional
+add another additional
+
+Nothing persists until:
+
+Save
+
+Save makes EXACTLY ONE canonical mutation:
+
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+
+with the complete desired state.
+
+Do not fire mutations on every dropdown click.
+
+This is both safer and faster.
+
+Cancel discards the draft.
+
+Closing without Save discards the draft.
+
+────────────────────────────────────────────────────────────
+CURRENT MEMBERSHIP READ
+────────────────────────────────────────────────────────────
+
+Use the best existing canonical state already available.
+
+If the Watchlist row reliably provides:
+
+primary_theme_id
+theme_ids
+subtheme_ids
+
+derive the editor draft from that without an extra request.
+
+If additional-membership provenance/state needed by the editor is NOT complete in
+the Watchlist row, reuse the already-existing backend read:
+
+GET /api/themes/admin/ticker-memberships/{ticker}
+
+ONLY when the editor opens.
+
+Do not fetch ticker-membership detail for all ~460 rows on page load.
+
+No N+1 startup requests.
+
+Prefer row payload if complete.
+
+If the admin membership endpoint is needed:
+lazy fetch for the one opened ticker only.
+
+────────────────────────────────────────────────────────────
+SUCCESS / INVALIDATION
+────────────────────────────────────────────────────────────
+
+On successful PUT:
+
+1. use returned authoritative state
+2. close/save editor
+3. invalidate/refetch the current Watchlist query
+4. invalidate the shared taxonomy query if current architecture requires it
+5. invalidate Theme performance/grouping data affected by membership changes
+6. invalidate any Confluence/Theme grouping query already known to depend on
+   ticker taxonomy
+
+Do not reload the full browser page.
+
+Do not create a frontend permanent ticker→taxonomy map.
+
+Backend/Neon remains authoritative.
+
+────────────────────────────────────────────────────────────
+TABLE CELL DISPLAY RULE
+────────────────────────────────────────────────────────────
+
+The single Watchlist Theme column remains compact.
+
+Preferred label hierarchy:
+
+If primary is sub_theme:
+  display subtheme.display_name
+
+Else if primary is theme:
+  display theme.display_name
+
+Else:
+  Unassigned
+
+If additional_theme_ids.length > 0:
+  append compact +N
+
+Examples:
+
+Foundry & Manufacturing +1
+
+Space Economy +2
+
+Cloud Software
+
+Unassigned
+
+Tooltip/title on hover should provide full context:
+
+Sector: Technology
+Theme: Semiconductors
+Subtheme: Foundry & Manufacturing
+Additional:
+  Packaging & Substrates
+
+For a parent-theme primary:
+
+Sector: Technology
+Theme: Semiconductors
+Subtheme: —
+
+Do not add more table columns.
+
+────────────────────────────────────────────────────────────
+MARKET LENSES — HARD EXCLUSION
+────────────────────────────────────────────────────────────
+
+Silver (Commodity Lens)
+Gold (Commodity Lens)
+and every classification="market_lens"
+
+must NEVER appear anywhere in the assignment editor:
+
+not Primary Theme
+not Subtheme
+not Additional Themes
+
+Likewise deprecated nodes.
+
+This must be enforced from classification metadata, not label matching.
+
+Add tests specifically using Silver Commodity Lens fixture.
+
+Backend already rejects market_lens writes; frontend must not offer invalid
+choices.
+
+────────────────────────────────────────────────────────────
+SEARCH / NAVIGATION UX
+────────────────────────────────────────────────────────────
+
+The current flat dropdown is long.
+
+The new editor should reduce cognitive load.
+
+PRIMARY:
+two-step hierarchy:
+Theme → optional Subtheme
+
+ADDITIONAL:
+use either:
+
+A. searchable selector with grouped parent Theme headings
+
+or
+
+B. Theme selection first, then child choices
+
+Use existing frontend primitives.
+
+Do not install a component library.
+
+Do not build a complex tree framework.
+
+Keyboard navigation should remain usable.
+
+────────────────────────────────────────────────────────────
+ADMIN VS NON-ADMIN
+────────────────────────────────────────────────────────────
+
+Preserve existing behavior:
+
+Admin:
+interactive Theme cell + editor
+
+Non-admin:
+read-only Theme cell
+
+Do not expose mutation controls to non-admin.
+
+Backend remains final authorization gate.
+
+Use existing Bearer JWT browser path.
+
+Do not expose X-API-Key.
+
+────────────────────────────────────────────────────────────
+SECTOR SAFETY
+────────────────────────────────────────────────────────────
+
+Do not confuse:
+
+actual Sector
+with
+Theme rollup sector.
+
+Example:
+
+a company may have actual Sector:
+Technology
+
+while an additional thematic membership may roll up into:
+Industrials
+
+The Sector field in the editor must show actual company sector.
+
+Do not derive actual sector from selected themes.
+
+Do not mutate actual sector when selecting a Theme/Subtheme.
+
+────────────────────────────────────────────────────────────
+PERFORMANCE — NON-NEGOTIABLE
+────────────────────────────────────────────────────────────
+
+Do not regress the recently repaired Watchlist performance.
+
+Preserve:
+
+3bc5d6e6 — continuous full-row scrolling architecture
+
+and subsequent hierarchy filter work.
+
+Do NOT reintroduce:
+- virtualization
+- windowing
+- spacer rows
+- scroll-state rendering
+
+Do not add per-row taxonomy queries.
+
+Do not add per-row editor state to all 460 rows.
+
+Prefer:
+
+one page-level active editor ticker
++
+one small local draft object
+
+The editor only exists for the ticker currently being edited.
+
+Do not make every WlTickerRow own a large taxonomy tree.
+
+Keep row props stable.
+
+Opening one ticker's editor must not rerender every ticker row unnecessarily.
+
+────────────────────────────────────────────────────────────
+TAXONOMY SOURCE
+────────────────────────────────────────────────────────────
+
+Reuse the SAME shared taxonomy source that now powers:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+filters.
+
+Do not make another theme-list API call.
+
+Build memoized indexes once:
+
+themesById
+topLevelThemes
+childrenByParentThemeId
+assignableNodes
+
+Reuse existing buildThemeTaxonomyIndex helpers where possible.
+
+Do not duplicate hierarchy logic inside JSX.
+
+────────────────────────────────────────────────────────────
+TESTS
+────────────────────────────────────────────────────────────
+
+Add focused tests proving at minimum:
+
+1. market_lens absent from Primary selector.
+2. market_lens absent from Subtheme selector.
+3. market_lens absent from Additional selector.
+4. deprecated absent everywhere.
+5. sectors cannot be thematic primary.
+6. sector is displayed separately.
+7. parent Themes only populate Primary Theme selector.
+8. Subtheme choices are children of selected Theme via parent_theme_id.
+9. changing Theme updates available Subthemes.
+10. existing subtheme primary hydrates parent Theme correctly.
+11. Theme-only primary saves parent Theme ID.
+12. Theme+Subtheme saves child Subtheme ID as primary.
+13. parent Theme is not redundantly stored with child primary.
+14. additional Theme can be added.
+15. additional Subtheme can be added.
+16. primary cannot duplicate additional.
+17. redundant parent/child additional state normalizes correctly.
+18. current additional memberships hydrate correctly.
+19. +N cell count is correct.
+20. cell displays most-specific primary label.
+21. tooltip shows Sector/Theme/Subtheme/additional context.
+22. Cancel performs zero mutation.
+23. changing draft performs zero mutation before Save.
+24. Save issues exactly ONE PUT.
+25. PUT uses /api/themes/admin/ticker-taxonomy/{ticker}.
+26. complete desired state is sent.
+27. response authoritative state is respected.
+28. successful Save invalidates Watchlist.
+29. failed Save preserves canonical displayed state.
+30. non-admin remains read-only.
+31. no API key exposed.
+32. no N+1 ticker-membership fetch on page load.
+33. lazy membership read, if needed, occurs only for opened ticker.
+34. SECTORS/THEMES/SUBTHEMES filter bar remains unchanged.
+35. continuous scrolling tests remain unchanged.
+36. realtime quote cadence unchanged.
+
+Run all current Watchlist taxonomy/performance tests.
+
+────────────────────────────────────────────────────────────
+BROWSER VALIDATION
+────────────────────────────────────────────────────────────
+
+Test actual UI with several representative stocks.
+
+A. TSM
+
+Expected conceptual state:
+Sector: Technology
+Primary: Semiconductors or its current authoritative primary
+Additional: Packaging & Substrates if current backend state exposes it
+
+Confirm editor hydrates actual live state.
+
+B. UUUU
+
+Expected:
+Sector: actual canonical company sector
+Primary: Rare Earth Elements
+Additional: Uranium Mining & Nuclear Fuel
+
+Confirm +1 display and correct hierarchy.
+
+C. BAND
+
+Expected:
+Primary: Cloud Software
+
+Confirm no stale Memory & Storage.
+
+D. One parent-theme-only ticker.
+
+E. One unassigned ticker.
+
+Perform:
+
+assigned → changed draft → Cancel
+  no write
+
+assigned → changed Theme/Subtheme/additional → Save
+  one PUT
+  correct authoritative reread
+
+Then restore test ticker to original state using the same editor.
+
+────────────────────────────────────────────────────────────
+SILVER COMMODITY LENS VALIDATION
+────────────────────────────────────────────────────────────
+
+Explicitly prove:
+
+"Silver (Commodity Lens)"
+
+is NOT present in:
+
+Primary Theme
+Subtheme
+Additional Themes
+
+Also test:
+
+Gold (Commodity Lens)
+
+if present in live taxonomy.
+
+Do not consider the task complete if either appears as an assignment option.
+
+────────────────────────────────────────────────────────────
+DO NOT CHANGE
+────────────────────────────────────────────────────────────
+
+No backend changes unless the mandatory Sector audit proves there is an existing
+frontend-required contract mismatch; if so STOP and report instead.
+
+Do not modify:
+- Theme RS
+- Home
+- Options Flow
+- taxonomy definitions
+- Watchlist filters
+- quote cadence
+- options cadence
+- earnings
+- Confluence scoring
+- sector rollup semantics
+- Watchlist performance architecture
+
+Do not add a second Theme column.
+
+Do not add an Additional Theme column.
+
+Do not create a static taxonomy list.
+
+────────────────────────────────────────────────────────────
+VALIDATION
+────────────────────────────────────────────────────────────
+
+Run:
+
+npm run check
+npm run build
+git diff --check
+
+plus relevant AGENTS.md tests.
+
+Clearly separate pre-existing TS errors from new errors.
+
+No new errors.
+
+────────────────────────────────────────────────────────────
+COMMIT
+────────────────────────────────────────────────────────────
+
+Stage exact intended source/test files only.
+
+Do not use:
+
+git add .
+git add -A
+
+Do not stage attached prompt assets.
+
+One local commit:
+
+feat: add hierarchical Watchlist taxonomy editor
+
+Do not push until reviewed.
+
+────────────────────────────────────────────────────────────
+REQUIRED REPORT
+────────────────────────────────────────────────────────────
+
+Write to exact AGENTS.md-required report path.
+
+Include:
+
+1. Starting HEAD/status.
+2. Current obsolete dropdown root cause.
+3. Why Silver Commodity Lens was visible.
+4. Existing old mutation endpoint.
+5. Atomic PUT endpoint now used.
+6. Sector source and whether editable or read-only.
+7. Primary Theme hierarchy implementation.
+8. Subtheme implementation.
+9. Additional membership implementation.
+10. Local draft / one-Save behavior.
+11. Table cell +N implementation.
+12. Current-state hydration source.
+13. Exact assignment universe filters.
+14. Proof market_lens cannot render.
+15. Proof deprecated cannot render.
+16. Auth path.
+17. Mutation payload example.
+18. Query invalidations.
+19. TSM live validation.
+20. UUUU live validation.
+21. BAND live validation.
+22. Cancel validation.
+23. Save validation.
+24. Performance regression validation.
+25. Test/build/check results.
+26. Exact files changed.
+27. git diff --check.
+28. final SHA.
