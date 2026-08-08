@@ -3415,7 +3415,19 @@ export default function WatchlistPage() {
   const wlIdentityCsv = useMemo(() => {
     const tickers: string[] = (watchlist?.tickers as string[] | undefined) ?? [];
     if (!tickers.length) return '';
-    return tickers.sort().join(',');
+    const sections = (watchlist as any)?.analysis?.sections ?? [];
+    const hasBeta = new Set<string>();
+    for (const sec of sections) {
+      for (const t of (sec.tickers ?? [])) {
+        const sym = ((t.ticker || t.symbol || '') as string).toUpperCase();
+        const b = t.beta;
+        if (sym && b != null && b !== '' && Number.isFinite(Number(b))) hasBeta.add(sym);
+      }
+    }
+    // Include only symbols that genuinely need identity resolution:
+    //   - Exchange-qualified symbols (OTC:, LSE:, etc.) → need exchange & company name
+    //   - Symbols without beta from analysis → need beta
+    return tickers.filter(s => s.includes(':') || !hasBeta.has(s.toUpperCase())).sort().join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(watchlist?.tickers ?? []).join(','), watchlist]);
   const { data: wlIdentityData } = useQuery<Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }>>({
@@ -3453,8 +3465,14 @@ export default function WatchlistPage() {
     for (const [sym, d] of Object.entries(wlIdentityData)) {
       if (!d || typeof d !== 'object') continue;
       const nm = (d as any).name;
-      if (typeof nm === 'string' && nm.length > 0 && nm.toUpperCase() !== sym.toUpperCase()) {
-        out[sym.toUpperCase()] = nm;
+      if (typeof nm === 'string' && nm.length > 0) {
+        const nmUpper = nm.toUpperCase();
+        const symUpper = sym.toUpperCase();
+        // Exclude fallback names: canonical ticker itself (OTC:MALJF) or bare ticker (MALJF)
+        if (nmUpper === symUpper) continue;
+        const colonIdx = sym.indexOf(':');
+        if (colonIdx > 0 && nmUpper === sym.slice(colonIdx + 1).toUpperCase()) continue;
+        out[symUpper] = nm;
       }
     }
     return out;
@@ -4237,8 +4255,9 @@ export default function WatchlistPage() {
       // Inject company name from FMP company-identity when row has no legitimate name
       if (fmpName != null) {
         const existing = next.company || next.name;
-        const existingStr = (existing != null && existing !== '') ? String(existing) : '';
-        if (!existingStr || existingStr.toUpperCase() === sym) {
+        const existingStr = (existing != null && existing !== '') ? String(existing).toUpperCase() : '';
+        const bareTicker = sym.includes(':') ? sym.slice(sym.indexOf(':') + 1).toUpperCase() : sym.toUpperCase();
+        if (!existingStr || existingStr === sym.toUpperCase() || existingStr === bareTicker) {
           next.name = fmpName;
         }
       }

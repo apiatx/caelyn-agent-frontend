@@ -3171,65 +3171,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Company identity batch — used by earnings calendar ───────────
   const _identityCache = new Map<string, { name: string; logo: string | null; exchange: string | null; beta: number | null; ts: number }>();
-  const _IDENTITY_TTL = 24 * 3600_000;
+  const _IDENTITY_TTL = 24 * 3600_000;          // positive TTL: resolved identities
+  const _IDENTITY_NEG_TTL = 5 * 60_000;          // negative TTL: unresolved / provider failure
+
+  // Build canonical → provider mapping: strip exchange prefix (e.g. OTC:AAGFF → AAGFF)
+  // Returns a multi-map because multiple canonical symbols can reduce to the same provider symbol.
+  function _buildProviderMap(canonicalSymbols: string[]): {
+    providerToCanonicals: Map<string, string[]>;
+    providerSymbols: string[];
+  } {
+    const p2c = new Map<string, string[]>();
+    const seen = new Set<string>();
+    for (const cs of canonicalSymbols) {
+      const ci = cs.indexOf(':');
+      const ps = ci > 0 ? cs.slice(ci + 1) : cs;
+      if (!p2c.has(ps)) p2c.set(ps, []);
+      const list = p2c.get(ps)!;
+      if (!list.includes(cs)) list.push(cs);
+      if (!seen.has(ps)) { seen.add(ps); }
+    }
+    return { providerToCanonicals: p2c, providerSymbols: [...seen] };
+  }
+
+  // Determine whether a cache entry represents a resolved identity (has real data).
+  function _isIdentityResolved(entry: { name: string; logo: string | null; exchange: string | null; beta: number | null }): boolean {
+    return (entry.logo != null || entry.exchange != null || entry.beta != null);
+  }
 
   app.get('/api/fmp/company-identity', async (req, res) => {
     const raw = (req.query.symbols as string || '').trim();
     if (!raw) return res.json({});
-    const canonicalSymbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
-    // Build canonical → provider mapping: strip exchange prefix (e.g. OTC:AAGFF → AAGFF)
-    const providerToCanonical = new Map<string, string>();
-    const providerSymbols: string[] = [];
-    for (const cs of canonicalSymbols) {
-      const colonIdx = cs.indexOf(':');
-      const ps = colonIdx > 0 ? cs.slice(colonIdx + 1) : cs;
-      providerToCanonical.set(ps, cs);
-      if (!providerSymbols.includes(ps)) providerSymbols.push(ps);
-    }
+    const canonicalSymbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean);
     const result: Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }> = {};
     const needFetch: string[] = [];
+
+    // Serve from cache where valid
     for (const cs of canonicalSymbols) {
       const c = _identityCache.get(cs);
-      if (c && Date.now() - c.ts < _IDENTITY_TTL) {
-        result[cs] = { name: c.name, logo: c.logo, exchange: c.exchange, beta: c.beta };
-      } else {
-        needFetch.push(cs);
+      if (c) {
+        const ttl = _isIdentityResolved(c) ? _IDENTITY_TTL : _IDENTITY_NEG_TTL;
+        if (Date.now() - c.ts < ttl) {
+          result[cs] = { name: c.name, logo: c.logo, exchange: c.exchange, beta: c.beta };
+          continue;
+        }
       }
+      needFetch.push(cs);
     }
+
     if (needFetch.length > 0) {
       const FMP_KEY = process.env.FMP_API_KEY || '';
       if (FMP_KEY) {
-        // Convert canonical symbols to provider symbols for FMP lookup
-        const fmpSymbols = needFetch.map(cs => {
-          const ci = cs.indexOf(':');
-          return ci > 0 ? cs.slice(ci + 1) : cs;
-        }).filter((v, i, a) => a.indexOf(v) === i);
-        try {
-          const url = `https://financialmodelingprep.com/stable/profile?symbol=${fmpSymbols.join(',')}&apikey=${FMP_KEY}`;
-          const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-          if (r.ok) {
-            const profiles: any[] = await r.json();
-            if (Array.isArray(profiles)) {
-              for (const p of profiles) {
-                if (!p.symbol) continue;
-                const ps = p.symbol.toUpperCase();
-                // Map provider symbol back to canonical symbol(s)
-                const canonical = providerToCanonical.get(ps) || ps;
-                const exchange = p.exchangeShortName || p.exchange || null;
-                const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
-                const entry = { name: p.companyName || ps, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
-                _identityCache.set(canonical, entry);
-                result[canonical] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
+        const { providerToCanonicals, providerSymbols } = _buildProviderMap(needFetch);
+
+        // Chunk provider symbols into batches of 50 for FMP profile endpoint
+        const FMP_BATCH_SIZE = 50;
+        for (let i = 0; i < providerSymbols.length; i += FMP_BATCH_SIZE) {
+          const batch = providerSymbols.slice(i, i + FMP_BATCH_SIZE);
+          try {
+            const url = `https://financialmodelingprep.com/stable/profile?symbol=${batch.join(',')}&apikey=${FMP_KEY}`;
+            const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+            if (r.ok) {
+              const profiles: any[] = await r.json();
+              const returnedProviderSyms = new Set<string>();
+              if (Array.isArray(profiles)) {
+                for (const p of profiles) {
+                  if (!p.symbol) continue;
+                  const ps = p.symbol.toUpperCase();
+                  returnedProviderSyms.add(ps);
+                  const exchange = p.exchangeShortName || p.exchange || null;
+                  const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
+                  const name = p.companyName || ps;
+                  // Map provider symbol back to ALL canonical symbols that reduce to it
+                  const canonicals = providerToCanonicals.get(ps) || [ps];
+                  for (const canonical of canonicals) {
+                    const entry = { name, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
+                    _identityCache.set(canonical, entry);
+                    result[canonical] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
+                  }
+                }
+              }
+              // Any provider symbol NOT returned by FMP is unresolved — short negative cache
+              for (const ps of batch) {
+                if (!returnedProviderSyms.has(ps)) {
+                  const canonicals = providerToCanonicals.get(ps) || [ps];
+                  for (const canonical of canonicals) {
+                    _identityCache.set(canonical, { name: canonical, logo: null, exchange: null, beta: null, ts: Date.now() });
+                    result[canonical] = result[canonical] || { name: canonical, logo: null, exchange: null, beta: null };
+                  }
+                }
+              }
+            }
+          } catch (e: any) {
+            console.warn('[company-identity] FMP fetch failed:', e?.message);
+            // Provider failure: short negative cache for this batch
+            for (const ps of batch) {
+              const canonicals = providerToCanonicals.get(ps) || [ps];
+              for (const canonical of canonicals) {
+                _identityCache.set(canonical, { name: canonical, logo: null, exchange: null, beta: null, ts: Date.now() });
+                result[canonical] = result[canonical] || { name: canonical, logo: null, exchange: null, beta: null };
               }
             }
           }
-        } catch (e: any) {
-          console.warn('[company-identity] FMP fetch failed:', e?.message);
         }
       }
+      // Ensure every requested canonical symbol appears in result
       for (const cs of needFetch) {
         if (!result[cs]) {
-          _identityCache.set(cs, { name: cs, logo: null, exchange: null, beta: null, ts: Date.now() });
           result[cs] = { name: cs, logo: null, exchange: null, beta: null };
         }
       }
