@@ -2428,7 +2428,39 @@ function WlTaxonomyEditorPanel({
       });
       const data: any = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data?.detail || data?.error || `Save failed (${r.status})`);
-      // Invalidate watchlist + theme performance queries so rows refresh
+      // Optimistically patch the cached watchlist so the theme column reflects the
+      // new assignment immediately, without waiting for the background refetch.
+      const savedPrimaryId: string | null = data?.primary_theme_id ?? null;
+      const savedThemeIds: string[] = data?.theme_ids ?? (savedPrimaryId ? [savedPrimaryId] : []);
+      const savedAdditionalIds: string[] = data?.additional_theme_ids ?? [];
+      const savedSubthemeIds: string[] = data?.subtheme_ids ?? [];
+      queryClient.setQueryData(['/api/watchlist', activeWatchlistId], (old: any) => {
+        if (!old || !old.analysis?.sections) return old;
+        const upperTicker = ticker.toUpperCase();
+        return {
+          ...old,
+          analysis: {
+            ...old.analysis,
+            sections: old.analysis.sections.map((sec: any) => ({
+              ...sec,
+              tickers: Array.isArray(sec.tickers)
+                ? sec.tickers.map((t: any) =>
+                    (t.ticker || '').toUpperCase() !== upperTicker ? t : {
+                      ...t,
+                      primary_theme_id: savedPrimaryId,
+                      theme_ids: savedThemeIds,
+                      additional_theme_ids: savedAdditionalIds,
+                      subtheme_ids: savedSubthemeIds,
+                      // Clear canonical fallback so wlBuildThemeCellLabel uses primary_theme_id
+                      canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id,
+                    }
+                  )
+                : sec.tickers,
+            })),
+          },
+        };
+      });
+      // Invalidate in background so next refetch is fresh
       queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
       queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
       queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });

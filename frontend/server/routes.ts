@@ -5975,6 +5975,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Ticker taxonomy assignment ───────────────────────────────────────
+  // PUT /api/themes/admin/ticker-taxonomy/:ticker → WL_URL
+  // Persists primary_theme_id + additional_theme_ids for a ticker.
+  app.put('/api/themes/admin/ticker-taxonomy/:ticker', async (req, res) => {
+    try {
+      const { ticker } = req.params;
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(
+        `${WL_URL}/api/themes/admin/ticker-taxonomy/${encodeURIComponent(ticker)}`,
+        { method: 'PUT', headers: wlHdr(), body: JSON.stringify(req.body), signal: ctrl.signal },
+      );
+      clearTimeout(tid);
+      const data = await r.json().catch(() => ({}));
+      res.status(r.status).json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e?.name === 'AbortError' ? 'Theme save timed out' : 'Theme save failed' });
+    }
+  });
+
   // ── Playbook / Strategy routes ──────────────────────────────────────
   const PB_URL = 'https://fast-api-server-aidanpilon.replit.app';
   const PB_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
