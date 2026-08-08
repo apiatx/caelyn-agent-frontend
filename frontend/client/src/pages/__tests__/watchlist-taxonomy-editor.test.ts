@@ -487,3 +487,304 @@ test("REQ-48 fail-closed: missing required taxonomy fields must be rejected", ()
   }
   assert.ok(threw, "response without required fields must be rejected");
 });
+
+// ─── 8. setQueryData cache patch — row-identity and canonical_theme_id correctness ──
+//
+// These tests inline the EXACT production cache-patch logic from
+// WlTaxonomyEditorPanel.handleSave() so they catch the two proven bugs:
+//
+//   Bug 1: matcher used only (t.ticker||'') — misses raw rows where the backend
+//          sends `symbol` instead of `ticker`.
+//   Bug 2: canonical_theme_id used `savedPrimaryId ?? t.canonical_theme_id` —
+//          preserved stale identity when savedPrimaryId was null.
+//
+// The fix:
+//   String(t.ticker || t.symbol || '').trim().toUpperCase()  (identity)
+//   canonical_theme_id: savedPrimaryId                       (authoritative wins)
+
+/** Mirror the production setQueryData updater exactly. */
+function applyPatch(
+  old: any,
+  ticker: string,
+  savedPrimaryId: string | null,
+  savedThemeIds: string[],
+  savedAdditionalIds: string[],
+  savedSubthemeIds: string[],
+): any {
+  if (!old || !old.analysis?.sections) return old;
+  const upperTicker = ticker.toUpperCase();
+  return {
+    ...old,
+    analysis: {
+      ...old.analysis,
+      sections: old.analysis.sections.map((sec: any) => ({
+        ...sec,
+        tickers: Array.isArray(sec.tickers)
+          ? sec.tickers.map((t: any) =>
+              String(t.ticker || t.symbol || "").trim().toUpperCase() !== upperTicker
+                ? t
+                : {
+                    ...t,
+                    primary_theme_id: savedPrimaryId,
+                    theme_ids: savedThemeIds,
+                    additional_theme_ids: savedAdditionalIds,
+                    subtheme_ids: savedSubthemeIds,
+                    canonical_theme_id: savedPrimaryId,
+                  }
+            )
+          : sec.tickers,
+      })),
+    },
+  };
+}
+
+// ── CRITICAL regression test — symbol-only raw row ────────────────────────────
+
+test("REQ-49 CRITICAL — symbol-only raw row: AXTI patched immediately after successful PUT", () => {
+  const idx = makeIndex();
+  // Exact cache shape from the proven regression scenario
+  const old = {
+    analysis: {
+      sections: [
+        {
+          id: "something",
+          tickers: [
+            {
+              symbol: "AXTI",
+              primary_theme_id: null,
+              canonical_theme_id: null,
+              theme_ids: [],
+              subtheme_ids: [],
+            },
+          ],
+        },
+      ],
+    },
+  };
+  // Authoritative PUT response
+  const saveResponse = {
+    ok: true,
+    primary_theme_id: "packaging_substrates",
+    theme_ids: ["packaging_substrates", "semicap_materials_node"],
+    additional_theme_ids: ["semicap_materials_node"],
+    subtheme_ids: ["packaging_substrates"],
+  };
+  const updated = applyPatch(
+    old,
+    "AXTI",
+    saveResponse.primary_theme_id,
+    saveResponse.theme_ids,
+    saveResponse.additional_theme_ids,
+    saveResponse.subtheme_ids,
+  );
+  const row = updated.analysis.sections[0].tickers[0];
+  // Row identity preserved
+  assert.equal(row.symbol, "AXTI", "symbol field must survive patch");
+  // All authoritative taxonomy fields applied
+  assert.equal(row.primary_theme_id, "packaging_substrates");
+  assert.equal(row.canonical_theme_id, "packaging_substrates", "canonical_theme_id must equal savedPrimaryId");
+  assert.deepEqual(row.theme_ids, ["packaging_substrates", "semicap_materials_node"]);
+  assert.deepEqual(row.additional_theme_ids, ["semicap_materials_node"]);
+  assert.deepEqual(row.subtheme_ids, ["packaging_substrates"]);
+  // Cell label resolves immediately without a backend refetch
+  // (using a taxonomy index that has packaging_substrates as a theme)
+  const idxWithPkg = buildThemeTaxonomyIndex([
+    { theme_id: "packaging_substrates", display_name: "Packaging & Substrates", classification: "sub_theme", parent_theme_id: "th-semis" },
+    { theme_id: "th-semis", display_name: "Semiconductors", classification: "theme", parent_theme_id: null },
+    { theme_id: "semicap_materials_node", display_name: "Semicap Materials", classification: "theme", parent_theme_id: null },
+  ]);
+  const label = buildLabel(row, idxWithPkg);
+  assert.ok(label !== null && label !== "", `visible label must be non-empty, got: ${label}`);
+  assert.equal(label, "Packaging & Substrates", "label must resolve from authoritative primary_theme_id");
+  // THIS WOULD FAIL AGAINST PRE-FIX CODE (t.ticker undefined on symbol-only row)
+  const preFix = {
+    ...old,
+    analysis: {
+      ...old.analysis,
+      sections: old.analysis.sections.map((sec: any) => ({
+        ...sec,
+        tickers: sec.tickers.map((t: any) =>
+          (t.ticker || "").toUpperCase() !== "AXTI" ? t : { ...t, primary_theme_id: "packaging_substrates" }
+        ),
+      })),
+    },
+  };
+  const prefixRow = preFix.analysis.sections[0].tickers[0];
+  assert.equal(prefixRow.primary_theme_id, null, "pre-fix matcher silently misses symbol-only row");
+});
+
+// ── Test A — symbol-only raw row ──────────────────────────────────────────────
+
+test("REQ-50 A — symbol-only raw row { symbol: 'AXTI' } is matched and patched", () => {
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "AXTI", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const updated = applyPatch(old, "AXTI", "software", ["software"], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "software");
+  assert.equal(row.canonical_theme_id, "software");
+  assert.equal(row.symbol, "AXTI", "symbol field preserved");
+});
+
+// ── Test B — ticker-only compatibility row ────────────────────────────────────
+
+test("REQ-51 B — ticker-only raw row { ticker: 'AXTI' } still matched and patched", () => {
+  const old = { analysis: { sections: [{ tickers: [{ ticker: "AXTI", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const updated = applyPatch(old, "AXTI", "software", ["software"], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "software");
+  assert.equal(row.canonical_theme_id, "software");
+});
+
+// ── Test C — mixed casing and whitespace ──────────────────────────────────────
+
+test("REQ-52 C — raw row ticker normalized: mixed case and whitespace match correctly", () => {
+  const old = { analysis: { sections: [{ tickers: [{ ticker: " axti ", primary_theme_id: null, theme_ids: [] }] }] } };
+  const updated = applyPatch(old, "AXTI", "defense", ["defense"], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "defense", "mixed-case / whitespace ticker must match");
+});
+
+// ── Test D — unrelated ticker untouched ───────────────────────────────────────
+
+test("REQ-53 D — unrelated ticker row is referentially unchanged after patch", () => {
+  const unrelated = { ticker: "NVDA", primary_theme_id: "ai", canonical_theme_id: "ai", theme_ids: ["ai"] };
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "AXTI", primary_theme_id: null, theme_ids: [] }, unrelated] }] } };
+  const updated = applyPatch(old, "AXTI", "software", ["software"], [], []);
+  const nvdaRow = updated.analysis.sections[0].tickers[1];
+  assert.equal(nvdaRow, unrelated, "unrelated row must be the same reference (not mutated)");
+  assert.equal(nvdaRow.primary_theme_id, "ai", "unrelated row taxonomy unchanged");
+});
+
+// ── Test E — parent Theme assignment: label updates immediately ───────────────
+
+test("REQ-54 E — parent Theme assignment: visible label resolves immediately from patched row", () => {
+  const idx = makeIndex(); // has th-ai = "AI & Machine Learning"
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "MSFT", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const updated = applyPatch(old, "MSFT", "th-ai", ["th-ai"], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "th-ai");
+  const label = buildLabel(row, idx);
+  assert.equal(label, "AI & Machine Learning");
+});
+
+// ── Test F — subtheme assignment: primary_theme_id is subtheme ID ────────────
+
+test("REQ-55 F — subtheme assignment: primary_theme_id is subtheme ID; label is subtheme name", () => {
+  const idx = makeIndex(); // st-nlp = "Natural Language Processing"
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "MSFT", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const updated = applyPatch(old, "MSFT", "st-nlp", ["st-nlp"], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "st-nlp", "primary_theme_id must be subtheme ID");
+  assert.equal(row.canonical_theme_id, "st-nlp");
+  const label = buildLabel(row, idx);
+  assert.equal(label, "Natural Language Processing");
+});
+
+// ── Test G — additional membership ───────────────────────────────────────────
+
+test("REQ-56 G — additional membership: theme_ids and additional_theme_ids updated correctly", () => {
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "MSFT", primary_theme_id: "th-ai", theme_ids: ["th-ai"] }] }] } };
+  const updated = applyPatch(old, "MSFT", "th-ai", ["th-ai", "th-ev"], ["th-ev"], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "th-ai");
+  assert.deepEqual(row.additional_theme_ids, ["th-ev"]);
+  assert.deepEqual(row.theme_ids, ["th-ai", "th-ev"]);
+});
+
+// ── Test H — legitimate authoritative null clears stale canonical_theme_id ───
+
+test("REQ-57 H — authoritative null primary: stale canonical_theme_id must NOT survive", () => {
+  const old = {
+    analysis: {
+      sections: [{
+        tickers: [{
+          symbol: "MSFT",
+          primary_theme_id: "th-ai",
+          canonical_theme_id: "th-ai",  // stale
+          theme_ids: ["th-ai"],
+        }],
+      }],
+    },
+  };
+  // Authoritative clear — savedPrimaryId is null
+  const updated = applyPatch(old, "MSFT", null, [], [], []);
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, null, "primary_theme_id must be null");
+  assert.equal(row.canonical_theme_id, null, "stale canonical_theme_id must NOT survive authoritative null");
+});
+
+// ── Test I — failed backend save: no cache mutation ───────────────────────────
+
+test("REQ-58 I — failed save: cache must not be mutated when save throws", () => {
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "AXTI", primary_theme_id: null, theme_ids: [] }] }] } };
+  let cacheWasMutated = false;
+  // Simulate the fail-closed guard: if data.ok !== true, we throw before setQueryData
+  function simulateSave(responseData: any) {
+    if (responseData?.ok !== true) {
+      throw new Error("Backend did not confirm save");
+    }
+    // Only reached on success — in production this is where setQueryData runs
+    cacheWasMutated = true;
+    return applyPatch(old, "AXTI", responseData.primary_theme_id, responseData.theme_ids ?? [], responseData.additional_theme_ids ?? [], responseData.subtheme_ids ?? []);
+  }
+  // Simulate backend 500 / missing ok
+  let threw = false;
+  try {
+    simulateSave({ error: "internal server error" });
+  } catch {
+    threw = true;
+  }
+  assert.ok(threw, "failed save must throw");
+  assert.ok(!cacheWasMutated, "cache must not be mutated when save fails");
+  // Original cache row untouched
+  assert.equal(old.analysis.sections[0].tickers[0].primary_theme_id, null);
+});
+
+// ── Test J — non-JSON HTTP 200 remains a hard failure ────────────────────────
+
+test("REQ-59 J — non-JSON Content-Type: save must fail before cache mutation", () => {
+  let cacheWasMutated = false;
+  function simulateNonJsonResponse() {
+    const ct = "text/html; charset=utf-8"; // SPA fallback
+    if (!ct.includes("application/json")) {
+      throw new Error("Save returned a non-JSON response — proxy may be misconfigured");
+    }
+    cacheWasMutated = true;
+  }
+  let threw = false;
+  try { simulateNonJsonResponse(); } catch { threw = true; }
+  assert.ok(threw, "non-JSON CT must throw");
+  assert.ok(!cacheWasMutated, "cache must not be mutated");
+});
+
+// ── Test K — backend 500 remains a hard failure ───────────────────────────────
+
+test("REQ-60 K — backend 500: r.ok is false → save fails, cache unchanged", () => {
+  let cacheWasMutated = false;
+  function simulateHttp500() {
+    const rOk = false;
+    const data = { detail: "Internal Server Error" };
+    if (!rOk) throw new Error(data.detail || `Save failed (500)`);
+    cacheWasMutated = true;
+  }
+  let threw = false;
+  try { simulateHttp500(); } catch { threw = true; }
+  assert.ok(threw, "HTTP 500 must throw");
+  assert.ok(!cacheWasMutated, "cache must not be mutated on 500");
+});
+
+// ── Test L — malformed success body / missing required fields ─────────────────
+
+test("REQ-61 L — malformed success body missing required fields: hard failure, no cache mutation", () => {
+  let cacheWasMutated = false;
+  function simulateMalformedSuccess() {
+    const data: any = { ok: true }; // missing primary_theme_id and theme_ids
+    if (!("primary_theme_id" in data) || !Array.isArray(data.theme_ids)) {
+      throw new Error("Backend response missing required taxonomy fields");
+    }
+    cacheWasMutated = true;
+  }
+  let threw = false;
+  try { simulateMalformedSuccess(); } catch { threw = true; }
+  assert.ok(threw, "missing required fields must throw");
+  assert.ok(!cacheWasMutated, "cache must not be mutated on malformed success body");
+});

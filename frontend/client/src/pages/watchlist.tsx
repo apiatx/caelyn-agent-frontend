@@ -2487,14 +2487,18 @@ function WlTaxonomyEditorPanel({
               ...sec,
               tickers: Array.isArray(sec.tickers)
                 ? sec.tickers.map((t: any) =>
-                    (t.ticker || '').toUpperCase() !== upperTicker ? t : {
+                    // Normalize raw row identity using same t.ticker || t.symbol
+                    // convention used throughout this file — backend rows may carry
+                    // either field name; both must match correctly.
+                    String(t.ticker || t.symbol || '').trim().toUpperCase() !== upperTicker ? t : {
                       ...t,
                       primary_theme_id: savedPrimaryId,
                       theme_ids: savedThemeIds,
                       additional_theme_ids: savedAdditionalIds,
                       subtheme_ids: savedSubthemeIds,
-                      // Let primary_theme_id take precedence; clear stale canonical fallback
-                      canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id,
+                      // Authoritative null wins — do NOT use `?? t.canonical_theme_id`
+                      // because that would preserve stale identity after a legitimate clear.
+                      canonical_theme_id: savedPrimaryId,
                     }
                   )
                 : sec.tickers,
