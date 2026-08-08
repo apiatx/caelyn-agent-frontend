@@ -957,6 +957,17 @@ function V42ScreenerTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('confluence');
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  // ── Column resize state ─────────────────────────────────────────────────
+  // null = use default gridCols (fr-unit widths); number[] = user-dragged pixels.
+  // Index 0..N-1 maps to visibleCols[0..N-1] (rank '#' col is always 18px fixed).
+  const [confColWidths, setConfColWidths] = useState<number[] | null>(null);
+  const confColDragRef = React.useRef<{
+    colIdx: number; startX: number; startWidths: number[]; pointerId: number;
+  } | null>(null);
+  // Ref to the header row div — used to read actual rendered cell widths at drag-start.
+  const confHeaderRef = React.useRef<HTMLDivElement | null>(null);
+
   const [disabledCols, setDisabledCols] = useState<Set<SortKey>>(() => {
     try {
       const stored = localStorage.getItem(LS_KEY_DISABLED);
@@ -1031,6 +1042,51 @@ function V42ScreenerTable({
     [hideExcluded, disabledCols]
   );
   const gridCols = `18px ${visibleCols.map(c => c.width).join(' ')}`;
+
+  // Reset resize state when the visible column set changes (hide-excluded toggle).
+  useEffect(() => { setConfColWidths(null); }, [visibleCols.length]);
+
+  // Reset when user leaves the tab.
+  useEffect(() => {
+    function onVis() { if (document.hidden) setConfColWidths(null); }
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // Active grid: flat pixel string when user has dragged; default fr-unit string otherwise.
+  const activeGridCols = confColWidths && confColWidths.length === visibleCols.length
+    ? `18px ${confColWidths.map(w => `${Math.round(w)}px`).join(' ')}`
+    : gridCols;
+
+  // ── Confluence column-resize drag handlers ────────────────────────────
+  // Reads actual header cell widths from the DOM at first drag so the
+  // browser-sized fr-unit layout is captured as a pixel baseline.
+  function handleConfColResizeStart(e: React.PointerEvent<HTMLDivElement>, colIdx: number) {
+    e.stopPropagation();
+    e.preventDefault();
+    let startWidths: number[];
+    if (confColWidths && confColWidths.length === visibleCols.length) {
+      startWidths = [...confColWidths];
+    } else if (confHeaderRef.current) {
+      // Skip the first child (rank '#' span, always 18px)
+      const children = Array.from(confHeaderRef.current.children).slice(1);
+      startWidths = children.map(el => (el as HTMLElement).getBoundingClientRect().width);
+      if (startWidths.length !== visibleCols.length) startWidths = visibleCols.map(() => 80);
+    } else {
+      startWidths = visibleCols.map(() => 80);
+    }
+    confColDragRef.current = { colIdx, startX: e.clientX, startWidths, pointerId: e.pointerId };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function handleConfColResizeMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = confColDragRef.current;
+    if (!drag) return;
+    const delta = e.clientX - drag.startX;
+    const next = [...drag.startWidths];
+    next[drag.colIdx] = Math.max(44, drag.startWidths[drag.colIdx] + delta);
+    setConfColWidths(next);
+  }
+  function handleConfColResizeEnd() { confColDragRef.current = null; }
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'desc' ? 1 : -1;
@@ -1167,22 +1223,47 @@ function V42ScreenerTable({
       )}
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}>
+      <div
+        ref={confHeaderRef}
+        style={{ display: 'grid', gridTemplateColumns: activeGridCols, gap: '0 4px', padding: '3px 2px 4px 0', borderBottom: `1px solid rgba(255,255,255,0.07)`, marginBottom: 1, minWidth: 680 }}
+      >
         <span style={{ fontSize: 6, color: CC.dim, opacity: 0.3 }}>#</span>
-        {visibleCols.map(col => {
+        {visibleCols.map((col, colIdx) => {
           const isOff = disabledCols.has(col.key);
           const labelColor = isOff ? 'rgba(100,116,139,0.45)' : CC.dim;
+          const isLast = colIdx === visibleCols.length - 1;
           return (
-            <span
+            <div
               key={col.key}
-              style={{ ...hdr, color: labelColor, cursor: 'pointer' }}
-              onClick={() => handleSort(col.key)}
-              title={isOff ? 'Excluded from adjusted CCS. Use Score Lens above to include.' : (col.title ?? col.label)}
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}
             >
-              {isOff && <span style={{ marginRight: 2, fontSize: 5, opacity: 0.6 }}>⊘</span>}
-              {col.label}
-              {' '}{sortArrow(col.key)}
-            </span>
+              <span
+                style={{ ...hdr, color: labelColor, cursor: 'pointer', flex: 1, minWidth: 0 }}
+                onClick={() => handleSort(col.key)}
+                title={isOff ? 'Excluded from adjusted CCS. Use Score Lens above to include.' : (col.title ?? col.label)}
+              >
+                {isOff && <span style={{ marginRight: 2, fontSize: 5, opacity: 0.6 }}>⊘</span>}
+                {col.label}
+                {' '}{sortArrow(col.key)}
+              </span>
+              {!isLast && (
+                <div
+                  onPointerDown={e => handleConfColResizeStart(e, colIdx)}
+                  onPointerMove={handleConfColResizeMove}
+                  onPointerUp={handleConfColResizeEnd}
+                  onPointerCancel={handleConfColResizeEnd}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    position: 'absolute', right: -4, top: 0,
+                    width: 8, height: '100%',
+                    cursor: 'col-resize', zIndex: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ width: 1, height: 8, background: 'rgba(255,255,255,0.22)', borderRadius: 1, pointerEvents: 'none' }} />
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
@@ -1343,7 +1424,7 @@ function V42ScreenerTable({
         return (
           <div
             key={`v42-${ticker}-${i}`}
-            style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: 'transparent', transition: 'background 0.1s' }}
+            style={{ display: 'grid', gridTemplateColumns: activeGridCols, gap: '0 4px', padding: '4px 2px', borderBottom: `1px solid rgba(255,255,255,0.05)`, alignItems: 'center', cursor: 'pointer', minWidth: 680, background: 'transparent', transition: 'background 0.1s' }}
             onClick={() => onTickerClick?.(ticker)}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}

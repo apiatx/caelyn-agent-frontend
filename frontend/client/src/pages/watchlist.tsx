@@ -3197,6 +3197,9 @@ export default function WatchlistPage() {
     startWidths: number[];
     pointerId: number;
   } | null>(null);
+  // Ref to the <tr> inside <thead> of the fundamentals table — used to read
+  // actual rendered <th> widths at drag-start (columns are auto-sized by browser).
+  const wlFundTheadRowRef = useRef<HTMLTableRowElement | null>(null);
   const [optSecColsState, setOptSecColsState] = useState<Set<string>>(() => {
     try {
       const s = localStorage.getItem('wl_opt_sec_cols_v1');
@@ -3278,6 +3281,9 @@ export default function WatchlistPage() {
 
   // Reset column widths when screener mode changes (different column counts)
   useEffect(() => { setColWidths(null); }, [screenerMode]);
+
+  // Reset column widths when fundamentals sub-category changes (different column count)
+  useEffect(() => { setColWidths(null); }, [fundamentalsCategory]);
 
   // Reset column widths when the user switches tabs or leaves the page
   useEffect(() => {
@@ -7136,13 +7142,57 @@ export default function WatchlistPage() {
       borderBottom: `1px solid ${C.border}`, fontFamily: font,
     };
 
+    // ── Fund column-resize helpers ────────────────────────────────────────
+    // Reads actual rendered <th> widths from the DOM on first drag so the
+    // browser-auto-sized layout is preserved before we apply fixed widths.
+    function handleFundColResizeStart(e: React.PointerEvent<HTMLDivElement>, colIdx: number) {
+      e.stopPropagation();
+      e.preventDefault();
+      let startWidths: number[];
+      if (colWidths && colWidths.length === cols.length) {
+        startWidths = [...colWidths];
+      } else {
+        const ths = wlFundTheadRowRef.current
+          ? Array.from(wlFundTheadRowRef.current.querySelectorAll('th'))
+          : [];
+        startWidths = ths.length === cols.length
+          ? ths.map(th => th.getBoundingClientRect().width)
+          : cols.map(() => 100);
+      }
+      wlColDragRef.current = { colIdx, startX: e.clientX, startWidths, pointerId: e.pointerId };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    function handleFundColResizeMove(e: React.PointerEvent<HTMLDivElement>) {
+      const drag = wlColDragRef.current;
+      if (!drag) return;
+      const delta = e.clientX - drag.startX;
+      const next = [...drag.startWidths];
+      next[drag.colIdx] = Math.max(60, drag.startWidths[drag.colIdx] + delta);
+      setColWidths(next);
+    }
+    function handleFundColResizeEnd() { wlColDragRef.current = null; }
+
     return (
       <div style={{ width: '100%' }}>
-        <table style={{ borderCollapse: 'collapse' as const, minWidth: 'max-content', width: '100%' }}>
+        <table
+          style={{
+            borderCollapse: 'collapse' as const,
+            minWidth: 'max-content', width: '100%',
+            // Switch to fixed layout only when explicit widths are set so columns
+            // honour the user-dragged pixel values instead of being auto-sized.
+            tableLayout: colWidths && colWidths.length === cols.length ? 'fixed' as const : 'auto' as const,
+          }}
+        >
+          {colWidths && colWidths.length === cols.length && (
+            <colgroup>
+              {colWidths.map((w, i) => <col key={i} style={{ width: w }} />)}
+            </colgroup>
+          )}
           <thead>
-            <tr>
+            <tr ref={wlFundTheadRowRef}>
               {cols.map((col, ci) => {
                 const isActive = sortKey === col.key;
+                const isLast = ci === cols.length - 1;
                 return (
                 <th
                   key={col.key}
@@ -7155,13 +7205,19 @@ export default function WatchlistPage() {
                     position: 'sticky' as const,
                     top: 0,
                     zIndex: ci === 0 ? 3 : 2,
-                    ...(col.key === 'company' ? { width: 140, minWidth: 140, maxWidth: 140 } : {}),
-                    ...(col.key === 'canonical_theme_name' ? { width: 120, minWidth: 120, maxWidth: 130 } : {}),
+                    // Explicit width from user drag (fixed layout honours these)
+                    ...(colWidths && colWidths.length === cols.length
+                      ? { width: colWidths[ci], maxWidth: colWidths[ci] }
+                      : col.key === 'company' ? { width: 140, minWidth: 140, maxWidth: 140 }
+                      : col.key === 'canonical_theme_name' ? { width: 120, minWidth: 120, maxWidth: 130 }
+                      : {}),
                     ...(ci === 0 ? {
                       left: 0,
                       background: C.card,
                       boxShadow: `2px 0 4px rgba(0,0,0,0.4)`,
                     } : {}),
+                    // overflow: visible so the resize handle div isn't clipped
+                    overflow: 'visible',
                   }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
@@ -7170,6 +7226,24 @@ export default function WatchlistPage() {
                       {isActive ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
                     </span>
                   </span>
+                  {/* Drag-resize handle — omitted on last column */}
+                  {!isLast && (
+                    <div
+                      onPointerDown={e => handleFundColResizeStart(e, ci)}
+                      onPointerMove={handleFundColResizeMove}
+                      onPointerUp={handleFundColResizeEnd}
+                      onPointerCancel={handleFundColResizeEnd}
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        position: 'absolute', right: -4, top: 0,
+                        width: 8, height: '100%',
+                        cursor: 'col-resize', zIndex: 4,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <div style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.22)', borderRadius: 1, pointerEvents: 'none' }} />
+                    </div>
+                  )}
                 </th>
                 );
               })}
