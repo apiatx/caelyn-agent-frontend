@@ -5297,8 +5297,8 @@ export default function WatchlistPage() {
       }}>
         {/* Row 1: SECTORS + Clear pinned right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={labelStyle}>SECTORS</span>
           <div style={{ ...rowStyle, flex: 1, minWidth: 0 }} className="wl-chip-strip">
-            <span style={labelStyle}>SECTORS</span>
             {sectorOrder.map(id => {
               const node = nodeById.get(id);
               if (!node) return null;
@@ -5332,8 +5332,9 @@ export default function WatchlistPage() {
         </div>
 
         {/* Row 2: THEMES — classification === "theme" only; market_lens/deprecated excluded */}
-        <div style={rowStyle} className="wl-chip-strip">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={labelStyle}>THEMES</span>
+          <div style={{ ...rowStyle, flex: 1, minWidth: 0 }} className="wl-chip-strip">
           {themeOrder.map(id => {
             const node = nodeById.get(id);
             if (!node) return null;
@@ -5347,11 +5348,13 @@ export default function WatchlistPage() {
               </span>
             );
           })}
+          </div>
         </div>
 
         {/* Row 3: SUBTHEMES — classification === "sub_theme" only; parent name shown as tooltip */}
-        <div style={rowStyle} className="wl-chip-strip">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={labelStyle}>SUBTHEMES</span>
+          <div style={{ ...rowStyle, flex: 1, minWidth: 0 }} className="wl-chip-strip">
           {subthemeOrder.map(id => {
             const node = nodeById.get(id);
             if (!node) return null;
@@ -5369,6 +5372,7 @@ export default function WatchlistPage() {
               </span>
             );
           })}
+          </div>
         </div>
       </div>
     );
