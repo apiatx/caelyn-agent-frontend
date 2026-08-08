@@ -3174,17 +3174,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const _IDENTITY_TTL = 24 * 3600_000;          // positive TTL: resolved identities
   const _IDENTITY_NEG_TTL = 5 * 60_000;          // negative TTL: unresolved / provider failure
 
-  // Build canonical → provider mapping: strip exchange prefix (e.g. OTC:AAGFF → AAGFF)
+  // Build canonical → provider mapping: strip known US OTC exchange prefixes
+  // (e.g. OTC:AAGFF → AAGFF) for FMP lookup. True foreign exchange prefixes
+  // (LSE:, TSX:, TSE:, etc.) are NOT stripped — their identity must not be
+  // overwritten by bare-symbol FMP results.
   // Returns a multi-map because multiple canonical symbols can reduce to the same provider symbol.
   function _buildProviderMap(canonicalSymbols: string[]): {
     providerToCanonicals: Map<string, string[]>;
     providerSymbols: string[];
   } {
+    // Known OTC / US alternative exchange prefixes that FMP can resolve as bare symbols
+    const OTC_PREFIXES = new Set([
+      'OTC', 'OTCPK', 'OTCBB', 'OTCQB', 'OTCQX', 'OTCMKTS',
+      'PINK', 'PNK',
+    ]);
     const p2c = new Map<string, string[]>();
     const seen = new Set<string>();
     for (const cs of canonicalSymbols) {
+      let ps = cs;
       const ci = cs.indexOf(':');
-      const ps = ci > 0 ? cs.slice(ci + 1) : cs;
+      if (ci > 0) {
+        const prefix = cs.slice(0, ci).toUpperCase();
+        if (OTC_PREFIXES.has(prefix)) {
+          ps = cs.slice(ci + 1);
+        }
+        // Non-OTC prefix: keep full canonical symbol (FMP won't resolve it
+        // and the canonical prefix identity is preserved).
+      }
       if (!p2c.has(ps)) p2c.set(ps, []);
       const list = p2c.get(ps)!;
       if (!list.includes(cs)) list.push(cs);
@@ -3201,7 +3217,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/fmp/company-identity', async (req, res) => {
     const raw = (req.query.symbols as string || '').trim();
     if (!raw) return res.json({});
+    const MAX_SYMBOLS = 500;
     const canonicalSymbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean);
+    if (canonicalSymbols.length > MAX_SYMBOLS) {
+      return res.status(414).json({
+        error: `Too many symbols: ${canonicalSymbols.length} requested, max ${MAX_SYMBOLS}`,
+        max: MAX_SYMBOLS,
+      });
+    }
     const result: Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }> = {};
     const needFetch: string[] = [];
 

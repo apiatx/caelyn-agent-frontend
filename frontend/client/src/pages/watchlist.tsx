@@ -3437,6 +3437,10 @@ export default function WatchlistPage() {
     enabled: wlIdentityCsv.length > 0,
     staleTime: 24 * 60 * 60_000,
     retry: 1,
+    // Retry unresolved identities on the server's negative TTL cadence (~5 min)
+    // while keeping resolved identities cached client-side for 24h.
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
   });
   const betaByTicker = useMemo<Record<string, number>>(() => {
     if (!wlIdentityData || typeof wlIdentityData !== 'object' || Array.isArray(wlIdentityData)) return {};
@@ -4254,12 +4258,14 @@ export default function WatchlistPage() {
       }
       // Inject company name from FMP company-identity when row has no legitimate name
       if (fmpName != null) {
-        const existing = next.company || next.name;
-        const existingStr = (existing != null && existing !== '') ? String(existing).toUpperCase() : '';
         const bareTicker = sym.includes(':') ? sym.slice(sym.indexOf(':') + 1).toUpperCase() : sym.toUpperCase();
-        if (!existingStr || existingStr === sym.toUpperCase() || existingStr === bareTicker) {
-          next.name = fmpName;
-        }
+        const isPlaceholder = (v: unknown) => {
+          if (v == null || v === '') return true;
+          const s = String(v).toUpperCase();
+          return s === sym.toUpperCase() || s === bareTicker;
+        };
+        if (isPlaceholder(next.company)) next.company = fmpName;
+        if (isPlaceholder(next.name)) next.name = fmpName;
       }
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
@@ -4302,8 +4308,7 @@ export default function WatchlistPage() {
     // ── end LKG debug ─────────────────────────────────────────────────────
 
     return result;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId, betaByTicker]);
+  }, [baseMergedTickers, realtimeQuotes, optionsSignalsByTicker, activeId, betaByTicker, exchangeByTicker, companyNameByTicker]);
 
   const pendingCount = mergedTickers.filter(t => t._pending).length;
   const analyzedCount = mergedTickers.length - pendingCount;
