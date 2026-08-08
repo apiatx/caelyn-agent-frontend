@@ -3447,6 +3447,18 @@ export default function WatchlistPage() {
     }
     return out;
   }, [wlIdentityData]);
+  const companyNameByTicker = useMemo<Record<string, string | null>>(() => {
+    if (!wlIdentityData || typeof wlIdentityData !== 'object' || Array.isArray(wlIdentityData)) return {};
+    const out: Record<string, string | null> = {};
+    for (const [sym, d] of Object.entries(wlIdentityData)) {
+      if (!d || typeof d !== 'object') continue;
+      const nm = (d as any).name;
+      if (typeof nm === 'string' && nm.length > 0 && nm.toUpperCase() !== sym.toUpperCase()) {
+        out[sym.toUpperCase()] = nm;
+      }
+    }
+    return out;
+  }, [wlIdentityData]);
 
   const [themeAssignPendingTicker, setThemeAssignPendingTicker] = useState<string | null>(null);
   const [themeAssignFeedback, setThemeAssignFeedback] = useState<{ ticker: string; type: 'ok' | 'err'; msg: string } | null>(null);
@@ -4141,7 +4153,7 @@ export default function WatchlistPage() {
   // are unchanged (base row, stabilized quote, raw options, beta, exchange). This replaces the
   // unsafe 10-field display-field whitelist with source-level tracking — any canonical
   // change (technical, fundamental, taxonomy, 7D, IV, OI, etc.) forces a new output.
-  type _RowInputCache = { base: any; quote: any; rawOpt: any; beta: any; exchange: any; output: any };
+  type _RowInputCache = { base: any; quote: any; rawOpt: any; beta: any; exchange: any; fmpName: any; output: any };
   const rowIdentityRef = useRef<Map<string, _RowInputCache>>(new Map());
   // Stabilized realtime quote: reuses previous quote object when all 15 tracked fields
   // are identical so an unchanged poll does not produce a new reference.
@@ -4187,6 +4199,7 @@ export default function WatchlistPage() {
       const rawOpt = sym ? optionsSignalsByTicker[sym] : undefined;
       const beta = sym ? betaByTicker[sym] : undefined;
       const exchange = sym ? exchangeByTicker[sym] ?? null : null;
+      const fmpName = sym ? companyNameByTicker[sym] ?? null : null;
 
       // ── Input identity check ─────────────────────────────────────────────
       // Reuse the previous merged output ONLY when all 4 merge inputs are the
@@ -4201,7 +4214,8 @@ export default function WatchlistPage() {
           prevCache.quote === stableQuote &&
           prevCache.rawOpt === rawOpt &&
           Object.is(prevCache.beta, beta) &&
-          Object.is(prevCache.exchange, exchange)) {
+          Object.is(prevCache.exchange, exchange) &&
+          Object.is(prevCache.fmpName, fmpName)) {
         // All inputs unchanged — reuse cached output; keep LKG map current
         if (sym) prev.set(sym, prevCache.output);
         return prevCache.output;
@@ -4219,6 +4233,14 @@ export default function WatchlistPage() {
       // Inject exchange from FMP company-identity when not present in analysis row
       if (exchange != null && (next.exchange == null || next.exchange === '')) {
         next.exchange = exchange;
+      }
+      // Inject company name from FMP company-identity when row has no legitimate name
+      if (fmpName != null) {
+        const existing = next.company || next.name;
+        const existingStr = (existing != null && existing !== '') ? String(existing) : '';
+        if (!existingStr || existingStr.toUpperCase() === sym) {
+          next.name = fmpName;
+        }
       }
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
@@ -4240,7 +4262,7 @@ export default function WatchlistPage() {
 
       // Store in identity cache and update LKG
       if (sym) {
-        rowIdentityRef.current.set(sym, { base: baseRow, quote: stableQuote, rawOpt, beta, exchange, output });
+        rowIdentityRef.current.set(sym, { base: baseRow, quote: stableQuote, rawOpt, beta, exchange, fmpName, output });
         prev.set(sym, output);
       }
       return output;

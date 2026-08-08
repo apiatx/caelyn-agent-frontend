@@ -3176,34 +3176,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/fmp/company-identity', async (req, res) => {
     const raw = (req.query.symbols as string || '').trim();
     if (!raw) return res.json({});
-    const symbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
+    const canonicalSymbols = raw.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
+    // Build canonical → provider mapping: strip exchange prefix (e.g. OTC:AAGFF → AAGFF)
+    const providerToCanonical = new Map<string, string>();
+    const providerSymbols: string[] = [];
+    for (const cs of canonicalSymbols) {
+      const colonIdx = cs.indexOf(':');
+      const ps = colonIdx > 0 ? cs.slice(colonIdx + 1) : cs;
+      providerToCanonical.set(ps, cs);
+      if (!providerSymbols.includes(ps)) providerSymbols.push(ps);
+    }
     const result: Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }> = {};
     const needFetch: string[] = [];
-    for (const sym of symbols) {
-      const c = _identityCache.get(sym);
+    for (const cs of canonicalSymbols) {
+      const c = _identityCache.get(cs);
       if (c && Date.now() - c.ts < _IDENTITY_TTL) {
-        result[sym] = { name: c.name, logo: c.logo, exchange: c.exchange, beta: c.beta };
+        result[cs] = { name: c.name, logo: c.logo, exchange: c.exchange, beta: c.beta };
       } else {
-        needFetch.push(sym);
+        needFetch.push(cs);
       }
     }
     if (needFetch.length > 0) {
       const FMP_KEY = process.env.FMP_API_KEY || '';
       if (FMP_KEY) {
+        // Convert canonical symbols to provider symbols for FMP lookup
+        const fmpSymbols = needFetch.map(cs => {
+          const ci = cs.indexOf(':');
+          return ci > 0 ? cs.slice(ci + 1) : cs;
+        }).filter((v, i, a) => a.indexOf(v) === i);
         try {
-          const url = `https://financialmodelingprep.com/stable/profile?symbol=${needFetch.join(',')}&apikey=${FMP_KEY}`;
+          const url = `https://financialmodelingprep.com/stable/profile?symbol=${fmpSymbols.join(',')}&apikey=${FMP_KEY}`;
           const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
           if (r.ok) {
             const profiles: any[] = await r.json();
             if (Array.isArray(profiles)) {
               for (const p of profiles) {
                 if (!p.symbol) continue;
-                const s = p.symbol.toUpperCase();
+                const ps = p.symbol.toUpperCase();
+                // Map provider symbol back to canonical symbol(s)
+                const canonical = providerToCanonical.get(ps) || ps;
                 const exchange = p.exchangeShortName || p.exchange || null;
                 const betaVal = p.beta != null && Number.isFinite(Number(p.beta)) ? Number(p.beta) : null;
-                const entry = { name: p.companyName || s, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
-                _identityCache.set(s, entry);
-                result[s] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
+                const entry = { name: p.companyName || ps, logo: p.image || null, exchange, beta: betaVal, ts: Date.now() };
+                _identityCache.set(canonical, entry);
+                result[canonical] = { name: entry.name, logo: entry.logo, exchange: entry.exchange, beta: entry.beta };
               }
             }
           }
@@ -3211,10 +3227,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.warn('[company-identity] FMP fetch failed:', e?.message);
         }
       }
-      for (const sym of needFetch) {
-        if (!result[sym]) {
-          _identityCache.set(sym, { name: sym, logo: null, exchange: null, beta: null, ts: Date.now() });
-          result[sym] = { name: sym, logo: null, exchange: null, beta: null };
+      for (const cs of needFetch) {
+        if (!result[cs]) {
+          _identityCache.set(cs, { name: cs, logo: null, exchange: null, beta: null, ts: Date.now() });
+          result[cs] = { name: cs, logo: null, exchange: null, beta: null };
         }
       }
     }
