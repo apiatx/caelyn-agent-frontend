@@ -1,0 +1,653 @@
+FINAL TAXONOMY UX: ONE CLICK, INSTANT SCREENER UPDATE, BACKEND CONFIRMS IN BACKGROUND
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey the live AGENTS.md first.
+
+The live Replit workspace is the primary source of truth.
+GitHub is reference/backup only.
+
+THIS IS THE FINAL TAXONOMY ASSIGNMENT UX TASK.
+
+The backend is now complete.
+
+DO NOT modify backend code.
+DO NOT redesign taxonomy.
+DO NOT create another mutation endpoint.
+DO NOT change persistence architecture.
+DO NOT add localStorage.
+DO NOT add polling.
+DO NOT add write retries.
+DO NOT touch unrelated Watchlist functionality.
+
+Expected production scope:
+
+frontend/client/src/pages/watchlist.tsx
+
+and possibly:
+
+frontend/server/routes.ts
+
+ONLY for the taxonomy proxy timeout semantics described below.
+
+Use the existing focused taxonomy test suite.
+
+When the user clicks Save in Edit Classification:
+
+THE SCREENER MUST CHANGE IMMEDIATELY.
+
+Not after the backend responds.
+Not after React Query refetches.
+Not after the Watchlist GET completes.
+
+The intended experience is:
+
+user clicks Save
+→ modal closes immediately
+→ Theme cell immediately shows selected Theme/Subtheme
+→ PUT executes in background
+→ backend returns committed authoritative state
+→ client reconciles optimistic row to authoritative response
+→ normal refetch confirms same state
+→ hard refresh shows same state
+
+There must be no visible loading delay between clicking Save and seeing the new
+classification in the Screener.
+
+The network request must not be on the visual critical path.
+
+The backend canonical route remains:
+
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+
+Backend now guarantees:
+
+valid request + successful Neon transaction → ok
+transaction commit IS the save
+post-commit reread cannot convert success into HTTP failure
+expensive downstream propagation occurs post-response
+Watchlist LKG is invalidated before response
+immediate Watchlist GET reads the committed taxonomy
+no provider calls are involved
+
+Measured warm backend saves are normally well under 1 second.
+
+Do NOT compensate for old backend bugs in new frontend architecture.
+
+Before editing, read:
+
+frontend/client/src/pages/watchlist.tsx
+frontend/server/routes.ts
+
+and the existing Watchlist taxonomy tests.
+
+Trace the exact current path:
+
+Save button
+→ handleSave()
+→ effectivePrimaryId
+→ cleanAdditionals
+→ fetch PUT
+→ response validation
+→ setQueryData()
+→ onClose()
+→ invalidations
+→ wlBuildThemeCellLabel()
+
+Prove the current ordering.
+
+The currently pushed code is expected to do approximately:
+
+const r = await fetch(...)
+
+...validate response...
+
+queryClient.setQueryData(...)
+
+That means the UI waits for network completion before changing.
+
+That is the remaining product bug.
+
+Build the optimistic taxonomy state synchronously inside handleSave BEFORE
+starting/awaiting the network request.
+
+Use the editor's already-normalized selection:
+
+effectivePrimaryId
+cleanAdditionals
+
+Do NOT use display strings as identity.
+
+Compute:
+
+optimisticPrimaryId = effectivePrimaryId ?? null
+
+optimisticAdditionalIds =
+    cleanAdditionals excluding optimisticPrimaryId
+
+optimisticThemeIds =
+    primary first, followed by normalized additional IDs
+
+optimisticSubthemeIds =
+    IDs from optimisticThemeIds whose canonical taxonomy node
+    classification === "sub_theme"
+
+Use the EXISTING taxonomy index.
+
+Do not invent hierarchy logic.
+
+Then immediately patch the exact raw React Query Watchlist row.
+
+Remember the proven raw-row identity rule:
+
+t.ticker || t.symbol
+
+Normalize trim + uppercase.
+
+Patch:
+
+primary_theme_id
+canonical_theme_id
+theme_ids
+additional_theme_ids
+subtheme_ids
+
+For the optimistic state:
+
+canonical_theme_id = optimisticPrimaryId
+
+including null.
+
+Do NOT preserve stale canonical_theme_id.
+
+After the optimistic cache patch succeeds:
+
+onClose()
+
+must occur BEFORE awaiting the PUT.
+
+The modal should disappear immediately.
+
+The user should instantly see the Screener row with the selected Theme/Subtheme.
+
+The Save button must NOT sit spinning while the user waits on the backend.
+
+The assignment should feel like editing a local table cell.
+
+The production order must be:
+
+User clicks Save.
+Capture the current cache state needed for possible reconciliation.
+Compute optimistic normalized taxonomy.
+Patch React Query row immediately.
+Close editor immediately.
+Start/await canonical PUT.
+Validate response with all existing fail-closed checks.
+Patch that same row AGAIN from the authoritative backend response.
+Invalidate/refetch existing canonical queries.
+Confirm refetch converges to the same state.
+
+NOT:
+
+fetch
+→ wait
+→ response
+→ patch
+→ close
+
+That old ordering is specifically what this task removes.
+
+Optimistic state provides instant UX.
+
+It is not a second persistence source.
+
+When the canonical PUT returns:
+
+primary_theme_id
+theme_ids
+additional_theme_ids
+subtheme_ids
+
+patch the row again using those exact authoritative values.
+
+Do not assume the optimistic normalization is identical to backend normalization.
+
+Backend wins.
+
+Keep:
+
+canonical_theme_id = savedPrimaryId
+
+including null.
+
+Then perform the existing Query invalidations.
+
+Do NOT reconstruct:
+
+analysis.sections
+
+or move the ticker between analysis groups client-side.
+
+Only patch taxonomy identity fields on the existing raw ticker row.
+
+The corrected backend Watchlist GET owns canonical section placement.
+
+The later refetch can move/rebuild section placement if applicable.
+
+This prevents duplicating backend taxonomy-routing logic in React.
+
+There are now only three meaningful classes:
+
+A. SERVER CONFIRMS COMMIT
+
+keep optimistic state
+reconcile with authoritative response
+normal refetch
+
+B. SERVER DEFINITIVELY REJECTS BEFORE COMMIT
+
+Examples:
+
+400 / 401 / 403 / 404 / 422
+or explicit backend transaction failure
+
+Do NOT silently leave a classification that did not persist.
+
+Perform ONE canonical Watchlist refetch/reconciliation.
+
+If refreshed backend state does NOT equal the optimistic desired state:
+
+use the refreshed canonical state
+surface the error through the existing frontend notification/error mechanism
+
+Do not send another PUT automatically.
+
+C. NETWORK / TIMEOUT / CONNECTION UNCERTAINTY
+
+A timeout does NOT prove the PUT failed.
+
+ACMR already proved this historically.
+
+Never immediately rollback merely because the client stopped waiting.
+
+Perform ONE canonical Watchlist refetch.
+
+If the refreshed Watchlist row matches the desired optimistic state:
+
+treat it as saved
+keep the row
+do not show a false failure
+
+If the refreshed canonical row disagrees:
+
+display the canonical backend state
+surface a concise "Save could not be confirmed" error
+
+No automatic write retry.
+
+No polling loop.
+
+Audit frontend/server/routes.ts.
+
+The taxonomy PUT proxy currently has a hardcoded approximately 15-second
+AbortController timeout.
+
+The corrected backend normally responds in under 1 second and has been validated
+across 20 sequential saves.
+
+However, a proxy timeout must still NOT create another ACMR false-negative.
+
+For this route only:
+
+Define a named constant:
+
+TAXONOMY_WRITE_TIMEOUT_MS = 45000
+
+Use that for the upstream canonical taxonomy PUT.
+
+This is NOT because the backend should need 45 seconds.
+
+It is merely a network/cold-start safety ceiling.
+
+Do not apply it globally.
+
+On AbortError return:
+
+HTTP 504
+
+JSON equivalent to:
+
+{
+"error": "Taxonomy save confirmation timed out",
+"code": "taxonomy_save_confirmation_timeout",
+"state": "unknown"
+}
+
+Do NOT return:
+
+"Theme save failed"
+
+because timeout means UNKNOWN, not proven failure.
+
+Do NOT automatically retry the PUT.
+
+Keep all current non-JSON/malformed-JSON fail-closed protections.
+
+The 45-second proxy ceiling is invisible to normal UX.
+
+The modal has already closed.
+The Theme cell has already updated optimistically.
+
+Do not create a 45-second spinner.
+
+Do not disable the page.
+
+Do not block scrolling/filtering/sorting while the confirmation request is
+running.
+
+The network confirmation is background reconciliation from the user's
+perspective.
+
+Do not use a crude full-page rollback snapshot that can overwrite unrelated
+Watchlist updates which occurred while the PUT was in flight.
+
+If rollback/reconciliation is needed:
+
+prefer canonical refetch state for that ticker.
+
+If a tiny per-row previous-state snapshot is useful for tests, scope it only to
+taxonomy fields for the exact ticker.
+
+Never replace the entire Watchlist cache with an old snapshot after a delayed
+network failure.
+
+Immediately after setQueryData and before the PUT has resolved:
+
+wlBuildThemeCellLabel(updatedRow, taxonomyIndex)
+
+must return the selected Theme/Subtheme display label.
+
+Example:
+
+ACMR currently:
+Semiconductors
+→ Semiconductor Equipment
+
+When Save is clicked:
+
+the modal closes
+
+and the Theme column immediately displays:
+
+Semiconductor Equipment
+
+No refetch required.
+
+No server response required for that first visible update.
+
+Preserve Taxonomy v2 semantics:
+
+primary Theme or Subtheme is one specific primary ID
+additional themes remain separate memberships
+no duplicate primary in additional IDs
+subtheme_ids is classification-based
+parent Theme is not fabricated as an additional membership merely because a
+Subtheme belongs to it
+
+Do not change filtering semantics.
+
+Do not add a second Theme column.
+
+Keep all existing taxonomy tests.
+
+Add explicit ordering/regression tests.
+
+TEST 1 — OPTIMISTIC PATCH HAPPENS BEFORE NETWORK COMPLETES
+
+Use a deferred/unresolved fetch Promise.
+
+Call Save.
+
+BEFORE resolving fetch:
+
+assert the React Query raw ticker row already contains the new:
+
+primary_theme_id
+canonical_theme_id
+theme_ids
+additional_theme_ids
+subtheme_ids
+
+and:
+
+wlBuildThemeCellLabel(...)
+
+returns the new display label.
+
+This is the most important test in the task.
+
+TEST 2 — MODAL CLOSES BEFORE NETWORK COMPLETES
+
+With fetch still unresolved:
+
+assert onClose has already fired.
+
+TEST 3 — symbol-only backend row
+
+Raw row:
+
+{ symbol: "ACMR" }
+
+must patch correctly.
+
+TEST 4 — ticker-only compatibility
+
+Raw row:
+
+{ ticker: "ACMR" }
+
+must still patch correctly.
+
+TEST 5 — subtheme optimistic assignment
+
+Primary Theme:
+Semiconductors
+
+Subtheme:
+Semiconductor Equipment
+
+Before fetch resolves:
+
+primary_theme_id == semicap_equip
+canonical_theme_id == semicap_equip
+visible label == Semiconductor Equipment
+
+TEST 6 — parent-only assignment
+
+No subtheme selected.
+
+Immediate visible label is parent Theme.
+
+TEST 7 — additional themes
+
+Immediate optimistic arrays are correct.
+
+TEST 8 — authoritative response differs by normalization
+
+Start optimistic state.
+
+Resolve backend with a slightly different normalized membership array.
+
+Assert authoritative response replaces optimistic array.
+
+TEST 9 — authoritative null
+
+Backend success returns null primary.
+
+Stale canonical ID must not survive.
+
+TEST 10 — definitive pre-commit rejection
+
+Optimistic row appears immediately.
+
+Backend returns rejection.
+
+Single canonical refetch determines true state.
+
+Frontend converges to backend state.
+
+No second PUT.
+
+TEST 11 — timeout but write actually committed
+
+Optimistic row appears immediately.
+
+PUT ends in 504/timeout.
+
+Canonical Watchlist refetch returns desired taxonomy.
+
+Assert:
+
+row remains assigned
+no rollback
+no false "save failed"
+no second PUT
+
+THIS RECREATES THE ACMR INCIDENT AND MUST NOW PASS CORRECTLY.
+
+TEST 12 — timeout and write did not commit
+
+Optimistic row appears.
+
+Canonical refetch returns previous state.
+
+Frontend converges back to canonical state and surfaces confirmation failure.
+
+Exactly one PUT.
+
+TEST 13 — malformed/non-JSON backend response
+
+Existing fail-closed parsing still applies.
+
+Reconcile once rather than blindly treating optimistic state as persisted.
+
+TEST 14 — no full-cache stale rollback
+
+Modify an unrelated row while request is in flight.
+
+Then simulate failed save reconciliation.
+
+Assert unrelated row change survives.
+
+TEST 15 — repeated saves
+
+20 sequential UI save operations:
+
+each Theme-cell change occurs before its fetch resolves.
+
+Do NOT finish with unit tests alone.
+
+Use the actual Watchlist Screener.
+
+Use controlled tickers whose exact current classifications are recorded first.
+
+Perform 20 actual Save interactions.
+
+For EACH:
+
+Open Edit Classification.
+Change Primary Theme/Subtheme.
+Click Save once.
+Confirm modal disappears immediately.
+Confirm Screener Theme cell changes immediately.
+Confirm this occurs BEFORE the PUT response is received.
+Confirm PUT returns ok.
+Confirm normal Watchlist refetch does not revert it.
+
+At the end:
+
+hard refresh.
+
+All 20 assignments must still be visible exactly as persisted.
+
+Restore any controlled test tickers to their exact original classifications.
+
+Required acceptance:
+
+20/20:
+
+one click
+immediate UI change
+no red error
+no timeout
+no second Save click
+no revert after refetch
+persisted after hard refresh
+
+Measure click → optimistic cell update.
+
+Target:
+
+< 50ms locally in the React event cycle.
+
+It should effectively be instant.
+
+Also report:
+
+PUT wall-clock times
+
+but PUT duration is no longer the UI-update duration.
+
+Those are two separate metrics.
+
+DO NOT:
+
+touch backend
+add another API
+wait for backend before changing Theme cell
+add a spinner that blocks the modal for network confirmation
+auto-retry PUT
+use localStorage
+use editor display strings as persisted IDs
+reconstruct backend section routing
+restore old t.ticker-only matcher
+restore savedPrimaryId ?? staleCanonicalId
+globally increase every proxy timeout
+rollback the whole Watchlist cache
+hide a real definitive rejection
+
+The feature is done when:
+
+Click Save once.
+Modal closes immediately.
+Screener Theme cell changes immediately.
+This occurs before any network response.
+Valid save persists via canonical PUT.
+Backend response reconciles optimistic state.
+Refetch does not revert it.
+Hard refresh preserves it.
+A timeout cannot create a false "save failed."
+A genuine rejection converges back to canonical state.
+Exactly one PUT is ever sent per Save click.
+Additional/subtheme semantics remain correct.
+Existing fail-closed JSON parsing remains intact.
+No unrelated Watchlist cache state can be rolled backward.
+Actual UI validation passes 20/20.
+
+Final report must include:
+
+exact old vs new Save ordering
+exact optimistic state fields
+click→visible-cell latency
+proof modal closes before fetch resolves
+authoritative reconciliation behavior
+timeout reconciliation behavior
+PUT count per Save
+20/20 actual UI test results
+hard-refresh results
+restored test ticker state
+tests/results
+production files changed
+git diff/stat
+commit SHA
+final git status
