@@ -2426,14 +2426,56 @@ function WlTaxonomyEditorPanel({
           additional_theme_ids: cleanAdditionals,
         }),
       });
-      const data: any = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.detail || data?.error || `Save failed (${r.status})`);
-      // Optimistically patch the cached watchlist so the theme column reflects the
-      // new assignment immediately, without waiting for the background refetch.
-      const savedPrimaryId: string | null = data?.primary_theme_id ?? null;
-      const savedThemeIds: string[] = data?.theme_ids ?? (savedPrimaryId ? [savedPrimaryId] : []);
-      const savedAdditionalIds: string[] = data?.additional_theme_ids ?? [];
-      const savedSubthemeIds: string[] = data?.subtheme_ids ?? [];
+
+      // ── Fail-closed contract ──────────────────────────────────────────
+      // Every check below must pass before the editor closes or any cache
+      // is mutated.  A failure at any step keeps the editor open with an
+      // error message and leaves the Watchlist row unchanged.
+
+      // 1. Content-Type must be JSON — HTML/SPA fallback must never reach
+      //    here as a taxonomy success response.
+      const ct = r.headers.get('content-type') ?? '';
+      if (!ct.includes('application/json')) {
+        throw new Error(
+          r.ok
+            ? 'Save returned a non-JSON response — proxy may be misconfigured'
+            : `Save failed (${r.status}): non-JSON response from server`
+        );
+      }
+
+      // 2. Body must parse as JSON — a malformed response is an error even
+      //    on HTTP 200.  Do NOT swallow the parse error.
+      let data: any;
+      try {
+        data = await r.json();
+      } catch {
+        throw new Error('Save returned malformed JSON — response cannot be trusted');
+      }
+
+      // 3. HTTP status must be 2xx.
+      if (!r.ok) {
+        throw new Error(data?.detail || data?.error || `Save failed (${r.status})`);
+      }
+
+      // 4. Backend must confirm success explicitly via ok: true.
+      if (data?.ok !== true) {
+        throw new Error(data?.detail || data?.error || 'Backend did not confirm save (missing ok: true)');
+      }
+
+      // 5. Required authoritative taxonomy fields must be present so we
+      //    know we are patching from verified backend state, not guessing.
+      if (!('primary_theme_id' in data) || !Array.isArray(data.theme_ids)) {
+        throw new Error('Backend response missing required taxonomy fields — save cannot be verified');
+      }
+
+      // ── All checks passed — use AUTHORITATIVE returned state ──────────
+      // Never reconstruct "what must have happened"; use what the backend
+      // actually confirms it persisted.
+      const savedPrimaryId: string | null = data.primary_theme_id;
+      const savedThemeIds: string[] = data.theme_ids;
+      const savedAdditionalIds: string[] = Array.isArray(data.additional_theme_ids) ? data.additional_theme_ids : [];
+      const savedSubthemeIds: string[] = Array.isArray(data.subtheme_ids) ? data.subtheme_ids : [];
+
       queryClient.setQueryData(['/api/watchlist', activeWatchlistId], (old: any) => {
         if (!old || !old.analysis?.sections) return old;
         const upperTicker = ticker.toUpperCase();
@@ -2451,7 +2493,7 @@ function WlTaxonomyEditorPanel({
                       theme_ids: savedThemeIds,
                       additional_theme_ids: savedAdditionalIds,
                       subtheme_ids: savedSubthemeIds,
-                      // Clear canonical fallback so wlBuildThemeCellLabel uses primary_theme_id
+                      // Let primary_theme_id take precedence; clear stale canonical fallback
                       canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id,
                     }
                   )
@@ -2460,13 +2502,17 @@ function WlTaxonomyEditorPanel({
           },
         };
       });
-      // Invalidate in background so next refetch is fresh
+
+      // Background invalidation so the next refetch converges with backend state
       queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
       queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
       queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });
+
+      // Close editor only after verified success
       onSaveSuccess(ticker);
       onClose();
     } catch (e: any) {
+      // Keep editor open — user sees the error and can retry
       setSaveError(e?.message || 'Save failed. Try again.');
     } finally {
       setIsSaving(false);

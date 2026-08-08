@@ -5977,7 +5977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Ticker taxonomy assignment ───────────────────────────────────────
   // PUT /api/themes/admin/ticker-taxonomy/:ticker → WL_URL
-  // Persists primary_theme_id + additional_theme_ids for a ticker.
+  // Fail-closed: non-JSON upstream responses are never forwarded as success.
   app.put('/api/themes/admin/ticker-taxonomy/:ticker', async (req, res) => {
     try {
       const { ticker } = req.params;
@@ -5988,7 +5988,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { method: 'PUT', headers: wlHdr(), body: JSON.stringify(req.body), signal: ctrl.signal },
       );
       clearTimeout(tid);
-      const data = await r.json().catch(() => ({}));
+      // Upstream must return JSON — HTML/SPA fallback or error pages must never
+      // reach the client as a taxonomy success response.
+      const ct = r.headers.get('content-type') ?? '';
+      if (!ct.includes('application/json')) {
+        return res.status(502).json({ error: `Upstream returned non-JSON (${r.status}) — taxonomy save unverified` });
+      }
+      let data: unknown;
+      try {
+        data = await r.json();
+      } catch {
+        return res.status(502).json({ error: 'Upstream returned malformed JSON — taxonomy save unverified' });
+      }
       res.status(r.status).json(data);
     } catch (e: any) {
       res.status(500).json({ error: e?.name === 'AbortError' ? 'Theme save timed out' : 'Theme save failed' });

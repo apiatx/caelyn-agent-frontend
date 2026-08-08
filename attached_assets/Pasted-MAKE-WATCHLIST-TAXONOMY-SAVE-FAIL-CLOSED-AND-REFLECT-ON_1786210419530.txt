@@ -1,0 +1,361 @@
+MAKE WATCHLIST TAXONOMY SAVE FAIL CLOSED AND REFLECT ONLY VERIFIED BACKEND STATE
+
+Run this ONLY AFTER the backend taxonomy persistence/cache fix has been completed and validated.
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey live AGENTS.md first.
+
+The Replit workspace is the primary source of truth.
+
+Preserve the existing hierarchical taxonomy editor and the proxy work already present in the live workspace.
+
+Do NOT rebuild the editor.
+Do NOT add another endpoint.
+Do NOT add another mutation path.
+Do NOT add localStorage persistence.
+Do NOT create a frontend source of truth for taxonomy.
+Do NOT try to compensate for backend failures with optimistic state.
+
+The backend is authoritative.
+
+CURRENT PRODUCT REQUIREMENT
+
+When the user presses Save in the Watchlist taxonomy editor:
+
+Exactly one canonical request is made:
+
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+
+Backend persists and verifies the complete desired taxonomy state.
+Frontend updates only from the backend's AUTHORITATIVE successful response.
+A failed, malformed, non-JSON, unauthenticated, proxy-failed, backend-failed, or verification-failed request must NEVER close the editor as though the assignment succeeded.
+After a genuine success:
+Theme cell updates immediately
+hard refresh still shows assignment
+navigating away/back still shows assignment
+no "+ Assign" reappears from stale client state
+FIRST: AUDIT THE LIVE CHANGES FROM THE PRIOR SESSION
+
+The previous frontend session reportedly changed:
+
+frontend/server/routes.ts
+
+added PUT proxy:
+/api/themes/admin/ticker-taxonomy/
+→ WL backend
+
+frontend/client/src/pages/watchlist.tsx
+
+updated handleSave()
+added optimistic React Query cache patch
+
+Do not assume those edits are correct because the prior agent said they were.
+
+Read the LIVE files and prove the current path.
+
+Trace:
+
+Theme editor
+→ handleSave()
+→ Express proxy
+→ backend URL
+→ response parsing
+→ success predicate
+→ editor close
+→ cache mutation
+→ query invalidation
+→ Watchlist rerender
+
+KNOWN DANGEROUS CLIENT PATTERN
+
+The original hierarchical editor code used behavior equivalent to:
+
+const data = await r.json().catch(() => ({}));
+if (!r.ok) throw ...
+
+This is NOT safe.
+
+An HTTP 200 HTML response from a SPA fallback can therefore become:
+
+r.ok === true
+JSON parse fails
+data becomes {}
+client proceeds as though save succeeded
+
+That exact failure mode previously happened when the Express PUT proxy was missing.
+
+Remove any remaining ability for a non-JSON 2xx response to count as a successful taxonomy save.
+
+REQUIRED SAVE CONTRACT
+
+The Save action must fail CLOSED.
+
+For a request to count as successful, require all of:
+
+HTTP response is 2xx.
+Content-Type is JSON-compatible.
+Body parses successfully.
+data.ok === true.
+Response includes the authoritative taxonomy fields expected from the backend.
+Returned primary_theme_id matches the requested effective Primary ID after backend normalization.
+Returned membership state is internally valid.
+
+Do not silently swallow JSON parsing errors.
+
+A malformed/non-JSON response is an ERROR even when HTTP status is 200.
+
+AUTHORITATIVE RESPONSE
+
+The backend canonical PUT returns authoritative fields along the lines of:
+
+primary_theme_id
+additional_theme_ids
+theme_ids
+subtheme_ids
+sector_id
+memberships_added
+memberships_removed
+
+Use the actual live backend contract.
+
+After success, patch the relevant React Query row from those RETURNED fields.
+
+Do not reconstruct “what must have happened” from the draft if the backend already tells you what actually persisted.
+
+Backend response wins.
+
+Then invalidate/refetch the existing Watchlist query in the background to converge naturally.
+
+EDITOR FAILURE BEHAVIOR
+
+If ANY save failure occurs:
+
+keep editor open
+keep user's current draft intact
+show a clear save error
+do not show success feedback
+do not optimistically change the Theme cell
+do not invalidate caches in a way that makes failure appear successful
+allow user to retry manually
+
+Examples:
+
+401 / 403
+422 validation
+500 backend transaction failure
+500 post-commit backend verification mismatch
+502 frontend proxy failure
+timeout
+non-JSON response
+HTML SPA fallback
+malformed JSON
+JSON body missing ok: true
+authoritative response missing required taxonomy fields
+
+All must fail visibly.
+
+EXPRESS PROXY MUST FAIL CLOSED TOO
+
+Audit the existing:
+
+PUT /api/themes/admin/ticker-taxonomy/
+
+in:
+
+frontend/server/routes.ts
+
+It should:
+
+forward method PUT
+forward JSON body
+forward required authentication correctly
+target the existing WL/backend URL
+preserve meaningful upstream HTTP error status
+return JSON to the browser
+enforce a sensible existing timeout pattern
+return explicit JSON 5xx/502 on upstream/network failure
+never fall through to Vite SPA routing
+never transform upstream failure into HTTP 200
+never send HTML as a taxonomy API success response
+
+Do not add another proxy route.
+
+Fix the existing one if necessary.
+
+DO NOT ADD AUTOMATIC BLIND RETRIES
+
+The backend operation is intended to be deterministic/idempotent, but do not hide a broken path by adding blind client retries.
+
+The goal is:
+
+one Save
+→ one successful canonical PUT
+
+If it fails, surface the failure.
+
+Reliability comes from fixing the path, not hammering it ten times until one happens to work.
+
+VERIFY QUERY KEYS
+
+Inspect the actual Watchlist useQuery key in the live page.
+
+After successful Save:
+
+update the exact active Watchlist cache if doing an immediate authoritative patch
+invalidate the exact existing active Watchlist query
+preserve theme-performance invalidation if it is legitimately required
+preserve existing unified taxonomy invalidation if legitimately required
+
+Do not invent duplicate query keys.
+Do not add polling.
+Do not broadly invalidate unrelated application data.
+
+CRITICAL END-TO-END VALIDATION
+
+Validate through the browser/API path, not just a mocked React test.
+
+Use one controlled ticker if necessary.
+
+Before making a live test assignment:
+
+Read its full existing taxonomy state.
+Record Primary Theme.
+Record Additional Themes.
+Record Subtheme state.
+
+Then exercise:
+
+Test A — Parent Theme
+
+Assign a valid parent Theme.
+
+Verify:
+
+Save returns verified JSON
+editor closes only after verified response
+Theme cell immediately updates
+hard refresh retains it
+Test B — Subtheme
+
+Assign a valid Subtheme under a Theme.
+
+Verify:
+
+backend primary_theme_id is the Subtheme ID
+UI displays the Subtheme label, not merely the parent
+hard refresh retains it
+Test C — Reassign
+
+Change the same ticker to another Theme/Subtheme.
+
+Verify old assignment does not reappear.
+
+Test D — Failure
+
+Force/mock a non-JSON 200 response in a focused frontend test.
+
+Verify:
+
+treated as error
+editor remains open
+no optimistic row change
+Test E — Backend 500
+
+Verify:
+
+error is displayed
+no fake success
+no editor close
+Test F — Repeated saves
+
+Exercise enough consecutive valid transitions against the corrected backend to establish that the frontend no longer produces intermittent false state.
+
+If using live data, restore the ticker's EXACT original taxonomy through the canonical PUT when done.
+
+BROWSER CONSOLE / NETWORK VERIFICATION
+
+For every successful assignment inspect:
+
+Request:
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+
+Response:
+
+correct HTTP status
+JSON Content-Type
+ok: true
+authoritative primary_theme_id
+authoritative additional_theme_ids
+authoritative theme_ids/subtheme_ids
+
+There should be no:
+
+HTML API responses
+SPA fallback responses
+swallowed JSON exceptions
+duplicate PUTs per click
+uncaught promise errors
+React render loops
+duplicate refetch loops
+PRESERVE UI BEHAVIOR
+
+Do not redesign:
+
+Sector field
+Primary Theme selector
+Subtheme selector
+Additional Theme chips
+filters
+screener columns
+Watchlist scrolling
+row memoization
+Fundamentals tab
+Confluence tab
+theme hierarchy
+
+This task is reliability hardening only.
+
+Expected production scope should remain approximately:
+
+frontend/server/routes.ts
+frontend/client/src/pages/watchlist.tsx
+
+plus focused tests.
+
+If more than two production files are genuinely necessary, stop and report why before expanding scope.
+
+DEFINITION OF DONE
+
+Do NOT report success because one save looked correct.
+
+This is done only when:
+
+One click sends one canonical PUT.
+HTML/non-JSON 200 cannot count as success.
+Backend error cannot count as success.
+Success requires ok === true.
+Client uses authoritative returned taxonomy state.
+Failed saves keep editor open.
+Successful saves update immediately.
+Successful assignment survives hard refresh.
+Successful assignment survives navigating away/back.
+Subtheme displays as the specific Theme-column value.
+No local-only persistence exists.
+Repeated valid saves produce no intermittent false success.
+No duplicate endpoint or persistence architecture was created.
+
+At the end report:
+
+proven frontend failure mode
+exact files changed
+exact success predicate before vs after
+exact proxy behavior before vs after
+exact React Query cache behavior
+browser/network validation
+repeated-save results
+hard-refresh persistence result
+tests run/results
+remaining risks
+git diff summary
+final git status
