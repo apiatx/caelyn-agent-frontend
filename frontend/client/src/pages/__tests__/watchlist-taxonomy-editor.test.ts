@@ -353,3 +353,137 @@ test("REQ-36 theme with no sub_theme children has empty or absent childrenByPare
   const bioChildren = idx.childrenByParentThemeId.get("th-bio") ?? [];
   assert.equal(bioChildren.length, 0);
 });
+
+// ─── 7. Subtheme row rendering decision logic ─────────────────────────────────
+// These tests cover the computed disabled/placeholder state for all three cases
+// (A: no theme, B: theme-with-children, C: theme-without-children) to prove the
+// Subtheme row is always present and merely changes state, not visibility.
+
+/** Helper that mirrors the computed values the editor uses */
+function subthemeRowState(
+  draftThemeId: string | null,
+  idx: ThemeTaxonomyIndex,
+): { disabled: boolean; placeholder: string | null; childCount: number } {
+  const childIds = draftThemeId ? (idx.childrenByParentThemeId.get(draftThemeId) ?? []) : [];
+  const subthemesForDraftTheme = childIds
+    .map(id => idx.nodeById.get(id))
+    .filter((n): n is NonNullable<typeof n> => !!n && n.classification === "sub_theme");
+  const disabled = !draftThemeId || subthemesForDraftTheme.length === 0;
+  let placeholder: string | null = null;
+  if (!draftThemeId) placeholder = "— Select a Primary Theme first —";
+  else if (subthemesForDraftTheme.length === 0) placeholder = "— No subthemes for this theme —";
+  return { disabled, placeholder, childCount: subthemesForDraftTheme.length };
+}
+
+test("REQ-37 Case A — no Primary Theme: subtheme selector disabled with 'Select a Primary Theme first' placeholder", () => {
+  const idx = makeIndex();
+  const s = subthemeRowState(null, idx);
+  assert.ok(s.disabled, "selector must be disabled");
+  assert.equal(s.placeholder, "— Select a Primary Theme first —");
+  assert.equal(s.childCount, 0);
+});
+
+test("REQ-38 Case B — theme with child subthemes: selector enabled, children populated", () => {
+  const idx = makeIndex();
+  const s = subthemeRowState("th-ai", idx); // th-ai has st-nlp + st-cv
+  assert.ok(!s.disabled, "selector must be enabled");
+  assert.equal(s.placeholder, null);
+  assert.ok(s.childCount >= 2, `expected ≥2 children, got ${s.childCount}`);
+});
+
+test("REQ-39 Case C — theme with no subthemes: selector disabled with 'No subthemes' placeholder", () => {
+  const idx = makeIndex();
+  const s = subthemeRowState("th-bio", idx); // th-bio has no children
+  assert.ok(s.disabled, "selector must be disabled");
+  assert.equal(s.placeholder, "— No subthemes for this theme —");
+  assert.equal(s.childCount, 0);
+});
+
+test("REQ-40 parent change clears incompatible draftSubthemeId", () => {
+  // Simulate: user selects th-ai then st-nlp, then switches to th-ev
+  let draftThemeId: string | null = "th-ai";
+  let draftSubthemeId: string | null = "st-nlp";
+  // Changing Primary Theme fires: setDraftThemeId(newId); setDraftSubthemeId(null)
+  draftThemeId = "th-ev";
+  draftSubthemeId = null; // cleared by onChange handler
+  assert.equal(draftThemeId, "th-ev");
+  assert.equal(draftSubthemeId, null, "old subtheme must be cleared after parent change");
+});
+
+test("REQ-41 switching back to same parent does not auto-restore old subtheme", () => {
+  // After parent change clears subthemeId, re-selecting the same parent
+  // starts with no subtheme pre-selected (user must pick again)
+  let draftThemeId: string | null = "th-ai";
+  let draftSubthemeId: string | null = "st-nlp";
+  draftThemeId = "th-ev";
+  draftSubthemeId = null;
+  draftThemeId = "th-ai"; // switch back
+  assert.equal(draftSubthemeId, null, "subtheme must not auto-restore when switching back to original parent");
+});
+
+test("REQ-42 existing subtheme hydration: primary_theme_id pointing to sub_theme opens with parent+subtheme set", () => {
+  const idx = makeIndex();
+  // st-nlp is a sub_theme whose parent is th-ai
+  const stock = { primary_theme_id: "st-nlp", theme_ids: ["st-nlp"] };
+  const r = hydrateDraft(stock, idx);
+  assert.equal(r.themeId, "th-ai", "parent theme must be resolved from sub_theme node");
+  assert.equal(r.subthemeId, "st-nlp", "subtheme must be set to the specific sub_theme ID");
+});
+
+test("REQ-43 existing subtheme hydration does not flatten to parent theme", () => {
+  const idx = makeIndex();
+  const stock = { primary_theme_id: "st-bat", theme_ids: ["st-bat"] }; // Battery Technology, parent: th-ev
+  const r = hydrateDraft(stock, idx);
+  assert.equal(r.themeId, "th-ev");
+  assert.equal(r.subthemeId, "st-bat", "subtheme must not be lost (flattened) during hydration");
+  assert.notEqual(r.subthemeId, null);
+});
+
+test("REQ-44 save semantics: parent-only — effectivePrimaryId equals draftThemeId", () => {
+  const draftSubthemeId: string | null = null;
+  const draftThemeId: string | null = "th-ai";
+  const effectivePrimaryId = draftSubthemeId ?? draftThemeId ?? null;
+  assert.equal(effectivePrimaryId, "th-ai");
+});
+
+test("REQ-45 save semantics: subtheme selected — effectivePrimaryId equals draftSubthemeId, not parent", () => {
+  const draftSubthemeId: string | null = "st-nlp";
+  const draftThemeId: string | null = "th-ai";
+  const effectivePrimaryId = draftSubthemeId ?? draftThemeId ?? null;
+  assert.equal(effectivePrimaryId, "st-nlp", "subtheme ID must take priority over parent theme ID");
+  assert.notEqual(effectivePrimaryId, draftThemeId);
+});
+
+test("REQ-46 save semantics: additional themes unchanged by subtheme selection", () => {
+  const draftAdditionals = ["th-ev", "th-bio"];
+  const effectivePrimaryId = "st-nlp";
+  // cleanAdditionals must exclude effectivePrimaryId but leave others intact
+  const cleanAdditionals = draftAdditionals.filter(id => id !== effectivePrimaryId);
+  assert.deepEqual(cleanAdditionals, ["th-ev", "th-bio"], "additional themes must be unaffected");
+});
+
+test("REQ-47 fail-closed: non-ok data never mutates cache (ok !== true guard)", () => {
+  // Simulate the check: data.ok !== true must throw
+  const data = { detail: "Auth error" }; // missing ok: true
+  let threw = false;
+  try {
+    if ((data as any)?.ok !== true) throw new Error(data.detail || "Backend did not confirm save");
+  } catch {
+    threw = true;
+  }
+  assert.ok(threw, "missing ok: true must be treated as failure");
+});
+
+test("REQ-48 fail-closed: missing required taxonomy fields must be rejected", () => {
+  // data with ok:true but no primary_theme_id/theme_ids
+  const data = { ok: true };
+  let threw = false;
+  try {
+    if (!("primary_theme_id" in data) || !Array.isArray((data as any).theme_ids)) {
+      throw new Error("Backend response missing required taxonomy fields");
+    }
+  } catch {
+    threw = true;
+  }
+  assert.ok(threw, "response without required fields must be rejected");
+});

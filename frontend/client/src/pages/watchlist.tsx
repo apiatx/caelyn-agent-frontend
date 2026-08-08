@@ -2563,22 +2563,38 @@ function WlTaxonomyEditorPanel({
           </select>
         </div>
 
-        {/* Subtheme — shown when theme is selected and has sub_theme children */}
-        {draftThemeId && subthemesForDraftTheme.length > 0 && (
-          <div style={_sec}>
-            <div style={_lbl}>Subtheme</div>
-            <select
-              value={draftSubthemeId ?? ''}
-              onChange={e => setDraftSubthemeId(e.target.value || null)}
-              style={_sel}
-            >
-              <option value="">— General {nodeById.get(draftThemeId)?.display_name ?? ''} —</option>
-              {subthemesForDraftTheme.map(s => (
-                <option key={s.theme_id} value={s.theme_id}>{s.display_name}</option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Subtheme — always rendered; disabled with placeholder when no valid state.
+            Case A: no Primary Theme selected  → disabled, "Select a Primary Theme first"
+            Case B: theme with child subthemes → enabled, list of children
+            Case C: theme with no subthemes   → disabled, "No subthemes for this theme" */}
+        {(() => {
+          const _subDisabled = !draftThemeId || subthemesForDraftTheme.length === 0;
+          const _subStyle: React.CSSProperties = { ..._sel, opacity: _subDisabled ? 0.45 : 1, cursor: _subDisabled ? 'not-allowed' : 'pointer' };
+          return (
+            <div style={_sec}>
+              <div style={_lbl}>Subtheme</div>
+              <select
+                value={draftSubthemeId ?? ''}
+                onChange={e => setDraftSubthemeId(e.target.value || null)}
+                disabled={_subDisabled}
+                style={_subStyle}
+              >
+                {!draftThemeId ? (
+                  <option value="">— Select a Primary Theme first —</option>
+                ) : subthemesForDraftTheme.length === 0 ? (
+                  <option value="">— No subthemes for this theme —</option>
+                ) : (
+                  <>
+                    <option value="">— General {nodeById.get(draftThemeId)?.display_name ?? ''} —</option>
+                    {subthemesForDraftTheme.map(s => (
+                      <option key={s.theme_id} value={s.theme_id}>{s.display_name}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+          );
+        })()}
 
         {/* Additional Themes — optional; grouped in "Add" picker */}
         <div style={_sec}>
