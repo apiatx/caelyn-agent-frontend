@@ -1,0 +1,392 @@
+REPLIT AGENT — URGENT READ-ONLY LATENCY TRIAGE AFTER
+b89f6637 HIERARCHICAL WATCHLIST TAXONOMY EDITOR
+
+DO NOT EDIT CODE.
+
+The user reports that immediately after:
+
+b89f6637 — feat: add hierarchical Watchlist taxonomy editor
+
+the ENTIRE website feels extremely slow.
+
+We need evidence before changing anything.
+
+The live Replit workspace/runtime is authoritative.
+GitHub is reference only.
+
+────────────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────────────
+
+1. Read live frontend AGENTS.md completely.
+2. Record:
+   - repo root
+   - branch
+   - HEAD
+   - git status -sb
+   - ahead/behind
+   - recent 15 commits
+3. Confirm b89f6637 or current descendant.
+4. Do not edit.
+5. Do not commit.
+6. Do not reset/revert/rebase/pull/push/stash/clean.
+7. Preserve all files exactly.
+
+────────────────────────────────────────────────────────────
+KNOWN GIT FACTS TO VERIFY
+────────────────────────────────────────────────────────────
+
+The b89f6637 source commit should have changed only:
+
+frontend/client/src/pages/watchlist.tsx
+frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts
+
+plus an accidentally tracked pasted prompt asset.
+
+Verify this with:
+
+git show --stat b89f6637
+git diff b89f6637^..b89f6637 -- frontend/client/src
+
+Report any unexpected shared/global source changes.
+
+────────────────────────────────────────────────────────────
+PHASE 1 — IS THE BACKEND ACTUALLY SLOW?
+────────────────────────────────────────────────────────────
+
+Do this first.
+
+Against the currently running backend, measure 3 sequential requests each for:
+
+/api/health
+/api/watchlist/list
+/api/home/dashboard
+/api/themes/relative-strength?timeframe=1D&classification=all
+/api/options-flow/sectors
+
+and, separately:
+
+/api/watchlist/primary
+
+or the actual current primary Watchlist ID route.
+
+For each capture:
+
+HTTP status
+TTFB
+total time
+response bytes
+
+Do NOT infer from browser feel.
+
+Also inspect current backend logs for:
+
+Tradier limiter waits
+database pool exhaustion
+Theme RS rebuild loops
+options scanner stalls
+earnings/live-events stalls
+RSS pool errors
+repeated 5xx
+CPU/memory pressure
+
+If normal non-Watchlist backend endpoints are taking multiple seconds:
+STOP and identify this as backend/systemic.
+Do not blame b89f6637.
+
+────────────────────────────────────────────────────────────
+PHASE 2 — BROWSER ROUTE MATRIX
+────────────────────────────────────────────────────────────
+
+Open a fresh browser session.
+
+Measure:
+
+Home
+Portfolio
+Options Flow
+Themes
+Watchlist
+
+For each route record:
+
+navigation start
+first meaningful content
+interactive/usably clickable
+largest main-thread long task
+network requests >1s
+whether API waits or JS/render work dominate
+
+Test two scenarios:
+
+A. fresh reload directly onto Home
+
+B. open Watchlist first, then navigate:
+   Watchlist → Home → Portfolio → Options
+
+This distinction matters.
+
+If fresh Home is fast but navigating away from Watchlist is slow:
+the Watchlist main thread/render tree is blocking navigation.
+
+If fresh Home itself is slow:
+investigate global bundle/startup or backend.
+
+────────────────────────────────────────────────────────────
+PHASE 3 — VERIFY ROUTE BUNDLE OWNERSHIP
+────────────────────────────────────────────────────────────
+
+Read:
+
+frontend/client/src/App.tsx
+
+Confirm whether WatchlistPage is statically imported:
+
+import WatchlistPage from "@/pages/watchlist"
+
+and whether all page routes are eagerly imported.
+
+Run the production Vite build WITHOUT changing source.
+
+Capture emitted JS asset sizes.
+
+Report:
+
+main entry JS raw size
+main entry JS gzip size
+largest chunks
+whether watchlist.tsx is contained in the main startup chunk
+whether b89f6637 created a separate chunk or increased the main bundle
+
+Do not optimize yet.
+
+────────────────────────────────────────────────────────────
+PHASE 4 — COMPARE SOURCE COST OF b89f6637
+────────────────────────────────────────────────────────────
+
+Read the exact b89f6637 diff.
+
+Report:
+
+net source lines added to watchlist.tsx
+new imports introduced
+new third-party dependencies introduced
+module-level calculations introduced
+new effects introduced
+new timers/listeners introduced
+new queries introduced
+new mutations introduced
+
+Specifically inspect:
+
+WlTaxonomyEditorPanel
+wlHydrateTaxonomyDraft
+wlBuildThemeCellLabel
+wlBuildThemeCellAdditionalCount
+wlBuildThemeCellTooltip
+activeTaxonomyEditTicker
+
+Determine:
+
+1. Is WlTaxonomyEditorPanel rendered ONLY when a ticker editor is open?
+2. Does it make any API call merely by being mounted?
+3. Does it create any timer/listener?
+4. Are topLevelThemes/pickerGroups computed while editor is CLOSED?
+5. Does every ticker row now receive unstable props that defeat React.memo?
+6. Does any page-level state change cause all ~463 rows to rerender?
+
+Measure this, do not infer.
+
+────────────────────────────────────────────────────────────
+PHASE 5 — WATCHLIST RENDER REGRESSION
+────────────────────────────────────────────────────────────
+
+Profile Watchlist with editor CLOSED.
+
+Record:
+
+mounted WlTickerRow count
+WlTickerRow render count on initial load
+render count on realtime quote poll
+render count when sorting
+render count when switching Market → Technical
+render count when opening taxonomy editor
+render count when closing taxonomy editor
+
+CRITICAL:
+
+Opening or closing ONE ticker editor should NOT cause all 463 WlTickerRow
+components to do expensive rerenders.
+
+If it does, identify the exact changed prop/context reference.
+
+Do NOT fix yet.
+
+────────────────────────────────────────────────────────────
+PHASE 6 — NETWORK REGRESSION
+────────────────────────────────────────────────────────────
+
+With taxonomy editor CLOSED:
+
+verify b89f6637 did NOT add:
+
+GET /api/themes/admin/ticker-memberships/{ticker}
+
+for every Watchlist ticker.
+
+There must be no 460-ticker N+1 request storm.
+
+Record every new request relative to the prior build.
+
+With editor OPEN:
+
+record exact requests.
+
+Expected:
+no write until Save.
+
+On Save:
+exactly one PUT
+/api/themes/admin/ticker-taxonomy/{ticker}
+
+No repeated membership writes.
+
+────────────────────────────────────────────────────────────
+PHASE 7 — QUERY INVALIDATION CHECK
+────────────────────────────────────────────────────────────
+
+Inspect handleSave().
+
+It currently invalidates several queries after a successful taxonomy Save.
+
+Determine whether any query-key mismatch causes broad/unbounded invalidation,
+for example invalidating far more React Query entries than intended.
+
+Report exact matched query keys/count if possible.
+
+This cannot explain slowness before Save, but it could explain a large stall
+immediately after editing a ticker.
+
+Do not change it yet.
+
+────────────────────────────────────────────────────────────
+PHASE 8 — CURRENT APP CPU/MEMORY
+────────────────────────────────────────────────────────────
+
+While:
+
+A. Home idle
+B. Watchlist idle/editor closed
+C. Watchlist editor open
+
+capture browser/process CPU if tooling allows and JS heap/DOM counts.
+
+Look for:
+
+runaway render loop
+rapid repeated requests
+timer loop
+memory growth
+event-listener growth
+
+Wait at least 60 seconds in each relevant state.
+
+────────────────────────────────────────────────────────────
+DECISION TREE
+────────────────────────────────────────────────────────────
+
+Return ONE of these classifications:
+
+CASE A — BACKEND REGRESSION
+
+Evidence:
+API endpoints themselves slow across routes.
+
+Identify exact backend bottleneck.
+No frontend rollback recommendation yet.
+
+CASE B — GLOBAL FRONTEND STARTUP REGRESSION
+
+Evidence:
+backend fast
+fresh Home slow
+main-thread/bundle parse dominates
+Watchlist statically included in main bundle.
+
+Quantify b89f6637 bundle delta.
+
+CASE C — WATCHLIST RENDER REGRESSION
+
+Evidence:
+fresh other pages fast
+Watchlist or navigation away from Watchlist slow
+large WlTickerRow rerender cascade / expensive parent render.
+
+Identify exact source line/prop/state.
+
+CASE D — TAXONOMY NETWORK/INVALIDATION REGRESSION
+
+Evidence:
+request storm or broad refetch after editor interaction.
+
+Identify exact request/query-key cause.
+
+CASE E — NO b89f6637 REGRESSION FOUND
+
+Provide evidence and identify the actual current bottleneck.
+
+────────────────────────────────────────────────────────────
+IMPORTANT
+────────────────────────────────────────────────────────────
+
+Do NOT fix anything during this audit.
+
+Do NOT:
+- revert b89f6637
+- remove the taxonomy editor
+- change backend
+- change quote cadence
+- change options cadence
+- change Watchlist scrolling
+- introduce virtualization
+- add lazy routes yet
+- change query invalidations yet
+
+We want clean evidence first.
+
+────────────────────────────────────────────────────────────
+SECURITY SIDE FINDING
+────────────────────────────────────────────────────────────
+
+While reading watchlist.tsx, check wlApiHeaders().
+
+If a hardcoded X-API-Key is present in browser source:
+report it as a SEPARATE pre-existing security issue.
+
+Do not print the secret value in the report.
+Do not change it during this latency audit.
+
+────────────────────────────────────────────────────────────
+REPORT
+────────────────────────────────────────────────────────────
+
+Write to AGENTS.md-required report path.
+
+Include:
+
+1. Starting HEAD/status.
+2. Exact b89f6637 files changed.
+3. Backend endpoint timing table.
+4. Fresh-route browser timing table.
+5. Watchlist→other-route timing table.
+6. Main bundle/chunk sizes.
+7. Whether Watchlist is eagerly imported.
+8. b89f6637 bundle/source delta.
+9. New effects/listeners/queries.
+10. WlTickerRow render counts.
+11. Network requests editor closed/open.
+12. Query invalidation findings.
+13. CPU/memory observations.
+14. Root-cause CASE A/B/C/D/E.
+15. Exact evidence.
+16. No files changed.
