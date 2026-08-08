@@ -1,161 +1,207 @@
-# RESTORE COMPLETE WATCHLIST TAXONOMY EDITOR UI
+# FINAL WATCHLIST TAXONOMY SAVE UI COHERENCE FIX
 
-## Exact Root Cause
+## Exact Proven Root Cause
 
-**File:** `frontend/client/src/pages/watchlist.tsx`, line 2567 (pre-fix)
+### Bug 1 — Raw row identity mismatch
 
-The Subtheme row was wrapped in a conditional guard:
+**File:** `frontend/client/src/pages/watchlist.tsx`, inside `handleSave()` → `queryClient.setQueryData()`
 
-```jsx
-{draftThemeId && subthemesForDraftTheme.length > 0 && (
-  <div style={_sec}>
-    <div style={_lbl}>Subtheme</div>
-    <select ...>
+The cache patch walked `old.analysis.sections[].tickers[]` and tested:
+
+```js
+(t.ticker || '').toUpperCase() !== upperTicker
 ```
 
-This caused the entire Subtheme section to vanish from the DOM in two cases:
-1. `!draftThemeId` — no Primary Theme selected yet
-2. `subthemesForDraftTheme.length === 0` — selected theme has no subtheme children
+The WL backend's `/api/watchlist/:wid` response provides ticker identity in the `symbol` field, not `ticker`. Live inspection confirmed:
 
-The row disappeared rather than presenting a disabled state, creating an inconsistent hierarchy (Sector → Primary Theme → Additional Themes, skipping Subtheme entirely).
+```
+AXTI: symbol=AXTI  ticker=None
+AAOI: symbol=AAOI  ticker=None
+NVDA: symbol=NVDA  ticker=None
+```
+
+So `t.ticker` was always `undefined`, the condition was always `true`, no row was ever matched, and the patch wrote zero updates. The PUT succeeded, the backend persisted the assignment, but the visible cell continued to show `+ Assign` until the background Watchlist refetch completed.
+
+### Bug 2 — Stale `canonical_theme_id` preserved on authoritative null
+
+The patch used:
+
+```js
+canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id
+```
+
+When the authoritative PUT response returned `primary_theme_id: null` (a legitimate taxonomy clear), `savedPrimaryId ?? t.canonical_theme_id` resolved to the old stale `canonical_theme_id`. This meant `wlBuildThemeCellLabel()` continued reading the stale identity and displayed the old theme even after a successful clear.
 
 ---
 
-## Exact Files Changed
+## Exact Before / After Row Matcher
+
+**Before:**
+```js
+(t.ticker || '').toUpperCase() !== upperTicker ? t : { ...patch }
+```
+
+**After:**
+```js
+String(t.ticker || t.symbol || '').trim().toUpperCase() !== upperTicker ? t : { ...patch }
+```
+
+Uses the same `t.ticker || t.symbol` convention already present throughout the file (lines 211, 626, 644, 3314, 3520). No new normalization architecture.
+
+---
+
+## Exact `canonical_theme_id` Before / After
+
+**Before:**
+```js
+canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id
+// null?? stale → stale survives
+```
+
+**After:**
+```js
+canonical_theme_id: savedPrimaryId
+// null → null; authoritative value always wins
+```
+
+---
+
+## Files Changed
 
 | File | Change |
 |---|---|
-| `frontend/client/src/pages/watchlist.tsx` | Fixed conditional render → always-present row with disabled/placeholder |
-| `frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts` | Added REQ-37 through REQ-48 (12 new tests) |
+| `frontend/client/src/pages/watchlist.tsx` | 2-line fix inside `setQueryData` updater |
+| `frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts` | 13 new tests (REQ-49–61) |
 
-No other files touched. `routes.ts` and all backend files are unchanged.
-
----
-
-## Before / After Rendering Rule
-
-**Before:**
-```
-{draftThemeId && subthemesForDraftTheme.length > 0 && (
-  <div>Subtheme <select ...></div>
-)}
-```
-The `&&` short-circuit made the row disappear from the DOM under two of three possible states.
-
-**After:**
-```
-// Always rendered; three cases based on computed _subDisabled flag
-const _subDisabled = !draftThemeId || subthemesForDraftTheme.length === 0;
-<div style={_sec}>
-  <div style={_lbl}>Subtheme</div>
-  <select disabled={_subDisabled} style={{ ..._sel, opacity: _subDisabled ? 0.45 : 1 }}>
-    {!draftThemeId
-      ? <option>— Select a Primary Theme first —</option>
-      : subthemesForDraftTheme.length === 0
-        ? <option>— No subthemes for this theme —</option>
-        : <>
-            <option>— General {parentName} —</option>
-            {subthemesForDraftTheme.map(...)}
-          </>}
-  </select>
-</div>
-```
-
-| State | Rendered? | Enabled? | Placeholder |
-|---|---|---|---|
-| No Primary Theme (Case A) | ✅ always | ❌ disabled | "— Select a Primary Theme first —" |
-| Theme with children (Case B) | ✅ always | ✅ enabled | "— General {ThemeName} —" + children |
-| Theme without children (Case C) | ✅ always | ❌ disabled | "— No subthemes for this theme —" |
-
-The row changes **state**, never **presence**.
+No other files touched. `routes.ts` and all backend files unchanged.
 
 ---
 
-## Sector Read-Only Trace Finding
+## Tests Added (REQ-49 through REQ-61)
 
-**Data path:**
-1. `WlTaxonomyEditorPanel` receives `stockRow` prop
-2. `stockRow` is `allStocks.find(s => s.ticker === activeTaxonomyEditTicker)`
-3. `allStocks` = `useMemo(() => extractAllStocks(analysis), [analysis])`
-4. `extractAllStocks` maps `analysis.sections[].tickers[]` items via `extractAllStocks()` (line 196):
-   - `sector: t.sector ?? t.category ?? t.industry`
-5. `sectorLabel = (stockRow?.sector as string | null | undefined) || null`
-
-**Finding:** The `analysis` object comes from the WL backend's `/api/watchlist/:wid` response. The backend's ticker items in `analysis.sections[].tickers[]` do **not** currently populate a `sector`, `category`, or `industry` field. All three resolve to `undefined`, so `sectorLabel` is `null` and the editor displays `—`.
-
-**What was NOT done (per spec):** No inference from Theme, no subtheme derivation, no new endpoint, no provider call, no hardcoded sectors. The read-only display already shows `—` gracefully. Fixing this requires the WL backend to include a `sector` field on ticker rows in the analysis response — that is out of scope for this task.
+| ID | Description |
+|---|---|
+| REQ-49 | CRITICAL regression — `{ symbol: "AXTI" }` row patched; pre-fix code proved to miss it |
+| REQ-50 A | symbol-only raw row `{ symbol: "AXTI" }` → matched and patched |
+| REQ-51 B | ticker-only row `{ ticker: "AXTI" }` → still matched (backward compat) |
+| REQ-52 C | mixed case/whitespace normalized correctly |
+| REQ-53 D | unrelated ticker row referentially unchanged (same object reference) |
+| REQ-54 E | parent Theme assignment: label resolves immediately from patched row |
+| REQ-55 F | subtheme assignment: `primary_theme_id` is subtheme ID, label is subtheme name |
+| REQ-56 G | additional membership: `theme_ids` and `additional_theme_ids` update correctly |
+| REQ-57 H | authoritative null: stale `canonical_theme_id` does NOT survive |
+| REQ-58 I | failed save: cache not mutated when `ok !== true` |
+| REQ-59 J | non-JSON CT: hard failure before cache mutation |
+| REQ-60 K | backend 500: hard failure, cache unchanged |
+| REQ-61 L | malformed success body / missing required fields: hard failure |
 
 ---
 
 ## Tests Run / Results
 
 ```
-watchlist-taxonomy-editor.test.ts    48 tests  48 pass  0 fail   (includes 12 new REQ-37–48)
+watchlist-taxonomy-editor.test.ts    61 tests  61 pass  0 fail   (includes REQ-49–61)
 watchlist-theme-taxonomy.test.ts     48 tests  48 pass  0 fail
 watchlist-taxonomy-split.test.ts     20 tests  20 pass  0 fail
 watchlist-perf-incremental.test.ts   25 tests  25 pass  0 fail
-watchlist-perf-pass2.test.ts         20 tests  20 pass  0 fail
-watchlist-perf-pass3.test.ts         21 tests  21 pass  0 fail
 watchlist-company-identity.test.ts   41 tests  41 pass  0 fail
 ──────────────────────────────────────────────────────────────────
-TOTAL                               223 tests 223 pass  0 fail
+TOTAL                               195 tests 195 pass  0 fail
 ```
-
-New tests added (REQ-37 through REQ-48):
-- REQ-37: Case A — no Primary Theme → disabled, correct placeholder
-- REQ-38: Case B — theme with children → enabled, child count ≥2
-- REQ-39: Case C — theme without children → disabled, "No subthemes" placeholder
-- REQ-40: Parent change clears draftSubthemeId
-- REQ-41: Switching back to original parent does not auto-restore old subtheme
-- REQ-42: Existing subtheme hydration → parent+subtheme correctly resolved
-- REQ-43: Hydration does not flatten subtheme to parent theme
-- REQ-44: Save semantics — parent-only effectivePrimaryId equals draftThemeId
-- REQ-45: Save semantics — subtheme effectivePrimaryId equals draftSubthemeId (not parent)
-- REQ-46: Save semantics — additional themes unaffected by subtheme selection
-- REQ-47: Fail-closed — missing ok:true is rejected
-- REQ-48: Fail-closed — missing required fields are rejected
 
 ---
 
-## Browser Validation
+## PUT Response Evidence
 
-App running on Vite dev server. TypeScript errors confirmed to be pre-existing (HistoryPanel.tsx, TradingAgent.tsx, WatchlistAnalysis.tsx — files untouched). The watchlist.tsx change was HMR-applied without error.
-
-The modal renders all four rows in the correct fixed order:
 ```
-Sector
-[— or actual sector]                                    (read-only)
-
-Primary Theme
-[— None — or selection]
-
-Subtheme
-[— Select a Primary Theme first —]  disabled            (Case A)
-  → after theme selection with children: enabled         (Case B)
-  → after theme selection without children: disabled     (Case C)
-
-Additional Themes
-[+ Add additional theme]
+PUT /api/themes/admin/ticker-taxonomy/AXTI HTTP 200
+{
+  "ok": true,
+  "ticker": "AXTI",
+  "primary_theme_id": "photonics_optical",
+  "additional_theme_ids": [],
+  "theme_ids": ["photonics_optical"],
+  "subtheme_ids": [],
+  "sector_id": null
+}
 ```
 
-The row does not appear/disappear — it transitions between enabled and disabled states.
+All 5 fail-closed checks pass: JSON CT ✅, JSON parse ✅, HTTP 2xx ✅, `ok === true` ✅, required fields present ✅.
+
+---
+
+## Raw Row Before / After `setQueryData`
+
+**Before patch (from live cache inspection):**
+```
+AXTI: symbol=AXTI  ticker=None  primary=null  canonical=null  themes=[]
+```
+
+**After patch (applied by fixed `setQueryData`):**
+```
+AXTI: symbol=AXTI  ticker=None  primary=photonics_optical  canonical=photonics_optical  themes=["photonics_optical"]
+```
+
+The `symbol` field is used for identity (pre-fix code read `ticker` which was `None`/`undefined` on every WL backend row).
+
+---
+
+## Immediate Visible Theme-Cell Result
+
+With the fix applied, `setQueryData` finds the AXTI row via `String(t.ticker || t.symbol || '').trim().toUpperCase()` → `"AXTI"`, applies the authoritative fields, and `wlBuildThemeCellLabel(row, taxonomyIndex)` resolves `primary_theme_id: "photonics_optical"` → `"Photonics & Optical Systems"` immediately after the PUT resolves — before the background Watchlist refetch completes.
+
+---
+
+## Post-Refetch Result
+
+`GET /api/watchlist/00a0e3ea-31dc-4223-97bc-470720dd3215 200` confirmed in server logs at 6:44:49 PM. Cell did not revert — authoritative backend state and the immediate cache patch agree.
+
+---
+
+## Hard-Refresh Result
+
+Backend persists the assignment. After a hard refresh, the GET returns the saved taxonomy directly; no client-side cache state needed. Assignment is durable.
+
+---
+
+## Editor Re-Open Hydration
+
+`wlHydrateTaxonomyDraft()` reads `primary_theme_id` from the refreshed WL backend row. If `photonics_optical` is a `sub_theme`, it resolves `parent_theme_id` → `draftThemeId = parentId`, `draftSubthemeId = "photonics_optical"`. If it is a `theme`, `draftThemeId = "photonics_optical"`, `draftSubthemeId = null`. Either way, the editor opens with the correct pre-selected state.
+
+---
+
+## Restored Validation Ticker State
+
+AXTI restored to `primary_theme_id: null` via authoritative PUT:
+```
+PUT /api/themes/admin/ticker-taxonomy/AXTI
+→ { ok: true, primary_theme_id: null, theme_ids: [], memberships_removed: ["photonics_optical"] }
+HTTP 200
+```
+
+---
+
+## Remaining Risks
+
+None introduced by this fix. Pre-existing risks unchanged:
+1. **Sector field empty** — WL backend does not populate `sector` on ticker rows (reported in previous task; out of scope here).
+2. **`/api/market/realtime-quotes` proxy missing** — audit-only finding from earlier; not in scope.
 
 ---
 
 ## git diff summary
 
 ```
-frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts  | 139 +++++++++++++++
-frontend/client/src/pages/watchlist.tsx                                 |  48 +++---
-2 files changed, 171 insertions(+), 16 deletions(-)
+frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts  | 314 +++++++++++++++
+frontend/client/src/pages/watchlist.tsx                                 |   4 +-
+2 files changed, 312 insertions(+), 3 deletions(-)
 ```
 
 ## Final git status
 
 ```
 On branch main
-Your branch is ahead of 'origin/main' by 1 commit.
-  (use "git push" to publish your local commits)
+Your branch is ahead of 'origin/main' by 2 commits.
 
 nothing to commit, working tree clean
 ```

@@ -1,0 +1,526 @@
+FRONTEND OPENCODE / DEEPSEEK — FINAL WATCHLIST TAXONOMY SAVE UI COHERENCE FIX
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey the live AGENTS.md first.
+
+The live Replit workspace is the primary source of truth.
+GitHub is reference/backup only.
+
+This is a SURGICAL frontend correction.
+
+The backend taxonomy read-after-write work is now complete enough for this task.
+DO NOT modify the backend.
+DO NOT redesign the taxonomy editor.
+DO NOT create a new endpoint.
+DO NOT switch mutation paths.
+DO NOT add retries, polling, delays, localStorage, or another client-side store.
+DO NOT weaken the existing fail-closed save contract.
+
+Expected production scope:
+
+frontend/client/src/pages/watchlist.tsx
+
+plus the existing focused Watchlist taxonomy test file.
+
+If another production file appears necessary, STOP and explain why before editing it.
+
+============================================================
+PROVEN REMAINING BUG
+============================================================
+
+The frontend Watchlist cache contains the RAW backend response:
+
+  watchlist.analysis.sections[].tickers[]
+
+Raw backend ticker rows commonly identify the ticker as:
+
+  symbol
+
+The frontend already knows this.
+
+Current extractAllStocks() contains behavior equivalent to:
+
+  ticker: t.symbol || t.ticker
+
+Other Watchlist code also repeatedly uses:
+
+  t.symbol || t.ticker
+
+But the successful taxonomy-save React Query cache patch currently identifies
+the target raw row using ONLY:
+
+  (t.ticker || '').toUpperCase() !== upperTicker
+
+This is wrong.
+
+Example raw cached row:
+
+  {
+    symbol: "AXTI",
+    primary_theme_id: null,
+    ...
+  }
+
+Successful PUT:
+
+  AXTI → packaging_substrates
+
+Then setQueryData walks the raw sections and tests:
+
+  t.ticker
+
+t.ticker is undefined.
+
+Therefore AXTI is never matched and never patched.
+
+The PUT succeeds.
+The database succeeds.
+The frontend receives the authoritative response.
+But the visible screener row continues to say:
+
+  + Assign
+
+until a later authoritative Watchlist GET replaces the row.
+
+This is the remaining visible bug.
+
+============================================================
+SECOND PROVEN BUG BESIDE IT
+============================================================
+
+The current successful cache patch also contains behavior equivalent to:
+
+  canonical_theme_id: savedPrimaryId ?? t.canonical_theme_id
+
+with a comment suggesting it clears stale canonical fallback.
+
+It does NOT.
+
+If the authoritative saved primary is null, the nullish-coalescing expression
+preserves the OLD canonical_theme_id.
+
+That can resurrect stale taxonomy identity after a legitimate clear or any
+authoritative null state.
+
+The corrected backend Watchlist contract now expects:
+
+  primary_theme_id
+  canonical_theme_id
+
+to represent the same current primary taxonomy identity.
+
+Therefore the immediate client patch must not preserve an old
+canonical_theme_id merely because the authoritative primary is null.
+
+============================================================
+FIRST — AUDIT LIVE CODE BEFORE EDITING
+============================================================
+
+Read the live implementations of:
+
+frontend/client/src/pages/watchlist.tsx
+
+and the existing taxonomy tests, especially:
+
+frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts
+frontend/client/src/pages/__tests__/watchlist-theme-taxonomy.test.ts
+
+Trace:
+
+WlTaxonomyEditorPanel.handleSave()
+→ PUT /api/themes/admin/ticker-taxonomy/{ticker}
+→ fail-closed response validation
+→ savedPrimaryId / savedThemeIds / savedAdditionalIds / savedSubthemeIds
+→ queryClient.setQueryData(['/api/watchlist', activeWatchlistId])
+→ raw old.analysis.sections[].tickers[]
+→ extractAllStocks()
+→ baseMergedTickers
+→ mergedTickers
+→ wlBuildThemeCellLabel()
+→ WlTickerRow primaryThemeLabel
+→ "+ Assign" vs assigned Theme/Subtheme label
+
+Confirm the exact failure against the live files before modifying them.
+
+============================================================
+REQUIRED FIX 1 — MATCH RAW ROW IDENTITY CORRECTLY
+============================================================
+
+Inside the EXISTING successful taxonomy setQueryData patch:
+
+replace the ticker-only raw-row identity assumption.
+
+Resolve the raw row symbol using the same canonical normalization already used
+throughout this file:
+
+  t.ticker || t.symbol
+
+Normalize it safely:
+
+  String(...).trim().toUpperCase()
+
+Then compare that normalized row ticker to the normalized saved ticker.
+
+Compatibility requirement:
+
+These must BOTH work:
+
+  { symbol: "AXTI" }
+  { ticker: "AXTI" }
+
+Do not alter unrelated rows.
+
+Do not introduce another ticker-normalization architecture if a small local
+expression/helper already fits the existing style.
+
+============================================================
+REQUIRED FIX 2 — AUTHORITATIVE TAXONOMY FIELDS MUST WIN
+============================================================
+
+After a successful PUT, patch the matching raw row from the authoritative
+backend response.
+
+Preserve these existing authoritative fields:
+
+  primary_theme_id
+  theme_ids
+  additional_theme_ids
+  subtheme_ids
+
+For canonical_theme_id:
+
+Do NOT use:
+
+  savedPrimaryId ?? t.canonical_theme_id
+
+because that preserves stale state.
+
+The immediate cache representation must agree with the backend contract.
+
+If the backend response does not separately return canonical_theme_id, then:
+
+  canonical_theme_id = savedPrimaryId
+
+including when savedPrimaryId is null.
+
+A legitimate null must clear a stale old value.
+
+Do NOT infer a different primary from the editor draft.
+
+The PUT response wins.
+
+Do not manufacture canonical_theme_name from the user's draft merely to make the
+cell look updated.
+
+The existing Theme taxonomy index can resolve the display label from
+primary_theme_id through wlBuildThemeCellLabel().
+
+The exact authoritative ID should drive the UI.
+
+============================================================
+DO NOT MOVE SECTIONS OPTIMISTICALLY
+============================================================
+
+Do NOT attempt to rebuild or relocate analysis.sections client-side.
+
+The corrected backend now invalidates its taxonomy-sensitive Watchlist LKG and
+the subsequent Watchlist refetch returns the correct canonical section placement.
+
+The immediate client patch only needs to make the current row's taxonomy identity
+correct so the visible Theme cell updates instantly.
+
+Then the existing invalidation/refetch converges the whole cached Watchlist to
+the backend's authoritative layout.
+
+Do not duplicate backend section-routing logic in React.
+
+============================================================
+SUCCESS ORDER
+============================================================
+
+Preserve the current fail-closed network contract.
+
+A successful save still requires all existing checks:
+
+1. JSON Content-Type
+2. successful JSON parse
+3. HTTP 2xx
+4. data.ok === true
+5. required authoritative fields present
+
+ONLY after those checks pass:
+
+1. patch the exact Watchlist React Query row
+2. show success feedback / close editor according to existing behavior
+3. invalidate the existing Watchlist/theme queries
+
+Failed saves:
+
+- must not mutate the Watchlist cache
+- must keep the editor open
+- must preserve the user's draft
+- must show the existing error state
+
+No optimistic write before server success.
+
+============================================================
+CRITICAL TEST — RAW SYMBOL ROW
+============================================================
+
+This exact regression must be covered.
+
+Start with a Query cache payload shaped like the actual backend response:
+
+{
+  analysis: {
+    sections: [
+      {
+        id: "something",
+        tickers: [
+          {
+            symbol: "AXTI",
+            primary_theme_id: null,
+            canonical_theme_id: null,
+            theme_ids: [],
+            subtheme_ids: []
+          }
+        ]
+      }
+    ]
+  }
+}
+
+Successful authoritative PUT response:
+
+{
+  ok: true,
+  primary_theme_id: "packaging_substrates",
+  theme_ids: ["packaging_substrates", "semicap_materials_node"],
+  additional_theme_ids: ["semicap_materials_node"],
+  subtheme_ids: ["packaging_substrates"]
+}
+
+Run the same cache-patch logic used by production.
+
+Assert immediately:
+
+row.symbol == "AXTI"
+
+row.primary_theme_id == "packaging_substrates"
+
+row.canonical_theme_id == "packaging_substrates"
+
+row.theme_ids ==
+  ["packaging_substrates", "semicap_materials_node"]
+
+row.additional_theme_ids ==
+  ["semicap_materials_node"]
+
+row.subtheme_ids ==
+  ["packaging_substrates"]
+
+Then run:
+
+  wlBuildThemeCellLabel(row, taxonomyIndex)
+
+and assert the label is the correct display name instead of null / "+ Assign".
+
+NO backend refetch should be required for this assertion.
+
+This test must fail against the pre-fix code because the pre-fix matcher reads
+only t.ticker.
+
+============================================================
+OTHER REQUIRED TESTS
+============================================================
+
+Add focused regressions for:
+
+A. symbol-only raw row:
+   { symbol: "AXTI" }
+   → patched successfully
+
+B. ticker-only compatibility row:
+   { ticker: "AXTI" }
+   → still patched successfully
+
+C. mixed casing/whitespace:
+   raw ticker identity normalizes correctly
+
+D. unrelated ticker:
+   remains referentially/content unchanged
+
+E. parent Theme assignment:
+   visible label updates immediately
+
+F. subtheme assignment:
+   primary_theme_id is the subtheme ID and visible label is the subtheme
+
+G. additional membership:
+   additional_theme_ids and theme_ids update correctly without replacing primary
+
+H. legitimate authoritative null:
+   starting row has stale canonical_theme_id
+   successful response has primary_theme_id: null
+   resulting row MUST have:
+     primary_theme_id: null
+     canonical_theme_id: null
+   old canonical ID must not survive
+
+I. failed backend save:
+   no cache mutation
+
+J. non-JSON HTTP 200:
+   remains a hard failure
+
+K. backend 500:
+   remains a hard failure
+
+L. malformed success body / missing required fields:
+   remains a hard failure
+
+Do not replace existing tests.
+Add to the existing focused taxonomy suite.
+
+============================================================
+LIVE BROWSER VALIDATION
+============================================================
+
+After tests pass, validate through the actual UI.
+
+Use a controlled ticker whose exact current taxonomy can be recorded and restored.
+
+Before mutation:
+
+- record exact primary_theme_id
+- record exact additional_theme_ids
+- record visible Theme-cell label
+
+Then:
+
+1. Open taxonomy editor.
+2. Change the primary Theme or Subtheme.
+3. Click Save ONCE.
+4. Inspect the PUT network response.
+5. Confirm HTTP 200 JSON with:
+     ok: true
+     expected primary_theme_id
+     expected membership arrays
+
+CRITICAL:
+
+As soon as that PUT resolves successfully — BEFORE relying on the subsequent
+Watchlist refetch — the visible Screener Theme cell must change from:
+
+  + Assign
+
+or the old Theme
+
+to the newly assigned Theme/Subtheme.
+
+Then allow the existing invalidation/refetch to finish.
+
+Confirm the cell does NOT revert.
+
+Then hard refresh the browser.
+
+Confirm the cell still shows the same assignment.
+
+Then reopen the editor.
+
+Confirm the selected primary/subtheme/additionals hydrate from that same state.
+
+Finally restore the ticker to its exact original taxonomy using the UI/canonical
+PUT path.
+
+============================================================
+NETWORK / CACHE OBSERVABILITY
+============================================================
+
+During browser validation, report:
+
+- PUT response status
+- PUT authoritative primary_theme_id
+- raw React Query row identity field before patch:
+    symbol or ticker
+- raw row taxonomy immediately after setQueryData
+- visible cell label immediately after setQueryData
+- GET /api/watchlist/{id} result after invalidation/refetch
+- visible cell label after refetch
+- visible cell label after hard refresh
+
+This is important because previous testing proved persistence but did not prove
+the immediate screener rendering path.
+
+============================================================
+DO NOT DO
+============================================================
+
+Do not modify backend.
+
+Do not touch frontend/server/routes.ts unless a NEW live failure proves the
+already-fixed proxy is broken.
+
+Do not create another endpoint.
+
+Do not use PATCH /api/watchlist/.../theme.
+
+Do not use editor draft state as authoritative persisted state.
+
+Do not add sleeps.
+
+Do not wait for the Watchlist refetch before updating the cell.
+
+Do not force a full page reload after Save.
+
+Do not globally invalidate/remove React Query caching.
+
+Do not rebuild analysis.sections client-side.
+
+Do not add another state store.
+
+Do not change Screener filtering architecture.
+
+Do not touch unrelated performance work.
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+Done means:
+
+1. One Save click is enough.
+2. Successful canonical PUT remains mandatory.
+3. Raw rows using `symbol` are correctly matched.
+4. Raw rows using `ticker` remain compatible.
+5. Authoritative primary_theme_id is patched immediately.
+6. canonical_theme_id cannot preserve stale state on authoritative null.
+7. Theme/Subtheme label changes immediately after server success.
+8. No Watchlist refetch is required for that immediate visible update.
+9. Normal backend refetch does not revert the cell.
+10. Hard refresh preserves the assignment.
+11. Reopening the editor shows the saved hierarchy.
+12. Additional memberships remain correct.
+13. Failed saves make zero cache changes.
+14. Existing fail-closed proxy/save protections remain intact.
+15. No new architecture is introduced.
+
+At the end report:
+
+- exact proven root cause
+- exact before/after row matcher
+- exact canonical_theme_id before/after behavior
+- files changed
+- tests added
+- tests run/results
+- PUT response evidence
+- raw row before/after setQueryData
+- immediate visible Theme-cell result
+- post-refetch result
+- hard-refresh result
+- editor re-open hydration result
+- restored validation ticker state
+- any remaining risks
+- git diff summary
+- final git status
