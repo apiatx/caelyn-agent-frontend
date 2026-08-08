@@ -207,6 +207,7 @@ export function rowMatchesTaxonomySelection(
 export function getTaxonomyChipOrder(index: ThemeTaxonomyIndex): {
   sectorOrder: string[];
   themeOrder: string[];
+  subthemeOrder: string[];
 } {
   const { nodeById } = index;
 
@@ -216,21 +217,33 @@ export function getTaxonomyChipOrder(index: ThemeTaxonomyIndex): {
     return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
   });
 
-  const allNonSector: string[] = [];
+  const themeArr: string[] = [];
+  const subthemeArr: string[] = [];
+
   const allIds = Array.from(nodeById.keys());
   for (let i = 0; i < allIds.length; i++) {
     const id = allIds[i];
     const node = nodeById.get(id);
-    if (node && node.classification !== "sector") {
-      allNonSector.push(id);
+    if (!node) continue;
+    const cls = node.classification;
+    // Explicitly exclude market_lens and deprecated from all filter rows
+    if (cls === "market_lens" || cls === "deprecated") continue;
+    if (cls === "theme") {
+      themeArr.push(id);
+    } else if (cls === "sub_theme") {
+      subthemeArr.push(id);
     }
   }
 
-  const themeOrder = allNonSector.sort((a, b) => {
+  const sortByName = (a: string, b: string) => {
     const na = nodeById.get(a);
     const nb = nodeById.get(b);
     return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
-  });
+  };
 
-  return { sectorOrder, themeOrder };
+  return {
+    sectorOrder,
+    themeOrder: themeArr.sort(sortByName),
+    subthemeOrder: subthemeArr.sort(sortByName),
+  };
 }

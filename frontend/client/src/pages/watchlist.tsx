@@ -4896,7 +4896,7 @@ export default function WatchlistPage() {
 
   const renderTaxonomyBar = () => {
     const { nodeById } = taxonomyIndex;
-    const { sectorOrder, themeOrder } = taxonomyChipOrder;
+    const { sectorOrder, themeOrder, subthemeOrder } = taxonomyChipOrder;
 
     const chipStyle = (active: boolean, isParent: boolean): React.CSSProperties => ({
       flexShrink: 0, cursor: 'pointer',
@@ -4979,7 +4979,7 @@ export default function WatchlistPage() {
           )}
         </div>
 
-        {/* Row 2: THEMES */}
+        {/* Row 2: THEMES — classification === "theme" only; market_lens/deprecated excluded */}
         <div style={rowStyle} className="wl-chip-strip">
           <span style={labelStyle}>THEMES</span>
           {themeOrder.map(id => {
@@ -4990,6 +4990,28 @@ export default function WatchlistPage() {
             return (
               <span key={id} onClick={() => toggleId(id)}
                 style={chipStyle(active, isParent)}
+              >
+                {node.display_name}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* Row 3: SUBTHEMES — classification === "sub_theme" only; parent name shown as tooltip */}
+        <div style={rowStyle} className="wl-chip-strip">
+          <span style={labelStyle}>SUBTHEMES</span>
+          {subthemeOrder.map(id => {
+            const node = nodeById.get(id);
+            if (!node) return null;
+            const active = selectedTaxonomyIds.has(id);
+            const parentNode = node.parent_theme_id ? nodeById.get(node.parent_theme_id) : undefined;
+            const titleText = parentNode
+              ? `${parentNode.display_name} → ${node.display_name}`
+              : node.display_name;
+            return (
+              <span key={id} onClick={() => toggleId(id)}
+                title={titleText}
+                style={chipStyle(active, false)}
               >
                 {node.display_name}
               </span>

@@ -415,7 +415,7 @@ test("every sector renders exactly once", () => {
   assert.ok(order.sectorOrder.includes("tech"));
 });
 
-test("every non-sector node renders exactly once", () => {
+test("every non-sector node renders exactly once across themeOrder and subthemeOrder", () => {
   const idx = s([
     makeNode({ theme_id: "tech", classification: "sector" }),
     makeNode({ theme_id: "semi", classification: "sub_theme" }),
@@ -423,26 +423,34 @@ test("every non-sector node renders exactly once", () => {
     makeNode({ theme_id: "gold", classification: "theme" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  assert.equal(order.themeOrder.length, 3);
-  const themeSet = new Set(order.themeOrder);
-  assert.equal(themeSet.size, 3);
+  // "gold" (theme) → themeOrder; "semi" and "ai" (sub_theme) → subthemeOrder
+  assert.equal(order.themeOrder.length, 1);
+  assert.ok(order.themeOrder.includes("gold"), "gold in themeOrder");
+  assert.equal(order.subthemeOrder.length, 2);
+  assert.ok(order.subthemeOrder.includes("semi"), "semi in subthemeOrder");
+  assert.ok(order.subthemeOrder.includes("ai"),   "ai in subthemeOrder");
+  // No duplicates across all rows
+  const all = [...order.sectorOrder, ...order.themeOrder, ...order.subthemeOrder];
+  assert.equal(new Set(all).size, all.length, "no duplicates across rows");
 });
 
-test("every non-sector node renders exactly once including children", () => {
+test("every non-sector sub_theme node renders exactly once in subthemeOrder including children", () => {
   const idx = s([
     makeNode({ theme_id: "semi", classification: "sub_theme" }),
     makeNode({ theme_id: "memory", classification: "sub_theme", parent_theme_id: "semi" }),
     makeNode({ theme_id: "ai", classification: "sub_theme" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  assert.equal(order.themeOrder.length, 3);
-  assert.equal(new Set(order.themeOrder).size, 3);
-  assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
-  assert.equal(order.themeOrder.filter(id => id === "memory").length, 1);
-  assert.equal(order.themeOrder.filter(id => id === "ai").length, 1);
+  // All three are sub_theme → all go to subthemeOrder, not themeOrder
+  assert.equal(order.themeOrder.length, 0);
+  assert.equal(order.subthemeOrder.length, 3);
+  assert.equal(new Set(order.subthemeOrder).size, 3, "no duplicates in subthemeOrder");
+  assert.equal(order.subthemeOrder.filter(id => id === "semi").length,   1, "semi once");
+  assert.equal(order.subthemeOrder.filter(id => id === "memory").length, 1, "memory once");
+  assert.equal(order.subthemeOrder.filter(id => id === "ai").length,     1, "ai once");
 });
 
-test("stale classification sub_theme parent renders once", () => {
+test("sub_theme parent and its children each render once in subthemeOrder", () => {
   const idx = s([
     makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
     makeNode({ theme_id: "equip", classification: "sub_theme", display_name: "Equipment", parent_theme_id: "semi" }),
@@ -450,24 +458,30 @@ test("stale classification sub_theme parent renders once", () => {
     makeNode({ theme_id: "ai", classification: "sub_theme", display_name: "AI Networking" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  assert.equal(order.themeOrder.length, 4);
-  assert.equal(order.themeOrder.filter(id => id === "semi").length, 1);
-  assert.equal(order.themeOrder.filter(id => id === "memory").length, 1);
+  // All four are sub_theme → all go to subthemeOrder; themeOrder stays empty
+  assert.equal(order.themeOrder.length, 0);
+  assert.equal(order.subthemeOrder.length, 4);
+  assert.equal(order.subthemeOrder.filter(id => id === "semi").length,   1, "semi once");
+  assert.equal(order.subthemeOrder.filter(id => id === "memory").length, 1, "memory once");
 });
 
-test("themes sorted alphabetically by display_name", () => {
+test("themes sorted alphabetically by display_name; sub_themes sorted in subthemeOrder", () => {
   const idx = s([
     makeNode({ theme_id: "zinc", classification: "sub_theme", display_name: "Zinc" }),
     makeNode({ theme_id: "gold", classification: "theme", display_name: "Gold" }),
     makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
+  // themeOrder: only "gold" (classification === "theme")
+  assert.equal(order.themeOrder.length, 1);
   assert.equal(order.themeOrder[0], "gold");
-  assert.equal(order.themeOrder[1], "semi");
-  assert.equal(order.themeOrder[2], "zinc");
+  // subthemeOrder: "semi" < "zinc" alphabetically by display_name
+  assert.equal(order.subthemeOrder.length, 2);
+  assert.equal(order.subthemeOrder[0], "semi");
+  assert.equal(order.subthemeOrder[1], "zinc");
 });
 
-test("all non-sector nodes appear exactly once in alphabetical order", () => {
+test("sub_theme nodes appear in subthemeOrder sorted alphabetically, not in themeOrder", () => {
   const idx = s([
     makeNode({ theme_id: "memory", classification: "sub_theme", display_name: "Memory", parent_theme_id: "semi" }),
     makeNode({ theme_id: "semi", classification: "sub_theme", display_name: "Semiconductors" }),
@@ -475,11 +489,14 @@ test("all non-sector nodes appear exactly once in alphabetical order", () => {
     makeNode({ theme_id: "dc", classification: "sub_theme", display_name: "Data Center" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  assert.equal(order.themeOrder.length, 4);
-  assert.equal(order.themeOrder[0], "ai");
-  assert.equal(order.themeOrder[1], "dc");
-  assert.equal(order.themeOrder[2], "memory");
-  assert.equal(order.themeOrder[3], "semi");
+  // themeOrder contains only classification==="theme" nodes — none here
+  assert.equal(order.themeOrder.length, 0);
+  // subthemeOrder contains all four sub_theme nodes sorted A→Z
+  assert.equal(order.subthemeOrder.length, 4);
+  assert.equal(order.subthemeOrder[0], "ai");
+  assert.equal(order.subthemeOrder[1], "dc");
+  assert.equal(order.subthemeOrder[2], "memory");
+  assert.equal(order.subthemeOrder[3], "semi");
 });
 
 test("sectors sorted by display_name", () => {
@@ -492,17 +509,23 @@ test("sectors sorted by display_name", () => {
   assert.equal(order.sectorOrder[1], "z");
 });
 
-test("node with theme classification and children renders as parent", () => {
+test("node with theme classification appears in themeOrder; its children appear in subthemeOrder", () => {
   const idx = s([
     makeNode({ theme_id: "energy", classification: "theme", display_name: "Energy" }),
     makeNode({ theme_id: "solar", classification: "sub_theme", parent_theme_id: "energy" }),
     makeNode({ theme_id: "nuclear", classification: "sub_theme", parent_theme_id: "energy" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
+  // "energy" is classification==="theme" → goes to themeOrder
   assert.equal(order.themeOrder.filter(id => id === "energy").length, 1);
+  // sub_theme children go to subthemeOrder, not themeOrder
+  assert.ok(order.subthemeOrder.includes("solar"));
+  assert.ok(order.subthemeOrder.includes("nuclear"));
+  assert.ok(!order.themeOrder.includes("solar"));
+  assert.ok(!order.themeOrder.includes("nuclear"));
 });
 
-test("tree with descendants renders all alphabetically not by hierarchy", () => {
+test("sub_theme tree with descendants renders all in subthemeOrder alphabetically not by hierarchy", () => {
   const idx = s([
     makeNode({ theme_id: "a", classification: "sub_theme", display_name: "Alpha" }),
     makeNode({ theme_id: "b", classification: "sub_theme", display_name: "Beta", parent_theme_id: "a" }),
@@ -510,9 +533,11 @@ test("tree with descendants renders all alphabetically not by hierarchy", () => 
     makeNode({ theme_id: "d", classification: "sub_theme", display_name: "Delta", parent_theme_id: "c" }),
   ]);
   const order = getTaxonomyChipOrder(idx);
-  assert.equal(order.themeOrder.length, 4);
-  assert.equal(order.themeOrder[0], "a");
-  assert.equal(order.themeOrder[1], "b");
-  assert.equal(order.themeOrder[2], "c");
-  assert.equal(order.themeOrder[3], "d");
+  // All are sub_theme → all go into subthemeOrder, none in themeOrder
+  assert.equal(order.themeOrder.length, 0);
+  assert.equal(order.subthemeOrder.length, 4);
+  assert.equal(order.subthemeOrder[0], "a");
+  assert.equal(order.subthemeOrder[1], "b");
+  assert.equal(order.subthemeOrder[2], "c");
+  assert.equal(order.subthemeOrder[3], "d");
 });
