@@ -2412,115 +2412,142 @@ function WlTaxonomyEditorPanel({
   async function handleSave() {
     setIsSaving(true);
     setSaveError(null);
+
     // Defensive: remove effectivePrimaryId from additionals if present
     const cleanAdditionals = draftAdditionals.filter(id => id !== effectivePrimaryId);
-    try {
-      const r = await fetch(`/api/themes/admin/ticker-taxonomy/${encodeURIComponent(ticker)}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+    // ── STEP 1: Compute optimistic taxonomy state synchronously ──────────
+    // Derived from the editor's already-normalised selection — IDs only,
+    // no display strings.  Backend may normalise slightly differently;
+    // the authoritative response overwrites this in Step 4.
+    const optimisticPrimaryId: string | null = effectivePrimaryId ?? null;
+    const optimisticAdditionalIds: string[] = cleanAdditionals.filter(id => id !== optimisticPrimaryId);
+    // primary first, then additional — matches backend convention
+    const optimisticThemeIds: string[] = [
+      ...(optimisticPrimaryId ? [optimisticPrimaryId] : []),
+      ...optimisticAdditionalIds,
+    ];
+    // sub_theme IDs from the combined membership list
+    const optimisticSubthemeIds: string[] = optimisticThemeIds.filter(
+      id => nodeById.get(id)?.classification === 'sub_theme',
+    );
+
+    // ── Row-patch helper (closed over upperTicker) ───────────────────────
+    // Uses the proven t.ticker || t.symbol identity rule.
+    const upperTicker = ticker.toUpperCase();
+    function applyRowPatch(old: any, fields: Record<string, unknown>) {
+      if (!old || !old.analysis?.sections) return old;
+      return {
+        ...old,
+        analysis: {
+          ...old.analysis,
+          sections: old.analysis.sections.map((sec: any) => ({
+            ...sec,
+            tickers: Array.isArray(sec.tickers)
+              ? sec.tickers.map((t: any) =>
+                  String(t.ticker || t.symbol || '').trim().toUpperCase() !== upperTicker
+                    ? t
+                    : { ...t, ...fields }
+                )
+              : sec.tickers,
+          })),
         },
-        body: JSON.stringify({
-          primary_theme_id: effectivePrimaryId ?? null,
-          additional_theme_ids: cleanAdditionals,
-        }),
-      });
-
-      // ── Fail-closed contract ──────────────────────────────────────────
-      // Every check below must pass before the editor closes or any cache
-      // is mutated.  A failure at any step keeps the editor open with an
-      // error message and leaves the Watchlist row unchanged.
-
-      // 1. Content-Type must be JSON — HTML/SPA fallback must never reach
-      //    here as a taxonomy success response.
-      const ct = r.headers.get('content-type') ?? '';
-      if (!ct.includes('application/json')) {
-        throw new Error(
-          r.ok
-            ? 'Save returned a non-JSON response — proxy may be misconfigured'
-            : `Save failed (${r.status}): non-JSON response from server`
-        );
-      }
-
-      // 2. Body must parse as JSON — a malformed response is an error even
-      //    on HTTP 200.  Do NOT swallow the parse error.
-      let data: any;
-      try {
-        data = await r.json();
-      } catch {
-        throw new Error('Save returned malformed JSON — response cannot be trusted');
-      }
-
-      // 3. HTTP status must be 2xx.
-      if (!r.ok) {
-        throw new Error(data?.detail || data?.error || `Save failed (${r.status})`);
-      }
-
-      // 4. Backend must confirm success explicitly via ok: true.
-      if (data?.ok !== true) {
-        throw new Error(data?.detail || data?.error || 'Backend did not confirm save (missing ok: true)');
-      }
-
-      // 5. Required authoritative taxonomy fields must be present so we
-      //    know we are patching from verified backend state, not guessing.
-      if (!('primary_theme_id' in data) || !Array.isArray(data.theme_ids)) {
-        throw new Error('Backend response missing required taxonomy fields — save cannot be verified');
-      }
-
-      // ── All checks passed — use AUTHORITATIVE returned state ──────────
-      // Never reconstruct "what must have happened"; use what the backend
-      // actually confirms it persisted.
-      const savedPrimaryId: string | null = data.primary_theme_id;
-      const savedThemeIds: string[] = data.theme_ids;
-      const savedAdditionalIds: string[] = Array.isArray(data.additional_theme_ids) ? data.additional_theme_ids : [];
-      const savedSubthemeIds: string[] = Array.isArray(data.subtheme_ids) ? data.subtheme_ids : [];
-
-      queryClient.setQueryData(['/api/watchlist', activeWatchlistId], (old: any) => {
-        if (!old || !old.analysis?.sections) return old;
-        const upperTicker = ticker.toUpperCase();
-        return {
-          ...old,
-          analysis: {
-            ...old.analysis,
-            sections: old.analysis.sections.map((sec: any) => ({
-              ...sec,
-              tickers: Array.isArray(sec.tickers)
-                ? sec.tickers.map((t: any) =>
-                    // Normalize raw row identity using same t.ticker || t.symbol
-                    // convention used throughout this file — backend rows may carry
-                    // either field name; both must match correctly.
-                    String(t.ticker || t.symbol || '').trim().toUpperCase() !== upperTicker ? t : {
-                      ...t,
-                      primary_theme_id: savedPrimaryId,
-                      theme_ids: savedThemeIds,
-                      additional_theme_ids: savedAdditionalIds,
-                      subtheme_ids: savedSubthemeIds,
-                      // Authoritative null wins — do NOT use `?? t.canonical_theme_id`
-                      // because that would preserve stale identity after a legitimate clear.
-                      canonical_theme_id: savedPrimaryId,
-                    }
-                  )
-                : sec.tickers,
-            })),
-          },
-        };
-      });
-
-      // Background invalidation so the next refetch converges with backend state
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
-      queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });
-
-      // Close editor only after verified success
-      onSaveSuccess(ticker);
-      onClose();
-    } catch (e: any) {
-      // Keep editor open — user sees the error and can retry
-      setSaveError(e?.message || 'Save failed. Try again.');
-    } finally {
-      setIsSaving(false);
+      };
     }
+
+    // ── STEP 2: Patch the React Query cache immediately (before network) ──
+    // Theme cell updates here — no network wait required.
+    queryClient.setQueryData(['/api/watchlist', activeWatchlistId], (old: any) =>
+      applyRowPatch(old, {
+        primary_theme_id: optimisticPrimaryId,
+        canonical_theme_id: optimisticPrimaryId, // authoritative null clears stale value
+        theme_ids: optimisticThemeIds,
+        additional_theme_ids: optimisticAdditionalIds,
+        subtheme_ids: optimisticSubthemeIds,
+      }),
+    );
+
+    // ── STEP 3: Close editor immediately ─────────────────────────────────
+    // Component unmounts here. Do NOT touch component state below this line.
+    setIsSaving(false);
+    onSaveSuccess(ticker);
+    onClose();
+
+    // ── STEP 4: Canonical PUT in background ───────────────────────────────
+    // Captured variables (queryClient, ticker, activeWatchlistId, etc.) remain
+    // valid in this closure even after component unmount.
+    void (async () => {
+      try {
+        const r = await fetch(`/api/themes/admin/ticker-taxonomy/${encodeURIComponent(ticker)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            primary_theme_id: optimisticPrimaryId,
+            additional_theme_ids: optimisticAdditionalIds,
+          }),
+        });
+
+        const ct = r.headers.get('content-type') ?? '';
+
+        // 504 = proxy timeout → state UNKNOWN (not proven failure).
+        // A timeout does NOT prove the write failed — reconcile via canonical
+        // Watchlist GET rather than rolling back the optimistic row.
+        if (r.status === 504) {
+          queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+          return;
+        }
+
+        // Non-JSON upstream → reconcile via canonical refetch
+        if (!ct.includes('application/json')) {
+          queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+          return;
+        }
+
+        let data: any;
+        try {
+          data = await r.json();
+        } catch {
+          // Malformed JSON → reconcile via canonical refetch
+          queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+          return;
+        }
+
+        // Definitive pre-commit rejection (4xx / 5xx / missing ok) →
+        // single canonical refetch so Watchlist converges to true backend state.
+        if (!r.ok || data?.ok !== true || !('primary_theme_id' in data) || !Array.isArray(data.theme_ids)) {
+          queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+          return;
+        }
+
+        // ── Server confirmed commit — apply authoritative state ────────────
+        // Backend wins: overwrite optimistic with exact persisted taxonomy.
+        const savedPrimaryId: string | null = data.primary_theme_id;
+        const savedThemeIds: string[] = data.theme_ids;
+        const savedAdditionalIds: string[] = Array.isArray(data.additional_theme_ids) ? data.additional_theme_ids : [];
+        const savedSubthemeIds: string[] = Array.isArray(data.subtheme_ids) ? data.subtheme_ids : [];
+
+        queryClient.setQueryData(['/api/watchlist', activeWatchlistId], (old: any) =>
+          applyRowPatch(old, {
+            primary_theme_id: savedPrimaryId,
+            canonical_theme_id: savedPrimaryId,
+            theme_ids: savedThemeIds,
+            additional_theme_ids: savedAdditionalIds,
+            subtheme_ids: savedSubthemeIds,
+          }),
+        );
+
+        // Background invalidation so next refetch converges with backend state
+        queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId, 'performance/theme'] });
+        queryClient.invalidateQueries({ queryKey: ['themes-unified', 'themes'] });
+      } catch {
+        // Network error / fetch threw — reconcile via single canonical refetch
+        queryClient.invalidateQueries({ queryKey: ['/api/watchlist', activeWatchlistId] });
+      }
+    })();
   }
 
   // Shared styles

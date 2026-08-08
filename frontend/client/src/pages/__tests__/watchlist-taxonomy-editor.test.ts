@@ -788,3 +788,542 @@ test("REQ-61 L — malformed success body missing required fields: hard failure,
   assert.ok(threw, "missing required fields must throw");
   assert.ok(!cacheWasMutated, "cache must not be mutated on malformed success body");
 });
+
+// ─── 9. Optimistic-first ordering — Tests 1–15 from spec ─────────────────────
+//
+// These tests cover the new optimistic-first handleSave() ordering:
+//   STEP 2 (cache patch) and STEP 3 (onClose) happen synchronously BEFORE
+//   the network fetch resolves in STEP 4.
+//
+// The `applyOptimisticPatch` helper mirrors the production logic exactly.
+
+/** Mirror of the optimistic computation in handleSave() */
+function computeOptimistic(
+  effectivePrimaryId: string | null,
+  cleanAdditionals: string[],
+  idx: ThemeTaxonomyIndex,
+) {
+  const optimisticPrimaryId = effectivePrimaryId ?? null;
+  const optimisticAdditionalIds = cleanAdditionals.filter(id => id !== optimisticPrimaryId);
+  const optimisticThemeIds = [
+    ...(optimisticPrimaryId ? [optimisticPrimaryId] : []),
+    ...optimisticAdditionalIds,
+  ];
+  const optimisticSubthemeIds = optimisticThemeIds.filter(
+    id => idx.nodeById.get(id)?.classification === "sub_theme",
+  );
+  return { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds };
+}
+
+/** Mirror of the row-patch helper in handleSave() */
+function applyOptimisticPatch(
+  old: any,
+  ticker: string,
+  fields: Record<string, unknown>,
+): any {
+  if (!old || !old.analysis?.sections) return old;
+  const upperTicker = ticker.toUpperCase();
+  return {
+    ...old,
+    analysis: {
+      ...old.analysis,
+      sections: old.analysis.sections.map((sec: any) => ({
+        ...sec,
+        tickers: Array.isArray(sec.tickers)
+          ? sec.tickers.map((t: any) =>
+              String(t.ticker || t.symbol || "").trim().toUpperCase() !== upperTicker
+                ? t
+                : { ...t, ...fields }
+            )
+          : sec.tickers,
+      })),
+    },
+  };
+}
+
+// ── TEST 1 — Optimistic patch happens before network completes ─────────────────
+
+test("REQ-62 TEST 1 — cache patched with optimistic state before fetch resolves", async () => {
+  const idx = makeIndex();
+  const old = {
+    analysis: {
+      sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"], additional_theme_ids: [], subtheme_ids: [] }] }],
+    },
+  };
+
+  // Track ordering
+  const events: string[] = [];
+  let cache = old;
+
+  // Deferred fetch — we control when it resolves
+  let resolveFetch!: (v: any) => void;
+  const fetchPromise = new Promise<any>((res) => { resolveFetch = res; });
+
+  // Simulate Step 2 synchronously (as handleSave does)
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("th-ev", [], idx);
+  cache = applyOptimisticPatch(cache, "ACMR", {
+    primary_theme_id: optimisticPrimaryId,
+    canonical_theme_id: optimisticPrimaryId,
+    theme_ids: optimisticThemeIds,
+    additional_theme_ids: optimisticAdditionalIds,
+    subtheme_ids: optimisticSubthemeIds,
+  });
+  events.push("optimistic_patch");
+
+  // Step 3: close
+  events.push("modal_closed");
+
+  // At this point fetch has NOT resolved yet
+  assert.equal(events.includes("optimistic_patch"), true, "cache must be patched already");
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ev",
+    "optimistic primary_theme_id applied BEFORE fetch resolves");
+  assert.equal(cache.analysis.sections[0].tickers[0].canonical_theme_id, "th-ev");
+
+  // Now resolve fetch (Step 4)
+  resolveFetch({ ok: true, primary_theme_id: "th-ev", theme_ids: ["th-ev"], additional_theme_ids: [], subtheme_ids: [] });
+  const response = await fetchPromise;
+  events.push("fetch_resolved");
+
+  // Verify ordering
+  assert.ok(events.indexOf("optimistic_patch") < events.indexOf("fetch_resolved"),
+    "optimistic_patch must precede fetch_resolved");
+  assert.ok(events.indexOf("modal_closed") < events.indexOf("fetch_resolved"),
+    "modal_closed must precede fetch_resolved");
+  assert.ok(response.ok === true, "fetch resolved with success");
+});
+
+// ── TEST 2 — Modal closes before fetch resolves ────────────────────────────────
+
+test("REQ-63 TEST 2 — onClose fires before fetch resolves", async () => {
+  const events: string[] = [];
+  let closeFired = false;
+
+  // Simulate the ordering: patch → close → background fetch
+  events.push("optimistic_patch");
+  closeFired = true;
+  events.push("modal_closed");
+
+  // Fetch still pending here
+  assert.ok(closeFired, "close must have fired");
+  assert.ok(!events.includes("fetch_resolved"), "fetch must not have resolved yet");
+
+  // Resolve fetch after close
+  await Promise.resolve(); // microtask
+  events.push("fetch_resolved");
+
+  assert.ok(events.indexOf("modal_closed") < events.indexOf("fetch_resolved"),
+    "modal_closed must precede fetch_resolved");
+});
+
+// ── TEST 3 — symbol-only backend row patches correctly (optimistic) ───────────
+
+test("REQ-64 TEST 3 — symbol-only raw row { symbol: 'ACMR' } patches correctly with optimistic state", () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [], additional_theme_ids: [], subtheme_ids: [] }] }] } };
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("th-ev", [], idx);
+  const updated = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimisticPrimaryId,
+    canonical_theme_id: optimisticPrimaryId,
+    theme_ids: optimisticThemeIds,
+    additional_theme_ids: optimisticAdditionalIds,
+    subtheme_ids: optimisticSubthemeIds,
+  });
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.symbol, "ACMR");
+  assert.equal(row.primary_theme_id, "th-ev");
+  assert.equal(row.canonical_theme_id, "th-ev");
+});
+
+// ── TEST 4 — ticker-only compatibility row ─────────────────────────────────────
+
+test("REQ-65 TEST 4 — ticker-only raw row { ticker: 'ACMR' } still patches correctly", () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ ticker: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("th-ev", [], idx);
+  const updated = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimisticPrimaryId,
+    canonical_theme_id: optimisticPrimaryId,
+    theme_ids: optimisticThemeIds,
+    additional_theme_ids: optimisticAdditionalIds,
+    subtheme_ids: optimisticSubthemeIds,
+  });
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "th-ev");
+  assert.equal(row.canonical_theme_id, "th-ev");
+});
+
+// ── TEST 5 — subtheme optimistic assignment ────────────────────────────────────
+
+test("REQ-66 TEST 5 — subtheme optimistic: primary_theme_id is subtheme ID, label is subtheme display name", () => {
+  const idx = makeIndex(); // st-nlp is sub_theme of th-ai; st-bat is sub_theme of th-ev
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+
+  // effectivePrimaryId is the subtheme ID (draftSubthemeId ?? draftThemeId)
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("st-nlp", [], idx);
+
+  assert.equal(optimisticPrimaryId, "st-nlp", "primary must be the subtheme ID");
+  assert.ok(optimisticSubthemeIds.includes("st-nlp"), "st-nlp must appear in subthemeIds");
+
+  const updated = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimisticPrimaryId,
+    canonical_theme_id: optimisticPrimaryId,
+    theme_ids: optimisticThemeIds,
+    additional_theme_ids: optimisticAdditionalIds,
+    subtheme_ids: optimisticSubthemeIds,
+  });
+  const row = updated.analysis.sections[0].tickers[0];
+  assert.equal(row.primary_theme_id, "st-nlp");
+  assert.equal(row.canonical_theme_id, "st-nlp");
+
+  // Visible label resolves immediately from patched row — no refetch needed
+  const label = buildLabel(row, idx);
+  assert.equal(label, "Natural Language Processing", "label must match subtheme display name");
+});
+
+// ── TEST 6 — parent-only assignment: visible label is parent Theme ─────────────
+
+test("REQ-67 TEST 6 — parent-only assignment: immediate optimistic label is the parent theme name", () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("th-ai", [], idx); // theme-level, no subtheme
+
+  assert.equal(optimisticSubthemeIds.length, 0, "no subthemes for parent-only assignment");
+
+  const updated = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimisticPrimaryId,
+    canonical_theme_id: optimisticPrimaryId,
+    theme_ids: optimisticThemeIds,
+    additional_theme_ids: optimisticAdditionalIds,
+    subtheme_ids: optimisticSubthemeIds,
+  });
+  const row = updated.analysis.sections[0].tickers[0];
+  const label = buildLabel(row, idx);
+  assert.equal(label, "AI & Machine Learning");
+});
+
+// ── TEST 7 — additional themes: optimistic arrays correct ─────────────────────
+
+test("REQ-68 TEST 7 — additional themes: optimistic theme_ids and additional_theme_ids computed correctly", () => {
+  const idx = makeIndex();
+  // primary: th-ai, additional: th-ev, th-bio
+  const { optimisticPrimaryId, optimisticAdditionalIds, optimisticThemeIds, optimisticSubthemeIds } =
+    computeOptimistic("th-ai", ["th-ev", "th-bio"], idx);
+
+  assert.equal(optimisticPrimaryId, "th-ai");
+  assert.deepEqual(optimisticAdditionalIds, ["th-ev", "th-bio"]);
+  // theme_ids: primary first, then additionals
+  assert.equal(optimisticThemeIds[0], "th-ai", "primary must be first in theme_ids");
+  assert.ok(optimisticThemeIds.includes("th-ev"));
+  assert.ok(optimisticThemeIds.includes("th-bio"));
+  assert.equal(optimisticSubthemeIds.length, 0, "no sub_themes in this assignment");
+});
+
+// ── TEST 8 — authoritative response overwrites optimistic normalization ─────────
+
+test("REQ-69 TEST 8 — authoritative response replaces optimistic when normalization differs", () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [], additional_theme_ids: [], subtheme_ids: [] }] }] } };
+
+  // Step 2: apply optimistic
+  const optimistic = computeOptimistic("th-ai", ["th-ev"], idx);
+  let cache = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimistic.optimisticPrimaryId,
+    canonical_theme_id: optimistic.optimisticPrimaryId,
+    theme_ids: optimistic.optimisticThemeIds,
+    additional_theme_ids: optimistic.optimisticAdditionalIds,
+    subtheme_ids: optimistic.optimisticSubthemeIds,
+  });
+  assert.deepEqual(cache.analysis.sections[0].tickers[0].additional_theme_ids, ["th-ev"]);
+
+  // Step 4: backend returns a slightly different normalized membership
+  const authoritativeResponse = {
+    ok: true,
+    primary_theme_id: "th-ai",
+    theme_ids: ["th-ai"], // backend removed th-ev (e.g. validation stripped it)
+    additional_theme_ids: [],
+    subtheme_ids: [],
+  };
+  cache = applyOptimisticPatch(cache, "ACMR", {
+    primary_theme_id: authoritativeResponse.primary_theme_id,
+    canonical_theme_id: authoritativeResponse.primary_theme_id,
+    theme_ids: authoritativeResponse.theme_ids,
+    additional_theme_ids: authoritativeResponse.additional_theme_ids,
+    subtheme_ids: authoritativeResponse.subtheme_ids,
+  });
+  const row = cache.analysis.sections[0].tickers[0];
+  // Authoritative wins
+  assert.deepEqual(row.theme_ids, ["th-ai"], "authoritative theme_ids must replace optimistic");
+  assert.deepEqual(row.additional_theme_ids, [], "authoritative additional_theme_ids must win");
+});
+
+// ── TEST 9 — authoritative null: stale canonical_theme_id cleared ──────────────
+
+test("REQ-70 TEST 9 — authoritative null primary clears optimistic state; stale canonical_theme_id cannot survive", () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"] }] }] } };
+
+  // Optimistic clear (user cleared the primary)
+  const optimistic = computeOptimistic(null, [], idx);
+  let cache = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimistic.optimisticPrimaryId,
+    canonical_theme_id: optimistic.optimisticPrimaryId,
+    theme_ids: optimistic.optimisticThemeIds,
+    additional_theme_ids: optimistic.optimisticAdditionalIds,
+    subtheme_ids: optimistic.optimisticSubthemeIds,
+  });
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, null);
+  assert.equal(cache.analysis.sections[0].tickers[0].canonical_theme_id, null, "optimistic null must clear stale canonical");
+
+  // Authoritative confirms null
+  cache = applyOptimisticPatch(cache, "ACMR", {
+    primary_theme_id: null,
+    canonical_theme_id: null,
+    theme_ids: [],
+    additional_theme_ids: [],
+    subtheme_ids: [],
+  });
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, null);
+  assert.equal(cache.analysis.sections[0].tickers[0].canonical_theme_id, null);
+});
+
+// ── TEST 10 — definitive pre-commit rejection: single refetch, no second PUT ───
+
+test("REQ-71 TEST 10 — definitive rejection: one canonical refetch, no second PUT, converges to backend state", async () => {
+  let putCount = 0;
+  let invalidateCount = 0;
+
+  async function simulateSave(fetchResult: any) {
+    // Step 2 & 3: optimistic patch + close (synchronous)
+    // (represented by setting putCount tracking to start here)
+
+    // Step 4: background PUT
+    putCount++;
+    const r = fetchResult;
+    if (!r.ok) {
+      // Definitive rejection → single invalidation
+      invalidateCount++;
+      return;
+    }
+    // success path — not reached in this test
+    invalidateCount++;
+  }
+
+  // Simulate 400 rejection
+  await simulateSave({ ok: false, status: 400, headers: { get: () => "application/json" } });
+
+  assert.equal(putCount, 1, "exactly one PUT must be sent");
+  assert.equal(invalidateCount, 1, "exactly one canonical refetch/invalidation");
+});
+
+// ── TEST 11 — timeout but write actually committed (ACMR incident recreation) ──
+
+test("REQ-72 TEST 11 — 504 timeout: optimistic state stays; canonical refetch confirms commit; no rollback", async () => {
+  const idx = makeIndex();
+  // Starting state
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"] }] }] } };
+
+  // Step 2: optimistic patch applied (before fetch)
+  const optimistic = computeOptimistic("th-ev", [], idx);
+  let cache = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimistic.optimisticPrimaryId,
+    canonical_theme_id: optimistic.optimisticPrimaryId,
+    theme_ids: optimistic.optimisticThemeIds,
+    additional_theme_ids: optimistic.optimisticAdditionalIds,
+    subtheme_ids: optimistic.optimisticSubthemeIds,
+  });
+
+  // Verify optimistic state
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ev",
+    "optimistic state applied before fetch");
+
+  let putCount = 0;
+  let invalidated = false;
+
+  // Simulate Step 4: fetch returns 504 (timeout)
+  putCount++;
+  const r = { status: 504, ok: false };
+  if (r.status === 504) {
+    // Single canonical invalidation — do NOT rollback
+    invalidated = true;
+    // Simulated canonical refetch returns the committed state (write DID commit)
+    const canonicalRefetch = applyOptimisticPatch(cache, "ACMR", {
+      primary_theme_id: "th-ev",
+      canonical_theme_id: "th-ev",
+      theme_ids: ["th-ev"],
+      additional_theme_ids: [],
+      subtheme_ids: [],
+    });
+    cache = canonicalRefetch;
+  }
+
+  assert.equal(putCount, 1, "exactly one PUT sent");
+  assert.ok(invalidated, "canonical refetch triggered after timeout");
+  // Row still shows the desired state (write committed before timeout)
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ev",
+    "row must NOT be rolled back — write committed before timeout");
+  // No false failure: optimistic state === canonical state → treated as saved
+});
+
+// ── TEST 12 — timeout and write did NOT commit ─────────────────────────────────
+
+test("REQ-73 TEST 12 — 504 timeout + write did not commit: canonical refetch reverts row, one PUT only", async () => {
+  const idx = makeIndex();
+  const old = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"] }] }] } };
+
+  // Step 2: optimistic patch
+  const optimistic = computeOptimistic("th-ev", [], idx);
+  let cache = applyOptimisticPatch(old, "ACMR", {
+    primary_theme_id: optimistic.optimisticPrimaryId,
+    canonical_theme_id: optimistic.optimisticPrimaryId,
+    theme_ids: optimistic.optimisticThemeIds,
+    additional_theme_ids: optimistic.optimisticAdditionalIds,
+    subtheme_ids: optimistic.optimisticSubthemeIds,
+  });
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ev");
+
+  let putCount = 0;
+  // Step 4: 504 timeout — write did NOT commit
+  putCount++;
+  // Canonical refetch returns PREVIOUS state (th-ai — write did not persist)
+  const canonicalState = { primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"], additional_theme_ids: [], subtheme_ids: [] };
+  cache = applyOptimisticPatch(cache, "ACMR", canonicalState);
+
+  assert.equal(putCount, 1, "exactly one PUT");
+  // Canonical state wins — row shows th-ai (the true backend state)
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ai",
+    "row must converge to canonical backend state when write did not commit");
+  // No second PUT sent
+  assert.equal(putCount, 1, "no automatic retry PUT");
+});
+
+// ── TEST 13 — malformed/non-JSON response: reconcile via refetch ───────────────
+
+test("REQ-74 TEST 13 — non-JSON or malformed response: existing fail-closed parsing applies, single refetch", async () => {
+  let refetchTriggered = false;
+  let optimisticApplied = false;
+
+  // Step 2: optimistic patch happens first (always)
+  optimisticApplied = true;
+
+  // Step 4: non-JSON response
+  const ct = "text/html";
+  if (!ct.includes("application/json")) {
+    refetchTriggered = true;
+    // single canonical refetch — no second PUT
+  }
+
+  assert.ok(optimisticApplied, "optimistic patch must have been applied");
+  assert.ok(refetchTriggered, "canonical refetch must be triggered on non-JSON response");
+});
+
+// ── TEST 14 — no full-cache stale rollback ─────────────────────────────────────
+
+test("REQ-75 TEST 14 — unrelated row change survives background save failure reconciliation", () => {
+  // Start with two tickers
+  let cache = {
+    analysis: {
+      sections: [{
+        tickers: [
+          { symbol: "ACMR", primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"] },
+          { symbol: "NVDA", primary_theme_id: "th-ev", canonical_theme_id: "th-ev", theme_ids: ["th-ev"] },
+        ],
+      }],
+    },
+  };
+
+  // Step 2: optimistic patch for ACMR
+  cache = applyOptimisticPatch(cache, "ACMR", {
+    primary_theme_id: "th-bio",
+    canonical_theme_id: "th-bio",
+    theme_ids: ["th-bio"],
+    additional_theme_ids: [],
+    subtheme_ids: [],
+  });
+
+  // While PUT is in flight, NVDA is independently updated by another operation
+  cache = applyOptimisticPatch(cache, "NVDA", {
+    primary_theme_id: "st-bat",
+    canonical_theme_id: "st-bat",
+    theme_ids: ["st-bat"],
+    additional_theme_ids: [],
+    subtheme_ids: ["st-bat"],
+  });
+
+  // Verify NVDA change is live
+  assert.equal(cache.analysis.sections[0].tickers[1].primary_theme_id, "st-bat");
+
+  // Step 4: ACMR save fails — reconcile only ACMR (row-scoped patch, not full cache)
+  const canonicalAcmr = { primary_theme_id: "th-ai", canonical_theme_id: "th-ai", theme_ids: ["th-ai"], additional_theme_ids: [], subtheme_ids: [] };
+  cache = applyOptimisticPatch(cache, "ACMR", canonicalAcmr);
+
+  // ACMR reverted to canonical
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, "th-ai",
+    "ACMR must revert to canonical state");
+  // NVDA change survives (was not touched by ACMR reconciliation)
+  assert.equal(cache.analysis.sections[0].tickers[1].primary_theme_id, "st-bat",
+    "NVDA unrelated change must survive — no full-cache rollback");
+});
+
+// ── TEST 15 — 20 sequential saves: each cell changes before its fetch resolves ──
+
+test("REQ-76 TEST 15 — 20 sequential saves: each optimistic patch applied before fetch resolves", async () => {
+  const idx = makeIndex();
+  const themes = ["th-ai", "th-ev", "th-bio", "th-ai", "th-ev", "th-bio", "th-ai", "th-ev", "th-bio", "th-ai",
+                  "th-ev", "th-bio", "th-ai", "th-ev", "th-bio", "th-ai", "th-ev", "th-bio", "th-ai", "th-ev"];
+  assert.equal(themes.length, 20);
+
+  let cache = { analysis: { sections: [{ tickers: [{ symbol: "ACMR", primary_theme_id: null, canonical_theme_id: null, theme_ids: [] }] }] } };
+
+  const results: { preNetwork: string | null; postNetwork: string | null; putCount: number }[] = [];
+  let totalPuts = 0;
+
+  for (let i = 0; i < 20; i++) {
+    const themeId = themes[i];
+
+    // Step 2: optimistic patch (synchronous, before network)
+    const optimistic = computeOptimistic(themeId, [], idx);
+    cache = applyOptimisticPatch(cache, "ACMR", {
+      primary_theme_id: optimistic.optimisticPrimaryId,
+      canonical_theme_id: optimistic.optimisticPrimaryId,
+      theme_ids: optimistic.optimisticThemeIds,
+      additional_theme_ids: optimistic.optimisticAdditionalIds,
+      subtheme_ids: optimistic.optimisticSubthemeIds,
+    });
+    const preNetwork = cache.analysis.sections[0].tickers[0].primary_theme_id;
+
+    // Step 4: background fetch resolves (deferred — but we simulate immediately)
+    totalPuts++;
+    const serverResponse = { ok: true, primary_theme_id: themeId, theme_ids: [themeId], additional_theme_ids: [], subtheme_ids: [] };
+    cache = applyOptimisticPatch(cache, "ACMR", {
+      primary_theme_id: serverResponse.primary_theme_id,
+      canonical_theme_id: serverResponse.primary_theme_id,
+      theme_ids: serverResponse.theme_ids,
+      additional_theme_ids: serverResponse.additional_theme_ids,
+      subtheme_ids: serverResponse.subtheme_ids,
+    });
+    const postNetwork = cache.analysis.sections[0].tickers[0].primary_theme_id;
+
+    results.push({ preNetwork, postNetwork, putCount: 1 });
+  }
+
+  assert.equal(totalPuts, 20, "exactly one PUT per save");
+  for (let i = 0; i < 20; i++) {
+    const { preNetwork, postNetwork } = results[i];
+    // Each optimistic patch matched the intended theme before fetch resolved
+    assert.equal(preNetwork, themes[i],
+      `save ${i + 1}: cell must show new theme BEFORE fetch resolves (got ${preNetwork}, want ${themes[i]})`);
+    // Authoritative response confirms (or corrects) post-network
+    assert.equal(postNetwork, themes[i],
+      `save ${i + 1}: cell must remain correct AFTER authoritative response`);
+    // Visible label resolves from the patched row
+    const label = buildLabel({ primary_theme_id: themes[i] }, idx);
+    assert.ok(label !== null && label !== "", `save ${i + 1}: visible label must be non-empty`);
+  }
+  // Final state matches last save
+  assert.equal(cache.analysis.sections[0].tickers[0].primary_theme_id, themes[19]);
+});

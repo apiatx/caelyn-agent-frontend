@@ -5978,11 +5978,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Ticker taxonomy assignment ───────────────────────────────────────
   // PUT /api/themes/admin/ticker-taxonomy/:ticker → WL_URL
   // Fail-closed: non-JSON upstream responses are never forwarded as success.
+  //
+  // Timeout ceiling is generous (45 s) to prevent creating a false-negative
+  // ACMR-style incident: a cold-start or slow network does NOT mean the write
+  // failed. Timeouts return 504 with state:"unknown" so the client can
+  // reconcile via a canonical Watchlist GET rather than assuming failure.
+  const TAXONOMY_WRITE_TIMEOUT_MS = 45_000;
   app.put('/api/themes/admin/ticker-taxonomy/:ticker', async (req, res) => {
     try {
       const { ticker } = req.params;
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 15000);
+      const tid = setTimeout(() => ctrl.abort(), TAXONOMY_WRITE_TIMEOUT_MS);
       const r = await fetch(
         `${WL_URL}/api/themes/admin/ticker-taxonomy/${encodeURIComponent(ticker)}`,
         { method: 'PUT', headers: wlHdr(), body: JSON.stringify(req.body), signal: ctrl.signal },
@@ -6002,7 +6008,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(r.status).json(data);
     } catch (e: any) {
-      res.status(500).json({ error: e?.name === 'AbortError' ? 'Theme save timed out' : 'Theme save failed' });
+      if (e?.name === 'AbortError') {
+        // Timeout ≠ failure. The write may have committed before the connection
+        // dropped. Return 504 with state:"unknown" so the client reconciles via
+        // a canonical Watchlist GET instead of assuming failure and rolling back.
+        return res.status(504).json({
+          error: 'Taxonomy save confirmation timed out',
+          code: 'taxonomy_save_confirmation_timeout',
+          state: 'unknown',
+        });
+      }
+      res.status(500).json({ error: 'Theme save failed' });
     }
   });
 
