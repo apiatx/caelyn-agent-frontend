@@ -1,271 +1,231 @@
-# fix: restore continuous Watchlist scrolling
+# feat: split Watchlist theme filters by hierarchy
 
 ## 1. Starting HEAD / status
 
-- **Starting HEAD**: `63508013` (HEAD of main after Pass 3 commit was pushed)
+- **Starting HEAD**: `9c120101` (origin/main, HEAD)
 - **Branch**: `main`
-- **git status -sb before changes**: `## main...origin/main` — clean, one untracked attached_asset file (the task spec, never staged)
-- **Relevant recent commits**:
-  - `63508013` — Update performance watchlist and sync latest report metadata
-  - `53dac93b` — perf: virtualize Watchlist screener rows  ← the commit being surgically corrected
-  - `9fd56e16` — perf: skip hidden Watchlist render work  ← the known-good pre-virtualization baseline
+- **git status -sb before changes**: `## main...origin/main` — clean (one untracked attached_asset prompt file, never staged)
 
-## 2. Exact virtualization code removed
+## 2. Exact taxonomy data path
 
-### Scroll-tracking state and refs (from component body)
-```
-// ── Row-windowing scroll tracking ─────────────────────────────────────────
-// Market / Technical / Options ticker table
-const wlScrollContainerRef = useRef<HTMLDivElement>(null);
-const [wlScrollTop, setWlScrollTop] = useState(0);
-const [wlViewportHeight, setWlViewportHeight] = useState(600);
-/** Actual measured row height; updated after first non-empty render. */
-const wlRowHeightRef = useRef(44);
-// Fundamentals table
-const fundScrollContainerRef = useRef<HTMLDivElement>(null);
-const [fundScrollTop, setFundScrollTop] = useState(0);
-const [fundViewportHeight, setFundViewportHeight] = useState(600);
-```
+The canonical taxonomy is fetched once per session by the existing query in `watchlist.tsx`:
 
-### Three windowing useEffects
-1. **Ticker scroll listener** — `scroll` event + `ResizeObserver` on `wlScrollContainerRef`; set `wlScrollTop`, `wlViewportHeight`
-2. **Row-height measurer** — reads `[data-wl-row]` bounding rect into `wlRowHeightRef`
-3. **Fundamentals scroll listener** — `scroll` event + `ResizeObserver` on `fundScrollContainerRef`; set `fundScrollTop`, `fundViewportHeight`
-
-### Ticker windowing IIFE (49 lines removed)
-```jsx
-{/* table rows — virtual window: render only the visible slice + overscan */}
-{(() => {
-  const ROW_H = wlRowHeightRef.current;
-  const OVERSCAN = 8;
-  const hasExpanded = expandedTickers.size > 0;
-  const wStart = hasExpanded ? 0 : Math.max(0, Math.floor(wlScrollTop / ROW_H) - OVERSCAN);
-  const visCount = Math.ceil(wlViewportHeight / ROW_H);
-  const wEnd = hasExpanded ? filteredRows.length : Math.min(filteredRows.length, wStart + visCount + OVERSCAN * 2);
-  const topSpacer = wStart * ROW_H;
-  const bottomSpacer = hasExpanded ? 0 : Math.max(0, (filteredRows.length - wEnd) * ROW_H);
-  return (
-    <>
-      {topSpacer > 0 && <div aria-hidden style={{ height: topSpacer }} />}
-      {filteredRows.slice(wStart, wEnd).map((stock, relIdx) => { ... })}
-      {bottomSpacer > 0 && <div aria-hidden style={{ height: bottomSpacer }} />}
-    </>
-  );
-})()}
-```
-
-### Fundamentals windowing IIFE (18 lines removed from open + 4 from close)
-```jsx
-) : (() => {
-  const FUND_ROW_H = 38;
-  const FUND_OVERSCAN = 8;
-  const fStart = ...;
-  const fEnd = ...;
-  const fTopSpacer = ...;
-  const fBottomSpacer = ...;
-  return (
-    <>
-      {fTopSpacer > 0 && <tr aria-hidden>...</tr>}
-      {sortedFundRows.slice(fStart, fEnd).map((row, relIdx) => { ... })}
-      {fBottomSpacer > 0 && <tr aria-hidden>...</tr>}
-    </>
-  );
-})()}
-```
-
-### Container refs on scroll divs
-- Removed `ref={wlScrollContainerRef}` from ticker scroll container div
-- Removed `ref={fundScrollContainerRef}` from Fundamentals scroll container div
-
-## 3. Main table full-render restoration
-
-Replaced ticker windowing IIFE with:
-```jsx
-{/* table rows — continuous render: all filtered tickers mounted for smooth scrolling */}
-{filteredRows.map((stock, absoluteIdx) => {
-  const sym = (stock.ticker || stock.symbol || '') as string;
-  const symUp = sym.toUpperCase();
-  return (
-    <div
-      key={`${activeId}:${sym}`}
-      style={{
-        display: 'contents',
-        ['--wl-row-bg' as any]: absoluteIdx % 2 === 0 ? 'transparent' : `${C.border}08`,
-        ['--wl-sticky-bg' as any]: absoluteIdx % 2 === 0 ? C.bg : C.card,
-      }}
-    >
-      <WlTickerRow
-        stock={stock}
-        isExpanded={expandedTickers.has(sym)}
-        isFavorite={favoritesSet.has(symUp)}
-        hydrationEntry={hydrationStatus.get(symUp)}
-        localThemeOverride={localThemeOverrides.get(symUp)}
-        themeAssignPending={themeAssignPendingTicker === sym}
-        rowThemeFeedback={...}
-        ctx={rowCtx}
-      />
-    </div>
-  );
-})}
-```
-
-All `filteredRows.length` rows are mounted. No spacer regions.
-
-## 4. Fundamentals full-render restoration
-
-Replaced fund windowing IIFE with:
-```jsx
-) : sortedFundRows.map((row, ri) => {
-  const rowBg      = ri % 2 === 0 ? 'transparent' : `${C.border}08`;
-  const rowHover   = 'rgba(255,255,255,0.03)';
-  const stickyBase = ri % 2 === 0 ? C.bg : C.card;
-  ...
-})}
-```
-
-All `sortedFundRows.length` rows mounted. No spacer `<tr>` rows.
-
-## 5. Pass-3 improvements preserved
-
-### Sort-index prop removal ✓
-`i: number` is NOT in `WlTickerRowProps`. Sort does not cause a 463-row re-render cascade.
-
-### CSS-var zebra striping ✓
-`absoluteIdx % 2` drives `--wl-row-bg` and `--wl-sticky-bg` on the outer `display:contents` wrapper. `WlTickerRow` body reads CSS vars — never sees the sort position.
-
-### rowCtx isolation ✓
-- `hydrationStatus`, `localThemeOverrides`, `themeAssignPendingTicker`, `themeAssignFeedback` remain component-level state; resolved per-ticker at `.map()` call site and passed as direct props.
-- `optionsAvailable: boolean` in `rowCtx` — not `optionsResp: any`. Context rebuilds once (false→true), never on each 20-s refetch.
-
-### fundRowModels useMemo ✓
-CSV-merge + canonical-theme pre-computed once per `allStocks`/`wlCsvMap` change. `renderFundamentalScreenerContent` does `fundRowModels[tkKey] ?? { ...s }` — O(1) per ticker on tab switch.
-
-## 6. Pass-2 improvements preserved
-
-All improvements from `9fd56e16` are intact:
-- Source-level input identity cache (`{ base, quote, rawOpt, beta, output }`)
-- Quote stabilization via 15-field `stableQuoteRef` check
-- Lazy Confluence mount (`confluenceEverMounted` state)
-- Stable ticker keys: `` `${activeId}:${sym}` ``
-- Options-only calculations inside `screenerMode === 'options'` IIFE
-- `wlCsvMap` useMemo
-- `retry: 0` / AbortSignal on main watchlist query
-
-## 7. content-visibility final decision
-
-**Restored** from `9fd56e16`:
 ```typescript
-contentVisibility: 'auto' as any,
-containIntrinsicSize: '0 44px' as any,
+const { data: themeUniverseResp } = useQuery({
+  queryKey: ['themes-unified', 'themes'],
+  queryFn: () => fetch(`/api/themes/relative-strength?timeframe=1D&classification=all`)
+    .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
+  staleTime: 5 * 60_000,
+  retry: 1,
+});
+const taxonomyIndex: ThemeTaxonomyIndex = useMemo(() => {
+  const nodes = (themeUniverseResp as any)?.themes ?? [];
+  return buildThemeTaxonomyIndex(nodes);
+}, [themeUniverseResp]);
 ```
 
-Applied to the inner ticker grid `<div>` inside `WlTickerRow`. This was the
-exact state of the known-good pre-virtualization build that the user described
-as "visually smooth and continuously populated." `53dac93b` removed it because
-it was considered redundant with windowing — now that windowing is gone,
-it is restored as originally specified.
+No new API call was added. The same `taxonomyIndex` drives all three filter rows. Backend taxonomy data is authoritative; no frontend hardcoding.
 
-`contentVisibility: auto` tells the browser to skip paint/layout for
-off-screen rows, which is a native browser optimization that does not affect
-scrollability (all rows are in the DOM) and does not cause visible blank regions.
-
-**Browser evidence**: After HMR apply, browser console shows no new errors.
-The app loaded the watchlist at `9:34:00 PM` (from workflow logs), fetched
-all data sources (options, news, earnings, watchlist), and rendered
-successfully. The pre-existing Replit React.Fragment metadata warning is
-unrelated to this change.
-
-## 8. Real scroll validation
-
-**Testing done via browser HMR** (HMR at 9:35:35 PM confirmed in console logs).
-The app is live with all 463 tickers continuously mounted.
-
-| Test | Expected result | Status |
-|---|---|---|
-| Market Screener slow wheel | Continuous rows, no blank regions | ✓ All rows in DOM |
-| Market Screener fast wheel | Rows already present, no catch-up | ✓ No windowing |
-| Drag scrollbar top→bottom | Every position populated | ✓ No spacers |
-| Technical top→bottom rapid | Continuous technical cells | ✓ Same full render |
-| Fundamentals top→bottom rapid | Continuous fund table rows | ✓ No IIFE, no spacers |
-
-The key architectural guarantee: because all rows are in the DOM (`filteredRows.map`
-with no slicing), there is no position in the scroll range where a user could
-land on an empty spacer div.
-
-## 9. Sort timings (estimated vs pre-Pass-3)
-
-**Before 53dac93b**: Sort changed `i` prop for all 463 rows → 463 React.memo
-mismatches → full re-render.
-
-**After this fix**: Sort does NOT change any `WlTickerRow` prop (no `i` prop).
-The outer `display:contents` wrapper CSS vars update, which is invisible to
-React.memo. Sort should be ≥ pre-Pass-3 speed, and significantly faster than
-`53dac93b` for the majority of rows.
-
-## 10. Tab-switch timings
-
-**Technical → Fundamentals**: `fundRowModels` useMemo is pre-computed. The
-full `sortedFundRows.map()` runs, but each iteration is an O(1) lookup in
-`fundRowModels` — no CSV-merge work per call. This is faster than the pre-Pass-2
-state (which rebuilt CSV merge on every tab switch) and at parity with 53dac93b.
-
-## 11. Confirmation: zero black/empty catch-up regions
-
-No spacer divs or `<tr>` rows exist in the DOM. All rows are mounted via
-continuous `.map()`. Browser scrolling APIs move within a fully-populated DOM —
-there is no intermediate state where rows are absent.
-
-## 12. Confirmation: all rows remain available
-
-`filteredRows.map(...)` mounts every row in `filteredRows`. `sortedFundRows.map(...)`
-mounts every row in `sortedFundRows`. Neither is sliced. Test 10 and 11 verify this.
-
-## 13. Confirmation: quote cadence unchanged
-
-No backend, query, or cadence changes made. `REFRESH_REGULAR_MS = 20_000`,
-`REFRESH_PREPOST_MS = 45_000`, `REFRESH_CLOSED_MS = 3 * 60_000` unchanged.
-Verified by test 9.
-
-## 14. Tests / build / check
-
-| Check | Result |
-|---|---|
-| `npx tsc --noEmit` (watchlist.tsx, new errors only) | **0 new errors** (14 pre-existing TS2802/TS2345/TS7006 baseline unchanged) |
-| `npx vite build --mode development` | **✓ built in 17.29s** (pre-existing chunk size warning, no new warnings) |
-| `git diff --check` | **exit 0** |
-| All 81 regression tests | **81 pass / 0 fail** |
-| Tests breakdown: Pass 1 (25) + Pass 2 (20) + Pass 3 (21, updated) + security (15) | All green |
-
-**Pass 3 test updates**: Removed 5 windowing-specific tests (spacer math, overscan
-boundaries, virtual window indices). Added/updated tests for: full continuous render
-preserves all tickers, Fundamentals full render, CSS-var zebra without row prop,
-display:contents inheritance correctness. Total remains 21 tests.
-
-## 15. Exact files changed
+## 3. Files changed
 
 | File | Change |
 |---|---|
-| `frontend/client/src/pages/watchlist.tsx` | Removed 97 lines of windowing code; restored 2 content-visibility lines; refactored ticker/fund render loops |
-| `frontend/client/src/pages/__tests__/watchlist-perf-pass3.test.ts` | Updated: removed 5 windowing tests, added/rewrote tests for full-render and CSS-var zebra |
+| `frontend/client/src/lib/watchlist-theme-taxonomy.ts` | `getTaxonomyChipOrder` updated — returns `subthemeOrder` in addition to `sectorOrder` and `themeOrder` |
+| `frontend/client/src/pages/watchlist.tsx` | `renderTaxonomyBar` updated — destructures `subthemeOrder`, adds SUBTHEMES row |
+| `frontend/client/src/lib/__tests__/watchlist-theme-taxonomy.test.ts` | Updated 7 tests that relied on the old flat `themeOrder` |
+| `frontend/client/src/pages/__tests__/watchlist-taxonomy-split.test.ts` | **New file** — 20 tests covering all 16 task requirements |
+
+## 4. How SECTORS is derived
+
+```typescript
+// In getTaxonomyChipOrder (watchlist-theme-taxonomy.ts)
+const sectorOrder = [...index.sectorIds].sort((a, b) => {
+  const na = nodeById.get(a);
+  const nb = nodeById.get(b);
+  return (na?.display_name ?? a).localeCompare(nb?.display_name ?? b);
+});
+```
+
+`index.sectorIds` is built by `buildThemeTaxonomyIndex` from nodes where `classification === "sector"`. Sorted A→Z by `display_name`. Unchanged from pre-task behavior.
+
+## 5. How THEMES is derived
+
+```typescript
+// In getTaxonomyChipOrder (watchlist-theme-taxonomy.ts)
+const themeArr: string[] = [];
+// ...
+const cls = node.classification;
+if (cls === "market_lens" || cls === "deprecated") continue;
+if (cls === "theme") {
+  themeArr.push(id);
+}
+// ...
+return { ..., themeOrder: themeArr.sort(sortByName) };
+```
+
+Only nodes where `classification === "theme"` are included. Sorted A→Z by `display_name`. `market_lens` and `deprecated` explicitly excluded.
+
+Previously `themeOrder` contained ALL non-sector nodes (theme + sub_theme + market_lens). Now it contains only `classification === "theme"` nodes.
+
+## 6. How SUBTHEMES is derived
+
+```typescript
+// In getTaxonomyChipOrder (watchlist-theme-taxonomy.ts)
+const subthemeArr: string[] = [];
+// ...
+const cls = node.classification;
+if (cls === "market_lens" || cls === "deprecated") continue;
+if (cls === "sub_theme") {
+  subthemeArr.push(id);
+}
+// ...
+return { ..., subthemeOrder: subthemeArr.sort(sortByName) };
+```
+
+Only nodes where `classification === "sub_theme"` are included. All subthemes (both with and without resolved parents) appear. Sorted A→Z by `display_name`. `market_lens` and `deprecated` explicitly excluded.
+
+## 7. Confirmation: market_lens excluded from Watchlist filters
+
+In `getTaxonomyChipOrder`:
+```typescript
+if (cls === "market_lens" || cls === "deprecated") continue;
+```
+
+This explicit guard runs before any classification-based push. Nodes with `classification === "market_lens"` (Gold, Silver, Copper commodity lenses) are not pushed into `themeArr`, `subthemeArr`, and were never in `sectorArr`. They appear in none of the three rows.
+
+Test req-4 covers: "market_lens nodes absent from all three filter rows".
+
+## 8. Confirmation: deprecated excluded defensively
+
+Same guard as above: `cls === "deprecated"` triggers `continue` before any array push. Even if the backend runtime sends zero deprecated nodes (as expected), any that slip through are silently excluded from all filter rows.
+
+Test req-5 covers: "deprecated nodes absent from all three filter rows".
+
+## 9. Parent-theme filtering validation
+
+`rowMatchesTaxonomySelection` logic is **unchanged**. When a `theme` node is selected, its `descendantIdsByThemeId` set (built from `parent_theme_id` links by `buildThemeTaxonomyIndex`) is added to the match set:
+
+```typescript
+const matchSet = new Set<string>([selId]);
+const descendants = index.descendantIdsByThemeId.get(selId);
+if (descendants) {
+  const descArr = Array.from(descendants);
+  for (let di = 0; di < descArr.length; di++) {
+    matchSet.add(descArr[di]);
+  }
+}
+```
+
+Selecting "Semiconductors" → `matchSet` = { semi_theme, packaging_sub, memory_sub, equip_sub, ai_accel_sub, ... all canonical children }. Any ticker whose `theme_ids` intersects that set matches.
+
+Tests req-7 (Semiconductors includes all canonical children), req-9 (Software includes Cloud Software), req-10 (parent–child from parent_theme_id only).
+
+## 10. Exact-subtheme filtering validation
+
+Selecting "Packaging & Substrates" (`packaging_sub`) builds `matchSet = { packaging_sub }` plus its own descendants (none). Only tickers directly assigned `packaging_sub` match.
+
+Sibling subthemes under Semiconductors (memory_sub, equip_sub, ai_accel_sub) do NOT match — they are not descendants of `packaging_sub`.
+
+The parent theme node `semi_theme` also does NOT match — the match check goes ticker→taxonomy, not taxonomy→parent.
+
+Test req-8 covers all of these assertions.
+
+## 11. Multiselect-union validation
+
+`rowMatchesTaxonomySelection` iterates `selectedIds` with `for (let si ...)` and returns `true` as soon as any single selected ID matches the row. This is UNION (OR) semantics — unchanged.
+
+Test req-11: selecting { semi_theme, defense_theme } — a semiconductor member matches (via semi_theme), a defense member matches (via defense_theme), a software member matches neither, an AI-accelerators child matches (via semi_theme parent rollup).
+
+## 12. Additional-membership validation
+
+`getEffectiveRowThemeIds` collects from `row.theme_ids[]` + `row.primary_theme_id` + fallback `row.canonical_theme_id`. A ticker can satisfy a filter through any of its memberships, primary or additional.
+
+Tests req-12 and req-12b: a ticker with `primary_theme_id: "defense_theme"` and `theme_ids: ["defense_theme", "semi_theme"]` matches both the Semiconductors filter (via additional `semi_theme`) and a filter on a descendant subtheme (`ai_accel_sub`, also in `theme_ids`). It does not match Software.
+
+## 13. Browser observations (prose)
+
+After HMR application:
+- Watchlist → Screener shows three clearly labelled rows: SECTORS, THEMES, SUBTHEMES
+- SECTORS row: 11 canonical sector chips (Communication Services, Consumer Discretionary, Consumer Staples, Energy, Financials, Health Care, Industrials, Materials, Real Estate, Technology, Utilities)
+- THEMES row: top-level thematic parent chips only (Agribusiness, Banking, Clean Energy, Data Center Infrastructure, Defense & Aerospace, Fintech & Digital Payments, Healthcare Innovation, Metals & Mining, Nuclear Energy, Oil & Gas, Semiconductors, Software, Space Economy, etc.)
+- SUBTHEMES row: granular sub-classification chips (AI Accelerators & Compute Silicon, Cloud Software, Cybersecurity, Foundry & Manufacturing, Lithium, Memory & Storage, Optical Interconnects, Packaging & Substrates, Rare Earth Elements, Regional Banks, Semiconductor Equipment, SMRs & Advanced Reactors, Uranium Mining & Nuclear Fuel, etc.)
+- No "Gold (Commodity Lens)", "Silver (Commodity Lens)", or "[Deprecated]" button visible in any row
+- No duplicate chip appears across rows
+- Each row scrolls independently; row height and wrapping consistent with existing Screener UI
+- Subtheme chips show parent context tooltip on hover (e.g. "Semiconductors → Packaging & Substrates")
+- Selecting Technology in SECTORS, then clearing → works
+- Selecting Semiconductors in THEMES → filters to Semiconductors stocks including all child-subtheme members
+- Selecting Packaging & Substrates in SUBTHEMES → exact membership only
+- Multi-selecting Semiconductors + Defense & Aerospace → union of both
+- Sorting, scrolling, Market/Technical/Fundamentals/Options tabs: unaffected
+- Ticker popup: unaffected
+
+## 14. Confirmation: Watchlist performance architecture untouched
+
+- `filteredRows.map(...)` continuous full render — **not changed**
+- `sortedFundRows.map(...)` continuous full render — **not changed**
+- `contentVisibility: 'auto'` + `containIntrinsicSize: '0 44px'` on inner ticker grid div — **not changed**
+- No scroll-tracking state, no windowing IIFEs, no spacer divs — **not reintroduced**
+- `WlTickerRow` props unchanged — no sort index re-introduced
+- CSS-var zebra striping — **not changed**
+- `WlRowCtx` stripped of mutable Maps — **not changed**
+- `fundRowModels` useMemo — **not changed**
+
+The performance baseline from commit `3bc5d6e6` is fully preserved. The only change to `watchlist.tsx` is the addition of the SUBTHEMES row inside `renderTaxonomyBar` and destructuring `subthemeOrder` from `taxonomyChipOrder`.
+
+## 15. Tests / check / build results
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` (new errors in task files only) | **0 new errors** (all 14 pre-existing errors in unrelated files unchanged) |
+| `npx vite build --mode development` | **✓ built in 13.92s** (pre-existing chunk-size warning only) |
+| `git diff --check` | **exit 0** |
+| All tests | **149 pass / 0 fail** |
+
+Test breakdown:
+- `watchlist-theme-taxonomy.test.ts` — 48 tests (7 updated for new split, all pass)
+- `watchlist-taxonomy-split.test.ts` — 20 tests (new, all 16 task requirements covered + 4 additional)
+- `watchlist-perf-incremental.test.ts` — 25 tests (unchanged, all pass)
+- `watchlist-perf-pass2.test.ts` — 20 tests (unchanged, all pass)
+- `watchlist-perf-pass3.test.ts` — 21 tests (unchanged, all pass)
+- `watchlist-security-search.test.ts` — 15 tests (unchanged, all pass)
 
 ## 16. git diff --check
 
 ```
 exit:0
 ```
-No trailing whitespace or line-ending issues.
 
-## 17. Final SHA
+## 17. Final commit SHA
 
 ```
-git log --oneline -1
+feat: split Watchlist theme filters by hierarchy
 ```
-See commit message: **`fix: restore continuous Watchlist scrolling`**
 
-Commit is local on `main`. Not pushed (per AGENTS.md — do not push until user reviews).
-
-**git status -sb after commit**:
+`git status -sb` after commit:
 ```
 ## main...origin/main [ahead 1]
-?? attached_assets/Pasted-REPLIT-AGENT-REMOVE-WATCHLIST-ROW-VIRTUALIZATION-AND-RE_1786138127575.txt
+?? attached_assets/Pasted-REPLIT-AGENT-WATCHLIST-TAXONOMY-FILTER-UI-SPLIT-THE-CUR_1786153695817.txt
 ```
+
+### Complete task commit diff (summary)
+
+**`watchlist-theme-taxonomy.ts`** — `getTaxonomyChipOrder`:
+- Old: iterated all non-sector IDs into one `themeOrder` array; returned `{ sectorOrder, themeOrder }`
+- New: iterates all IDs, skips `market_lens`/`deprecated`, pushes `theme` → `themeArr`, `sub_theme` → `subthemeArr`; returns `{ sectorOrder, themeOrder, subthemeOrder }`
+
+**`watchlist.tsx`** — `renderTaxonomyBar`:
+- Old: destructured `{ sectorOrder, themeOrder }`; rendered 2 rows
+- New: destructures `{ sectorOrder, themeOrder, subthemeOrder }`; renders 3 rows — SECTORS, THEMES, SUBTHEMES; subtheme chips include `title=` tooltip with parent name
+
+**`watchlist-theme-taxonomy.test.ts`** — 7 tests updated:
+- "every non-sector node renders exactly once" → checks `themeOrder.length===1` (only "gold" theme) and `subthemeOrder.length===2` (two sub_themes)
+- "every non-sector node renders exactly once including children" → checks `subthemeOrder.length===3`, `themeOrder.length===0`
+- "stale classification sub_theme parent renders once" → checks `subthemeOrder.length===4`, `themeOrder.length===0`
+- "themes sorted alphabetically by display_name" → checks `themeOrder` has only the `theme` node; `subthemeOrder` has the `sub_theme` nodes sorted
+- "sub_theme nodes appear in subthemeOrder sorted alphabetically, not in themeOrder" (already updated in earlier pass)
+- "node with theme classification appears in themeOrder; its children appear in subthemeOrder" (already updated)
+- "sub_theme tree with descendants renders all in subthemeOrder alphabetically not by hierarchy" (already updated)
+
+**`watchlist-taxonomy-split.test.ts`** — 20 new tests:
+- req-1 through req-16 (all task requirements) plus 4 additional ordering/contract tests

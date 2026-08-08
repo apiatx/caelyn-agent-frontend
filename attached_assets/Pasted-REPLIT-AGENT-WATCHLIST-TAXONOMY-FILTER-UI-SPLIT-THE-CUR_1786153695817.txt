@@ -1,0 +1,560 @@
+REPLIT AGENT — WATCHLIST TAXONOMY FILTER UI:
+SPLIT THE CURRENT FLATTENED THEMES ROW INTO SECTORS / THEMES / SUBTHEMES
+
+Work only in the live FRONTEND Replit workspace:
+
+/home/runner/workspace
+
+This is a narrowly scoped Watchlist UI task.
+
+The backend taxonomy is already canonical and complete.
+
+DO NOT change backend.
+DO NOT create another taxonomy.
+DO NOT hardcode theme lists in frontend.
+
+The desired Watchlist filter layout is now exactly:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+The current UI incorrectly flattens top-level themes, subthemes, and market
+lenses into one giant THEMES row.
+
+────────────────────────────────────────────────────────────
+IMPORTANT TAXONOMY SEMANTICS
+────────────────────────────────────────────────────────────
+
+The canonical backend taxonomy already supplies:
+
+classification:
+  "sector"
+  "theme"
+  "sub_theme"
+  "market_lens"
+
+and subthemes supply:
+
+parent_theme_id
+
+Deprecated nodes have already been retired from the live backend runtime.
+
+Use these canonical fields.
+
+Do not infer hierarchy from display names.
+
+Do not maintain another frontend hierarchy table.
+
+────────────────────────────────────────────────────────────
+COMMODITY / MARKET LENSES
+────────────────────────────────────────────────────────────
+
+Market lenses such as:
+
+Gold (Commodity Lens)
+Silver (Commodity Lens)
+Copper / commodity proxy lenses
+
+are NOT stock thematic memberships.
+
+A silver miner does NOT get assigned the "Silver Commodity Lens."
+
+The lens represents the performance of the underlying commodity/market proxy
+and is useful as a benchmark for thematic equity groups.
+
+Therefore:
+
+classification === "market_lens"
+
+must NOT appear in any Watchlist stock-filter row.
+
+Do not create a fourth LENSES row in Watchlist.
+
+Do not change or delete market-lens backend data.
+
+Other pages may continue using lenses for performance/benchmark purposes.
+
+This task touches Watchlist filtering UI only.
+
+────────────────────────────────────────────────────────────
+MANDATORY FIRST STEP
+────────────────────────────────────────────────────────────
+
+1. Find and read frontend AGENTS.md completely.
+2. Confirm:
+   - repo root = /home/runner/workspace
+   - branch = main
+   - git status -sb
+   - HEAD
+   - ahead/behind
+3. Preserve unrelated changes.
+4. Do not reset/revert/rebase/pull/push/clean/stash.
+5. Read the current canonical Watchlist taxonomy path before editing:
+   - frontend/client/src/pages/watchlist.tsx
+   - frontend/client/src/lib/watchlist-theme-taxonomy.ts
+   - frontend/client/src/lib/__tests__/watchlist-theme-taxonomy.test.ts
+   - frontend/client/src/contexts/GlobalDataContext.tsx
+6. Identify the current source of the SECTORS / THEMES button rows.
+7. Identify the existing filter state and filtering helpers.
+8. Do not add an API request.
+
+The existing shared taxonomy query/data is the source of truth.
+
+────────────────────────────────────────────────────────────
+CURRENT DESIRED UI
+────────────────────────────────────────────────────────────
+
+Replace the current:
+
+SECTORS
+[sector buttons...]
+
+THEMES
+[all themes + subthemes + market lenses flattened...]
+
+with:
+
+SECTORS
+[only classification === "sector"]
+
+THEMES
+[only classification === "theme"]
+
+SUBTHEMES
+[only classification === "sub_theme"]
+
+Use the exact existing button styling.
+
+Do not redesign the visual language.
+
+Keep the rows compact and consistent with the existing Screener UI.
+
+Each row should wrap naturally as it does today.
+
+────────────────────────────────────────────────────────────
+SECTOR ROW
+────────────────────────────────────────────────────────────
+
+Render only canonical nodes with:
+
+classification === "sector"
+
+Examples:
+
+Communication Services
+Consumer Discretionary
+Consumer Staples
+Energy
+Financials
+Health Care
+Industrials
+Materials
+Real Estate
+Technology
+Utilities
+
+Do not change sector filtering semantics.
+
+Preserve the existing inclusive ecosystem behavior:
+
+selecting a Sector should match:
+
+1. stocks whose actual company sector is that sector
+OR
+2. stocks whose thematic membership rolls up into that sector according to
+   canonical taxonomy relationships
+
+Do not replace actual-sector identity with thematic sector rollup.
+
+────────────────────────────────────────────────────────────
+THEMES ROW
+────────────────────────────────────────────────────────────
+
+Render only:
+
+classification === "theme"
+
+Examples should be top-level thematic parents such as:
+
+Agribusiness
+Banking
+Clean Energy
+Consumer & Housing
+Data Center Infrastructure
+Defense & Aerospace
+Fintech & Digital Payments
+Healthcare Innovation
+Metals & Mining
+Nuclear Energy
+Oil & Gas
+Semiconductors
+Software
+Space Economy
+
+The exact live backend list is authoritative.
+
+Do not use this example list as a hardcoded source.
+
+────────────────────────────────────────────────────────────
+SUBTHEMES ROW
+────────────────────────────────────────────────────────────
+
+Render only:
+
+classification === "sub_theme"
+
+Examples include:
+
+AI Accelerators & Compute Silicon
+Data Center Connectivity & Interconnect Silicon
+Memory & Storage
+Semiconductor Equipment
+Packaging & Substrates
+Cloud Software
+Regional Banks
+SMRs & Advanced Reactors
+Uranium Mining & Nuclear Fuel
+Optical Interconnects
+Rare Earth Elements
+Lithium
+Copper
+etc.
+
+Again, live backend classification is authoritative.
+
+Do not hardcode this list.
+
+────────────────────────────────────────────────────────────
+FILTER SEMANTICS — MUST NOT REGRESS
+────────────────────────────────────────────────────────────
+
+This task changes PRESENTATION GROUPING, not taxonomy behavior.
+
+Preserve the established behavior:
+
+A. Sector selected
+   → inclusive sector ecosystem result
+
+B. Parent Theme selected
+   → ticker matches if it belongs directly to that Theme
+     OR belongs to any canonical child subtheme of that Theme
+
+Example:
+
+Semiconductors selected
+→ includes:
+  direct Semiconductors members
+  AI Accelerators & Compute Silicon
+  Analog, Power & Mixed-Signal
+  Foundry & Manufacturing
+  Memory & Storage
+  Semiconductor Equipment
+  Semiconductor Materials
+  Packaging & Substrates
+  Test & Measurement
+  and every other actual canonical child
+
+Do not manually enumerate those children.
+
+Use parent_theme_id.
+
+C. Subtheme selected
+   → exact subtheme membership only
+
+Example:
+
+Packaging & Substrates
+→ Packaging & Substrates stocks only
+
+D. Multi-select
+   → preserve current UNION semantics
+
+Do not silently change multiselect to intersection/AND.
+
+E. Deduplicate tickers.
+
+F. Preserve primary + additional membership behavior:
+   a ticker can match a selected filter through either its primary or valid
+   additional thematic membership.
+
+────────────────────────────────────────────────────────────
+SELECTION UI
+────────────────────────────────────────────────────────────
+
+Preserve the existing selected/unselected visual button states.
+
+Selections must remain independent across all three rows.
+
+Examples:
+
+Sector Technology selected
++
+Theme Defense & Aerospace selected
++
+Subtheme Memory & Storage selected
+
+must continue using existing multi-selection UNION behavior.
+
+Do not clear Theme selections merely because a Subtheme is selected.
+
+Do not force users into a drill-down workflow.
+
+The three rows are parallel filter controls backed by hierarchical semantics.
+
+────────────────────────────────────────────────────────────
+OPTIONAL UX IMPROVEMENT — PARENT CONTEXT FOR SUBTHEMES
+────────────────────────────────────────────────────────────
+
+Only if it can be done with minimal code and without clutter:
+
+add the canonical parent Theme as a tooltip/title on each Subtheme button.
+
+Example:
+
+Packaging & Substrates
+tooltip:
+Semiconductors → Packaging & Substrates
+
+Cloud Software
+tooltip:
+Software → Cloud Software
+
+Do not place parent names directly inside every button if that makes the row
+too large.
+
+This is optional.
+
+────────────────────────────────────────────────────────────
+MARKET LENS DEFENSIVE FILTER
+────────────────────────────────────────────────────────────
+
+Explicitly ensure:
+
+classification === "market_lens"
+
+is excluded from:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+Also defensively exclude:
+
+classification === "deprecated"
+
+even though the backend runtime should now send zero deprecated nodes.
+
+Do not filter unknown active structural nodes by display-name pattern.
+
+Use classification.
+
+────────────────────────────────────────────────────────────
+DO NOT CHANGE
+────────────────────────────────────────────────────────────
+
+Do not change backend.
+
+Do not change:
+- Theme RS
+- Home Theme Performance
+- Options Flow
+- market-lens computation
+- taxonomy assignment editor
+- taxonomy APIs
+- Watchlist membership
+- realtime quotes
+- options polling
+- earnings
+- Watchlist performance/memoization work
+- continuous full-row scrolling architecture
+- content-visibility behavior
+
+Specifically preserve the known-good Watchlist performance baseline after:
+
+3bc5d6e6 — fix: restore continuous Watchlist scrolling
+
+Do not reintroduce:
+- virtualization
+- spacer rows
+- windowed rendering
+- scroll-position rendering state
+
+────────────────────────────────────────────────────────────
+PERFORMANCE
+────────────────────────────────────────────────────────────
+
+Do not add expensive per-row taxonomy computation.
+
+Build the three button arrays with useMemo from the existing shared taxonomy
+data.
+
+Suggested conceptual derivation:
+
+sectors =
+  taxonomy.filter(x => x.classification === "sector")
+
+themes =
+  taxonomy.filter(x => x.classification === "theme")
+
+subthemes =
+  taxonomy.filter(x => x.classification === "sub_theme")
+
+Do not repeatedly scan the taxonomy inside every ticker-row render.
+
+No new query.
+No new fetch.
+No new context.
+
+────────────────────────────────────────────────────────────
+SORTING OF FILTER BUTTONS
+────────────────────────────────────────────────────────────
+
+Preserve existing ordering if it already comes canonically from backend.
+
+If the current flattened row alphabetizes buttons and that is the established
+Watchlist UX, alphabetize separately within each row:
+
+SECTORS A→Z
+THEMES A→Z
+SUBTHEMES A→Z
+
+Do not mix classifications.
+
+Do not use display order as taxonomy hierarchy logic.
+
+────────────────────────────────────────────────────────────
+TESTS
+────────────────────────────────────────────────────────────
+
+Add/update focused tests proving:
+
+1. sector nodes render only in SECTORS.
+2. theme nodes render only in THEMES.
+3. sub_theme nodes render only in SUBTHEMES.
+4. market_lens nodes render in none of the three Watchlist rows.
+5. deprecated nodes render in none of the three rows.
+6. no active structural node appears in more than one row.
+7. Semiconductors parent filter includes child subtheme members.
+8. Packaging & Substrates exact filter does not include unrelated
+   Semiconductors children.
+9. Software parent includes Cloud Software child.
+10. parent relationships are derived from parent_theme_id.
+11. multiselect remains union.
+12. additional theme membership can satisfy a filter.
+13. sector ecosystem behavior remains unchanged.
+14. ticker deduplication remains unchanged.
+15. no new API query was added.
+16. current Watchlist continuous scrolling/performance tests still pass.
+
+Run existing watchlist taxonomy tests as well.
+
+────────────────────────────────────────────────────────────
+BROWSER VALIDATION
+────────────────────────────────────────────────────────────
+
+Open Watchlist → Screener.
+
+Verify visually:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+are three distinct rows.
+
+Confirm:
+
+- no "Gold (Commodity Lens)" button
+- no "Silver (Commodity Lens)" button
+- no "[Deprecated]" button
+- no duplicate taxonomy button across rows
+- row wrapping remains clean
+- Screener height/layout remains reasonable
+
+Functional checks:
+
+1. click Technology
+2. clear
+3. click Semiconductors
+4. verify child stocks remain included
+5. clear
+6. click Packaging & Substrates
+7. verify exact-only behavior
+8. multi-select Semiconductors + Defense & Aerospace
+9. verify union
+10. select a subtheme through an additional membership case
+11. verify ticker remains included
+
+Also verify:
+
+- sorting still fast
+- scrolling still continuous
+- Market/Technical/Fundamentals/Options tabs unchanged
+- ticker popup unchanged
+
+────────────────────────────────────────────────────────────
+VALIDATION
+────────────────────────────────────────────────────────────
+
+Run:
+
+npm run check
+npm run build
+git diff --check
+
+plus all relevant AGENTS.md-required tests.
+
+Clearly distinguish pre-existing TS errors from new errors.
+
+No new errors.
+
+────────────────────────────────────────────────────────────
+REPOSITORY HYGIENE
+────────────────────────────────────────────────────────────
+
+Do not use:
+
+git add .
+git add -A
+
+Stage exact intended frontend source/test files only.
+
+Do not stage:
+- attached prompt assets
+- runtime files
+- cache files
+- unrelated report files
+
+One local commit if validation succeeds:
+
+feat: split Watchlist theme filters by hierarchy
+
+Do not push.
+
+────────────────────────────────────────────────────────────
+REQUIRED REPORT
+────────────────────────────────────────────────────────────
+
+Write to the exact frontend AGENTS.md report path.
+
+Include:
+
+1. Starting HEAD/status.
+2. Exact existing taxonomy data path.
+3. Files changed.
+4. How SECTORS is derived.
+5. How THEMES is derived.
+6. How SUBTHEMES is derived.
+7. Confirmation market_lens is excluded from Watchlist filters.
+8. Confirmation deprecated is excluded defensively.
+9. Parent-theme filtering validation.
+10. Exact-subtheme filtering validation.
+11. Multiselect-union validation.
+12. Additional-membership validation.
+13. Browser screenshots/observations in prose only; do not stage screenshots
+    unless AGENTS explicitly requires them.
+14. Confirmation Watchlist performance architecture untouched.
+15. Tests/check/build results.
+16. git diff --check.
+17. final commit SHA.
