@@ -1,0 +1,300 @@
+RESTORE THE COMPLETE WATCHLIST TAXONOMY EDITOR UI
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey the live AGENTS.md first.
+
+The live Replit workspace is the primary source of truth. GitHub is reference/back-up only.
+
+This is a small corrective frontend task, not a taxonomy redesign.
+
+CURRENT BUG
+
+The Watchlist Edit Classification modal is supposed to present the classification hierarchy consistently as:
+
+Sector
+Primary Theme
+Subtheme
+Additional Themes
+
+Instead, the current UI completely removes the Subtheme row whenever no Primary Theme is selected, and also removes it when the selected theme has no child subthemes.
+
+Current live code in frontend/client/src/pages/watchlist.tsx has behavior equivalent to:
+
+{draftThemeId && subthemesForDraftTheme.length > 0 && (
+  // Subtheme selector
+)}
+
+That conditional rendering is the bug.
+
+Example current broken state:
+
+Sector
+Primary Theme
+Additional Themes
+
+The user should never wonder whether Subtheme support disappeared.
+
+REQUIRED UI
+
+The modal must always render these four sections in this order:
+
+SECTOR
+[actual company sector · read-only]
+
+PRIMARY THEME
+[selector]
+
+SUBTHEME
+[selector / disabled state]
+
+ADDITIONAL THEMES
+[existing chips/picker]
+Subtheme behavior
+
+Case A — no Primary Theme selected
+
+Render the Subtheme selector, but disabled.
+
+Display a clear placeholder such as:
+
+— Select a Primary Theme first —
+
+Do NOT hide the row.
+
+Case B — Primary Theme selected and it has subthemes
+
+Enable the selector.
+
+Populate it only with sub_theme children of that selected Primary Theme using the existing taxonomy index/hierarchy.
+
+Preserve the existing general-parent option:
+
+— General {Primary Theme Name} —
+
+Selecting that means no specific subtheme and the parent Theme remains the effective primary assignment.
+
+Case C — Primary Theme selected but it has no subthemes
+
+Keep the Subtheme row visible.
+
+Disable the selector.
+
+Show:
+
+— No subthemes for this theme —
+
+Do not invent a child.
+
+Changing Primary Theme
+
+Preserve the existing behavior that changing Primary Theme clears an incompatible draftSubthemeId.
+
+Do not allow a subtheme from the previously selected parent to survive after switching Primary Theme.
+
+PRESERVE THE CURRENT TAXONOMY MODEL
+
+Do not alter the backend persistence model.
+
+The editor currently maintains:
+
+draftThemeId
+draftSubthemeId
+draftAdditionals
+
+and computes:
+
+effectivePrimaryId =
+  draftSubthemeId
+  ?? draftThemeId
+  ?? null
+
+Preserve this.
+
+This is intentional:
+
+Primary Theme selected with no Subtheme → backend primary_theme_id is the Theme ID.
+Subtheme selected → backend primary_theme_id is the more-specific Subtheme ID.
+The frontend derives/displays its parent Theme from the canonical taxonomy hierarchy.
+Additional Themes remain separate memberships.
+
+Do NOT introduce separate backend fields just because the UI shows both Primary Theme and Subtheme.
+
+Do NOT create another endpoint.
+
+Do NOT create another save path.
+
+Do NOT use localStorage for taxonomy assignments.
+
+Do NOT alter the canonical PUT contract:
+
+PUT /api/themes/admin/ticker-taxonomy/{ticker}
+DO NOT REGRESS THE SAVE RELIABILITY FIX
+
+The just-completed frontend work hardened taxonomy saves.
+
+Preserve all of it.
+
+A successful save must still require:
+
+HTTP 2xx
+JSON-compatible Content-Type
+valid JSON parsing
+data.ok === true
+required authoritative taxonomy fields
+
+Non-JSON 200 responses must remain failures.
+
+Backend 500s must remain failures.
+
+Failed saves must keep the modal open.
+
+Do not restore optimistic fake-success behavior.
+
+Do not add retries.
+
+HYDRATION MUST STILL WORK
+
+Audit the existing wlHydrateTaxonomyDraft() behavior while making this change.
+
+It should continue to behave as follows:
+
+Existing primary is a Theme
+Primary Theme = that theme
+Subtheme = General / none
+Existing primary is a Subtheme
+Primary Theme = parent theme
+Subtheme = existing subtheme
+
+Do not flatten a stored subtheme into the parent theme when opening the editor.
+
+Do not change the existing canonical taxonomy hierarchy.
+
+ALSO INSPECT THE SECTOR DISPLAY — READ ONLY
+
+In the supplied UI screenshot, the editor displays:
+
+Sector
+—  Actual company sector · read-only
+
+The current component appears to derive this from:
+
+stockRow?.sector
+
+Do a read-only trace first of the Watchlist row shape feeding this modal and determine why the row can contain no sector.
+
+The required product behavior remains:
+
+Sector = actual company economic sector
+
+It is read-only in this editor.
+
+If the sector already exists elsewhere on the same Watchlist row under the canonical existing field, use that existing value.
+
+Do NOT:
+
+infer sector from Theme
+derive sector from Subtheme
+add a provider call
+add a backend endpoint
+create a new sector store
+hardcode ticker sectors
+
+If fixing the missing Sector requires backend work or a new data path, do not make that architecture change in this task. Report the exact live data-path finding instead.
+
+The Subtheme rendering correction is not contingent on fixing Sector.
+
+FILE SCOPE
+
+Expected production scope:
+
+frontend/client/src/pages/watchlist.tsx
+
+plus a focused existing/new frontend test if appropriate.
+
+Do not touch frontend/server/routes.ts unless you discover an actual regression in the already-completed proxy save path.
+
+Do not touch backend code.
+
+If more than one production file is genuinely necessary, stop and explain why before expanding scope.
+
+REQUIRED TESTS
+
+Add/update focused taxonomy-editor tests proving:
+
+No Primary Theme
+Sector row rendered
+Primary Theme rendered
+Subtheme row rendered
+Subtheme selector disabled
+Additional Themes rendered
+Theme with child subthemes
+Subtheme row rendered
+selector enabled
+contains only valid children of selected parent
+Theme without child subthemes
+Subtheme row still rendered
+selector disabled
+No subthemes for this theme state visible
+Parent change
+select Theme A
+select Subtheme A1
+change Primary Theme to Theme B
+old A1 is cleared
+Existing subtheme hydration
+row whose stored primary_theme_id is Subtheme A1
+modal opens with Primary Theme A selected
+Subtheme A1 selected
+Save semantics remain correct
+parent-only save sends parent Theme ID
+subtheme save sends Subtheme ID
+additional themes remain unchanged
+Existing fail-closed save tests continue passing.
+VISUAL ACCEPTANCE
+
+Open the editor in the live app.
+
+With no Primary Theme selected, it must visibly look like:
+
+Sector
+[sector]
+
+Primary Theme
+[— None —]
+
+Subtheme
+[— Select a Primary Theme first —]  disabled
+
+Additional Themes
+[+ Add additional theme]
+
+Then choose a parent with subthemes and confirm the same Subtheme row becomes enabled without appearing/disappearing from the layout.
+
+Then choose a parent with no subthemes and confirm the row remains present but disabled.
+
+DEFINITION OF DONE
+
+This task is complete only when:
+
+Sector row is always present.
+Primary Theme row is always present.
+Subtheme row is always present.
+Additional Themes row is always present.
+The Subtheme control changes state rather than disappearing.
+Parent → child hierarchy uses the existing canonical taxonomy.
+Existing assignments hydrate correctly.
+Subtheme remains the more-specific effective primary when selected.
+Additional Theme behavior is untouched.
+The fail-closed save reliability work remains intact.
+No backend or persistence architecture is changed.
+
+At the end report:
+
+exact root cause
+exact file(s) changed
+before/after rendering rule
+sector read-only trace finding
+tests run/results
+browser validation
+git diff summary
+final git status

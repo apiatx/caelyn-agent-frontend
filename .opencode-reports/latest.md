@@ -1,151 +1,161 @@
-# Final OTC Company Display Correction
+# RESTORE COMPLETE WATCHLIST TAXONOMY EDITOR UI
 
-**Completion status**: Complete
+## Exact Root Cause
 
-## Task requested
+**File:** `frontend/client/src/pages/watchlist.tsx`, line 2567 (pre-fix)
 
-Fix the remaining bugs preventing OTC company names from displaying correctly in the Watchlist Screener. The prior fix (commit `2041f6fc`) removed truncation but had three critical bugs.
+The Subtheme row was wrapped in a conditional guard:
 
-## Proven root causes
-
-### Bug #1: Wrong field being updated (the visible bug)
-
-The merge injection at `watchlist.tsx:4261` wrote `next.name = fmpName` but the Company cell at line 2740 renders `stock.company || stock.name`. When the analysis backend or CSV data set `company = "OTC:BESIY"`, it took precedence over the correctly-injected `name = "BE Semiconductor Industries N.V."`.
-
-**Before** (for `OTC:BESIY`):
-```
-company = "OTC:BESIY"        ← from analysis/CSV data (takes precedence)
-name    = "BE Semiconductor"  ← last fix injected here (ignored by renderer)
-```
-**After**:
-```
-company = "BE Semiconductor"  ← both fields fixed when placeholder
-name    = "BE Semiconductor"
+```jsx
+{draftThemeId && subthemesForDraftTheme.length > 0 && (
+  <div style={_sec}>
+    <div style={_lbl}>Subtheme</div>
+    <select ...>
 ```
 
-### Bug #2: Stale useMemo dependencies
+This caused the entire Subtheme section to vanish from the DOM in two cases:
+1. `!draftThemeId` — no Primary Theme selected yet
+2. `subthemesForDraftTheme.length === 0` — selected theme has no subtheme children
 
-`mergedTickers` at line 4306 had deps `[..., betaByTicker]` but was missing `exchangeByTicker` and `companyNameByTicker`. When the identity query resolved and `companyNameByTicker` changed independently of `betaByTicker`, the memo did not recompute — keeping stale row data.
+The row disappeared rather than presenting a disabled state, creating an inconsistent hierarchy (Sector → Primary Theme → Additional Themes, skipping Subtheme entirely).
 
-### Bug #3: Client staleTime frozen for 24h
+---
 
-The React Query `staleTime: 24 * 60 * 60_000` matched the server positive TTL but meant unresolved identities were frozen on the client for a full day. Even though the server negative cache is 5 min, the browser wouldn't re-query. Added `refetchInterval: 5 * 60_000`.
+## Exact Files Changed
 
-## Exact BESIY trace
-
-| Step | Value |
+| File | Change |
 |---|---|
-| Security search canonical_ticker | `OTC:BESIY` |
-| Security search company_name | `BE Semiconductor Industries N.V.` |
-| `/api/fmp/company-identity?symbols=OTC:BESIY` response | `{ name: "BE Semiconductor Industries N.V.", exchange: "OTC", ... }` |
-| companyNameByTicker['OTC:BESIY'] | `"BE Semiconductor Industries N.V."` |
-| mergedTickers row (BEFORE fix) | `company: "OTC:BESIY"`, `name: "BE Semiconductor"` |
-| Company cell (BEFORE) | `"OTC:BESIY"` (company takes precedence) |
-| mergedTickers row (AFTER fix) | `company: "BE Semiconductor"`, `name: "BE Semiconductor"` |
-| Company cell (AFTER) | `"BE Semiconductor Industries N.V."` |
+| `frontend/client/src/pages/watchlist.tsx` | Fixed conditional render → always-present row with disabled/placeholder |
+| `frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts` | Added REQ-37 through REQ-48 (12 new tests) |
 
-## Exact files changed
+No other files touched. `routes.ts` and all backend files are unchanged.
 
-1. **`frontend/client/src/pages/watchlist.tsx`** (+14 / -5)
-   - Fix merge injection to check both `company` and `name` independently
-   - Add `exchangeByTicker`, `companyNameByTicker` to `mergedTickers` deps
-   - Add `refetchInterval: 5 * 60_000` for unresolved identity retries
+---
 
-2. **`frontend/server/routes.ts`** (+23 / -4)
-   - Only strip known OTC prefixes (OTC, OTCPK, PINK, etc.) for FMP
-   - True foreign prefixes (LSE:, TSX:, TSE:) preserved as-is
-   - Add MAX_SYMBOLS=500 with explicit 414 error
+## Before / After Rendering Rule
 
-3. **`frontend/client/src/pages/__tests__/watchlist-company-identity.test.ts`** (+136 lines)
-   - 7 new production-path tests (company field, memo deps, foreign safety)
-   - Simulates actual merge pipeline with both company and name fields
-
-## Company-name merge priority (final)
-
-1. Legitimate `company` from analysis backend → preserved
-2. Legitimate `name` from analysis backend → preserved
-3. FMP company name injected into **both** company and name when placeholder
-4. DASH fallback
-
-Placeholders detected: null, undefined, "", canonical ticker (`OTC:BESIY`), bare ticker (`BESIY`).
-
-## Foreign safety
-
-- **OTC prefixes** (OTC, OTCPK, OTCBB, OTCQB, OTCQX, OTCMKTS, PINK, PNK) → stripped for FMP lookup
-- **True foreign prefixes** (LSE:, TSX:, TSE:, HKEX:, etc.) → NOT stripped; FMP won't find them, canonical identity preserved
-- **Normal US tickers** → passthrough unchanged
-- **Hide Foreign**: OTC remains visible, foreign remains hidden, unresolved doesn't change
-
-## Live validation
-
-| Symbol | Company cell (expected) | Status |
-|---|---|---|
-| OTC:BESIY | BE Semiconductor Industries N.V. | Will resolve |
-| OTC:NLST | Netlist, Inc. | Will resolve |
-| OTC:VLXGF | Volex plc | Will resolve |
-| OTC:SESMF | SÜSS MicroTec SE | Will resolve |
-| OTC:SLOIY | Soitec S.A. | Will resolve |
-| OTC:MALJF | (FMP no-match → —) | Not falsely showing ticker |
-| OSS | Analysis company name | Unchanged |
-| LSE:VOD | Foreign identity preserved | Unchanged |
-
-## Regression checks
-
-| # | Test | Status |
-|---|---|---|
-| 1 | Normal US company names unchanged | ✓ |
-| 2 | Legitimate analysis names beat FMP fallback | ✓ |
-| 3 | Ticker column unchanged | ✓ |
-| 4 | Add/search unchanged | ✓ |
-| 5 | Delete confirmation company correct | ✓ |
-| 6 | Favorites unchanged | ✓ |
-| 7 | Ticker popup unchanged | ✓ |
-| 8 | Hide Foreign keeps OTC visible | ✓ |
-| 9 | Hide Foreign hides true foreign | ✓ |
-| 10 | No duplicate rows | ✓ |
-| 11 | No per-row network calls | ✓ |
-| 12 | No render/fetch loop | ✓ |
-| 13 | FMP positive caching works (24h) | ✓ |
-| 14 | Unresolved retries on 5-min cadence | ✓ |
-| 15 | Max-symbol bound (500) with explicit error | ✓ |
-
-## Focused tests (20 tests: 13 original + 7 new)
-
+**Before:**
 ```
-PASS: Bug1: company placeholder replaced
-PASS: Bug1: Company cell contract
-PASS: Bug1: Legitimate preserved
-PASS: OTC prefix stripped
-PASS: LSE prefix NOT stripped
-PASS: TSX prefix NOT stripped
-PASS: Bare US passthrough
+{draftThemeId && subthemesForDraftTheme.length > 0 && (
+  <div>Subtheme <select ...></div>
+)}
+```
+The `&&` short-circuit made the row disappear from the DOM under two of three possible states.
+
+**After:**
+```
+// Always rendered; three cases based on computed _subDisabled flag
+const _subDisabled = !draftThemeId || subthemesForDraftTheme.length === 0;
+<div style={_sec}>
+  <div style={_lbl}>Subtheme</div>
+  <select disabled={_subDisabled} style={{ ..._sel, opacity: _subDisabled ? 0.45 : 1 }}>
+    {!draftThemeId
+      ? <option>— Select a Primary Theme first —</option>
+      : subthemesForDraftTheme.length === 0
+        ? <option>— No subthemes for this theme —</option>
+        : <>
+            <option>— General {parentName} —</option>
+            {subthemesForDraftTheme.map(...)}
+          </>}
+  </select>
+</div>
 ```
 
-## Request counts
+| State | Rendered? | Enabled? | Placeholder |
+|---|---|---|---|
+| No Primary Theme (Case A) | ✅ always | ❌ disabled | "— Select a Primary Theme first —" |
+| Theme with children (Case B) | ✅ always | ✅ enabled | "— General {ThemeName} —" + children |
+| Theme without children (Case C) | ✅ always | ❌ disabled | "— No subthemes for this theme —" |
 
-| Metric | Value |
-|---|---|
-| Browser HTTP requests | 1 (single batch endpoint) |
-| Server invocations | 1 (processes all symbols) |
-| FMP requests (cold) | ceil(N/50) batches (OTC-only filtered N) |
-| FMP requests (warm) | 0 (positive cache) |
-| Client refetch (unresolved) | 5 min cadence |
-| Client refetch (resolved) | 24h (cached) |
+The row changes **state**, never **presence**.
+
+---
+
+## Sector Read-Only Trace Finding
+
+**Data path:**
+1. `WlTaxonomyEditorPanel` receives `stockRow` prop
+2. `stockRow` is `allStocks.find(s => s.ticker === activeTaxonomyEditTicker)`
+3. `allStocks` = `useMemo(() => extractAllStocks(analysis), [analysis])`
+4. `extractAllStocks` maps `analysis.sections[].tickers[]` items via `extractAllStocks()` (line 196):
+   - `sector: t.sector ?? t.category ?? t.industry`
+5. `sectorLabel = (stockRow?.sector as string | null | undefined) || null`
+
+**Finding:** The `analysis` object comes from the WL backend's `/api/watchlist/:wid` response. The backend's ticker items in `analysis.sections[].tickers[]` do **not** currently populate a `sector`, `category`, or `industry` field. All three resolve to `undefined`, so `sectorLabel` is `null` and the editor displays `—`.
+
+**What was NOT done (per spec):** No inference from Theme, no subtheme derivation, no new endpoint, no provider call, no hardcoded sectors. The read-only display already shows `—` gracefully. Fixing this requires the WL backend to include a `sector` field on ticker rows in the analysis response — that is out of scope for this task.
+
+---
+
+## Tests Run / Results
+
+```
+watchlist-taxonomy-editor.test.ts    48 tests  48 pass  0 fail   (includes 12 new REQ-37–48)
+watchlist-theme-taxonomy.test.ts     48 tests  48 pass  0 fail
+watchlist-taxonomy-split.test.ts     20 tests  20 pass  0 fail
+watchlist-perf-incremental.test.ts   25 tests  25 pass  0 fail
+watchlist-perf-pass2.test.ts         20 tests  20 pass  0 fail
+watchlist-perf-pass3.test.ts         21 tests  21 pass  0 fail
+watchlist-company-identity.test.ts   41 tests  41 pass  0 fail
+──────────────────────────────────────────────────────────────────
+TOTAL                               223 tests 223 pass  0 fail
+```
+
+New tests added (REQ-37 through REQ-48):
+- REQ-37: Case A — no Primary Theme → disabled, correct placeholder
+- REQ-38: Case B — theme with children → enabled, child count ≥2
+- REQ-39: Case C — theme without children → disabled, "No subthemes" placeholder
+- REQ-40: Parent change clears draftSubthemeId
+- REQ-41: Switching back to original parent does not auto-restore old subtheme
+- REQ-42: Existing subtheme hydration → parent+subtheme correctly resolved
+- REQ-43: Hydration does not flatten subtheme to parent theme
+- REQ-44: Save semantics — parent-only effectivePrimaryId equals draftThemeId
+- REQ-45: Save semantics — subtheme effectivePrimaryId equals draftSubthemeId (not parent)
+- REQ-46: Save semantics — additional themes unaffected by subtheme selection
+- REQ-47: Fail-closed — missing ok:true is rejected
+- REQ-48: Fail-closed — missing required fields are rejected
+
+---
+
+## Browser Validation
+
+App running on Vite dev server. TypeScript errors confirmed to be pre-existing (HistoryPanel.tsx, TradingAgent.tsx, WatchlistAnalysis.tsx — files untouched). The watchlist.tsx change was HMR-applied without error.
+
+The modal renders all four rows in the correct fixed order:
+```
+Sector
+[— or actual sector]                                    (read-only)
+
+Primary Theme
+[— None — or selection]
+
+Subtheme
+[— Select a Primary Theme first —]  disabled            (Case A)
+  → after theme selection with children: enabled         (Case B)
+  → after theme selection without children: disabled     (Case C)
+
+Additional Themes
+[+ Add additional theme]
+```
+
+The row does not appear/disappear — it transitions between enabled and disabled states.
+
+---
+
+## git diff summary
+
+```
+frontend/client/src/pages/__tests__/watchlist-taxonomy-editor.test.ts  | 139 +++++++++++++++
+frontend/client/src/pages/watchlist.tsx                                 |  48 +++---
+2 files changed, 171 insertions(+), 16 deletions(-)
+```
 
 ## Final git status
 
 ```
-## main...origin/main
- M .opencode-reports/latest.md
- M frontend/market-overview-cache.json
-```
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
 
-## Commit
-
-**SHA**: `121e91a3`
-
-```
-fix: OTC company — write to company field, fix memo deps, OTC-only strip, refetch
-
-3 files changed, 173 insertions(+), 9 deletions(-)
+nothing to commit, working tree clean
 ```
