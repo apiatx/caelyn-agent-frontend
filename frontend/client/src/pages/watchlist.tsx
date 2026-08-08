@@ -3415,20 +3415,7 @@ export default function WatchlistPage() {
   const wlIdentityCsv = useMemo(() => {
     const tickers: string[] = (watchlist?.tickers as string[] | undefined) ?? [];
     if (!tickers.length) return '';
-    // Analysis rows already carry beta from the watchlist endpoint.
-    // Only query the identity API for the small subset of symbols whose beta
-    // is absent — for healthy watchlists this means the request never fires.
-    const sections = (watchlist as any)?.analysis?.sections ?? [];
-    const hasBeta = new Set<string>();
-    for (const sec of sections) {
-      for (const t of (sec.tickers ?? [])) {
-        const sym = ((t.ticker || t.symbol || '') as string).toUpperCase();
-        const b = t.beta;
-        if (sym && b != null && b !== '' && Number.isFinite(Number(b))) hasBeta.add(sym);
-      }
-    }
-    const missing = tickers.filter((s: string) => !hasBeta.has(s.toUpperCase()));
-    return missing.sort().join(',');
+    return tickers.sort().join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(watchlist?.tickers ?? []).join(','), watchlist]);
   const { data: wlIdentityData } = useQuery<Record<string, { name: string; logo: string | null; exchange: string | null; beta: number | null }>>({
@@ -3447,6 +3434,16 @@ export default function WatchlistPage() {
       const bRaw = (d as any).beta;
       const bNum = Number(bRaw);
       if (bRaw != null && Number.isFinite(bNum)) out[sym.toUpperCase()] = bNum;
+    }
+    return out;
+  }, [wlIdentityData]);
+  const exchangeByTicker = useMemo<Record<string, string | null>>(() => {
+    if (!wlIdentityData || typeof wlIdentityData !== 'object' || Array.isArray(wlIdentityData)) return {};
+    const out: Record<string, string | null> = {};
+    for (const [sym, d] of Object.entries(wlIdentityData)) {
+      if (!d || typeof d !== 'object') continue;
+      const ex = (d as any).exchange;
+      out[sym.toUpperCase()] = typeof ex === 'string' && ex.length > 0 ? ex : null;
     }
     return out;
   }, [wlIdentityData]);
@@ -4141,10 +4138,10 @@ export default function WatchlistPage() {
   const { quotesBySymbol: realtimeQuotes } = useRealtimeQuotes(realtimeSymbols, { enabled: realtimeSymbols.length > 0 });
 
   // Per-symbol input identity cache: reuse merged output only when ALL merge inputs
-  // are unchanged (base row, stabilized quote, raw options, beta). This replaces the
+  // are unchanged (base row, stabilized quote, raw options, beta, exchange). This replaces the
   // unsafe 10-field display-field whitelist with source-level tracking — any canonical
   // change (technical, fundamental, taxonomy, 7D, IV, OI, etc.) forces a new output.
-  type _RowInputCache = { base: any; quote: any; rawOpt: any; beta: any; output: any };
+  type _RowInputCache = { base: any; quote: any; rawOpt: any; beta: any; exchange: any; output: any };
   const rowIdentityRef = useRef<Map<string, _RowInputCache>>(new Map());
   // Stabilized realtime quote: reuses previous quote object when all 15 tracked fields
   // are identical so an unchanged poll does not produce a new reference.
@@ -4189,6 +4186,7 @@ export default function WatchlistPage() {
 
       const rawOpt = sym ? optionsSignalsByTicker[sym] : undefined;
       const beta = sym ? betaByTicker[sym] : undefined;
+      const exchange = sym ? exchangeByTicker[sym] ?? null : null;
 
       // ── Input identity check ─────────────────────────────────────────────
       // Reuse the previous merged output ONLY when all 4 merge inputs are the
@@ -4202,7 +4200,8 @@ export default function WatchlistPage() {
           prevCache.base === baseRow &&
           prevCache.quote === stableQuote &&
           prevCache.rawOpt === rawOpt &&
-          Object.is(prevCache.beta, beta)) {
+          Object.is(prevCache.beta, beta) &&
+          Object.is(prevCache.exchange, exchange)) {
         // All inputs unchanged — reuse cached output; keep LKG map current
         if (sym) prev.set(sym, prevCache.output);
         return prevCache.output;
@@ -4216,6 +4215,10 @@ export default function WatchlistPage() {
       // Inject beta from FMP company-identity when not present in analysis row
       if (beta !== undefined && (next.beta == null || next.beta === '')) {
         next.beta = beta;
+      }
+      // Inject exchange from FMP company-identity when not present in analysis row
+      if (exchange != null && (next.exchange == null || next.exchange === '')) {
+        next.exchange = exchange;
       }
 
       // LKG merge: when a refetch returns null/undefined/empty for a signal field,
@@ -4237,7 +4240,7 @@ export default function WatchlistPage() {
 
       // Store in identity cache and update LKG
       if (sym) {
-        rowIdentityRef.current.set(sym, { base: baseRow, quote: stableQuote, rawOpt, beta, output });
+        rowIdentityRef.current.set(sym, { base: baseRow, quote: stableQuote, rawOpt, beta, exchange, output });
         prev.set(sym, output);
       }
       return output;
@@ -6102,6 +6105,41 @@ export default function WatchlistPage() {
     );
   };
 
+  /* ── foreign classification for watchlist Hide-Foreign toggle ────
+   * Uses per-row exchange metadata (from FMP company-identity) when available.
+   * Known US exchange codes (including OTC) → NOT foreign.
+   * Null/unknown exchange → fallback to colon-free symbol heuristic.
+   * True foreign exchanges (TSX, LSE, TSE, HKEX, etc.) → foreign. */
+  function isForeignForWatchlistFilter(row: any): boolean {
+    const ticker: string = String(row.ticker || row.symbol || '');
+    if (!ticker) return false;
+    const exchange: string | null = (row.exchange != null && row.exchange !== '')
+      ? String(row.exchange)
+      : null;
+    if (exchange) {
+      const x = exchange.toUpperCase().trim();
+      if (
+        x === 'NASDAQ' || x === 'NMS' || x === 'NGS' || x === 'NCM' ||
+        x === 'NYSE'   || x === 'NYQ' ||
+        x === 'AMEX'   || x === 'NYSEARCA' || x === 'NYSE ARCA' || x === 'BATS' ||
+        x === 'OTC'    || x === 'OTCBB' || x === 'PINK' || x === 'OTCMKTS' ||
+        x === 'OTCQB'  || x === 'OTCQX' ||
+        x === 'CBOE'   || x === 'IEX'
+      ) {
+        return false;
+      }
+      if (
+        x.includes('NASDAQ') || x.includes('NYSE') || x.includes('AMEX') ||
+        x.includes('OTC')    || x.includes('BATS') || x.includes('CBOE') ||
+        x.includes('IEX')    || x.includes('PINK') || x.includes('OTCQB') ||
+        x.includes('OTCQX')  || x.includes('OTCMKTS')
+      ) {
+        return false;
+      }
+    }
+    return ticker.includes(':');
+  }
+
   /* ── ticker table for new format ─────────────────────── */
   const renderNewFormatTickerTable = (opts?: { rows?: typeof sortedTickers; title?: string }) => {
     const rows = opts?.rows ?? displayRows;
@@ -6109,7 +6147,7 @@ export default function WatchlistPage() {
     const isMainScreener = tableTitle === 'SCREENER' || tableTitle === 'FAVORITES';
     // Apply hide-foreign filter
     const visibleRows = hideForeignTickers
-      ? rows.filter(r => !String((r as any).ticker || (r as any).symbol || '').includes(':'))
+      ? rows.filter(r => !isForeignForWatchlistFilter(r))
       : rows;
     const foreignHidden = rows.length - visibleRows.length;
     // Apply screener filters (only for the main Screener panel, not Close Watch or custom row sets)
@@ -6490,7 +6528,7 @@ export default function WatchlistPage() {
                 transition: 'all 0.12s',
                 flexShrink: 0,
               }}
-              title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from foreign exchanges (symbols containing ":")'}
+              title={hideForeignTickers ? 'Show all tickers including foreign exchanges' : 'Hide tickers from non-U.S. foreign exchanges. OTC and U.S. listings remain visible.'}
             >
               {hideForeignTickers ? '⊘ Hide Foreign' : 'Hide Foreign'}
             </button>
