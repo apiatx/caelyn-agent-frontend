@@ -1,0 +1,369 @@
+MAKE WATCHLIST TAXONOMY SELF-HEAL AFTER BACKEND OUTAGES + HARDEN LIVE NEWS DISPLAY STATE
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey live AGENTS.md first.
+
+LIVE REPLIT FILES ARE SOURCE OF TRUTH.
+GitHub is reference/audit only.
+
+This is a RECOVERY / RESILIENCE correction.
+
+DO NOT redesign taxonomy.
+DO NOT undo the canonical /api/themes/list change.
+DO NOT revert instant optimistic taxonomy saves.
+DO NOT modify backend.
+DO NOT touch Screener column resizing.
+DO NOT create another state store.
+DO NOT use localStorage as taxonomy authority.
+DO NOT add broad application polling.
+
+On 2026-08-09 the FastAPI production backend temporarily went down because of
+a stale production Neon secret.
+
+The Watchlist eventually recovered and showed all 461 stocks.
+
+However the taxonomy bar remained:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+with ZERO chips/buttons.
+
+At the same time Live News displayed:
+
+REFRESHING...
+Loading activity data...
+
+for an extended period.
+
+The backend later recovered.
+
+The frontend did NOT recover cleanly without a page lifecycle/refetch event.
+
+Current canonical taxonomy query is correctly:
+
+queryKey:
+["theme-taxonomy", "list"]
+
+URL:
+GET /api/themes/list?classification=all
+
+Current backend response is healthy:
+
+HTTP 200
+104 nodes
+
+classification counts:
+
+sector      11
+theme       23
+sub_theme   67
+market_lens 3
+
+Current build path is correctly:
+
+themeUniverseResp?.themes ?? []
+→ buildThemeTaxonomyIndex()
+→ getTaxonomyChipOrder()
+
+Do NOT change that architecture.
+
+PROVEN FAILURE PATH
+
+During backend outage:
+
+GET /api/themes/list
+→ HTTP 500
+→ retry exhausted
+→ themeUniverseResp undefined
+→ buildThemeTaxonomyIndex([])
+→ sectorOrder=[]
+→ themeOrder=[]
+→ subthemeOrder=[]
+
+renderTaxonomyBar() still renders the static row labels, but each .map() receives
+an empty array.
+
+So the user sees:
+
+SECTORS
+THEMES
+SUBTHEMES
+
+with zero controls.
+
+After backend recovery the mounted query has no continuous recovery mechanism.
+
+That is the bug.
+
+IMPORTANT: DO NOT "FIX" THIS ONLY WITH staleTime: 0
+
+Do not merely change:
+
+staleTime: 24h
+
+to
+staleTime: 0
+
+That does NOT fully solve a query that has already exhausted retries while the
+component remains mounted.
+
+We need error/no-data recovery.
+
+REQUIRED TAXONOMY RECOVERY CONTRACT
+
+Desired behavior:
+
+backend unavailable
+→ taxonomy request fails
+→ keep retrying LIGHTLY while taxonomy has no usable data
+→ backend recovers
+→ chips automatically appear
+→ retries STOP
+
+No reload.
+No tab blur/focus requirement.
+No user action.
+
+Keep the endpoint inexpensive and isolated.
+
+Preferred React Query behavior:
+
+preserve existing dedicated key:
+["theme-taxonomy", "list"]
+preserve canonical URL:
+/api/themes/list?classification=all
+preserve normal long staleTime after success if desired
+add a refetch/recovery policy that runs ONLY while no canonical taxonomy data
+exists or the query is in an initial error state.
+
+Example semantic behavior:
+
+refetchInterval(query):
+    if query has valid canonical taxonomy data:
+        false
+    else:
+        5_000 to 10_000 ms
+
+Do not poll forever after success.
+
+Also preserve:
+
+refetchOnReconnect = true
+refetchOnWindowFocus = true
+
+where supported/current defaults are suitable.
+
+TAXONOMY UI ERROR STATE
+
+Do not silently render three empty rows indefinitely.
+
+If taxonomy is unavailable AND there is no cached data:
+
+show a compact non-blocking state such as:
+
+Taxonomy reconnecting…
+
+inside the taxonomy bar.
+
+Do NOT remove the bar.
+Do NOT collapse page layout.
+Do NOT show a giant error card.
+
+The moment canonical data succeeds, render all chips normally.
+
+If prior data exists and a background refetch fails:
+
+KEEP the existing chips visible.
+
+Never blank valid chips because a refresh failed.
+
+TAXONOMY INVARIANTS
+
+After recovery:
+
+Primary canonical registry must still contain:
+
+11 sectors
+23 themes
+67 subthemes
+3 market lenses
+
+Filter chips must expose:
+
+all 11 sectors
+all 23 themes
+all 67 subthemes
+
+Market lenses remain excluded from thematic assignment/filter surfaces according
+to current semantics.
+
+Robotics & Automation remains:
+
+robotics_automation
+classification=sub_theme
+parent=industrial_automation
+
+Do not regress the previous canonical completeness fix.
+
+Do NOT attempt to solve the backend cold-start architecture in frontend.
+
+Backend will receive a separate fix.
+
+But clean up the client recovery state.
+
+Current news query:
+
+key:
+["/api/watchlist/news", activeId]
+
+URL:
+/api/watchlist/{activeId}/news
+
+Current behavior:
+
+newsFetching=true
+newsData=undefined
+
+causes BOTH:
+
+REFRESHING...
+
+and
+Loading activity data...
+
+This is misleading.
+
+REQUIRED LIVE NEWS CLIENT BEHAVIOR
+
+There are two distinct states:
+
+COLD LOAD:
+no prior data + fetch in progress
+
+Display:
+
+Loading activity data…
+
+Do NOT also display REFRESHING.
+
+BACKGROUND REFRESH:
+valid existing newsData + fetch in progress
+
+Display:
+
+existing Live News data immediately
++
+subtle REFRESHING badge
+
+Never blank existing news rows while refreshing.
+
+PLACEHOLDER / PREVIOUS DATA
+
+Use React Query previous-data semantics so when a valid prior result already
+exists for the same logical query, a refetch does not blank the card.
+
+Use the smallest supported React Query v5 pattern.
+
+Do NOT fabricate data.
+Do NOT persist news into localStorage.
+Do NOT reuse another watchlist's news as current data.
+
+This is only stale-while-revalidate UI behavior.
+
+Add focused regression tests.
+
+TAXONOMY:
+
+canonical endpoint success:
+→ 11 sector chips
+→ 23 theme chips
+→ 67 subtheme chips
+initial endpoint 500:
+→ no crash
+→ compact reconnecting state
+→ recovery refetch remains scheduled
+endpoint returns 200 on later recovery:
+→ taxonomy chips appear automatically
+→ recovery polling stops
+existing successful taxonomy data + later refresh error:
+→ existing chips remain visible
+→ never collapse to zero chips
+no dependency on window blur/focus for recovery
+Robotics & Automation still exists under Industrial Automation
+canonical query remains isolated from ["themes-unified","themes"]
+instant taxonomy SAVE behavior remains green
+
+LIVE NEWS:
+
+newsData undefined + newsFetching true:
+→ show Loading
+→ do NOT show Refreshing
+newsData populated + newsFetching true:
+→ existing rows remain visible
+→ show Refreshing
+previous valid data is preserved during background refetch
+query failure does not erase valid previous data
+
+Simulate/reproduce taxonomy outage without changing backend data:
+
+Force the taxonomy request to fail temporarily or mock 500.
+Confirm static bar does not misleadingly sit permanently empty.
+Restore successful response.
+WITHOUT reload, blur/focus, or navigation:
+chips must automatically repopulate.
+
+Then verify counts.
+
+For Live News client behavior:
+
+warm data visible
+trigger refetch
+table must remain visible
+REFRESHING may appear
+zero blank-card transition
+
+Expected:
+
+frontend/client/src/pages/watchlist.tsx
+
+and existing focused tests only.
+
+Do NOT edit server/routes.ts unless live audit proves the existing proxy is broken.
+
+Current /api/themes/list proxy is returning healthy canonical data, so no proxy
+rewrite should be necessary.
+
+Taxonomy:
+
+backend outage cannot leave chips permanently blank
+automatically self-heals after backend recovery
+no reload required
+valid cached taxonomy never disappears during refresh failure
+all canonical chips return
+
+Live News frontend:
+
+cold load says Loading, not Refreshing + Loading
+existing rows stay visible during refresh
+no frontend-induced blanking
+
+Do not report completion until actual outage→recovery behavior has been tested.
+
+Final report:
+
+exact taxonomy old failure path
+exact recovery policy
+retry cadence
+proof polling stops after success
+taxonomy counts
+Robotics validation
+Live News state-machine before/after
+tests
+browser validation
+files changed
+git diff/stat
+commit SHA
+final git status
