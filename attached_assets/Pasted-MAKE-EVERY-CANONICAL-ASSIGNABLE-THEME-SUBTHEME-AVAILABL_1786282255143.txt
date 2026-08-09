@@ -1,0 +1,543 @@
+MAKE EVERY CANONICAL ASSIGNABLE THEME/SUBTHEME AVAILABLE IN WATCHLIST TAXONOMY EDITOR
+
+Work only in the live CaelynAI FRONTEND Replit workspace.
+
+Read and obey live AGENTS.md first.
+
+The live Replit workspace is the primary source of truth.
+GitHub is reference/backup only.
+
+The taxonomy assignment/persistence UX now works.
+
+DO NOT touch that save architecture.
+
+DO NOT modify backend unless the live audit proves the existing canonical
+/api/themes/list proxy is broken.
+
+DO NOT hardcode Robotics & Automation.
+
+DO NOT flatten subthemes into top-level themes.
+
+This task is a TAXONOMY COMPLETENESS correction.
+
+"Robotics & Automation" exists in the canonical taxonomy but is not currently
+available as a selectable taxonomy option in the Watchlist classification editor.
+
+Canonical backend registry says:
+
+theme_id:
+robotics_automation
+
+display_name:
+Robotics & Automation
+
+classification:
+sub_theme
+
+parent_theme_id:
+industrial_automation
+
+Therefore its intended editor path is:
+
+Primary Theme:
+Industrial Automation
+
+Subtheme:
+Robotics & Automation
+
+It should ALSO be available in the Additional Themes picker according to the
+existing additional-membership semantics.
+
+Do NOT make robotics_automation a top-level Theme.
+
+The Watchlist currently constructs taxonomyIndex from:
+
+/api/themes/relative-strength?timeframe=1D&classification=all
+
+using React Query key approximately:
+
+["themes-unified", "themes"]
+
+This is wrong for an assignment editor.
+
+The Relative Strength endpoint is MARKET-DATA dependent.
+
+The backend theme RS service explicitly does:
+
+row = await _build_theme_row(...)
+
+if row:
+rows.append(row)
+else:
+print("No data for 'theme_id' — skipped")
+
+Therefore a valid canonical taxonomy node can disappear from the Watchlist
+assignment UI simply because it has no current RS/performance row.
+
+Classification availability must NEVER depend on:
+
+Tradier
+FMP
+proxy price data
+historical price data
+RS calculation success
+market hours
+RS LKG completeness
+
+The canonical assignment editor must use the canonical registry endpoint:
+
+GET /api/themes/list
+
+There is already an Express proxy for:
+
+GET /api/themes/list
+
+in frontend/server/routes.ts.
+
+Audit it first; do not duplicate it.
+
+DO NOT simply change the fetch URL while keeping:
+
+["themes-unified", "themes"]
+
+Home and the Themes/Sectors experience use that key for the actual Relative
+Strength payload.
+
+Using the SAME React Query key for:
+
+/api/themes/list
+
+and:
+
+/api/themes/relative-strength
+
+would create a cache-shape/source collision.
+
+Create/use a dedicated canonical taxonomy key, for example:
+
+["theme-taxonomy", "list"]
+
+or the closest existing naming convention already present in the live repo.
+
+The key must be unique to the canonical static taxonomy registry.
+
+Do not change Home's RS query.
+
+Do not change the Themes page RS query.
+
+The Watchlist taxonomy editor/filter hierarchy should build its ThemeTaxonomyIndex
+from:
+
+GET /api/themes/list?classification=all
+
+NOT from:
+
+GET /api/themes/relative-strength...
+
+Use the returned:
+
+theme_id
+display_name
+classification
+parent_sector
+parent_theme_id
+rollup_sector_ids
+
+with the existing:
+
+buildThemeTaxonomyIndex()
+
+Do not duplicate hierarchy-building logic.
+
+Do not create a frontend hardcoded theme list.
+
+Do not stop after confirming Robotics appears.
+
+Programmatically compare the full live canonical registry to every selectable
+surface in the editor.
+
+Fetch live:
+
+A:
+/api/themes/list?classification=all
+
+B:
+/api/themes/relative-strength?timeframe=1D&classification=all
+
+Print an audit showing:
+
+canonical active IDs
+RS IDs
+canonical IDs missing from RS
+
+This proves how many nodes the old implementation could hide.
+
+Report the EXACT missing IDs/display names.
+
+Robotics & Automation should be checked explicitly.
+
+The assignment editor should allow canonical thematic memberships:
+
+classification == "theme"
+OR
+classification == "sub_theme"
+
+It should NOT allow:
+
+classification == "sector"
+classification == "market_lens"
+classification == "deprecated"
+
+Do not turn sectors into thematic memberships.
+
+Do not expose commodity market lenses as assignable themes.
+
+Do not resurrect deprecated nodes.
+
+Every active canonical thematic node must have a valid UI selection path.
+
+For every classification == "theme":
+
+MUST appear in:
+
+Primary Theme dropdown
+Additional Themes picker
+
+For every classification == "sub_theme":
+
+MUST appear in:
+
+Subtheme dropdown underneath its canonical parent_theme_id
+Additional Themes picker
+
+There must be ZERO canonical active theme/sub_theme IDs that are absent from all
+editor selection surfaces.
+
+Explicitly prove:
+
+Canonical:
+
+industrial_automation
+classification = theme
+
+robotics_automation
+classification = sub_theme
+parent_theme_id = industrial_automation
+display_name = Robotics & Automation
+
+UI:
+
+Choose:
+
+Primary Theme → Industrial Automation
+
+Then Subtheme MUST enable and contain:
+
+Robotics & Automation
+
+Selecting it must produce:
+
+effectivePrimaryId = robotics_automation
+
+It must also appear in:
+
+Additional Themes
+
+when not already selected as the effective primary.
+
+Audit every canonical sub_theme returned by /api/themes/list.
+
+For each one assert:
+
+parent_theme_id is non-null
+parent_theme_id exists in the canonical node map
+parent node classification == "theme"
+
+If ANY active sub_theme violates this:
+
+DO NOT silently hide it.
+
+DO NOT invent a fake parent.
+
+DO NOT flatten it into the Primary Theme dropdown.
+
+Stop and report the exact broken IDs because that would be a backend canonical
+registry integrity issue requiring a separate correction.
+
+Expected invariant is:
+
+Sector → Theme → Subtheme
+
+No orphan active subthemes.
+
+Build expectedPrimaryIds from canonical /api/themes/list:
+
+classification === "theme"
+
+Build actualPrimaryIds from the exact array rendered into the dropdown.
+
+Assert:
+
+expectedPrimaryIds == actualPrimaryIds
+
+No missing IDs.
+No extra IDs.
+
+Sort order may remain alphabetical by display_name.
+
+For EVERY canonical parent Theme:
+
+expectedChildren =
+canonical nodes where:
+classification === "sub_theme"
+AND parent_theme_id === parent.theme_id
+
+actualChildren =
+subthemesForDraftTheme when that parent is selected
+
+Assert exact set equality for EVERY parent.
+
+Not just Robotics.
+
+No child may disappear because it lacks RS data.
+
+This is especially important.
+
+Expected available thematic universe:
+
+every canonical "theme"
+UNION
+every canonical "sub_theme"
+
+Then account only for the existing intentional exclusions:
+
+currently selected effective primary
+already selected additional memberships
+search text
+
+With search empty and no memberships selected:
+
+union of all picker item IDs MUST equal:
+
+canonical theme IDs
+UNION
+canonical sub_theme IDs
+
+Exact set equality.
+
+This catches any other hidden themes automatically.
+
+The Watchlist taxonomy filter chips/hierarchy and assignment editor should use
+the same canonical taxonomyIndex from /api/themes/list.
+
+This means filter availability also cannot depend on current RS data.
+
+Preserve existing filter semantics:
+
+Sector:
+sector + descendant thematic ecosystem
+
+Theme:
+theme + descendants
+
+Subtheme:
+exact subtheme
+
+Multi-select:
+union
+
+Do not rewrite rowMatchesTaxonomySelection() unless an actual test proves it is
+incorrect.
+
+Relative Strength data remains useful for:
+
+performance
+rankings
+state
+leaders/laggards
+Theme page
+Home Theme Performance
+
+But it is NOT a taxonomy registry.
+
+The frontend should maintain the conceptual separation:
+
+CANONICAL TAXONOMY:
+/api/themes/list
+
+MARKET PERFORMANCE:
+/api/themes/relative-strength
+
+Do not merge these response objects merely to populate the editor.
+
+The taxonomy save flow is working now.
+
+Preserve ALL recent behavior:
+
+instant optimistic Screener update
+modal closes immediately
+symbol || ticker row matching
+canonical_theme_id authoritative handling
+canonical PUT only
+no automatic PUT retry
+commit-success backend semantics
+canonical reconciliation
+timeout uncertainty behavior
+hard-refresh persistence
+
+This task should not alter handleSave except where a query key invalidation must
+be adjusted for the new dedicated taxonomy-list key.
+
+IMPORTANT:
+
+The canonical taxonomy LIST is static registry structure.
+
+A ticker assignment does NOT change the taxonomy registry.
+
+Therefore do not unnecessarily invalidate/refetch:
+
+["theme-taxonomy", "list"]
+
+after every assignment unless live code proves the registry itself changed.
+
+Assignment changes memberships, not the registry.
+
+Add exhaustive tests, not spot checks.
+
+Robotics canonical node exists:
+robotics_automation
+display_name == "Robotics & Automation"
+classification == "sub_theme"
+parent_theme_id == "industrial_automation"
+Industrial Automation appears in Primary Theme.
+Selecting Industrial Automation makes Robotics & Automation appear in
+Subtheme.
+Selecting Robotics produces:
+effectivePrimaryId == "robotics_automation"
+Robotics appears in Additional Themes when eligible.
+
+Canonical Primary completeness:
+
+SET(
+Primary dropdown IDs
+)
+
+Canonical child completeness for EVERY parent:
+
+expected canonical child set == rendered Subtheme set
+
+Additional picker completeness:
+
+SET(all canonical theme + sub_theme IDs)
+
+SET(all unfiltered picker IDs)
+
+subject only to the intentional selected-ID exclusions.
+
+No sector IDs appear in theme membership selectors.
+No market_lens IDs appear.
+No deprecated IDs appear.
+RS independence regression:
+
+Create fixtures where:
+
+/api/themes/list includes robotics_automation
+
+but:
+
+/api/themes/relative-strength omits robotics_automation
+
+Assert the editor STILL renders Robotics & Automation.
+
+This is the critical regression test.
+
+Query key isolation:
+
+Assert canonical taxonomy query and RS query do not share the same React Query
+key.
+
+Parent integrity:
+
+Every canonical sub_theme has a valid canonical parent classification == theme.
+
+Existing save/instant-update taxonomy tests all remain green.
+
+After implementation, run against the live frontend/backend.
+
+Capture:
+
+canonical = GET /api/themes/list?classification=all
+rs = GET /api/themes/relative-strength?timeframe=1D&classification=all
+
+Report:
+
+total canonical sector count
+total canonical theme count
+total canonical sub_theme count
+total market_lens/deprecated count if present
+total selectable thematic nodes = themes + subthemes
+count previously missing because absent from RS
+exact previously missing IDs + display names
+
+Then inspect actual UI.
+
+For every top-level Theme:
+
+choose it
+record all visible subthemes
+
+Programmatically/structurally compare those options with canonical children.
+
+Required result:
+
+0 missing canonical themes
+0 missing canonical subthemes
+0 extra non-assignable nodes
+
+Expected:
+
+frontend/client/src/pages/watchlist.tsx
+
+Possibly the existing taxonomy helper/test files.
+
+frontend/server/routes.ts should NOT need a new route because /api/themes/list
+already exists.
+
+If the live route is unexpectedly broken, repair that existing route rather than
+creating a second endpoint.
+
+DO NOT touch backend production files in this task.
+
+Done means:
+
+Robotics & Automation is selectable under Industrial Automation.
+Robotics & Automation is selectable as an Additional Theme.
+Dropdown availability comes from canonical /api/themes/list.
+Relative Strength availability cannot hide taxonomy nodes.
+Every canonical top-level theme appears in Primary Theme.
+Every canonical subtheme appears under its canonical parent.
+Every canonical theme/subtheme is reachable in Additional Themes.
+Zero active canonical thematic nodes are missing.
+Sectors, market lenses, and deprecated nodes remain non-selectable.
+Canonical taxonomy and RS queries have separate React Query keys.
+Existing instant save behavior is untouched.
+Exhaustive tests prove set equality, not just individual examples.
+
+Final report MUST include:
+
+exact root cause
+why Robotics was missing
+canonical-vs-RS missing-node audit
+exact list of every previously missing theme/subtheme
+canonical counts by classification
+selectable-node count
+Primary dropdown set comparison
+Subtheme parent/child set comparison
+Additional picker set comparison
+query key before/after
+tests/results
+browser validation
+files changed
+git diff/stat
+commit SHA
+final git status
