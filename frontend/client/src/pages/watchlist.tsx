@@ -3441,6 +3441,10 @@ export default function WatchlistPage() {
     refetchInterval: 20 * 60 * 1000,
     enabled: !!activeId && !!watchlist?.analysis,
     retry: 1,
+    // Preserve last-known-good data during background refetch so the activity
+    // table never blanks while waiting for an updated response. A cold load
+    // (no prior data) still shows the Loading state until the first success.
+    placeholderData: (previousData: any) => previousData,
   });
 
   /* ── major developments for active watchlist ─────────────────────── */
@@ -3565,14 +3569,22 @@ export default function WatchlistPage() {
     () => token ?? localStorage.getItem('caelyn_jwt') ?? sessionStorage.getItem('caelyn_jwt') ?? '',
     [token]
   );
-  const { data: themeUniverseResp } = useQuery({
+  const { data: themeUniverseResp, isError: taxonomyIsError } = useQuery({
     queryKey: ['theme-taxonomy', 'list'],
     queryFn: () => fetch(`/api/themes/list?classification=all`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
-    // Taxonomy registry is static structure — 24h stale is fine.
+    // Taxonomy registry is static structure — 24h stale is fine after a successful load.
     // Assignments change memberships, NOT the registry; do not invalidate
     // this key after every ticker save.
     staleTime: 24 * 60 * 60_000,
+    // Light recovery polling: re-attempt every 5 s while no usable taxonomy data
+    // exists (e.g. after a backend outage). Automatically stops once the query
+    // has a successful response — false when data is present.
+    // This is the ONLY mechanism that self-heals after retry exhaustion while
+    // the component stays mounted. staleTime alone does not cover that case.
+    refetchInterval: (query: any) => (query.state.data ? false : 5_000),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     retry: 1,
   });
   const taxonomyIndex: ThemeTaxonomyIndex = useMemo(() => {
@@ -5460,6 +5472,11 @@ export default function WatchlistPage() {
       flexWrap: 'nowrap',
     };
 
+    // True when the registry hasn't loaded yet (outage or first paint).
+    // Used to decide between chips and the reconnecting notice.
+    const allEmpty =
+      sectorOrder.length === 0 && themeOrder.length === 0 && subthemeOrder.length === 0;
+
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 4,
@@ -5467,6 +5484,15 @@ export default function WatchlistPage() {
         background: C.card2,
         borderBottom: `1px solid ${C.border}`,
       }}>
+        {/* Reconnecting notice: shown only when an error occurred AND no cached
+            taxonomy data is available. The moment the query recovers, chips
+            render normally. If prior data exists and a background refetch
+            fails, chips remain visible (allEmpty stays false). */}
+        {allEmpty && taxonomyIsError ? (
+          <div style={{ fontSize: 10, color: C.dim, fontStyle: 'italic', padding: '2px 0' }}>
+            Taxonomy reconnecting…
+          </div>
+        ) : (<>
         {/* Row 1: SECTORS + Clear pinned right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={labelStyle}>SECTORS</span>
@@ -5546,6 +5572,7 @@ export default function WatchlistPage() {
           })}
           </div>
         </div>
+        </>)}
       </div>
     );
   };
@@ -8127,7 +8154,7 @@ export default function WatchlistPage() {
                           : `${Math.round(newsCacheAge / 60)} min ago`}
                       </span>
                     )}
-                    {(newsIsBuilding || newsFetching) && (
+                    {(newsIsBuilding || (newsFetching && !!newsData)) && (
                       <span style={{
                         marginLeft: 'auto', fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
                         padding: '2px 6px', borderRadius: 3,
