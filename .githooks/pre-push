@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# CaelynAI Frontend — Pre-Push Hook
+# Delegates all logic to scripts/workspace_guard.py prepush.
+# This hook is intentionally thin — no duplicate guard logic here.
+#
+# Installed via: git config core.hooksPath .githooks
+# Applies to all push origins: DeepSeek, Codex, Replit Agent, manual, future providers.
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+GUARD="$REPO_ROOT/scripts/workspace_guard.py"
+
+if [ ! -f "$GUARD" ]; then
+  echo "[pre-push] ERROR: workspace_guard.py not found at $GUARD"
+  exit 1
+fi
+
+python3 "$GUARD" prepush

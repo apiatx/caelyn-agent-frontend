@@ -1,2 +1,10 @@
+# Replit agent operational state — never commit
+.agent-state/
+
+# Agent report directories
 .codex-reports/
 .codex/
+
+# Existing ignores
+node_modules/
+dist/
