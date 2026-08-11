@@ -1,0 +1,912 @@
+CAELYNAI FRONTEND — REPLIT AGENT — INSTALL THE SAME PERMANENT MULTI-AGENT
+VERSIONING, HANDOFF, PUSH, BUILD, AND REPUBLISH SAFETY SYSTEM AS BACKEND
+
+Work only in the LIVE frontend Replit workspace:
+
+    /home/runner/workspace
+
+You are the Replit Agent for this task.
+
+READ THE CURRENT AGENTS.md FIRST.
+
+This is an explicitly approved repository-infrastructure task.
+
+The BACKEND repository already has a successfully implemented multi-agent
+workspace guard system.
+
+The frontend must now receive the SAME Git/handoff/locking philosophy and
+behavior, adapted only for frontend build/typecheck/test validation.
+
+DO NOT invent a second workflow.
+
+The user must be able to safely bounce between:
+
+- DeepSeek through OpenCode
+- Codex CLI
+- Replit Agent
+- future coding-model providers
+- manual edits by the user
+
+without agents overwriting one another, losing source changes, leaving completed
+source only locally, creating Git divergence, or publishing unvalidated builds.
+
+============================================================
+CRITICAL CURRENT FRONTEND STATE
+============================================================
+
+A read-only audit already established:
+
+    branch:
+        main
+
+    local HEAD:
+        d5638a5afbf763c9021d9ca7ad4ad18decfbe85e
+
+    origin/main:
+        4e5346fbcdce0b58c8914f7770be91cca8a45e1a
+
+    relationship:
+        local main is 5 commits ahead
+        0 behind
+        NO divergence
+
+IMPORTANT:
+
+The 5 local-only commits are NOT all generated-only.
+
+They include:
+
+    97d9f32c
+    fix: taxonomy self-heal + live news state hardening after backend outage
+
+with real production/test source changes including:
+
+    frontend/client/src/pages/watchlist.tsx
+
+    frontend/client/src/pages/tests/
+        watchlist-recovery-resilience.test.ts
+
+Other local-only commits contain generated market-overview cache updates and
+agent report artifacts.
+
+Current dirty working tree:
+
+    frontend/market-overview-cache.json
+
+only.
+
+That file is generated/runtime cache data.
+
+There are currently ZERO dirty authored source files.
+
+============================================================
+THIS STARTING STATE MUST BE PRESERVED
+============================================================
+
+Do NOT:
+
+- reset local main to origin/main
+- rebase
+- squash
+- cherry-pick
+- rewrite the 5 ahead commits
+- discard the taxonomy/news source fix
+- restore source from origin
+- create another branch
+- create another clone/worktree
+- force push
+
+The local source work is authoritative Replit workspace work and MUST survive.
+
+Because there is no divergence, the existing ahead history can be safely
+fast-forward pushed after its source changes are validated.
+
+============================================================
+PHASE 0 — RECONCILE EXISTING FRONTEND SOURCE BEFORE GUARD INSTALL
+============================================================
+
+Before writing guard infrastructure:
+
+1. inspect all 5 commits in:
+
+       origin/main..HEAD
+
+2. classify every changed path as:
+
+       SOURCE
+       GENERATED/REPORT
+
+3. prove that the real source changes in 97d9f32c are intentional completed
+   frontend work, not partial/debugging work.
+
+4. run focused validation for that existing source state:
+
+       frontend TypeScript check
+       frontend production build
+       existing watchlist resilience test(s) relevant to the commit
+
+Do NOT modify the application code merely to make validation pass.
+
+If the existing source commit is broken:
+
+STOP and report before installing infrastructure.
+
+If validation passes:
+
+fast-forward push the CURRENT existing local main to origin/main:
+
+    git push origin main
+
+This push is explicitly approved for the one-time frontend migration.
+
+It must be a normal fast-forward push.
+
+Then verify:
+
+    HEAD == origin/main
+
+before creating the new guard infrastructure commit.
+
+This ensures the frontend starts the new guard system from a synchronized
+source baseline.
+
+============================================================
+GOAL
+============================================================
+
+Install the frontend equivalent of the backend workspace safety system.
+
+The frontend should have the same:
+
+- single-writer workspace claim
+- source/generated classifier
+- Cases A/B/C/D Git-state handling
+- automatic preflight
+- versioned pre-push hook
+- required push before handoff
+- prepublish gate
+- postpublish classification
+- manual-user workflow
+- future-provider compatibility
+
+Only validation behavior differs because this is Node/TypeScript rather than
+Python/FastAPI.
+
+============================================================
+CURRENT FRONTEND FACTS
+============================================================
+
+Current .replit deployment:
+
+    deploymentTarget = autoscale
+
+    run:
+        npm start
+
+    build:
+        npm run build
+
+Root package.json:
+
+    build:
+        cd frontend && npm install && npm run build
+
+    start:
+        cd frontend && npm start
+
+frontend/package.json:
+
+    dev:
+        NODE_ENV=development tsx server/index.ts
+
+    build:
+        vite build &&
+        esbuild server/index.ts
+            --platform=node
+            --packages=external
+            --bundle
+            --format=esm
+            --outdir=dist
+
+    start:
+        NODE_ENV=production node dist/index.js
+
+    check:
+        tsc
+
+No lint script exists.
+
+No general npm test script exists.
+
+Existing tests are run directly using the current Node/tsx test mechanism.
+
+Current repository has:
+
+    NO .githooks/
+    NO scripts/workspace_guard.py
+    NO existing equivalent guard
+
+Current AGENTS.md explicitly says frontend agents:
+
+    NEVER PUSH
+
+That rule must be replaced.
+
+After this task, successful validated implementation tasks must be pushed before
+handoff, matching the backend workflow.
+
+============================================================
+PRESERVE BACKEND PHILOSOPHY
+============================================================
+
+If useful, inspect the backend guard implementation from the backend repository
+only as a reference.
+
+Do NOT blindly copy backend-specific:
+
+- Python compile checks
+- FastAPI startup health logic
+- backend paths
+- provider tests
+
+Mirror the WORKFLOW and GIT SAFETY architecture.
+
+Adapt validation to frontend.
+
+============================================================
+1. ONE CANONICAL GUARD
+============================================================
+
+Create:
+
+    scripts/workspace_guard.py
+
+Prefer keeping its command/API behavior aligned with backend:
+
+    claim
+    status
+    preflight
+    prepush
+    prepublish
+    release
+    postpublish
+    install-hooks
+
+Do not add external Python dependencies.
+
+Use Python stdlib + Git subprocess calls.
+
+============================================================
+2. SINGLE-WRITER LOCK
+============================================================
+
+Use gitignored operational state such as:
+
+    .agent-state/claim.json
+
+Store:
+
+- actor
+- task
+- timestamp
+- starting HEAD
+- starting origin/main
+- workspace
+- branch
+
+Actor must be free-form.
+
+Examples:
+
+    deepseek
+    codex
+    replit-agent
+    manual
+    gemini
+    claude
+    future-provider-name
+
+If another active claim exists:
+
+STOP.
+
+Show holder information.
+
+Do not silently steal locks.
+
+============================================================
+STALE LOCK SAFETY — IMPORTANT IMPROVEMENT
+============================================================
+
+The backend implementation currently auto-releases locks older than 24 hours.
+
+For FRONTEND, make stale-lock behavior MORE conservative:
+
+A lock older than 24 hours may be labeled STALE, but:
+
+DO NOT automatically release it merely because its age exceeds 24 hours.
+
+Require:
+
+    explicit release --force
+
+with user authorization.
+
+This avoids a long-running/manual task being silently overridden.
+
+Document this behavior clearly.
+
+Do not change backend in this task.
+
+============================================================
+3. GIT CASES A/B/C/D
+============================================================
+
+Use the same conceptual model as backend.
+
+CASE A
+
+    HEAD == origin/main
+
+Proceed.
+
+CASE B
+
+    local behind origin/main
+    no divergence
+
+Only allow:
+
+    git fetch origin main
+    git merge --ff-only origin/main
+
+Never create merge commit.
+
+CASE C-SOURCE
+
+    local ahead
+    one or more local-only commits contain source/config
+
+Normally STOP unless these are:
+
+- current actor's validated task commits being completed/pushed
+
+For this migration ONLY, the known pre-existing source commits described above
+may be validated and fast-forward pushed during Phase 0.
+
+CASE C-GENERATED
+
+    local ahead
+    every local-only commit contains generated/report/runtime files only
+
+Allow work to continue.
+
+Do not reset/rebase them.
+
+CASE D
+
+    true divergence
+
+STOP.
+
+Never automatically:
+
+- merge divergent history
+- rebase
+- reset
+- cherry-pick
+- force-push
+
+============================================================
+4. CENTRAL SOURCE CLASSIFIER
+============================================================
+
+Create one conservative centralized classifier.
+
+Frontend SOURCE must include relevant:
+
+- *.ts
+- *.tsx
+- *.js
+- *.jsx
+- *.mjs
+- *.cjs
+- *.css
+- *.scss
+- *.html
+- *.json when configuration/source
+- package.json
+- package-lock.json
+- tsconfig*.json
+- vite config
+- esbuild config
+- drizzle config/schema
+- .replit
+- AGENTS.md
+- scripts/**
+- .githooks/**
+- configuration files
+- tests
+
+IMPORTANT:
+
+Do NOT classify all JSON as generated.
+
+For example:
+
+    package.json
+    tsconfig.json
+
+are SOURCE.
+
+Generated/runtime classification must be an explicit narrowlist.
+
+Known generated frontend artifact:
+
+    frontend/market-overview-cache.json
+
+Agent operational/report directories such as:
+
+    .opencode-reports/**
+    .codex-reports/**
+    .opencode-persistent/**
+    .opencode/**
+    .codex/**
+    .agent-state/**
+
+may be generated/non-source.
+
+When uncertain:
+
+    SOURCE
+
+============================================================
+5. VERSIONED PRE-PUSH HOOK
+============================================================
+
+Create:
+
+    .githooks/pre-push
+
+Keep it thin.
+
+It delegates to:
+
+    scripts/workspace_guard.py prepush
+
+Add/install:
+
+    git config core.hooksPath .githooks
+
+The hook must apply regardless of whether push comes from:
+
+- DeepSeek
+- Codex
+- Replit Agent shell/tool
+- manual user command
+- future providers
+
+Do not duplicate guard logic in shell.
+
+============================================================
+6. FRONTEND PREPUSH VALIDATION
+============================================================
+
+Frontend prepush should reject:
+
+- wrong branch
+- unresolved conflicts
+- true divergence
+- non-fast-forward push
+- dirty authored source that should be committed
+- build/typecheck failure
+
+Use the repository's REAL existing validation.
+
+At minimum:
+
+    cd frontend && npm run check
+
+and:
+
+    npm run build
+
+using the root build path that Replit actually uses.
+
+Do NOT invent lint if none exists.
+
+Do NOT run provider/backend integration tests for ordinary frontend pushes.
+
+============================================================
+7. TARGETED TEST SELECTION
+============================================================
+
+Do not run the entire frontend test universe if it is unnecessarily expensive.
+
+Detect changed source areas and run appropriate existing focused tests when
+practical.
+
+For example, if watchlist-related source changes:
+
+run the existing Watchlist test files through the repository's current Node +
+tsx test mechanism.
+
+Do not create a second testing framework.
+
+If no relevant test exists:
+
+typecheck + production build remain mandatory.
+
+============================================================
+8. CANONICAL FRONTEND BUILD
+============================================================
+
+Audit whether current:
+
+    npm run build
+
+at repository root is already a trustworthy deployment build.
+
+Current root build:
+
+    cd frontend && npm install && npm run build
+
+Current .replit uses:
+
+    npm run build
+
+If this already exits nonzero correctly on:
+
+- npm install failure
+- Vite build failure
+- esbuild failure
+
+then DO NOT create unnecessary duplicate build infrastructure.
+
+Unlike backend, there is no known trailing `true` masking failures here.
+
+Prefer preserving:
+
+    .replit build = npm run build
+
+if it is already correct.
+
+The guard should execute the SAME root production build.
+
+Do not create scripts/run_build.sh merely for symmetry if it adds no value.
+
+============================================================
+9. FRONTEND PREPUBLISH
+============================================================
+
+Create:
+
+    workspace_guard.py prepublish
+
+Require:
+
+- branch = main
+- no unresolved conflicts
+- no dirty authored source/config
+- authored source state contained in origin/main
+- typecheck passes
+- root production build passes
+
+Then perform a lightweight runtime smoke test using the existing production
+server artifact if practical:
+
+    production server starts successfully
+    homepage responds successfully
+    process remains alive
+
+Do not invent an artificial <1 second requirement.
+
+The goal is:
+
+    build succeeds
+    server starts
+    no immediate process exit
+    homepage returns successful/non-5xx response within Replit's deployment
+    timeout budget
+
+Do not require backend/API provider availability for frontend publish readiness
+unless current frontend startup itself requires it.
+
+============================================================
+10. POSTPUBLISH
+============================================================
+
+Implement:
+
+    workspace_guard.py postpublish
+
+Read/classify only by default.
+
+After a Replit publish:
+
+- fetch origin
+- show HEAD
+- show origin/main
+- identify new Replit publish commits
+- list changed files
+- classify source vs generated
+- report source synchronization status
+
+Do not automatically:
+
+- reset
+- rebase
+- rewrite
+- force push
+
+Generated-only publish commits are harmless source-wise.
+
+============================================================
+11. SUCCESSFUL TASK HANDOFF RULE
+============================================================
+
+Replace frontend's current:
+
+    agents never push
+    user personally pushes
+
+policy.
+
+New canonical successful implementation lifecycle:
+
+    claim
+    preflight
+    edit
+    validate
+    exact stage
+    focused commit
+    prepush guard
+    git push origin main
+    verify synchronization
+    release
+    final report
+
+Successful completed source work must NOT be left only locally.
+
+Push is part of task completion.
+
+Only permitted remote write remains:
+
+    git push origin main
+
+Never:
+
+- force push
+- push another branch
+- GitHub write operations
+- PR creation/merge
+- rebase
+- reset
+- cherry-pick
+- history rewrite
+
+============================================================
+12. MANUAL USER EDITS
+============================================================
+
+Support:
+
+    claim --actor manual --task "description"
+
+While manual owns claim:
+
+agents must refuse production edits.
+
+User can either:
+
+A.
+
+    manually validate/commit/push
+
+through the same pre-push hook
+
+OR
+
+B.
+
+    explicitly hand dirty source to an agent
+
+Agents must never silently discard manual changes.
+
+============================================================
+13. AGENTS.md
+============================================================
+
+Preserve all current frontend architecture safeguards.
+
+Do NOT weaken:
+
+- scope restrictions
+- no architecture drift
+- frontend-only default for display/UI tasks
+- API/query/cache preservation
+- exact staging
+- no broad refactors
+- no new data pipeline without approval
+- report conventions
+
+Extend applicability to:
+
+- Codex
+- DeepSeek/OpenCode
+- Replit Agent
+- future providers
+- manual workflow
+
+Preserve existing Codex/OpenCode report paths.
+
+For Replit Agent:
+
+report in conversation unless an established Replit-specific file already
+exists.
+
+Do not invent one.
+
+============================================================
+14. TEST THE GUARD
+============================================================
+
+Add focused tests equivalent to backend guard coverage, adapted to frontend.
+
+At minimum test:
+
+- correct repo/main accepted
+- wrong branch rejected
+- active claim rejected
+- manual claim protected
+- stale >24h claim is FLAGGED but NOT auto-released
+- force release works only explicitly
+- dirty TS/TSX source rejected
+- dirty generated market-overview-cache.json accepted
+- package.json classified SOURCE
+- tsconfig JSON classified SOURCE
+- tests classified SOURCE
+- Case A
+- Case B fast-forward
+- Case C-source
+- Case C-generated
+- Case D divergence
+- Replit generated-only publish commit accepted
+- non-fast-forward push rejected
+- prepublish rejects dirty source
+- prepublish rejects unpushed source
+- frontend typecheck failure returns nonzero
+- frontend build failure returns nonzero
+- targeted Watchlist changes select Watchlist tests
+
+Use temporary repositories for Git-state tests.
+
+Never damage live history during tests.
+
+============================================================
+15. VALIDATE FRONTEND AFTER INSTALL
+============================================================
+
+Run at minimum:
+
+    guard tests
+
+    cd frontend && npm run check
+
+    npm run build
+
+and focused relevant existing frontend tests if practical.
+
+Also run:
+
+    workspace_guard.py status
+
+    workspace_guard.py preflight
+
+and prepublish validation/dry-run.
+
+Do not require a live deployment publish to validate this infrastructure task.
+
+============================================================
+16. SCOPE
+============================================================
+
+Expected infrastructure files:
+
+    AGENTS.md
+    .gitignore
+    .githooks/pre-push
+    scripts/workspace_guard.py
+    focused guard tests
+
+Potentially package.json only if a small script alias materially improves the
+workflow.
+
+Do not modify .replit if its existing build/run contract is already correct.
+
+DO NOT TOUCH APPLICATION BUSINESS LOGIC.
+
+No:
+
+- Watchlist behavior changes
+- taxonomy changes
+- query changes
+- API proxy changes
+- React component changes
+- provider changes
+- backend changes
+- database changes
+- UI changes
+
+The existing watchlist source commit in Phase 0 is to be PRESERVED AND VALIDATED,
+not edited.
+
+============================================================
+17. COMMIT / PUSH
+============================================================
+
+After Phase 0 synchronizes existing validated source:
+
+implement infrastructure.
+
+Then:
+
+- stage exact infrastructure files only
+- create ONE focused infrastructure commit
+- install the new hook
+- push using the new guarded push
+- verify:
+
+      HEAD
+      local main
+      origin/main
+      origin/HEAD
+
+  contain the infrastructure commit
+
+Do not leave the frontend local-only after successful completion.
+
+============================================================
+18. DO NOT PUBLISH
+============================================================
+
+Do NOT publish the frontend during this infrastructure task.
+
+Commit and push only.
+
+We will review the report first.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Return:
+
+1. starting HEAD
+2. starting origin/main
+3. exact five local-only commits found
+4. source/generated classification of those commits
+5. Phase 0 existing-source validation
+6. Phase 0 push SHA/result
+7. files added/changed for guard
+8. guard lifecycle
+9. source/generated classifier
+10. lock behavior
+11. stale-lock behavior
+12. Cases A/B/C/D behavior
+13. prepush behavior
+14. targeted-test selection
+15. prepublish behavior
+16. postpublish behavior
+17. exact frontend build command preserved/changed
+18. TypeScript check result
+19. production build result
+20. guard test result
+21. focused frontend test result
+22. manual-edit workflow
+23. infrastructure commit SHA
+24. infrastructure push result
+25. ending HEAD/local main/origin main/origin HEAD
+26. git status
+27. confirmation no application business source was modified by THIS task
+28. DO NOT PUBLISH
