@@ -1,0 +1,214 @@
+CAELYNAI FRONTEND — PRODUCTION LOGIN INCIDENT
+
+Work only in the LIVE frontend Replit workspace.
+
+READ AGENTS.md FIRST.
+Use the workspace guard.
+
+The app is now successfully published at:
+
+```
+https://caelyn.ai
+```
+
+Replit Preview login works with the existing Caelyn admin credentials.
+
+The SAME credentials do NOT work at caelyn.ai.
+
+This must be fixed.
+
+DO NOT change the backend repo.
+DO NOT redesign auth.
+DO NOT create public signup yet.
+DO NOT weaken authentication.
+DO NOT publish until explicitly told.
+
+## IMPORTANT CURRENT AUTH ARCHITECTURE
+
+The existing frontend Express login route:
+
+```
+POST /api/auth/login
+```
+
+currently:
+
+1. tries the FastAPI auth endpoint first
+2. if that does not return success, falls back to server-side env credentials:
+   CAELYN_USERNAME
+   CAELYN_PASSWORD
+3. issues a local JWT signed with:
+   SESSION_SECRET
+
+This local fallback is NOT intentionally development-only in source.
+
+Therefore Preview success + caelyn.ai failure suggests a runtime/deployment environment difference.
+
+## PHASE 1 — PROVE ROOT CAUSE BEFORE EDITING
+
+Compare Preview versus published production.
+
+For BOTH environments report, without revealing secret values:
+
+```
+CAELYN_USERNAME present? yes/no
+CAELYN_PASSWORD present? yes/no
+SESSION_SECRET present? yes/no
+```
+
+Do NOT print values.
+
+Probe:
+
+```
+POST /api/auth/login
+```
+
+using the SAME valid admin credentials in Preview and production.
+
+Do not expose credentials in logs/report.
+
+Report:
+
+```
+Preview:
+    HTTP status
+    whether FastAPI login succeeded
+    whether local fallback executed
+    whether local fallback succeeded
+
+caelyn.ai:
+    HTTP status
+    whether FastAPI login succeeded
+    whether local fallback executed
+    whether local fallback succeeded
+```
+
+Trace the exact production failure.
+
+Determine whether the issue is:
+
+* production deployment missing CAELYN_USERNAME
+* production deployment missing CAELYN_PASSWORD
+* production deployment missing SESSION_SECRET
+* stale deployment secret snapshot
+* FastAPI auth path difference
+* request body issue
+* hostname/origin issue
+* another proven cause
+
+Do not guess.
+
+## IF PRODUCTION SECRETS ARE MISSING
+
+Do NOT hardcode credentials.
+
+Do NOT put credentials in source.
+
+Determine the correct existing Replit deployment-secret mechanism.
+
+If secrets must be enabled/copied for the published deployment, report the exact Replit configuration change required.
+
+If the deployment simply needs to be republished after secrets were added, say so explicitly.
+
+Prefer fixing deployment configuration over source code.
+
+## IF SOURCE CODE IS ACTUALLY WRONG
+
+Only change source if the live evidence proves a code bug.
+
+Expected source scope should be at most ONE production file.
+
+Preserve existing architecture:
+
+```
+FastAPI auth first
+local admin fallback second
+```
+
+The local admin fallback must work identically in:
+
+```
+Replit Preview
+caelyn.ai production
+```
+
+Do not create hostname-specific credentials.
+
+Do not treat `.replit.dev` specially for authentication.
+
+## SIGNUP AUDIT — READ ONLY
+
+Separately inspect whether real self-service user registration exists.
+
+Answer:
+
+* Is there a POST /api/auth/register or /signup backend route?
+* Is there a client /signup or /register page?
+* Is there a persistent users table/store?
+* Does “Get Started” intentionally route to /login?
+* Is the product currently effectively a single-admin login system?
+
+DO NOT implement signup in this task.
+
+We will design real account creation separately after production admin login is fixed.
+
+## ACCEPTANCE
+
+Using the existing admin credentials:
+
+```
+Preview login → success
+caelyn.ai login → success
+```
+
+After login at caelyn.ai:
+
+```
+JWT stored under caelyn.ai origin
+/api/auth/verify → success
+authenticated dashboard loads
+```
+
+No credentials exposed client-side.
+
+No hardcoded password.
+
+Production and Preview use the same auth semantics.
+
+## VALIDATION
+
+Run:
+
+* focused auth tests
+* production build
+* existing project TypeScript policy
+* workspace guard prepush
+
+If only deployment configuration changes are needed:
+DO NOT create a meaningless source commit.
+
+If code changes are required:
+exact-stage only intended files
+one focused commit
+push
+DO NOT PUBLISH
+
+## FINAL REPORT
+
+Return:
+
+1. Preview secret presence
+2. Production secret presence
+3. Preview login path/result
+4. caelyn.ai login path/result
+5. exact root cause
+6. whether source code changed
+7. exact fix
+8. confirmation credentials remain server-side only
+9. confirmation backend untouched
+10. signup/account creation audit
+11. files changed
+12. tests/build
+13. commit/push if applicable
+14. DO NOT PUBLISH
