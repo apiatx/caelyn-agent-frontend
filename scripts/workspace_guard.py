@@ -216,7 +216,12 @@ def classify_commits(commits: list[dict]) -> str:
 
 def dirty_source_files() -> list[str]:
     """Return tracked SOURCE files with uncommitted modifications."""
-    out = git_out("status", "--porcelain")
+    # Use raw .stdout (not git_out) to preserve per-line leading whitespace.
+    # git_out() calls .strip() on the full output, which destroys the XY status
+    # prefix on the first line when there is only one dirty file, causing
+    # classify_path() to receive a truncated path (e.g. 'rontend/...' instead
+    # of 'frontend/...') that misses the GENERATED_EXACT allowlist.
+    out = _git("status", "--porcelain").stdout
     dirty = []
     for line in out.splitlines():
         if len(line) < 3:
