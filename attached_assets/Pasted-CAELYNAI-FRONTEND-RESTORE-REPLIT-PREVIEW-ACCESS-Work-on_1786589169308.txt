@@ -1,0 +1,326 @@
+CAELYNAI FRONTEND — RESTORE REPLIT PREVIEW ACCESS
+
+Work only in the LIVE frontend Replit workspace.
+
+READ AGENTS.md FIRST.
+Use the workspace guard.
+
+This is a FRONTEND-ONLY task.
+
+DO NOT touch the backend repo.
+DO NOT touch FastAPI.
+DO NOT touch DB pool work.
+DO NOT touch Watchlist/theme/taxonomy.
+DO NOT publish.
+DO NOT make production auth less secure.
+
+## CURRENT SITUATION
+
+A new production custom domain:
+
+```
+https://caelyn.ai
+```
+
+is still verifying and may take hours.
+
+I need the FRONTEND REPLIT PREVIEW to work normally right now.
+
+Current observed behavior in the app:
+
+* Home dashboard unavailable
+* Macro unavailable
+* Should I Trade unavailable
+* Daily Alpha Board unavailable
+* Catalysts unavailable
+* Themes unavailable
+* News does not load
+* Portfolio/Watchlist snapshots empty
+* Hyperliquid unavailable
+* most other backend-dependent sections fail
+* Prediction Markets still works
+
+A prior live audit proved:
+
+1. FastAPI backend is healthy and returning 200 responses.
+2. Backend CORS is not blocking caelyn.ai.
+3. Frontend stores JWT in origin-scoped browser storage:
+   caelyn_jwt
+4. Switching browser origins means that JWT is absent.
+5. `/api/auth/verify` therefore returns unauthenticated.
+6. Prediction Markets survives because it is largely public / has direct external fallbacks.
+7. The same origin-isolation problem MAY affect Replit Preview because preview hostnames can differ from the hostname where the user's JWT was originally stored.
+
+DO NOT assume that is the preview root cause.
+
+PROVE IT.
+
+## PHASE 1 — READ ONLY
+
+Before editing anything, inspect the live frontend Replit preview.
+
+Determine:
+
+### A. Exact preview URL/origin
+
+Report the exact hostname currently used by the browser preview.
+
+Determine whether it differs from:
+
+```
+crypto-track-pro-aidanpilon.replit.app
+caelyn.ai
+```
+
+### B. Auth initialization in preview
+
+Trace the exact current path:
+
+```
+AuthContext mount
+    →
+localStorage/sessionStorage read
+    →
+/api/auth/verify
+    →
+auth state
+    →
+protected data rendering
+```
+
+Determine:
+
+* whether `caelyn_jwt` exists in preview origin storage
+* whether `/api/auth/verify` receives a Bearer token
+* exact verify response/status
+* resulting `isAuthenticated` state
+* whether protected routes/components are intentionally blocked by that state
+
+Do not print the JWT value.
+
+### C. Representative requests
+
+From PREVIEW, inspect at least:
+
+```
+/api/auth/verify
+/api/home/dashboard
+/api/watchlist/list
+one Watchlist endpoint
+/api/home/top-catalysts
+/api/hyperliquid/signals
+/api/predict/odds/live
+```
+
+For each, report:
+
+```
+status
+whether Authorization was present
+whether request reached Express
+whether Express reached FastAPI
+resulting UI behavior
+```
+
+### D. Login path
+
+Determine whether the current preview exposes a usable login UI when auth is missing.
+
+Answer:
+
+* Is there a login screen/route?
+* Can I authenticate normally from preview?
+* Does successful login save `caelyn_jwt` to the CURRENT preview origin?
+* After login, does AuthContext rerun/reconcile and allow the app to render?
+
+If a normal login in Preview already solves this with no code changes:
+
+STOP.
+
+Do not edit anything.
+
+Report exactly how I should log in from Preview.
+
+## GOAL IF A CODE FIX IS ACTUALLY REQUIRED
+
+The Replit preview must work when opened under its current preview hostname.
+
+The fix must NOT weaken production authentication.
+
+Acceptable outcome:
+
+```
+preview opened
+    →
+no valid local auth token
+    →
+user is shown the EXISTING login/authentication experience
+    →
+successful login stores token for that preview origin
+    →
+app loads normally
+```
+
+Do NOT make this outcome:
+
+```
+preview opened
+    →
+automatically authenticated without credentials
+```
+
+unless the existing architecture already intentionally implements a development-only authentication bypass and you can prove that behavior existed before.
+
+Do not create a new bypass.
+
+## MOST IMPORTANT RULE
+
+DO NOT solve this by globally disabling:
+
+* ProtectedRoute
+* AuthContext
+* JWT verification
+* authentication checks
+* token requirements
+
+DO NOT hardcode a fake token.
+
+DO NOT put username/password in source.
+
+DO NOT copy tokens between origins.
+
+DO NOT expose secrets to the browser.
+
+## IF THE BUG IS THE MISSING LOGIN EXPERIENCE
+
+If AuthContext correctly determines unauthenticated state but the app shell renders broken cards instead of taking the user to the existing login flow:
+
+fix ONLY that frontend state transition.
+
+Reuse the EXISTING login page/component/route.
+
+Expected behavior:
+
+```
+unauthenticated
+    →
+existing login UI
+```
+
+not:
+
+```
+unauthenticated
+    →
+partially mounted protected dashboard with dozens of failed requests
+```
+
+After successful authentication:
+
+```
+login
+    →
+save JWT in current origin storage
+    →
+verify
+    →
+authenticated app
+```
+
+Do not redesign authentication.
+
+## IF PREVIEW HAS A SPECIAL REPLIT ORIGIN ISSUE
+
+If the existing login flow is incorrectly restricted to a particular hostname:
+
+make the smallest existing-config correction necessary so legitimate Replit preview
+hostnames can use the same login flow.
+
+Do NOT introduce wildcard production trust for arbitrary internet domains.
+
+Keep production and preview behavior explicitly separated if necessary.
+
+## CAELYN.AI
+
+Do NOT try to make caelyn.ai work in this task.
+
+The domain is still verifying.
+
+Do NOT edit custom-domain DNS.
+
+Do NOT republish.
+
+Do NOT touch frontend production CORS unless it is directly required for Preview,
+which is unlikely.
+
+We will handle caelyn.ai after verification completes.
+
+## SCOPE
+
+Expected production scope:
+
+0 files if normal preview login already solves it.
+
+Otherwise ideally:
+
+1 frontend auth/routing file
+
+Maximum 2 production files.
+
+If more than 2 production files are required:
+
+STOP and report before editing.
+
+## VALIDATION
+
+If code changes are necessary, prove from the actual Replit Preview:
+
+1. Fresh preview origin with no JWT does NOT mount a broken protected dashboard.
+2. Existing login experience appears.
+3. Valid login succeeds.
+4. Token is stored only in current preview origin storage.
+5. `/api/auth/verify` succeeds afterward.
+6. Home loads.
+7. Watchlist loads.
+8. Portfolio loads.
+9. Themes load.
+10. Hyperliquid loads or reaches its normal backend state.
+11. Prediction Markets still works.
+12. Production auth behavior is unchanged.
+
+Run:
+
+* focused auth tests
+* relevant routing tests
+* production build
+* TypeScript check according to existing project policy
+* workspace guard prepush
+
+If no source fix is required, DO NOT create a commit just to create one.
+
+If a source fix is required:
+
+* exact-stage only intended files
+* one focused commit
+* push through existing Replit credential bridge
+* DO NOT PUBLISH
+
+## FINAL REPORT
+
+Return:
+
+1. exact Preview origin
+2. whether JWT existed for that origin
+3. `/api/auth/verify` result before login/fix
+4. proven preview root cause
+5. whether normal login alone solved it
+6. if code changed: exact bug and exact correction
+7. files changed
+8. confirmation production auth was not weakened
+9. confirmation backend untouched
+10. Preview validation results
+11. build/tests
+12. commit SHA if applicable
+13. push result if applicable
+14. final git state
+15. DO NOT PUBLISH
