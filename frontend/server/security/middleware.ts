@@ -464,6 +464,11 @@ export const corsConfig = cors({
     if (origin.includes('cryptohippo.locker')) {
       return callback(null, true);
     }
+
+    // Allow caelyn.ai production domain
+    if (origin.includes('caelyn.ai')) {
+      return callback(null, true);
+    }
     
     // Allow other common development origins
     if (origin.includes('vite') || origin === 'null') {
